@@ -24,10 +24,14 @@ export async function POST(request: NextRequest) {
     const forecast = await agent.generateForecast(body);
     return NextResponse.json({ success: true, data: forecast });
 
-  } catch (error) {
-    console.error('Forecast route error:', error);
+  } catch (error: any) {
+    console.error('❌ Forecast route error:', error);
+    console.error('❌ Forecast route error details:', {
+      message: error.message,
+      stack: error.stack,
+    });
     return NextResponse.json(
-      { success: false, error: String(error) },
+      { success: false, error: error.message || String(error) },
       { status: 500 }
     );
   }

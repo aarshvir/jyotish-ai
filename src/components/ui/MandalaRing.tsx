@@ -26,6 +26,7 @@ export function MandalaRing({ className }: MandalaRingProps) {
       xmlns="http://www.w3.org/2000/svg"
       className={className}
       aria-hidden
+      suppressHydrationWarning
     >
       {/* ── Triple outer border (bhupura) ───────────────────────────────── */}
       <circle cx="200" cy="200" r="194" stroke="currentColor" strokeWidth="1"   opacity="0.9" />

@@ -378,10 +378,7 @@ export default function OnboardPage() {
     setGeo(null);
     
     try {
-      const res  = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`,
-        { headers: { 'Accept-Language': 'en' } }
-      );
+      const res = await fetch(`/api/geocode?city=${encodeURIComponent(city)}`);
       
       if (!res.ok) {
         setGeoError('Location lookup failed. You can continue without it.');

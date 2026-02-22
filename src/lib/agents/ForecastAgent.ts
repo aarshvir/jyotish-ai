@@ -108,56 +108,75 @@ export class ForecastAgent {
   }
 
   async generateForecast(input: ForecastInput): Promise<ForecastOutput> {
-    const dates = getDateRange(input.dateFrom, input.dateTo);
-    if (dates.length === 0) throw new Error('ForecastAgent: empty date range');
+    try {
+      const dates = getDateRange(input.dateFrom, input.dateTo);
+      if (dates.length === 0) throw new Error('ForecastAgent: empty date range');
 
-    // ── Step 1: Fetch ephemeris data for all dates in parallel ──────────────
-    const dayData: FullDayData[] = await Promise.all(
-      dates.map((date) =>
-        this.ephemeris.getFullDayData({
+      console.log(`📅 ForecastAgent - Generating forecast for ${dates.length} days`);
+
+      // ── Step 1: Fetch ephemeris data for all dates in parallel ──────────────
+      console.log('📡 ForecastAgent - Step 1: Fetching ephemeris data...');
+      const dayData: FullDayData[] = await Promise.all(
+        dates.map((date) =>
+          this.ephemeris.getFullDayData({
+            date,
+            birthLat:        input.birthLat,
+            birthLng:        input.birthLng,
+            currentLat:      input.currentLat,
+            currentLng:      input.currentLng,
+            timezoneOffset:  input.timezoneOffset,
+          })
+        )
+      );
+      console.log(`✅ ForecastAgent - Step 1 complete: ${dayData.length} days fetched`);
+
+      // ── Step 2: Rate all days (pure calculation) ─────────────────────────────
+      console.log('🔢 ForecastAgent - Step 2: Rating days...');
+      const ratings: DayRating[] = dates.map((date, i) =>
+        this.rating.rateDay(date, dayData[i], input.natalChart.lagna)
+      );
+      console.log(`✅ ForecastAgent - Step 2 complete: ${ratings.length} days rated`);
+
+      // ── Step 3: Single Claude call for all narratives ────────────────────────
+      console.log('🔮 ForecastAgent - Step 3: Generating narratives...');
+      const narratives = await this.generateNarratives(input, dates, dayData, ratings);
+      console.log('✅ ForecastAgent - Step 3 complete');
+
+      // ── Step 4: Assemble final output ────────────────────────────────────────
+      console.log('📦 ForecastAgent - Step 4: Assembling forecast...');
+      const days: DayForecast[] = dates.map((date, i) => {
+        const narr = narratives.days.find((n) => n.date === date) ?? {
           date,
-          birthLat:        input.birthLat,
-          birthLng:        input.birthLng,
-          currentLat:      input.currentLat,
-          currentLng:      input.currentLng,
-          timezoneOffset:  input.timezoneOffset,
-        })
-      )
-    );
+          narrative:   '',
+          best_times:  [],
+          avoid_times: [],
+        };
+        return {
+          date,
+          panchang:    dayData[i].panchang,
+          rating:      ratings[i],
+          narrative:   narr.narrative,
+          best_times:  narr.best_times,
+          avoid_times: narr.avoid_times,
+        };
+      });
 
-    // ── Step 2: Rate all days (pure calculation) ─────────────────────────────
-    const ratings: DayRating[] = dates.map((date, i) =>
-      this.rating.rateDay(date, dayData[i], input.natalChart.lagna)
-    );
-
-    // ── Step 3: Single Claude call for all narratives ────────────────────────
-    const narratives = await this.generateNarratives(input, dates, dayData, ratings);
-
-    // ── Step 4: Assemble final output ────────────────────────────────────────
-    const days: DayForecast[] = dates.map((date, i) => {
-      const narr = narratives.days.find((n) => n.date === date) ?? {
-        date,
-        narrative:   '',
-        best_times:  [],
-        avoid_times: [],
-      };
+      console.log('✅ ForecastAgent - Forecast generation complete');
       return {
-        date,
-        panchang:    dayData[i].panchang,
-        rating:      ratings[i],
-        narrative:   narr.narrative,
-        best_times:  narr.best_times,
-        avoid_times: narr.avoid_times,
+        period:         { from: input.dateFrom, to: input.dateTo },
+        lagna:          input.natalChart.lagna,
+        current_dasha:  input.natalChart.current_dasha,
+        days,
+        weekly_summary: narratives.weekly_summary,
       };
-    });
-
-    return {
-      period:         { from: input.dateFrom, to: input.dateTo },
-      lagna:          input.natalChart.lagna,
-      current_dasha:  input.natalChart.current_dasha,
-      days,
-      weekly_summary: narratives.weekly_summary,
-    };
+    } catch (error: any) {
+      console.error('❌ ForecastAgent - generateForecast error:', error);
+      console.error('❌ ForecastAgent - Error details:', {
+        message: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
   }
 
   // ── Private: Claude narrative generation ───────────────────────────────────

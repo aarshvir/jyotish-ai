@@ -10,7 +10,8 @@
       "Bash(cd \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" && npm run dev 2>&1)",
       "Bash(cd \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" && npx kill-port 3000 3001 2>&1)",
       "Bash(cd:*)",
-      "Bash(npx kill-port:*)"
+      "Bash(npx kill-port:*)",
+      "Bash(winget install:*)"
     ]
   }
 }

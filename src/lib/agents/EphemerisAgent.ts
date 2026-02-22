@@ -41,16 +41,24 @@ export class EphemerisAgent {
   }
 
   private async post<T>(path: string, body: unknown): Promise<T> {
-    const res = await fetch(`${this.baseUrl}${path}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`EphemerisAgent ${path} → HTTP ${res.status}: ${text}`);
+    try {
+      console.log(`🌍 EphemerisAgent - Calling ${path} at ${this.baseUrl}`);
+      const res = await fetch(`${this.baseUrl}${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        console.error(`❌ EphemerisAgent ${path} - HTTP ${res.status}:`, text);
+        throw new Error(`EphemerisAgent ${path} → HTTP ${res.status}: ${text}`);
+      }
+      console.log(`✅ EphemerisAgent - ${path} succeeded`);
+      return res.json() as Promise<T>;
+    } catch (error: any) {
+      console.error(`❌ EphemerisAgent ${path} - Fetch error:`, error);
+      throw error;
     }
-    return res.json() as Promise<T>;
   }
 
   /** Full birth chart with planets, lagna, dasha sequence. */
