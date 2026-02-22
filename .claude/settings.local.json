@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sleep 3 && cd \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai/ephemeris-service\" && py test_chart.py 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai/ephemeris-service\" && py -m uvicorn main:app --reload 2>&1)",
+      "Bash(sleep 4 && cd \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai/ephemeris-service\" && PYTHONUTF8=1 py test_chart.py 2>&1)",
+      "Bash(py:*)",
+      "Bash(sleep 2 && cd \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai/ephemeris-service\" && PYTHONUTF8=1 py test_chart.py 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" && npx tsc --noEmit 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" && npm run dev 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" && npx kill-port 3000 3001 2>&1)",
+      "Bash(cd:*)",
+      "Bash(npx kill-port:*)"
+    ]
+  }
+}

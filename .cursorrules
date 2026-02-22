@@ -1,0 +1,79 @@
+# Jyotish AI - Cursor Rules
+
+## Project Context
+This is a Vedic astrology SaaS platform that generates personalized birth chart analyses and forecasts using AI.
+
+## Tech Stack
+- Next.js 14 App Router
+- TypeScript (strict mode)
+- Supabase (auth + database)
+- Stripe (payments)
+- Anthropic Claude API
+- Tailwind CSS + Shadcn/ui
+
+## Code Style
+
+### TypeScript
+- Use strict TypeScript
+- Avoid `any` types - use proper interfaces from `src/types/index.ts`
+- Prefer type inference where obvious
+- Use `unknown` for truly unknown types
+
+### React/Next.js
+- Use Server Components by default
+- Mark Client Components with 'use client' only when needed (for interactivity, hooks, browser APIs)
+- Use async/await for server components that fetch data
+- Prefer Server Actions over API routes for mutations when possible
+
+### Component Organization
+- Place reusable UI in `components/ui/` (shadcn components)
+- Domain-specific components in `components/[domain]/`
+- Shared components in `components/shared/`
+
+### API Routes
+- Validate user auth in protected routes
+- Use proper HTTP status codes
+- Return consistent JSON structure: `{ success: boolean, data?: any, error?: string }`
+- Handle errors gracefully with try-catch
+
+### Supabase
+- Use `createClient()` from `@/lib/supabase/server` in Server Components
+- Use `createClient()` from `@/lib/supabase/client` in Client Components
+- Always check auth state before database operations
+- Leverage RLS policies for security
+
+### AI Agents
+- Each agent has a specific, focused responsibility
+- Use clear, detailed prompts with context
+- Handle rate limits and errors gracefully
+- Log agent calls for debugging
+
+### Styling
+- Use Tailwind CSS utility classes
+- Follow shadcn/ui design patterns
+- Use Framer Motion for animations sparingly
+- Ensure responsive design (mobile-first)
+
+## Naming Conventions
+- Files: camelCase for utilities, PascalCase for components
+- Functions: camelCase, descriptive names
+- Types/Interfaces: PascalCase
+- Constants: UPPER_SNAKE_CASE
+
+## Security
+- Never expose API keys in client code
+- Use RLS policies in Supabase
+- Validate all user input
+- Sanitize data before AI prompts
+
+## Performance
+- Use Server Components to reduce client JS
+- Implement loading states for async operations
+- Optimize images with Next.js Image component
+- Lazy load heavy components
+
+## Vedic Astrology Terminology
+- Use traditional Sanskrit terms where appropriate
+- Provide context/tooltips for non-expert users
+- Follow authentic Vedic astrology principles
+- Cite classical texts when relevant

@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pyswisseph
+geopy
+timezonefinder
+python-dateutil
+requests
+ephem
