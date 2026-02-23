@@ -1,13 +1,7 @@
 /**
  * ForecastAgent
- * Orchestrates the full day-by-day forecast pipeline:
- *   1. EphemerisAgent  → fetch panchang + hora + choghadiya + rahu kaal for each date
- *   2. RatingAgent     → score every hora slot deterministically
- *   3. Claude claude-sonnet-4-6 → single batched call for narratives + best/avoid windows
- *
- * Usage:
- *   const agent = new ForecastAgent();
- *   const forecast = await agent.generateForecast({ natalChart, ...locationData, dateFrom, dateTo });
+ * Orchestrates the full day-by-day forecast pipeline with resilient error handling.
+ * Uses claude-sonnet-4-6 for all AI calls.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -22,8 +16,6 @@ import type {
   DayNarrative,
 } from './types';
 
-// ── Date helpers ─────────────────────────────────────────────────────────────
-
 function getDateRange(from: string, to: string): string[] {
   const dates: string[] = [];
   const cur = new Date(`${from}T00:00:00Z`);
@@ -35,8 +27,6 @@ function getDateRange(from: string, to: string): string[] {
   return dates;
 }
 
-// ── Prompt builders ──────────────────────────────────────────────────────────
-
 function buildForecastPrompt(
   input: ForecastInput,
   dates: string[],
@@ -46,8 +36,9 @@ function buildForecastPrompt(
   const { natalChart } = input;
 
   const dayBlocks = dates.map((date, i) => {
-    const d  = dayData[i];
-    const r  = ratings[i];
+    const d = dayData[i];
+    const r = ratings[i];
+    if (!d || !r) return `DATE: ${date}\n  Data unavailable`;
     const peak = r.peak_windows
       .map((s) => `${s.start_time}–${s.end_time} (${s.hora_ruler} hora, ${s.choghadiya}, rating ${s.rating})`)
       .join(' | ');
@@ -57,19 +48,19 @@ function buildForecastPrompt(
 
     return `DATE: ${date}
   Day score: ${r.day_score}/100
-  Tithi: ${d.panchang.tithi} | Nakshatra: ${d.panchang.nakshatra} | Yoga: ${d.panchang.yoga}
-  Moon sign: ${d.panchang.moon_sign} | Day ruler: ${d.panchang.day_ruler}
-  Rahu Kaal: ${d.rahu_kaal.start_time}–${d.rahu_kaal.end_time}
-  Peak windows:  ${peak}
-  Avoid windows: ${avoid}`;
+  Tithi: ${d.panchang?.tithi ?? '?'} | Nakshatra: ${d.panchang?.nakshatra ?? '?'} | Yoga: ${d.panchang?.yoga ?? '?'}
+  Moon sign: ${d.panchang?.moon_sign ?? '?'} | Day ruler: ${d.panchang?.day_ruler ?? '?'}
+  Rahu Kaal: ${d.rahu_kaal?.start_time ?? '?'}–${d.rahu_kaal?.end_time ?? '?'}
+  Peak windows:  ${peak || 'none'}
+  Avoid windows: ${avoid || 'none'}`;
   }).join('\n\n');
 
   return `You are a Vedic astrologer writing a personalised daily forecast.
 
 NATIVE
-  Lagna: ${natalChart.lagna}
-  Moon nakshatra: ${natalChart.moon_nakshatra}
-  Current dasha: ${natalChart.current_dasha?.mahadasha ?? '?'} MD / ${natalChart.current_dasha?.antardasha ?? '?'} AD (ends ${natalChart.current_dasha?.end_date ?? '?'})
+  Lagna: ${natalChart?.lagna ?? '?'}
+  Moon nakshatra: ${natalChart?.moon_nakshatra ?? '?'}
+  Current dasha: ${natalChart?.current_dasha?.mahadasha ?? '?'} MD / ${natalChart?.current_dasha?.antardasha ?? '?'} AD (ends ${natalChart?.current_dasha?.end_date ?? '?'})
 
 DAILY DATA (${dates[0]} to ${dates[dates.length - 1]})
 ${dayBlocks}
@@ -89,7 +80,52 @@ Return ONLY valid JSON (no prose, no code fences) with this exact structure:
 }`;
 }
 
-// ── Agent ────────────────────────────────────────────────────────────────────
+async function callClaudeWithBackoff(
+  claude: Anthropic,
+  prompt: string,
+  maxTokens: number,
+  retries = 3
+): Promise<string> {
+  const delays = [2000, 4000, 8000];
+  let lastError: any;
+
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await claude.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: maxTokens,
+        system: 'You are a Vedic astrologer. Return only valid JSON — no prose, no markdown.',
+        messages: [{ role: 'user', content: prompt }],
+      });
+
+      const text = response.content.find((b) => b.type === 'text')?.text ?? '';
+      return text;
+    } catch (error: any) {
+      lastError = error;
+      const status = error?.status;
+
+      if (status === 401) throw new Error('Invalid Anthropic API key. Check .env.local ANTHROPIC_API_KEY');
+      if (status === 400) {
+        console.error('Anthropic 400 bad request:', error?.message);
+        throw error;
+      }
+
+      // 429 rate limit or 529 overloaded — retry with backoff
+      if (status === 429 || status === 529) {
+        const delay = delays[Math.min(i, delays.length - 1)];
+        console.warn(`Anthropic ${status}, retrying in ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+
+      if (i < retries - 1) {
+        await new Promise((r) => setTimeout(r, delays[Math.min(i, delays.length - 1)]));
+        continue;
+      }
+    }
+  }
+  throw lastError ?? new Error('Claude call failed after retries');
+}
 
 export class ForecastAgent {
   private ephemeris: EphemerisAgent;
@@ -98,8 +134,8 @@ export class ForecastAgent {
 
   constructor() {
     this.ephemeris = new EphemerisAgent();
-    this.rating    = new RatingAgent();
-    
+    this.rating = new RatingAgent();
+
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey || apiKey === 'your_anthropic_api_key') {
       throw new Error('ANTHROPIC_API_KEY is not set in environment variables');
@@ -108,78 +144,87 @@ export class ForecastAgent {
   }
 
   async generateForecast(input: ForecastInput): Promise<ForecastOutput> {
-    try {
-      const dates = getDateRange(input.dateFrom, input.dateTo);
-      if (dates.length === 0) throw new Error('ForecastAgent: empty date range');
+    const dates = getDateRange(input.dateFrom, input.dateTo);
+    if (dates.length === 0) throw new Error('ForecastAgent: empty date range');
 
-      console.log(`📅 ForecastAgent - Generating forecast for ${dates.length} days`);
+    console.log(`ForecastAgent - Generating forecast for ${dates.length} days`);
 
-      // ── Step 1: Fetch ephemeris data for all dates in parallel ──────────────
-      console.log('📡 ForecastAgent - Step 1: Fetching ephemeris data...');
-      const dayData: FullDayData[] = await Promise.all(
-        dates.map((date) =>
-          this.ephemeris.getFullDayData({
-            date,
-            birthLat:        input.birthLat,
-            birthLng:        input.birthLng,
-            currentLat:      input.currentLat,
-            currentLng:      input.currentLng,
-            timezoneOffset:  input.timezoneOffset,
-          })
-        )
-      );
-      console.log(`✅ ForecastAgent - Step 1 complete: ${dayData.length} days fetched`);
-
-      // ── Step 2: Rate all days (pure calculation) ─────────────────────────────
-      console.log('🔢 ForecastAgent - Step 2: Rating days...');
-      const ratings: DayRating[] = dates.map((date, i) =>
-        this.rating.rateDay(date, dayData[i], input.natalChart.lagna)
-      );
-      console.log(`✅ ForecastAgent - Step 2 complete: ${ratings.length} days rated`);
-
-      // ── Step 3: Single Claude call for all narratives ────────────────────────
-      console.log('🔮 ForecastAgent - Step 3: Generating narratives...');
-      const narratives = await this.generateNarratives(input, dates, dayData, ratings);
-      console.log('✅ ForecastAgent - Step 3 complete');
-
-      // ── Step 4: Assemble final output ────────────────────────────────────────
-      console.log('📦 ForecastAgent - Step 4: Assembling forecast...');
-      const days: DayForecast[] = dates.map((date, i) => {
-        const narr = narratives.days.find((n) => n.date === date) ?? {
+    // Step 1: Fetch ephemeris data — skip failed days instead of failing all
+    console.log('ForecastAgent - Step 1: Fetching ephemeris data...');
+    const dayDataResults = await Promise.allSettled(
+      dates.map((date) =>
+        this.ephemeris.getFullDayData({
           date,
-          narrative:   '',
-          best_times:  [],
-          avoid_times: [],
-        };
-        return {
-          date,
-          panchang:    dayData[i].panchang,
-          rating:      ratings[i],
-          narrative:   narr.narrative,
-          best_times:  narr.best_times,
-          avoid_times: narr.avoid_times,
-        };
-      });
+          birthLat: input.birthLat,
+          birthLng: input.birthLng,
+          currentLat: input.currentLat,
+          currentLng: input.currentLng,
+          timezoneOffset: input.timezoneOffset,
+        })
+      )
+    );
 
-      console.log('✅ ForecastAgent - Forecast generation complete');
-      return {
-        period:         { from: input.dateFrom, to: input.dateTo },
-        lagna:          input.natalChart.lagna,
-        current_dasha:  input.natalChart.current_dasha,
-        days,
-        weekly_summary: narratives.weekly_summary,
-      };
-    } catch (error: any) {
-      console.error('❌ ForecastAgent - generateForecast error:', error);
-      console.error('❌ ForecastAgent - Error details:', {
-        message: error.message,
-        stack: error.stack,
-      });
-      throw error;
+    const dayData: (FullDayData | null)[] = dayDataResults.map((r, i) => {
+      if (r.status === 'fulfilled') return r.value;
+      console.warn(`ForecastAgent - Day ${dates[i]} fetch failed:`, (r as PromiseRejectedResult).reason?.message);
+      return null;
+    });
+
+    const successCount = dayData.filter(Boolean).length;
+    if (successCount === 0) {
+      const firstErr = dayDataResults.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined;
+      throw new Error(firstErr?.reason?.message ?? 'All ephemeris fetches failed');
     }
-  }
+    console.log(`ForecastAgent - Step 1 complete: ${successCount}/${dates.length} days fetched`);
 
-  // ── Private: Claude narrative generation ───────────────────────────────────
+    // Step 2: Rate days (pure calculation, skip nulls)
+    console.log('ForecastAgent - Step 2: Rating days...');
+    const ratings: (DayRating | null)[] = dates.map((date, i) => {
+      if (!dayData[i]) return null;
+      try {
+        return this.rating.rateDay(date, dayData[i]!, input.natalChart?.lagna ?? 'Aries');
+      } catch {
+        return null;
+      }
+    });
+    console.log('ForecastAgent - Step 2 complete');
+
+    // Step 3: Claude narratives
+    console.log('ForecastAgent - Step 3: Generating narratives...');
+    const validIndices = dates.map((_, i) => i).filter((i) => dayData[i] && ratings[i]);
+    const validDates = validIndices.map((i) => dates[i]);
+    const validDayData = validIndices.map((i) => dayData[i]!);
+    const validRatings = validIndices.map((i) => ratings[i]!);
+
+    const narratives = await this.generateNarratives(input, validDates, validDayData, validRatings);
+    console.log('ForecastAgent - Step 3 complete');
+
+    // Step 4: Assemble
+    const days: DayForecast[] = dates.map((date, i) => {
+      const narr = narratives.days.find((n) => n.date === date) ?? {
+        date,
+        narrative: '',
+        best_times: [],
+        avoid_times: [],
+      };
+      return {
+        date,
+        panchang: dayData[i]?.panchang ?? { tithi: '', nakshatra: '', yoga: '', karana: '', sunrise: '', sunset: '', moon_sign: '', day_ruler: '' },
+        rating: ratings[i] ?? { date: date, day_score: 50, peak_windows: [], avoid_windows: [], all_slots: [] },
+        narrative: narr.narrative,
+        best_times: narr.best_times,
+        avoid_times: narr.avoid_times,
+      };
+    });
+
+    return {
+      period: { from: input.dateFrom, to: input.dateTo },
+      lagna: input.natalChart?.lagna ?? 'Unknown',
+      current_dasha: input.natalChart?.current_dasha,
+      days,
+      weekly_summary: narratives.weekly_summary,
+    };
+  }
 
   private async generateNarratives(
     input: ForecastInput,
@@ -187,48 +232,25 @@ export class ForecastAgent {
     dayData: FullDayData[],
     ratings: DayRating[]
   ): Promise<{ days: DayNarrative[]; weekly_summary: string }> {
+    const emptyResult = {
+      days: dates.map((date) => ({ date, narrative: '', best_times: [] as string[], avoid_times: [] as string[] })),
+      weekly_summary: '',
+    };
+
     try {
       const prompt = buildForecastPrompt(input, dates, dayData, ratings);
-      console.log('🔮 ForecastAgent - Calling Claude for narratives...');
-
-      const response = await this.claude.messages.create({
-        model:      'claude-sonnet-4-6',
-        max_tokens: 4096,
-        system:     'You are a Vedic astrologer. Return only valid JSON — no prose, no markdown.',
-        messages:   [{ role: 'user', content: prompt }],
-      });
-
-      console.log('✅ ForecastAgent - Claude response received');
-
-      const text =
-        response.content.find((b) => b.type === 'text')?.text ?? '';
-      const clean = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```$/m, '').trim();
+      const rawText = await callClaudeWithBackoff(this.claude, prompt, 4096);
+      const clean = rawText.replace(/^```(?:json)?\s*/m, '').replace(/\s*```$/m, '').trim();
 
       try {
-        const result = JSON.parse(clean) as { days: DayNarrative[]; weekly_summary: string };
-        console.log('✅ ForecastAgent - Successfully parsed narratives');
-        return result;
-      } catch (parseError) {
-        console.error('❌ ForecastAgent - JSON parse error:', parseError);
-        console.error('❌ ForecastAgent - Raw response:', text.slice(0, 400));
-        // Graceful degradation: return empty narratives rather than throwing
-        return {
-          days: dates.map((date) => ({ date, narrative: '', best_times: [], avoid_times: [] })),
-          weekly_summary: '',
-        };
+        return JSON.parse(clean) as { days: DayNarrative[]; weekly_summary: string };
+      } catch {
+        console.error('ForecastAgent - JSON parse error. Raw:', clean.slice(0, 400));
+        return emptyResult;
       }
     } catch (error: any) {
-      console.error('❌ ForecastAgent - Anthropic API error:', error);
-      console.error('❌ ForecastAgent - Error details:', {
-        message: error.message,
-        status: error.status,
-        type: error.type,
-      });
-      // Graceful degradation
-      return {
-        days: dates.map((date) => ({ date, narrative: '', best_times: [], avoid_times: [] })),
-        weekly_summary: '',
-      };
+      console.error('ForecastAgent - Narrative generation failed:', error?.message);
+      return emptyResult;
     }
   }
 }

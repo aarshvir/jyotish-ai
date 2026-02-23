@@ -36,7 +36,7 @@ const STEPS = [
   {
     number: '03',
     title: 'AI Interprets',
-    description: 'Claude claude-opus-4-6 cross-references your chart with every hora and choghadiya, producing hourly ratings + narrative.',
+    description: 'Our AI engine cross-references your chart with every hora and choghadiya, producing hourly ratings + narrative.',
     icon: (
       <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
         <rect x="6"  y="30" width="8" height="12" rx="1" fill="currentColor" opacity="0.4" />

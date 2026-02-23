@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MandalaRing } from '@/components/ui/MandalaRing';
@@ -12,6 +12,7 @@ import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 import { DailyAnalysis } from '@/components/report/DailyAnalysis';
 import { HourlyAnalysis } from '@/components/report/HourlyAnalysis';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
+import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 
 const LOADING_STAGES = [
   'Computing sidereal positions via Swiss Ephemeris...',
@@ -34,13 +35,13 @@ function ReportContent() {
   const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [reportData, setReportData] = useState<any>(null);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    console.log('📊 Report page params:', { name, date, time, city, lat, lng, type });
-    if (!lat || !lng || lat === '' || lng === '' || isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))) {
-      console.warn('⚠️ Missing or invalid lat/lng coordinates');
-    }
+    if (hasFetched.current) return;
+    hasFetched.current = true;
 
+    console.log('Report page params:', { name, date, time, city, lat, lng, type });
     fetchReportData();
   }, []);
 
@@ -53,7 +54,6 @@ function ReportContent() {
       const birthLng = parseFloat(lng) || 0;
 
       // Step 1: Ephemeris
-      console.log('📡 Step 1: Fetching ephemeris data...');
       setLoadingStage(0);
       const ephemerisRes = await fetch('/api/agents/ephemeris', {
         method: 'POST',
@@ -68,16 +68,14 @@ function ReportContent() {
         }),
       });
 
-      if (!ephemerisRes.ok) throw new Error('Ephemeris calculation failed');
+      if (!ephemerisRes.ok) {
+        const ephErr = await ephemerisRes.json().catch(() => ({}));
+        throw new Error(ephErr.error || 'Ephemeris calculation failed');
+      }
       const ephemerisResult = await ephemerisRes.json();
-      console.log('✅ Step 1 complete - Full response:', ephemerisResult);
-      
-      // Extract natal chart from response
       const natalChart = ephemerisResult.data || ephemerisResult;
-      console.log('✅ Step 1 - Natal chart data:', { lagna: natalChart.lagna, hasLagna: !!natalChart.lagna });
 
       // Step 2: Nativity
-      console.log('📡 Step 2: Analyzing nativity...');
       setLoadingStage(1);
       const nativityRes = await fetch('/api/agents/nativity', {
         method: 'POST',
@@ -85,12 +83,14 @@ function ReportContent() {
         body: JSON.stringify({ natalChart }),
       });
 
-      if (!nativityRes.ok) throw new Error('Nativity analysis failed');
-      const nativity = await nativityRes.json();
-      console.log('✅ Step 2 complete');
+      if (!nativityRes.ok) {
+        const natErr = await nativityRes.json().catch(() => ({}));
+        throw new Error(natErr.error || 'Nativity analysis failed');
+      }
+      const nativityRaw = await nativityRes.json();
+      const nativity = nativityRaw.data || nativityRaw;
 
       // Step 3: Forecast
-      console.log('📡 Step 3: Generating forecast...');
       setLoadingStage(2);
       const today = new Date();
       const dateFrom = today.toISOString().split('T')[0];
@@ -113,12 +113,14 @@ function ReportContent() {
         }),
       });
 
-      if (!forecastRes.ok) throw new Error('Forecast generation failed');
-      const forecast = await forecastRes.json();
-      console.log('✅ Step 3 complete');
+      if (!forecastRes.ok) {
+        const forecastErr = await forecastRes.json().catch(() => ({}));
+        throw new Error(forecastErr.error || 'Forecast generation failed');
+      }
+      const forecastRaw = await forecastRes.json();
+      const forecast = forecastRaw.data || forecastRaw;
 
       // Step 4: Commentary
-      console.log('📡 Step 4: Generating grandmaster commentary...');
       setLoadingStage(3);
       const commentaryRes = await fetch('/api/generate-commentary', {
         method: 'POST',
@@ -126,22 +128,18 @@ function ReportContent() {
         body: JSON.stringify({ natalChart, nativity, forecast, reportType: type }),
       });
 
-      if (!commentaryRes.ok) throw new Error('Commentary generation failed');
-      const { commentary } = await commentaryRes.json();
-      console.log('✅ Step 4 complete');
+      let commentary: any = {};
+      if (commentaryRes.ok) {
+        const commentaryRaw = await commentaryRes.json();
+        commentary = commentaryRaw.commentary || commentaryRaw.data || commentaryRaw;
+      } else {
+        console.error('Commentary generation failed, continuing with partial report');
+      }
 
-      // Combine all data
-      setReportData({
-        natalChart,
-        nativity,
-        forecast,
-        commentary,
-      });
-
-      console.log('🎉 Report generation complete!');
+      setReportData({ natalChart, nativity, forecast, commentary });
       setIsLoading(false);
     } catch (err: any) {
-      console.error('❌ Report generation error:', err);
+      console.error('Report generation error:', err);
       setError(err.message || 'Failed to generate report');
       setIsLoading(false);
     }
@@ -271,7 +269,7 @@ function ReportContent() {
           </h1>
           <p className="font-body text-dust text-base mb-8">{error}</p>
           <button
-            onClick={fetchReportData}
+            onClick={() => { hasFetched.current = false; fetchReportData(); }}
             className="px-8 py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
           >
             Try Again
@@ -283,8 +281,11 @@ function ReportContent() {
 
   if (!reportData) return null;
 
-  // Extract data for components
   const { natalChart, commentary } = reportData;
+  const safeCommentary = commentary ?? {};
+  const safeMonthly = Array.isArray(safeCommentary.monthly) ? safeCommentary.monthly : [];
+  const safeWeekly = Array.isArray(safeCommentary.weekly) ? safeCommentary.weekly : [];
+  const safeDaily = Array.isArray(safeCommentary.daily) ? safeCommentary.daily : [];
 
   return (
     <motion.div
@@ -297,40 +298,52 @@ function ReportContent() {
       <ReportSidebar />
 
       <main className="lg:ml-[200px] px-6 py-12 max-w-4xl mx-auto relative z-10">
-        <NativityCard
-          name={name}
-          birthDate={date}
-          birthTime={time}
-          birthCity={city}
-          lagna={natalChart.lagna || 'Unknown'}
-          lagnaDegree={natalChart.lagna_degree || 0}
-          moonSign={natalChart.planets?.Moon?.sign || 'Unknown'}
-          moonNakshatra={natalChart.moon_nakshatra || 'Unknown'}
-          currentDasha={natalChart.current_dasha || { mahadasha: 'Unknown', antardasha: 'Unknown' }}
-          nativitySummary={commentary.nativity_summary}
-        />
-
-        {commentary.monthly && commentary.monthly.length > 0 && (
-          <MonthlyAnalysis months={commentary.monthly} />
-        )}
-
-        {commentary.weekly && commentary.weekly.length > 0 && (
-          <WeeklyAnalysis weeks={commentary.weekly} />
-        )}
-
-        {commentary.daily && commentary.daily.length > 0 && (
-          <DailyAnalysis days={commentary.daily} />
-        )}
-
-        {commentary.daily && commentary.daily.length > 0 && commentary.daily[0]?.hours && (
-          <HourlyAnalysis hours={commentary.daily[0].hours} />
-        )}
-
-        {commentary.period_synthesis && commentary.daily && (
-          <PeriodSynthesis
-            synthesis={commentary.period_synthesis}
-            dailyScores={commentary.daily.map((d: any) => ({ date: d.date, score: d.day_score }))}
+        <ReportErrorBoundary fallbackTitle="Nativity">
+          <NativityCard
+            name={name}
+            birthDate={date}
+            birthTime={time}
+            birthCity={city}
+            lagna={natalChart?.lagna || 'Unknown'}
+            lagnaDegree={natalChart?.lagna_degree ?? 0}
+            moonSign={natalChart?.planets?.Moon?.sign || 'Unknown'}
+            moonNakshatra={natalChart?.moon_nakshatra || 'Unknown'}
+            currentDasha={natalChart?.current_dasha ?? { mahadasha: 'Unknown', antardasha: 'Unknown' }}
+            nativitySummary={safeCommentary.nativity_summary}
           />
+        </ReportErrorBoundary>
+
+        {safeMonthly.length > 0 && (
+          <ReportErrorBoundary fallbackTitle="Monthly Analysis">
+            <MonthlyAnalysis months={safeMonthly} />
+          </ReportErrorBoundary>
+        )}
+
+        {safeWeekly.length > 0 && (
+          <ReportErrorBoundary fallbackTitle="Weekly Analysis">
+            <WeeklyAnalysis weeks={safeWeekly} />
+          </ReportErrorBoundary>
+        )}
+
+        {safeDaily.length > 0 && (
+          <ReportErrorBoundary fallbackTitle="Daily Forecast">
+            <DailyAnalysis days={safeDaily} />
+          </ReportErrorBoundary>
+        )}
+
+        {safeDaily.length > 0 && safeDaily[0]?.hours?.length > 0 && (
+          <ReportErrorBoundary fallbackTitle="Hourly Analysis">
+            <HourlyAnalysis hours={safeDaily[0].hours} />
+          </ReportErrorBoundary>
+        )}
+
+        {(safeCommentary.period_synthesis || safeDaily.length > 0) && (
+          <ReportErrorBoundary fallbackTitle="Period Synthesis">
+            <PeriodSynthesis
+              synthesis={safeCommentary.period_synthesis ?? ''}
+              dailyScores={safeDaily.map((d: any) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
+            />
+          </ReportErrorBoundary>
         )}
       </main>
     </motion.div>

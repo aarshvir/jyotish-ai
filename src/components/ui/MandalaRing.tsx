@@ -2,20 +2,21 @@ interface MandalaRingProps {
   className?: string;
 }
 
-// Pre-computed petal and spoke positions (deterministic, SSR-safe)
+const r2 = (n: number) => Math.round(n * 100) / 100;
+
 const SPOKES_12 = Array.from({ length: 12 }, (_, i) => {
   const a = ((i * 30 - 90) * Math.PI) / 180;
-  return { x2: 200 + 188 * Math.cos(a), y2: 200 + 188 * Math.sin(a) };
+  return { x2: r2(200 + 188 * Math.cos(a)), y2: r2(200 + 188 * Math.sin(a)) };
 });
 
 const PETALS_16 = Array.from({ length: 16 }, (_, i) => {
   const a = ((i * 22.5 - 90) * Math.PI) / 180;
-  return { cx: 200 + 148 * Math.cos(a), cy: 200 + 148 * Math.sin(a) };
+  return { cx: r2(200 + 148 * Math.cos(a)), cy: r2(200 + 148 * Math.sin(a)) };
 });
 
 const PETALS_8 = Array.from({ length: 8 }, (_, i) => {
   const a = ((i * 45 - 90) * Math.PI) / 180;
-  return { cx: 200 + 105 * Math.cos(a), cy: 200 + 105 * Math.sin(a) };
+  return { cx: r2(200 + 105 * Math.cos(a)), cy: r2(200 + 105 * Math.sin(a)) };
 });
 
 export function MandalaRing({ className }: MandalaRingProps) {

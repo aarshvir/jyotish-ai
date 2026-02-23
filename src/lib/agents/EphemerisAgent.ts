@@ -1,7 +1,7 @@
 /**
  * EphemerisAgent
- * Thin typed wrapper around the FastAPI ephemeris service running at
- * EPHEMERIS_API_URL (defaults to http://localhost:8000 for local dev).
+ * Typed wrapper around the FastAPI ephemeris service with timeouts,
+ * retry logic, and graceful error handling for ECONNREFUSED.
  */
 
 import type {
@@ -30,6 +30,8 @@ interface FullDayInput {
   timezone_offset: number;
 }
 
+const FETCH_TIMEOUT_MS = 60_000;
+
 export class EphemerisAgent {
   private readonly baseUrl: string;
 
@@ -40,81 +42,76 @@ export class EphemerisAgent {
       'http://localhost:8000';
   }
 
-  private async post<T>(path: string, body: unknown): Promise<T> {
-    try {
-      console.log(`🌍 EphemerisAgent - Calling ${path} at ${this.baseUrl}`);
-      const res = await fetch(`${this.baseUrl}${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        console.error(`❌ EphemerisAgent ${path} - HTTP ${res.status}:`, text);
-        throw new Error(`EphemerisAgent ${path} → HTTP ${res.status}: ${text}`);
+  private async post<T>(path: string, body: unknown, retries = 1): Promise<T> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+      try {
+        if (attempt > 0) console.log(`EphemerisAgent ${path} retry ${attempt}/${retries}`);
+
+        const res = await fetch(`${this.baseUrl}${path}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timer);
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(`EphemerisAgent ${path} → HTTP ${res.status}: ${text}`);
+        }
+
+        return res.json() as Promise<T>;
+      } catch (error: any) {
+        clearTimeout(timer);
+        lastError = error;
+
+        if (error?.cause?.code === 'ECONNREFUSED' || error?.message?.includes('ECONNREFUSED')) {
+          throw new Error(
+            `Ephemeris service offline at ${this.baseUrl}. Start it with: cd ephemeris-service && py -m uvicorn main:app --reload`
+          );
+        }
+
+        if (error.name === 'AbortError') {
+          throw new Error(`EphemerisAgent ${path} timed out after ${FETCH_TIMEOUT_MS / 1000}s`);
+        }
+
+        if (attempt < retries) continue;
       }
-      console.log(`✅ EphemerisAgent - ${path} succeeded`);
-      return res.json() as Promise<T>;
-    } catch (error: any) {
-      console.error(`❌ EphemerisAgent ${path} - Fetch error:`, error);
-      throw error;
     }
+
+    throw lastError ?? new Error(`EphemerisAgent ${path} failed`);
   }
 
-  /** Full birth chart with planets, lagna, dasha sequence. */
   getNatalChart(input: NatalChartInput): Promise<NatalChartData> {
     return this.post<NatalChartData>('/natal-chart', input);
   }
 
-  /** Daily panchang (tithi, nakshatra, yoga, sunrise/sunset…). */
-  getPanchang(
-    date: string,
-    lat: number,
-    lng: number,
-    timezoneOffset: number
-  ): Promise<PanchangData> {
+  getPanchang(date: string, lat: number, lng: number, timezoneOffset: number): Promise<PanchangData> {
     const body: DayInput = { date, lat, lng, timezone_offset: timezoneOffset };
     return this.post<PanchangData>('/panchang', body);
   }
 
-  /** 24-entry hora schedule (12 day + 12 night planetary hours). */
-  getHoraSchedule(
-    date: string,
-    lat: number,
-    lng: number,
-    timezoneOffset: number
-  ): Promise<HoraEntry[]> {
+  getHoraSchedule(date: string, lat: number, lng: number, timezoneOffset: number): Promise<HoraEntry[]> {
     const body: DayInput = { date, lat, lng, timezone_offset: timezoneOffset };
     return this.post<HoraEntry[]>('/hora-schedule', body);
   }
 
-  /** 16-entry choghadiya schedule (8 day + 8 night). */
-  getChoghadiya(
-    date: string,
-    lat: number,
-    lng: number,
-    timezoneOffset: number
-  ): Promise<ChoghadiyaEntry[]> {
+  getChoghadiya(date: string, lat: number, lng: number, timezoneOffset: number): Promise<ChoghadiyaEntry[]> {
     const body: DayInput = { date, lat, lng, timezone_offset: timezoneOffset };
     return this.post<ChoghadiyaEntry[]>('/choghadiya', body);
   }
 
-  /** Rahu Kaal window for the day. */
-  getRahuKaal(
-    date: string,
-    lat: number,
-    lng: number,
-    timezoneOffset: number
-  ): Promise<RahuKaalData> {
+  getRahuKaal(date: string, lat: number, lng: number, timezoneOffset: number): Promise<RahuKaalData> {
     const body: DayInput = { date, lat, lng, timezone_offset: timezoneOffset };
     return this.post<RahuKaalData>('/rahu-kaal', body);
   }
 
-  /**
-   * Full-day bundle: panchang + hora + choghadiya + rahu kaal in one call.
-   * birth_lat/lng = permanent residence (used for reference);
-   * current_lat/lng = where the person is today.
-   */
   getFullDayData(input: {
     date: string;
     birthLat: number;

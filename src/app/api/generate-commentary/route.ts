@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+export const maxDuration = 300;
+
+let anthropic: Anthropic | null = null;
+try {
+  anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+} catch (e) {
+  console.error('Anthropic SDK init failed in generate-commentary:', e);
+}
 
 const GRANDMASTER_SYSTEM_PROMPT = `You are Jyotish AI — a grandmaster Vedic astrologer combining Swiss Ephemeris precision with deep classical Jyotish knowledge. You have access to verified planetary positions, dasha timelines, and panchang data.
 
@@ -15,38 +20,138 @@ Your commentary style:
 - Be specific and actionable. Never vague.
 - Tone: warm, direct, authoritative — like a trusted mentor who also happens to be a cosmic engineer`;
 
-async function callClaudeWithRetry(userPrompt: string, maxTokens: number, retries = 2) {
+function tryParseJSON(text: string): any {
+  let jsonText = text.trim();
+  jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+
+  const objStart = jsonText.indexOf('{');
+  const arrStart = jsonText.indexOf('[');
+  if (objStart >= 0 || arrStart >= 0) {
+    const start = objStart >= 0 && arrStart >= 0
+      ? Math.min(objStart, arrStart)
+      : Math.max(objStart, arrStart);
+    const isArray = jsonText[start] === '[';
+    const end = jsonText.lastIndexOf(isArray ? ']' : '}');
+    if (end > start) {
+      jsonText = jsonText.substring(start, end + 1);
+    }
+  }
+
+  try {
+    return JSON.parse(jsonText);
+  } catch {
+    // Attempt repair: find the last complete object boundary and close
+  }
+
+  // Repair: truncate to last complete element
+  const lastCompleteObj = jsonText.lastIndexOf('},');
+  if (lastCompleteObj > 0) {
+    const isArrayOuter = jsonText.trimStart().startsWith('[');
+    const truncated = jsonText.substring(0, lastCompleteObj + 1) + (isArrayOuter ? ']' : '}');
+    try {
+      console.log('JSON repair: truncated at position', lastCompleteObj, 'of', jsonText.length);
+      return JSON.parse(truncated);
+    } catch { /* fall through */ }
+  }
+
+  // Repair: try closing with }] or }}
+  for (const suffix of ['}]', '}}', '"]}}', '"]}]', '"}]']) {
+    const lastBrace = jsonText.lastIndexOf('}');
+    if (lastBrace > 0) {
+      try {
+        return JSON.parse(jsonText.substring(0, lastBrace) + suffix);
+      } catch { /* try next */ }
+    }
+  }
+
+  throw new Error(`JSON parse failed. First 200 chars: ${jsonText.substring(0, 200)}`);
+}
+
+async function callClaudeWithRetry(userPrompt: string, maxTokens: number, retries = 3) {
+  if (!anthropic) throw new Error('Anthropic SDK not initialized — check ANTHROPIC_API_KEY');
+
+  let lastError: any;
+  let lastRawText = '';
+  const delays = [2000, 4000, 8000];
+
   for (let i = 0; i < retries; i++) {
     try {
-      const response = await anthropic.messages.create({
+      const prompt = i === 0
+        ? userPrompt
+        : `The previous JSON response was truncated at ~${lastRawText.length} characters. Return ONLY the same JSON but with shorter commentaries (max 15 words per hourly slot, max 2 sentences per day overview) so it fits within the token limit. Keep all fields and structure identical.\n\nOriginal request:\n${userPrompt}`;
+
+      console.log(`Claude call attempt ${i + 1}/${retries}, max_tokens: ${maxTokens}`);
+      const response = await anthropic!.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: maxTokens,
         temperature: 0.7,
         system: GRANDMASTER_SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userPrompt }],
+        messages: [{ role: 'user', content: prompt }],
       });
 
       const content = response.content[0];
       if (content.type === 'text') {
-        let jsonText = content.text.trim();
-        jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-        return JSON.parse(jsonText);
+        lastRawText = content.text;
+        const stopReason = response.stop_reason;
+        console.log(`Claude response: ${content.text.length} chars, stop_reason: ${stopReason}`);
+
+        if (stopReason === 'end_turn') {
+          return tryParseJSON(content.text);
+        }
+
+        console.warn('Response truncated (stop_reason:', stopReason, ') — attempting JSON repair');
+        try {
+          return tryParseJSON(content.text);
+        } catch (parseErr: any) {
+          console.error('JSON repair failed:', parseErr.message);
+          if (i < retries - 1) continue;
+          throw parseErr;
+        }
       }
-    } catch (error) {
-      console.error(`Claude call failed (attempt ${i + 1}):`, error);
-      if (i === retries - 1) throw error;
+    } catch (error: any) {
+      lastError = error;
+      const status = error?.status;
+
+      if (status === 401) throw new Error('Invalid Anthropic API key. Check .env.local ANTHROPIC_API_KEY');
+
+      if (status === 429 || status === 529) {
+        const delay = status === 529 ? 5000 : delays[Math.min(i, delays.length - 1)];
+        console.warn(`Anthropic ${status}, retrying in ${delay}ms...`);
+        await new Promise((r) => setTimeout(r, delay));
+        continue;
+      }
+
+      if (status === 400) {
+        console.error('Anthropic 400 bad request:', error?.message);
+        throw error;
+      }
+
+      console.error(`Claude call failed (attempt ${i + 1}):`, error?.message || error);
+      if (i < retries - 1) {
+        await new Promise((r) => setTimeout(r, delays[Math.min(i, delays.length - 1)]));
+      }
     }
   }
-  throw new Error('Failed after retries');
+  throw lastError || new Error('Failed after retries');
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const { natalChart, nativity, forecast, reportType } = await req.json();
+    const body = await req.json();
+    const { natalChart, nativity, forecast, reportType } = body;
+
+    console.log('Generate-commentary received - keys:', Object.keys(body));
+    console.log('natalChart?.lagna:', natalChart?.lagna);
+    console.log('forecast has days:', !!forecast?.days, 'count:', forecast?.days?.length);
 
     if (!natalChart || !forecast) {
+      return NextResponse.json({ error: 'Missing required data' }, { status: 400 });
+    }
+
+    if (!forecast.days || !Array.isArray(forecast.days) || forecast.days.length === 0) {
+      console.error('Forecast has no days array. Keys:', Object.keys(forecast));
       return NextResponse.json(
-        { error: 'Missing required data' },
+        { error: `Forecast missing days array. Got keys: ${Object.keys(forecast).join(', ')}` },
         { status: 400 }
       );
     }
@@ -58,14 +163,13 @@ export async function POST(req: NextRequest) {
     const mahadasha = currentDasha.mahadasha || 'Unknown';
     const antardasha = currentDasha.antardasha || 'Unknown';
 
-    // Simplify forecast for macro call
-    const dailyScores = forecast.days?.slice(0, 30).map((day: any) => ({
+    const dailyScores = forecast.days.slice(0, 30).map((day: any) => ({
       date: day.date,
-      score: day.average_score || 70,
+      score: day.rating?.day_score ?? day.day_score ?? day.average_score ?? 70,
       panchang: day.panchang || {},
-    })) || [];
+    }));
 
-    // ── CALL 1: MACRO COMMENTARY ──
+    // ── CALL 1: MACRO COMMENTARY (max_tokens: 6000) ──
     const macroPrompt = `Generate macro commentary for this native. Return ONLY valid JSON, no markdown backticks.
 
 Native: ${natalChart.name || 'Seeker'}, ${lagna} Lagna, Moon in ${moonSign}/${moonNakshatra}, Current dasha: ${mahadasha}/${antardasha}
@@ -110,36 +214,50 @@ Return:
   "period_synthesis": "3-4 sentence synthesis of the full forecast period, what the overall arc is, and the single most important strategic advice."
 }`;
 
-    const macroCommentary = await callClaudeWithRetry(macroPrompt, 4000);
+    console.log('Calling Claude for macro commentary with', dailyScores.length, 'days of scores...');
+    const macroCommentary = await callClaudeWithRetry(macroPrompt, 6000);
+    console.log('Macro commentary received - keys:', Object.keys(macroCommentary));
+    console.log('Macro has nativity_summary:', !!macroCommentary.nativity_summary);
+    console.log('Macro has monthly:', !!macroCommentary.monthly, 'count:', macroCommentary.monthly?.length);
+    console.log('Macro has weekly:', !!macroCommentary.weekly, 'count:', macroCommentary.weekly?.length);
 
-    // ── CALL 2: DAILY + HOURLY COMMENTARY (First 7 days only) ──
-    const first7Days = forecast.days?.slice(0, 7) || [];
-    
-    const microPrompt = `Generate daily and hourly commentary for days 1-7 of this forecast. Return ONLY valid JSON.
+    // ── CALL 2: DAILY + HOURLY COMMENTARY (max_tokens: 16000) ──
+    // Full hourly for days 1-3, day overview only for days 4-7
+    const first3Days = forecast.days.slice(0, 3);
+    const days4to7 = forecast.days.slice(3, 7);
 
-Native: ${lagna} Lagna, natal placements summary, current dasha: ${mahadasha}/${antardasha}
-Days data: ${JSON.stringify(first7Days, null, 2)}
+    const microPrompt = `Generate daily and hourly commentary for 7 days. Return ONLY valid JSON, no markdown.
 
-For EACH DAY return:
+Native: ${lagna} Lagna, current dasha: ${mahadasha}/${antardasha}
+
+DAYS 1-3 (full hourly data):
+${JSON.stringify(first3Days, null, 2)}
+
+DAYS 4-7 (summary only):
+${JSON.stringify(days4to7.map((d: any) => ({ date: d.date, panchang: d.panchang, day_score: d.rating?.day_score ?? d.day_score ?? 70 })), null, 2)}
+
+INSTRUCTIONS:
+- For days 1-3: return FULL object with hours array (24 entries each)
+- For days 4-7: omit the hours array entirely — just return date, day_score, day_theme, day_rating_label, panchang, day_overview, rahu_kaal, best_windows, avoid_windows.
+
+For EACH of days 1-3:
 {
   "date": "YYYY-MM-DD",
   "day_score": 74,
   "day_theme": "One punchy theme line",
   "day_rating_label": "EXCELLENT|GOOD|NEUTRAL|CHALLENGING|AVOID",
   "panchang": {
-    "tithi": "...", "nakshatra": "...", 
+    "tithi": "...", "nakshatra": "...",
     "yoga": "...", "karana": "...",
     "moon_sign": "..."
   },
-  "day_overview": "3-4 sentence day overview. Reference the day ruler, dominant hora patterns, panchang quality. Strategic directive for the day.",
+  "day_overview": "3-4 sentence day overview. Reference the day ruler, dominant hora patterns, panchang quality.",
   "rahu_kaal": { "start": "HH:MM", "end": "HH:MM" },
   "best_windows": [
-    { "time": "HH:MM-HH:MM", "hora": "Jupiter", 
-      "choghadiya": "Amrit", "score": 88,
-      "reason": "One sentence why this is peak time" }
+    { "time": "HH:MM-HH:MM", "hora": "Jupiter", "choghadiya": "Amrit", "score": 88, "reason": "One sentence" }
   ],
   "avoid_windows": [
-    { "time": "HH:MM-HH:MM", "reason": "Rahu Kaal / specific malefic combination" }
+    { "time": "HH:MM-HH:MM", "reason": "Rahu Kaal / malefic combination" }
   ],
   "hours": [
     {
@@ -153,34 +271,55 @@ For EACH DAY return:
       "transit_lagna": "Cancer",
       "transit_lagna_house": 1,
       "is_rahu_kaal": false,
-      "commentary": "60-80 word commentary. MUST include: 1) Hora planet natal house lordship for ${lagna} Lagna and what that activates 2) Transit lagna house activation 3) Choghadiya quality and specific effect 4) 2-3 concrete activities best suited and 1-2 things to avoid. NO generic statements."
+      "commentary": "25-35 word commentary. Include hora planet lordship for ${lagna} Lagna, transit lagna activation, choghadiya effect, and one concrete activity recommendation."
     }
   ]
 }
 
-Return array of 7 day objects.`;
+For EACH of days 4-7 (NO hours array):
+{
+  "date": "YYYY-MM-DD",
+  "day_score": 70,
+  "day_theme": "Theme line",
+  "day_rating_label": "GOOD",
+  "panchang": { "tithi": "...", "nakshatra": "...", "yoga": "...", "karana": "...", "moon_sign": "..." },
+  "day_overview": "2-3 sentence overview.",
+  "rahu_kaal": { "start": "HH:MM", "end": "HH:MM" },
+  "best_windows": [{ "time": "HH:MM-HH:MM", "hora": "Jupiter", "choghadiya": "Amrit", "score": 85, "reason": "One sentence" }],
+  "avoid_windows": [{ "time": "HH:MM-HH:MM", "reason": "Reason" }]
+}
 
-    const dailyHourlyCommentary = await callClaudeWithRetry(microPrompt, 8000);
+Return array of 7 day objects. Keep commentaries concise to avoid truncation.`;
 
-    // Merge the two responses
+    console.log('Calling Claude for daily/hourly commentary...');
+    const dailyHourlyCommentary = await callClaudeWithRetry(microPrompt, 16000);
+    const dailyArray = Array.isArray(dailyHourlyCommentary)
+      ? dailyHourlyCommentary
+      : dailyHourlyCommentary.days || [];
+    console.log('Daily commentary received - count:', dailyArray.length);
+    if (dailyArray[0]) {
+      console.log('Day 0 keys:', Object.keys(dailyArray[0]), 'has hours:', !!dailyArray[0].hours);
+    }
+
     const finalCommentary = {
       nativity_summary: macroCommentary.nativity_summary,
-      monthly: macroCommentary.monthly,
-      weekly: macroCommentary.weekly,
-      daily: dailyHourlyCommentary,
-      period_synthesis: macroCommentary.period_synthesis,
+      monthly: macroCommentary.monthly || [],
+      weekly: macroCommentary.weekly || [],
+      daily: dailyArray,
+      period_synthesis: macroCommentary.period_synthesis || '',
     };
 
+    console.log('Final commentary assembled - daily count:', finalCommentary.daily.length);
     return NextResponse.json({ commentary: finalCommentary });
-  } catch (error) {
-    console.error('Generate commentary error:', error);
-    
-    // Return fallback
+  } catch (error: any) {
+    console.error('Generate commentary error:', error?.message || error);
+
+    // Return partial fallback so the report page still renders
     return NextResponse.json({
       commentary: {
         nativity_summary: {
-          lagna_analysis: 'Detailed analysis unavailable at this time.',
-          current_dasha_interpretation: 'Dasha interpretation unavailable.',
+          lagna_analysis: 'Analysis temporarily unavailable. Please try again.',
+          current_dasha_interpretation: '',
           key_yogas: [],
           functional_benefics: [],
           functional_malefics: [],
@@ -188,7 +327,8 @@ Return array of 7 day objects.`;
         monthly: [],
         weekly: [],
         daily: [],
-        period_synthesis: 'Synthesis unavailable.',
+        period_synthesis: '',
+        _error: error?.message || 'Commentary generation failed',
       },
     });
   }

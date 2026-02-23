@@ -1,8 +1,7 @@
 /**
  * NativityAgent
  * Sends the natal chart JSON to Claude claude-sonnet-4-6 and returns a
- * structured NativityProfile: lagna analysis, yogas, functional
- * benefics/malefics, strengths, and current dasha interpretation.
+ * structured NativityProfile with retry and error handling.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -11,21 +10,21 @@ import type { NatalChartData, NativityProfile } from './types';
 const SYSTEM_PROMPT = `You are a classically trained Vedic astrologer with deep expertise in Parashari and Jaimini traditions. You will analyze a natal chart and return a single JSON object — no prose, no markdown, no code fences. Only valid JSON.`;
 
 function buildUserPrompt(chart: NatalChartData): string {
-  const planets = Object.entries(chart.planets)
+  const planets = Object.entries(chart.planets ?? {})
     .map(([name, p]) =>
-      `  ${name}: ${p.sign} ${p.degree.toFixed(2)}° | house ${p.house} | ${p.nakshatra} pada ${p.nakshatra_pada}${p.is_retrograde ? ' (R)' : ''}`
+      `  ${name}: ${p?.sign ?? '?'} ${(p?.degree ?? 0).toFixed(2)}° | house ${p?.house ?? '?'} | ${p?.nakshatra ?? '?'} pada ${p?.nakshatra_pada ?? '?'}${p?.is_retrograde ? ' (R)' : ''}`
     )
     .join('\n');
 
-  return `Analyze this natal chart for ${chart.lagna} lagna and return a JSON NativityProfile.
+  return `Analyze this natal chart for ${chart.lagna ?? 'Unknown'} lagna and return a JSON NativityProfile.
 
 NATAL CHART
-Lagna: ${chart.lagna} ${chart.lagna_degree.toFixed(2)}°
+Lagna: ${chart.lagna ?? 'Unknown'} ${(chart.lagna_degree ?? 0).toFixed(2)}°
 Planets:
 ${planets}
-Moon nakshatra: ${chart.moon_nakshatra}
+Moon nakshatra: ${chart.moon_nakshatra ?? 'Unknown'}
 Current dasha: ${chart.current_dasha?.mahadasha ?? 'unknown'} MD / ${chart.current_dasha?.antardasha ?? 'unknown'} AD
-  (${chart.current_dasha?.start_date} → ${chart.current_dasha?.end_date})
+  (${chart.current_dasha?.start_date ?? '?'} → ${chart.current_dasha?.end_date ?? '?'})
 
 INSTRUCTIONS
 1. Determine functional benefics: planets ruling kendras (1,4,7,10) and trikonas (1,5,9) for this lagna.
@@ -64,43 +63,47 @@ export class NativityAgent {
   }
 
   async analyze(natalChart: NatalChartData): Promise<NativityProfile> {
-    try {
-      console.log('🔮 NativityAgent - Starting analysis for lagna:', natalChart.lagna);
-      
-      const response = await this.client.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 2048,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: buildUserPrompt(natalChart) }],
-      });
+    const delays = [2000, 4000, 8000];
+    let lastError: any;
 
-      console.log('✅ NativityAgent - Claude response received');
-
-      const text =
-        response.content.find((b) => b.type === 'text')?.text ?? '';
-
-      // Strip any accidental markdown code fences
-      const clean = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```$/m, '').trim();
-
+    for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        const profile = JSON.parse(clean) as NativityProfile;
-        console.log('✅ NativityAgent - Successfully parsed profile');
-        return profile;
-      } catch (parseError) {
-        console.error('❌ NativityAgent - JSON parse error:', parseError);
-        console.error('❌ NativityAgent - Raw response:', text.slice(0, 400));
-        throw new Error(
-          `NativityAgent: Claude returned non-JSON response:\n${text.slice(0, 400)}`
-        );
+        const response = await this.client.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 2048,
+          system: SYSTEM_PROMPT,
+          messages: [{ role: 'user', content: buildUserPrompt(natalChart) }],
+        });
+
+        const text = response.content.find((b) => b.type === 'text')?.text ?? '';
+        const clean = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```$/m, '').trim();
+
+        return JSON.parse(clean) as NativityProfile;
+      } catch (error: any) {
+        lastError = error;
+        const status = error?.status;
+
+        if (status === 401) throw new Error('Invalid Anthropic API key. Check .env.local ANTHROPIC_API_KEY');
+        if (status === 400) {
+          console.error('NativityAgent 400:', error?.message);
+          throw error;
+        }
+
+        if ((status === 429 || status === 529) && attempt < 2) {
+          const delay = delays[attempt];
+          console.warn(`NativityAgent: Anthropic ${status}, retrying in ${delay}ms...`);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
+
+        if (attempt < 2) {
+          console.error(`NativityAgent attempt ${attempt + 1} failed:`, error?.message);
+          await new Promise((r) => setTimeout(r, delays[attempt]));
+          continue;
+        }
       }
-    } catch (error: any) {
-      console.error('❌ NativityAgent - Anthropic API error:', error);
-      console.error('❌ NativityAgent - Error details:', {
-        message: error.message,
-        status: error.status,
-        type: error.type,
-      });
-      throw error;
     }
+
+    throw lastError ?? new Error('NativityAgent failed after retries');
   }
 }

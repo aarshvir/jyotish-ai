@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 from timezonefinder import TimezoneFinder
 import swisseph as swe
 import math
+import traceback
 
 app = FastAPI(title="Vedic Astrology Ephemeris Service")
 
@@ -245,11 +246,10 @@ def get_current_dasha(dasha_sequence: List[Dict], current_date: datetime) -> Dic
 
 def get_sunrise_sunset(jd: float, lat: float, lng: float) -> tuple:
     """Calculate sunrise and sunset times"""
-    # Get sunrise
-    sunrise_jd = swe.rise_trans(jd - 0.5, swe.SUN, lng, lat, 0, 0, 0, 1)[1][0]
-    # Get sunset
-    sunset_jd = swe.rise_trans(jd - 0.5, swe.SUN, lng, lat, 0, 0, 0, 2)[1][0]
-    
+    # swe.rise_trans(tjdut, body, rsmi, geopos, atpress, attemp)
+    geopos = (lng, lat, 0.0)
+    sunrise_jd = swe.rise_trans(jd - 0.5, swe.SUN, swe.CALC_RISE | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
+    sunset_jd = swe.rise_trans(jd - 0.5, swe.SUN, swe.CALC_SET | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
     return sunrise_jd, sunset_jd
 
 
@@ -438,7 +438,7 @@ def panchang(data: PanchangInput):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
 
 
 @app.post("/hora-schedule")
