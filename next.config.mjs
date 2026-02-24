@@ -4,8 +4,8 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '4mb',
     },
+    serverComponentsExternalPackages: ['@anthropic-ai/sdk'],
   },
-  serverExternalPackages: ['@anthropic-ai/sdk'],
 };
 
 export default nextConfig;
