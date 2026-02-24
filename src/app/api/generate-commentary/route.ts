@@ -67,7 +67,7 @@ function tryParseJSON(text: string): any {
   throw new Error(`JSON parse failed. First 200 chars: ${jsonText.substring(0, 200)}`);
 }
 
-async function callClaudeWithRetry(userPrompt: string, maxTokens: number, retries = 3) {
+async function callClaudeWithRetry(userPrompt: string, maxTokens: number, retries = 2) {
   if (!anthropic) throw new Error('Anthropic SDK not initialized — check ANTHROPIC_API_KEY');
 
   let lastError: any;
@@ -166,16 +166,32 @@ export async function POST(req: NextRequest) {
     const dailyScores = forecast.days.slice(0, 30).map((day: any) => ({
       date: day.date,
       score: day.rating?.day_score ?? day.day_score ?? day.average_score ?? 70,
-      panchang: day.panchang || {},
+      tithi: day.panchang?.tithi || '',
+      nakshatra: day.panchang?.nakshatra || '',
     }));
+
+    // Build concise planet summary to reduce prompt size
+    const planetSummary = Object.entries(natalChart.planets || {})
+      .map(([name, p]: [string, any]) =>
+        `${name}: ${p?.sign || '?'} ${(p?.degree ?? 0).toFixed(1)} H${p?.house ?? '?'} ${p?.nakshatra || '?'}${p?.is_retrograde ? ' (R)' : ''}`
+      ).join(', ');
+
+    const nativityBrief = nativity ? {
+      lagna_analysis: nativity.lagna_analysis || '',
+      yogas: (nativity.yogas || []).slice(0, 5).map((y: any) => typeof y === 'string' ? y : y?.name || ''),
+      functional_benefics: nativity.functional_benefics || [],
+      functional_malefics: nativity.functional_malefics || [],
+      strengths: (nativity.strengths || []).slice(0, 3),
+    } : {};
 
     // ── CALL 1: MACRO COMMENTARY (max_tokens: 6000) ──
     const macroPrompt = `Generate macro commentary for this native. Return ONLY valid JSON, no markdown backticks.
 
 Native: ${natalChart.name || 'Seeker'}, ${lagna} Lagna, Moon in ${moonSign}/${moonNakshatra}, Current dasha: ${mahadasha}/${antardasha}
-Natal chart: ${JSON.stringify(natalChart, null, 2)}
-Nativity profile: ${JSON.stringify(nativity || {}, null, 2)}
-30-day forecast scores: ${JSON.stringify(dailyScores, null, 2)}
+Planets: ${planetSummary}
+Lagna degree: ${(natalChart.lagna_degree ?? 0).toFixed(1)}
+Nativity: ${JSON.stringify(nativityBrief)}
+30-day scores: ${JSON.stringify(dailyScores)}
 
 Return:
 {
@@ -197,7 +213,7 @@ Return:
       "love_score": 73,
       "theme": "Eclipse recovery + Jupiter direct relief",
       "key_transits": ["Jupiter stations direct Mar 10 in Gemini (12th house)"],
-      "commentary": "4-5 sentence paragraph. Reference specific transits and their house activation for ${lagna} Lagna. What should the native do this month? What to avoid? What opportunities arise?",
+      "commentary": "300-400 words. MUST include: 1) Major transits during the month. 2) Eclipses or retrograde periods if any. 3) Dasha sub-period activation themes. 4) Monthly arc: first/second half energy shift. 5) Specific high-score and low-score dates with reasons why. Reference house activation for ${lagna} Lagna.",
       "weekly_scores": [68, 72, 75, 74]
     }
   ],
@@ -207,34 +223,60 @@ Return:
       "week_start": "2026-03-02",
       "score": 71,
       "theme": "One compelling theme line",
-      "commentary": "3-4 sentence paragraph referencing specific day energies, panchang highlights, and practical recommendations for the week.",
+      "commentary": "200-250 words. MUST include: 1) Arc narrative: how energy shifts across the 7 days. 2) The week's nakshatra progression and its meaning. 3) Transit events (Moon sign changes, etc.). 4) Standout days with specific reasons. 5) Domain guidance: career, money, health, relationships.",
       "daily_scores": [70, 73, 68, 75, 72, 69, 74]
     }
   ],
-  "period_synthesis": "3-4 sentence synthesis of the full forecast period, what the overall arc is, and the single most important strategic advice."
+  "period_synthesis": {
+    "opening_paragraph": "150 words on dominant energy and natal chart interaction",
+    "strategic_windows": [{"date": "Feb 25", "nakshatra": "Rohini", "score": 83, "reason": "One sentence why"}],
+    "caution_dates": [{"date": "Mar 2", "nakshatra": "Ashlesha", "score": 47, "reason": "One sentence why"}],
+    "domain_priorities": {"career": "40 words", "money": "40 words", "health": "40 words", "relationships": "40 words"},
+    "closing_paragraph": "80 words on spiritual teaching"
+  }
 }`;
 
-    console.log('Calling Claude for macro commentary with', dailyScores.length, 'days of scores...');
-    const macroCommentary = await callClaudeWithRetry(macroPrompt, 6000);
-    console.log('Macro commentary received - keys:', Object.keys(macroCommentary));
-    console.log('Macro has nativity_summary:', !!macroCommentary.nativity_summary);
-    console.log('Macro has monthly:', !!macroCommentary.monthly, 'count:', macroCommentary.monthly?.length);
-    console.log('Macro has weekly:', !!macroCommentary.weekly, 'count:', macroCommentary.weekly?.length);
-
     // ── CALL 2: DAILY + HOURLY COMMENTARY (max_tokens: 16000) ──
-    // Full hourly for days 1-3, day overview only for days 4-7
-    const first3Days = forecast.days.slice(0, 3);
-    const days4to7 = forecast.days.slice(3, 7);
+    // Build micro prompt BEFORE calling, so both calls run in parallel
+    // Slim down data: only send essential fields, not full rating objects
+    const slimDay = (day: any) => {
+      const rating = day.rating || {};
+      const peakSlots = (rating.peak_windows || []).slice(0, 3).map((s: any) => ({
+        time: s.start_time, ruler: s.hora_ruler, chog: s.choghadiya, score: s.rating,
+      }));
+      const avoidSlots = (rating.avoid_windows || []).slice(0, 2).map((s: any) => ({
+        time: s.start_time, ruler: s.hora_ruler, rk: s.is_rahu_kaal,
+      }));
+      const horaSchedule = (rating.all_slots || []).map((s: any) => ({
+        t: s.start_time, r: s.hora_ruler, c: s.choghadiya, sc: s.rating, rk: s.is_rahu_kaal ? 1 : 0,
+      }));
+      return {
+        date: day.date,
+        score: rating.day_score ?? 50,
+        panchang: day.panchang || {},
+        narrative: day.narrative || '',
+        peak: peakSlots,
+        avoid: avoidSlots,
+        hours: horaSchedule,
+      };
+    };
+
+    const first3Days = forecast.days.slice(0, 3).map(slimDay);
+    const days4to7 = forecast.days.slice(3, 7).map((d: any) => ({
+      date: d.date,
+      score: d.rating?.day_score ?? d.day_score ?? 70,
+      panchang: d.panchang || {},
+    }));
 
     const microPrompt = `Generate daily and hourly commentary for 7 days. Return ONLY valid JSON, no markdown.
 
 Native: ${lagna} Lagna, current dasha: ${mahadasha}/${antardasha}
 
-DAYS 1-3 (full hourly data):
-${JSON.stringify(first3Days, null, 2)}
+DAYS 1-3 (with hourly schedule):
+${JSON.stringify(first3Days)}
 
 DAYS 4-7 (summary only):
-${JSON.stringify(days4to7.map((d: any) => ({ date: d.date, panchang: d.panchang, day_score: d.rating?.day_score ?? d.day_score ?? 70 })), null, 2)}
+${JSON.stringify(days4to7)}
 
 INSTRUCTIONS:
 - For days 1-3: return FULL object with hours array (24 entries each)
@@ -251,7 +293,7 @@ For EACH of days 1-3:
     "yoga": "...", "karana": "...",
     "moon_sign": "..."
   },
-  "day_overview": "3-4 sentence day overview. Reference the day ruler, dominant hora patterns, panchang quality.",
+  "day_overview": "120-150 words. MUST include: 1) Nakshatra ruler and its natal house lordship. 2) Tithi's spiritual and practical significance. 3) Day's dominant planetary energy and its house. 4) Specific windows (hora times) to act vs avoid. 5) One career, one financial, one health recommendation. 6) Reference to current dasha (${mahadasha}-${antardasha}) interaction.",
   "rahu_kaal": { "start": "HH:MM", "end": "HH:MM" },
   "best_windows": [
     { "time": "HH:MM-HH:MM", "hora": "Jupiter", "choghadiya": "Amrit", "score": 88, "reason": "One sentence" }
@@ -271,7 +313,7 @@ For EACH of days 1-3:
       "transit_lagna": "Cancer",
       "transit_lagna_house": 1,
       "is_rahu_kaal": false,
-      "commentary": "25-35 word commentary. Include hora planet lordship for ${lagna} Lagna, transit lagna activation, choghadiya effect, and one concrete activity recommendation."
+      "commentary": "35-45 words. MUST include: 1) Hora planet's natal house lordship for ${lagna} Lagna (e.g. Jupiter hora activates 9th lord). 2) Transit lagna house position. 3) Choghadiya quality with specific effect. 4) One specific actionable recommendation. 5) Rahu Kaal warning if applicable."
     }
   ]
 }
@@ -291,22 +333,72 @@ For EACH of days 4-7 (NO hours array):
 
 Return array of 7 day objects. Keep commentaries concise to avoid truncation.`;
 
-    console.log('Calling Claude for daily/hourly commentary...');
-    const dailyHourlyCommentary = await callClaudeWithRetry(microPrompt, 16000);
-    const dailyArray = Array.isArray(dailyHourlyCommentary)
-      ? dailyHourlyCommentary
-      : dailyHourlyCommentary.days || [];
-    console.log('Daily commentary received - count:', dailyArray.length);
-    if (dailyArray[0]) {
-      console.log('Day 0 keys:', Object.keys(dailyArray[0]), 'has hours:', !!dailyArray[0].hours);
+    // Run BOTH Claude calls in parallel to halve total time
+    console.log('Calling Claude for macro + daily/hourly commentary in parallel...');
+    const [macroResult, microResult] = await Promise.allSettled([
+      callClaudeWithRetry(macroPrompt, 8000),
+      callClaudeWithRetry(microPrompt, 10000),
+    ]);
+
+    const macroCommentary = macroResult.status === 'fulfilled' ? macroResult.value : {};
+    if (macroResult.status === 'rejected') {
+      console.error('Macro commentary failed:', macroResult.reason?.message);
+    } else {
+      console.log('Macro commentary received - keys:', Object.keys(macroCommentary));
+    }
+
+    let dailyArray: any[] = [];
+    if (microResult.status === 'fulfilled') {
+      const raw = microResult.value;
+      console.log('Micro result type:', typeof raw, 'isArray:', Array.isArray(raw));
+      if (Array.isArray(raw)) {
+        dailyArray = raw;
+      } else if (raw?.days && Array.isArray(raw.days)) {
+        dailyArray = raw.days;
+      } else if (raw && typeof raw === 'object') {
+        const vals = Object.values(raw);
+        const arrVal = vals.find((v) => Array.isArray(v)) as any[] | undefined;
+        if (arrVal) dailyArray = arrVal;
+      }
+      console.log('Daily commentary count:', dailyArray.length);
+    } else {
+      console.error('Micro commentary failed:', microResult.reason?.message);
+    }
+
+    // Fallback: if micro call failed or returned empty, generate basic daily entries from forecast data
+    if (dailyArray.length === 0 && forecast.days?.length > 0) {
+      console.log('Generating fallback daily entries from forecast data...');
+      dailyArray = forecast.days.slice(0, 7).map((day: any) => ({
+        date: day.date || '',
+        day_score: day.rating?.day_score ?? 50,
+        day_theme: day.narrative ? day.narrative.slice(0, 80) : 'Daily forecast',
+        day_rating_label: (day.rating?.day_score ?? 50) >= 70 ? 'GOOD' : (day.rating?.day_score ?? 50) >= 50 ? 'NEUTRAL' : 'CHALLENGING',
+        panchang: day.panchang || {},
+        day_overview: day.narrative || 'Based on today\'s panchang and hora patterns, this day shows moderate potential. Focus on key activities during the optimal windows.',
+        rahu_kaal: { start: '', end: '' },
+        best_windows: (day.rating?.peak_windows || []).slice(0, 3).map((w: any) => ({
+          time: `${w.start_time || ''}–${w.end_time || ''}`,
+          hora: w.hora_ruler || '',
+          choghadiya: w.choghadiya || '',
+          score: w.rating || 0,
+          reason: '',
+        })),
+        avoid_windows: [],
+      }));
     }
 
     const finalCommentary = {
-      nativity_summary: macroCommentary.nativity_summary,
+      nativity_summary: macroCommentary.nativity_summary || {
+        lagna_analysis: 'Analysis temporarily unavailable.',
+        current_dasha_interpretation: '',
+        key_yogas: [],
+        functional_benefics: [],
+        functional_malefics: [],
+      },
       monthly: macroCommentary.monthly || [],
       weekly: macroCommentary.weekly || [],
       daily: dailyArray,
-      period_synthesis: macroCommentary.period_synthesis || '',
+      period_synthesis: macroCommentary.period_synthesis ?? '',
     };
 
     console.log('Final commentary assembled - daily count:', finalCommentary.daily.length);

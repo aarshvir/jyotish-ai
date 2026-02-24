@@ -48,7 +48,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       </h2>
 
       <div className="space-y-6">
-        {months.map((month, i) => (
+        {(months ?? []).map((month, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 20 }}
@@ -97,55 +97,55 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
               </div>
             )}
 
-            {/* Multi-domain scores */}
-            {(month.career_score || month.money_score || month.health_score || month.love_score) && (
+            {/* Multi-domain scores with progress bars */}
+            {(month.career_score ?? month.money_score ?? month.health_score ?? month.love_score) != null && (
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div className="text-center">
-                  <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">
-                    Overall
+                  <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">Overall</p>
+                  <p className={`font-mono text-xl font-bold ${getScoreColor(month.overall_score ?? 50)}`}>
+                    {month.overall_score ?? 50}
                   </p>
-                  <p className={`font-mono text-xl font-bold ${getScoreColor(month.overall_score)}`}>
-                    {month.overall_score}
-                  </p>
+                  <div className="h-1 bg-horizon/40 rounded-full mt-1 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${getColor(month.overall_score ?? 50)}`}
+                      style={{ width: `${Math.min(100, (month.overall_score ?? 50))}%` }}
+                    />
+                  </div>
                 </div>
-                {month.career_score && (
+                {month.career_score != null && (
                   <div className="text-center">
-                    <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">
-                      Career
-                    </p>
-                    <p className={`font-mono text-xl font-bold ${getScoreColor(month.career_score)}`}>
-                      {month.career_score}
-                    </p>
+                    <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">Career</p>
+                    <p className={`font-mono text-xl font-bold ${getScoreColor(month.career_score)}`}>{month.career_score}</p>
+                    <div className="h-1 bg-horizon/40 rounded-full mt-1 overflow-hidden">
+                      <div className={`h-full rounded-full ${getColor(month.career_score)}`} style={{ width: `${Math.min(100, month.career_score)}%` }} />
+                    </div>
                   </div>
                 )}
-                {month.money_score && (
+                {month.money_score != null && (
                   <div className="text-center">
-                    <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">
-                      Money
-                    </p>
-                    <p className={`font-mono text-xl font-bold ${getScoreColor(month.money_score)}`}>
-                      {month.money_score}
-                    </p>
+                    <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">Money</p>
+                    <p className={`font-mono text-xl font-bold ${getScoreColor(month.money_score)}`}>{month.money_score}</p>
+                    <div className="h-1 bg-horizon/40 rounded-full mt-1 overflow-hidden">
+                      <div className={`h-full rounded-full ${getColor(month.money_score)}`} style={{ width: `${Math.min(100, month.money_score)}%` }} />
+                    </div>
                   </div>
                 )}
-                {month.health_score && (
+                {month.health_score != null && (
                   <div className="text-center">
-                    <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">
-                      Health
-                    </p>
-                    <p className={`font-mono text-xl font-bold ${getScoreColor(month.health_score)}`}>
-                      {month.health_score}
-                    </p>
+                    <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">Health</p>
+                    <p className={`font-mono text-xl font-bold ${getScoreColor(month.health_score)}`}>{month.health_score}</p>
+                    <div className="h-1 bg-horizon/40 rounded-full mt-1 overflow-hidden">
+                      <div className={`h-full rounded-full ${getColor(month.health_score)}`} style={{ width: `${Math.min(100, month.health_score)}%` }} />
+                    </div>
                   </div>
                 )}
-                {month.love_score && (
+                {month.love_score != null && (
                   <div className="text-center">
-                    <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">
-                      Love
-                    </p>
-                    <p className={`font-mono text-xl font-bold ${getScoreColor(month.love_score)}`}>
-                      {month.love_score}
-                    </p>
+                    <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">Love</p>
+                    <p className={`font-mono text-xl font-bold ${getScoreColor(month.love_score)}`}>{month.love_score}</p>
+                    <div className="h-1 bg-horizon/40 rounded-full mt-1 overflow-hidden">
+                      <div className={`h-full rounded-full ${getColor(month.love_score)}`} style={{ width: `${Math.min(100, month.love_score)}%` }} />
+                    </div>
                   </div>
                 )}
               </div>

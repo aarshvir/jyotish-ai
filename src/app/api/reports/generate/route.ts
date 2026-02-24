@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+export const maxDuration = 300;
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
@@ -46,52 +48,78 @@ export async function POST(request: NextRequest) {
 
     if (chartError) throw chartError;
 
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
+
+    // Step 1: Ephemeris — matches /api/agents/ephemeris expected shape
     const ephemerisResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_URL}/api/agents/ephemeris`,
+      `${baseUrl}/api/agents/ephemeris`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          date: birth_date,
-          time: birth_time,
-          latitude: birth_lat,
-          longitude: birth_lng,
-          timezone,
+          type: 'natal-chart',
+          birth_date,
+          birth_time: birth_time?.includes(':') && birth_time.split(':').length === 2
+            ? `${birth_time}:00`
+            : birth_time,
+          birth_city,
+          birth_lat: parseFloat(birth_lat) || 0,
+          birth_lng: parseFloat(birth_lng) || 0,
         }),
       }
     );
 
-    const { data: chartData } = await ephemerisResponse.json();
+    if (!ephemerisResponse.ok) {
+      const err = await ephemerisResponse.json().catch(() => ({}));
+      throw new Error(err.error || 'Ephemeris calculation failed');
+    }
+
+    const ephemerisResult = await ephemerisResponse.json();
+    const natalChart = ephemerisResult.data || ephemerisResult;
+
+    // Step 2+3: Nativity + Forecast in parallel
+    const today = new Date();
+    const dateFrom = today.toISOString().split('T')[0];
+    const dateTo = new Date(today.getTime() + 29 * 24 * 60 * 60 * 1000)
+      .toISOString().split('T')[0];
+
+    const lat = parseFloat(birth_lat) || 0;
+    const lng = parseFloat(birth_lng) || 0;
 
     const [nativityResponse, forecastResponse] = await Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_URL}/api/agents/nativity`, {
+      fetch(`${baseUrl}/api/agents/nativity`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          chartData, 
-          birthData: { name, birth_date, birth_time, birth_city } 
-        }),
+        body: JSON.stringify({ natalChart }),
       }),
-      fetch(`${process.env.NEXT_PUBLIC_URL}/api/agents/forecast`, {
+      fetch(`${baseUrl}/api/agents/forecast`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          chartData, 
-          birthData: { name, birth_date, birth_time, birth_city } 
+        body: JSON.stringify({
+          natalChart,
+          birthLat: lat,
+          birthLng: lng,
+          currentLat: lat,
+          currentLng: lng,
+          timezoneOffset: 330,
+          dateFrom,
+          dateTo,
         }),
       }),
     ]);
 
-    const { data: nativityAnalysis } = await nativityResponse.json();
-    const { data: forecastAnalysis } = await forecastResponse.json();
+    const nativityResult = await nativityResponse.json();
+    const forecastResult = await forecastResponse.json();
+    const nativityAnalysis = nativityResult.data || nativityResult;
+    const forecastAnalysis = forecastResult.data || forecastResult;
 
     await supabase
       .from('birth_charts')
       .update({
         nativity_profile: nativityAnalysis,
-        lagna: chartData?.ascendant?.sign || null,
-        moon_sign: chartData?.moon?.sign || null,
-        moon_nakshatra: chartData?.moon?.nakshatra || null,
+        lagna: natalChart?.lagna || null,
+        moon_sign: natalChart?.planets?.Moon?.sign || null,
+        moon_nakshatra: natalChart?.moon_nakshatra || null,
       })
       .eq('id', birthChart.id);
 
@@ -114,14 +142,14 @@ export async function POST(request: NextRequest) {
 
     await supabase.rpc('increment_reports_used', { user_id: user.id });
 
-    return NextResponse.json({ 
-      success: true, 
-      reportId: report.id 
+    return NextResponse.json({
+      success: true,
+      reportId: report.id,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Report generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate report' },
+      { error: error?.message || 'Failed to generate report' },
       { status: 500 }
     );
   }

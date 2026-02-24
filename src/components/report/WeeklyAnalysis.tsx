@@ -37,7 +37,7 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
       </h2>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {weeks.map((week, i) => (
+        {(weeks ?? []).map((week, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 20 }}
@@ -68,16 +68,21 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
             </p>
 
             {/* Daily sparkline */}
-            {week.daily_scores && week.daily_scores.length > 0 && (
+            {(week.daily_scores?.length ?? 0) > 0 && (
               <div className="pt-4 border-t border-horizon/40">
-                <div className="flex items-end gap-1 h-12">
-                  {week.daily_scores.map((score, j) => (
+                <div className="flex items-end gap-1 h-16">
+                  {(week.daily_scores ?? []).map((score, j) => (
                     <div
                       key={j}
-                      className={`flex-1 rounded-t-sm ${getColor(score)}`}
-                      style={{ height: `${(score / 100) * 100}%` }}
+                      className={`flex-1 rounded-t-sm min-h-[4px] ${getColor(score)}`}
+                      style={{ height: `${Math.max(8, score)}%` }}
                       title={`Day ${j + 1}: ${score}`}
                     />
+                  ))}
+                </div>
+                <div className="flex justify-between mt-1 font-mono text-[9px] text-dust">
+                  {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, j) => (
+                    <span key={j} className="flex-1 text-center">{d}</span>
                   ))}
                 </div>
               </div>

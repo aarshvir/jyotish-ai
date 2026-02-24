@@ -12,15 +12,18 @@ interface HourData {
   score: number;
   hora_planet: string;
   choghadiya: string;
+  choghadiya_quality?: string;
   is_rahu_kaal: boolean;
-  commentary: string;
+  commentary?: string;
+  hora_planet_symbol?: string;
 }
 
 interface HourlyAnalysisProps {
   hours: HourData[];
+  lagna?: string;
 }
 
-export function HourlyAnalysis({ hours }: HourlyAnalysisProps) {
+export function HourlyAnalysis({ hours, lagna }: HourlyAnalysisProps) {
   const [viewMode, setViewMode] = useState<'visual' | 'table'>('visual');
 
   return (
@@ -90,7 +93,7 @@ export function HourlyAnalysis({ hours }: HourlyAnalysisProps) {
         </AnimatePresence>
 
         {/* Best windows */}
-        <BestWindows hours={hours} />
+        <BestWindows hours={hours} lagna={lagna} />
       </div>
     </motion.div>
   );

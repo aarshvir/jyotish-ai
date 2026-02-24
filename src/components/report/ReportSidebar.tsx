@@ -8,12 +8,15 @@ const NAV_ITEMS = [
   { id: 'weekly', label: 'Weekly' },
   { id: 'daily', label: 'Daily' },
   { id: 'hourly', label: 'Hourly' },
+  { id: 'synthesis', label: 'Synthesis' },
 ];
 
-export function ReportSidebar() {
+export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean }) {
   const [activeSection, setActiveSection] = useState('nativity');
 
   useEffect(() => {
+    if (!reportLoaded) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -36,7 +39,7 @@ export function ReportSidebar() {
     });
 
     return () => observer.disconnect();
-  }, []);
+  }, [reportLoaded]);
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);

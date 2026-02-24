@@ -47,7 +47,12 @@ Return ONLY this JSON (no other text):
   "strengths": ["string", ...],
   "challenges": ["string", ...],
   "current_dasha_interpretation": "2–3 sentence interpretation of the current dasha period",
-  "summary": "2–3 sentence holistic summary of the chart"
+  "summary": "2–3 sentence holistic summary of the chart",
+  "planetary_positions": [
+    { "planet": "Mars", "sign": "Taurus", "house": 10, "nakshatra": "Krittika", "dignity": "exalted", "significance": "Yogakaraka in 10th house..." }
+  ],
+  "life_themes": ["Professional authority through disciplined action", "Emotional intelligence as foundation for success"],
+  "current_year_theme": "2026 brings..."
 }`;
 }
 

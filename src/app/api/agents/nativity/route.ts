@@ -2,44 +2,40 @@ import { NextRequest, NextResponse } from 'next/server';
 import { NativityAgent } from '@/lib/agents/NativityAgent';
 import type { NatalChartData } from '@/lib/agents/types';
 
-const agent = new NativityAgent();
+export const maxDuration = 300;
+
+let agent: NativityAgent | null = null;
+try {
+  agent = new NativityAgent();
+} catch (initError) {
+  console.error('NativityAgent init failed:', initError);
+}
 
 export async function POST(request: NextRequest) {
   try {
+    if (!agent) {
+      return NextResponse.json(
+        { success: false, error: 'NativityAgent failed to initialize — check ANTHROPIC_API_KEY in .env.local' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
-    console.log('🔍 Nativity route - Received body keys:', Object.keys(body));
-    console.log('🔍 Nativity route - body.natalChart exists:', !!body.natalChart);
-    console.log('🔍 Nativity route - body.natalChart?.lagna:', body.natalChart?.lagna);
-    
     const natalChart = (body.natalChart ?? body.chartData) as NatalChartData;
-    console.log('🔍 Nativity route - Extracted natalChart.lagna:', natalChart?.lagna);
 
     if (!natalChart?.lagna) {
-      console.error('❌ Nativity route - Missing lagna. natalChart:', natalChart);
       return NextResponse.json(
         { success: false, error: 'natalChart with lagna is required' },
         { status: 400 }
       );
     }
 
-    console.log('✅ Nativity route - Starting analysis...');
     const profile = await agent.analyze(natalChart);
-    console.log('✅ Nativity route - Analysis complete');
     return NextResponse.json({ success: true, data: profile });
-
   } catch (error: any) {
-    console.error('❌ Nativity route error:', error);
-    console.error('❌ Nativity route error details:', {
-      message: error.message,
-      stack: error.stack,
-      status: error.status,
-    });
+    console.error('Nativity route error:', error?.message);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || String(error),
-        details: error.status ? `API Status: ${error.status}` : undefined,
-      },
+      { success: false, error: error?.message || String(error) },
       { status: 500 }
     );
   }

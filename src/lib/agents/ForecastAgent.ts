@@ -207,13 +207,16 @@ export class ForecastAgent {
         best_times: [],
         avoid_times: [],
       };
+      const fd = dayData[i];
+      const rk = fd?.rahu_kaal;
       return {
         date,
-        panchang: dayData[i]?.panchang ?? { tithi: '', nakshatra: '', yoga: '', karana: '', sunrise: '', sunset: '', moon_sign: '', day_ruler: '' },
+        panchang: fd?.panchang ?? { tithi: '', nakshatra: '', yoga: '', karana: '', sunrise: '', sunset: '', moon_sign: '', day_ruler: '' },
         rating: ratings[i] ?? { date: date, day_score: 50, peak_windows: [], avoid_windows: [], all_slots: [] },
         narrative: narr.narrative,
         best_times: narr.best_times,
         avoid_times: narr.avoid_times,
+        rahu_kaal: rk ? { start_time: rk.start_time, end_time: rk.end_time } : undefined,
       };
     });
 

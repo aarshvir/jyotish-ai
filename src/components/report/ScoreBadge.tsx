@@ -10,7 +10,8 @@ interface ScoreBadgeProps {
   animate?: boolean;
 }
 
-export function ScoreBadge({ score, size = 'md', showLabel = false, animate = true }: ScoreBadgeProps) {
+export function ScoreBadge({ score: rawScore, size = 'md', showLabel = false, animate = true }: ScoreBadgeProps) {
+  const score = Number.isFinite(rawScore) ? rawScore : 0;
   const [displayScore, setDisplayScore] = useState(animate ? 0 : score);
 
   // Count-up animation

@@ -91,6 +91,15 @@ export interface Yoga {
   strength: 'strong' | 'moderate' | 'weak';
 }
 
+export interface PlanetaryPosition {
+  planet: string;
+  sign: string;
+  house: number;
+  nakshatra: string;
+  dignity?: string;
+  significance?: string;
+}
+
 export interface NativityProfile {
   lagna_sign: string;
   lagna_analysis: string;
@@ -102,6 +111,9 @@ export interface NativityProfile {
   challenges: string[];
   current_dasha_interpretation: string;
   summary: string;
+  planetary_positions?: PlanetaryPosition[];
+  life_themes?: string[];
+  current_year_theme?: string;
 }
 
 // ── RatingAgent types ────────────────────────────────────────────────────────
@@ -139,7 +151,7 @@ export interface ForecastInput {
   birthLng: number;
   currentLat: number;
   currentLng: number;
-  timezoneOffset: number;   // hours from UTC, e.g. 5.5 for IST
+  timezoneOffset: number;   // offset in MINUTES east of UTC (e.g. IST = 330, GST = 240)
   dateFrom: string;         // "YYYY-MM-DD"
   dateTo: string;           // "YYYY-MM-DD"
 }
@@ -158,6 +170,7 @@ export interface DayForecast {
   narrative: string;
   best_times: string[];
   avoid_times: string[];
+  rahu_kaal?: { start_time: string; end_time: string };
 }
 
 export interface ForecastOutput {

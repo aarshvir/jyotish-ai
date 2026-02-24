@@ -9,7 +9,7 @@ interface HourData {
   transit_lagna?: string;
   transit_lagna_house?: number;
   is_rahu_kaal: boolean;
-  commentary: string;
+  commentary?: string;
 }
 
 interface HourlyTableProps {
@@ -75,7 +75,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
           </tr>
         </thead>
         <tbody>
-          {hours.map((hour, i) => (
+          {(hours ?? []).map((hour, i) => (
             <tr
               key={i}
               className={`hover:bg-nebula/40 transition-colors ${
@@ -132,7 +132,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
               {/* Commentary */}
               <td className="py-3 px-4 hidden md:table-cell">
                 <p className="font-display text-sm text-star italic max-w-[300px] line-clamp-3 leading-[1.6]">
-                  {hour.commentary}
+                  {hour.commentary || '—'}
                 </p>
               </td>
             </tr>

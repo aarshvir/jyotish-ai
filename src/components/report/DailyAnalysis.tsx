@@ -2,13 +2,25 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ScoreBadge } from './ScoreBadge';
+import { HourlyAnalysis } from './HourlyAnalysis';
+
+interface HourSlot {
+  time: string;
+  end_time: string;
+  score: number;
+  hora_planet: string;
+  hora_planet_symbol?: string;
+  choghadiya: string;
+  choghadiya_quality?: string;
+  is_rahu_kaal: boolean;
+  commentary?: string;
+}
 
 interface DayData {
   date: string;
   day_score: number;
-  day_theme: string;
-  day_rating_label: string;
+  day_theme?: string;
+  day_rating_label?: string;
   panchang?: {
     tithi?: string;
     nakshatra?: string;
@@ -16,8 +28,8 @@ interface DayData {
     karana?: string;
     moon_sign?: string;
   };
-  day_overview: string;
-  rahu_kaal?: { start: string; end: string };
+  day_overview?: string;
+  rahu_kaal?: { start: string; end: string } | null;
   best_windows?: Array<{
     time: string;
     hora: string;
@@ -29,38 +41,45 @@ interface DayData {
     time: string;
     reason: string;
   }>;
+  hours?: HourSlot[] | null;
+  hourlySlots?: HourSlot[];
 }
 
 interface DailyAnalysisProps {
   days: DayData[];
+  activeDayIndex?: number;
+  onDayChange?: (index: number) => void;
+  lagna?: string;
 }
 
 const PLANET_SYMBOLS: Record<string, string> = {
-  Sun: '☉',
-  Moon: '☽',
-  Mars: '♂',
-  Mercury: '☿',
-  Jupiter: '♃',
-  Venus: '♀',
-  Saturn: '♄',
+  Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿',
+  Jupiter: '♃', Venus: '♀', Saturn: '♄',
 };
 
-export function DailyAnalysis({ days }: DailyAnalysisProps) {
-  const [activeDay, setActiveDay] = useState(0);
+export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: DailyAnalysisProps) {
+  const [internalActive, setInternalActive] = useState(0);
+  const activeDay = onDayChange ? activeDayIndex : internalActive;
+  const setActiveDay = onDayChange ? onDayChange : setInternalActive;
 
   const formatTabLabel = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    return `${dayNames[date.getDay()]}\n${date.getDate()}`;
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      if (isNaN(d.getTime())) return dateStr || '?';
+      const names = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+      return `${names[d.getDay()]}\n${d.getDate()}`;
+    } catch {
+      return dateStr || '?';
+    }
   };
 
-  const currentDay = days[activeDay];
+  const currentDay = days[activeDay] ?? days[0];
+  if (!currentDay) return null;
 
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return 'text-emerald';
-    if (score >= 50) return 'text-amber';
-    return 'text-crimson';
-  };
+  const score = currentDay.day_score ?? 50;
+  const scoreColor = score >= 70 ? 'text-emerald' : score >= 50 ? 'text-amber' : 'text-crimson';
+
+  const activeHours: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
 
   return (
     <motion.div
@@ -75,26 +94,26 @@ export function DailyAnalysis({ days }: DailyAnalysisProps) {
         Daily Forecast
       </h2>
 
-      {/* Tab navigator */}
+      {/* Tab strip — one tab per day */}
       <div className="overflow-x-auto scrollbar-thin">
         <div className="flex gap-2 min-w-max pb-2">
-          {days.map((day, i) => (
+          {(days ?? []).map((day, i) => (
             <button
-              key={i}
+              key={day?.date || i}
               onClick={() => setActiveDay(i)}
-              className={`px-4 py-3 rounded-sm font-mono text-xs uppercase tracking-wider transition-all whitespace-pre-line leading-tight ${
+              className={`px-4 py-3 rounded-sm font-mono uppercase tracking-wider transition-all whitespace-pre-line leading-tight ${
                 activeDay === i
-                  ? 'border-b-2 border-amber text-star bg-nebula/40'
-                  : 'text-dust hover:text-star'
+                  ? 'border-b-2 border-amber text-star bg-nebula/40 text-sm'
+                  : 'text-dust hover:text-star text-xs'
               }`}
             >
-              {formatTabLabel(day.date)}
+              {formatTabLabel(day?.date ?? '')}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Day content */}
+      {/* Active day content */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeDay}
@@ -104,17 +123,17 @@ export function DailyAnalysis({ days }: DailyAnalysisProps) {
           transition={{ duration: 0.2 }}
           className="bg-cosmos border border-horizon rounded-sm p-8"
         >
-          {/* Score display */}
+          {/* Score */}
           <div className="text-center mb-8">
-            <div className={`font-display font-semibold text-[96px] leading-none ${getScoreColor(currentDay.day_score)}`}>
-              {currentDay.day_score}
+            <div className={`font-display font-semibold text-[96px] leading-none ${scoreColor}`}>
+              {score}
             </div>
-            <p className={`font-mono text-xs tracking-[0.2em] uppercase mt-3 ${getScoreColor(currentDay.day_score)}`}>
-              {currentDay.day_rating_label}
+            <p className={`font-mono text-xs tracking-[0.2em] uppercase mt-3 ${scoreColor}`}>
+              {currentDay.day_rating_label || (score >= 70 ? 'EXCELLENT' : score >= 50 ? 'GOOD' : 'CHALLENGING')}
             </p>
           </div>
 
-          {/* Panchang row */}
+          {/* Panchang */}
           {currentDay.panchang && (
             <div className="flex flex-wrap justify-center gap-3 mb-8">
               {currentDay.panchang.tithi && (
@@ -146,52 +165,46 @@ export function DailyAnalysis({ days }: DailyAnalysisProps) {
           )}
 
           {/* Theme */}
-          <p className="font-display italic text-amber text-xl text-center mb-6">
-            {currentDay.day_theme}
-          </p>
+          {currentDay.day_theme && (
+            <p className="font-display italic text-amber text-xl text-center mb-6">
+              {currentDay.day_theme}
+            </p>
+          )}
 
           {/* Day overview */}
           <p className="font-display text-star text-base leading-[1.8] text-center max-w-2xl mx-auto mb-8">
-            {currentDay.day_overview}
+            {currentDay.day_overview || 'Overview unavailable'}
           </p>
 
           {/* Quick windows */}
           <div className="space-y-4">
-            {/* Best windows */}
             {currentDay.best_windows && currentDay.best_windows.length > 0 && (
               <div>
                 <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3 text-center">
                   Optimal Windows
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {currentDay.best_windows.map((window, i) => (
+                  {currentDay.best_windows.map((w, i) => (
                     <div
                       key={i}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-emerald/10 border border-emerald/20"
-                      title={window.reason}
+                      title={w.reason}
                     >
                       <span className="text-emerald text-sm">
-                        {PLANET_SYMBOLS[window.hora] || ''}
+                        {PLANET_SYMBOLS[w.hora] || ''}
                       </span>
-                      <span className="font-mono text-xs text-emerald">
-                        {window.time}
-                      </span>
+                      <span className="font-mono text-xs text-emerald">{w.time}</span>
                       <span className="text-emerald/50">·</span>
-                      <span className="font-mono text-xs text-emerald/70">
-                        {window.choghadiya}
-                      </span>
+                      <span className="font-mono text-xs text-emerald/70">{w.choghadiya}</span>
                       <span className="text-emerald/50">·</span>
-                      <span className="font-mono text-xs text-emerald font-medium">
-                        {window.score}
-                      </span>
+                      <span className="font-mono text-xs text-emerald font-medium">{w.score}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Rahu Kaal */}
-            {currentDay.rahu_kaal && (
+            {currentDay.rahu_kaal && currentDay.rahu_kaal.start && (
               <div>
                 <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3 text-center">
                   Rahu Kaal
@@ -207,20 +220,19 @@ export function DailyAnalysis({ days }: DailyAnalysisProps) {
               </div>
             )}
 
-            {/* Avoid windows */}
             {currentDay.avoid_windows && currentDay.avoid_windows.length > 0 && (
               <div>
                 <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3 text-center">
                   Avoid
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {currentDay.avoid_windows.map((window, i) => (
+                  {currentDay.avoid_windows.map((w, i) => (
                     <div
                       key={i}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-crimson/10 border border-crimson/20"
                     >
                       <span className="font-mono text-xs text-crimson">
-                        {window.time} · {window.reason}
+                        {w.time} · {w.reason}
                       </span>
                     </div>
                   ))}
@@ -230,6 +242,11 @@ export function DailyAnalysis({ days }: DailyAnalysisProps) {
           </div>
         </motion.div>
       </AnimatePresence>
+
+      {/* Hourly analysis for the active day — rendered inline */}
+      {activeHours.length > 0 && (
+        <HourlyAnalysis hours={activeHours} lagna={lagna} />
+      )}
     </motion.div>
   );
 }

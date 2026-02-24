@@ -14,7 +14,7 @@ interface HourData {
   transit_lagna?: string;
   transit_lagna_house?: number;
   is_rahu_kaal: boolean;
-  commentary: string;
+  commentary?: string;
 }
 
 interface HourlyChartProps {
@@ -71,13 +71,21 @@ export function HourlyChart({ hours }: HourlyChartProps) {
   };
 
   // Show time labels for every 3 hours
-  const timeLabels = hours.filter((_, i) => i % 3 === 0);
+  const timeLabels = (hours ?? []).filter((_, i) => i % 3 === 0);
+
+  if (!hours?.length) {
+    return (
+      <div className="py-8 text-center font-mono text-xs text-dust">
+        Hourly data unavailable for this day.
+      </div>
+    );
+  }
 
   return (
     <div className="relative">
       {/* Chart */}
       <div className="flex items-end gap-[2px] h-[120px] mb-4">
-        {hours.map((hour, i) => (
+        {(hours ?? []).map((hour, i) => (
           <motion.div
             key={i}
             initial={{ scaleY: 0 }}
@@ -186,7 +194,7 @@ export function HourlyChart({ hours }: HourlyChartProps) {
 
           {/* Commentary */}
           <p className="font-display text-sm text-star italic leading-[1.6]">
-            {hours[hoveredIndex].commentary}
+            {hours[hoveredIndex].commentary || 'Hora and choghadiya quality determine this window\'s potential.'}
           </p>
         </motion.div>
       )}

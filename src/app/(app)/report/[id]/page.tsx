@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MandalaRing } from '@/components/ui/MandalaRing';
@@ -10,7 +10,6 @@ import { NativityCard } from '@/components/report/NativityCard';
 import { MonthlyAnalysis } from '@/components/report/MonthlyAnalysis';
 import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 import { DailyAnalysis } from '@/components/report/DailyAnalysis';
-import { HourlyAnalysis } from '@/components/report/HourlyAnalysis';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 
@@ -35,7 +34,22 @@ function ReportContent() {
   const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [reportData, setReportData] = useState<any>(null);
+  const [activeDayIndex, setActiveDayIndex] = useState(0);
+  const [copyLinkFeedback, setCopyLinkFeedback] = useState(false);
   const hasFetched = useRef(false);
+
+  const copyReportLink = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href);
+      setCopyLinkFeedback(true);
+      setTimeout(() => setCopyLinkFeedback(false), 2000);
+    }
+  }, []);
+
+  const handleDaySelectFromCalendar = useCallback((index: number) => {
+    setActiveDayIndex(index);
+    document.getElementById('daily')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   useEffect(() => {
     if (hasFetched.current) return;
@@ -98,6 +112,8 @@ function ReportContent() {
         .toISOString()
         .split('T')[0];
 
+      const timezoneOffset = -(new Date().getTimezoneOffset());
+
       const forecastRes = await fetch('/api/agents/forecast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -107,7 +123,7 @@ function ReportContent() {
           birthLng,
           currentLat: birthLat,
           currentLng: birthLng,
-          timezoneOffset: 330,
+          timezoneOffset,
           dateFrom,
           dateTo,
         }),
@@ -281,11 +297,57 @@ function ReportContent() {
 
   if (!reportData) return null;
 
-  const { natalChart, commentary } = reportData;
+  const { natalChart, forecast, commentary } = reportData;
   const safeCommentary = commentary ?? {};
   const safeMonthly = Array.isArray(safeCommentary.monthly) ? safeCommentary.monthly : [];
   const safeWeekly = Array.isArray(safeCommentary.weekly) ? safeCommentary.weekly : [];
-  const safeDaily = Array.isArray(safeCommentary.daily) ? safeCommentary.daily : [];
+  const commentaryDays = Array.isArray(safeCommentary.daily) ? safeCommentary.daily : [];
+
+  const dayLimit = type === 'monthly' ? 30 : 7;
+  const forecastDays: any[] = forecast?.days ?? [];
+
+  const mergedDays = forecastDays.slice(0, dayLimit).map((day: any, i: number) => {
+    const cd = commentaryDays.find((c: any) => c?.date === day.date) ?? commentaryDays[i] ?? null;
+    const slots = day.rating?.all_slots ?? [];
+    const rk = day.rahu_kaal ?? cd?.rahu_kaal;
+    const rahuKaalFormatted = rk
+      ? { start: (rk.start_time ?? rk.start) ?? '', end: (rk.end_time ?? rk.end) ?? '' }
+      : null;
+    const peakFromRating = (day.rating?.peak_windows ?? []).slice(0, 3).map((w: any) => ({
+      time: `${w.start_time ?? ''}–${w.end_time ?? ''}`,
+      hora: w.hora_ruler ?? '',
+      choghadiya: w.choghadiya ?? '',
+      score: w.rating ?? 0,
+      reason: '',
+    }));
+    return {
+      date: day.date ?? '',
+      day_score: cd?.day_score ?? day.rating?.day_score ?? 50,
+      day_theme: cd?.day_theme ?? (day.narrative ? day.narrative.slice(0, 80) : ''),
+      day_rating_label: cd?.day_rating_label ?? ((day.rating?.day_score ?? 50) >= 70 ? 'EXCELLENT' : (day.rating?.day_score ?? 50) >= 50 ? 'GOOD' : 'CHALLENGING'),
+      panchang: cd?.panchang ?? day.panchang ?? {},
+      day_overview: cd?.day_overview ?? day.narrative ?? 'Based on today\'s panchang and hora patterns, this day shows moderate potential. Focus on key activities during the optimal windows.',
+      rahu_kaal: rahuKaalFormatted,
+      best_windows: (cd?.best_windows?.length ? cd.best_windows : peakFromRating) ?? [],
+      avoid_windows: cd?.avoid_windows ?? [],
+      hours: cd?.hours ?? null,
+      hourlySlots: slots.map((s: any) => ({
+        time: s.start_time ?? '',
+        end_time: s.end_time ?? '',
+        score: s.rating ?? 50,
+        hora_planet: s.hora_ruler ?? '',
+        hora_planet_symbol: '',
+        choghadiya: s.choghadiya ?? '',
+        choghadiya_quality: s.choghadiya_quality ?? '',
+        is_rahu_kaal: s.is_rahu_kaal ?? false,
+        commentary: s.commentary ?? '',
+      })),
+    };
+  });
+
+  if (typeof window !== 'undefined') {
+    console.log('Report merged data:', { mergedDaysCount: mergedDays.length, day0Hours: mergedDays[0]?.hourlySlots?.length ?? 0 });
+  }
 
   return (
     <motion.div
@@ -295,9 +357,27 @@ function ReportContent() {
       className="min-h-screen bg-space relative"
     >
       <StarField />
-      <ReportSidebar />
+      <ReportSidebar reportLoaded={!!reportData} />
 
       <main className="lg:ml-[200px] px-6 py-12 max-w-4xl mx-auto relative z-10">
+        {/* Copy report link */}
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={copyReportLink}
+            className="font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2"
+          >
+            {copyLinkFeedback ? (
+              <span className="text-emerald">Link copied!</span>
+            ) : (
+              <>
+                <span>Copy report link</span>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </>
+            )}
+          </button>
+        </div>
         <ReportErrorBoundary fallbackTitle="Nativity">
           <NativityCard
             name={name}
@@ -310,6 +390,7 @@ function ReportContent() {
             moonNakshatra={natalChart?.moon_nakshatra || 'Unknown'}
             currentDasha={natalChart?.current_dasha ?? { mahadasha: 'Unknown', antardasha: 'Unknown' }}
             nativitySummary={safeCommentary.nativity_summary}
+            nativity={reportData?.nativity}
           />
         </ReportErrorBoundary>
 
@@ -325,23 +406,23 @@ function ReportContent() {
           </ReportErrorBoundary>
         )}
 
-        {safeDaily.length > 0 && (
+        {mergedDays.length > 0 && (
           <ReportErrorBoundary fallbackTitle="Daily Forecast">
-            <DailyAnalysis days={safeDaily} />
+            <DailyAnalysis
+              days={mergedDays}
+              activeDayIndex={activeDayIndex}
+              onDayChange={setActiveDayIndex}
+              lagna={natalChart?.lagna}
+            />
           </ReportErrorBoundary>
         )}
 
-        {safeDaily.length > 0 && safeDaily[0]?.hours?.length > 0 && (
-          <ReportErrorBoundary fallbackTitle="Hourly Analysis">
-            <HourlyAnalysis hours={safeDaily[0].hours} />
-          </ReportErrorBoundary>
-        )}
-
-        {(safeCommentary.period_synthesis || safeDaily.length > 0) && (
+        {(safeCommentary.period_synthesis || mergedDays.length > 0) && (
           <ReportErrorBoundary fallbackTitle="Period Synthesis">
             <PeriodSynthesis
               synthesis={safeCommentary.period_synthesis ?? ''}
-              dailyScores={safeDaily.map((d: any) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
+              dailyScores={mergedDays.map((d: any) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
+              onDayClick={handleDaySelectFromCalendar}
             />
           </ReportErrorBoundary>
         )}
