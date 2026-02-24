@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { safeParseJson } from '@/lib/utils/safeJson';
 
 export const maxDuration = 300;
 
@@ -20,52 +21,6 @@ Your commentary style:
 - Be specific and actionable. Never vague.
 - Tone: warm, direct, authoritative — like a trusted mentor who also happens to be a cosmic engineer`;
 
-function tryParseJSON(text: string): any {
-  let jsonText = text.trim();
-  jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-
-  const objStart = jsonText.indexOf('{');
-  const arrStart = jsonText.indexOf('[');
-  if (objStart >= 0 || arrStart >= 0) {
-    const start = objStart >= 0 && arrStart >= 0
-      ? Math.min(objStart, arrStart)
-      : Math.max(objStart, arrStart);
-    const isArray = jsonText[start] === '[';
-    const end = jsonText.lastIndexOf(isArray ? ']' : '}');
-    if (end > start) {
-      jsonText = jsonText.substring(start, end + 1);
-    }
-  }
-
-  try {
-    return JSON.parse(jsonText);
-  } catch {
-    // Attempt repair: find the last complete object boundary and close
-  }
-
-  // Repair: truncate to last complete element
-  const lastCompleteObj = jsonText.lastIndexOf('},');
-  if (lastCompleteObj > 0) {
-    const isArrayOuter = jsonText.trimStart().startsWith('[');
-    const truncated = jsonText.substring(0, lastCompleteObj + 1) + (isArrayOuter ? ']' : '}');
-    try {
-      console.log('JSON repair: truncated at position', lastCompleteObj, 'of', jsonText.length);
-      return JSON.parse(truncated);
-    } catch { /* fall through */ }
-  }
-
-  // Repair: try closing with }] or }}
-  for (const suffix of ['}]', '}}', '"]}}', '"]}]', '"}]']) {
-    const lastBrace = jsonText.lastIndexOf('}');
-    if (lastBrace > 0) {
-      try {
-        return JSON.parse(jsonText.substring(0, lastBrace) + suffix);
-      } catch { /* try next */ }
-    }
-  }
-
-  throw new Error(`JSON parse failed. First 200 chars: ${jsonText.substring(0, 200)}`);
-}
 
 async function callClaudeWithRetry(userPrompt: string, maxTokens: number, retries = 2) {
   if (!anthropic) throw new Error('Anthropic SDK not initialized — check ANTHROPIC_API_KEY');
@@ -96,12 +51,12 @@ async function callClaudeWithRetry(userPrompt: string, maxTokens: number, retrie
         console.log(`Claude response: ${content.text.length} chars, stop_reason: ${stopReason}`);
 
         if (stopReason === 'end_turn') {
-          return tryParseJSON(content.text);
+          return safeParseJson(content.text);
         }
 
         console.warn('Response truncated (stop_reason:', stopReason, ') — attempting JSON repair');
         try {
-          return tryParseJSON(content.text);
+          return safeParseJson(content.text);
         } catch (parseErr: any) {
           console.error('JSON repair failed:', parseErr.message);
           if (i < retries - 1) continue;
@@ -261,8 +216,8 @@ Return:
       };
     };
 
-    const first3Days = forecast.days.slice(0, 3).map(slimDay);
-    const days4to7 = forecast.days.slice(3, 7).map((d: any) => ({
+    const first2Days = forecast.days.slice(0, 2).map(slimDay);
+    const days3to7 = forecast.days.slice(2, 7).map((d: any) => ({
       date: d.date,
       score: d.rating?.day_score ?? d.day_score ?? 70,
       panchang: d.panchang || {},
@@ -272,15 +227,15 @@ Return:
 
 Native: ${lagna} Lagna, current dasha: ${mahadasha}/${antardasha}
 
-DAYS 1-3 (with hourly schedule):
-${JSON.stringify(first3Days)}
+DAYS 1-2 (with hourly schedule):
+${JSON.stringify(first2Days)}
 
-DAYS 4-7 (summary only):
-${JSON.stringify(days4to7)}
+DAYS 3-7 (summary only):
+${JSON.stringify(days3to7)}
 
 INSTRUCTIONS:
-- For days 1-3: return FULL object with hours array (24 entries each)
-- For days 4-7: omit the hours array entirely — just return date, day_score, day_theme, day_rating_label, panchang, day_overview, rahu_kaal, best_windows, avoid_windows.
+- For days 1 and 2 only (48 slots total): return FULL object with hours array (24 entries each)
+- For days 3-7: omit the hours array entirely — just return date, day_score, day_theme, day_rating_label, panchang, day_overview, rahu_kaal, best_windows, avoid_windows.
 
 For EACH of days 1-3:
 {
@@ -336,11 +291,11 @@ Return array of 7 day objects. Keep commentaries concise to avoid truncation.`;
     // Run BOTH Claude calls in parallel to halve total time
     console.log('Calling Claude for macro + daily/hourly commentary in parallel...');
     const [macroResult, microResult] = await Promise.allSettled([
-      callClaudeWithRetry(macroPrompt, 8000),
-      callClaudeWithRetry(microPrompt, 10000),
+      callClaudeWithRetry(macroPrompt, 16000),
+      callClaudeWithRetry(microPrompt, 24000),
     ]);
 
-    const macroCommentary = macroResult.status === 'fulfilled' ? macroResult.value : {};
+    const macroCommentary: any = macroResult.status === 'fulfilled' ? macroResult.value : {};
     if (macroResult.status === 'rejected') {
       console.error('Macro commentary failed:', macroResult.reason?.message);
     } else {
@@ -349,7 +304,7 @@ Return array of 7 day objects. Keep commentaries concise to avoid truncation.`;
 
     let dailyArray: any[] = [];
     if (microResult.status === 'fulfilled') {
-      const raw = microResult.value;
+      const raw: any = microResult.value;
       console.log('Micro result type:', typeof raw, 'isArray:', Array.isArray(raw));
       if (Array.isArray(raw)) {
         dailyArray = raw;

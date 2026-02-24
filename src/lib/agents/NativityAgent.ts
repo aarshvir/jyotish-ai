@@ -6,8 +6,14 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import type { NatalChartData, NativityProfile } from './types';
+import { safeParseJson } from '@/lib/utils/safeJson';
 
-const SYSTEM_PROMPT = `You are a classically trained Vedic astrologer with deep expertise in Parashari and Jaimini traditions. You will analyze a natal chart and return a single JSON object — no prose, no markdown, no code fences. Only valid JSON.`;
+const SYSTEM_PROMPT = `You are a classically trained Vedic astrologer with deep expertise in Parashari and Jaimini traditions. You will analyze a natal chart and return a single JSON object — no prose, no markdown, no code fences. Only valid JSON.
+
+CRITICAL: Your entire response must be valid, complete JSON. Do not truncate. If content is too long, summarize — never cut mid-string.
+planetary_positions: include only the 9 main planets (skip minor points).
+life_themes: maximum 4 items, 10 words each.
+Keep all string values under 200 characters.`;
 
 function buildUserPrompt(chart: NatalChartData): string {
   const planets = Object.entries(chart.planets ?? {})
@@ -75,15 +81,13 @@ export class NativityAgent {
       try {
         const response = await this.client.messages.create({
           model: 'claude-sonnet-4-6',
-          max_tokens: 2048,
+          max_tokens: 4096,
           system: SYSTEM_PROMPT,
           messages: [{ role: 'user', content: buildUserPrompt(natalChart) }],
         });
 
         const text = response.content.find((b) => b.type === 'text')?.text ?? '';
-        const clean = text.replace(/^```(?:json)?\s*/m, '').replace(/\s*```$/m, '').trim();
-
-        return JSON.parse(clean) as NativityProfile;
+        return safeParseJson(text) as NativityProfile;
       } catch (error: any) {
         lastError = error;
         const status = error?.status;

@@ -89,20 +89,25 @@ function ReportContent() {
       const ephemerisResult = await ephemerisRes.json();
       const natalChart = ephemerisResult.data || ephemerisResult;
 
-      // Step 2: Nativity
+      // Step 2: Nativity (non-fatal — report renders without it)
       setLoadingStage(1);
-      const nativityRes = await fetch('/api/agents/nativity', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ natalChart }),
-      });
-
-      if (!nativityRes.ok) {
-        const natErr = await nativityRes.json().catch(() => ({}));
-        throw new Error(natErr.error || 'Nativity analysis failed');
+      let nativity: any = null;
+      try {
+        const nativityRes = await fetch('/api/agents/nativity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ natalChart }),
+        });
+        if (nativityRes.ok) {
+          const nativityRaw = await nativityRes.json();
+          nativity = nativityRaw.data || nativityRaw;
+        } else {
+          const natErr = await nativityRes.json().catch(() => ({}));
+          console.error('Nativity API error (non-fatal):', natErr.error || nativityRes.status);
+        }
+      } catch (natErr: any) {
+        console.error('Nativity fetch failed (non-fatal):', natErr.message);
       }
-      const nativityRaw = await nativityRes.json();
-      const nativity = nativityRaw.data || nativityRaw;
 
       // Step 3: Forecast
       setLoadingStage(2);
