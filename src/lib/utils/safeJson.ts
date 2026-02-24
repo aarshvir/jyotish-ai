@@ -1,11 +1,14 @@
-export function safeParseJson(raw: string): unknown {
-  // Strip markdown code fences
-  let text = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim()
+export function safeParseJson<T = unknown>(raw: string): T {
+  let text = raw
+    .replace(/^```json\s*/im, '')
+    .replace(/^```\s*/im, '')
+    .replace(/```\s*$/im, '')
+    .trim()
 
-  // Try direct parse first
-  try { return JSON.parse(text) } catch {}
+  // Direct parse
+  try { return JSON.parse(text) as T } catch {}
 
-  // Find the last complete } or ] by scanning backwards
+  // Find last complete JSON structure by tracking depth
   let depth = 0
   let inString = false
   let escape = false
@@ -25,14 +28,14 @@ export function safeParseJson(raw: string): unknown {
   }
 
   if (lastCompletePos > 0) {
-    try { return JSON.parse(text.slice(0, lastCompletePos + 1)) } catch {}
+    try { return JSON.parse(text.slice(0, lastCompletePos + 1)) as T } catch {}
   }
 
-  // Last resort: extract first complete JSON object with regex
+  // Regex fallback
   const match = text.match(/\{[\s\S]*\}/)
   if (match) {
-    try { return JSON.parse(match[0]) } catch {}
+    try { return JSON.parse(match[0]) as T } catch {}
   }
 
-  throw new Error(`Could not parse JSON from response. Raw length: ${raw.length}`)
+  throw new Error(`JSON parse failed. Response length: ${raw.length} chars`)
 }

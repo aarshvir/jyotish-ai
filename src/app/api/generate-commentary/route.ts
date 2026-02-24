@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
       strengths: (nativity.strengths || []).slice(0, 3),
     } : {};
 
-    // ── CALL 1: MACRO COMMENTARY (max_tokens: 6000) ──
+    // ── CALL 1: MACRO COMMENTARY (max_tokens: 64000) ──
     const macroPrompt = `Generate macro commentary for this native. Return ONLY valid JSON, no markdown backticks.
 
 Native: ${natalChart.name || 'Seeker'}, ${lagna} Lagna, Moon in ${moonSign}/${moonNakshatra}, Current dasha: ${mahadasha}/${antardasha}
@@ -191,7 +191,7 @@ Return:
   }
 }`;
 
-    // ── CALL 2: DAILY + HOURLY COMMENTARY (max_tokens: 16000) ──
+    // ── CALL 2: DAILY + HOURLY COMMENTARY (max_tokens: 64000) ──
     // Build micro prompt BEFORE calling, so both calls run in parallel
     // Slim down data: only send essential fields, not full rating objects
     const slimDay = (day: any) => {
@@ -216,26 +216,32 @@ Return:
       };
     };
 
-    const first2Days = forecast.days.slice(0, 2).map(slimDay);
-    const days3to7 = forecast.days.slice(2, 7).map((d: any) => ({
-      date: d.date,
-      score: d.rating?.day_score ?? d.day_score ?? 70,
-      panchang: d.panchang || {},
-    }));
+    const first3Days = forecast.days.slice(0, 3).map(slimDay);
+    const days4to7 = forecast.days.slice(3, 7).map((d: any) => {
+      const rating = d.rating || {};
+      return {
+        date: d.date,
+        score: rating.day_score ?? d.day_score ?? 70,
+        panchang: d.panchang || {},
+        top_slots: (rating.peak_windows || []).slice(0, 3).map((s: any) => ({
+          time: s.start_time, ruler: s.hora_ruler, chog: s.choghadiya, score: s.rating,
+        })),
+      };
+    });
 
     const microPrompt = `Generate daily and hourly commentary for 7 days. Return ONLY valid JSON, no markdown.
 
 Native: ${lagna} Lagna, current dasha: ${mahadasha}/${antardasha}
 
-DAYS 1-2 (with hourly schedule):
-${JSON.stringify(first2Days)}
+DAYS 1-3 (with hourly schedule):
+${JSON.stringify(first3Days)}
 
-DAYS 3-7 (summary only):
-${JSON.stringify(days3to7)}
+DAYS 4-7 (summary only):
+${JSON.stringify(days4to7)}
 
 INSTRUCTIONS:
-- For days 1 and 2 only (48 slots total): return FULL object with hours array (24 entries each)
-- For days 3-7: omit the hours array entirely — just return date, day_score, day_theme, day_rating_label, panchang, day_overview, rahu_kaal, best_windows, avoid_windows.
+- For days 1-3 (72 slots total): return FULL object with hours array (24 entries each)
+- For days 4-7: omit the hours array entirely — just return date, day_score, day_theme, day_rating_label, panchang, day_overview, rahu_kaal, best_windows, avoid_windows.
 
 For EACH of days 1-3:
 {
@@ -273,7 +279,7 @@ For EACH of days 1-3:
   ]
 }
 
-For EACH of days 4-7 (NO hours array):
+For EACH of days 4-7 (summary only, NO hours array):
 {
   "date": "YYYY-MM-DD",
   "day_score": 70,
@@ -286,13 +292,13 @@ For EACH of days 4-7 (NO hours array):
   "avoid_windows": [{ "time": "HH:MM-HH:MM", "reason": "Reason" }]
 }
 
-Return array of 7 day objects. Keep commentaries concise to avoid truncation.`;
+Return array of 7 day objects.`;
 
     // Run BOTH Claude calls in parallel to halve total time
     console.log('Calling Claude for macro + daily/hourly commentary in parallel...');
     const [macroResult, microResult] = await Promise.allSettled([
-      callClaudeWithRetry(macroPrompt, 16000),
-      callClaudeWithRetry(microPrompt, 24000),
+      callClaudeWithRetry(macroPrompt, 64000),
+      callClaudeWithRetry(microPrompt, 64000),
     ]);
 
     const macroCommentary: any = macroResult.status === 'fulfilled' ? macroResult.value : {};

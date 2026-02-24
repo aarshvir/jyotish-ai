@@ -62,6 +62,27 @@ Return ONLY this JSON (no other text):
 }`;
 }
 
+function buildFallbackNativity(chart: NatalChartData): NativityProfile {
+  const lagna = chart.lagna ?? 'Unknown';
+  const md = chart.current_dasha?.mahadasha ?? '?';
+  const ad = chart.current_dasha?.antardasha ?? '?';
+  return {
+    lagna_sign: lagna,
+    lagna_analysis: `${lagna} lagna native. Full AI analysis temporarily unavailable — chart data was computed successfully.`,
+    yogas: [],
+    functional_benefics: [],
+    functional_malefics: [],
+    yogakarakas: [],
+    strengths: [],
+    challenges: [],
+    current_dasha_interpretation: `Currently running ${md}/${ad} dasha period.`,
+    summary: `${lagna} lagna chart. Detailed interpretation unavailable at this time.`,
+    planetary_positions: [],
+    life_themes: [],
+    current_year_theme: '',
+  };
+}
+
 export class NativityAgent {
   private client: Anthropic;
 
@@ -81,13 +102,13 @@ export class NativityAgent {
       try {
         const response = await this.client.messages.create({
           model: 'claude-sonnet-4-6',
-          max_tokens: 4096,
+          max_tokens: 16000,
           system: SYSTEM_PROMPT,
           messages: [{ role: 'user', content: buildUserPrompt(natalChart) }],
         });
 
         const text = response.content.find((b) => b.type === 'text')?.text ?? '';
-        return safeParseJson(text) as NativityProfile;
+        return safeParseJson<NativityProfile>(text);
       } catch (error: any) {
         lastError = error;
         const status = error?.status;
@@ -113,6 +134,8 @@ export class NativityAgent {
       }
     }
 
-    throw lastError ?? new Error('NativityAgent failed after retries');
+    // All retries exhausted — return fallback instead of 500
+    console.error('NativityAgent: all retries failed, returning fallback nativity:', lastError?.message);
+    return buildFallbackNativity(natalChart);
   }
 }

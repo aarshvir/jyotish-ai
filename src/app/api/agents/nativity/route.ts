@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { NativityAgent } from '@/lib/agents/NativityAgent';
 import type { NatalChartData } from '@/lib/agents/types';
 
-export const maxDuration = 300;
+export const maxDuration = 120;
 
 let agent: NativityAgent | null = null;
 try {

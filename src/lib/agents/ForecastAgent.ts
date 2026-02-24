@@ -5,6 +5,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { safeParseJson } from '@/lib/utils/safeJson';
 import { EphemerisAgent } from './EphemerisAgent';
 import { RatingAgent } from './RatingAgent';
 import type {
@@ -242,13 +243,11 @@ export class ForecastAgent {
 
     try {
       const prompt = buildForecastPrompt(input, dates, dayData, ratings);
-      const rawText = await callClaudeWithBackoff(this.claude, prompt, 4096);
-      const clean = rawText.replace(/^```(?:json)?\s*/m, '').replace(/\s*```$/m, '').trim();
-
+      const rawText = await callClaudeWithBackoff(this.claude, prompt, 8000);
       try {
-        return JSON.parse(clean) as { days: DayNarrative[]; weekly_summary: string };
+        return safeParseJson<{ days: DayNarrative[]; weekly_summary: string }>(rawText);
       } catch {
-        console.error('ForecastAgent - JSON parse error. Raw:', clean.slice(0, 400));
+        console.error('ForecastAgent - JSON parse error. Raw:', rawText.slice(0, 400));
         return emptyResult;
       }
     } catch (error: any) {

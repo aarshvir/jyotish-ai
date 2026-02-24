@@ -34,6 +34,7 @@ function ReportContent() {
   const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [reportData, setReportData] = useState<any>(null);
+  const [commentaryPartial, setCommentaryPartial] = useState(false);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
   const [copyLinkFeedback, setCopyLinkFeedback] = useState(false);
   const hasFetched = useRef(false);
@@ -141,20 +142,29 @@ function ReportContent() {
       const forecastRaw = await forecastRes.json();
       const forecast = forecastRaw.data || forecastRaw;
 
-      // Step 4: Commentary
+      // Step 4: Commentary (non-fatal — report renders without it)
       setLoadingStage(3);
-      const commentaryRes = await fetch('/api/generate-commentary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ natalChart, nativity, forecast, reportType: type }),
-      });
-
       let commentary: any = {};
-      if (commentaryRes.ok) {
-        const commentaryRaw = await commentaryRes.json();
-        commentary = commentaryRaw.commentary || commentaryRaw.data || commentaryRaw;
-      } else {
-        console.error('Commentary generation failed, continuing with partial report');
+      try {
+        const commentaryRes = await fetch('/api/generate-commentary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ natalChart, nativity, forecast, reportType: type }),
+        });
+        if (commentaryRes.ok) {
+          const commentaryRaw = await commentaryRes.json();
+          commentary = commentaryRaw.commentary || commentaryRaw.data || commentaryRaw;
+          if (commentary?._error) {
+            console.warn('Commentary returned with partial error:', commentary._error);
+            setCommentaryPartial(true);
+          }
+        } else {
+          console.error('Commentary API non-2xx:', commentaryRes.status);
+          setCommentaryPartial(true);
+        }
+      } catch (commentaryErr: any) {
+        console.error('Commentary fetch failed (non-fatal):', commentaryErr.message);
+        setCommentaryPartial(true);
       }
 
       setReportData({ natalChart, nativity, forecast, commentary });
@@ -365,6 +375,16 @@ function ReportContent() {
       <ReportSidebar reportLoaded={!!reportData} />
 
       <main className="lg:ml-[200px] px-6 py-12 max-w-4xl mx-auto relative z-10">
+        {/* Commentary partial banner */}
+        {commentaryPartial && (
+          <div className="mb-6 px-4 py-3 border border-amber/30 bg-amber/5 rounded-sm flex items-center gap-3">
+            <span className="text-amber text-sm">⚠</span>
+            <p className="font-mono text-xs text-dust">
+              Some AI commentary is still loading — refresh to update.
+            </p>
+          </div>
+        )}
+
         {/* Copy report link */}
         <div className="flex justify-end mb-6">
           <button
