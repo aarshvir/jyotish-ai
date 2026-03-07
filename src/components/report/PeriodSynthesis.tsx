@@ -17,19 +17,48 @@ interface PeriodSynthesisProps {
 }
 
 export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSynthesisProps) {
+  if (!synthesis) {
+    return (
+      <div id="synthesis" className="p-8 text-center text-dust bg-cosmos border border-horizon rounded-sm">
+        <p className="text-amber text-lg mb-2">Synthesis generating...</p>
+        <p className="text-sm">
+          Period synthesis will appear here once all commentary sections are complete.
+        </p>
+      </div>
+    );
+  }
+
   const getColor = (score: number) => {
-    if (score >= 70) return 'bg-emerald/30';
-    if (score >= 50) return 'bg-amber/30';
-    return 'bg-crimson/30';
+    if (score >= 75) return 'bg-emerald/25';
+    if (score >= 65) return 'bg-emerald/10';
+    if (score >= 55) return 'bg-amber/15';
+    if (score >= 45) return 'bg-amber/10 border-amber/20';
+    return 'bg-crimson/20';
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 70) return 'text-emerald';
-    if (score >= 50) return 'text-amber';
+    if (score >= 65) return 'text-emerald';
+    if (score >= 45) return 'text-amber';
     return 'text-crimson';
   };
 
+  const getScorePrefix = (score: number) => {
+    if (score >= 85) return '★★★ ';
+    if (score >= 75) return '★ ';
+    if (score < 45) return '⚠ ';
+    return '';
+  };
+
   const isStructured = typeof synthesis === 'object' && synthesis !== null && synthesis !== undefined;
+  const s = synthesis as SynthesisStructured;
+  const OPENING_FALLBACK = 'This forecast period combines transits, dasha activations, and hora patterns. Prioritise high-score windows for important work and avoid Rahu Kaal for new beginnings.';
+  const CLOSING_FALLBACK = 'This forecast period offers opportunities and challenges. Use hora and choghadiya to align actions with cosmic rhythms.';
+  const DOMAIN_FALLBACK: Record<string, string> = {
+    career: 'Focus on Yogakaraka and 10th house activations for career moves.',
+    money: '2nd and 11th house transits influence gains.',
+    health: 'Lagna lord and 6th house themes affect wellbeing.',
+    relationships: '7th house and Badhaka themes require care.',
+  };
 
   return (
     <motion.div
@@ -46,72 +75,66 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
 
       {isStructured ? (
         <div className="space-y-1 mb-8">
-          {(synthesis as SynthesisStructured).opening_paragraph && (
-            <p className="font-display text-star text-base leading-[1.8]">
-              {(synthesis as SynthesisStructured).opening_paragraph}
+          <p className="font-display text-star text-base leading-[1.8]">
+            {(s?.opening_paragraph ?? '').trim() || OPENING_FALLBACK}
+          </p>
+          <div className="pt-6">
+            <p className="font-mono text-xs text-amber tracking-[0.15em] uppercase mb-3">
+              Strategic Windows
             </p>
-          )}
-          {(synthesis as SynthesisStructured).strategic_windows &&
-            (synthesis as SynthesisStructured).strategic_windows!.length > 0 && (
-              <div className="pt-6">
-                <p className="font-mono text-xs text-amber tracking-[0.15em] uppercase mb-3">
-                  Strategic Windows
-                </p>
-                <ul className="space-y-2">
-                  {((synthesis as SynthesisStructured).strategic_windows ?? []).map((w, i) => (
-                    <li key={i} className="font-display text-star text-sm leading-[1.7]">
-                      <span className="font-mono text-xs text-emerald">{w.date}</span>
-                      {w.nakshatra && (
-                        <span className="font-mono text-xs text-dust ml-2">({w.nakshatra}, {w.score})</span>
-                      )}
-                      — {w.reason}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          {(synthesis as SynthesisStructured).caution_dates &&
-            (synthesis as SynthesisStructured).caution_dates!.length > 0 && (
-              <div className="pt-4">
-                <p className="font-mono text-xs text-crimson/80 tracking-[0.15em] uppercase mb-3">
-                  Caution Dates
-                </p>
-                <ul className="space-y-2">
-                  {((synthesis as SynthesisStructured).caution_dates ?? []).map((c, i) => (
-                    <li key={i} className="font-display text-star text-sm leading-[1.7]">
-                      <span className="font-mono text-xs text-crimson">{c.date}</span>
-                      {c.nakshatra && (
-                        <span className="font-mono text-xs text-dust ml-2">({c.nakshatra}, {c.score})</span>
-                      )}
-                      — {c.reason}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          {(synthesis as SynthesisStructured).domain_priorities && (
-            <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(['career', 'money', 'health', 'relationships'] as const).map((key) => {
-                const text = (synthesis as SynthesisStructured).domain_priorities?.[key];
-                if (!text) return null;
-                return (
-                  <div key={key} className="py-2 px-3 rounded-sm bg-cosmos border border-horizon/60">
-                    <p className="font-mono text-xs text-dust uppercase mb-1">{key}</p>
-                    <p className="font-display text-star text-sm leading-[1.6]">{text}</p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {(synthesis as SynthesisStructured).closing_paragraph && (
-            <p className="font-display text-star text-base leading-[1.8] pt-6 italic">
-              {(synthesis as SynthesisStructured).closing_paragraph}
+            <ul className="space-y-2">
+              {(s?.strategic_windows ?? []).length > 0 ? (s?.strategic_windows ?? []).map((w, i) => (
+                <li key={i} className="font-display text-star text-sm leading-[1.7]">
+                  <span className="font-mono text-xs text-emerald">{w.date}</span>
+                  {w.nakshatra != null && (
+                    <span className="font-mono text-xs text-dust ml-2">({w.nakshatra}, {w.score})</span>
+                  )}
+                  — {w.reason || 'Favourable timing.'}
+                </li>
+              )) : (
+                <li className="font-display text-star text-sm leading-[1.7] text-dust/70">
+                  Use the daily score calendar to identify high-score windows.
+                </li>
+              )}
+            </ul>
+          </div>
+          <div className="pt-4">
+            <p className="font-mono text-xs text-crimson/80 tracking-[0.15em] uppercase mb-3">
+              Caution Dates
             </p>
-          )}
+            <ul className="space-y-2">
+              {(s?.caution_dates ?? []).length > 0 ? (s?.caution_dates ?? []).map((c, i) => (
+                <li key={i} className="font-display text-star text-sm leading-[1.7]">
+                  <span className="font-mono text-xs text-crimson">{c.date}</span>
+                  {c.nakshatra != null && (
+                    <span className="font-mono text-xs text-dust ml-2">({c.nakshatra}, {c.score})</span>
+                  )}
+                  — {c.reason || 'Exercise caution.'}
+                </li>
+              )) : (
+                <li className="font-display text-star text-sm leading-[1.7] text-dust/70">
+                  Check the daily score calendar for lower-scoring days.
+                </li>
+              )}
+            </ul>
+          </div>
+          <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {(['career', 'money', 'health', 'relationships'] as const).map((key) => (
+              <div key={key} className="py-2 px-3 rounded-sm bg-cosmos border border-horizon/60">
+                <p className="font-mono text-xs text-dust uppercase mb-1">{key}</p>
+                <p className="font-display text-star text-sm leading-[1.6]">
+                  {(s?.domain_priorities?.[key] ?? '').trim() || DOMAIN_FALLBACK[key]}
+                </p>
+              </div>
+            ))}
+          </div>
+          <p className="font-display text-star text-base leading-[1.8] pt-6 italic">
+            {(s?.closing_paragraph ?? '').trim() || CLOSING_FALLBACK}
+          </p>
         </div>
       ) : (
         <p className="font-display text-star text-base leading-[1.8] mb-8">
-          {typeof synthesis === 'string' ? synthesis : ''}
+          {(typeof synthesis === 'string' ? synthesis : '').trim() || OPENING_FALLBACK}
         </p>
       )}
 
@@ -125,12 +148,17 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
             <button
               key={day?.date ?? i}
               onClick={() => onDayClick?.(i)}
-              className={`w-10 h-10 rounded-sm ${getColor(day?.score ?? 50)} border border-horizon hover:border-amber/40 transition-all flex items-center justify-center`}
+              className={`w-12 h-12 rounded-sm ${getColor(day?.score ?? 50)} border border-horizon/40 hover:border-amber/60 transition-all flex flex-col items-center justify-center gap-0.5`}
               title={`${day?.date ?? ''}: ${day?.score ?? 50}`}
             >
-              <span className={`font-mono text-xs font-medium ${getScoreColor(day?.score ?? 50)}`}>
-                {day?.score ?? 50}
+              <span className={`font-mono text-[11px] font-bold ${getScoreColor(day?.score ?? 50)}`}>
+                {getScorePrefix(day?.score ?? 50)}{day?.score ?? 50}
               </span>
+              {day?.date && (
+                <span className="font-mono text-[8px] text-dust/40">
+                  {new Date(day.date + 'T12:00:00').toLocaleDateString('en', { month: 'numeric', day: 'numeric' })}
+                </span>
+              )}
             </button>
           ))}
         </div>

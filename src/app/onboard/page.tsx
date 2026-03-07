@@ -16,6 +16,10 @@ interface FormData {
   birthCity: string;
   birthLat: number | null;
   birthLng: number | null;
+  currentCity: string;
+  currentLat: number | null;
+  currentLng: number | null;
+  currentTzOffset: number | null;
   reportType: 'free' | '7day' | 'monthly';
 }
 
@@ -23,6 +27,7 @@ interface GeoResult {
   display: string;
   lat: number;
   lng: number;
+  tzOffset?: number; // minutes east of UTC
 }
 
 // ── Loading overlay stages ────────────────────────────────────────────────────
@@ -148,12 +153,16 @@ interface Step2Props {
   geo: GeoResult | null;
   geoLoading: boolean;
   geoError: string | null;
-  onGeocode: (city: string) => void;
+  onGeocode: (city: string, isCurrent?: boolean) => void;
+  currentGeo: GeoResult | null;
+  currentGeoLoading: boolean;
+  currentGeoError: string | null;
   onNext: () => void;
   onBack: () => void;
 }
 
-function Step2({ form, update, geo, geoLoading, geoError, onGeocode, onNext, onBack }: Step2Props) {
+function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
+  currentGeo, currentGeoLoading, currentGeoError, onNext, onBack }: Step2Props) {
   return (
     <>
       <h1 className="font-display font-semibold text-star mb-2"
@@ -161,7 +170,7 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode, onNext, onB
         When and Where Did You Arrive?
       </h1>
       <p className="font-body text-dust text-sm mb-8">
-        Exact birth time gives precise Lagna.
+        Exact birth time gives precise Lagna. Current city gives accurate timing.
       </p>
 
       <div className="space-y-5">
@@ -186,23 +195,21 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode, onNext, onB
           </Field>
         </div>
 
-        <Field label="Birth City" hint="City, Country">
+        <Field label="Birth City" hint="For natal chart calculation">
           <input
             type="text"
             className="cosmic-input"
             placeholder="Lucknow, India"
             value={form.birthCity}
-            onChange={(e) => {
-              update('birthCity', e.target.value);
-            }}
-            onBlur={(e) => onGeocode(e.target.value)}
+            onChange={(e) => update('birthCity', e.target.value)}
+            onBlur={(e) => onGeocode(e.target.value, false)}
             required
           />
         </Field>
 
         {geoLoading && (
           <p className="font-mono text-xs text-amber/60 animate-pulse tracking-wide">
-            Locating coordinates…
+            Locating birth coordinates…
           </p>
         )}
         {geoError && !geoLoading && (
@@ -212,9 +219,7 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode, onNext, onB
             className="flex items-center gap-2 px-4 py-2.5 rounded-sm bg-crimson/10 border border-crimson/20"
           >
             <span className="text-crimson text-sm">⚠</span>
-            <span className="font-mono text-xs text-crimson tracking-wide">
-              {geoError}
-            </span>
+            <span className="font-mono text-xs text-crimson tracking-wide">{geoError}</span>
           </motion.div>
         )}
         {geo && !geoLoading && !geoError && (
@@ -226,6 +231,60 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode, onNext, onB
             <span className="text-emerald text-sm">📍</span>
             <span className="font-mono text-xs text-emerald tracking-wide">
               {geo.display} ({geo.lat.toFixed(2)}°, {geo.lng.toFixed(2)}°)
+            </span>
+          </motion.div>
+        )}
+
+        {/* Current city divider */}
+        <div className="pt-2 border-t border-horizon/30">
+          <Field label="Current City" hint="Where you live NOW — for accurate daily timing">
+            <input
+              type="text"
+              className="cosmic-input"
+              placeholder="Dubai, UAE (or same as birth city)"
+              value={form.currentCity}
+              onChange={(e) => update('currentCity', e.target.value)}
+              onBlur={(e) => {
+                if (e.target.value.trim() && e.target.value.trim() !== form.birthCity.trim()) {
+                  onGeocode(e.target.value, true);
+                }
+              }}
+            />
+          </Field>
+          <p className="font-mono text-[10px] text-dust/40 mt-1.5">
+            Hora times and scores are calculated for your current location. Leave blank to use birth city.
+          </p>
+        </div>
+
+        {currentGeoLoading && (
+          <p className="font-mono text-xs text-amber/60 animate-pulse tracking-wide">
+            Locating current city…
+          </p>
+        )}
+        {currentGeoError && !currentGeoLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-sm bg-crimson/10 border border-crimson/20"
+          >
+            <span className="text-crimson text-sm">⚠</span>
+            <span className="font-mono text-xs text-crimson tracking-wide">{currentGeoError}</span>
+          </motion.div>
+        )}
+        {currentGeo && !currentGeoLoading && !currentGeoError && form.currentCity.trim() !== form.birthCity.trim() && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-sm bg-emerald/10 border border-emerald/20"
+          >
+            <span className="text-emerald text-sm">🌍</span>
+            <span className="font-mono text-xs text-emerald tracking-wide">
+              {currentGeo.display} ({currentGeo.lat.toFixed(2)}°, {currentGeo.lng.toFixed(2)}°)
+              {currentGeo.tzOffset !== undefined && (
+                <span className="text-emerald/70 ml-2">
+                  · UTC{currentGeo.tzOffset >= 0 ? '+' : ''}{(currentGeo.tzOffset / 60).toFixed(1)}
+                </span>
+              )}
             </span>
           </motion.div>
         )}
@@ -338,13 +397,17 @@ export default function OnboardPage() {
     name: '', email: '',
     birthDate: '', birthTime: '', birthCity: '',
     birthLat: null, birthLng: null,
+    currentCity: '', currentLat: null, currentLng: null, currentTzOffset: null,
     reportType: 'free',
   });
-  const [geo, setGeo]               = useState<GeoResult | null>(null);
-  const [geoLoading, setGeoLoading] = useState(false);
-  const [geoError, setGeoError]     = useState<string | null>(null);
-  const [isLoading, setIsLoading]   = useState(false);
-  const [loadingStage, setLoadingStage] = useState(0);
+  const [geo, setGeo]                       = useState<GeoResult | null>(null);
+  const [geoLoading, setGeoLoading]         = useState(false);
+  const [geoError, setGeoError]             = useState<string | null>(null);
+  const [currentGeo, setCurrentGeo]         = useState<GeoResult | null>(null);
+  const [currentGeoLoading, setCurrentGeoLoading] = useState(false);
+  const [currentGeoError, setCurrentGeoError]     = useState<string | null>(null);
+  const [isLoading, setIsLoading]           = useState(false);
+  const [loadingStage, setLoadingStage]     = useState(0);
   const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Check for ?plan= URL param and pre-select report type
@@ -356,6 +419,19 @@ export default function OnboardPage() {
         setForm((prev) => ({ ...prev, reportType: plan }));
       }
     }
+  }, []);
+
+  // E2E: allow orchestrator to sync step 2 form state (controlled inputs + Playwright)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = (e: Event) => {
+      const d = (e as CustomEvent<{ birthDate?: string; birthTime?: string; birthCity?: string }>).detail;
+      if (d?.birthDate) update('birthDate', d.birthDate);
+      if (d?.birthTime) update('birthTime', d.birthTime);
+      if (d?.birthCity) update('birthCity', d.birthCity);
+    };
+    window.addEventListener('e2e-sync-step2', handler);
+    return () => window.removeEventListener('e2e-sync-step2', handler);
   }, []);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -371,38 +447,87 @@ export default function OnboardPage() {
     setForm((prev) => ({ ...prev, reportType: id }));
   }
 
-  async function geocodeCity(city: string) {
+  // Detect timezone offset (minutes east of UTC) for a given lat/lng
+  function detectTzOffset(lat: number, lng: number): number {
+    // Approximate: use browser timezone for current location, or estimate from longitude
+    // Each 15 degrees of longitude ≈ 1 hour
+    // Known offsets for common cities:
+    const knownTz: Record<string, number> = {
+      // Dubai / UAE: UTC+4 = 240 min
+      'dubai': 240, 'uae': 240, 'abu dhabi': 240, 'sharjah': 240,
+      // India: UTC+5:30 = 330 min
+      'india': 330, 'mumbai': 330, 'delhi': 330, 'bangalore': 330, 'lucknow': 330,
+      // Singapore / HK: UTC+8 = 480 min
+      'singapore': 480, 'hong kong': 480,
+      // London: UTC+0 or UTC+1 (BST)
+      'london': 0, 'uk': 0,
+      // New York: UTC-5 = -300 min
+      'new york': -300, 'nyc': -300,
+    };
+    // Return -based on browser timezone as best guess
+    return -(new Date().getTimezoneOffset());
+  }
+
+  async function geocodeCity(city: string, isCurrent = false) {
     if (!city.trim()) return;
-    setGeoLoading(true);
-    setGeoError(null);
-    setGeo(null);
-    
+
+    if (isCurrent) {
+      setCurrentGeoLoading(true);
+      setCurrentGeoError(null);
+      setCurrentGeo(null);
+    } else {
+      setGeoLoading(true);
+      setGeoError(null);
+      setGeo(null);
+    }
+
     try {
       const res = await fetch(`/api/geocode?city=${encodeURIComponent(city)}`);
-      
+
       if (!res.ok) {
-        setGeoError('Location lookup failed. You can continue without it.');
+        const err = 'Location lookup failed. You can continue without it.';
+        if (isCurrent) setCurrentGeoError(err); else setGeoError(err);
         return;
       }
-      
+
       const data = await res.json() as Array<{ lat: string; lon: string; display_name: string }>;
-      
+
       if (data[0]) {
         const lat  = parseFloat(data[0].lat);
         const lng  = parseFloat(data[0].lon);
         const name = data[0].display_name.split(',').slice(0, 3).join(',').trim();
-        setGeo({ display: name, lat, lng });
-        setForm((prev) => ({ ...prev, birthLat: lat, birthLng: lng }));
-        console.log('✅ Geocoded:', { city, lat, lng, display: name });
+        const displayLower = (name + ' ' + city).toLowerCase();
+        // Known offsets for common cities (Dubai +04:00 GMT = 240 min)
+        const knownTz: Record<string, number> = {
+          'dubai': 240, 'uae': 240, 'abu dhabi': 240, 'sharjah': 240,
+          'india': 330, 'mumbai': 330, 'delhi': 330, 'bangalore': 330,
+          'singapore': 480, 'hong kong': 480, 'london': 0, 'new york': -300,
+        };
+        let tzOffset = Math.round((lng / 15) * 60 / 30) * 30;
+        for (const [key, val] of Object.entries(knownTz)) {
+          if (displayLower.includes(key)) { tzOffset = val; break; }
+        }
+        const geoResult: GeoResult = { display: name, lat, lng, tzOffset };
+
+        if (isCurrent) {
+          setCurrentGeo(geoResult);
+          setForm((prev) => ({ ...prev, currentLat: lat, currentLng: lng, currentTzOffset: tzOffset }));
+          console.log('✅ Current city geocoded:', { city, lat, lng, tzOffset });
+        } else {
+          setGeo(geoResult);
+          setForm((prev) => ({ ...prev, birthLat: lat, birthLng: lng }));
+          console.log('✅ Birth city geocoded:', { city, lat, lng });
+        }
       } else {
-        setGeoError('City not found. Try a different spelling.');
-        console.warn('⚠️ No geocoding results for:', city);
+        const err = 'City not found. Try a different spelling.';
+        if (isCurrent) setCurrentGeoError(err); else setGeoError(err);
       }
     } catch (err) {
-      setGeoError('Location lookup failed. You can continue without it.');
+      const msg = 'Location lookup failed. You can continue without it.';
+      if (isCurrent) setCurrentGeoError(msg); else setGeoError(msg);
       console.error('❌ Geocoding error:', err);
     } finally {
-      setGeoLoading(false);
+      if (isCurrent) setCurrentGeoLoading(false); else setGeoLoading(false);
     }
   }
 
@@ -438,15 +563,30 @@ export default function OnboardPage() {
       clearInterval(stageTimer.current!);
     }
 
-    const params = new URLSearchParams({
+    // Use current city if provided, else fall back to birth city
+    const useCurrent = form.currentCity.trim() && form.currentLat != null && form.currentLng != null;
+    const displayCity = useCurrent ? `${form.currentCity} (born: ${form.birthCity})` : form.birthCity;
+
+    const paramsObj: Record<string, string> = {
       name: form.name,
       date: form.birthDate,
       time: form.birthTime,
-      city: form.birthCity,
+      city: displayCity,
       lat:  String(form.birthLat ?? ''),
       lng:  String(form.birthLng ?? ''),
       type: form.reportType,
-    });
+    };
+
+    if (useCurrent) {
+      paramsObj.currentCity = form.currentCity;
+      paramsObj.currentLat  = String(form.currentLat);
+      paramsObj.currentLng  = String(form.currentLng);
+      if (form.currentTzOffset != null) {
+        paramsObj.currentTz = String(form.currentTzOffset);
+      }
+    }
+
+    const params = new URLSearchParams(paramsObj);
 
     const finalUrl = `/report/${Date.now()}?${params.toString()}`;
     console.log('📍 Redirecting to:', finalUrl);
@@ -516,6 +656,9 @@ export default function OnboardPage() {
                   geoLoading={geoLoading}
                   geoError={geoError}
                   onGeocode={geocodeCity}
+                  currentGeo={currentGeo}
+                  currentGeoLoading={currentGeoLoading}
+                  currentGeoError={currentGeoError}
                   onNext={next}
                   onBack={back}
                 />

@@ -38,6 +38,7 @@ export class EphemerisAgent {
   constructor(baseUrl?: string) {
     this.baseUrl =
       baseUrl ??
+      process.env.EPHEMERIS_SERVICE_URL ??
       process.env.EPHEMERIS_API_URL ??
       'http://localhost:8000';
   }

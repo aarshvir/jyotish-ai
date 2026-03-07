@@ -1,7 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
 interface HourData {
   time: string;
@@ -22,182 +21,166 @@ interface HourlyChartProps {
 }
 
 const PLANET_SYMBOLS: Record<string, string> = {
-  Sun: '☉',
-  Moon: '☽',
-  Mars: '♂',
-  Mercury: '☿',
-  Jupiter: '♃',
-  Venus: '♀',
-  Saturn: '♄',
+  Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿',
+  Jupiter: '♃', Venus: '♀', Saturn: '♄',
 };
 
-const CHOGHADIYA_COLORS: Record<string, string> = {
-  Amrit: 'text-emerald',
-  Labh: 'text-emerald',
-  Shubh: 'text-emerald',
-  Chal: 'text-amber',
-  Rog: 'text-crimson',
-  Kaal: 'text-crimson',
-  Udveg: 'text-crimson',
-};
+function toMinutes(t: string): number {
+  const [h, m] = (t || '00:00').split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function getBarColor(score: number, isRahuKaal: boolean): string {
+  if (isRahuKaal) return '#dc2626'; // crimson
+  if (score >= 65) return '#10b981'; // emerald
+  if (score >= 45) return '#f59e0b'; // amber
+  return '#ef4444'; // red
+}
+
+function getBarStyle(hour: HourData): React.CSSProperties {
+  const color = getBarColor(hour.score, hour.is_rahu_kaal);
+  if (hour.is_rahu_kaal) {
+    return {
+      background: `repeating-linear-gradient(45deg, ${color}, ${color} 3px, #1a0505 3px, #1a0505 7px)`,
+    };
+  }
+  return { backgroundColor: color };
+}
+
+const MAX_BAR_HEIGHT = 180; // px
 
 export function HourlyChart({ hours }: HourlyChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-
-  const getBarColor = (hour: HourData) => {
-    if (hour.score >= 70) return 'bg-emerald';
-    if (hour.score >= 50) return 'bg-amber';
-    return 'bg-crimson';
-  };
-
-  const getBarHeight = (score: number) => {
-    const min = 6;
-    const max = 100;
-    return Math.max(min, (score / 100) * max);
-  };
-
-  const handleMouseEnter = (index: number, event: React.MouseEvent) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    setTooltipPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.top,
-    });
-    setHoveredIndex(index);
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredIndex(null);
-  };
-
-  // Show time labels for every 3 hours
-  const timeLabels = (hours ?? []).filter((_, i) => i % 3 === 0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   if (!hours?.length) {
     return (
-      <div className="py-8 text-center font-mono text-xs text-dust">
-        Hourly data unavailable for this day.
+      <div className="py-12 text-center">
+        <p className="font-mono text-xs text-dust/50">No hourly data to display.</p>
       </div>
     );
   }
 
+  const sortedHours = [...hours].sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
+
+  // Time label every ~4 slots or at most 6 labels
+  const labelStep = Math.max(1, Math.floor(sortedHours.length / 6));
+  const timeLabels = sortedHours.map((h, i) => ({
+    hour: h,
+    showLabel: i % labelStep === 0 || i === sortedHours.length - 1,
+    index: i,
+  }));
+
   return (
-    <div className="relative">
-      {/* Chart */}
-      <div className="flex items-end gap-[2px] h-[120px] mb-4">
-        {(hours ?? []).map((hour, i) => (
-          <motion.div
-            key={i}
-            initial={{ scaleY: 0 }}
-            animate={{ scaleY: 1 }}
-            transition={{ duration: 0.4, delay: i * 0.02, ease: 'easeOut' }}
-            className="relative flex-1 origin-bottom cursor-pointer group"
-            style={{ height: `${getBarHeight(hour.score)}px` }}
-            onMouseEnter={(e) => handleMouseEnter(i, e)}
-            onMouseLeave={handleMouseLeave}
-          >
+    <div ref={containerRef} className="relative select-none">
+      {/* Chart area */}
+      <div
+        className="flex items-end gap-[2px] w-full"
+        style={{ height: `${MAX_BAR_HEIGHT + 4}px` }}
+      >
+        {sortedHours.map((hour, i) => {
+          const barH = Math.max(6, (hour.score / 100) * MAX_BAR_HEIGHT);
+          const isHovered = hoveredIndex === i;
+
+          return (
             <div
-              className={`w-full h-full rounded-t-sm ${getBarColor(hour)} ${
-                hour.is_rahu_kaal
-                  ? 'relative overflow-hidden'
-                  : ''
-              }`}
+              key={i}
+              className="flex-1 relative cursor-pointer transition-opacity"
+              style={{ height: `${barH}px`, opacity: isHovered ? 1 : 0.85 }}
+              onMouseEnter={() => setHoveredIndex(i)}
+              onMouseLeave={() => setHoveredIndex(null)}
             >
-              {hour.is_rahu_kaal && (
-                <div
-                  className="absolute inset-0 opacity-30"
-                  style={{
-                    backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,0.3) 3px, rgba(0,0,0,0.3) 6px)',
-                  }}
-                />
-              )}
+              <div
+                className="w-full h-full rounded-t-sm"
+                style={{
+                  ...getBarStyle(hour),
+                  transform: isHovered ? 'scaleY(1.05)' : 'scaleY(1)',
+                  transformOrigin: 'bottom',
+                  transition: 'transform 0.15s ease',
+                }}
+              />
             </div>
-          </motion.div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* Time labels */}
-      <div className="flex justify-between px-1">
-        {timeLabels.map((hour, i) => (
-          <span key={i} className="font-mono text-[9px] text-dust">
-            {hour.time}
-          </span>
+      {/* X-axis time labels */}
+      <div className="flex mt-2">
+        {sortedHours.map((hour, i) => (
+          <div key={i} className="flex-1 relative">
+            {timeLabels[i]?.showLabel && (
+              <span
+                className="absolute left-0 font-mono text-[8px] text-dust/60 whitespace-nowrap"
+                style={{ transform: 'translateX(-50%)' }}
+              >
+                {hour.time?.slice(0, 5)}
+              </span>
+            )}
+          </div>
         ))}
       </div>
 
       {/* Tooltip */}
-      {hoveredIndex !== null && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="fixed z-50 bg-cosmos border border-horizon rounded-sm shadow-xl p-4 min-w-[220px] max-w-[340px] pointer-events-none"
-          style={{
-            left: `${tooltipPosition.x}px`,
-            top: `${tooltipPosition.y - 10}px`,
-            transform: 'translate(-50%, -100%)',
-          }}
-        >
-          {/* Time */}
-          <div className="font-mono text-sm text-star font-semibold mb-3">
-            {hours[hoveredIndex].time} – {hours[hoveredIndex].end_time}
-          </div>
+      {hoveredIndex !== null && (() => {
+        const h = sortedHours[hoveredIndex];
+        if (!h) return null;
+        const scoreColor = h.is_rahu_kaal ? '#dc2626' : h.score >= 65 ? '#10b981' : h.score >= 45 ? '#f59e0b' : '#ef4444';
 
-          {/* Hora planet */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-amber text-base">
-              {hours[hoveredIndex].hora_planet_symbol || PLANET_SYMBOLS[hours[hoveredIndex].hora_planet] || ''}
-            </span>
-            <span className="font-mono text-xs text-dust">
-              {hours[hoveredIndex].hora_planet} Hora
-            </span>
-          </div>
-
-          {/* Choghadiya */}
-          <div className="flex items-center gap-2 mb-2">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                hours[hoveredIndex].score >= 70
-                  ? 'bg-emerald'
-                  : hours[hoveredIndex].score >= 50
-                  ? 'bg-amber'
-                  : 'bg-crimson'
-              }`}
-            />
-            <span
-              className={`font-mono text-xs ${
-                CHOGHADIYA_COLORS[hours[hoveredIndex].choghadiya] || 'text-dust'
-              }`}
-            >
-              {hours[hoveredIndex].choghadiya}
-            </span>
-          </div>
-
-          {/* Transit Lagna */}
-          {hours[hoveredIndex].transit_lagna && (
-            <div className="font-mono text-xs text-dust mb-3">
-              {hours[hoveredIndex].transit_lagna} (House {hours[hoveredIndex].transit_lagna_house})
-            </div>
-          )}
-
-          {/* Score */}
+        return (
           <div
-            className={`font-display text-3xl font-semibold mb-3 ${
-              hours[hoveredIndex].score >= 70
-                ? 'text-emerald'
-                : hours[hoveredIndex].score >= 50
-                ? 'text-amber'
-                : 'text-crimson'
-            }`}
+            className="absolute bottom-full left-1/2 mb-3 z-50 pointer-events-none"
+            style={{
+              transform: `translateX(calc(-50% + ${(hoveredIndex - sortedHours.length / 2) * 8}px))`,
+            }}
           >
-            {hours[hoveredIndex].score}
+            <div className="bg-cosmos border border-horizon rounded-sm shadow-xl p-4 min-w-[220px] max-w-[300px]">
+              <div className="font-mono text-xs text-amber font-semibold mb-2">
+                {h.time?.slice(0, 5)} – {h.end_time?.slice(0, 5)}
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-amber">
+                  {h.hora_planet_symbol || PLANET_SYMBOLS[h.hora_planet] || ''}
+                </span>
+                <span className="font-mono text-xs text-dust">{h.hora_planet} Hora</span>
+              </div>
+              {h.transit_lagna && (
+                <div className="font-mono text-xs text-dust/70 mb-1">
+                  {h.transit_lagna} · H{h.transit_lagna_house}
+                </div>
+              )}
+              <div className="font-mono text-xs text-dust/60 mb-2">{h.choghadiya}</div>
+              <div className="font-display text-2xl font-bold mb-2" style={{ color: scoreColor }}>
+                {h.is_rahu_kaal ? '⚠ ' : ''}{h.score}
+              </div>
+              {h.commentary && (
+                <p className="font-display text-xs text-star/80 italic leading-[1.6]">
+                  {h.commentary.slice(0, 120)}{h.commentary.length > 120 ? '…' : ''}
+                </p>
+              )}
+            </div>
           </div>
+        );
+      })()}
 
-          {/* Commentary */}
-          <p className="font-display text-sm text-star italic leading-[1.6]">
-            {hours[hoveredIndex].commentary || 'Hora and choghadiya quality determine this window\'s potential.'}
-          </p>
-        </motion.div>
-      )}
+      {/* Legend */}
+      <div className="flex items-center gap-4 mt-6 pt-4 border-t border-horizon/30">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#10b981' }} />
+          <span className="font-mono text-[10px] text-dust/60">Peak (≥65)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#f59e0b' }} />
+          <span className="font-mono text-[10px] text-dust/60">Neutral (45–65)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#ef4444' }} />
+          <span className="font-mono text-[10px] text-dust/60">Caution (&lt;45)</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-sm" style={{ background: 'repeating-linear-gradient(45deg, #dc2626, #dc2626 3px, #1a0505 3px, #1a0505 7px)' }} />
+          <span className="font-mono text-[10px] text-dust/60">Rahu Kaal</span>
+        </div>
+      </div>
     </div>
   );
 }

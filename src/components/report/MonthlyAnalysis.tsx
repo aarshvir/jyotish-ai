@@ -21,7 +21,28 @@ interface MonthlyAnalysisProps {
   months: MonthData[];
 }
 
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
 export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
+  const today = new Date();
+  const monthsData = Array.from({ length: 12 }, (_, i) => {
+    const m = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    const label = `${MONTH_NAMES[m.getMonth()]} ${m.getFullYear()}`;
+    const ex = (months ?? [])[i];
+    return {
+      month: ex?.month ?? label,
+      score: ex?.score ?? ex?.overall_score ?? 65,
+      overall_score: ex?.overall_score ?? ex?.score ?? 65,
+      career_score: ex?.career_score,
+      money_score: ex?.money_score,
+      health_score: ex?.health_score,
+      love_score: ex?.love_score,
+      theme: (ex?.theme ?? '').trim() || `${label} energy arc.`,
+      key_transits: ex?.key_transits ?? [],
+      commentary: (ex?.commentary ?? '').trim() || `Monthly overview for ${label}.`,
+      weekly_scores: ex?.weekly_scores ?? [65, 65, 65, 65],
+    };
+  });
   const getColor = (score: number) => {
     if (score >= 70) return 'bg-emerald';
     if (score >= 50) return 'bg-amber';
@@ -48,7 +69,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       </h2>
 
       <div className="space-y-6">
-        {(months ?? []).map((month, i) => (
+        {monthsData.map((month, i) => (
           <motion.div
             key={i}
             initial={{ opacity: 0, y: 20 }}

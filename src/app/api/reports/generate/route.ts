@@ -1,7 +1,7 @@
+export const maxDuration = 900;
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-
-export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
   try {
@@ -123,6 +123,27 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', birthChart.id);
 
+    // Step 4: Commentary (dynamic generation with fallbacks)
+    let commentary: Record<string, unknown> = {};
+    try {
+      const commentaryRes = await fetch(`${baseUrl}/api/generate-commentary`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          natalChart,
+          nativity: nativityAnalysis,
+          forecast: forecastAnalysis,
+          reportType: report_type || 'free',
+        }),
+      });
+      if (commentaryRes.ok) {
+        const commentaryRaw = await commentaryRes.json();
+        commentary = commentaryRaw.commentary || commentaryRaw.data || commentaryRaw;
+      }
+    } catch (commentaryErr: unknown) {
+      console.warn('Commentary fetch failed (non-fatal):', commentaryErr);
+    }
+
     const { data: report, error: reportError } = await supabase
       .from('reports')
       .insert({
@@ -133,6 +154,7 @@ export async function POST(request: NextRequest) {
         output_json: {
           nativity: nativityAnalysis,
           forecast: forecastAnalysis,
+          commentary,
         },
       })
       .select()

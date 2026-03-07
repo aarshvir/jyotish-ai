@@ -12,12 +12,25 @@ import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 import { DailyAnalysis } from '@/components/report/DailyAnalysis';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { ReportErrorBoundary } from '@/components/ErrorBoundary';
+import { validateReportData } from '@/lib/validation/reportValidation';
 
-const LOADING_STAGES = [
-  'Computing sidereal positions via Swiss Ephemeris...',
-  'Analyzing natal architecture...',
-  'Calculating 30 days of hora and choghadiya...',
-  'Generating grandmaster interpretations...',
+const STEPS = [
+  'Calculating planetary positions',
+  'Analysing birth chart',
+  'Scoring 126 hourly windows',
+  'Writing daily forecasts',
+  'Deepening natal analysis',
+  'Writing hourly commentary (day 1 of 7)',
+  'Writing hourly commentary (day 2 of 7)',
+  'Writing hourly commentary (day 3 of 7)',
+  'Writing hourly commentary (day 4 of 7)',
+  'Writing hourly commentary (day 5 of 7)',
+  'Writing hourly commentary (day 6 of 7)',
+  'Writing hourly commentary (day 7 of 7)',
+  'Generating monthly forecast (months 1-6)',
+  'Generating monthly forecast (months 7-12)',
+  'Writing period synthesis',
+  'Finalising report',
 ];
 
 function ReportContent() {
@@ -29,23 +42,103 @@ function ReportContent() {
   const lat = params.get('lat') ?? '';
   const lng = params.get('lng') ?? '';
   const type = params.get('type') ?? 'free';
+  // Current location params (may differ from birth city)
+  const currentLat = params.get('currentLat') ?? lat;
+  const currentLng = params.get('currentLng') ?? lng;
+  const currentCity = params.get('currentCity') ?? city;
+  const currentTzOffset = params.get('currentTz') ? parseInt(params.get('currentTz')!) : null;
 
   const [isLoading, setIsLoading] = useState(true);
-  const [loadingStage, setLoadingStage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [reportData, setReportData] = useState<any>(null);
   const [commentaryPartial, setCommentaryPartial] = useState(false);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
   const [copyLinkFeedback, setCopyLinkFeedback] = useState(false);
+  const [copyLinkError, setCopyLinkError] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [stepMessage, setStepMessage] = useState('');
+  const [stepDetail, setStepDetail] = useState('');
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const hasFetched = useRef(false);
 
-  const copyReportLink = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      navigator.clipboard.writeText(window.location.href);
-      setCopyLinkFeedback(true);
-      setTimeout(() => setCopyLinkFeedback(false), 2000);
+  const copyShareLink = useCallback(async () => {
+    if (typeof window === 'undefined') return;
+    const url = window.location.href;
+    setCopyLinkError(null);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+        setCopyLinkFeedback(true);
+        setTimeout(() => setCopyLinkFeedback(false), 2500);
+      } else {
+        // Fallback: execCommand for older browsers or insecure contexts
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (ok) {
+          setCopyLinkFeedback(true);
+          setTimeout(() => setCopyLinkFeedback(false), 2500);
+        } else {
+          setCopyLinkError('Clipboard unavailable. Please copy the URL from the address bar.');
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Copy failed';
+      setCopyLinkError(msg);
     }
   }, []);
+
+  const downloadPdf = useCallback(async (mergedDaysForPdf: any[]) => {
+    if (!reportData) return;
+    setPdfError(null);
+    setPdfLoading(true);
+    try {
+      const natalChart = reportData.nativity?.natal_chart ?? reportData.natalChart;
+      const commentary = reportData.commentary ?? {
+        nativity_summary: reportData.nativity ? { lagna_analysis: reportData.nativity.lagna_analysis, current_dasha_interpretation: reportData.nativity.current_dasha_interpretation } : {},
+        monthly: reportData.months ?? [],
+        weekly: reportData.weeks ?? [],
+        daily: reportData.days ?? [],
+        period_synthesis: reportData.synthesis ?? {},
+      };
+      const payload = {
+        name,
+        date,
+        time,
+        city,
+        natalChart,
+        commentary,
+        mergedDays: mergedDaysForPdf,
+      };
+      const res = await fetch('/api/report/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error ?? `PDF failed (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Jyotish_AI_Report_${name.replace(/\s+/g, '_')}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'PDF download failed';
+      setPdfError(msg);
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [reportData, name, date, time, city]);
 
   const handleDaySelectFromCalendar = useCallback((index: number) => {
     setActiveDayIndex(index);
@@ -55,22 +148,63 @@ function ReportContent() {
   useEffect(() => {
     if (hasFetched.current) return;
     hasFetched.current = true;
-
     console.log('Report page params:', { name, date, time, city, lat, lng, type });
-    fetchReportData();
+    generateReport();
   }, []);
 
-  async function fetchReportData() {
+  async function resilientFetch(url: string, options: RequestInit, retries = 3, delayMs = 2000): Promise<Response> {
+    for (let i = 0; i < retries; i++) {
+      try {
+        const res = await fetch(url, options);
+        return res;
+      } catch (err: any) {
+        const isNetworkError = err.name === 'TypeError' || err.message?.includes('Failed to fetch') || err.message?.includes('SUSPENDED') || err.message?.includes('aborted');
+        if (isNetworkError && i < retries - 1) {
+          console.warn(`Network error on ${url}, retry ${i + 1}/${retries} in ${delayMs}ms...`);
+          await new Promise(r => setTimeout(r, delayMs * (i + 1)));
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw new Error(`Failed to fetch ${url} after ${retries} retries`);
+  }
+
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  function formatDayLabel(dateStr: string): string {
+    try {
+      const d = new Date(dateStr + 'T12:00:00Z');
+      const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${names[d.getUTCDay()]} · ${months[d.getUTCMonth()]} ${d.getUTCDate()}`;
+    } catch {
+      return dateStr;
+    }
+  }
+
+  async function generateReport() {
     try {
       setIsLoading(true);
       setError(null);
-
       const birthLat = parseFloat(lat) || 0;
       const birthLng = parseFloat(lng) || 0;
+      const dayCount = type === 'monthly' ? 30 : 7;
+      const timezoneOffset = currentTzOffset ?? -new Date().getTimezoneOffset();
+      const cLat = parseFloat(currentLat) || birthLat;
+      const cLng = parseFloat(currentLng) || birthLng;
+      const SIGNS_FOR_LAGNA = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+      const today = new Date();
+      const dateRange: string[] = Array.from({ length: dayCount }, (_, i) => {
+        const d = new Date(today.getTime() + i * 24 * 60 * 60 * 1000);
+        return d.toISOString().split('T')[0];
+      });
 
-      // Step 1: Ephemeris
-      setLoadingStage(0);
-      const ephemerisRes = await fetch('/api/agents/ephemeris', {
+      // ── STEP 1: Ephemeris ──
+      setStepMessage('Reading the stars...');
+      setStepDetail('Calculating planetary positions');
+      setCurrentStepIndex(0);
+      const ephemerisRes = await resilientFetch('/api/agents/ephemeris', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,208 +216,549 @@ function ReportContent() {
           birth_lng: birthLng,
         }),
       });
-
       if (!ephemerisRes.ok) {
         const ephErr = await ephemerisRes.json().catch(() => ({}));
         throw new Error(ephErr.error || 'Ephemeris calculation failed');
       }
       const ephemerisResult = await ephemerisRes.json();
-      const natalChart = ephemerisResult.data || ephemerisResult;
+      const ephemerisData = ephemerisResult.data || ephemerisResult;
 
-      // Step 2: Nativity (non-fatal — report renders without it)
-      setLoadingStage(1);
-      let nativity: any = null;
+      // ── STEP 2: Nativity ──
+      setStepMessage('Analysing your birth chart...');
+      setStepDetail('Extended thinking: mapping yogas and house lordships');
+      setCurrentStepIndex(1);
+      let nativityProfile: any = null;
       try {
-        const nativityRes = await fetch('/api/agents/nativity', {
+        const nativityRes = await resilientFetch('/api/agents/nativity', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ natalChart }),
-        });
+          body: JSON.stringify({ natalChart: ephemerisData }),
+        }, 2, 3000);
         if (nativityRes.ok) {
           const nativityRaw = await nativityRes.json();
-          nativity = nativityRaw.data || nativityRaw;
-        } else {
-          const natErr = await nativityRes.json().catch(() => ({}));
-          console.error('Nativity API error (non-fatal):', natErr.error || nativityRes.status);
+          nativityProfile = nativityRaw.data || nativityRaw;
         }
       } catch (natErr: any) {
         console.error('Nativity fetch failed (non-fatal):', natErr.message);
       }
 
-      // Step 3: Forecast
-      setLoadingStage(2);
-      const today = new Date();
-      const dateFrom = today.toISOString().split('T')[0];
-      const dateTo = new Date(today.getTime() + 29 * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0];
+      const natal_lagna_sign_index = Math.max(0, SIGNS_FOR_LAGNA.indexOf(ephemerisData?.lagna ?? ''));
 
-      const timezoneOffset = -(new Date().getTimezoneOffset());
+      // ── STEP 3: Daily grids ──
+      setStepMessage('Calculating hourly scores...');
+      setStepDetail('Computing 18 slots × ' + dayCount + ' days');
+      setCurrentStepIndex(2);
+      const dailyGridResults = await Promise.all(
+        dateRange.map(async (d) => {
+          try {
+            const res = await resilientFetch('/api/agents/daily-grid', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ date: d, currentLat: cLat, currentLng: cLng, timezoneOffset, natal_lagna_sign_index }),
+            }, 2, 2000);
+            if (!res.ok) return null;
+            return await res.json();
+          } catch {
+            return null;
+          }
+        })
+      );
 
-      const forecastRes = await fetch('/api/agents/forecast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          natalChart,
-          birthLat,
-          birthLng,
-          currentLat: birthLat,
-          currentLng: birthLng,
-          timezoneOffset,
-          dateFrom,
-          dateTo,
-        }),
+      const forecastDays: any[] = dailyGridResults.map((r, i) => {
+        if (!r) {
+          return {
+            date: dateRange[i],
+            panchang: {},
+            rahu_kaal: { start: '', end: '' },
+            day_score: 50,
+            slots: Array.from({ length: 18 }, (_, si) => ({
+              slot_index: si,
+              display_label: `${String(6 + si).padStart(2, '0')}:00–${String(7 + si).padStart(2, '0')}:00`,
+              dominant_hora: 'Moon',
+              dominant_choghadiya: 'Chal',
+              transit_lagna: '',
+              transit_lagna_house: 1,
+              is_rahu_kaal: false,
+              score: 50,
+            })),
+          };
+        }
+        const rahu = r.rahu_kaal ?? {};
+        return {
+          date: r.date ?? dateRange[i],
+          panchang: r.panchang ?? {},
+          rahu_kaal: { start: rahu.start ?? '', end: rahu.end ?? '' },
+          day_score: r.day_score ?? 50,
+          slots: (r.slots ?? []).map((s: any) => ({
+            slot_index: s.slot_index,
+            display_label: s.display_label ?? '06:00–07:00',
+            dominant_hora: s.dominant_hora ?? s.hora_ruler ?? '',
+            dominant_choghadiya: s.dominant_choghadiya ?? s.choghadiya ?? '',
+            transit_lagna: s.transit_lagna ?? '',
+            transit_lagna_house: s.transit_lagna_house ?? 1,
+            is_rahu_kaal: s.is_rahu_kaal ?? false,
+            score: s.score ?? 50,
+            start_iso: s.start_iso,
+            end_iso: s.end_iso,
+            midpoint_iso: s.midpoint_iso,
+          })),
+        };
       });
 
-      if (!forecastRes.ok) {
-        const forecastErr = await forecastRes.json().catch(() => ({}));
-        throw new Error(forecastErr.error || 'Forecast generation failed');
-      }
-      const forecastRaw = await forecastRes.json();
-      const forecast = forecastRaw.data || forecastRaw;
+      const nativityData: any = {
+        natal_chart: ephemerisData,
+        lagna_analysis: nativityProfile?.lagna_analysis ?? '',
+        current_dasha_interpretation: nativityProfile?.current_dasha_interpretation ?? '',
+        key_yogas: nativityProfile?.yogas ?? [],
+        functional_benefics: nativityProfile?.functional_benefics ?? [],
+        functional_malefics: nativityProfile?.functional_malefics ?? [],
+        profile: nativityProfile,
+      };
+      const dasha = ephemerisData?.current_dasha ?? {};
+      const mahadasha = dasha.mahadasha ?? 'Unknown';
+      const antardasha = dasha.antardasha ?? 'Unknown';
 
-      // Step 4: Commentary (non-fatal — report renders without it)
-      setLoadingStage(3);
-      let commentary: any = {};
+      // ── STEP 4: Daily overviews ──
+      setStepMessage('Writing daily forecasts...');
+      setStepDetail('Generating ' + dayCount + ' day overview paragraphs');
+      setCurrentStepIndex(3);
       try {
-        const commentaryRes = await fetch('/api/generate-commentary', {
+        const overviewRes = await fetch('/api/commentary/daily-overviews', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ natalChart, nativity, forecast, reportType: type }),
+          body: JSON.stringify({
+            lagnaSign: ephemerisData.lagna,
+            mahadasha,
+            antardasha,
+            days: forecastDays.map((d) => ({
+              date: d.date,
+              panchang: d.panchang,
+              day_score: d.day_score,
+              rahu_kaal: d.rahu_kaal,
+              peak_slots: d.slots.filter((s: any) => s.score >= 75).slice(0, 3).map((s: any) => ({
+                display_label: s.display_label,
+                dominant_hora: s.dominant_hora,
+                dominant_choghadiya: s.dominant_choghadiya,
+                score: s.score,
+              })),
+            })),
+          }),
         });
-        if (commentaryRes.ok) {
-          const commentaryRaw = await commentaryRes.json();
-          commentary = commentaryRaw.commentary || commentaryRaw.data || commentaryRaw;
-          if (commentary?._error) {
-            console.warn('Commentary returned with partial error:', commentary._error);
-            setCommentaryPartial(true);
-          }
-        } else {
-          console.error('Commentary API non-2xx:', commentaryRes.status);
-          setCommentaryPartial(true);
+        if (overviewRes.ok) {
+          const overviewData = await overviewRes.json();
+          overviewData.days?.forEach((od: any) => {
+            const day = forecastDays.find((d: any) => d.date === od.date);
+            if (day) {
+              day.day_theme = od.day_theme;
+              day.day_overview = od.day_overview;
+            }
+          });
         }
-      } catch (commentaryErr: any) {
-        console.error('Commentary fetch failed (non-fatal):', commentaryErr.message);
+      } catch (e) {
+        console.error('[STEP4] Failed, continuing:', e instanceof Error ? e.message : String(e));
         setCommentaryPartial(true);
       }
 
-      setReportData({ natalChart, nativity, forecast, commentary });
+      // ── STEP 5: Nativity text ──
+      setStepMessage('Deepening natal analysis...');
+      setStepDetail('Writing lagna and dasha interpretation');
+      setCurrentStepIndex(4);
+      try {
+        const natTextRes = await fetch('/api/commentary/nativity-text', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lagnaSign: ephemerisData.lagna,
+            lagnaDegreee: ephemerisData.lagna_degree,
+            moonSign: ephemerisData.planets?.Moon?.sign,
+            moonNakshatra: ephemerisData.planets?.Moon?.nakshatra ?? ephemerisData.moon_nakshatra,
+            mahadasha,
+            antardasha,
+            md_end: dasha.end_date,
+            ad_end: dasha.end_date,
+            planets: ephemerisData.planets ?? {},
+          }),
+        });
+        if (natTextRes.ok) {
+          const natTextData = await natTextRes.json();
+          if (natTextData.lagna_analysis) nativityData.lagna_analysis = natTextData.lagna_analysis;
+          if (natTextData.dasha_interpretation) nativityData.current_dasha_interpretation = natTextData.dasha_interpretation;
+        }
+      } catch (e) {
+        console.error('[STEP5] Failed, continuing:', e instanceof Error ? e.message : String(e));
+      }
+
+      // ── STEP 6: Hourly commentary (sequential) ──
+      try {
+        for (let i = 0; i < forecastDays.length; i++) {
+          const day = forecastDays[i];
+          setStepMessage('Writing hourly commentary...');
+          setStepDetail(`Day ${i + 1} of ${forecastDays.length}: ${day.date} (18 slots)`);
+          setCurrentStepIndex(5 + i);
+          try {
+            const hourlyRes = await fetch('/api/commentary/hourly-day', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                lagnaSign: ephemerisData.lagna,
+                mahadasha,
+                antardasha,
+                dayIndex: i,
+                date: day.date,
+                slots: day.slots.map((s: any) => ({
+                  slot_index: s.slot_index,
+                  display_label: s.display_label,
+                  dominant_hora: s.dominant_hora,
+                  dominant_choghadiya: s.dominant_choghadiya,
+                  transit_lagna: s.transit_lagna,
+                  transit_lagna_house: s.transit_lagna_house,
+                  is_rahu_kaal: s.is_rahu_kaal,
+                  score: s.score,
+                })),
+              }),
+            });
+            if (hourlyRes.ok) {
+              const hourlyData = await hourlyRes.json();
+              if (hourlyData.partial) {
+                console.warn(`[HOURLY] Day ${i + 1} partial: only ${hourlyData.slots?.length ?? 0} of 18 slots`);
+              }
+              hourlyData.slots?.forEach((hs: any) => {
+                const slot = day.slots.find((s: any) => s.slot_index === hs.slot_index);
+                if (slot) {
+                  slot.commentary = hs.commentary ?? '';
+                  const firstSent = hs.commentary?.split('.')[0]?.trim();
+                  slot.commentary_short = (hs.commentary_short && hs.commentary_short.trim()) ? hs.commentary_short : (firstSent ? firstSent + '.' : '');
+                }
+              });
+              console.log(`[HOURLY] Day ${i + 1} done, slots with commentary: ${day.slots.filter((s: any) => s.commentary).length}`);
+            }
+          } catch (err) {
+            console.error(`[HOURLY] Day ${i + 1} failed:`, err);
+            day.slots.forEach((slot: any) => {
+              if (!slot.commentary) {
+                slot.commentary = `${slot.dominant_hora} hora, ${slot.dominant_choghadiya} choghadiya. Score: ${slot.score}/100.` + (slot.is_rahu_kaal ? ' ⚠ Rahu Kaal — avoid new initiations.' : '');
+                slot.commentary_short = slot.commentary.split('.')[0] + '.';
+              }
+            });
+          }
+          if (i < forecastDays.length - 1) await sleep(4000);
+        }
+        console.log('[STEP6] Complete');
+      } catch (err) {
+        console.error('[STEP6] Failed, continuing:', err instanceof Error ? err.message : String(err));
+      }
+
+      // ── STEP 7: Monthly (2 calls) ──
+      let allMonthsData: any[] = [];
+      try {
+        setStepMessage('Generating monthly forecast...');
+        setStepDetail('Months 1-6 of 2026');
+        setCurrentStepIndex(12);
+        const startDate = new Date(forecastDays[0].date);
+        const allMonths = Array.from({ length: 12 }, (_, i) => {
+          const d = new Date(startDate);
+          d.setMonth(d.getMonth() + i);
+          return {
+            month_label: d.toLocaleString('default', { month: 'long', year: 'numeric' }),
+            month_index: i,
+            key_transits_hint: '',
+          };
+        });
+
+        let months1Data: any[] = [];
+        let months2Data: any[] = [];
+        try {
+          const months1Res = await fetch('/api/commentary/months-first', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              lagnaSign: ephemerisData.lagna,
+              mahadasha,
+              antardasha,
+              startMonth: forecastDays[0].date.substring(0, 7),
+              months: allMonths.slice(0, 6),
+            }),
+          });
+          if (months1Res.ok) months1Data = (await months1Res.json()).months ?? [];
+        } catch (e) {
+          console.warn('Months 1-6 failed:', e);
+        }
+        await sleep(4000);
+        setStepDetail('Months 7-12');
+        setCurrentStepIndex(13);
+        try {
+          const months2Res = await fetch('/api/commentary/months-second', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              lagnaSign: ephemerisData.lagna,
+              mahadasha,
+              antardasha,
+              startMonth: forecastDays[0].date.substring(0, 7),
+              months: allMonths.slice(6, 12),
+            }),
+          });
+          if (months2Res.ok) months2Data = (await months2Res.json()).months ?? [];
+        } catch (e) {
+          console.warn('Months 7-12 failed:', e);
+        }
+
+        allMonthsData = [...months1Data, ...months2Data].map((m: any) => ({
+          month: m.month_label ?? m.month ?? '',
+          score: m.overall_score ?? m.score ?? 65,
+          overall_score: m.overall_score ?? m.score ?? 65,
+          career_score: m.career_score ?? 65,
+          money_score: m.money_score ?? 65,
+          health_score: m.health_score ?? 65,
+          love_score: m.love_score ?? 65,
+          theme: (m.theme ?? '').trim() || '',
+          key_transits: m.key_transits ?? [],
+          commentary: (m.analysis ?? m.commentary ?? '').trim() || '',
+          weekly_scores: m.weekly_scores ?? [65, 65, 65, 65],
+          domain_scores: {
+            career: m.career_score ?? 65,
+            money: m.money_score ?? 65,
+            health: m.health_score ?? 65,
+            relationships: m.love_score ?? 65,
+          },
+        }));
+        while (allMonthsData.length < 12) {
+          const m = new Date(startDate.getFullYear(), startDate.getMonth() + allMonthsData.length, 1);
+          allMonthsData.push({
+            month: m.toLocaleString('default', { month: 'long', year: 'numeric' }),
+            score: 65,
+            overall_score: 65,
+            career_score: 65,
+            money_score: 65,
+            health_score: 65,
+            love_score: 65,
+            theme: '',
+            key_transits: [],
+            commentary: 'Monthly overview will be available when the forecast is generated.',
+            weekly_scores: [65, 65, 65, 65],
+            domain_scores: { career: 65, money: 65, health: 65, relationships: 65 },
+          });
+        }
+        console.log('[STEP7] Complete');
+      } catch (e) {
+        console.error('[STEP7] Failed, continuing:', e instanceof Error ? e.message : String(e));
+        const startDate = new Date(forecastDays?.[0]?.date ?? Date.now());
+        allMonthsData = Array.from({ length: 12 }, (_, i) => {
+          const m = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+          return {
+            month: m.toLocaleString('default', { month: 'long', year: 'numeric' }),
+            score: 65,
+            overall_score: 65,
+            career_score: 65,
+            money_score: 65,
+            health_score: 65,
+            love_score: 65,
+            theme: '',
+            key_transits: [],
+            commentary: 'Monthly overview will be available when the forecast is generated.',
+            weekly_scores: [65, 65, 65, 65],
+            domain_scores: { career: 65, money: 65, health: 65, relationships: 65 },
+          };
+        });
+      }
+
+      console.log('[PAGE] Reached Step 8 — weeks-synthesis block');
+      console.log('[PAGE] forecastDays available:', forecastDays?.length);
+      console.log('[PAGE] allMonthsData available:', allMonthsData?.length);
+
+      // ── STEP 8: Weeks + Synthesis ──
+      setCurrentStepIndex(14);
+      setStepMessage('Writing period synthesis...');
+      setStepDetail('6 weekly summaries + strategic windows');
+
+      await sleep(4000);
+
+      const reportStart = new Date(forecastDays[0].date);
+      const weeksPayload = Array.from({ length: 6 }, (_, i) => {
+        const wStart = new Date(reportStart);
+        wStart.setDate(wStart.getDate() + i * 7);
+        const wEnd = new Date(wStart);
+        wEnd.setDate(wEnd.getDate() + 6);
+        const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        const weekDays = forecastDays.slice(i * 7, (i + 1) * 7);
+        return {
+          week_index: i,
+          week_label: `${fmt(wStart)} – ${fmt(wEnd)}`,
+          start_date: wStart.toISOString().split('T')[0],
+          end_date: wEnd.toISOString().split('T')[0],
+          daily_scores: weekDays.map((d: any) => d.day_score ?? 55),
+        };
+      });
+
+      const allScores = forecastDays.map((d: any) => d.day_score ?? 55);
+      const bestDay = forecastDays.reduce((a: any, b: any) => (a.day_score ?? 0) > (b.day_score ?? 0) ? a : b);
+      const worstDay = forecastDays.reduce((a: any, b: any) => (a.day_score ?? 100) < (b.day_score ?? 100) ? a : b);
+
+      let weeksSynthData: any = { weeks: [], period_synthesis: null };
+      try {
+        console.log('[STEP8] Inside try block, about to call weeks-synthesis');
+        console.log('[STEP8] Calling weeks-synthesis...');
+        const weeksSynthResponse = await fetch('/api/commentary/weeks-synthesis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lagnaSign: ephemerisData.lagna ?? 'Cancer',
+            mahadasha: mahadasha ?? 'Rahu',
+            antardasha: antardasha ?? 'Mercury',
+            reportStartDate: forecastDays[0].date,
+            weeks: weeksPayload,
+            synthesis_context: {
+              total_days: forecastDays.length,
+              best_date: bestDay.date,
+              best_score: bestDay.day_score ?? 0,
+              worst_date: worstDay.date,
+              worst_score: worstDay.day_score ?? 0,
+              avg_score: Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / (allScores.length || 1)),
+            },
+          }),
+        });
+        if (weeksSynthResponse.ok) {
+          weeksSynthData = await weeksSynthResponse.json();
+          console.log('[STEP8] weeks:', weeksSynthData.weeks?.length ?? 0);
+          console.log('[STEP8] synthesis:', !!weeksSynthData.period_synthesis);
+        } else {
+          const errText = await weeksSynthResponse.text();
+          console.error('[STEP8] HTTP error:', weeksSynthResponse.status, errText.substring(0, 200));
+        }
+      } catch (err: unknown) {
+        console.error('[STEP8] Failed:', err instanceof Error ? err.message : String(err));
+      }
+
+      const weekList = (weeksSynthData.weeks ?? []).map((w: any, i: number) => ({
+        week_label: w.week_label ?? `Week ${i + 1}`,
+        week_start: weeksPayload[i]?.start_date ?? '',
+        score: w.overall_score ?? w.score ?? 65,
+        theme: (w.theme ?? '').trim() || '',
+        commentary: (w.analysis ?? w.commentary ?? '').trim() || 'Weekly overview.',
+        daily_scores: weeksPayload[i]?.daily_scores ?? [65, 65, 65, 65, 65, 65, 65],
+        moon_journey: w.moon_signs ?? [],
+        peak_days_count: 2,
+        caution_days_count: 1,
+      }));
+      while (weekList.length < 6) {
+        weekList.push({
+          week_label: `Week ${weekList.length + 1}`,
+          week_start: '',
+          score: 65,
+          theme: '',
+          commentary: 'Weekly overview will be available when the forecast is generated.',
+          daily_scores: [65, 65, 65, 65, 65, 65, 65],
+          moon_journey: [],
+          peak_days_count: 2,
+          caution_days_count: 1,
+        });
+      }
+
+      // ── STEP 9: Assemble final report ──
+      setStepMessage('Finalising your report...');
+      setStepDetail('Assembling all sections');
+      setCurrentStepIndex(15);
+
+      const PLANET_SYMBOLS: Record<string, string> = {
+        Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿', Jupiter: '♃', Venus: '♀', Saturn: '♄',
+      };
+      const toLabel = (score: number, isRk: boolean): 'Peak' | 'Excellent' | 'Good' | 'Neutral' | 'Caution' | 'Difficult' | 'Avoid' => {
+        if (isRk) return 'Avoid';
+        if (score >= 85) return 'Peak';
+        if (score >= 75) return 'Excellent';
+        if (score >= 65) return 'Good';
+        if (score >= 55) return 'Neutral';
+        if (score >= 45) return 'Caution';
+        if (score >= 35) return 'Difficult';
+        return 'Avoid';
+      };
+
+      const daysForReport = forecastDays.map((d: any) => ({
+        date: d.date,
+        day_label: formatDayLabel(d.date),
+        day_score: d.day_score,
+        day_label_tier: toLabel(d.day_score, false) as import('@/lib/agents/types').RatingLabel,
+        day_theme: (d.day_theme ?? '').trim() || `Day score ${d.day_score}.`,
+        overview: (d.day_overview ?? '').trim() || `Day score ${d.day_score}. Use hora and choghadiya to time activities.`,
+        panchang: d.panchang ?? {},
+        rahu_kaal: d.rahu_kaal?.start ? { start: d.rahu_kaal.start.slice(0, 5), end: d.rahu_kaal.end.slice(0, 5) } : null,
+        slots: (d.slots ?? []).map((s: any) => ({
+          ...s,
+          hora_planet: s.dominant_hora ?? s.hora_planet ?? 'Moon',
+          hora_planet_symbol: PLANET_SYMBOLS[s.dominant_hora ?? s.hora_planet] ?? '☽',
+          choghadiya: s.dominant_choghadiya ?? s.choghadiya ?? 'Chal',
+          choghadiya_quality: s.choghadiya_quality ?? 'Neutral',
+          commentary: (s.commentary ?? '').trim() || `${s.dominant_hora} hora. Score ${s.score}.`,
+          commentary_short: (s.commentary_short ?? '').trim() || (s.commentary ?? '').split('.')[0] + '.' || '—',
+          score: s.score ?? 50,
+          label: toLabel(s.score ?? 50, s.is_rahu_kaal ?? false),
+        })),
+        peak_count: (d.slots ?? []).filter((s: any) => (s.score ?? 50) >= 75 && !(s.is_rahu_kaal ?? false)).length,
+        caution_count: (d.slots ?? []).filter((s: any) => (s.score ?? 50) < 45 || (s.is_rahu_kaal ?? false)).length,
+      }));
+
+      const finalReport = {
+        report_id: 'gen-' + Date.now(),
+        report_type: type || '7day',
+        generated_at: new Date().toISOString().slice(0, 10),
+        nativity: nativityData,
+        months: allMonthsData,
+        weeks: weekList,
+        days: daysForReport,
+        synthesis: weeksSynthData.period_synthesis ?? {
+          opening_paragraph: 'This forecast period combines transits, dasha activations, and hora patterns. Use high-score windows for important work and avoid Rahu Kaal for new beginnings.',
+          strategic_windows: [],
+          caution_dates: [],
+          domain_priorities: { career: 'Focus on career themes.', money: 'Money themes.', health: 'Health.', relationships: 'Relationships.' },
+          closing_paragraph: 'Use hora and choghadiya to align actions with cosmic rhythms.',
+        },
+      };
+
+      const errors = validateReportData(finalReport);
+      if (errors.length > 0) console.warn('[VALIDATION] Issues:', errors);
+
+      setReportData(finalReport);
       setIsLoading(false);
     } catch (err: any) {
       console.error('Report generation error:', err);
-      setError(err.message || 'Failed to generate report');
+      setError(err?.message || 'Failed to generate report');
       setIsLoading(false);
     }
   }
 
   if (isLoading) {
-    const progress = ((loadingStage + 1) / LOADING_STAGES.length) * 100;
-
     return (
-      <div className="min-h-screen bg-space flex flex-col items-center justify-center relative overflow-hidden px-6 py-20">
+      <div className="min-h-screen bg-dark flex flex-col items-center justify-center gap-8 px-6">
         <StarField />
-
-        <div className="relative mb-10">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-            className="w-64 h-64 text-amber/20"
-          >
-            <MandalaRing className="w-full h-full" />
-          </motion.div>
-
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          >
-            <div className="w-28 h-28 text-amber/35">
-              <MandalaRing className="w-full h-full" />
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            animate={{ opacity: [0.4, 0.9, 0.4] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <div className="w-3 h-3 rounded-full bg-amber" />
-          </motion.div>
+        <div className="text-amber text-4xl">🪐</div>
+        <h1 className="text-star text-2xl font-bold">Jyotish AI</h1>
+        <div className="text-center">
+          <p className="text-star text-xl font-semibold">{stepMessage || 'Preparing...'}</p>
+          <p className="text-dust text-sm mt-2">{stepDetail || ''}</p>
         </div>
-
-        <h1
-          className="font-display font-semibold text-star text-center mb-3 relative z-10"
-          style={{ fontSize: 'clamp(26px, 4vw, 42px)' }}
-        >
-          Your Cosmic Blueprint Is Being Assembled
-        </h1>
-
-        <AnimatePresence mode="wait">
-          <motion.p
-            key={loadingStage}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.4 }}
-            className="font-mono text-sm text-dust text-center mb-8 max-w-sm relative z-10"
-          >
-            {LOADING_STAGES[loadingStage]}
-          </motion.p>
-        </AnimatePresence>
-
-        <div className="w-64 h-px bg-horizon mb-12 relative overflow-visible rounded-full z-10">
-          <motion.div
-            className="absolute inset-y-0 left-0 bg-amber rounded-full"
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-          />
-          <motion.div
-            className="absolute top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-amber shadow-[0_0_8px_2px_rgba(245,158,11,0.6)]"
-            animate={{ left: `calc(${progress}% - 3px)` }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-          />
-        </div>
-
-        <div className="border border-horizon rounded-sm px-8 py-5 bg-cosmos/70 backdrop-blur-sm max-w-sm w-full relative z-10">
-          <p className="font-mono text-xs text-amber tracking-[0.2em] uppercase mb-4">
-            Chart Parameters
-          </p>
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="font-mono text-xs text-dust">Native</span>
-              <span className="font-mono text-xs text-star">{name}</span>
-            </div>
-            {date && (
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-dust">Birth Date</span>
-                <span className="font-mono text-xs text-star">{date}</span>
+        <div className="w-full max-w-md space-y-2">
+          {STEPS.map((step, i) => (
+            <div
+              key={i}
+              className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-500 ${
+                currentStepIndex > i ? 'opacity-50' : ''
+              } ${currentStepIndex === i ? 'bg-amber/10 border border-amber/20' : ''}`}
+            >
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                  currentStepIndex > i ? 'bg-emerald text-dark' : currentStepIndex === i ? 'bg-amber text-dark animate-pulse' : 'bg-nebula text-dust'
+                }`}
+              >
+                {currentStepIndex > i ? '✓' : i + 1}
               </div>
-            )}
-            {time && (
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-dust">Birth Time</span>
-                <span className="font-mono text-xs text-star">{time}</span>
-              </div>
-            )}
-            {city && (
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-dust">Location</span>
-                <span className="font-mono text-xs text-star truncate ml-4 text-right max-w-[160px]">
-                  {city}
-                </span>
-              </div>
-            )}
-            <div className="flex items-center justify-between pt-2 border-t border-horizon/40">
-              <span className="font-mono text-xs text-dust">Report</span>
-              <span className="font-mono text-xs text-amber">
-                {type === '7day' ? '7-Day Forecast' : type === 'monthly' ? 'Monthly Oracle' : type === 'free' ? 'Preview Report' : type}
+              <span className={`text-sm ${currentStepIndex === i ? 'text-star font-medium' : 'text-dust'}`}>
+                {step}
               </span>
             </div>
-          </div>
+          ))}
         </div>
-
-        <p className="font-mono text-xs text-dust/40 mt-8 relative z-10">
-          This typically takes 20–40 seconds
+        <p className="text-dust text-xs">
+          Generating grandmaster-quality analysis... This takes 8-12 minutes. Keep this tab open.
         </p>
       </div>
     );
@@ -300,7 +775,7 @@ function ReportContent() {
           </h1>
           <p className="font-body text-dust text-base mb-8">{error}</p>
           <button
-            onClick={() => { hasFetched.current = false; fetchReportData(); }}
+            onClick={() => { hasFetched.current = false; generateReport(); }}
             className="px-8 py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
           >
             Try Again
@@ -312,57 +787,55 @@ function ReportContent() {
 
   if (!reportData) return null;
 
-  const { natalChart, forecast, commentary } = reportData;
-  const safeCommentary = commentary ?? {};
-  const safeMonthly = Array.isArray(safeCommentary.monthly) ? safeCommentary.monthly : [];
-  const safeWeekly = Array.isArray(safeCommentary.weekly) ? safeCommentary.weekly : [];
-  const commentaryDays = Array.isArray(safeCommentary.daily) ? safeCommentary.daily : [];
+  const natalChart = reportData.nativity?.natal_chart ?? reportData.natalChart;
+  const safeMonthly = Array.isArray(reportData.months) ? reportData.months : [];
+  const safeWeekly = Array.isArray(reportData.weeks) ? reportData.weeks : [];
+  const reportDays: any[] = reportData.days ?? [];
 
-  const dayLimit = type === 'monthly' ? 30 : 7;
-  const forecastDays: any[] = forecast?.days ?? [];
-
-  const mergedDays = forecastDays.slice(0, dayLimit).map((day: any, i: number) => {
-    const cd = commentaryDays.find((c: any) => c?.date === day.date) ?? commentaryDays[i] ?? null;
-    const slots = day.rating?.all_slots ?? [];
-    const rk = day.rahu_kaal ?? cd?.rahu_kaal;
-    const rahuKaalFormatted = rk
-      ? { start: (rk.start_time ?? rk.start) ?? '', end: (rk.end_time ?? rk.end) ?? '' }
-      : null;
-    const peakFromRating = (day.rating?.peak_windows ?? []).slice(0, 3).map((w: any) => ({
-      time: `${w.start_time ?? ''}–${w.end_time ?? ''}`,
-      hora: w.hora_ruler ?? '',
-      choghadiya: w.choghadiya ?? '',
-      score: w.rating ?? 0,
-      reason: '',
-    }));
+  const mergedDays = reportDays.map((day: any) => {
+    const slots = day.slots ?? [];
+    const peakFromGrid = slots
+      .filter((s: any) => (s.score ?? 0) >= 75 && !(s.is_rahu_kaal ?? false))
+      .slice(0, 3)
+      .map((s: any) => ({
+        time: s.display_label ?? '',
+        hora: s.hora_planet ?? s.dominant_hora ?? '',
+        choghadiya: s.choghadiya ?? s.dominant_choghadiya ?? '',
+        score: s.score ?? 0,
+        reason: '',
+      }));
+    const rk = day.rahu_kaal;
+    const rahuKaalFormatted = rk && (rk.start || rk.end) ? { start: (rk.start ?? '').slice(0, 5), end: (rk.end ?? '').slice(0, 5) } : null;
     return {
       date: day.date ?? '',
-      day_score: cd?.day_score ?? day.rating?.day_score ?? 50,
-      day_theme: cd?.day_theme ?? (day.narrative ? day.narrative.slice(0, 80) : ''),
-      day_rating_label: cd?.day_rating_label ?? ((day.rating?.day_score ?? 50) >= 70 ? 'EXCELLENT' : (day.rating?.day_score ?? 50) >= 50 ? 'GOOD' : 'CHALLENGING'),
-      panchang: cd?.panchang ?? day.panchang ?? {},
-      day_overview: cd?.day_overview ?? day.narrative ?? 'Based on today\'s panchang and hora patterns, this day shows moderate potential. Focus on key activities during the optimal windows.',
+      day_score: day.day_score ?? 50,
+      day_theme: day.day_theme ?? '',
+      day_rating_label: (day.day_score ?? 50) >= 70 ? 'EXCELLENT' : (day.day_score ?? 50) >= 50 ? 'GOOD' : 'CHALLENGING',
+      panchang: day.panchang ?? {},
+      day_overview: day.overview ?? day.day_overview ?? 'Overview is being generated.',
       rahu_kaal: rahuKaalFormatted,
-      best_windows: (cd?.best_windows?.length ? cd.best_windows : peakFromRating) ?? [],
-      avoid_windows: cd?.avoid_windows ?? [],
-      hours: cd?.hours ?? null,
+      best_windows: peakFromGrid,
+      avoid_windows: [],
+      peak_count: day.peak_count ?? peakFromGrid.length,
+      caution_count: day.caution_count ?? 0,
+      hours: null,
       hourlySlots: slots.map((s: any) => ({
-        time: s.start_time ?? '',
-        end_time: s.end_time ?? '',
-        score: s.rating ?? 50,
-        hora_planet: s.hora_ruler ?? '',
-        hora_planet_symbol: '',
-        choghadiya: s.choghadiya ?? '',
+        slot_index: s.slot_index,
+        display_label: s.display_label,
+        time: s.start_iso?.slice(11, 19) ?? '',
+        end_time: s.end_iso?.slice(11, 19) ?? '',
+        score: s.score ?? 50,
+        hora_planet: s.hora_planet ?? s.dominant_hora ?? '',
+        hora_planet_symbol: s.hora_planet_symbol ?? '',
+        choghadiya: s.choghadiya ?? s.dominant_choghadiya ?? '',
         choghadiya_quality: s.choghadiya_quality ?? '',
         is_rahu_kaal: s.is_rahu_kaal ?? false,
+        transit_lagna: s.transit_lagna ?? '',
+        transit_lagna_house: s.transit_lagna_house ?? undefined,
         commentary: s.commentary ?? '',
       })),
     };
   });
-
-  if (typeof window !== 'undefined') {
-    console.log('Report merged data:', { mergedDaysCount: mergedDays.length, day0Hours: mergedDays[0]?.hourlySlots?.length ?? 0 });
-  }
 
   return (
     <motion.div
@@ -385,24 +858,52 @@ function ReportContent() {
           </div>
         )}
 
-        {/* Copy report link */}
-        <div className="flex justify-end mb-6">
+        {/* Report actions: Copy Share Link + Download PDF */}
+        <div className="flex flex-wrap items-center justify-end gap-4 mb-6">
           <button
-            onClick={copyReportLink}
+            onClick={copyShareLink}
             className="font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2"
           >
             {copyLinkFeedback ? (
               <span className="text-emerald">Link copied!</span>
             ) : (
               <>
-                <span>Copy report link</span>
+                <span>Copy Share Link</span>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               </>
             )}
           </button>
+          <button
+            onClick={() => downloadPdf(mergedDays)}
+            disabled={pdfLoading}
+            className="font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {pdfLoading ? (
+              <span>Generating PDF…</span>
+            ) : (
+              <>
+                <span>Download PDF</span>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </>
+            )}
+          </button>
         </div>
+        {copyLinkError && (
+          <div className="mb-4 px-4 py-3 border border-crimson/50 bg-crimson/10 rounded-sm flex items-center gap-3">
+            <span className="text-crimson text-sm">⚠</span>
+            <p className="font-mono text-xs text-crimson">{copyLinkError}</p>
+          </div>
+        )}
+        {pdfError && (
+          <div className="mb-4 px-4 py-3 border border-crimson/50 bg-crimson/10 rounded-sm flex items-center gap-3">
+            <span className="text-crimson text-sm">⚠</span>
+            <p className="font-mono text-xs text-crimson">{pdfError}</p>
+          </div>
+        )}
         <ReportErrorBoundary fallbackTitle="Nativity">
           <NativityCard
             name={name}
@@ -413,23 +914,19 @@ function ReportContent() {
             lagnaDegree={natalChart?.lagna_degree ?? 0}
             moonSign={natalChart?.planets?.Moon?.sign || 'Unknown'}
             moonNakshatra={natalChart?.moon_nakshatra || 'Unknown'}
-            currentDasha={natalChart?.current_dasha ?? { mahadasha: 'Unknown', antardasha: 'Unknown' }}
-            nativitySummary={safeCommentary.nativity_summary}
-            nativity={reportData?.nativity}
+            currentDasha={natalChart?.current_dasha ?? reportData?.nativity?.natal_chart?.current_dasha ?? { mahadasha: 'Unknown', antardasha: 'Unknown' }}
+            nativitySummary={reportData?.nativity ? { lagna_analysis: reportData.nativity.lagna_analysis, current_dasha_interpretation: reportData.nativity.current_dasha_interpretation, key_yogas: reportData.nativity.key_yogas, functional_benefics: reportData.nativity.functional_benefics, functional_malefics: reportData.nativity.functional_malefics } : undefined}
+            nativity={reportData?.nativity?.profile ?? reportData?.nativity}
           />
         </ReportErrorBoundary>
 
-        {safeMonthly.length > 0 && (
-          <ReportErrorBoundary fallbackTitle="Monthly Analysis">
-            <MonthlyAnalysis months={safeMonthly} />
-          </ReportErrorBoundary>
-        )}
+        <ReportErrorBoundary fallbackTitle="Monthly Analysis">
+          <MonthlyAnalysis months={safeMonthly} />
+        </ReportErrorBoundary>
 
-        {safeWeekly.length > 0 && (
-          <ReportErrorBoundary fallbackTitle="Weekly Analysis">
-            <WeeklyAnalysis weeks={safeWeekly} />
-          </ReportErrorBoundary>
-        )}
+        <ReportErrorBoundary fallbackTitle="Weekly Analysis">
+          <WeeklyAnalysis weeks={safeWeekly} />
+        </ReportErrorBoundary>
 
         {mergedDays.length > 0 && (
           <ReportErrorBoundary fallbackTitle="Daily Forecast">
@@ -442,15 +939,13 @@ function ReportContent() {
           </ReportErrorBoundary>
         )}
 
-        {(safeCommentary.period_synthesis || mergedDays.length > 0) && (
-          <ReportErrorBoundary fallbackTitle="Period Synthesis">
-            <PeriodSynthesis
-              synthesis={safeCommentary.period_synthesis ?? ''}
-              dailyScores={mergedDays.map((d: any) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
-              onDayClick={handleDaySelectFromCalendar}
-            />
-          </ReportErrorBoundary>
-        )}
+        <ReportErrorBoundary fallbackTitle="Period Synthesis">
+          <PeriodSynthesis
+            synthesis={reportData?.synthesis ?? ''}
+            dailyScores={mergedDays.map((d: any) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
+            onDayClick={handleDaySelectFromCalendar}
+          />
+        </ReportErrorBoundary>
       </main>
     </motion.div>
   );

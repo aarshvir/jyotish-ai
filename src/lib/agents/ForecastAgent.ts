@@ -11,10 +11,11 @@ import { RatingAgent } from './RatingAgent';
 import type {
   ForecastInput,
   ForecastOutput,
-  DayForecast,
+  AgentDayForecast,
   DayRating,
   FullDayData,
   DayNarrative,
+  PanchangData,
 } from './types';
 
 function getDateRange(from: string, to: string): string[] {
@@ -67,7 +68,8 @@ DAILY DATA (${dates[0]} to ${dates[dates.length - 1]})
 ${dayBlocks}
 
 TASK
-Return ONLY valid JSON (no prose, no code fences) with this exact structure:
+Return ONLY valid JSON (no prose, no code fences) with this exact structure.
+CRITICAL: Dense paragraphs only. No bullet points. Mention actual planets, houses, nakshatra. Never invent scores — all scores in text must match the provided numeric inputs exactly. Do not truncate strings.
 {
   "days": [
     {
@@ -95,7 +97,7 @@ async function callClaudeWithBackoff(
       const response = await claude.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: maxTokens,
-        system: 'You are a Vedic astrologer. Return only valid JSON — no prose, no markdown.',
+        system: 'You are a Vedic astrologer. Return only valid JSON. No prose, no markdown. Dense paragraphs only. Never invent scores — match provided numeric inputs exactly.',
         messages: [{ role: 'user', content: prompt }],
       });
 
@@ -200,8 +202,15 @@ export class ForecastAgent {
     const narratives = await this.generateNarratives(input, validDates, validDayData, validRatings);
     console.log('ForecastAgent - Step 3 complete');
 
-    // Step 4: Assemble
-    const days: DayForecast[] = dates.map((date, i) => {
+    // Step 4: Assemble (with deterministic narrative fallback)
+    const dayFallbackNarrative = (date: string, dayScore: number, panchang: PanchangData | undefined) => {
+      const tithi = panchang?.tithi || 'today';
+      const nakshatra = panchang?.nakshatra || 'the lunar mansion';
+      const quality = dayScore >= 70 ? 'strong' : dayScore >= 50 ? 'moderate' : 'challenging';
+      return `Day score ${dayScore} reflects ${quality} energy. Tithi ${tithi} and nakshatra ${nakshatra} influence the day. Use peak hora windows for important activities.`;
+    };
+
+    const days: AgentDayForecast[] = dates.map((date, i) => {
       const narr = narratives.days.find((n) => n.date === date) ?? {
         date,
         narrative: '',
@@ -210,11 +219,13 @@ export class ForecastAgent {
       };
       const fd = dayData[i];
       const rk = fd?.rahu_kaal;
+      const dayScore = ratings[i]?.day_score ?? 50;
+      const narrative = (narr.narrative || '').trim() || dayFallbackNarrative(date, dayScore, fd?.panchang);
       return {
         date,
         panchang: fd?.panchang ?? { tithi: '', nakshatra: '', yoga: '', karana: '', sunrise: '', sunset: '', moon_sign: '', day_ruler: '' },
         rating: ratings[i] ?? { date: date, day_score: 50, peak_windows: [], avoid_windows: [], all_slots: [] },
-        narrative: narr.narrative,
+        narrative,
         best_times: narr.best_times,
         avoid_times: narr.avoid_times,
         rahu_kaal: rk ? { start_time: rk.start_time, end_time: rk.end_time } : undefined,
@@ -237,13 +248,13 @@ export class ForecastAgent {
     ratings: DayRating[]
   ): Promise<{ days: DayNarrative[]; weekly_summary: string }> {
     const emptyResult = {
-      days: dates.map((date) => ({ date, narrative: '', best_times: [] as string[], avoid_times: [] as string[] })),
-      weekly_summary: '',
+      days: dates.map((date) => ({ date, narrative: `Day forecast for ${date}. Use hora and choghadiya for timing.`, best_times: [] as string[], avoid_times: [] as string[] })),
+      weekly_summary: 'Forecast period overview. Prioritise high-score windows for important activities.',
     };
 
     try {
       const prompt = buildForecastPrompt(input, dates, dayData, ratings);
-      const rawText = await callClaudeWithBackoff(this.claude, prompt, 8000);
+      const rawText = await callClaudeWithBackoff(this.claude, prompt, 16000);
       try {
         return safeParseJson<{ days: DayNarrative[]; weekly_summary: string }>(rawText);
       } catch {

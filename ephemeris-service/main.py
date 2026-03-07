@@ -254,9 +254,10 @@ def get_sunrise_sunset(jd: float, lat: float, lng: float) -> tuple:
 
 
 def jd_to_time_string(jd: float, timezone_offset: float) -> str:
-    """Convert Julian Day to time string"""
+    """Convert Julian Day to time string. timezone_offset is in minutes from UTC."""
     dt = swe.revjul(jd)
-    time_dt = datetime(dt[0], dt[1], dt[2], 0, 0, 0) + timedelta(days=dt[3]) + timedelta(hours=timezone_offset)
+    offset_hours = timezone_offset / 60.0 if abs(timezone_offset) > 24 else timezone_offset
+    time_dt = datetime(int(dt[0]), int(dt[1]), int(dt[2]), 0, 0, 0) + timedelta(days=dt[3]) + timedelta(hours=offset_hours)
     return time_dt.strftime("%H:%M:%S")
 
 
@@ -403,7 +404,7 @@ def natal_chart(data: NatalChartInput):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
 
 
 @app.post("/panchang")
@@ -492,7 +493,7 @@ def hora_schedule(data: HoraScheduleInput):
         return schedule
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
 
 
 @app.post("/choghadiya")
@@ -547,7 +548,7 @@ def choghadiya(data: ChoghadiyaInput):
         return schedule
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
 
 
 @app.post("/rahu-kaal")
@@ -573,7 +574,7 @@ def rahu_kaal(data: RahuKaalInput):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
 
 
 @app.post("/full-day-data")
@@ -619,7 +620,431 @@ def full_day_data(data: FullDayDataInput):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+
+
+# ---------------------------------------------------------------------------
+# Slot scoring (mirrors RatingAgent formula; used when Python builds slots)
+# ---------------------------------------------------------------------------
+
+HORA_MODIFIERS = {
+    "Aries":       {"Saturn": 15, "Sun": 8, "Jupiter": 6, "Mars": 3, "Mercury": -8, "Venus": -6, "Moon": -3},
+    "Taurus":      {"Saturn": 15, "Mercury": 8, "Venus": 6, "Moon": 3, "Jupiter": -8, "Mars": -6, "Sun": -3},
+    "Gemini":      {"Venus": 15, "Mercury": 8, "Saturn": 6, "Sun": 3, "Moon": -8, "Jupiter": -6, "Mars": -3},
+    "Cancer":      {"Mars": 18, "Moon": 15, "Jupiter": 6, "Venus": 4, "Sun": 3, "Mercury": -8, "Saturn": -12},
+    "Leo":         {"Mars": 15, "Sun": 10, "Jupiter": 6, "Saturn": 3, "Mercury": -8, "Venus": -6, "Moon": -3},
+    "Virgo":       {"Venus": 15, "Mercury": 10, "Saturn": 6, "Moon": 3, "Jupiter": -8, "Mars": -6, "Sun": -3},
+    "Libra":       {"Saturn": 15, "Mercury": 8, "Venus": 8, "Moon": 3, "Mars": -8, "Jupiter": -6, "Sun": -3},
+    "Scorpio":     {"Moon": 15, "Mars": 10, "Jupiter": 6, "Sun": 3, "Venus": -8, "Mercury": -6, "Saturn": -3},
+    "Sagittarius": {"Mars": 15, "Jupiter": 10, "Sun": 6, "Saturn": 3, "Venus": -8, "Mercury": -6, "Moon": -3},
+    "Capricorn":   {"Venus": 15, "Saturn": 10, "Mercury": 6, "Moon": 3, "Mars": -8, "Jupiter": -6, "Sun": -3},
+    "Aquarius":    {"Venus": 15, "Saturn": 10, "Mercury": 6, "Moon": 3, "Mars": -8, "Jupiter": -6, "Sun": -3},
+    "Pisces":      {"Moon": 15, "Jupiter": 10, "Mars": 6, "Sun": 3, "Saturn": -8, "Mercury": -6, "Venus": -3},
+}
+
+CHOGHADIYA_MODIFIERS = {
+    "Amrit": 15, "Shubh": 10, "Labh": 8, "Char": 3, "Chal": 3,
+    "Udveg": -5, "Rog": -10, "Kaal": -15,
+}
+
+TRANSIT_HOUSE_MODIFIERS = {
+    1: 8, 2: 3, 3: -1, 4: 2, 5: 4, 6: -3, 7: 1, 8: -6,
+    9: 6, 10: 8, 11: 5, 12: -6,
+}
+
+# Day-level modifiers for score variance (grandmaster range 39-80)
+YOGA_MODIFIERS = {
+    "Amrita": 18, "Sarvartha_Siddhi": 18,
+    "Brahma": 16, "Siddha": 15, "Indra": 14,
+    "Shubha": 10, "Subha": 10,
+    "Sadhya": 8, "Shobhana": 8, "Shubhakrit": 8,
+    "Vriddhi": 7, "Siddhi": 6, "Dhruva": 6,
+    "Harshana": 5, "Vajra": 4, "Sukarma": 4,
+    "Priti": 3, "Variyan": 2, "Sukla": 2,
+    "Ganda": -8, "Atiganda": -8,
+    "Shoola": -10, "Shula": -10,
+    "Vishkumbha": -15, "Vaidhriti": -15,
+    "Parigha": -18, "Vyatipata": -18,
+}
+
+MOON_HOUSE_MODIFIERS = {
+    1: 8, 2: 3, 3: -2, 4: 5, 5: 10, 6: -8, 7: 2, 8: -12,
+    9: 10, 10: 8, 11: 14, 12: -10,
+}
+
+TITHI_MODIFIERS = {
+    "Shukla Pratipada": 2, "Shukla Dwitiya": 4,
+    "Shukla Tritiya": 6, "Shukla Chaturthi": -2,
+    "Shukla Panchami": 5, "Shukla Shashthi": 3,
+    "Shukla Saptami": 4, "Shukla Ashtami": 2,
+    "Shukla Navami": 4, "Shukla Dashami": 5,
+    "Shukla Ekadashi": 8, "Shukla Dwadashi": 6,
+    "Shukla Trayodashi": 3, "Purnima": 8,
+    "Krishna Pratipada": 1, "Krishna Dwitiya": 2,
+    "Krishna Tritiya": 3, "Krishna Chaturthi": -2,
+    "Krishna Panchami": 2, "Krishna Shashthi": 1,
+    "Krishna Saptami": 2, "Krishna Ashtami": -4,
+    "Krishna Navami": -2, "Krishna Dashami": 1,
+    "Krishna Ekadashi": 5, "Krishna Dwadashi": 3,
+    "Krishna Trayodashi": -3,
+    "Amavasya": -15,
+    "Purnima/Amavasya": -5,
+    "Krishna Purnima/Amavasya": -5,
+    "Purnima (Full Moon)": 8, "Amavasya (New Moon)": -15,
+}
+
+WEEKDAY_MODIFIERS = {
+    0: -5, 1: 3, 2: 2, 3: 8, 4: 5, 5: -8, 6: 4,
+}
+
+SIGN_INDEX = {
+    "Aries": 0, "Taurus": 1, "Gemini": 2, "Cancer": 3, "Leo": 4, "Virgo": 5,
+    "Libra": 6, "Scorpio": 7, "Sagittarius": 8, "Capricorn": 9,
+    "Aquarius": 10, "Pisces": 11,
+}
+
+
+def calculate_slot_score(
+    dominant_hora,
+    dominant_choghadiya,
+    transit_lagna_house,
+    is_rahu_kaal,
+    natal_lagna_sign,
+    yoga=None,
+    moon_house=None,
+    tithi=None,
+    weekday=None,
+):
+    base = 55
+
+    hora_mod = HORA_MODIFIERS.get(natal_lagna_sign, {}).get(dominant_hora, 0)
+    chog_mod = CHOGHADIYA_MODIFIERS.get(dominant_choghadiya, 0)
+    if chog_mod == 0 and dominant_choghadiya == "Char":
+        chog_mod = CHOGHADIYA_MODIFIERS.get("Chal", 0)
+    house_mod = TRANSIT_HOUSE_MODIFIERS.get(transit_lagna_house, 0)
+    rahu_mod = -20 if is_rahu_kaal else 0
+
+    yoga_mod = YOGA_MODIFIERS.get(yoga, 0) if yoga else 0
+
+    moon_house_mod = MOON_HOUSE_MODIFIERS.get(moon_house, 0) if moon_house else 0
+
+    tithi_mod = 0
+    if tithi:
+        tithi_mod = TITHI_MODIFIERS.get(tithi, 0)
+        if tithi_mod == 0:
+            tithi_part = tithi.split("→")[0].strip() if "→" in tithi else tithi
+            for key, val in TITHI_MODIFIERS.items():
+                if tithi.startswith(key) or key.startswith(tithi_part):
+                    tithi_mod = val
+                    break
+
+    weekday_mod = WEEKDAY_MODIFIERS.get(weekday, 0) if weekday is not None else 0
+
+    raw = (
+        base
+        + hora_mod
+        + chog_mod
+        + house_mod
+        + rahu_mod
+        + yoga_mod
+        + moon_house_mod
+        + tithi_mod
+        + weekday_mod
+    )
+
+    if is_rahu_kaal:
+        raw = min(raw, 45)
+
+    score = max(0, min(100, raw))
+    return int(round(score))
+
+
+# ---------------------------------------------------------------------------
+# Slot-normalisation constants & helpers
+# ---------------------------------------------------------------------------
+
+PLANET_SYMBOLS = {
+    "Sun": "☉", "Moon": "☽", "Mars": "♂",
+    "Mercury": "☿", "Jupiter": "♃", "Venus": "♀", "Saturn": "♄",
+}
+
+SLOT_COUNT = 18
+SLOT_START_HOUR = 6
+_RAHU_KAAL_OVERLAP_THRESHOLD_SECS = 900  # 15 min minimum overlap — only 1–2 slots flagged per day
+
+
+class DailyGridInput(BaseModel):
+    date: str
+    current_lat: float
+    current_lng: float
+    natal_lagna_sign_index: int
+    # Minutes east of UTC (e.g. Dubai = 240, IST = 330). Used for UTC slot timestamps and display_label.
+    timezone_offset_minutes: Optional[int] = None
+
+
+def _jd_to_aware_dt(jd: float, tz: ZoneInfo) -> datetime:
+    """Convert Julian-Day UT to a timezone-aware datetime."""
+    y, m, d, h = swe.revjul(jd)
+    utc_dt = datetime(int(y), int(m), int(d), tzinfo=ZoneInfo("UTC")) + timedelta(hours=h)
+    return utc_dt.astimezone(tz)
+
+
+def _sunrise_sunset_pair(jd: float, lat: float, lng: float) -> tuple:
+    """Return (sunrise_jd, sunset_jd) guaranteed to be for the same solar day."""
+    geopos = (lng, lat, 0.0)
+    sr = swe.rise_trans(jd - 0.5, swe.SUN, swe.CALC_RISE | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
+    ss = swe.rise_trans(sr, swe.SUN, swe.CALC_SET | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
+    return sr, ss
+
+
+def _overlap_secs(a0: datetime, a1: datetime, b0: datetime, b1: datetime) -> float:
+    return max(0.0, (min(a1, b1) - max(a0, b0)).total_seconds())
+
+
+def _pick_dominant(slot_start: datetime, slot_end: datetime, spans: list) -> dict:
+    best, best_ov = spans[0], 0.0
+    for s in spans:
+        ov = _overlap_secs(slot_start, slot_end, s["start"], s["end"])
+        if ov > best_ov:
+            best_ov = ov
+            best = s
+    return best
+
+
+def _hora_spans(prev_sunset, sunrise, sunset, next_sunrise, date_obj):
+    spans: List[Dict] = []
+
+    def _add(anchor, dur_secs, count, hora_offset):
+        for i in range(count):
+            spans.append({
+                "start": anchor + timedelta(seconds=i * dur_secs),
+                "end":   anchor + timedelta(seconds=(i + 1) * dur_secs),
+                "ruler": HORA_RULERS[(hora_offset + i) % 7],
+            })
+
+    prev_day = date_obj - timedelta(days=1)
+    prev_idx = (prev_day.weekday() + 1) % 7
+    prev_base = HORA_RULERS.index(DAY_RULERS[prev_idx])
+    _add(prev_sunset, (sunrise - prev_sunset).total_seconds() / 12, 12, prev_base + 12)
+
+    cur_idx = (date_obj.weekday() + 1) % 7
+    cur_base = HORA_RULERS.index(DAY_RULERS[cur_idx])
+    _add(sunrise, (sunset - sunrise).total_seconds() / 12, 12, cur_base)
+    _add(sunset, (next_sunrise - sunset).total_seconds() / 12, 12, cur_base + 12)
+
+    return spans
+
+
+def _choghadiya_spans(prev_sunset, sunrise, sunset, next_sunrise, date_obj):
+    spans: List[Dict] = []
+
+    def _add(anchor, dur_secs, count, seq):
+        for i in range(count):
+            name = seq[i]
+            spans.append({
+                "start":   anchor + timedelta(seconds=i * dur_secs),
+                "end":     anchor + timedelta(seconds=(i + 1) * dur_secs),
+                "name":    name,
+                "quality": CHOGHADIYA_QUALITY[name],
+            })
+
+    prev_idx = ((date_obj - timedelta(days=1)).weekday() + 1) % 7
+    prev_seq = CHOGHADIYA_DAY[prev_idx]
+    _add(prev_sunset, (sunrise - prev_sunset).total_seconds() / 8, 8,
+         prev_seq[1:] + [prev_seq[0]])
+
+    cur_idx = (date_obj.weekday() + 1) % 7
+    cur_seq = CHOGHADIYA_DAY[cur_idx]
+    _add(sunrise, (sunset - sunrise).total_seconds() / 8, 8, cur_seq)
+    _add(sunset, (next_sunrise - sunset).total_seconds() / 8, 8,
+         cur_seq[1:] + [cur_seq[0]])
+
+    return spans
+
+
+def _local_midnight_utc(date_obj, timezone_offset_minutes: int):
+    """UTC moment when it is midnight local (date_obj day) in the given offset (minutes east of UTC)."""
+    utc_midnight = datetime(date_obj.year, date_obj.month, date_obj.day, 0, 0, 0)
+    return utc_midnight - timedelta(minutes=timezone_offset_minutes)
+
+
+@app.post("/generate-daily-grid")
+def generate_daily_grid(data: DailyGridInput):
+    try:
+        tz_name = _tf.timezone_at(lat=data.current_lat, lng=data.current_lng)
+        local_tz = ZoneInfo(tz_name)
+        date_obj = datetime.strptime(data.date, "%Y-%m-%d")
+        # Use request offset if provided (e.g. Dubai 240); else infer from timezone
+        tz_offset_mins = data.timezone_offset_minutes
+        if tz_offset_mins is None:
+            sample_dt = datetime(date_obj.year, date_obj.month, date_obj.day, 12, 0, 0, tzinfo=local_tz)
+            td = sample_dt.utcoffset()
+            tz_offset_mins = int(td.total_seconds() / 60) if td else 0
+
+        # Sunrise / sunset anchors (same-day pairs)
+        jd = get_julian_day(date_obj)
+        sunrise_jd, sunset_jd = _sunrise_sunset_pair(jd, data.current_lat, data.current_lng)
+        sunrise = _jd_to_aware_dt(sunrise_jd, local_tz)
+        sunset  = _jd_to_aware_dt(sunset_jd, local_tz)
+
+        prev_jd = get_julian_day(date_obj - timedelta(days=1))
+        _, prev_sunset_jd = _sunrise_sunset_pair(prev_jd, data.current_lat, data.current_lng)
+        prev_sunset = _jd_to_aware_dt(prev_sunset_jd, local_tz)
+
+        next_jd = get_julian_day(date_obj + timedelta(days=1))
+        next_sunrise_jd, _ = _sunrise_sunset_pair(next_jd, data.current_lat, data.current_lng)
+        next_sunrise = _jd_to_aware_dt(next_sunrise_jd, local_tz)
+
+        # Raw astrological spans (in local_tz)
+        horas = _hora_spans(prev_sunset, sunrise, sunset, next_sunrise, date_obj)
+        chogs = _choghadiya_spans(prev_sunset, sunrise, sunset, next_sunrise, date_obj)
+
+        # Rahu Kaal
+        day_secs = (sunset - sunrise).total_seconds()
+        rk_part  = RAHU_KAAL_PARTS[(date_obj.weekday() + 1) % 7]
+        rk_start = sunrise + timedelta(seconds=(rk_part - 1) * day_secs / 8)
+        rk_end   = sunrise + timedelta(seconds=rk_part * day_secs / 8)
+
+        natal_sign_idx = data.natal_lagna_sign_index % 12
+        natal_lagna_sign = SIGNS[natal_sign_idx]
+
+        # Day-level panchang (for score modifiers)
+        sun_pos = get_planet_position(sunrise_jd, swe.SUN)
+        moon_pos = get_planet_position(sunrise_jd, swe.MOON)
+        tithi_str = calculate_tithi(sun_pos["longitude"], moon_pos["longitude"])
+        yoga_str = calculate_yoga(sun_pos["longitude"], moon_pos["longitude"])
+        moon_sign = moon_pos["sign"]
+        lagna_idx = SIGN_INDEX.get(natal_lagna_sign, 0)
+        moon_idx = SIGN_INDEX.get(moon_sign, 0)
+        moon_house = (moon_idx - lagna_idx) % 12 + 1
+        weekday = date_obj.weekday()
+
+        print(
+            f"[SCORE-DEBUG] date={date_obj} "
+            f"yoga={yoga_str!r} tithi={tithi_str!r} "
+            f"moon_sign={moon_sign!r} "
+            f"moon_house={moon_house} "
+            f"weekday={weekday}"
+        )
+
+        local_midnight_utc = _local_midnight_utc(date_obj, tz_offset_mins)
+
+        # Build 18 fixed hourly slots: UTC for start_iso/end_iso/midpoint_iso (Z), display_label = local "06:00–07:00"
+        output_slots = []
+        for i in range(SLOT_COUNT):
+            hour = SLOT_START_HOUR + i
+            end_hour = hour + 1
+
+            slot_start_utc = local_midnight_utc + timedelta(hours=6 + i)
+            slot_end_utc   = local_midnight_utc + timedelta(hours=7 + i)
+            midpoint_utc   = local_midnight_utc + timedelta(hours=6 + i, minutes=30)
+
+            # Local times for overlap with hora/choghadiya/rahu_kaal (spans are in local_tz)
+            slot_start_aware = slot_start_utc.replace(tzinfo=ZoneInfo("UTC"))
+            slot_end_aware   = slot_end_utc.replace(tzinfo=ZoneInfo("UTC"))
+            slot_start_local = slot_start_aware.astimezone(local_tz)
+            slot_end_local   = slot_end_aware.astimezone(local_tz)
+
+            dom_hora = _pick_dominant(slot_start_local, slot_end_local, horas)
+            dom_chog = _pick_dominant(slot_start_local, slot_end_local, chogs)
+
+            is_rk = (_overlap_secs(slot_start_local, slot_end_local, rk_start, rk_end)
+                     >= _RAHU_KAAL_OVERLAP_THRESHOLD_SECS)
+
+            mid_jd = get_julian_day(midpoint_utc)
+            t_cusps = calculate_houses(mid_jd, data.current_lat, data.current_lng)
+            t_sign  = int(t_cusps[0] / 30) % 12
+            t_house = ((t_sign - natal_sign_idx) % 12) + 1
+
+            score = calculate_slot_score(
+                dominant_hora=dom_hora["ruler"],
+                dominant_choghadiya=dom_chog["name"],
+                transit_lagna_house=t_house,
+                is_rahu_kaal=is_rk,
+                natal_lagna_sign=natal_lagna_sign,
+                yoga=yoga_str,
+                moon_house=moon_house,
+                tithi=tithi_str,
+                weekday=weekday,
+            )
+
+            output_slots.append({
+                "slot_index":           i,
+                "display_label":        f"{hour:02d}:00\u2013{end_hour:02d}:00",
+                "start_iso":            slot_start_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "end_iso":              slot_end_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "midpoint_iso":         midpoint_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "dominant_hora":        dom_hora["ruler"],
+                "dominant_choghadiya":  dom_chog["name"],
+                "transit_lagna":        SIGNS[t_sign],
+                "transit_lagna_house":  t_house,
+                "is_rahu_kaal":         is_rk,
+                "score":                score,
+            })
+
+        # Panchang (reuse sun_pos, moon_pos, tithi_str, yoga_str from above)
+        day_idx = (date_obj.weekday() + 1) % 7
+        panchang_out = {
+            "tithi":     tithi_str,
+            "nakshatra": moon_pos["nakshatra"],
+            "yoga":      yoga_str,
+            "karana":    calculate_karana(sun_pos["longitude"], moon_pos["longitude"]),
+            "sunrise":   sunrise.strftime("%H:%M:%S"),
+            "sunset":    sunset.strftime("%H:%M:%S"),
+            "moon_sign": moon_sign,
+            "day_ruler": DAY_RULERS[day_idx],
+        }
+
+        day_score = round(sum(s["score"] for s in output_slots) / 18) if output_slots else 0
+
+        return {
+            "date":       data.date,
+            "panchang":   panchang_out,
+            "rahu_kaal":  {
+                "start": rk_start.strftime("%H:%M:%S"),
+                "end":   rk_end.strftime("%H:%M:%S"),
+            },
+            "slots":      output_slots,
+            "day_score":  day_score,
+            "moon_house": moon_house,
+            "yoga":       yoga_str,
+            "weekday":    weekday,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+
+
+@app.get("/validate")
+def validate_grid():
+    """Structural sanity-check using Dubai 2026-02-26, Cancer lagna. Asserts UTC (Z) timestamps and slot 0 score 74."""
+    result = generate_daily_grid(DailyGridInput(
+        date="2026-02-26",
+        current_lat=25.2048,
+        current_lng=55.2708,
+        natal_lagna_sign_index=3,
+        timezone_offset_minutes=240,
+    ))
+    slots = result["slots"]
+    labels = [s["display_label"] for s in slots]
+    no_reversed = all(
+        lbl.split("\u2013")[0] < lbl.split("\u2013")[1] for lbl in labels
+    )
+    slot0 = slots[0] if slots else {}
+    start_iso = slot0.get("start_iso", "")
+    start_ends_z = start_iso.endswith("Z")
+    slot0_score = slot0.get("score", 0)
+    return {
+        "slot_count":            len(slots),
+        "first_label":           labels[0] if labels else None,
+        "last_label":            labels[-1] if labels else None,
+        "no_reversed_intervals": no_reversed,
+        "start_iso_ends_z":      start_ends_z,
+        "slot0_start_iso":       start_iso,
+        "slot0_score":           slot0_score,
+        "day_score":             result.get("day_score"),
+        "slots":                 slots,
+    }
 
 
 if __name__ == "__main__":

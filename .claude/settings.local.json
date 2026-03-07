@@ -15,7 +15,20 @@
       "Bash(grep:*)",
       "Bash(echo not found in 313:*)",
       "Bash(netstat -ano)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(railway:*)",
+      "Bash(cd /c/Users/aarsh/Downloads/jyotish-ai && npx tsc --noEmit 2>&1)",
+      "Bash(echo EXIT:$?:*)",
+      "Bash(pip install:*)",
+      "Bash(uvicorn main:app:*)",
+      "Bash(curl:*)",
+      "Bash(python:*)",
+      "Bash(powershell:*)",
+      "Bash(npm run:*)",
+      "Bash(npx tsc:*)",
+      "Bash(netstat:*)",
+      "Bash(python3:*)",
+      "Bash(node:*)"
     ]
   }
 }

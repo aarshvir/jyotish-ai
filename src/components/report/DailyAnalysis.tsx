@@ -14,6 +14,8 @@ interface HourSlot {
   choghadiya_quality?: string;
   is_rahu_kaal: boolean;
   commentary?: string;
+  transit_lagna?: string;
+  transit_lagna_house?: number;
 }
 
 interface DayData {
@@ -41,6 +43,8 @@ interface DayData {
     time: string;
     reason: string;
   }>;
+  peak_count?: number;
+  caution_count?: number;
   hours?: HourSlot[] | null;
   hourlySlots?: HourSlot[];
 }
@@ -77,9 +81,22 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
   if (!currentDay) return null;
 
   const score = currentDay.day_score ?? 50;
-  const scoreColor = score >= 70 ? 'text-emerald' : score >= 50 ? 'text-amber' : 'text-crimson';
+  const scoreColor = score >= 65 ? 'text-emerald' : score >= 45 ? 'text-amber' : 'text-crimson';
+
+  const getScoreLabel = (s: number) => {
+    if (s >= 85) return '★★★ PEAK';
+    if (s >= 75) return '★★ EXCELLENT';
+    if (s >= 65) return '★ GOOD';
+    if (s >= 55) return 'NEUTRAL';
+    if (s >= 45) return '⚠ CAUTION';
+    if (s >= 35) return '⚠⚠ DIFFICULT';
+    return '🔴 AVOID';
+  };
 
   const activeHours: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
+  const peakCount = currentDay.peak_count ?? currentDay.best_windows?.length ?? 0;
+  const cautionCount = currentDay.caution_count ?? 0;
+  const avgScore = score;
 
   return (
     <motion.div
@@ -129,7 +146,12 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
               {score}
             </div>
             <p className={`font-mono text-xs tracking-[0.2em] uppercase mt-3 ${scoreColor}`}>
-              {currentDay.day_rating_label || (score >= 70 ? 'EXCELLENT' : score >= 50 ? 'GOOD' : 'CHALLENGING')}
+              {getScoreLabel(score)}
+            </p>
+            <p className="font-mono text-[11px] text-dust/60 mt-2">
+              {peakCount > 0 && <span className="text-emerald mr-3">★ {peakCount} peak {peakCount === 1 ? 'window' : 'windows'}</span>}
+              {cautionCount > 0 && <span className="text-crimson mr-3">⚠ {cautionCount} caution</span>}
+              <span>avg {avgScore}/100</span>
             </p>
           </div>
 
@@ -184,7 +206,16 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                   Optimal Windows
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {currentDay.best_windows.map((w, i) => (
+                  {currentDay.best_windows.map((w, i) => {
+                    const formatLabel = (label: string) => {
+                      if (label && label.includes('–') && !label.includes(':00:00')) return label;
+                      if (label && label.includes('–')) {
+                        return label.split('–').map((t) => t.trim().split(':').slice(0, 2).join(':')).join('–');
+                      }
+                      return label || '';
+                    };
+                    const timeStr = formatLabel(w.time ?? '');
+                    return (
                     <div
                       key={i}
                       className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-emerald/10 border border-emerald/20"
@@ -193,18 +224,18 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                       <span className="text-emerald text-sm">
                         {PLANET_SYMBOLS[w.hora] || ''}
                       </span>
-                      <span className="font-mono text-xs text-emerald">{w.time}</span>
+                      <span className="font-mono text-xs text-emerald">{timeStr}</span>
                       <span className="text-emerald/50">·</span>
                       <span className="font-mono text-xs text-emerald/70">{w.choghadiya}</span>
                       <span className="text-emerald/50">·</span>
                       <span className="font-mono text-xs text-emerald font-medium">{w.score}</span>
                     </div>
-                  ))}
+                  ); })}
                 </div>
               </div>
             )}
 
-            {currentDay.rahu_kaal && currentDay.rahu_kaal.start && (
+            {currentDay.rahu_kaal && (currentDay.rahu_kaal.start || currentDay.rahu_kaal.end) && (
               <div>
                 <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3 text-center">
                   Rahu Kaal
@@ -213,7 +244,17 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-crimson/10 border border-crimson/20">
                     <span className="text-crimson">⚠</span>
                     <span className="font-mono text-xs text-crimson">
-                      {currentDay.rahu_kaal.start}–{currentDay.rahu_kaal.end}
+                      ⚠ Rahu Kaal: {(() => {
+                        const start = currentDay.rahu_kaal!.start ?? '';
+                        const end = currentDay.rahu_kaal!.end ?? '';
+                        const toHHMM = (t: string) => {
+                          if (!t) return '';
+                          const iso = t.includes('T') ? t.split('T')[1] ?? t : t;
+                          const part = iso.trim().split(':').slice(0, 2).join(':');
+                          return part || t.slice(0, 5);
+                        };
+                        return `${toHHMM(start)} – ${toHHMM(end)}`;
+                      })()}
                     </span>
                   </div>
                 </div>

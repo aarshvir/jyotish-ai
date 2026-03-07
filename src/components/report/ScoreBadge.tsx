@@ -41,15 +41,19 @@ export function ScoreBadge({ score: rawScore, size = 'md', showLabel = false, an
   }, [score, animate]);
 
   const getColor = (s: number) => {
-    if (s >= 70) return 'text-emerald';
-    if (s >= 50) return 'text-amber';
+    if (s >= 65) return 'text-emerald';
+    if (s >= 45) return 'text-amber';
     return 'text-crimson';
   };
 
   const getLabel = (s: number) => {
-    if (s >= 70) return 'EXCELLENT';
-    if (s >= 50) return 'GOOD';
-    return 'CHALLENGING';
+    if (s >= 85) return '★★★ PEAK';
+    if (s >= 75) return '★★ EXCELLENT';
+    if (s >= 65) return '★ GOOD';
+    if (s >= 55) return 'NEUTRAL';
+    if (s >= 45) return '⚠ CAUTION';
+    if (s >= 35) return '⚠⚠ DIFFICULT';
+    return '🔴 AVOID';
   };
 
   const sizeClasses = {

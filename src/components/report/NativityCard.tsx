@@ -45,6 +45,18 @@ const PLANET_SYMBOLS: Record<string, string> = {
   Jupiter: '♃', Venus: '♀', Saturn: '♄', Rahu: '☊', Ketu: '☋',
 };
 
+const LAGNA_FALLBACK = (lagna: string, moonSign: string, dasha: string) =>
+  `${lagna} lagna native with Moon in ${moonSign}. Current dasha period ${dasha} shapes the dominant themes. The lagna lord governs identity and vitality; functional benefics and malefics for this lagna influence daily outcomes.`;
+
+const DASHA_FALLBACK = (dasha: string) =>
+  `Current ${dasha} dasha period shapes dominant themes. Use hora and choghadiya to align important activities with favourable planetary hours.`;
+
+function safeText(text: string | undefined, fallback: string): string {
+  const t = (text ?? '').trim();
+  if (!t || /temporarily unavailable/i.test(t)) return fallback;
+  return t;
+}
+
 export function NativityCard({
   name,
   birthDate,
@@ -71,7 +83,7 @@ export function NativityCard({
         {/* Left: Native details + analysis */}
         <div>
           <h1 className="font-display font-semibold text-star text-4xl mb-4">
-            {name}
+            {name.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
           </h1>
 
           <div className="font-mono text-xs text-dust mb-6">
@@ -109,24 +121,26 @@ export function NativityCard({
             </div>
           </div>
 
-          {nativitySummary && (
-            <>
-              <div className="pt-6 border-t border-horizon/40 mb-6">
-                <p className="font-display text-star text-base leading-[1.8]">
-                  {nativitySummary.lagna_analysis}
-                </p>
-              </div>
+          <div className="pt-6 border-t border-horizon/40 mb-6">
+            <p className="font-display text-star text-base leading-[1.8]">
+              {safeText(
+                nativitySummary?.lagna_analysis,
+                LAGNA_FALLBACK(lagna, moonSign, `${currentDasha.mahadasha}/${currentDasha.antardasha}`)
+              )}
+            </p>
+          </div>
 
-              <div className="pt-6 border-t border-horizon/40">
-                <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
-                  Current Dasha Period
-                </p>
-                <p className="font-display text-star text-sm leading-[1.8]">
-                  {nativitySummary.current_dasha_interpretation}
-                </p>
-              </div>
-            </>
-          )}
+          <div className="pt-6 border-t border-horizon/40">
+            <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+              Current Dasha Period
+            </p>
+            <p className="font-display text-star text-sm leading-[1.8]">
+              {safeText(
+                nativitySummary?.current_dasha_interpretation,
+                DASHA_FALLBACK(`${currentDasha.mahadasha}/${currentDasha.antardasha}`)
+              )}
+            </p>
+          </div>
         </div>
 
         {/* Right: Yogas and functional lords */}
@@ -223,11 +237,9 @@ export function NativityCard({
             </div>
           )}
 
-          {(nativitySummary || nativity) && (
-            <p className="font-mono text-xs text-dust/50 tracking-wide">
-              Assessed for {lagna} Lagna
-            </p>
-          )}
+          <p className="font-mono text-xs text-dust/50 tracking-wide">
+            Assessed for {lagna} Lagna
+          </p>
         </div>
       </div>
 

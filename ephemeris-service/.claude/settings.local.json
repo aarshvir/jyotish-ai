@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-NetTCPConnection:*)",
+      "Bash(netstat -ano)",
+      "Bash(xargs -I{} taskkill //PID {} //F)",
+      "Bash(python:*)",
+      "Bash(uvicorn main:app:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}
