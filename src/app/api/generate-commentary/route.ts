@@ -1,6 +1,6 @@
 // DEPRECATED: replaced by /api/commentary/* routes (daily-overviews, hourly-day, months-first, months-second, weeks-synthesis, nativity-text).
 // This route is no longer called from the frontend.
-export const maxDuration = 800;
+export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
