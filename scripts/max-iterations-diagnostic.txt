@@ -1,0 +1,5 @@
+Max iterations 1 reached at 03/21/2026 20:53:32
+Day variance avg: 11.6%
+Days within 10pct: 7/22
+Commentary issues:
+  - hourly: 1/18 slots below quality bar

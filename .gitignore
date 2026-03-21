@@ -20,6 +20,7 @@ yarn-error.log*
 
 # Environment variables
 .env
+.env.local
 .env*.local
 .env.production
 
@@ -56,3 +57,13 @@ Thumbs.db
 # Debug
 *.log
 .cursor/
+
+# Script outputs / artifacts (do not commit)
+scripts/last-report.html
+scripts/report-full.png
+scripts/before-submit.png
+scripts/eph-server.log
+scripts/next-server.log
+
+# Windows reserved device name (accidental file)
+nul

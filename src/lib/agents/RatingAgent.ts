@@ -226,7 +226,7 @@ export function getScoreLabel(
   if (score >= 65) return 'Good';
   if (score >= 50) return 'Neutral';
   if (score >= 45) return 'Caution';
-  if (score >= 40) return 'Difficult';
+  if (score >= 35) return 'Difficult';
   return 'Avoid';
 }
 

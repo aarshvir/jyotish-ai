@@ -1,0 +1,295 @@
+{
+  "day_variance": [
+    {
+      "date": "2026-02-17",
+      "benchmark": 39.2,
+      "live": 40,
+      "variance": 0.8,
+      "pct": 2.0,
+      "status": "OK"
+    },
+    {
+      "date": "2026-02-18",
+      "benchmark": 53.2,
+      "live": 46,
+      "variance": 7.2,
+      "pct": 13.5,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-02-19",
+      "benchmark": 72.4,
+      "live": 65,
+      "variance": 7.4,
+      "pct": 10.2,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-02-20",
+      "benchmark": 69.3,
+      "live": 67,
+      "variance": 2.3,
+      "pct": 3.3,
+      "status": "OK"
+    },
+    {
+      "date": "2026-02-21",
+      "benchmark": 55.9,
+      "live": 64,
+      "variance": 8.1,
+      "pct": 14.5,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-02-22",
+      "benchmark": 62.6,
+      "live": 63,
+      "variance": 0.4,
+      "pct": 0.6,
+      "status": "OK"
+    },
+    {
+      "date": "2026-02-23",
+      "benchmark": 76.8,
+      "live": 78,
+      "variance": 1.2,
+      "pct": 1.6,
+      "status": "OK"
+    },
+    {
+      "date": "2026-02-24",
+      "benchmark": 66.2,
+      "live": 77,
+      "variance": 10.8,
+      "pct": 16.3,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-02-25",
+      "benchmark": 46.8,
+      "live": 52,
+      "variance": 5.2,
+      "pct": 11.1,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-02-26",
+      "benchmark": 53.0,
+      "live": 55,
+      "variance": 2.0,
+      "pct": 3.8,
+      "status": "OK"
+    },
+    {
+      "date": "2026-02-27",
+      "benchmark": 59.9,
+      "live": 48,
+      "variance": 11.9,
+      "pct": 19.9,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-02-28",
+      "benchmark": 79.6,
+      "live": 63,
+      "variance": 16.6,
+      "pct": 20.9,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-03-01",
+      "benchmark": 60.2,
+      "live": 69,
+      "variance": 8.8,
+      "pct": 14.6,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-03-02",
+      "benchmark": 38.1,
+      "live": 43,
+      "variance": 4.9,
+      "pct": 12.9,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-03-03",
+      "benchmark": 49.0,
+      "live": 59,
+      "variance": 10.0,
+      "pct": 20.4,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-03-04",
+      "benchmark": 61.2,
+      "live": 53,
+      "variance": 8.2,
+      "pct": 13.4,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-03-05",
+      "benchmark": 57.5,
+      "live": 46,
+      "variance": 11.5,
+      "pct": 20.0,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-03-06",
+      "benchmark": 47.9,
+      "live": 38,
+      "variance": 9.9,
+      "pct": 20.7,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-03-07",
+      "benchmark": 65.2,
+      "live": 56,
+      "variance": 9.2,
+      "pct": 14.1,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-03-08",
+      "benchmark": 66.9,
+      "live": 60,
+      "variance": 6.9,
+      "pct": 10.3,
+      "status": "FAIL"
+    },
+    {
+      "date": "2026-03-09",
+      "benchmark": 46.3,
+      "live": 49,
+      "variance": 2.7,
+      "pct": 5.8,
+      "status": "OK"
+    },
+    {
+      "date": "2026-03-10",
+      "benchmark": 76.2,
+      "live": 73,
+      "variance": 3.2,
+      "pct": 4.2,
+      "status": "OK"
+    }
+  ],
+  "hourly_variance": [],
+  "formula_diagnosis": [
+    {
+      "date": "2026-02-18",
+      "yoga": "Shiva",
+      "moon_house": 8,
+      "live_slots_range": "0-77",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-02-19",
+      "yoga": "Siddha",
+      "moon_house": 8,
+      "live_slots_range": "39-87",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-02-21",
+      "yoga": "Shubha",
+      "moon_house": 9,
+      "live_slots_range": "30-95",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-02-24",
+      "yoga": "Indra",
+      "moon_house": 11,
+      "live_slots_range": "45-100",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-02-25",
+      "yoga": "Vishkambha",
+      "moon_house": 11,
+      "live_slots_range": "5-83",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-02-27",
+      "yoga": "Ayushman",
+      "moon_house": 12,
+      "live_slots_range": "23-76",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-02-28",
+      "yoga": "Saubhagya",
+      "moon_house": 1,
+      "live_slots_range": "30-95",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-03-01",
+      "yoga": "Shobhana",
+      "moon_house": 1,
+      "live_slots_range": "34-96",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-03-02",
+      "yoga": "Atiganda",
+      "moon_house": 1,
+      "live_slots_range": "3-77",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-03-03",
+      "yoga": "Sukarma",
+      "moon_house": 2,
+      "live_slots_range": "37-83",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-03-04",
+      "yoga": "Dhriti",
+      "moon_house": 2,
+      "live_slots_range": "6-84",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-03-05",
+      "yoga": "Shula",
+      "moon_house": 3,
+      "live_slots_range": "20-65",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-03-06",
+      "yoga": "Ganda",
+      "moon_house": 3,
+      "live_slots_range": "7-65",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-03-07",
+      "yoga": "Vriddhi",
+      "moon_house": 4,
+      "live_slots_range": "32-86",
+      "issue": "day_score_variance_exceeded_10pct"
+    },
+    {
+      "date": "2026-03-08",
+      "yoga": "Dhruva",
+      "moon_house": 4,
+      "live_slots_range": "26-86",
+      "issue": "day_score_variance_exceeded_10pct"
+    }
+  ],
+  "summary": {
+    "days_within_10pct": 7,
+    "days_total": 22,
+    "avg_day_variance_pct": 11.6,
+    "avg_slot_variance_pct": 0,
+    "pass": false
+  }
+}

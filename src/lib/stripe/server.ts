@@ -1,9 +1,11 @@
 import Stripe from 'stripe';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2026-01-28.clover',
-  typescript: true,
-});
+const key = process.env.STRIPE_SECRET_KEY ?? '';
+export const isTestMode = key.startsWith('your_');
+
+export const stripe = isTestMode
+  ? (null as unknown as Stripe)
+  : new Stripe(key, { apiVersion: '2026-01-28.clover', typescript: true });
 
 export async function createCheckoutSession({
   priceId,
@@ -14,6 +16,9 @@ export async function createCheckoutSession({
   userId: string;
   userEmail: string;
 }) {
+  if (isTestMode) {
+    return { id: 'test_skip', url: null } as unknown as Stripe.Checkout.Session;
+  }
   return await stripe.checkout.sessions.create({
     line_items: [
       {
@@ -38,6 +43,9 @@ export async function createSubscription({
   priceId: string;
   customerId: string;
 }) {
+  if (isTestMode) {
+    return { id: 'sub_test_skip' } as unknown as Stripe.Subscription;
+  }
   return await stripe.subscriptions.create({
     customer: customerId,
     items: [{ price: priceId }],

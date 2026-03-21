@@ -38,6 +38,9 @@ const WEEK_FALLBACK: WeekData = {
 };
 
 export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
+  // eslint-disable-next-line no-console
+  console.log('[WEEKLY] weeks:', weeks?.length ?? 0);
+
   const weeksData = Array.from({ length: 6 }, (_, i) => {
     const w = (weeks ?? [])[i];
     const base = w ? { ...WEEK_FALLBACK, ...w } : { ...WEEK_FALLBACK };
@@ -61,6 +64,26 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
     if (score >= 45) return { backgroundColor: 'rgba(245,158,11,0.5)' };
     return { backgroundColor: '#ef4444' };
   };
+
+  if (!weeks || weeks.length === 0) {
+    return (
+      <motion.div
+        id="weekly"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="space-y-4 mb-12"
+      >
+        <h2 className="font-display font-semibold text-star text-3xl">
+          Weekly Breakdown
+        </h2>
+        <p className="font-mono text-xs text-dust">
+          Weekly data unavailable.
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

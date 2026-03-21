@@ -94,8 +94,20 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
   };
 
   const activeHours: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
-  const peakCount = currentDay.peak_count ?? currentDay.best_windows?.length ?? 0;
-  const cautionCount = currentDay.caution_count ?? 0;
+  const slotsForSummary = (currentDay as any).slots ?? activeHours ?? [];
+  const peakCount =
+    currentDay.peak_count ??
+    (slotsForSummary as HourSlot[]).filter((s) => s?.score >= 75).length ??
+    currentDay.best_windows?.length ??
+    0;
+  const cautionCount =
+    currentDay.caution_count ??
+    (slotsForSummary as HourSlot[]).filter((s) => s?.score <= 45).length ??
+    0;
+  const peakWindows = (slotsForSummary as HourSlot[])
+    .filter((s) => s?.score >= 75 && (s as any).display_label)
+    .map((s: any) => s.display_label as string)
+    .join(' · ');
   const avgScore = score;
 
   return (
@@ -140,19 +152,37 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
           transition={{ duration: 0.2 }}
           className="bg-cosmos border border-horizon rounded-sm p-8"
         >
-          {/* Score */}
-          <div className="text-center mb-8">
-            <div className={`font-display font-semibold text-[96px] leading-none ${scoreColor}`}>
-              {score}
+          {/* Score + peaks header */}
+          <div className="flex flex-col items-start gap-2 mb-6">
+            <div className="flex items-baseline gap-3">
+              <span className={`font-display font-semibold text-5xl ${scoreColor}`}>
+                {score}
+              </span>
+              <span className="text-xl text-dust">/100</span>
+              <span className="text-lg font-semibold ml-2 text-dust">
+                {getScoreLabel(score)}
+              </span>
+              <span className="ml-auto font-mono text-xs text-dust/70">
+                {peakCount > 0 && (
+                  <span className="text-emerald mr-2">
+                    ★ {peakCount} peak{peakCount === 1 ? '' : 's'}
+                  </span>
+                )}
+                {cautionCount > 0 && (
+                  <span className="text-crimson">
+                    ⚠ {cautionCount} caution
+                  </span>
+                )}
+                {!peakCount && !cautionCount && (
+                  <span className="text-dust/60">avg {avgScore}/100</span>
+                )}
+              </span>
             </div>
-            <p className={`font-mono text-xs tracking-[0.2em] uppercase mt-3 ${scoreColor}`}>
-              {getScoreLabel(score)}
-            </p>
-            <p className="font-mono text-[11px] text-dust/60 mt-2">
-              {peakCount > 0 && <span className="text-emerald mr-3">★ {peakCount} peak {peakCount === 1 ? 'window' : 'windows'}</span>}
-              {cautionCount > 0 && <span className="text-crimson mr-3">⚠ {cautionCount} caution</span>}
-              <span>avg {avgScore}/100</span>
-            </p>
+            {peakWindows && (
+              <p className="text-sm text-amber">
+                Peak windows: {peakWindows}
+              </p>
+            )}
           </div>
 
           {/* Panchang */}
@@ -207,14 +237,14 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {currentDay.best_windows.map((w, i) => {
-                    const formatLabel = (label: string) => {
-                      if (label && label.includes('–') && !label.includes(':00:00')) return label;
-                      if (label && label.includes('–')) {
-                        return label.split('–').map((t) => t.trim().split(':').slice(0, 2).join(':')).join('–');
-                      }
-                      return label || '';
+                    const fmtLabel = (s: string): string => {
+                      if (!s) return '';
+                      if (s.includes('-') && s.length <= 11) return s;
+                      return s.split(/[-\u2013]/)
+                        .map(t => t.trim().split(':').slice(0, 2).join(':'))
+                        .join('\u2013');
                     };
-                    const timeStr = formatLabel(w.time ?? '');
+                    const timeStr = fmtLabel(w.time ?? (w as any).display_label ?? '');
                     return (
                     <div
                       key={i}
@@ -244,16 +274,13 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-crimson/10 border border-crimson/20">
                     <span className="text-crimson">⚠</span>
                     <span className="font-mono text-xs text-crimson">
-                      ⚠ Rahu Kaal: {(() => {
-                        const start = currentDay.rahu_kaal!.start ?? '';
-                        const end = currentDay.rahu_kaal!.end ?? '';
-                        const toHHMM = (t: string) => {
+                      Rahu Kaal: {(() => {
+                        const fmtTime = (t: string): string => {
                           if (!t) return '';
-                          const iso = t.includes('T') ? t.split('T')[1] ?? t : t;
-                          const part = iso.trim().split(':').slice(0, 2).join(':');
-                          return part || t.slice(0, 5);
+                          if (t.includes('T')) t = t.split('T')[1];
+                          return t.slice(0, 5);
                         };
-                        return `${toHHMM(start)} – ${toHHMM(end)}`;
+                        return `${fmtTime(currentDay.rahu_kaal?.start ?? '')} - ${fmtTime(currentDay.rahu_kaal?.end ?? '')}`;
                       })()}
                     </span>
                   </div>

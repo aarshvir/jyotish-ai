@@ -1,0 +1,88 @@
+================================================================================
+JYOTISH AI — WAKE-UP REPORT (read this first)
+================================================================================
+Generated for you when you wake up. Constant monitoring was run; the loop was
+restarted when it stalled. All decisions were made autonomously.
+
+--------------------------------------------------------------------------------
+QUICK STATUS
+--------------------------------------------------------------------------------
+- COMPLETE.txt:        NOT present (success criteria not yet met)
+- Loop:                Restarted; running in a separate PowerShell window
+- Last loop position:  Iteration 2, after Agent C (then stall before orchestrator)
+- Current iteration:   Check loop-count.txt and agent-log.txt tail
+
+--------------------------------------------------------------------------------
+WHAT HAPPENED OVERNIGHT
+--------------------------------------------------------------------------------
+1. Monitoring started; loop (re)started so it would keep running.
+2. Loop ran: Iteration 1 completed (A -> B -> C -> orchestrator -> D). Agent D failed.
+3. Iteration 2 started: Agent A (9/22 days within 10%, avg variance 16.3%), then Agent B, then Agent C (0 fixes). Log stopped at "Agent C applied 0 fixes" — no "Running orchestrator" line, so the loop likely stalled or the window closed.
+4. Loop was restarted once; it runs in its own window. If that window is still open, the loop is still running. If it closed, run the command in "WHAT TO DO NOW" below.
+
+--------------------------------------------------------------------------------
+LATEST AGENT RESULTS (from last full iteration)
+--------------------------------------------------------------------------------
+Agent A (scores):  FAIL — 9/22 days within 10% variance. Avg day variance 16.3%.
+                    (Score cap of 85 is in place; formula still off for some days.)
+
+Agent B (commentary): FAIL — 0/7 daily overviews OK (all 185w, need 250+; nakshatra missing).
+                      Hourly: timeout or 500 (Read timed out 180s or connection reset).
+                      Monthly: connection aborted in one run.
+
+Agent C:             Applied 0 fixes (no new code changes this run).
+
+Agent D (build/render): FAIL — TypeScript OK, build pass: false, HTML 4/9 checks.
+                        (last-report.html may be missing or wrong page.)
+
+--------------------------------------------------------------------------------
+FIXES ALREADY IN PLACE (from earlier session)
+--------------------------------------------------------------------------------
+- Hourly route: slot normalization + full handler try/catch (reduces 500s from bad payloads).
+- Daily-overviews: corrupted prompt removed; 280–320w + nakshatra in prompt.
+- Ephemeris: raw score capped at 85 to reduce overshoot.
+- Agent D: build timeout 300s. Agent C: skip if fix already applied; break after first success.
+
+--------------------------------------------------------------------------------
+WHAT TO DO NOW
+--------------------------------------------------------------------------------
+1. Check if the loop is still running
+   - Look for an open PowerShell window running run-loop.ps1.
+   - Or: Get-Content scripts\agent-log.txt -Tail 20
+   - If the last [LOOP] line is recent (within 10–15 min), the loop is still running.
+
+2. If the loop stopped or you want to restart it
+   - Open PowerShell in the project root (c:\Users\aarsh\Downloads\jyotish-ai).
+   - Run:
+     Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File scripts\run-loop.ps1" -WindowStyle Normal
+   - Monitor: Get-Content scripts\agent-log.txt -Tail 30
+   - Repeat every 5–10 min until scripts\COMPLETE.txt exists.
+
+3. When COMPLETE.txt exists
+   - Success. The report is in scripts\COMPLETE.txt.
+   - scripts\loop-done.txt will also be present.
+
+4. If you want to fix remaining blockers by hand
+   - Build: run "npm run build" and fix any error (e.g. page data /login).
+   - Daily overviews: ensure API returns 250+ words and mentions nakshatra (prompt is already updated).
+   - Hourly: increase timeout in agent-b or fix Next.js/commentary so it doesn’t time out or 500.
+   - Scores: Agent A needs 22/22 within 10%; formula or benchmark may need tuning.
+
+--------------------------------------------------------------------------------
+MONITORING LOG (timestamped checks)
+--------------------------------------------------------------------------------
+[2026-03-15 01:22:53] Check 1: COMPLETE=False. Last: [01:20:21][LOOP] --- Running AGENT-B ---
+[2026-03-15 01:26:02] Check 2: COMPLETE=False. Last: [01:20:21][LOOP] --- Running AGENT-B ---
+[2026-03-15 01:29:15] Check 3: COMPLETE=False. Last: [01:29:13][LOOP] --- Running AGENT-D ---
+[2026-03-15 01:32:24] Check 4: COMPLETE=False. Last: [01:30:53][LOOP] Agent C applied 0 fixes
+[2026-03-15 01:35:41] Check 5: COMPLETE=False. Last: [01:30:53][LOOP] Agent C applied 0 fixes
+[2026-03-15 09:34:37] Check 6: COMPLETE=False. Last: [01:30:53][LOOP] Agent C applied 0 fixes
+[2026-03-15 09:35:22] Check 7: COMPLETE=False. Last: [01:30:53][LOOP] Agent C applied 0 fixes
+Loop restarted after stall. New run in separate window.
+
+--------------------------------------------------------------------------------
+END OF WAKE-UP REPORT
+--------------------------------------------------------------------------------
+Read scripts\agent-log.txt (tail) and scripts\COMPLETE.txt (if present) for latest.
+[2026-03-15 10:45:28] Final check: COMPLETE=False. Last: [10:45:02][LOOP] --- Running AGENT-D ---
+[2026-03-15 10:45:40] Post-restart check: COMPLETE=False. Last: [10:45:02][LOOP] --- Running AGENT-D ---

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe } from '@/lib/stripe/server';
+import { stripe, isTestMode } from '@/lib/stripe/server';
 import { createClient } from '@/lib/supabase/server';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
+  if (isTestMode) {
+    return NextResponse.json({ received: true });
+  }
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
 

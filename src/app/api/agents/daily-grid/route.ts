@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const EPHEMERIS_URL =
   process.env.EPHEMERIS_SERVICE_URL ??
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
         timezone_offset_minutes: timezoneOffset ?? 0,
         natal_lagna_sign_index,
       }),
-      signal: AbortSignal.timeout(55_000),
+      signal: AbortSignal.timeout(600_000),
     });
 
     if (!res.ok) {

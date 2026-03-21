@@ -1,0 +1,27 @@
+=== DATE SCORES ===
+2026-02-17: bm=39.2 live=32 var=18.4% [FAIL] yoga=Parigha mh=7 wd=1
+2026-02-23: bm=76.8 live=57 var=25.8% [FAIL] yoga=Brahma mh=10 wd=0
+2026-02-28: bm=79.6 live=58 var=27.1% [FAIL] yoga=Saubhagya mh=1 wd=5
+2026-03-02: bm=38.1 live=52 var=36.5% [FAIL] yoga=Atiganda mh=1 wd=0
+2026-03-03: bm=49.0 live=61 var=24.5% [FAIL] yoga=Sukarma mh=2 wd=1
+2026-02-25: bm=46.8 live=50 var=6.8% [OK] yoga=Vishkambha mh=11 wd=2
+2026-03-10: bm=76.2 live=63 var=17.3% [FAIL] yoga=Harshana mh=5 wd=1
+
+=== FORMULA STATE ===
+base = 50
+WEEKDAY: WEEKDAY_MODIFIERS = {
+    0: 5,    # Monday — Moon day, Cancer lagna lord
+    1: 2,    # Tuesday — Mars yogakaraka (reduced from 3)
+    2: -2,   # Wednesday — Mercury functional malefic
+    3: 8,    #
+MHM: MOON_HOUSE_MODIFIERS = {
+    1: 7, 2: 3, 3: -2, 4: 5, 5: 10, 6: -8,
+    7: 2, 8: -12, 9: 10, 10: 8, 11: 12, 12: -10,
+}
+  CAP: day_mods_raw = (yoga_mod + moon_house_mod +
+  CAP: if day_mods_raw > 0:
+  CAP: day_mods = min(day_mods_raw, 10)
+  CAP: day_mods = max(day_mods_raw, -22)
+  CAP: raw = base + slot_mods + day_mods
+  CAP: f"day_mods_raw={day_mods_raw} "
+  CAP: f"day_mods={day_mods} "

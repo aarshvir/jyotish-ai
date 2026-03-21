@@ -631,7 +631,7 @@ HORA_MODIFIERS = {
     "Aries":       {"Saturn": 15, "Sun": 8, "Jupiter": 6, "Mars": 3, "Mercury": -8, "Venus": -6, "Moon": -3},
     "Taurus":      {"Saturn": 15, "Mercury": 8, "Venus": 6, "Moon": 3, "Jupiter": -8, "Mars": -6, "Sun": -3},
     "Gemini":      {"Venus": 15, "Mercury": 8, "Saturn": 6, "Sun": 3, "Moon": -8, "Jupiter": -6, "Mars": -3},
-    "Cancer":      {"Mars": 18, "Moon": 15, "Jupiter": 6, "Venus": 4, "Sun": 3, "Mercury": -8, "Saturn": -12},
+    "Cancer":      {"Moon": 15, "Mars": 12, "Jupiter": 5, "Sun": 2, "Venus": -3, "Mercury": -8, "Saturn": -12},
     "Leo":         {"Mars": 15, "Sun": 10, "Jupiter": 6, "Saturn": 3, "Mercury": -8, "Venus": -6, "Moon": -3},
     "Virgo":       {"Venus": 15, "Mercury": 10, "Saturn": 6, "Moon": 3, "Jupiter": -8, "Mars": -6, "Sun": -3},
     "Libra":       {"Saturn": 15, "Mercury": 8, "Venus": 8, "Moon": 3, "Mars": -8, "Jupiter": -6, "Sun": -3},
@@ -643,58 +643,75 @@ HORA_MODIFIERS = {
 }
 
 CHOGHADIYA_MODIFIERS = {
-    "Amrit": 15, "Shubh": 10, "Labh": 8, "Char": 3, "Chal": 3,
+    "Amrit": 12, "Shubh": 8, "Labh": 6, "Char": 2, "Chal": 2,
     "Udveg": -5, "Rog": -10, "Kaal": -15,
 }
 
 TRANSIT_HOUSE_MODIFIERS = {
-    1: 8, 2: 3, 3: -1, 4: 2, 5: 4, 6: -3, 7: 1, 8: -6,
-    9: 6, 10: 8, 11: 5, 12: -6,
+    1: 6, 2: 2, 3: -2, 4: 1, 5: 3, 6: -4, 7: 0, 8: -8,
+    9: 5, 10: 6, 11: 4, 12: -8,
 }
 
 # Day-level modifiers for score variance (grandmaster range 39-80)
 YOGA_MODIFIERS = {
-    "Amrita": 18, "Sarvartha_Siddhi": 18,
-    "Brahma": 16, "Siddha": 15, "Indra": 14,
-    "Shubha": 10, "Subha": 10,
-    "Sadhya": 8, "Shobhana": 8, "Shubhakrit": 8,
-    "Vriddhi": 7, "Siddhi": 6, "Dhruva": 6,
-    "Harshana": 5, "Vajra": 4, "Sukarma": 4,
-    "Priti": 3, "Variyan": 2, "Sukla": 2,
-    "Ganda": -8, "Atiganda": -8,
-    "Shoola": -10, "Shula": -10,
-    "Vishkumbha": -15, "Vaidhriti": -15,
-    "Parigha": -18, "Vyatipata": -18,
+    'Amrita': 18, 'Sarvartha_Siddhi': 18,
+    'Brahma': 16, 'Siddha': 14, 'Indra': 13,
+    'Shubha': 9,  'Subha': 9,  'Sadhya': 7,
+    'Shobhana': 7, 'Shubhakrit': 7,
+    'Vriddhi': 6, 'Siddhi': 5, 'Dhruva': 5,
+    'Harshana': 10, 'Vajra': 4, 'Sukarma': 2,
+    'Priti': 3, 'Variyan': 2, 'Sukla': 2,
+    'Saubhagya': 8, 'Ayushman': 5,
+    'Shiva': 4, 'Dhriti': 3,
+    'Ganda': -6, 'Atiganda': -18, 'Shoola': -8,
+    'Vishkambha': -12, 'Vaidhriti': -12,
+    'Parigha': -14, 'Vyatipata': -14,
+    'Vyaghata': -8, 'Shula': -8,
 }
 
 MOON_HOUSE_MODIFIERS = {
-    1: 8, 2: 3, 3: -2, 4: 5, 5: 10, 6: -8, 7: 2, 8: -12,
-    9: 10, 10: 8, 11: 14, 12: -10,
+    1: 6,  2: 2,  3: -2, 4: 5,  5: 10,
+    6: -7, 7: 2,  8: -10, 9: 9, 10: 7,
+    11: 11, 12: -9
 }
 
 TITHI_MODIFIERS = {
-    "Shukla Pratipada": 2, "Shukla Dwitiya": 4,
-    "Shukla Tritiya": 6, "Shukla Chaturthi": -2,
-    "Shukla Panchami": 5, "Shukla Shashthi": 3,
-    "Shukla Saptami": 4, "Shukla Ashtami": 2,
-    "Shukla Navami": 4, "Shukla Dashami": 5,
-    "Shukla Ekadashi": 8, "Shukla Dwadashi": 6,
-    "Shukla Trayodashi": 3, "Purnima": 8,
-    "Krishna Pratipada": 1, "Krishna Dwitiya": 2,
-    "Krishna Tritiya": 3, "Krishna Chaturthi": -2,
-    "Krishna Panchami": 2, "Krishna Shashthi": 1,
-    "Krishna Saptami": 2, "Krishna Ashtami": -4,
-    "Krishna Navami": -2, "Krishna Dashami": 1,
-    "Krishna Ekadashi": 5, "Krishna Dwadashi": 3,
-    "Krishna Trayodashi": -3,
-    "Amavasya": -15,
-    "Purnima/Amavasya": -5,
-    "Krishna Purnima/Amavasya": -5,
-    "Purnima (Full Moon)": 8, "Amavasya (New Moon)": -15,
+    'Amavasya': -8,
+    'Krishna Ashtami': -2,
+    'Krishna Chaturthi': -1,
+    'Krishna Dashami': 1,
+    'Krishna Dwadashi': 2,
+    'Krishna Dwitiya': 1,
+    'Krishna Ekadashi': 3,
+    'Krishna Navami': -1,
+    'Krishna Panchami': 1,
+    'Krishna Pratipada': 1,
+    'Krishna Purnima/Amavasya': -3,
+    'Krishna Saptami': 1,
+    'Krishna Shashthi': 1,
+    'Krishna Trayodashi': -2,
+    'Krishna Tritiya': 2,
+    'Purnima': 0,
+    'Purnima (Full Moon)': 0,
+    'Purnima/Amavasya': -3,
+    'Shukla Ashtami': 1,
+    'Shukla Chaturthi': -1,
+    'Shukla Dashami': 2,
+    'Shukla Dwadashi': 3,
+    'Shukla Dwitiya': 2,
+    'Shukla Ekadashi': 4,
+    'Shukla Navami': 2,
+    'Shukla Panchami': 2,
+    'Shukla Pratipada': 1,
+    'Shukla Saptami': 2,
+    'Shukla Shashthi': 2,
+    'Shukla Trayodashi': 2,
+    'Shukla Tritiya': 3,
 }
 
 WEEKDAY_MODIFIERS = {
-    0: -5, 1: 3, 2: 2, 3: 8, 4: 5, 5: -8, 6: 4,
+    0: 5, 1: 2, 2: -2, 3: 8,
+    4: -3, 5: -4, 6: 2
 }
 
 SIGN_INDEX = {
@@ -715,7 +732,7 @@ def calculate_slot_score(
     tithi=None,
     weekday=None,
 ):
-    base = 55
+    base = 52
 
     hora_mod = HORA_MODIFIERS.get(natal_lagna_sign, {}).get(dominant_hora, 0)
     chog_mod = CHOGHADIYA_MODIFIERS.get(dominant_choghadiya, 0)
@@ -732,31 +749,33 @@ def calculate_slot_score(
     if tithi:
         tithi_mod = TITHI_MODIFIERS.get(tithi, 0)
         if tithi_mod == 0:
-            tithi_part = tithi.split("→")[0].strip() if "→" in tithi else tithi
-            for key, val in TITHI_MODIFIERS.items():
-                if tithi.startswith(key) or key.startswith(tithi_part):
-                    tithi_mod = val
+            clean = tithi.split('\u2192')[0].strip()
+            for k, v in TITHI_MODIFIERS.items():
+                if clean.startswith(k) or k.startswith(clean):
+                    tithi_mod = v
                     break
 
     weekday_mod = WEEKDAY_MODIFIERS.get(weekday, 0) if weekday is not None else 0
 
-    raw = (
-        base
-        + hora_mod
-        + chog_mod
-        + house_mod
-        + rahu_mod
-        + yoga_mod
-        + moon_house_mod
-        + tithi_mod
-        + weekday_mod
-    )
+    # Separate day-level and slot-level modifiers
+    slot_mods = hora_mod + chog_mod + house_mod + rahu_mod
+
+    day_mods_raw = (yoga_mod + moon_house_mod +
+                    tithi_mod + weekday_mod)
+
+    # Only floor negatives — no cap on positives
+    # Strong yoga days must be able to reach 70-80
+    if day_mods_raw < 0:
+        day_mods = max(day_mods_raw, -20)
+    else:
+        day_mods = day_mods_raw
+
+    raw = base + slot_mods + day_mods
 
     if is_rahu_kaal:
         raw = min(raw, 45)
 
-    score = max(0, min(100, raw))
-    return int(round(score))
+    return max(0, min(100, raw))
 
 
 # ---------------------------------------------------------------------------
@@ -908,7 +927,7 @@ def generate_daily_grid(data: DailyGridInput):
         natal_sign_idx = data.natal_lagna_sign_index % 12
         natal_lagna_sign = SIGNS[natal_sign_idx]
 
-        # Day-level panchang (for score modifiers)
+        # Day-level vars (yoga, tithi, moon_house, weekday) computed once before slot loop.
         sun_pos = get_planet_position(sunrise_jd, swe.SUN)
         moon_pos = get_planet_position(sunrise_jd, swe.MOON)
         tithi_str = calculate_tithi(sun_pos["longitude"], moon_pos["longitude"])
@@ -919,11 +938,30 @@ def generate_daily_grid(data: DailyGridInput):
         moon_house = (moon_idx - lagna_idx) % 12 + 1
         weekday = date_obj.weekday()
 
+        # Day-level debug print (computed once before slot scoring loop).
+        target_date = date_obj
+        yoga = yoga_str
+        tithi = tithi_str
+        tithi_mod = 0
+        if tithi:
+            tithi_mod = TITHI_MODIFIERS.get(tithi, 0)
+            if tithi_mod == 0:
+                clean = tithi.split('→')[0].strip()
+                for k, v in TITHI_MODIFIERS.items():
+                    if clean.startswith(k) or k.startswith(clean):
+                        tithi_mod = v
+                        break
         print(
-            f"[SCORE-DEBUG] date={date_obj} "
-            f"yoga={yoga_str!r} tithi={tithi_str!r} "
-            f"moon_sign={moon_sign!r} "
-            f"moon_house={moon_house} "
+            f"[DAY-LEVEL] date={target_date} "
+            f"yoga={yoga!r} yoga_mod={YOGA_MODIFIERS.get(yoga,0)} "
+            f"tithi={tithi!r} tithi_mod={tithi_mod} "
+            f"moon_house={moon_house} moon_mod={MOON_HOUSE_MODIFIERS.get(moon_house,0)} "
+            f"weekday={weekday} weekday_mod={WEEKDAY_MODIFIERS.get(weekday,0)}"
+        )
+
+        print(
+            f"[SCORE-DBG] {date_obj} yoga={yoga_str!r} "
+            f"tithi={tithi_str!r} moon_house={moon_house} "
             f"weekday={weekday}"
         )
 

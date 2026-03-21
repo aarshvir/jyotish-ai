@@ -1,0 +1,7 @@
+Current variance status (updated each Agent A run):
+- Day scores within 10%: 13/26 (benchmark has 9 real + 17 placeholder 55)
+- Avg day variance: 17.4%
+- Avg slot variance: 0.0%
+- Formula diagnosis: high variance on days with strong yogas (Brahma, Indra, etc.); placeholder benchmark 55 inflates variance. Do NOT tune formula to match placeholder.
+
+Loop 1: Applied Agent C commentary fix only (hourly 130-160 words, max_tokens 7000). Did NOT apply formula change per anti-reverse-engineering rules.

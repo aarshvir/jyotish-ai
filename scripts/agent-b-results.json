@@ -1,0 +1,261 @@
+{
+  "daily_overviews": [
+    {
+      "date": "2026-03-09",
+      "word_count": 310,
+      "has_strategy": true,
+      "has_caps_headline": true,
+      "has_houses": true,
+      "has_nakshatra": true,
+      "no_generic_phrases": true,
+      "quality_score": "6/6",
+      "status": "OK"
+    },
+    {
+      "date": "2026-03-10",
+      "word_count": 334,
+      "has_strategy": true,
+      "has_caps_headline": true,
+      "has_houses": true,
+      "has_nakshatra": true,
+      "no_generic_phrases": true,
+      "quality_score": "6/6",
+      "status": "OK"
+    },
+    {
+      "date": "2026-03-11",
+      "word_count": 359,
+      "has_strategy": true,
+      "has_caps_headline": true,
+      "has_houses": true,
+      "has_nakshatra": true,
+      "no_generic_phrases": true,
+      "quality_score": "6/6",
+      "status": "OK"
+    },
+    {
+      "date": "2026-03-12",
+      "word_count": 397,
+      "has_strategy": true,
+      "has_caps_headline": true,
+      "has_houses": true,
+      "has_nakshatra": true,
+      "no_generic_phrases": true,
+      "quality_score": "6/6",
+      "status": "OK"
+    },
+    {
+      "date": "2026-03-13",
+      "word_count": 322,
+      "has_strategy": true,
+      "has_caps_headline": true,
+      "has_houses": true,
+      "has_nakshatra": true,
+      "no_generic_phrases": true,
+      "quality_score": "6/6",
+      "status": "OK"
+    },
+    {
+      "date": "2026-03-14",
+      "word_count": 326,
+      "has_strategy": true,
+      "has_caps_headline": true,
+      "has_houses": true,
+      "has_nakshatra": true,
+      "no_generic_phrases": true,
+      "quality_score": "6/6",
+      "status": "OK"
+    },
+    {
+      "date": "2026-03-15",
+      "word_count": 385,
+      "has_strategy": true,
+      "has_caps_headline": true,
+      "has_houses": true,
+      "has_nakshatra": true,
+      "no_generic_phrases": true,
+      "quality_score": "6/6",
+      "status": "OK"
+    }
+  ],
+  "hourly": [
+    {
+      "slot": 0,
+      "wc": 139,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 1,
+      "wc": 139,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 2,
+      "wc": 144,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 3,
+      "wc": 144,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 4,
+      "wc": 145,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 5,
+      "wc": 149,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 6,
+      "wc": 145,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 7,
+      "wc": 144,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 8,
+      "wc": 146,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 9,
+      "wc": 141,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 10,
+      "wc": 148,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 11,
+      "wc": 148,
+      "has_houses": true,
+      "no_generic": false,
+      "ok": false
+    },
+    {
+      "slot": 12,
+      "wc": 158,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 13,
+      "wc": 151,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 14,
+      "wc": 151,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 15,
+      "wc": 158,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 16,
+      "wc": 156,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    },
+    {
+      "slot": 17,
+      "wc": 163,
+      "has_houses": true,
+      "no_generic": true,
+      "ok": true
+    }
+  ],
+  "monthly": [
+    {
+      "month": "March 2026",
+      "score": 42,
+      "wc": 160,
+      "has_houses": true,
+      "has_planets": true
+    },
+    {
+      "month": "April 2026",
+      "score": 48,
+      "wc": 165,
+      "has_houses": true,
+      "has_planets": true
+    },
+    {
+      "month": "May 2026",
+      "score": 55,
+      "wc": 181,
+      "has_houses": true,
+      "has_planets": true
+    },
+    {
+      "month": "June 2026",
+      "score": 70,
+      "wc": 193,
+      "has_houses": true,
+      "has_planets": true
+    },
+    {
+      "month": "July 2026",
+      "score": 73,
+      "wc": 198,
+      "has_houses": true,
+      "has_planets": true
+    },
+    {
+      "month": "August 2026",
+      "score": 65,
+      "wc": 213,
+      "has_houses": true,
+      "has_planets": true
+    }
+  ],
+  "issues": [
+    "hourly: 1/18 slots below quality bar"
+  ],
+  "summary": {
+    "daily_overviews_ok": "7/7",
+    "total_issues": 1,
+    "pass": false
+  }
+}

@@ -1,0 +1,41 @@
+=== DEPLOYMENT STATUS REPORT ===
+Date: 2026-03-22 01:17:15 +04:00
+
+GITHUB:
+  Remote: https://github.com/aarshvir/jyotish-ai.git
+  Uncommitted changes: yes — 94 porcelain entries (modified tracked files + untracked files; e.g. nul, many under scripts/, src/app/api/stripe/, etc.)
+  Unpushed commits: no — branch main is up to date with origin/main
+
+ENVIRONMENT:
+  Supabase: configured (NEXT_PUBLIC_SUPABASE_URL and keys present; not placeholders)
+  Anthropic: configured (ANTHROPIC_API_KEY present; not a your_* placeholder)
+  Stripe: placeholder — NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET still start with your_stripe_ / your_stripe
+  Ephemeris URL: localhost — EPHEMERIS_SERVICE_URL=http://localhost:8001 (also EPHEMERIS_API_URL=http://localhost:8001)
+  App URL: localhost — NEXT_PUBLIC_URL=http://localhost:3000
+
+RAILWAY (Ephemeris):
+  railway.json: missing (ephemeris-service\railway.json does not exist; ephemeris-service\railway.toml is present for Railway config)
+  requirements.txt: exists
+  Live URL: NOT DEPLOYED (no railway.app URL in .env.local)
+  Health check: SKIPPED — no Railway base URL configured to curl /validate
+
+VERCEL (Frontend):
+  vercel.json: missing
+  Project linked: no — .vercel\project.json missing
+  Live URL: NOT CONFIRMED FROM REPO — NEXT_PUBLIC_URL is localhost; Vercel CLI available via npx (Vercel CLI 50.35.0)
+
+DOMAIN:
+  vedichour.com DNS: resolves — A record 2.57.91.91 (not the commonly cited Vercel anycast 76.76.21.21); verify with your DNS host whether this is intended (e.g. proxy/CDN vs direct Vercel)
+  Site accessible: yes — curl https://vedichour.com returned HTTP 200
+
+BUILD:
+  TypeScript: 0 errors (npx tsc --noEmit exited 0)
+  Build: PASS (npm run build exited 0)
+
+NEXT STEPS NEEDED:
+  1. Replace Stripe env placeholders in .env.local (and set matching secrets in hosting).
+  2. Deploy ephemeris-service to Railway; set EPHEMERIS_SERVICE_URL (and EPHEMERIS_API_URL if used) to the live Railway URL; run health check on /validate.
+  3. Point production NEXT_PUBLIC_URL to the real app URL (Vercel preview/production or vedichour.com as appropriate).
+  4. Link project to Vercel (vercel link) and/or add vercel.json if your workflow requires it; configure env vars on Vercel.
+  5. Commit or discard 94 working-tree changes; avoid committing secrets; remove accidental untracked `nul` if undesired.
+  6. Confirm vedichour.com DNS target (2.57.91.91) matches your intended host (Vercel vs other).

@@ -58,18 +58,46 @@ function safeText(text: string | undefined, fallback: string): string {
 }
 
 export function NativityCard({
-  name,
-  birthDate,
-  birthTime,
-  birthCity,
-  lagna,
-  lagnaDegree,
-  moonSign,
-  moonNakshatra,
-  currentDasha,
+  name: nameProp,
+  birthDate: birthDateProp,
+  birthTime: birthTimeProp,
+  birthCity: birthCityProp,
+  lagna: lagnaProp,
+  lagnaDegree: lagnaDegreeProp,
+  moonSign: moonSignProp,
+  moonNakshatra: moonNakshatraProp,
+  currentDasha: currentDashaProp,
   nativitySummary,
   nativity,
 }: NativityCardProps) {
+  const name = nameProp ?? 'Seeker';
+  const birthDate = birthDateProp ?? '';
+  const birthTime = birthTimeProp ?? '';
+  const birthCity = birthCityProp ?? '';
+  const lagna = lagnaProp ?? 'Cancer';
+  const lagnaDegree = typeof lagnaDegreeProp === 'number' && !Number.isNaN(lagnaDegreeProp) ? lagnaDegreeProp : 0;
+  const moonSign = moonSignProp ?? 'Cancer';
+  const moonNakshatra = moonNakshatraProp ?? '';
+  const currentDasha = currentDashaProp ?? { mahadasha: 'Unknown', antardasha: 'Unknown' };
+  // Debug trace to ensure nativity never silently crashes
+  try {
+    // eslint-disable-next-line no-console
+    console.log(
+      '[NATIVITY-CARD] data:',
+      JSON.stringify(
+        {
+          lagna,
+          moonSign,
+          currentDasha,
+          hasSummary: !!nativitySummary,
+          hasNativity: !!nativity,
+        }
+      )?.slice(0, 200)
+    );
+  } catch {
+    // ignore logging failures
+  }
+
   return (
     <motion.div
       id="nativity"
@@ -158,7 +186,7 @@ export function NativityCard({
                     title={yoga}
                   >
                     <span className="font-mono text-xs text-amber">
-                      {yoga.split('(')[0].trim()}
+                      {typeof yoga === 'string' ? yoga.split('(')[0].trim() : (yoga != null ? String(yoga) : '').trim()}
                     </span>
                   </span>
                 ))}

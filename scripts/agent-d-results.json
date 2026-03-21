@@ -1,0 +1,24 @@
+{
+  "typescript": {
+    "errors": 0,
+    "pass": true
+  },
+  "build": {
+    "pass": true
+  },
+  "html": {
+    "checks": {
+      "is_report_page": true,
+      "size_gt_250kb": true,
+      "nativity_ok": true,
+      "has_7_strategy": true,
+      "has_caps_headlines": true,
+      "has_house_refs": true,
+      "has_monthly": true,
+      "has_weekly": true,
+      "has_synthesis": true
+    },
+    "pass": true
+  },
+  "overall_pass": true
+}

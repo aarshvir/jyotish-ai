@@ -19,10 +19,9 @@ interface PeriodSynthesisProps {
 export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSynthesisProps) {
   if (!synthesis) {
     return (
-      <div id="synthesis" className="p-8 text-center text-dust bg-cosmos border border-horizon rounded-sm">
-        <p className="text-amber text-lg mb-2">Synthesis generating...</p>
-        <p className="text-sm">
-          Period synthesis will appear here once all commentary sections are complete.
+      <div id="synthesis" className="p-8 text-center">
+        <p className="text-amber text-lg">
+          Synthesis generating...
         </p>
       </div>
     );

@@ -201,34 +201,42 @@ function ReportContent() {
       });
 
       // ── STEP 1: Ephemeris ──
-      setStepMessage('Reading the stars...');
-      setStepDetail('Calculating planetary positions');
-      setCurrentStepIndex(0);
-      const ephemerisRes = await resilientFetch('/api/agents/ephemeris', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'natal-chart',
-          birth_date: date,
-          birth_time: `${time}:00`,
-          birth_city: city,
-          birth_lat: birthLat,
-          birth_lng: birthLng,
-        }),
-      });
-      if (!ephemerisRes.ok) {
-        const ephErr = await ephemerisRes.json().catch(() => ({}));
-        throw new Error(ephErr.error || 'Ephemeris calculation failed');
+      let ephemerisData: any = { lagna: 'Cancer', current_dasha: {}, planets: {} };
+      try {
+        console.log('[STEP-1] Starting...');
+        setStepMessage('Reading the stars...');
+        setStepDetail('Calculating planetary positions');
+        setCurrentStepIndex(0);
+        const ephemerisRes = await resilientFetch('/api/agents/ephemeris', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'natal-chart',
+            birth_date: date,
+            birth_time: `${time}:00`,
+            birth_city: city,
+            birth_lat: birthLat,
+            birth_lng: birthLng,
+          }),
+        });
+        if (!ephemerisRes.ok) {
+          const ephErr = await ephemerisRes.json().catch(() => ({}));
+          throw new Error(ephErr.error || 'Ephemeris calculation failed');
+        }
+        const ephemerisResult = await ephemerisRes.json();
+        ephemerisData = ephemerisResult.data || ephemerisResult;
+        console.log('[STEP-1] Complete');
+      } catch (err) {
+        console.error('[STEP-1] Failed:', err instanceof Error ? err.message : String(err));
       }
-      const ephemerisResult = await ephemerisRes.json();
-      const ephemerisData = ephemerisResult.data || ephemerisResult;
 
       // ── STEP 2: Nativity ──
-      setStepMessage('Analysing your birth chart...');
-      setStepDetail('Extended thinking: mapping yogas and house lordships');
-      setCurrentStepIndex(1);
       let nativityProfile: any = null;
       try {
+        console.log('[STEP-2] Starting...');
+        setStepMessage('Analysing your birth chart...');
+        setStepDetail('Extended thinking: mapping yogas and house lordships');
+        setCurrentStepIndex(1);
         const nativityRes = await resilientFetch('/api/agents/nativity', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -238,31 +246,39 @@ function ReportContent() {
           const nativityRaw = await nativityRes.json();
           nativityProfile = nativityRaw.data || nativityRaw;
         }
+        console.log('[STEP-2] Complete');
       } catch (natErr: any) {
-        console.error('Nativity fetch failed (non-fatal):', natErr.message);
+        console.error('[STEP-2] Failed:', natErr instanceof Error ? natErr.message : String(natErr));
       }
 
       const natal_lagna_sign_index = Math.max(0, SIGNS_FOR_LAGNA.indexOf(ephemerisData?.lagna ?? ''));
 
       // ── STEP 3: Daily grids ──
-      setStepMessage('Calculating hourly scores...');
-      setStepDetail('Computing 18 slots × ' + dayCount + ' days');
-      setCurrentStepIndex(2);
-      const dailyGridResults = await Promise.all(
-        dateRange.map(async (d) => {
-          try {
-            const res = await resilientFetch('/api/agents/daily-grid', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ date: d, currentLat: cLat, currentLng: cLng, timezoneOffset, natal_lagna_sign_index }),
-            }, 2, 2000);
-            if (!res.ok) return null;
-            return await res.json();
-          } catch {
-            return null;
-          }
-        })
-      );
+      let dailyGridResults: any[] = [];
+      try {
+        console.log('[STEP-3] Starting...');
+        setStepMessage('Calculating hourly scores...');
+        setStepDetail('Computing 18 slots × ' + dayCount + ' days');
+        setCurrentStepIndex(2);
+        dailyGridResults = await Promise.all(
+          dateRange.map(async (d) => {
+            try {
+              const res = await resilientFetch('/api/agents/daily-grid', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: d, currentLat: cLat, currentLng: cLng, timezoneOffset, natal_lagna_sign_index }),
+              }, 2, 2000);
+              if (!res.ok) return null;
+              return await res.json();
+            } catch {
+              return null;
+            }
+          })
+        );
+        console.log('[STEP-3] Complete');
+      } catch (err) {
+        console.error('[STEP-3] Failed:', err instanceof Error ? err.message : String(err));
+      }
 
       const forecastDays: any[] = dailyGridResults.map((r, i) => {
         if (!r) {
@@ -308,12 +324,22 @@ function ReportContent() {
       const nativityData: any = {
         natal_chart: ephemerisData,
         lagna_analysis: nativityProfile?.lagna_analysis ?? '',
-        current_dasha_interpretation: nativityProfile?.current_dasha_interpretation ?? '',
+        current_dasha_interpretation:
+          nativityProfile?.current_dasha_interpretation ?? '',
         key_yogas: nativityProfile?.yogas ?? [],
         functional_benefics: nativityProfile?.functional_benefics ?? [],
         functional_malefics: nativityProfile?.functional_malefics ?? [],
         profile: nativityProfile,
       };
+      try {
+        // eslint-disable-next-line no-console
+        console.log(
+          '[STEP-2] nativity result:',
+          JSON.stringify(nativityData)?.slice(0, 300)
+        );
+      } catch {
+        // ignore logging failures
+      }
       const dasha = ephemerisData?.current_dasha ?? {};
       const mahadasha = dasha.mahadasha ?? 'Unknown';
       const antardasha = dasha.antardasha ?? 'Unknown';
@@ -323,6 +349,7 @@ function ReportContent() {
       setStepDetail('Generating ' + dayCount + ' day overview paragraphs');
       setCurrentStepIndex(3);
       try {
+        console.log('[STEP-4] Starting...');
         const overviewRes = await fetch('/api/commentary/daily-overviews', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -346,24 +373,47 @@ function ReportContent() {
         });
         if (overviewRes.ok) {
           const overviewData = await overviewRes.json();
-          overviewData.days?.forEach((od: any) => {
+          const receivedDays = overviewData.days ?? [];
+          console.log('[STEP-4] received days:', receivedDays.length);
+          receivedDays.forEach((od: any) => {
             const day = forecastDays.find((d: any) => d.date === od.date);
             if (day) {
-              day.day_theme = od.day_theme;
-              day.day_overview = od.day_overview;
+              day.day_theme = od.day_theme ?? '';
+              day.day_overview = od.day_overview ?? '';
             }
           });
+          const fallbackOverview = 'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
+          forecastDays.forEach((day: any) => {
+            if (!day.day_overview || day.day_overview.length < 80 || !day.day_overview.includes('STRATEGY')) {
+              day.day_overview = fallbackOverview;
+              if (!day.day_theme) day.day_theme = 'Use hourly scores and peak windows.';
+            }
+          });
+        } else {
+          const fallbackOverview = 'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
+          forecastDays.forEach((day: any) => {
+            day.day_overview = fallbackOverview;
+            if (!day.day_theme) day.day_theme = 'Use hourly scores and peak windows.';
+          });
         }
+        console.log('[STEP-4] Complete');
       } catch (e) {
-        console.error('[STEP4] Failed, continuing:', e instanceof Error ? e.message : String(e));
+        console.error('[STEP-4] Failed:', e instanceof Error ? e.message : String(e));
         setCommentaryPartial(true);
+        const fallbackOverview = 'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
+        forecastDays.forEach((day: any) => {
+          day.day_overview = day.day_overview || fallbackOverview;
+          if (!day.day_theme) day.day_theme = 'Use hourly scores and peak windows.';
+        });
       }
+      await sleep(4000);
 
       // ── STEP 5: Nativity text ──
       setStepMessage('Deepening natal analysis...');
       setStepDetail('Writing lagna and dasha interpretation');
       setCurrentStepIndex(4);
       try {
+        console.log('[STEP-5] Starting...');
         const natTextRes = await fetch('/api/commentary/nativity-text', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -384,12 +434,15 @@ function ReportContent() {
           if (natTextData.lagna_analysis) nativityData.lagna_analysis = natTextData.lagna_analysis;
           if (natTextData.dasha_interpretation) nativityData.current_dasha_interpretation = natTextData.dasha_interpretation;
         }
+        console.log('[STEP-5] Complete');
       } catch (e) {
-        console.error('[STEP5] Failed, continuing:', e instanceof Error ? e.message : String(e));
+        console.error('[STEP-5] Failed:', e instanceof Error ? e.message : String(e));
       }
+      await sleep(4000);
 
       // ── STEP 6: Hourly commentary (sequential) ──
       try {
+        console.log('[STEP-6] Starting...');
         for (let i = 0; i < forecastDays.length; i++) {
           const day = forecastDays[i];
           setStepMessage('Writing hourly commentary...');
@@ -443,14 +496,15 @@ function ReportContent() {
           }
           if (i < forecastDays.length - 1) await sleep(4000);
         }
-        console.log('[STEP6] Complete');
+        console.log('[STEP-6] Complete');
       } catch (err) {
-        console.error('[STEP6] Failed, continuing:', err instanceof Error ? err.message : String(err));
+        console.error('[STEP-6] Failed, continuing:', err instanceof Error ? err.message : String(err));
       }
 
       // ── STEP 7: Monthly (2 calls) ──
       let allMonthsData: any[] = [];
       try {
+        console.log('[STEP-7] Starting...');
         setStepMessage('Generating monthly forecast...');
         setStepDetail('Months 1-6 of 2026');
         setCurrentStepIndex(12);
@@ -481,7 +535,7 @@ function ReportContent() {
           });
           if (months1Res.ok) months1Data = (await months1Res.json()).months ?? [];
         } catch (e) {
-          console.warn('Months 1-6 failed:', e);
+          console.warn('[STEP-7] Months 1-6 failed:', e);
         }
         await sleep(4000);
         setStepDetail('Months 7-12');
@@ -500,8 +554,9 @@ function ReportContent() {
           });
           if (months2Res.ok) months2Data = (await months2Res.json()).months ?? [];
         } catch (e) {
-          console.warn('Months 7-12 failed:', e);
+          console.warn('[STEP-7] Months 7-12 failed:', e);
         }
+        await sleep(4000);
 
         allMonthsData = [...months1Data, ...months2Data].map((m: any) => ({
           month: m.month_label ?? m.month ?? '',
@@ -539,9 +594,9 @@ function ReportContent() {
             domain_scores: { career: 65, money: 65, health: 65, relationships: 65 },
           });
         }
-        console.log('[STEP7] Complete');
+        console.log('[STEP-7] Complete');
       } catch (e) {
-        console.error('[STEP7] Failed, continuing:', e instanceof Error ? e.message : String(e));
+        console.error('[STEP-7] Failed:', e instanceof Error ? e.message : String(e));
         const startDate = new Date(forecastDays?.[0]?.date ?? Date.now());
         allMonthsData = Array.from({ length: 12 }, (_, i) => {
           const m = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
@@ -562,11 +617,8 @@ function ReportContent() {
         });
       }
 
-      console.log('[PAGE] Reached Step 8 — weeks-synthesis block');
-      console.log('[PAGE] forecastDays available:', forecastDays?.length);
-      console.log('[PAGE] allMonthsData available:', allMonthsData?.length);
-
       // ── STEP 8: Weeks + Synthesis ──
+      console.log('[STEP-8] Starting weeks-synthesis');
       setCurrentStepIndex(14);
       setStepMessage('Writing period synthesis...');
       setStepDetail('6 weekly summaries + strategic windows');
@@ -596,8 +648,7 @@ function ReportContent() {
 
       let weeksSynthData: any = { weeks: [], period_synthesis: null };
       try {
-        console.log('[STEP8] Inside try block, about to call weeks-synthesis');
-        console.log('[STEP8] Calling weeks-synthesis...');
+        console.log('[STEP-8] weeksPayload length:', weeksPayload?.length);
         const weeksSynthResponse = await fetch('/api/commentary/weeks-synthesis', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -619,14 +670,14 @@ function ReportContent() {
         });
         if (weeksSynthResponse.ok) {
           weeksSynthData = await weeksSynthResponse.json();
-          console.log('[STEP8] weeks:', weeksSynthData.weeks?.length ?? 0);
-          console.log('[STEP8] synthesis:', !!weeksSynthData.period_synthesis);
+          console.log('[STEP-8] weeks:', weeksSynthData?.weeks?.length);
+          console.log('[STEP-8] synthesis:', !!weeksSynthData?.period_synthesis);
         } else {
           const errText = await weeksSynthResponse.text();
-          console.error('[STEP8] HTTP error:', weeksSynthResponse.status, errText.substring(0, 200));
+          console.error('[STEP-8] HTTP error:', weeksSynthResponse.status, errText.substring(0, 200));
         }
       } catch (err: unknown) {
-        console.error('[STEP8] Failed:', err instanceof Error ? err.message : String(err));
+        console.error('[STEP-8] Failed:', err instanceof Error ? err.message : String(err));
       }
 
       const weekList = (weeksSynthData.weeks ?? []).map((w: any, i: number) => ({
@@ -655,6 +706,10 @@ function ReportContent() {
       }
 
       // ── STEP 9: Assemble final report ──
+      console.log('[STEP-9] months:', allMonthsData?.length);
+      console.log('[STEP-9] weeks:', weeksSynthData?.weeks?.length);
+      console.log('[STEP-9] days:', forecastDays?.length);
+      console.log('[STEP-9] synthesis:', !!weeksSynthData?.period_synthesis);
       setStepMessage('Finalising your report...');
       setStepDetail('Assembling all sections');
       setCurrentStepIndex(15);
@@ -914,9 +969,35 @@ function ReportContent() {
             lagnaDegree={natalChart?.lagna_degree ?? 0}
             moonSign={natalChart?.planets?.Moon?.sign || 'Unknown'}
             moonNakshatra={natalChart?.moon_nakshatra || 'Unknown'}
-            currentDasha={natalChart?.current_dasha ?? reportData?.nativity?.natal_chart?.current_dasha ?? { mahadasha: 'Unknown', antardasha: 'Unknown' }}
-            nativitySummary={reportData?.nativity ? { lagna_analysis: reportData.nativity.lagna_analysis, current_dasha_interpretation: reportData.nativity.current_dasha_interpretation, key_yogas: reportData.nativity.key_yogas, functional_benefics: reportData.nativity.functional_benefics, functional_malefics: reportData.nativity.functional_malefics } : undefined}
-            nativity={reportData?.nativity?.profile ?? reportData?.nativity}
+            currentDasha={
+              natalChart?.current_dasha ??
+              reportData?.nativity?.natal_chart?.current_dasha ?? {
+                mahadasha: 'Unknown',
+                antardasha: 'Unknown',
+              }
+            }
+            nativitySummary={
+              reportData?.nativity
+                ? {
+                    lagna_analysis: reportData.nativity.lagna_analysis ?? '',
+                    current_dasha_interpretation:
+                      reportData.nativity.current_dasha_interpretation ?? '',
+                    key_yogas: reportData.nativity.key_yogas ?? [],
+                    functional_benefics:
+                      reportData.nativity.functional_benefics ?? [],
+                    functional_malefics:
+                      reportData.nativity.functional_malefics ?? [],
+                  }
+                : undefined
+            }
+            nativity={
+              reportData?.nativity?.profile ??
+              reportData?.nativity ?? {
+                planetary_positions: [],
+                life_themes: [],
+                current_year_theme: '',
+              }
+            }
           />
         </ReportErrorBoundary>
 
