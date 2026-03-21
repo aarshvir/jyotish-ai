@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       reportParams?: Record<string, string>;
     };
 
-    if (isTestMode) {
+    if (isTestMode()) {
       const base = request.nextUrl.origin;
       const reportId = Date.now();
       const query = reportParams

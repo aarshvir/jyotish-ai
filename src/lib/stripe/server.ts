@@ -1,11 +1,31 @@
 import Stripe from 'stripe';
 
-const key = process.env.STRIPE_SECRET_KEY ?? '';
-export const isTestMode = key.startsWith('your_');
+function stripeSecretKey(): string {
+  return process.env.STRIPE_SECRET_KEY ?? '';
+}
 
-export const stripe = isTestMode
-  ? (null as unknown as Stripe)
-  : new Stripe(key, { apiVersion: '2026-01-28.clover', typescript: true });
+/** True when key is missing or still a placeholder (e.g. Vercel build without Stripe). */
+export function isTestMode(): boolean {
+  const key = stripeSecretKey();
+  return !key || key.startsWith('your_');
+}
+
+let stripeSingleton: Stripe | null = null;
+
+/** Lazy Stripe client — never instantiate at module load (avoids Vercel build failures). */
+export function getStripeClient(): Stripe {
+  const key = stripeSecretKey();
+  if (!key || key.startsWith('your_')) {
+    throw new Error('Stripe not configured');
+  }
+  if (!stripeSingleton) {
+    stripeSingleton = new Stripe(key, {
+      apiVersion: '2026-01-28.clover',
+      typescript: true,
+    });
+  }
+  return stripeSingleton;
+}
 
 export async function createCheckoutSession({
   priceId,
@@ -16,10 +36,10 @@ export async function createCheckoutSession({
   userId: string;
   userEmail: string;
 }) {
-  if (isTestMode) {
+  if (isTestMode()) {
     return { id: 'test_skip', url: null } as unknown as Stripe.Checkout.Session;
   }
-  return await stripe.checkout.sessions.create({
+  return await getStripeClient().checkout.sessions.create({
     line_items: [
       {
         price: priceId,
@@ -43,10 +63,10 @@ export async function createSubscription({
   priceId: string;
   customerId: string;
 }) {
-  if (isTestMode) {
+  if (isTestMode()) {
     return { id: 'sub_test_skip' } as unknown as Stripe.Subscription;
   }
-  return await stripe.subscriptions.create({
+  return await getStripeClient().subscriptions.create({
     customer: customerId,
     items: [{ price: priceId }],
     payment_behavior: 'default_incomplete',

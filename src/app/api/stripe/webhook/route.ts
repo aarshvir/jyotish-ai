@@ -6,7 +6,7 @@ import { isTestMode } from '@/lib/stripe/server';
  * Stripe webhook. When STRIPE_SECRET_KEY starts with "your_" (test mode), return 200 and skip.
  */
 export async function POST(request: NextRequest) {
-  if (isTestMode) {
+  if (isTestMode()) {
     return NextResponse.json({ received: true });
   }
   const body = await request.text();

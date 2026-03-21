@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stripe, isTestMode } from '@/lib/stripe/server';
+import { getStripeClient, isTestMode } from '@/lib/stripe/server';
 import { createClient } from '@/lib/supabase/server';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
-  if (isTestMode) {
+  if (isTestMode()) {
     return NextResponse.json({ received: true });
   }
   const body = await request.text();
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
+    event = getStripeClient().webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!

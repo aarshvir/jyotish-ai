@@ -16,6 +16,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key || key.startsWith('your_')) {
+      return NextResponse.json(
+        { error: 'Stripe not configured', testMode: true },
+        { status: 200 }
+      );
+    }
+
     const { priceId } = await request.json();
 
     if (!priceId) {
