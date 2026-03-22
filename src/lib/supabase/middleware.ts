@@ -1,22 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-/** Paths reachable without a session. Note: `/` must be checked with equality — `startsWith('/')` matches everything. */
-const PUBLIC_PREFIXES = [
-  '/login',
-  '/signup',
-  '/pricing',
-  '/terms',
-  '/privacy',
-  '/refund',
-  '/auth/',
-] as const;
+const PROTECTED_PREFIXES = ['/dashboard', '/settings', '/account', '/api/user'];
 
-function isPublicPath(pathname: string): boolean {
-  if (pathname === '/') return true;
-  return PUBLIC_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(prefix)
-  );
+function isProtectedRoute(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
 export async function updateSession(request: NextRequest) {
@@ -49,7 +37,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && !isPublicPath(request.nextUrl.pathname)) {
+  if (!user && isProtectedRoute(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
