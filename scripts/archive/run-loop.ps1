@@ -1,6 +1,13 @@
 $ErrorActionPreference = "Continue"
-$ROOT = (Get-Item $PSScriptRoot).Parent.FullName
-$MAX_LOOPS = 1
+$ROOT = (Get-Item $PSScriptRoot).Parent.Parent.FullName
+$MAX_LOOPS = 10
+
+# Prevent laptop sleep while loop runs
+$powerCode = @'
+[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint f);
+'@
+$powerType = Add-Type -MemberDefinition $powerCode -Name "PwrUtil" -Namespace "Win32" -PassThru
+$powerType::SetThreadExecutionState(0x80000003) | Out-Null  # ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED
 $PYTHON = "py"
 $NODE = "node"
 
@@ -164,7 +171,7 @@ function RunPython($scriptPath, $label) {
 function RunOrchestrator {
     Log "--- Running orchestrator (12-15 min) ---"
     $proc = Start-Process -FilePath "node" `
-        -ArgumentList ('"' + $ROOT + '\scripts\orchestrator.js"') `
+        -ArgumentList ('"' + $ROOT + '\scripts\archive\orchestrator.js"') `
         -WorkingDirectory $ROOT `
         -PassThru `
         -RedirectStandardOutput "$ROOT\scripts\tmp-orch-out.txt" `
@@ -233,11 +240,11 @@ Log ""
 
 # Verify scripts exist
 $required = @(
-    "scripts\agent-a-score-validator.py",
-    "scripts\agent-b-commentary-analyzer.py",
-    "scripts\agent-c-optimizer.py",
-    "scripts\agent-d-verify.py",
-    "scripts\orchestrator.js",
+    "scripts\archive\agent-a-score-validator.py",
+    "scripts\archive\agent-b-commentary-analyzer.py",
+    "scripts\archive\agent-c-optimizer.py",
+    "scripts\archive\agent-d-verify.py",
+    "scripts\archive\orchestrator.js",
     "scripts\benchmark.json"
 )
 foreach ($f in $required) {
@@ -276,15 +283,15 @@ for ($i = 1; $i -le $MAX_LOOPS; $i++) {
     if (-not (PortOpen 3000)) { StartNextJS }
 
     # AGENT A - Score variance
-    $aCode = RunPython "scripts\agent-a-score-validator.py" "AGENT-A"
+    $aCode = RunPython "scripts\archive\agent-a-score-validator.py" "AGENT-A"
     Log "Agent A exit code: $aCode"
 
     # AGENT B - Commentary quality
-    $bCode = RunPython "scripts\agent-b-commentary-analyzer.py" "AGENT-B"
+    $bCode = RunPython "scripts\archive\agent-b-commentary-analyzer.py" "AGENT-B"
     Log "Agent B exit code: $bCode"
 
     # AGENT C — Apply fixes to source files
-    $cCode = RunPython "scripts\agent-c-optimizer.py" "AGENT-C"
+    $cCode = RunPython "scripts\archive\agent-c-optimizer.py" "AGENT-C"
     Log "Agent C exit code: $cCode"
 
     # Read what C fixed
@@ -394,7 +401,7 @@ for ($i = 1; $i -le $MAX_LOOPS; $i++) {
     Log "Orchestrator exit code: $orchCode"
 
     # AGENT D - TypeScript + build + HTML validation
-    $dCode = RunPython "scripts\agent-d-verify.py" "AGENT-D"
+    $dCode = RunPython "scripts\archive\agent-d-verify.py" "AGENT-D"
     Log "Agent D exit code: $dCode"
 
     # Check success
@@ -454,4 +461,5 @@ for ($i = 1; $i -le $MAX_LOOPS; $i++) {
     }
 }
 
+$powerType::SetThreadExecutionState(0x80000000) | Out-Null  # Restore sleep on exit
 Log '=== LOOP ENDED ==='

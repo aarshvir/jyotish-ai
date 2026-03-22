@@ -18,7 +18,7 @@ FIXES APPLIED THIS SESSION
 --------------------------------------------------------------------------------
 1. scripts/validate-html.py — Report URL accepts Daily Forecast + Period Synthesis; score regex \d+\s*/\s*100; scores filtered 20–99; single score passes spread check.
 2. scripts/DEPLOY.md — Created (Supabase, Railway, Vercel, env vars).
-3. scripts/orchestrator.js — Wait 25 min; poll 12s; done if body > 50k and (STRATEGY or Daily Forecast) or body > 120k.
+3. scripts/archive/orchestrator.js — Wait 25 min; poll 12s; done if body > 50k and (STRATEGY or Daily Forecast) or body > 120k.
 4. NativityCard — All props defaulted; yoga.split guarded (typeof yoga === 'string').
 5. Report page (page.tsx) — Step 4: pad missing/short day overviews with STRATEGY fallback; on !overviewRes.ok or in catch, apply fallback to all forecastDays so 7 days always have STRATEGY.
 6. daily-overviews/route.ts — Prompt says "exactly N days" and "You MUST return exactly N objects"; long fallbacks on parse/API failure.
@@ -29,7 +29,7 @@ FIXES APPLIED THIS SESSION
 HOW TO REACH FULL PASS
 --------------------------------------------------------------------------------
 1. Start ephemeris + Next.js; run: py scripts/test-report.py (expect 32/32).
-2. Run: node scripts/orchestrator.js (allow 25+ min; stable network).
+2. Run: node scripts/archive/orchestrator.js (allow 25+ min; stable network).
 3. When last-report.html > 250KB and report-full.png > 500KB, run: py scripts/validate-html.py.
 4. Fix any [FAIL] by component/route changes and re-run orchestrator + validation until 10/10.
 5. Then: npx tsc --noEmit, npm run build, and set this file to STATUS: READY.

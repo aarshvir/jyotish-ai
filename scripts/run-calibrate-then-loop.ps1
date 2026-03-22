@@ -41,7 +41,7 @@ if (-not (PortOpen 3000)) {
 
 # Run calibration
 Log "Running auto-calibration..."
-$cal = Start-Process "py" -ArgumentList "`"$ROOT\scripts\auto-calibrate.py`"" `
+$cal = Start-Process "py" -ArgumentList "`"$ROOT\scripts\archive\auto-calibrate.py`"" `
     -WorkingDirectory $ROOT -Wait -PassThru `
     -RedirectStandardOutput "$ROOT\scripts\cal-out.txt" `
     -RedirectStandardError "$ROOT\scripts\cal-err.txt" `
@@ -52,10 +52,10 @@ Get-Content "$ROOT\scripts\cal-out.txt" | ForEach-Object { Write-Host "  $_" }
 if ($cal.ExitCode -eq 0) {
     Log "Calibration passed 5/7 - starting main loop"
     # Set MAX_LOOPS to 10 for overnight run
-    (Get-Content "$ROOT\scripts\run-loop.ps1") `
+    (Get-Content "$ROOT\scripts\archive\run-loop.ps1") `
         -replace '\$MAX_LOOPS\s*=\s*\d+', '$MAX_LOOPS = 10' | `
-        Set-Content "$ROOT\scripts\run-loop.ps1"
-    & "$ROOT\scripts\run-loop.ps1"
+        Set-Content "$ROOT\scripts\archive\run-loop.ps1"
+    & "$ROOT\scripts\archive\run-loop.ps1"
 } else {
     Log "Calibration did not reach 5/7"
     Log "Check scripts/calibration-needed.txt for diagnosis"

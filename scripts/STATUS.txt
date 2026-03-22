@@ -4,7 +4,7 @@ Updated: last check ~21:21; loop running (Iteration 3+, Agent B). COMPLETE.txt n
 
 ACTIONS TAKEN
 -------------
-1. Loop: Started via Start-Process powershell run-loop.ps1. Restarted once after Iteration 4 appeared to stall at "Starting ephemeris".
+1. Loop: Started via Start-Process powershell scripts\archive\run-loop.ps1. Restarted once after Iteration 4 appeared to stall at "Starting ephemeris".
 2. Stripe: Test mode when STRIPE_SECRET_KEY starts with "your_". Created:
    - src/app/api/stripe/create-checkout/route.ts (test mode returns skipPayment + redirect URL to report)
    - src/app/api/stripe/webhook/route.ts (test mode returns 200 without calling Stripe)
@@ -18,7 +18,7 @@ CURRENT STATE
 - scripts/COMPLETE.txt: not present (loop has not reached full success yet)
 - Loop: running (multiple iterations; A/B/C/D still failing: scores variance, commentary, HTML checks)
 - To monitor: Get-Content scripts\agent-log.txt -Tail 30
-- To re-run loop: Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File scripts\run-loop.ps1" -WindowStyle Normal
+- To re-run loop: Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File scripts\archive\run-loop.ps1" -WindowStyle Normal
 
 SUCCESS CRITERIA (until COMPLETE.txt exists)
 --------------------------------------------

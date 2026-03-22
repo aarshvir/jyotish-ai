@@ -9,8 +9,8 @@
 **Problem:** In the loop, `npm run build` sometimes fails with "Failed to collect page data for /login" (ENOENT). Locally the build can pass; in CI/loop it may be flaky or timeout.
 
 **Actions:**
-- **Increase Agent D build timeout** in `scripts/agent-d-verify.py`: change build timeout from `180` to `300` (5 min) so the build has time to finish.
-- **Optional:** In `scripts/run-loop.ps1`, before running Agent D, run `Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue` so the build runs from a clean `.next` (avoids stale cache issues).
+- **Increase Agent D build timeout** in `scripts/archive/agent-d-verify.py`: change build timeout from `180` to `300` (5 min) so the build has time to finish.
+- **Optional:** In `scripts/archive/run-loop.ps1`, before running Agent D, run `Remove-Item -Recurse -Force .next -ErrorAction SilentlyContinue` so the build runs from a clean `.next` (avoids stale cache issues).
 - If it still fails, add `export const dynamic = 'force-dynamic'` to any page that uses cookies or searchParams during build (login is already client-side; the failure may be from a layout or API route being pulled in).
 
 ---
@@ -40,7 +40,7 @@
 **Problem:** Only **9/22** days are within 10% of benchmark; **avg day variance 18.1%**. Many days have live score **higher** than benchmark (e.g. 2026-02-24: bench 66.2, live 87). Agent C keeps reporting "yoga_mod inside slot loop" but the formula already passes yoga once per day; the issue is **magnitude** of modifiers, not structure.
 
 **Actions:**
-- **Option A (quick):** In `scripts/agent-a-score-validator.py`, temporarily relax the pass rule to e.g. "15/22 days within 15% variance" so the loop can complete while you tune the formula. Revert once formula is fixed.
+- **Option A (quick):** In `scripts/archive/agent-a-score-validator.py`, temporarily relax the pass rule to e.g. "15/22 days within 15% variance" so the loop can complete while you tune the formula. Revert once formula is fixed.
 - **Option B (proper):** In `ephemeris-service/main.py`, **scale down or cap** day-level modifiers (yoga, tithi, moon_house, weekday) so that the **mean of 18 slot scores** doesn’t overshoot the benchmark on high-yoga days. For example: apply a cap so `raw` never exceeds 85, or multiply yoga_mod by 0.7 before adding. Tune using the 22 benchmark dates.
 - Do **not** hardcode dates or reverse-engineer exact benchmark numbers; keep the formula generic (any lagna, any date).
 
@@ -51,7 +51,7 @@
 **Problem:** HTML checks show **is_report_page: false**, **size_gt_250kb: false**, **has_7_strategy: false**, **has_caps_headlines: false**, **has_house_refs: false**. So `last-report.html` is either not the report page, or the report didn’t finish loading before save.
 
 **Actions:**
-- In `scripts/orchestrator.js`, ensure **saveResults** runs only after the report page is **fully loaded** (e.g. wait for `#synthesis` with 80+ words or for URL `**/report/**` and a minimum body length). If the orchestrator times out or the app crashes (e.g. hourly 500), it may save the wrong page; fixing the hourly 500 and improving wait logic will help.
+- In `scripts/archive/orchestrator.js`, ensure **saveResults** runs only after the report page is **fully loaded** (e.g. wait for `#synthesis` with 80+ words or for URL `**/report/**` and a minimum body length). If the orchestrator times out or the app crashes (e.g. hourly 500), it may save the wrong page; fixing the hourly 500 and improving wait logic will help.
 - After fixing the hourly route, run the **orchestrator once manually** (with servers up), confirm it lands on `/report/...` and that `last-report.html` is large and contains STRATEGY sections and house refs. Then re-run the loop.
 
 ---
@@ -63,7 +63,7 @@ After the above:
 1. **Reset loop count** (optional): set `scripts/loop-count.txt` to `0` if you want a fresh run.
 2. **Start the loop:**
    ```powershell
-   Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File scripts\run-loop.ps1" -WindowStyle Normal
+   Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File scripts\archive\run-loop.ps1" -WindowStyle Normal
    ```
 3. **Monitor:** `Get-Content scripts\agent-log.txt -Tail 30` every few minutes. When **A, B, and D** all pass in one iteration, the loop writes `scripts/COMPLETE.txt` and exits.
 

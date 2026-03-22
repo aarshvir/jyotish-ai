@@ -47,14 +47,14 @@ FIXES ALREADY IN PLACE (from earlier session)
 WHAT TO DO NOW
 --------------------------------------------------------------------------------
 1. Check if the loop is still running
-   - Look for an open PowerShell window running run-loop.ps1.
+   - Look for an open PowerShell window running scripts\archive\run-loop.ps1.
    - Or: Get-Content scripts\agent-log.txt -Tail 20
    - If the last [LOOP] line is recent (within 10–15 min), the loop is still running.
 
 2. If the loop stopped or you want to restart it
    - Open PowerShell in the project root (c:\Users\aarsh\Downloads\jyotish-ai).
    - Run:
-     Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File scripts\run-loop.ps1" -WindowStyle Normal
+     Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File scripts\archive\run-loop.ps1" -WindowStyle Normal
    - Monitor: Get-Content scripts\agent-log.txt -Tail 30
    - Repeat every 5–10 min until scripts\COMPLETE.txt exists.
 
