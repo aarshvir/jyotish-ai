@@ -31,10 +31,13 @@ export async function createCheckoutSession({
   priceId,
   userId,
   userEmail,
+  planType,
 }: {
   priceId: string;
   userId: string;
   userEmail: string;
+  /** Mirrors onboard/report query param; stored on the session for webhooks. */
+  planType?: string;
 }) {
   if (isTestMode()) {
     return { id: 'test_skip', url: null } as unknown as Stripe.Checkout.Session;
@@ -52,6 +55,7 @@ export async function createCheckoutSession({
     customer_email: userEmail,
     metadata: {
       userId,
+      ...(planType ? { plan_type: planType } : {}),
     },
   });
 }

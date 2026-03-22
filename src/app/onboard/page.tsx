@@ -8,6 +8,8 @@ import { StarField } from '@/components/ui/StarField';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+type ReportPlanId = 'free' | '7day' | 'monthly' | 'annual';
+
 interface FormData {
   name: string;
   email: string;
@@ -20,7 +22,7 @@ interface FormData {
   currentLat: number | null;
   currentLng: number | null;
   currentTzOffset: number | null;
-  reportType: 'free' | '7day' | 'monthly';
+  reportType: ReportPlanId;
 }
 
 interface GeoResult {
@@ -49,17 +51,27 @@ const REPORT_TYPES = [
   },
   {
     id: '7day' as const,
+    plan_type: '7day' as const,
     title: '7-Day Forecast',
-    price: '$4.99',
+    price: '$9.99',
     description: 'Hourly ratings + AI narrative for 7 days',
   },
   {
     id: 'monthly' as const,
+    plan_type: 'monthly' as const,
     title: 'Monthly Oracle',
     price: '$19.99',
     description: '30-day calendar + nativity analysis + PDF',
   },
-];
+  {
+    id: 'annual' as const,
+    plan_type: 'annual' as const,
+    title: 'Annual Oracle',
+    price: '$49.99',
+    description: 'Full year forecast + monthly breakdowns + PDF',
+    bestValue: true,
+  },
+] as const;
 
 // ── Slide transition variants ─────────────────────────────────────────────────
 
@@ -313,7 +325,7 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
 
 interface Step3Props {
   form: FormData;
-  setReportType: (id: 'free' | '7day' | 'monthly') => void;
+  setReportType: (id: ReportPlanId) => void;
   onSubmit: () => void;
   onBack: () => void;
 }
@@ -340,9 +352,16 @@ function Step3({ form, setReportType, onSubmit, onBack }: Step3Props) {
             }`}
             onClick={() => setReportType(rt.id)}
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between gap-2 mb-1">
               <span className="font-display font-semibold text-lg">{rt.title}</span>
-              <span className="font-mono text-sm text-amber">{rt.price}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                {'bestValue' in rt && rt.bestValue && (
+                  <span className="font-mono text-[9px] tracking-[0.12em] px-2 py-0.5 rounded-sm bg-amber text-space uppercase whitespace-nowrap">
+                    BEST VALUE
+                  </span>
+                )}
+                <span className="font-mono text-sm text-amber">{rt.price}</span>
+              </div>
             </div>
             <p className="font-body text-xs text-dust">{rt.description}</p>
             {form.reportType === rt.id && (
@@ -372,7 +391,7 @@ function Step3({ form, setReportType, onSubmit, onBack }: Step3Props) {
         </div>
 
         {/* Money-back guarantee for paid plans */}
-        {(form.reportType === '7day' || form.reportType === 'monthly') && (
+        {(form.reportType === '7day' || form.reportType === 'monthly' || form.reportType === 'annual') && (
           <div className="flex items-center justify-center gap-2 pt-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-dust shrink-0">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -415,7 +434,7 @@ export default function OnboardPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const plan = params.get('plan');
-      if (plan === '7day' || plan === 'monthly' || plan === 'free') {
+      if (plan === '7day' || plan === 'monthly' || plan === 'annual' || plan === 'free') {
         setForm((prev) => ({ ...prev, reportType: plan }));
       }
     }
@@ -443,7 +462,7 @@ export default function OnboardPage() {
   function next() { setDir(1);  setStep((s) => s + 1); }
   function back() { setDir(-1); setStep((s) => s - 1); }
 
-  function setReportType(id: 'free' | '7day' | 'monthly') {
+  function setReportType(id: ReportPlanId) {
     setForm((prev) => ({ ...prev, reportType: id }));
   }
 
@@ -576,6 +595,13 @@ export default function OnboardPage() {
       lng:  String(form.birthLng ?? ''),
       type: form.reportType,
     };
+
+    if (form.reportType !== 'free') {
+      const row = REPORT_TYPES.find((r) => r.id === form.reportType);
+      if (row && 'plan_type' in row) {
+        paramsObj.plan_type = row.plan_type;
+      }
+    }
 
     if (useCurrent) {
       paramsObj.currentCity = form.currentCity;

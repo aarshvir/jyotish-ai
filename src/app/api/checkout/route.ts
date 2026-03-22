@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { priceId } = await request.json();
+    const { priceId, planType } = await request.json();
 
     if (!priceId) {
       return NextResponse.json(
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
       priceId,
       userId: user.id,
       userEmail: user.email!,
+      planType: typeof planType === 'string' ? planType : undefined,
     });
 
     return NextResponse.json({ 

@@ -9,18 +9,26 @@ import { createCheckoutSession, isTestMode } from '@/lib/stripe/server';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
-    const { priceId, userId, userEmail, reportParams } = body as {
+    const { priceId, userId, userEmail, reportParams, planType } = body as {
       priceId?: string;
       userId?: string;
       userEmail?: string;
       reportParams?: Record<string, string>;
+      planType?: string;
     };
 
     if (isTestMode()) {
       const base = request.nextUrl.origin;
       const reportId = Date.now();
-      const query = reportParams
-        ? new URLSearchParams(reportParams).toString()
+      const mergedParams =
+        reportParams || planType
+          ? {
+              ...reportParams,
+              ...(typeof planType === 'string' && planType ? { plan_type: planType } : {}),
+            }
+          : undefined;
+      const query = mergedParams
+        ? new URLSearchParams(mergedParams as Record<string, string>).toString()
         : '';
       const url = `${base}/report/${reportId}${query ? `?${query}` : ''}`;
       return NextResponse.json({
@@ -41,6 +49,7 @@ export async function POST(request: NextRequest) {
       priceId,
       userId,
       userEmail,
+      planType: typeof planType === 'string' ? planType : undefined,
     });
 
     return NextResponse.json({

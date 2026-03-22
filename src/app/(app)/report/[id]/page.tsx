@@ -189,7 +189,7 @@ function ReportContent() {
       setError(null);
       const birthLat = parseFloat(lat) || 0;
       const birthLng = parseFloat(lng) || 0;
-      const dayCount = type === 'monthly' ? 30 : 7;
+      const dayCount = type === 'monthly' || type === 'annual' ? 30 : 7;
       const timezoneOffset = currentTzOffset ?? -new Date().getTimezoneOffset();
       const cLat = parseFloat(currentLat) || birthLat;
       const cLng = parseFloat(currentLng) || birthLng;
