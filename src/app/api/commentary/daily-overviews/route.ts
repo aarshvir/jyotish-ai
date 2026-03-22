@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
-import { formatActualPlanetaryPositionsBlock } from '@/lib/commentary/planetPositionsPrompt';
+import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 
 function buildFallbackDay(d: any, lagnaSign: string): { date: string; day_theme: string; day_overview: string } {
   const date = String(d?.date ?? '');
@@ -148,6 +148,7 @@ export async function POST(req: NextRequest) {
       date: string;
       panchang: { tithi?: string; nakshatra?: string; yoga?: string; karana?: string; moon_sign?: string };
       planet_positions?: unknown;
+      slots?: Array<{ display_label?: string; score?: number; dominant_choghadiya?: string }>;
       day_score: number;
       rahu_kaal: { start: string; end: string };
       peak_slots: Array<{ display_label: string; dominant_hora: string; dominant_choghadiya: string; score: number }>;
@@ -180,7 +181,7 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a planet, house, or nakshatra.
 
-Each day may include authoritative sidereal graha positions (whole-sign houses from natal lagna) in a separate block in the user message — use that block for Sun through Ketu for that calendar date only. Never contradict it.
+Each day includes fixed blocks in the user message: graha positions, verified yoga meaning, best scoring choghadiya window, and Rahu Kaal status. Obey every STRICT RULE in those blocks.
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
 ${horaBlock}
@@ -192,14 +193,20 @@ Return ONLY valid JSON. No markdown, no backticks.`;
     const grahaBlocks = batchDays
       .map(
         (d: (typeof batchDays)[0]) =>
-          `=== ${d.date} ===\n${formatActualPlanetaryPositionsBlock(d.planet_positions as any, { dateLabel: d.date })}`
+          `=== ${d.date} ===\n${formatDayCommentaryAnchorBlocks({
+            planet_positions: d.planet_positions as any,
+            dateLabel: d.date,
+            yogaName: d.panchang?.yoga,
+            slots: d.slots,
+            rahu_kaal: d.rahu_kaal,
+          })}`
       )
       .join('\n\n');
 
     const userPrompt = `${grahaBlocks}
 
-Generate day_theme and day_overview for EACH of the following ${nDays} days. You MUST return exactly ${nDays} objects in the "days" array — one per day in the same order. Current dasha: ${mahadasha}/${antardasha}.
-For each day, graha signs and whole-sign houses MUST match the ACTUAL PLANETARY POSITIONS block for that date above (not the JSON duplicate alone).
+Generate day_theme and day_overview for EACH of the following ${nDays} days. You MUST return exactly ${nDays} entr${nDays === 1 ? 'y' : 'ies'} in the "days" array — one per day in the same order. Current dasha: ${mahadasha}/${antardasha}.
+For each day, graha signs and whole-sign houses MUST match the ACTUAL PLANETARY POSITIONS block for that date above (not the JSON duplicate alone). The yoga meaning and BEST ACTION WINDOW lines are authoritative for that date.
 
 Days data:
 ${JSON.stringify(batchDays, null, 2)}
@@ -210,9 +217,9 @@ Name specific house numbers, planets, nakshatras.
 Never use: generally, may, could, might, perhaps.
 
 STRATEGY section must include exactly 4 directives in this order:
-1) Best hora directive naming the hora planet and a concrete activity
+1) Primary timing: MUST name the BEST ACTION WINDOW (exact Time + Choghadiya from the fixed block above) as the main recommended window; tie the hora planet to that window.
 2) Strict avoid directive using direct language
-3) Rahu Kaal directive using the exact HH:MM-HH:MM time from the data and one instruction
+3) Rahu Kaal directive using the exact HH:MM-HH:MM time from the data and one instruction (if Rahu Kaal is ACTIVE above)
 4) Wellness directive with one practice for Cancer lagna
 
 Return this exact JSON structure (no extra fields):
@@ -226,7 +233,7 @@ Return this exact JSON structure (no extra fields):
   ]
 }
 
-Exactly ${nDays} objects in the days array. Start with { and end with }.`;
+Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start with { and end with }.`;
 
     const text = await completeLlmChat({
       modelOverride: override,

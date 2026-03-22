@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
-import { formatActualPlanetaryPositionsBlock } from '@/lib/commentary/planetPositionsPrompt';
+import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 
 function buildFallbackMonths(body: any): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; theme: string; key_transits: string[]; analysis: string }[] {
   const fallbackScores = [48, 52, 58, 70, 73, 65];
@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
     months: Array<{ month_label: string; month_index: number; key_transits_hint?: string }>;
     reference_planet_positions?: unknown;
     reference_planet_positions_date?: string;
+    reference_panchang?: { yoga?: string };
+    reference_slots?: Array<{ display_label?: string; score?: number; dominant_choghadiya?: string }>;
+    reference_rahu_kaal?: { start?: string; end?: string };
   };
 
   try {
@@ -66,8 +69,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ months: buildFallbackMonths(body) });
   }
 
-  const { lagnaSign, mahadasha, antardasha, months, reference_planet_positions, reference_planet_positions_date } =
-    body;
+  const {
+    lagnaSign,
+    mahadasha,
+    antardasha,
+    months,
+    reference_planet_positions,
+    reference_planet_positions_date,
+    reference_panchang,
+    reference_slots,
+    reference_rahu_kaal,
+  } = body;
   if (!lagnaSign || !Array.isArray(months) || months.length === 0) {
     return NextResponse.json({ error: 'lagnaSign and months required' }, { status: 400 });
   }
@@ -75,15 +87,19 @@ export async function POST(req: NextRequest) {
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
 
-  const anchorGraha = formatActualPlanetaryPositionsBlock(reference_planet_positions as any, {
+  const anchorBlocks = formatDayCommentaryAnchorBlocks({
+    planet_positions: reference_planet_positions as any,
     dateLabel: reference_planet_positions_date ?? 'forecast anchor date',
+    yogaName: reference_panchang?.yoga,
+    slots: reference_slots,
+    rahu_kaal: reference_rahu_kaal,
   });
 
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a planet, house, or nakshatra.
 
-${anchorGraha}
+${anchorBlocks}
 
-ANCHOR RULE: The table above is the verified sidereal snapshot for the forecast anchor date only. For later calendar months, describe transit themes qualitatively (dasha, house lords, Moon rhythm) without inventing precise graha longitudes or houses that contradict this anchor. Never place the same graha in a different sign/house than the anchor table for statements about that anchor date.
+ANCHOR RULE: The blocks above are the verified snapshot for the forecast anchor date only. For later calendar months, describe transit themes qualitatively (dasha, house lords, Moon rhythm) without inventing precise graha longitudes or houses that contradict this anchor. Never place the same graha in a different sign/house than the anchor table for statements about that anchor date. When discussing the anchor date, use the fixed yoga meaning and BEST ACTION WINDOW above.
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
 ${horaBlock}

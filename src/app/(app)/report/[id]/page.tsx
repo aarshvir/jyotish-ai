@@ -362,6 +362,11 @@ function ReportContent() {
               date: d.date,
               panchang: d.panchang,
               planet_positions: d.planet_positions,
+              slots: d.slots.map((s: any) => ({
+                display_label: s.display_label,
+                score: s.score,
+                dominant_choghadiya: s.dominant_choghadiya,
+              })),
               day_score: d.day_score,
               rahu_kaal: d.rahu_kaal,
               peak_slots: d.slots.filter((s: any) => s.score >= 75).slice(0, 3).map((s: any) => ({
@@ -461,6 +466,8 @@ function ReportContent() {
                 dayIndex: i,
                 date: day.date,
                 planet_positions: day.planet_positions,
+                panchang: day.panchang,
+                rahu_kaal: day.rahu_kaal,
                 slots: day.slots.map((s: any) => ({
                   slot_index: s.slot_index,
                   display_label: s.display_label,
@@ -536,6 +543,13 @@ function ReportContent() {
               months: allMonths.slice(0, 6),
               reference_planet_positions: forecastDays[0]?.planet_positions,
               reference_planet_positions_date: forecastDays[0]?.date,
+              reference_panchang: forecastDays[0]?.panchang,
+              reference_rahu_kaal: forecastDays[0]?.rahu_kaal,
+              reference_slots: forecastDays[0]?.slots?.map((s: any) => ({
+                display_label: s.display_label,
+                score: s.score,
+                dominant_choghadiya: s.dominant_choghadiya,
+              })),
             }),
           });
           if (months1Res.ok) months1Data = (await months1Res.json()).months ?? [];
@@ -557,6 +571,13 @@ function ReportContent() {
               months: allMonths.slice(6, 12),
               reference_planet_positions: forecastDays[0]?.planet_positions,
               reference_planet_positions_date: forecastDays[0]?.date,
+              reference_panchang: forecastDays[0]?.panchang,
+              reference_rahu_kaal: forecastDays[0]?.rahu_kaal,
+              reference_slots: forecastDays[0]?.slots?.map((s: any) => ({
+                display_label: s.display_label,
+                score: s.score,
+                dominant_choghadiya: s.dominant_choghadiya,
+              })),
             }),
           });
           if (months2Res.ok) months2Data = (await months2Res.json()).months ?? [];
@@ -668,6 +689,13 @@ function ReportContent() {
             planet_positions_by_date: forecastDays.map((d: any) => ({
               date: d.date,
               planet_positions: d.planet_positions,
+              panchang: d.panchang,
+              rahu_kaal: d.rahu_kaal,
+              slots: d.slots?.map((s: any) => ({
+                display_label: s.display_label,
+                score: s.score,
+                dominant_choghadiya: s.dominant_choghadiya,
+              })),
             })),
             synthesis_context: {
               total_days: forecastDays.length,

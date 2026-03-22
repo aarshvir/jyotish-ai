@@ -6,8 +6,8 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import {
-  formatMultipleDaysPlanetPositions,
-  type PlanetPositionsPayload,
+  formatMultipleDaysCommentaryAnchors,
+  type DayAnchorInput,
 } from '@/lib/commentary/planetPositionsPrompt';
 
 export async function POST(req: NextRequest) {
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       worst_score: number;
       avg_score: number;
     };
-    planet_positions_by_date?: Array<{ date?: string; planet_positions?: PlanetPositionsPayload }>;
+    planet_positions_by_date?: DayAnchorInput[];
   };
 
   try {
@@ -59,13 +59,13 @@ export async function POST(req: NextRequest) {
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
 
-  const forecastGraha = formatMultipleDaysPlanetPositions(planet_positions_by_date ?? []);
+  const forecastAnchors = formatMultipleDaysCommentaryAnchors(planet_positions_by_date ?? []);
 
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a planet, house, or nakshatra.
 
-${forecastGraha}
+${forecastAnchors}
 
-When discussing a specific calendar date in this report window, graha signs and whole-sign houses MUST match the ACTUAL PLANETARY POSITIONS block for that date in the tables above. Do not invent other placements.
+When discussing a specific calendar date in this report window, use the fixed blocks for that date: graha positions, yoga meaning, BEST ACTION WINDOW, and Rahu Kaal status. Do not contradict them or invent other placements.
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
 ${horaBlock}
@@ -80,7 +80,7 @@ ${JSON.stringify(weeks, null, 2)}
 Synthesis context:
 ${JSON.stringify(synthesis_context, null, 2)}
 
-Return this JSON structure. Each week's analysis must be a dense paragraph in grandmaster style: key yogas and transits for the week, then end with "BEST: [date or event]." and "WORST: [date or event]." so the reader gets clear best/worst days for that week.
+Return this JSON structure. Each week's analysis must be a dense paragraph in grandmaster style: key yogas and transits for the week, then end with "BEST: [date or event]." and "WORST: [date or event]." so the reader gets clear best/worst days for that week. When you name a best timing window for a date, use that date's BEST ACTION WINDOW (time + choghadiya) from the fixed blocks above.
 {
   "weeks": [
     {

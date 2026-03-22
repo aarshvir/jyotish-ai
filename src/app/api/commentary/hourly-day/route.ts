@@ -6,7 +6,7 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
 import type { HoraRole, LagnaContext } from '@/lib/agents/lagnaContext';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
-import { formatActualPlanetaryPositionsBlock } from '@/lib/commentary/planetPositionsPrompt';
+import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 
 function choghadiyaMeaning(chog: string): string {
   const k = chog.trim();
@@ -131,6 +131,8 @@ export async function POST(req: NextRequest) {
     const antardasha = String(body?.antardasha ?? '');
     const date = String(body?.date ?? '');
     const planetPositions = body?.planet_positions;
+    const panchang = body?.panchang;
+    const rahuKaalDay = body?.rahu_kaal;
     const rawSlots = body?.slots;
 
     const slots = Array.isArray(rawSlots) ? rawSlots : [];
@@ -181,11 +183,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const grahaBlock = formatActualPlanetaryPositionsBlock(planetPositions as any, { dateLabel: date });
+    const anchorBlocks = formatDayCommentaryAnchorBlocks({
+      planet_positions: planetPositions as any,
+      dateLabel: date,
+      yogaName: panchang?.yoga,
+      slots: normalizedSlots,
+      rahu_kaal: rahuKaalDay,
+    });
 
     const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only. Every sentence names a planet, house, or nakshatra.
 
-${grahaBlock}
+${anchorBlocks}
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
 ${horaBlock}
@@ -203,6 +211,8 @@ Return ONLY valid JSON. No markdown, no backticks. Start response with { and end
     const userPrompt = `Generate hourly commentary for ${date}. Current dasha: ${mahadasha}/${antardasha}.
 
 For each of the 18 time slots write commentary of 140-170 words. Name house numbers. Explain choghadiya meaning in parentheses. End with CAPS directive. No generic language.
+
+The slot that matches the BEST ACTION WINDOW (highest score) above should be described as the primary favorable window when you discuss timing; do not treat a lower-scoring slot as the main recommendation.
 
 Never use: generally, may, could, might, perhaps.
 
