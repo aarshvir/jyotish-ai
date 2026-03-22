@@ -2,20 +2,10 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
-
-const anthropic = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  : null;
-
-function extractText(response: Anthropic.Message): string {
-  return response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('');
-}
+import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
+import { formatActualPlanetaryPositionsBlock } from '@/lib/commentary/planetPositionsPrompt';
 
 function buildFallbackMonths(body: any): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; theme: string; key_transits: string[]; analysis: string }[] {
   const fallbackScores = [48, 52, 58, 70, 73, 65];
@@ -53,16 +43,15 @@ function buildFallbackMonths(body: any): { month_index: number; month_label: str
 }
 
 export async function POST(req: NextRequest) {
-  if (!anthropic) {
-    return NextResponse.json({ error: 'API key missing' }, { status: 500 });
-  }
-
   let body: {
+    model_override?: string;
     lagnaSign: string;
     mahadasha: string;
     antardasha: string;
     startMonth: string;
     months: Array<{ month_label: string; month_index: number; key_transits_hint?: string }>;
+    reference_planet_positions?: unknown;
+    reference_planet_positions_date?: string;
   };
 
   try {
@@ -71,7 +60,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { lagnaSign, mahadasha, antardasha, months } = body;
+  const modelOverride =
+    typeof body.model_override === 'string' ? body.model_override.trim() : undefined;
+  if (!hasLlmCredentials(modelOverride)) {
+    return NextResponse.json({ months: buildFallbackMonths(body) });
+  }
+
+  const { lagnaSign, mahadasha, antardasha, months, reference_planet_positions, reference_planet_positions_date } =
+    body;
   if (!lagnaSign || !Array.isArray(months) || months.length === 0) {
     return NextResponse.json({ error: 'lagnaSign and months required' }, { status: 400 });
   }
@@ -79,7 +75,15 @@ export async function POST(req: NextRequest) {
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
 
+  const anchorGraha = formatActualPlanetaryPositionsBlock(reference_planet_positions as any, {
+    dateLabel: reference_planet_positions_date ?? 'forecast anchor date',
+  });
+
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a planet, house, or nakshatra.
+
+${anchorGraha}
+
+ANCHOR RULE: The table above is the verified sidereal snapshot for the forecast anchor date only. For later calendar months, describe transit themes qualitatively (dasha, house lords, Moon rhythm) without inventing precise graha longitudes or houses that contradict this anchor. Never place the same graha in a different sign/house than the anchor table for statements about that anchor date.
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
 ${horaBlock}
@@ -116,14 +120,12 @@ Return exactly 6 month objects in this structure:
 Same structure for each month. Start with { and end with }.`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 7000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const text = await completeLlmChat({
+      modelOverride,
+      systemPrompt,
+      userPrompt,
+      maxTokens: 7000,
     });
-
-    const text = extractText(response);
     const parsed = safeParseJson<{ months: any[] }>(text);
 
     return NextResponse.json({ months: parsed.months ?? [] });

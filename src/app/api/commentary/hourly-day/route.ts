@@ -2,21 +2,11 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
 import type { HoraRole, LagnaContext } from '@/lib/agents/lagnaContext';
-
-const anthropic = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  : null;
-
-function extractText(response: Anthropic.Message): string {
-  return response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('');
-}
+import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
+import { formatActualPlanetaryPositionsBlock } from '@/lib/commentary/planetPositionsPrompt';
 
 function choghadiyaMeaning(chog: string): string {
   const k = chog.trim();
@@ -119,10 +109,6 @@ function parseClaudeJsonDefensively(text: string): any {
 }
 
 export async function POST(req: NextRequest) {
-  if (!anthropic) {
-    return NextResponse.json({ slots: [] }, { status: 200 });
-  }
-
   try {
     // Required defensiveness: parse request body from raw text so malformed payloads
     // do not crash the route before fallback logic can run.
@@ -135,10 +121,16 @@ export async function POST(req: NextRequest) {
       const recovered = parseClaudeJsonDefensively(rawBody || '');
       body = recovered && typeof recovered === 'object' ? recovered : {};
     }
+    const modelOverride = typeof body?.model_override === 'string' ? body.model_override : undefined;
+    if (!hasLlmCredentials(modelOverride)) {
+      return NextResponse.json({ slots: [] }, { status: 200 });
+    }
+
     const lagnaSign = String(body?.lagnaSign ?? '');
     const mahadasha = String(body?.mahadasha ?? '');
     const antardasha = String(body?.antardasha ?? '');
     const date = String(body?.date ?? '');
+    const planetPositions = body?.planet_positions;
     const rawSlots = body?.slots;
 
     const slots = Array.isArray(rawSlots) ? rawSlots : [];
@@ -189,7 +181,11 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const grahaBlock = formatActualPlanetaryPositionsBlock(planetPositions as any, { dateLabel: date });
+
     const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only. Every sentence names a planet, house, or nakshatra.
+
+${grahaBlock}
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
 ${horaBlock}
@@ -226,14 +222,12 @@ Format: {"slots": [{"slot_index": 0, "commentary": "..."}]}
 Start response with { and end with }. No markdown.`;
 
     try {
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 6000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
+      const rawText = await completeLlmChat({
+        modelOverride,
+        systemPrompt,
+        userPrompt,
+        maxTokens: 6000,
       });
-
-      const rawText = extractText(response);
       console.log('[HOURLY] Raw response length:', rawText.length);
       console.log('[HOURLY] Raw first 100 chars:', rawText.slice(0, 100));
       let parsed: any = null;

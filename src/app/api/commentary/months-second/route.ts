@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
+import { formatActualPlanetaryPositionsBlock } from '@/lib/commentary/planetPositionsPrompt';
 
 const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -61,6 +62,8 @@ export async function POST(req: NextRequest) {
     antardasha: string;
     startMonth: string;
     months: Array<{ month_label: string; month_index: number; key_transits_hint?: string }>;
+    reference_planet_positions?: unknown;
+    reference_planet_positions_date?: string;
   };
 
   try {
@@ -69,7 +72,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { lagnaSign, mahadasha, antardasha, months } = body;
+  const { lagnaSign, mahadasha, antardasha, months, reference_planet_positions, reference_planet_positions_date } =
+    body;
   if (!lagnaSign || !Array.isArray(months) || months.length === 0) {
     return NextResponse.json({ error: 'lagnaSign and months required' }, { status: 400 });
   }
@@ -77,7 +81,15 @@ export async function POST(req: NextRequest) {
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
 
+  const anchorGraha = formatActualPlanetaryPositionsBlock(reference_planet_positions as any, {
+    dateLabel: reference_planet_positions_date ?? 'forecast anchor date',
+  });
+
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a planet, house, or nakshatra.
+
+${anchorGraha}
+
+ANCHOR RULE: The table above is the verified sidereal snapshot for the forecast anchor date only. For later calendar months, describe transit themes qualitatively without inventing precise graha longitudes or houses that contradict this anchor.
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
 ${horaBlock}

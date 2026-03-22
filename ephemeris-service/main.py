@@ -801,6 +801,56 @@ class DailyGridInput(BaseModel):
     timezone_offset_minutes: Optional[int] = None
 
 
+class PlanetPositionsInput(BaseModel):
+    date: str
+    current_lat: float = 25.2048
+    current_lng: float = 55.2708
+    timezone_offset_minutes: Optional[int] = 240
+    natal_lagna_sign_index: int = 3
+
+
+def build_planet_positions_whole_sign(jd_ut: float, natal_lagna_sign: str) -> Dict[str, Any]:
+    """
+    Sidereal longitudes at jd_ut (UT). Whole-sign houses from natal lagna sign
+    (same convention as moon_house in generate_daily_grid: H1 = lagna sign).
+    """
+    lagna_idx = SIGN_INDEX.get(natal_lagna_sign, 0)
+    grahas = [
+        ("Sun", swe.SUN),
+        ("Moon", swe.MOON),
+        ("Mars", swe.MARS),
+        ("Mercury", swe.MERCURY),
+        ("Jupiter", swe.JUPITER),
+        ("Venus", swe.VENUS),
+        ("Saturn", swe.SATURN),
+        ("Rahu", swe.MEAN_NODE),
+    ]
+    planets: Dict[str, Dict[str, Any]] = {}
+    for name, pid in grahas:
+        pos = get_planet_position(jd_ut, pid)
+        pidx = SIGN_INDEX.get(pos["sign"], 0)
+        house = (pidx - lagna_idx) % 12 + 1
+        planets[name] = {
+            "sign": pos["sign"],
+            "house": house,
+            "degree": pos["degree"],
+        }
+    rahu_lon = get_planet_position(jd_ut, swe.MEAN_NODE)["longitude"]
+    ketu_lon = (rahu_lon + 180.0) % 360.0
+    k_sign = SIGNS[int(ketu_lon // 30) % 12]
+    k_idx = int(ketu_lon // 30) % 12
+    planets["Ketu"] = {
+        "sign": k_sign,
+        "house": (k_idx - lagna_idx) % 12 + 1,
+        "degree": round(ketu_lon % 30, 4),
+    }
+    return {
+        "reference": "sunrise_ut_sidereal_positions",
+        "lagna_sign": natal_lagna_sign,
+        "planets": planets,
+    }
+
+
 def _jd_to_aware_dt(jd: float, tz: ZoneInfo) -> datetime:
     """Convert Julian-Day UT to a timezone-aware datetime."""
     y, m, d, h = swe.revjul(jd)
@@ -1035,6 +1085,8 @@ def generate_daily_grid(data: DailyGridInput):
 
         day_score = round(sum(s["score"] for s in output_slots) / 18) if output_slots else 0
 
+        planet_positions = build_planet_positions_whole_sign(sunrise_jd, natal_lagna_sign)
+
         return {
             "date":       data.date,
             "panchang":   panchang_out,
@@ -1047,8 +1099,29 @@ def generate_daily_grid(data: DailyGridInput):
             "moon_house": moon_house,
             "yoga":       yoga_str,
             "weekday":    weekday,
+            "planet_positions": planet_positions,
         }
 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+
+
+@app.post("/get-planet-positions")
+def get_planet_positions(data: PlanetPositionsInput):
+    """Sidereal graha signs + whole-sign houses from natal lagna at local sunrise UT."""
+    try:
+        date_obj = datetime.strptime(data.date, "%Y-%m-%d")
+        jd = get_julian_day(date_obj)
+        sunrise_jd, _ = _sunrise_sunset_pair(jd, data.current_lat, data.current_lng)
+        natal_idx = data.natal_lagna_sign_index % 12
+        lagna_name = SIGNS[natal_idx]
+        core = build_planet_positions_whole_sign(sunrise_jd, lagna_name)
+        return {
+            "date": data.date,
+            "lagna": lagna_name,
+            "planet_positions": core,
+            "ascendant": {"sign": lagna_name, "degree": None},
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
 

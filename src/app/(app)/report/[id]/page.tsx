@@ -305,6 +305,7 @@ function ReportContent() {
           panchang: r.panchang ?? {},
           rahu_kaal: { start: rahu.start ?? '', end: rahu.end ?? '' },
           day_score: r.day_score ?? 50,
+          planet_positions: r.planet_positions ?? undefined,
           slots: (r.slots ?? []).map((s: any) => ({
             slot_index: s.slot_index,
             display_label: s.display_label ?? '06:00–07:00',
@@ -360,6 +361,7 @@ function ReportContent() {
             days: forecastDays.map((d) => ({
               date: d.date,
               panchang: d.panchang,
+              planet_positions: d.planet_positions,
               day_score: d.day_score,
               rahu_kaal: d.rahu_kaal,
               peak_slots: d.slots.filter((s: any) => s.score >= 75).slice(0, 3).map((s: any) => ({
@@ -458,6 +460,7 @@ function ReportContent() {
                 antardasha,
                 dayIndex: i,
                 date: day.date,
+                planet_positions: day.planet_positions,
                 slots: day.slots.map((s: any) => ({
                   slot_index: s.slot_index,
                   display_label: s.display_label,
@@ -531,6 +534,8 @@ function ReportContent() {
               antardasha,
               startMonth: forecastDays[0].date.substring(0, 7),
               months: allMonths.slice(0, 6),
+              reference_planet_positions: forecastDays[0]?.planet_positions,
+              reference_planet_positions_date: forecastDays[0]?.date,
             }),
           });
           if (months1Res.ok) months1Data = (await months1Res.json()).months ?? [];
@@ -550,6 +555,8 @@ function ReportContent() {
               antardasha,
               startMonth: forecastDays[0].date.substring(0, 7),
               months: allMonths.slice(6, 12),
+              reference_planet_positions: forecastDays[0]?.planet_positions,
+              reference_planet_positions_date: forecastDays[0]?.date,
             }),
           });
           if (months2Res.ok) months2Data = (await months2Res.json()).months ?? [];
@@ -658,6 +665,10 @@ function ReportContent() {
             antardasha: antardasha ?? 'Mercury',
             reportStartDate: forecastDays[0].date,
             weeks: weeksPayload,
+            planet_positions_by_date: forecastDays.map((d: any) => ({
+              date: d.date,
+              planet_positions: d.planet_positions,
+            })),
             synthesis_context: {
               total_days: forecastDays.length,
               best_date: bestDay.date,

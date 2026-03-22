@@ -2,27 +2,17 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
-
-const anthropic = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  : null;
-
-function extractText(response: Anthropic.Message): string {
-  return response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('');
-}
+import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
+import {
+  formatMultipleDaysPlanetPositions,
+  type PlanetPositionsPayload,
+} from '@/lib/commentary/planetPositionsPrompt';
 
 export async function POST(req: NextRequest) {
-  if (!anthropic) {
-    return NextResponse.json({ error: 'API key missing' }, { status: 500 });
-  }
-
   let body: {
+    model_override?: string;
     lagnaSign: string;
     mahadasha: string;
     antardasha: string;
@@ -41,6 +31,7 @@ export async function POST(req: NextRequest) {
       worst_score: number;
       avg_score: number;
     };
+    planet_positions_by_date?: Array<{ date?: string; planet_positions?: PlanetPositionsPayload }>;
   };
 
   try {
@@ -49,7 +40,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { lagnaSign, mahadasha, antardasha, weeks, synthesis_context } = body;
+  const modelOverride =
+    typeof body.model_override === 'string' ? body.model_override.trim() : undefined;
+  if (!hasLlmCredentials(modelOverride)) {
+    return NextResponse.json({
+      weeks: [],
+      period_synthesis: null,
+      partial: true,
+      error: 'API key missing for selected model',
+    });
+  }
+
+  const { lagnaSign, mahadasha, antardasha, weeks, synthesis_context, planet_positions_by_date } = body;
   if (!lagnaSign || !weeks?.length) {
     return NextResponse.json({ error: 'lagnaSign and weeks required' }, { status: 400 });
   }
@@ -57,7 +59,13 @@ export async function POST(req: NextRequest) {
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
 
+  const forecastGraha = formatMultipleDaysPlanetPositions(planet_positions_by_date ?? []);
+
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a planet, house, or nakshatra.
+
+${forecastGraha}
+
+When discussing a specific calendar date in this report window, graha signs and whole-sign houses MUST match the ACTUAL PLANETARY POSITIONS block for that date in the tables above. Do not invent other placements.
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
 ${horaBlock}
@@ -105,14 +113,12 @@ Return this JSON structure. Each week's analysis must be a dense paragraph in gr
 Start with { and end with }. No markdown.`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 6000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const text = await completeLlmChat({
+      modelOverride,
+      systemPrompt,
+      userPrompt,
+      maxTokens: 6000,
     });
-
-    const text = extractText(response);
     const parsed = safeParseJson<{ weeks: any[]; period_synthesis: any }>(text);
     return NextResponse.json({
       weeks: parsed.weeks ?? [],

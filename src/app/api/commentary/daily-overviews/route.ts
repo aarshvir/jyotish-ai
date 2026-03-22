@@ -2,20 +2,10 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
-
-const anthropic = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  : null;
-
-function extractText(response: Anthropic.Message): string {
-  return response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('');
-}
+import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
+import { formatActualPlanetaryPositionsBlock } from '@/lib/commentary/planetPositionsPrompt';
 
 function buildFallbackDay(d: any, lagnaSign: string): { date: string; day_theme: string; day_overview: string } {
   const date = String(d?.date ?? '');
@@ -149,17 +139,15 @@ function parseClaudeJsonDefensively(text: string): any {
 
 export async function POST(req: NextRequest) {
   try {
-    if (!anthropic) {
-      return NextResponse.json({ days: [] }, { status: 200 });
-    }
-
   let body: {
+    model_override?: string;
     lagnaSign: string;
     mahadasha: string;
     antardasha: string;
     days: Array<{
       date: string;
       panchang: { tithi?: string; nakshatra?: string; yoga?: string; karana?: string; moon_sign?: string };
+      planet_positions?: unknown;
       day_score: number;
       rahu_kaal: { start: string; end: string };
       peak_slots: Array<{ display_label: string; dominant_hora: string; dominant_choghadiya: string; score: number }>;
@@ -169,6 +157,11 @@ export async function POST(req: NextRequest) {
     try {
       body = await req.json();
     } catch {
+      return NextResponse.json({ days: [] }, { status: 200 });
+    }
+
+    const modelOverride = typeof body.model_override === 'string' ? body.model_override : undefined;
+    if (!hasLlmCredentials(modelOverride)) {
       return NextResponse.json({ days: [] }, { status: 200 });
     }
 
@@ -187,14 +180,26 @@ export async function POST(req: NextRequest) {
 
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a planet, house, or nakshatra.
 
+Each day may include authoritative sidereal graha positions (whole-sign houses from natal lagna) in a separate block in the user message — use that block for Sun through Ketu for that calendar date only. Never contradict it.
+
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
 ${horaBlock}
 
 Return ONLY valid JSON. No markdown, no backticks.`;
 
-  const callBatches = async (batchDays: typeof days, max_tokens: number) => {
+  const callBatches = async (batchDays: typeof days, max_tokens: number, override?: string) => {
     const nDays = batchDays.length;
-    const userPrompt = `Generate day_theme and day_overview for EACH of the following ${nDays} days. You MUST return exactly ${nDays} objects in the "days" array — one per day in the same order. Current dasha: ${mahadasha}/${antardasha}.
+    const grahaBlocks = batchDays
+      .map(
+        (d: (typeof batchDays)[0]) =>
+          `=== ${d.date} ===\n${formatActualPlanetaryPositionsBlock(d.planet_positions as any, { dateLabel: d.date })}`
+      )
+      .join('\n\n');
+
+    const userPrompt = `${grahaBlocks}
+
+Generate day_theme and day_overview for EACH of the following ${nDays} days. You MUST return exactly ${nDays} objects in the "days" array — one per day in the same order. Current dasha: ${mahadasha}/${antardasha}.
+For each day, graha signs and whole-sign houses MUST match the ACTUAL PLANETARY POSITIONS block for that date above (not the JSON duplicate alone).
 
 Days data:
 ${JSON.stringify(batchDays, null, 2)}
@@ -223,14 +228,12 @@ Return this exact JSON structure (no extra fields):
 
 Exactly ${nDays} objects in the days array. Start with { and end with }.`;
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const text = await completeLlmChat({
+      modelOverride: override,
+      systemPrompt,
+      userPrompt,
+      maxTokens: max_tokens,
     });
-
-    const text = extractText(response);
     let parsed: any = null;
     try {
       parsed = safeParseJson<{ days: Array<{ date: string; day_theme: string; day_overview: string }> }>(text);
@@ -261,13 +264,13 @@ Exactly ${nDays} objects in the days array. Start with { and end with }.`;
     let out: Array<{ date: string; day_theme: string; day_overview: string }> = [];
 
     if (batch1.length) {
-      const r1 = await callBatches(batch1, 8000);
+      const r1 = await callBatches(batch1, 8000, modelOverride);
       out.push(...(r1.length ? r1 : batch1.map((d) => buildFallbackDay(d, lagnaSign))));
       // Ensure any AI/fallback objects also have normalized headlines.
       out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
     }
     if (batch2.length) {
-      const r2 = await callBatches(batch2, 6000);
+      const r2 = await callBatches(batch2, 6000, modelOverride);
       out.push(...(r2.length ? r2 : batch2.map((d) => buildFallbackDay(d, lagnaSign))));
       out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
     }
