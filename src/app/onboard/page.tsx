@@ -494,7 +494,9 @@ function OnboardPageInner() {
   // Check for ?plan= URL param and pre-select report type
   useEffect(() => {
     const plan = searchParams.get('plan');
-    if (plan === '7day' || plan === 'monthly' || plan === 'annual' || plan === 'free') {
+    if (plan === 'preview') {
+      setForm((prev) => ({ ...prev, reportType: 'free' }));
+    } else if (plan === '7day' || plan === 'monthly' || plan === 'annual' || plan === 'free') {
       setForm((prev) => ({ ...prev, reportType: plan }));
     }
   }, [searchParams]);
