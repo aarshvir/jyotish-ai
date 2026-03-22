@@ -732,7 +732,7 @@ def calculate_slot_score(
     tithi=None,
     weekday=None,
 ):
-    base = 52
+    base = 50
 
     hora_mod = HORA_MODIFIERS.get(natal_lagna_sign, {}).get(dominant_hora, 0)
     chog_mod = CHOGHADIYA_MODIFIERS.get(dominant_choghadiya, 0)
