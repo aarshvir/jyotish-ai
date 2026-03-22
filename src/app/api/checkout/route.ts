@@ -1,6 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createCheckoutSession } from '@/lib/stripe/server';
+import { createServiceClient } from '@/lib/supabase/admin';
+import { getPromoDiscount, isBypassToken } from '@/lib/bypass';
+
+async function logPromoUsage(
+  code: string,
+  userEmail: string,
+  reportId: string | null
+) {
+  try {
+    const supabase = createServiceClient();
+    await supabase.from('promo_usage').insert({
+      code: code.trim().toUpperCase(),
+      user_email: userEmail,
+      report_id: reportId,
+    });
+  } catch (e) {
+    console.error('promo_usage insert failed (table missing or RLS):', e);
+  }
+}
+
+async function createFreeReport(
+  userId: string,
+  planType: string,
+  reportParams?: Record<string, unknown>
+): Promise<string> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from('reports')
+    .insert({
+      user_id: userId,
+      report_type: planType || '7day',
+      status: 'paid',
+      output_json: {
+        ...(reportParams ?? {}),
+        payment_bypass: true,
+        plan_type: planType,
+      },
+    })
+    .select('id')
+    .single();
+
+  if (error) throw error;
+  if (!data?.id) throw new Error('Failed to create report');
+  return data.id as string;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,11 +54,47 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+    if (!user?.id || !user.email) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const {
+      bypass,
+      promo_code,
+      priceId,
+      planType,
+      reportParams,
+    } = body as {
+      bypass?: string;
+      promo_code?: string;
+      priceId?: string;
+      planType?: string;
+      reportParams?: Record<string, unknown>;
+    };
+
+    const plan = typeof planType === 'string' && planType ? planType : '7day';
+
+    if (isBypassToken(bypass)) {
+      const reportId = await createFreeReport(user.id, plan, reportParams);
+      return NextResponse.json({
+        bypass: true,
+        report_id: reportId,
+        redirect: `/report/${reportId}`,
+      });
+    }
+
+    if (promo_code) {
+      const discount = getPromoDiscount(promo_code);
+      if (discount === 100) {
+        const reportId = await createFreeReport(user.id, plan, reportParams);
+        await logPromoUsage(promo_code, user.email, reportId);
+        return NextResponse.json({
+          bypass: true,
+          report_id: reportId,
+          redirect: `/report/${reportId}`,
+        });
+      }
     }
 
     const key = process.env.STRIPE_SECRET_KEY;
@@ -24,8 +105,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { priceId, planType } = await request.json();
-
     if (!priceId) {
       return NextResponse.json(
         { error: 'Price ID is required' },
@@ -33,16 +112,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const discount =
+      typeof promo_code === 'string' ? getPromoDiscount(promo_code) : 0;
+
     const session = await createCheckoutSession({
       priceId,
       userId: user.id,
-      userEmail: user.email!,
+      userEmail: user.email,
       planType: typeof planType === 'string' ? planType : undefined,
+      promoPercent: discount > 0 && discount < 100 ? discount : undefined,
+      promoCode:
+        discount > 0 && discount < 100
+          ? promo_code!.trim().toUpperCase()
+          : undefined,
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       sessionId: session.id,
-      url: session.url 
+      url: session.url,
     });
   } catch (error) {
     console.error('Checkout error:', error);

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { isAdminEmail } from '@/lib/bypass';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +31,8 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(10);
 
+  const isAdmin = user?.email ? isAdminEmail(user.email) : false;
+
   return (
     <div className="container mx-auto py-12 px-4">
       <div className="mb-8">
@@ -43,12 +46,21 @@ export default async function DashboardPage() {
               Reports this month: {userProfile?.reports_used_this_month || 0}
             </p>
           </div>
-          <Link href="/onboarding">
-            <Button size="lg" className="gap-2">
-              <Plus className="h-4 w-4" />
-              New Report
-            </Button>
-          </Link>
+          <div className="flex flex-wrap gap-2 justify-end">
+            {isAdmin && (
+              <Link href="/onboard">
+                <Button size="lg" variant="secondary" className="gap-2 border-emerald/40 text-emerald hover:bg-emerald/10">
+                  Generate Free Report
+                </Button>
+              </Link>
+            )}
+            <Link href="/onboarding">
+              <Button size="lg" className="gap-2">
+                <Plus className="h-4 w-4" />
+                New Report
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 

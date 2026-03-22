@@ -27,22 +27,70 @@ export function getStripeClient(): Stripe {
   return stripeSingleton;
 }
 
+const baseCheckoutUrls = () => ({
+  success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?success=true`,
+  cancel_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?canceled=true`,
+});
+
 export async function createCheckoutSession({
   priceId,
   userId,
   userEmail,
   planType,
+  promoPercent,
+  promoCode,
 }: {
   priceId: string;
   userId: string;
   userEmail: string;
   /** Mirrors onboard/report query param; stored on the session for webhooks. */
   planType?: string;
+  /** Applied by creating a one-time line item from the Price unit amount (1–99). */
+  promoPercent?: number;
+  promoCode?: string;
 }) {
   if (isTestMode()) {
     return { id: 'test_skip', url: null } as unknown as Stripe.Checkout.Session;
   }
-  return await getStripeClient().checkout.sessions.create({
+  const stripe = getStripeClient();
+  const urls = baseCheckoutUrls();
+  const meta: Record<string, string> = {
+    userId,
+    ...(planType ? { plan_type: planType } : {}),
+    ...(promoCode ? { promo_code: promoCode } : {}),
+    ...(promoPercent != null && promoPercent > 0
+      ? { promo_percent: String(promoPercent) }
+      : {}),
+  };
+
+  if (promoPercent != null && promoPercent > 0 && promoPercent < 100) {
+    const price = await stripe.prices.retrieve(priceId);
+    const unit = price.unit_amount;
+    if (unit == null) {
+      throw new Error('Price has no unit_amount; cannot apply promo discount');
+    }
+    const discounted = Math.max(50, Math.round((unit * (100 - promoPercent)) / 100));
+    return await stripe.checkout.sessions.create({
+      line_items: [
+        {
+          price_data: {
+            currency: price.currency,
+            unit_amount: discounted,
+            product_data: {
+              name: 'VedicHour report',
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      ...urls,
+      customer_email: userEmail,
+      metadata: meta,
+    });
+  }
+
+  return await stripe.checkout.sessions.create({
     line_items: [
       {
         price: priceId,
@@ -50,13 +98,9 @@ export async function createCheckoutSession({
       },
     ],
     mode: 'payment',
-    success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?success=true`,
-    cancel_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?canceled=true`,
+    ...urls,
     customer_email: userEmail,
-    metadata: {
-      userId,
-      ...(planType ? { plan_type: planType } : {}),
-    },
+    metadata: meta,
   });
 }
 

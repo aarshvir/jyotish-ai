@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
+import { getPromoDiscount } from '@/lib/bypass';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -327,10 +328,33 @@ interface Step3Props {
   form: FormData;
   setReportType: (id: ReportPlanId) => void;
   onSubmit: () => void;
+  onAdminFreeSubmit: () => void;
   onBack: () => void;
+  promoCode: string;
+  setPromoCode: (v: string) => void;
+  promoDiscount: number;
+  hasBypass: boolean;
+  isAdmin: boolean;
 }
 
-function Step3({ form, setReportType, onSubmit, onBack }: Step3Props) {
+function Step3({
+  form,
+  setReportType,
+  onSubmit,
+  onAdminFreeSubmit,
+  onBack,
+  promoCode,
+  setPromoCode,
+  promoDiscount,
+  hasBypass,
+  isAdmin,
+}: Step3Props) {
+  const paidPlan =
+    form.reportType === '7day' ||
+    form.reportType === 'monthly' ||
+    form.reportType === 'annual';
+  const fullPromo = paidPlan && promoDiscount >= 100;
+
   return (
     <>
       <h1 className="font-display font-semibold text-star mb-2"
@@ -374,20 +398,51 @@ function Step3({ form, setReportType, onSubmit, onBack }: Step3Props) {
         ))}
       </div>
 
+      <div className="mb-6">
+        <label className="font-mono text-xs text-dust/80 tracking-[0.12em] uppercase block mb-1.5">
+          Promo code (optional)
+        </label>
+        <input
+          type="text"
+          className="cosmic-input"
+          placeholder="Promo code (optional)"
+          value={promoCode}
+          onChange={(e) => setPromoCode(e.target.value)}
+          autoComplete="off"
+        />
+        {promoDiscount > 0 && (
+          <p className="font-mono text-xs text-emerald mt-2 tracking-wide">
+            ✓ {promoDiscount}% discount
+            {fullPromo ? ' — no payment required' : ' applies at Stripe checkout'}
+          </p>
+        )}
+      </div>
+
       <div className="space-y-4">
-        <div className="flex gap-3">
-          <button
-            className="flex-1 py-3 border border-horizon text-dust font-body text-sm rounded-sm hover:border-amber/30 hover:text-star transition-colors"
-            onClick={onBack}
-          >
-            Back
-          </button>
-          <button
-            className="flex-[2] py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
-            onClick={onSubmit}
-          >
-            Generate Report
-          </button>
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-3">
+            <button
+              className="flex-1 py-3 border border-horizon text-dust font-body text-sm rounded-sm hover:border-amber/30 hover:text-star transition-colors"
+              onClick={onBack}
+            >
+              Back
+            </button>
+            <button
+              className="flex-[2] py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
+              onClick={onSubmit}
+            >
+              {hasBypass || fullPromo ? 'Generate Report Free' : 'Generate Report'}
+            </button>
+          </div>
+          {isAdmin && (
+            <button
+              type="button"
+              className="w-full py-3 border border-emerald/50 text-emerald font-body text-sm rounded-sm hover:bg-emerald/10 transition-colors"
+              onClick={onAdminFreeSubmit}
+            >
+              Generate Free Report (admin)
+            </button>
+          )}
         </div>
 
         {/* Money-back guarantee for paid plans */}
@@ -408,8 +463,9 @@ function Step3({ form, setReportType, onSubmit, onBack }: Step3Props) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function OnboardPage() {
+function OnboardPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [dir, setDir]   = useState<1 | -1>(1);
   const [form, setForm] = useState<FormData>({
@@ -428,16 +484,61 @@ export default function OnboardPage() {
   const [isLoading, setIsLoading]           = useState(false);
   const [loadingStage, setLoadingStage]     = useState(0);
   const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [hasBypass, setHasBypass]           = useState(false);
+  const [bypassToken, setBypassToken]       = useState<string | null>(null);
+  const [isAdmin, setIsAdmin]               = useState(false);
+  const [promoCode, setPromoCode]           = useState('');
+
+  const promoDiscount = getPromoDiscount(promoCode);
 
   // Check for ?plan= URL param and pre-select report type
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const plan = params.get('plan');
-      if (plan === '7day' || plan === 'monthly' || plan === 'annual' || plan === 'free') {
-        setForm((prev) => ({ ...prev, reportType: plan }));
-      }
+    const plan = searchParams.get('plan');
+    if (plan === '7day' || plan === 'monthly' || plan === 'annual' || plan === 'free') {
+      setForm((prev) => ({ ...prev, reportType: plan }));
     }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const b = searchParams.get('bypass');
+    if (!b) {
+      setHasBypass(false);
+      setBypassToken(null);
+      return;
+    }
+    let cancelled = false;
+    fetch('/api/onboard/bypass-check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bypass: b }),
+    })
+      .then((r) => r.json())
+      .then((d: { ok?: boolean }) => {
+        if (cancelled) return;
+        if (d?.ok) {
+          setHasBypass(true);
+          setBypassToken(b);
+        } else {
+          setHasBypass(false);
+          setBypassToken(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setHasBypass(false);
+          setBypassToken(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
+
+  useEffect(() => {
+    fetch('/api/user/is-admin', { credentials: 'include' })
+      .then((r) => r.json())
+      .then((d: { admin?: boolean }) => setIsAdmin(!!d?.admin))
+      .catch(() => setIsAdmin(false));
   }, []);
 
   // E2E: allow orchestrator to sync step 2 form state (controlled inputs + Playwright)
@@ -550,7 +651,7 @@ export default function OnboardPage() {
     }
   }
 
-  async function handleSubmit() {
+  async function goToReportGeneration(opts?: { forcePaidPlan?: boolean }) {
     console.log('🚀 Submitting form:', form);
     
     setIsLoading(true);
@@ -586,6 +687,11 @@ export default function OnboardPage() {
     const useCurrent = form.currentCity.trim() && form.currentLat != null && form.currentLng != null;
     const displayCity = useCurrent ? `${form.currentCity} (born: ${form.birthCity})` : form.birthCity;
 
+    let effectiveType: ReportPlanId = form.reportType;
+    if (opts?.forcePaidPlan && form.reportType === 'free') {
+      effectiveType = '7day';
+    }
+
     const paramsObj: Record<string, string> = {
       name: form.name,
       date: form.birthDate,
@@ -593,14 +699,30 @@ export default function OnboardPage() {
       city: displayCity,
       lat:  String(form.birthLat ?? ''),
       lng:  String(form.birthLng ?? ''),
-      type: form.reportType,
+      type: effectiveType,
     };
 
-    if (form.reportType !== 'free') {
-      const row = REPORT_TYPES.find((r) => r.id === form.reportType);
+    if (effectiveType !== 'free') {
+      const row = REPORT_TYPES.find((r) => r.id === effectiveType);
       if (row && 'plan_type' in row) {
         paramsObj.plan_type = row.plan_type;
       }
+    }
+
+    if (hasBypass && bypassToken) {
+      void fetch('/api/onboard/record-bypass-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          bypass: bypassToken,
+          plan_type: paramsObj.plan_type ?? effectiveType,
+          name: form.name,
+          birth_date: form.birthDate,
+          birth_time: form.birthTime,
+          birth_city: form.birthCity,
+        }),
+      }).catch(() => {});
     }
 
     if (useCurrent) {
@@ -629,6 +751,14 @@ export default function OnboardPage() {
     router.push(finalUrl);
   }
 
+  function handleSubmit() {
+    void goToReportGeneration();
+  }
+
+  function handleAdminFreeSubmit() {
+    void goToReportGeneration({ forcePaidPlan: true });
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   const vars = slideVariants(dir);
@@ -642,6 +772,16 @@ export default function OnboardPage() {
       </div>
 
       <div className="relative z-10 w-full max-w-md">
+        {hasBypass && (
+          <div className="mb-4 px-4 py-3 rounded-sm border border-emerald/40 bg-emerald/10 text-emerald font-mono text-xs tracking-wide text-center">
+            ✓ Admin access — payment bypassed
+          </div>
+        )}
+        {isAdmin && (
+          <div className="mb-4 px-4 py-3 rounded-sm border border-emerald/30 bg-emerald/5 text-dust font-mono text-xs tracking-wide text-center">
+            Admin account — use &quot;Generate Free Report (admin)&quot; on the last step for a full forecast without payment.
+          </div>
+        )}
         {/* Logo */}
         <div className="text-center mb-10">
           <span className="font-display font-semibold text-xl tracking-[0.15em] text-star/70">
@@ -696,7 +836,13 @@ export default function OnboardPage() {
                   form={form}
                   setReportType={setReportType}
                   onSubmit={handleSubmit}
+                  onAdminFreeSubmit={handleAdminFreeSubmit}
                   onBack={back}
+                  promoCode={promoCode}
+                  setPromoCode={setPromoCode}
+                  promoDiscount={promoDiscount}
+                  hasBypass={hasBypass}
+                  isAdmin={isAdmin}
                 />
               </motion.div>
             )}
@@ -768,5 +914,19 @@ export default function OnboardPage() {
         .cosmic-input[type="time"] { color-scheme: dark; }
       `}</style>
     </main>
+  );
+}
+
+export default function OnboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-space flex items-center justify-center">
+          <MandalaRing className="w-24 h-24 text-amber opacity-60" />
+        </div>
+      }
+    >
+      <OnboardPageInner />
+    </Suspense>
   );
 }
