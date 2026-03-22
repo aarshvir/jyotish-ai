@@ -3,7 +3,9 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
+import { formatNatalPlanetaryPositionsStrictBlock } from '@/lib/commentary/planetPositionsPrompt';
 import { safeParseJson } from '@/lib/utils/safeJson';
+import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 
 const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -17,10 +19,6 @@ function extractText(response: Anthropic.Message): string {
 }
 
 export async function POST(req: NextRequest) {
-  if (!anthropic) {
-    return NextResponse.json({ error: 'API key missing' }, { status: 500 });
-  }
-
   let body: {
     lagnaSign: string;
     lagnaDegreee?: number;
@@ -31,6 +29,7 @@ export async function POST(req: NextRequest) {
     md_end?: string;
     ad_end?: string;
     planets: Record<string, unknown>;
+    model_override?: string;
   };
 
   try {
@@ -39,22 +38,46 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { lagnaSign, lagnaDegreee, moonSign, moonNakshatra, mahadasha, antardasha, md_end, ad_end, planets } = body;
+  const {
+    lagnaSign,
+    lagnaDegreee,
+    moonSign,
+    moonNakshatra,
+    mahadasha,
+    antardasha,
+    md_end,
+    ad_end,
+    planets,
+  } = body;
   if (!lagnaSign) {
     return NextResponse.json({ error: 'lagnaSign required' }, { status: 400 });
+  }
+
+  const modelOverride =
+    typeof body.model_override === 'string' ? body.model_override.trim() : undefined;
+
+  if (modelOverride && !hasLlmCredentials(modelOverride)) {
+    return NextResponse.json(
+      { error: 'API key missing for selected model_override provider' },
+      { status: 503 },
+    );
   }
 
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a specific planet, house, or nakshatra.
 
 Return ONLY valid JSON with two keys: lagna_analysis, dasha_interpretation. No markdown, no backticks.`;
 
+  const natalPositionsBlock = formatNatalPlanetaryPositionsStrictBlock(lagnaSign, planets);
+
   const userPrompt = `Generate lagna analysis and dasha interpretation for this native.
+
+${natalPositionsBlock}
 
 Lagna: ${lagnaSign} ${(lagnaDegreee ?? 0).toFixed(2)}°
 Moon: ${moonSign} / ${moonNakshatra}
 Current dasha: ${mahadasha} MD (until ${md_end ?? '?'}) / ${antardasha} AD (until ${ad_end ?? '?'})
 
-Planetary positions:
+Additional chart payload (reference only; graha signs/houses above are authoritative):
 ${JSON.stringify(planets, null, 2)}
 
 Return this exact JSON:
@@ -66,21 +89,35 @@ Return this exact JSON:
 Start with { and end with }. No markdown.`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
-    });
+    let rawText: string;
+    if (modelOverride) {
+      rawText = await completeLlmChat({
+        modelOverride,
+        systemPrompt,
+        userPrompt,
+        maxTokens: 2000,
+      });
+    } else {
+      if (!anthropic) {
+        return NextResponse.json({ error: 'API key missing' }, { status: 500 });
+      }
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1500,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      });
+      rawText = extractText(response);
+    }
 
-    const text = extractText(response);
-    const parsed = safeParseJson<{ lagna_analysis?: string; dasha_interpretation?: string }>(text);
+    const parsed = safeParseJson<{ lagna_analysis?: string; dasha_interpretation?: string }>(rawText);
     return NextResponse.json({
       lagna_analysis: parsed.lagna_analysis ?? '',
       dasha_interpretation: parsed.dasha_interpretation ?? '',
     });
-  } catch (err: any) {
-    console.error('[nativity-text]', err?.message);
-    return NextResponse.json({ error: err?.message ?? 'Commentary failed' }, { status: 500 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[nativity-text]', msg);
+    return NextResponse.json({ error: msg || 'Commentary failed' }, { status: 500 });
   }
 }

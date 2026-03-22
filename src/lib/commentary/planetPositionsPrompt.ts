@@ -67,7 +67,11 @@ export function formatYogaInterpretationBlock(yogaName: string): string {
   return `TODAY'S YOGA: ${display}
 MEANING: ${meaning}
 
-STRICT RULE: The yoga meaning above is fixed and verified. Do not reinterpret it. Use this exact meaning when discussing the yoga.`;
+STRICT RULE: The yoga meaning above is fixed and verified. Do not reinterpret it. Use this exact meaning when discussing the yoga.
+IMPORTANT: The yoga name is ${display} only.
+Do NOT combine it with nakshatra names.
+Anuradha is a nakshatra, not part of the yoga name.
+The yoga stands alone as: ${display}.`;
 }
 
 export type BestSlotLike = {
@@ -105,14 +109,19 @@ Choghadiya: ${best.dominant_choghadiya}
 STRICT RULE: This window MUST be mentioned by name in your STRATEGY section. It is the primary recommendation of this report. Do not recommend a different time as the primary window.`;
 }
 
-export function formatRahuKaalDayBlock(isRahuKaalActive: boolean): string {
-  const line1 = isRahuKaalActive
-    ? 'RAHU KAAL TODAY: ACTIVE — caution required'
-    : 'RAHU KAAL TODAY: Not active';
-  const line2 = isRahuKaalActive
-    ? 'STRICT RULE: Warn against important decisions during Rahu Kaal.'
-    : '';
-  return [line1, line2].filter(Boolean).join('\n');
+export function formatRahuKaalDayBlock(rahuKaal: { start?: string; end?: string } | null): string {
+  if (!rahuKaal?.start || !rahuKaal?.end) {
+    return `RAHU KAAL TODAY: Not active on this date.\n`;
+  }
+  return [
+    `RAHU KAAL TODAY: ACTIVE`,
+    `Time window: ${rahuKaal.start}–${rahuKaal.end}`,
+    `STRICT RULE: Warn against important decisions`,
+    `during ${rahuKaal.start}–${rahuKaal.end} Rahu Kaal.`,
+    `Do NOT invent a different Rahu Kaal time.`,
+    `Use ONLY ${rahuKaal.start}–${rahuKaal.end}.`,
+    ``,
+  ].join('\n');
 }
 
 export function isRahuKaalWindowDefined(rahu_kaal?: { start?: string; end?: string }): boolean {
@@ -129,10 +138,15 @@ export function formatDayCommentaryAnchorBlocks(opts: {
 }): string {
   const pos = formatActualPlanetaryPositionsBlock(opts.planet_positions, { dateLabel: opts.dateLabel });
   const yogaB = formatYogaInterpretationBlock(opts.yogaName ?? '');
+  const yogaDisplay =
+    normalizeYogaLookupKey(opts.yogaName ?? '') || String(opts.yogaName ?? '').trim() || 'Unknown';
+  const nakshatraYogaRule = `NAKSHATRA vs YOGA: These are separate systems.
+Do not create compound names like "[nakshatra] yoga [yogaName]".
+Use the yoga name "${yogaDisplay}" alone.`;
   const best = pickBestScoringSlot(opts.slots);
   const bestB = formatBestActionWindowBlock(best);
-  const rahuB = formatRahuKaalDayBlock(isRahuKaalWindowDefined(opts.rahu_kaal));
-  return [pos, yogaB, bestB, rahuB].join('\n\n');
+  const rahuB = formatRahuKaalDayBlock(opts.rahu_kaal ?? null);
+  return [pos, yogaB, nakshatraYogaRule, bestB, rahuB].join('\n\n');
 }
 
 export type DayAnchorInput = {
@@ -192,6 +206,40 @@ export function formatActualPlanetaryPositionsBlock(
     'Do NOT invent or assume any planetary placement. ' +
     'Per-slot transit lagna sign and house appear in slot data — use those for hourly rising-sign context and keep them consistent with this table. ' +
     'If a planet is not listed, do not mention its sign or house.'
+  );
+}
+
+/** Natal chart grahas for nativity commentary — same sidereal / whole-sign contract as transit anchors. */
+export function formatNatalPlanetaryPositionsStrictBlock(
+  lagnaSign: string,
+  planets: Record<string, unknown> | null | undefined,
+): string {
+  const entries = Object.entries(planets ?? {});
+  if (entries.length === 0) {
+    return (
+      `ACTUAL NATAL PLANETARY POSITIONS — sidereal Lahiri,\n` +
+      `whole-sign houses from ${lagnaSign} lagna:\n` +
+      `(Not provided — do not invent graha sign or house placements.)\n\n` +
+      `STRICT RULE: Use ONLY these positions.\n` +
+      `Do NOT invent any planetary placement.\n` +
+      `Do NOT place planets in houses not listed above.`
+    );
+  }
+  const lines = entries
+    .map(([planet, raw]) => {
+      const data = raw as { sign?: unknown; house?: unknown };
+      const sign = data?.sign != null ? String(data.sign) : '?';
+      const house = data?.house != null ? String(data.house) : '?';
+      return `${planet} in ${sign} (house ${house})`;
+    })
+    .join('\n');
+  return (
+    `ACTUAL NATAL PLANETARY POSITIONS — sidereal Lahiri,\n` +
+    `whole-sign houses from ${lagnaSign} lagna:\n` +
+    `${lines}\n\n` +
+    `STRICT RULE: Use ONLY these positions.\n` +
+    `Do NOT invent any planetary placement.\n` +
+    `Do NOT place planets in houses not listed above.`
   );
 }
 
