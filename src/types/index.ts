@@ -53,6 +53,22 @@ export interface Transaction {
   created_at: string;
 }
 
+export interface UserConsent {
+  id: string;
+  user_id: string;
+  user_email: string;
+  consent_given_at: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  terms_version: string;
+  privacy_version: string;
+  refund_version: string;
+  terms_url: string | null;
+  privacy_url: string | null;
+  refund_url: string | null;
+  explicitly_checked: boolean;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -75,6 +91,23 @@ export interface Database {
         Row: Transaction;
         Insert: Omit<Transaction, 'id' | 'created_at'>;
         Update: Partial<Omit<Transaction, 'id' | 'created_at'>>;
+      };
+      user_consent: {
+        Row: UserConsent;
+        Insert: {
+          user_id: string;
+          user_email: string;
+          terms_version?: string;
+          privacy_version?: string;
+          refund_version?: string;
+          terms_url?: string | null;
+          privacy_url?: string | null;
+          refund_url?: string | null;
+          explicitly_checked?: boolean;
+          ip_address?: string | null;
+          user_agent?: string | null;
+        };
+        Update: Partial<Omit<UserConsent, 'id'>>;
       };
     };
   };
