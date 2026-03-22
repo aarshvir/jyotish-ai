@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+export const dynamic = 'force-static'
+
 const sections = [
   { title: '1. Introduction', content: 'VedicHour is committed to protecting your personal information. This Privacy Policy explains how we collect, use, and safeguard your data. By using our Service, you consent to the practices described herein.' },
   { title: '2. Information We Collect', content: 'Account & Contact: Email address, name (optional).\n\nBirth Data: Date, time, and place of birth — used solely to generate your astrological report.\n\nLocation: Current city for calculating hora and choghadiya timing.\n\nPayment: We do not store payment details. All processing is handled by Paddle (PCI-DSS compliant). We receive only a transaction confirmation and email.\n\nUsage Data: IP address, browser type, pages visited — collected automatically via standard analytics.' },

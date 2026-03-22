@@ -45,7 +45,7 @@ export default function Navbar() {
           <Link href="#how-it-works" className="hover:text-star transition-colors tracking-wide">
             How It Works
           </Link>
-          <Link href="#pricing" className="hover:text-star transition-colors tracking-wide">
+          <Link href="/pricing" className="hover:text-star transition-colors tracking-wide">
             Pricing
           </Link>
         </div>

@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+export const dynamic = 'force-static'
+
 const sections = [
   { title: '1. Acceptance of Terms', content: 'By accessing or using VedicHour ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service. These Terms constitute a legally binding agreement between you and VedicHour. We reserve the right to modify these Terms at any time. Continued use following changes constitutes acceptance.' },
   { title: '2. Description of Service', content: 'VedicHour provides AI-generated Vedic astrology reports as digital products. Reports include natal chart analysis, hourly forecasts, choghadiya timing, planetary position analysis, and astrological commentary. All reports are generated using Swiss Ephemeris computational astrology software combined with artificial intelligence and delivered digitally.' },

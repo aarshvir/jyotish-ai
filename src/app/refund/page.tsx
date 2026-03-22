@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+export const dynamic = 'force-static'
+
 const sections = [
   { title: '1. Our Guarantee', content: 'We stand behind every VedicHour report. All paid reports are covered by our 7-day satisfaction guarantee. If your report does not meet your expectations for any reason, we will refund your purchase in full. No questions asked.' },
   { title: '2. Eligibility', content: 'You are eligible for a full refund if:\n• You request it within 7 days of your purchase date\n• Your report has been successfully generated and delivered\n• You contact us at support@vedichour.com with your order details\n\nYou are not required to provide a reason, though feedback is appreciated.' },

@@ -11,12 +11,12 @@ export default function Footer() {
           </span>
 
           {/* Links */}
-          <div className="flex items-center gap-8 text-sm font-body text-dust">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-body text-dust">
             <Link href="#how-it-works" className="hover:text-star transition-colors">How It Works</Link>
-            <Link href="#pricing"      className="hover:text-star transition-colors">Pricing</Link>
-            <Link href="/refund"       className="hover:text-star transition-colors">Refund Policy</Link>
-            <Link href="#"             className="hover:text-star transition-colors">Privacy</Link>
-            <Link href="#"             className="hover:text-star transition-colors">Terms</Link>
+            <Link href="/pricing" className="hover:text-star transition-colors">Pricing</Link>
+            <Link href="/refund" className="hover:text-star transition-colors">Refund Policy</Link>
+            <Link href="/privacy" className="hover:text-star transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-star transition-colors">Terms</Link>
           </div>
 
           {/* Copyright */}
