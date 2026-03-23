@@ -15,6 +15,7 @@ interface MonthData {
   key_transits?: string[];
   commentary: string;
   weekly_scores?: number[];
+  days?: Array<{ score?: number; day_score?: number }>;
 }
 
 interface MonthlyAnalysisProps {
@@ -24,6 +25,23 @@ interface MonthlyAnalysisProps {
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
+  const deriveWeeklyScores = (month: MonthData | undefined): number[] => {
+    if (Array.isArray(month?.weekly_scores) && month.weekly_scores.length > 0) {
+      return month.weekly_scores;
+    }
+    const dayScores = (month?.days ?? [])
+      .map((d) => d.score ?? d.day_score)
+      .filter((v): v is number => typeof v === 'number' && !Number.isNaN(v));
+    if (dayScores.length === 0) return [65, 65, 65, 65];
+    const grouped: number[] = [];
+    for (let i = 0; i < dayScores.length; i += 7) {
+      const weekDays = dayScores.slice(i, i + 7);
+      const avg = Math.round(weekDays.reduce((sum, s) => sum + s, 0) / weekDays.length);
+      grouped.push(avg);
+    }
+    return grouped;
+  };
+
   const today = new Date();
   const monthsData = Array.from({ length: 12 }, (_, i) => {
     const m = new Date(today.getFullYear(), today.getMonth() + i, 1);
@@ -40,7 +58,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       theme: (ex?.theme ?? '').trim() || `${label} energy arc.`,
       key_transits: ex?.key_transits ?? [],
       commentary: (ex?.commentary ?? '').trim() || `Monthly overview for ${label}.`,
-      weekly_scores: ex?.weekly_scores ?? [65, 65, 65, 65],
+      weekly_scores: deriveWeeklyScores(ex),
     };
   });
   const getColor = (score: number) => {

@@ -63,8 +63,8 @@ const PLANET_SYMBOLS: Record<string, string> = {
 
 export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: DailyAnalysisProps) {
   const [internalActive, setInternalActive] = useState(0);
-  const activeDay = onDayChange ? activeDayIndex : internalActive;
-  const setActiveDay = onDayChange ? onDayChange : setInternalActive;
+  const selectedDay = onDayChange ? activeDayIndex : internalActive;
+  const setSelectedDay = onDayChange ? onDayChange : setInternalActive;
 
   const formatTabLabel = (dateStr: string) => {
     try {
@@ -77,7 +77,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
     }
   };
 
-  const currentDay = days[activeDay] ?? days[0];
+  const currentDay = days[selectedDay] ?? days[0];
   if (!currentDay) return null;
 
   const score = currentDay.day_score ?? 50;
@@ -93,8 +93,8 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
     return '🔴 AVOID';
   };
 
-  const activeHours: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
-  const slotsForSummary = (currentDay as any).slots ?? activeHours ?? [];
+  const hourlyData: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
+  const slotsForSummary = (currentDay as any).slots ?? hourlyData ?? [];
   const peakCount =
     currentDay.peak_count ??
     (slotsForSummary as HourSlot[]).filter((s) => s?.score >= 75).length ??
@@ -129,9 +129,9 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
           {(days ?? []).map((day, i) => (
             <button
               key={day?.date || i}
-              onClick={() => setActiveDay(i)}
+              onClick={() => setSelectedDay(i)}
               className={`px-4 py-3 rounded-sm font-mono uppercase tracking-wider transition-all whitespace-pre-line leading-tight ${
-                activeDay === i
+                selectedDay === i
                   ? 'border-b-2 border-amber text-star bg-nebula/40 text-sm'
                   : 'text-dust hover:text-star text-xs'
               }`}
@@ -145,7 +145,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
       {/* Active day content */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={activeDay}
+          key={selectedDay}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -312,8 +312,8 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
       </AnimatePresence>
 
       {/* Hourly analysis for the active day — rendered inline */}
-      {activeHours.length > 0 && (
-        <HourlyAnalysis hours={activeHours} lagna={lagna} />
+      {hourlyData.length > 0 && (
+        <HourlyAnalysis hours={hourlyData} lagna={lagna} />
       )}
     </motion.div>
   );

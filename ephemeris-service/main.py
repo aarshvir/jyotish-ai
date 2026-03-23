@@ -631,7 +631,7 @@ HORA_MODIFIERS = {
     "Aries":       {"Saturn": 15, "Sun": 8, "Jupiter": 6, "Mars": 3, "Mercury": -8, "Venus": -6, "Moon": -3},
     "Taurus":      {"Saturn": 15, "Mercury": 8, "Venus": 6, "Moon": 3, "Jupiter": -8, "Mars": -6, "Sun": -3},
     "Gemini":      {"Venus": 15, "Mercury": 8, "Saturn": 6, "Sun": 3, "Moon": -8, "Jupiter": -6, "Mars": -3},
-    "Cancer":      {"Moon": 15, "Mars": 12, "Jupiter": 5, "Sun": 2, "Venus": -3, "Mercury": -8, "Saturn": -12},
+    "Cancer":      {"Moon": 18, "Mars": 18, "Jupiter": 5, "Sun": 2, "Venus": -3, "Mercury": -8, "Saturn": -12},
     "Leo":         {"Mars": 15, "Sun": 10, "Jupiter": 6, "Saturn": 3, "Mercury": -8, "Venus": -6, "Moon": -3},
     "Virgo":       {"Venus": 15, "Mercury": 10, "Saturn": 6, "Moon": 3, "Jupiter": -8, "Mars": -6, "Sun": -3},
     "Libra":       {"Saturn": 15, "Mercury": 8, "Venus": 8, "Moon": 3, "Mars": -8, "Jupiter": -6, "Sun": -3},
@@ -643,8 +643,8 @@ HORA_MODIFIERS = {
 }
 
 CHOGHADIYA_MODIFIERS = {
-    "Amrit": 12, "Shubh": 8, "Labh": 6, "Char": 2, "Chal": 2,
-    "Udveg": -5, "Rog": -10, "Kaal": -15,
+    "Amrit": 18, "Shubh": 12, "Labh": 10, "Char": 4, "Chal": 4,
+    "Udveg": -5, "Rog": -10, "Kaal": -18,
 }
 
 TRANSIT_HOUSE_MODIFIERS = {
@@ -667,6 +667,24 @@ YOGA_MODIFIERS = {
     'Vishkambha': -12, 'Vaidhriti': -12,
     'Parigha': -14, 'Vyatipata': -14,
     'Vyaghata': -8, 'Shula': -8,
+}
+
+YOGA_SCORE_MODIFIERS = {
+    "Siddhi": 8, "Shiva": 6, "Brahma": 6, "Indra": 5, "Amrit": 8,
+    "Harshana": 4, "Vriddhi": 5, "Dhruva": 4, "Shubha": 4, "Priti": 5,
+    "Saubhagya": 5, "Vishkambha": -8, "Atiganda": -10, "Ganda": -7,
+    "Vyaghata": -7, "Vyatipata": -12, "Vaidhriti": -10, "Parigha": -6,
+    "Shula": -5,
+}
+
+SUN_HOUSE_MONTHLY_BONUS = {
+    1: 6, 2: 2, 3: -2, 4: 4, 5: 8, 6: -4,
+    7: 2, 8: -10, 9: -4, 10: 12, 11: 6, 12: -8,
+}
+
+MARS_HOUSE_MONTHLY_BONUS = {
+    1: 8, 4: 6, 5: 10, 7: 4, 9: 8, 10: 10,
+    6: -4, 8: -10, 12: -6,
 }
 
 MOON_HOUSE_MODIFIERS = {
@@ -732,7 +750,7 @@ def calculate_slot_score(
     tithi=None,
     weekday=None,
 ):
-    base = 50
+    base = 55
 
     hora_mod = HORA_MODIFIERS.get(natal_lagna_sign, {}).get(dominant_hora, 0)
     chog_mod = CHOGHADIYA_MODIFIERS.get(dominant_choghadiya, 0)
@@ -742,6 +760,7 @@ def calculate_slot_score(
     rahu_mod = -20 if is_rahu_kaal else 0
 
     yoga_mod = YOGA_MODIFIERS.get(yoga, 0) if yoga else 0
+    yoga_name_mod = YOGA_SCORE_MODIFIERS.get(yoga, 0) if yoga else 0
 
     moon_house_mod = MOON_HOUSE_MODIFIERS.get(moon_house, 0) if moon_house else 0
 
@@ -760,7 +779,7 @@ def calculate_slot_score(
     # Separate day-level and slot-level modifiers
     slot_mods = hora_mod + chog_mod + house_mod + rahu_mod
 
-    day_mods_raw = (yoga_mod + moon_house_mod +
+    day_mods_raw = (yoga_mod + yoga_name_mod + moon_house_mod +
                     tithi_mod + weekday_mod)
 
     # Only floor negatives — no cap on positives
@@ -773,9 +792,38 @@ def calculate_slot_score(
     raw = base + slot_mods + day_mods
 
     if is_rahu_kaal:
-        raw = min(raw, 45)
+        raw = min(raw, 48)
 
     return max(0, min(100, raw))
+
+
+def generate_monthly_score(
+    sun_house: int,
+    mars_house: int,
+    jupiter_house: int,
+    rahu_house: int,
+    daily_scores: Optional[List[int]] = None,
+) -> int:
+    """Monthly score with transit-weighted planetary adjustments plus daily average."""
+    monthly_base = 55
+    monthly_base += SUN_HOUSE_MONTHLY_BONUS.get(sun_house, 0)
+    monthly_base += MARS_HOUSE_MONTHLY_BONUS.get(mars_house, 0)
+
+    if jupiter_house == 1:
+        monthly_base += 10
+    elif jupiter_house == 12:
+        monthly_base -= 6
+
+    if rahu_house == 8:
+        monthly_base -= 6
+
+    if daily_scores:
+        safe_scores = [s for s in daily_scores if isinstance(s, (int, float))]
+        if safe_scores:
+            daily_avg = round(sum(safe_scores) / len(safe_scores))
+            monthly_base = round((monthly_base * 0.6) + (daily_avg * 0.4))
+
+    return max(0, min(100, int(monthly_base)))
 
 
 # ---------------------------------------------------------------------------
