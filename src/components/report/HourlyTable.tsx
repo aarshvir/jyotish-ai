@@ -163,7 +163,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
 
                   {/* Commentary preview */}
                   <td className="py-3 px-3 hidden md:table-cell">
-                    <span className={`font-mono text-xs transition-colors ${isExpanded ? 'text-amber' : 'text-dust/60 hover:text-amber'}`}>
+                    <span className={`pdf-exclude font-mono text-xs transition-colors ${isExpanded ? 'text-amber' : 'text-dust/60 hover:text-amber'}`}>
                       {isExpanded ? '↑ Close' : 'Read analysis →'}
                     </span>
                   </td>

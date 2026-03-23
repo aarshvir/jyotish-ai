@@ -13,6 +13,7 @@ import { DailyAnalysis } from '@/components/report/DailyAnalysis';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 import { validateReportData } from '@/lib/validation/reportValidation';
+import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
 
 const STEPS = [
   'Calculating planetary positions',
@@ -94,51 +95,22 @@ function ReportContent() {
     }
   }, []);
 
-  const downloadPdf = useCallback(async (mergedDaysForPdf: any[]) => {
-    if (!reportData) return;
+  const handleDownloadPDF = useCallback(async () => {
     setPdfError(null);
     setPdfLoading(true);
     try {
-      const natalChart = reportData.nativity?.natal_chart ?? reportData.natalChart;
-      const commentary = reportData.commentary ?? {
-        nativity_summary: reportData.nativity ? { lagna_analysis: reportData.nativity.lagna_analysis, current_dasha_interpretation: reportData.nativity.current_dasha_interpretation } : {},
-        monthly: reportData.months ?? [],
-        weekly: reportData.weeks ?? [],
-        daily: reportData.days ?? [],
-        period_synthesis: reportData.synthesis ?? {},
-      };
-      const payload = {
-        name,
-        date,
-        time,
-        city,
-        natalChart,
-        commentary,
-        mergedDays: mergedDaysForPdf,
-      };
-      const res = await fetch('/api/report/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.error ?? `PDF failed (${res.status})`);
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Jyotish_AI_Report_${name.replace(/\s+/g, '_')}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
+      window.scrollTo(0, 0);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      await generateReportPDF(name, reportData?.generated_at ?? new Date().toISOString().slice(0, 10));
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'PDF download failed';
+      const msg = err instanceof Error ? err.message : 'PDF generation failed';
+      console.error('PDF generation failed:', err);
       setPdfError(msg);
+      alert('PDF generation failed. Please try again.');
     } finally {
       setPdfLoading(false);
     }
-  }, [reportData, name, date, time, city]);
+  }, [name, reportData]);
 
   const handleDaySelectFromCalendar = useCallback((index: number) => {
     setActiveDayIndex(index);
@@ -956,7 +928,7 @@ function ReportContent() {
         <div className="flex flex-wrap items-center justify-end gap-4 mb-6">
           <button
             onClick={copyShareLink}
-            className="font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2"
+            className="pdf-exclude font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2"
           >
             {copyLinkFeedback ? (
               <span className="text-emerald">Link copied!</span>
@@ -970,12 +942,19 @@ function ReportContent() {
             )}
           </button>
           <button
-            onClick={() => downloadPdf(mergedDays)}
+            id="pdf-download-btn"
+            onClick={handleDownloadPDF}
             disabled={pdfLoading}
-            className="font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="pdf-exclude font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {pdfLoading ? (
-              <span>Generating PDF…</span>
+              <>
+                <span>Generating PDF...</span>
+                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </>
             ) : (
               <>
                 <span>Download PDF</span>
@@ -998,74 +977,76 @@ function ReportContent() {
             <p className="font-mono text-xs text-crimson">{pdfError}</p>
           </div>
         )}
-        <ReportErrorBoundary fallbackTitle="Nativity">
-          <NativityCard
-            name={name}
-            birthDate={date}
-            birthTime={time}
-            birthCity={city}
-            lagna={natalChart?.lagna || 'Unknown'}
-            lagnaDegree={natalChart?.lagna_degree ?? 0}
-            moonSign={natalChart?.planets?.Moon?.sign || 'Unknown'}
-            moonNakshatra={natalChart?.moon_nakshatra || 'Unknown'}
-            currentDasha={
-              natalChart?.current_dasha ??
-              reportData?.nativity?.natal_chart?.current_dasha ?? {
-                mahadasha: 'Unknown',
-                antardasha: 'Unknown',
+        <div id="report-content">
+          <ReportErrorBoundary fallbackTitle="Nativity">
+            <NativityCard
+              name={name}
+              birthDate={date}
+              birthTime={time}
+              birthCity={city}
+              lagna={natalChart?.lagna || 'Unknown'}
+              lagnaDegree={natalChart?.lagna_degree ?? 0}
+              moonSign={natalChart?.planets?.Moon?.sign || 'Unknown'}
+              moonNakshatra={natalChart?.moon_nakshatra || 'Unknown'}
+              currentDasha={
+                natalChart?.current_dasha ??
+                reportData?.nativity?.natal_chart?.current_dasha ?? {
+                  mahadasha: 'Unknown',
+                  antardasha: 'Unknown',
+                }
               }
-            }
-            nativitySummary={
-              reportData?.nativity
-                ? {
-                    lagna_analysis: reportData.nativity.lagna_analysis ?? '',
-                    current_dasha_interpretation:
-                      reportData.nativity.current_dasha_interpretation ?? '',
-                    key_yogas: reportData.nativity.key_yogas ?? [],
-                    functional_benefics:
-                      reportData.nativity.functional_benefics ?? [],
-                    functional_malefics:
-                      reportData.nativity.functional_malefics ?? [],
-                  }
-                : undefined
-            }
-            nativity={
-              reportData?.nativity?.profile ??
-              reportData?.nativity ?? {
-                planetary_positions: [],
-                life_themes: [],
-                current_year_theme: '',
+              nativitySummary={
+                reportData?.nativity
+                  ? {
+                      lagna_analysis: reportData.nativity.lagna_analysis ?? '',
+                      current_dasha_interpretation:
+                        reportData.nativity.current_dasha_interpretation ?? '',
+                      key_yogas: reportData.nativity.key_yogas ?? [],
+                      functional_benefics:
+                        reportData.nativity.functional_benefics ?? [],
+                      functional_malefics:
+                        reportData.nativity.functional_malefics ?? [],
+                    }
+                  : undefined
               }
-            }
-          />
-        </ReportErrorBoundary>
-
-        <ReportErrorBoundary fallbackTitle="Monthly Analysis">
-          <MonthlyAnalysis months={safeMonthly} />
-        </ReportErrorBoundary>
-
-        <ReportErrorBoundary fallbackTitle="Weekly Analysis">
-          <WeeklyAnalysis weeks={safeWeekly} />
-        </ReportErrorBoundary>
-
-        {mergedDays.length > 0 && (
-          <ReportErrorBoundary fallbackTitle="Daily Forecast">
-            <DailyAnalysis
-              days={mergedDays}
-              activeDayIndex={activeDayIndex}
-              onDayChange={setActiveDayIndex}
-              lagna={natalChart?.lagna}
+              nativity={
+                reportData?.nativity?.profile ??
+                reportData?.nativity ?? {
+                  planetary_positions: [],
+                  life_themes: [],
+                  current_year_theme: '',
+                }
+              }
             />
           </ReportErrorBoundary>
-        )}
 
-        <ReportErrorBoundary fallbackTitle="Period Synthesis">
-          <PeriodSynthesis
-            synthesis={reportData?.synthesis ?? ''}
-            dailyScores={mergedDays.map((d: any) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
-            onDayClick={handleDaySelectFromCalendar}
-          />
-        </ReportErrorBoundary>
+          <ReportErrorBoundary fallbackTitle="Monthly Analysis">
+            <MonthlyAnalysis months={safeMonthly} />
+          </ReportErrorBoundary>
+
+          <ReportErrorBoundary fallbackTitle="Weekly Analysis">
+            <WeeklyAnalysis weeks={safeWeekly} />
+          </ReportErrorBoundary>
+
+          {mergedDays.length > 0 && (
+            <ReportErrorBoundary fallbackTitle="Daily Forecast">
+              <DailyAnalysis
+                days={mergedDays}
+                activeDayIndex={activeDayIndex}
+                onDayChange={setActiveDayIndex}
+                lagna={natalChart?.lagna}
+              />
+            </ReportErrorBoundary>
+          )}
+
+          <ReportErrorBoundary fallbackTitle="Period Synthesis">
+            <PeriodSynthesis
+              synthesis={reportData?.synthesis ?? ''}
+              dailyScores={mergedDays.map((d: any) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
+              onDayClick={handleDaySelectFromCalendar}
+            />
+          </ReportErrorBoundary>
+        </div>
       </main>
     </motion.div>
   );
