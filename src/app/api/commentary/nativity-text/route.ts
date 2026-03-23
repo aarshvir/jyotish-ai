@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { formatNatalPlanetaryPositionsStrictBlock } from '@/lib/commentary/planetPositionsPrompt';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 
@@ -67,11 +66,26 @@ export async function POST(req: NextRequest) {
 
 Return ONLY valid JSON with two keys: lagna_analysis, dasha_interpretation. No markdown, no backticks.`;
 
-  const natalPositionsBlock = formatNatalPlanetaryPositionsStrictBlock(lagnaSign, planets);
+  const planetLines = Object.entries(planets ?? {})
+    .map(([p, d]) => {
+      const row = d as { sign?: string; house?: number };
+      return `${p} in ${row.sign ?? '?'} (house ${row.house ?? '?'})`;
+    })
+    .join('\n');
+
+  const planetBlock = [
+    `ACTUAL NATAL PLANETARY POSITIONS — sidereal Lahiri, whole-sign houses from ${lagnaSign} lagna:`,
+    planetLines,
+    ``,
+    `STRICT RULE: Use ONLY these positions.`,
+    `Do NOT invent any planetary placement.`,
+    `Do NOT place planets in houses not listed above.`,
+    ``,
+  ].join('\n');
 
   const userPrompt = `Generate lagna analysis and dasha interpretation for this native.
 
-${natalPositionsBlock}
+${planetBlock}
 
 Lagna: ${lagnaSign} ${(lagnaDegreee ?? 0).toFixed(2)}°
 Moon: ${moonSign} / ${moonNakshatra}

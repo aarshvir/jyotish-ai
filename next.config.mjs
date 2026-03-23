@@ -4,7 +4,12 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
-    serverComponentsExternalPackages: ['@anthropic-ai/sdk', '@react-pdf/renderer'],
+    serverComponentsExternalPackages: [
+      '@anthropic-ai/sdk',
+      '@react-pdf/renderer',
+      'openai',
+      '@google/generative-ai',
+    ],
   },
 };
 

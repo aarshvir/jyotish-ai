@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     months: Array<{ month_label: string; month_index: number; key_transits_hint?: string }>;
     reference_planet_positions?: unknown;
     reference_planet_positions_date?: string;
-    reference_panchang?: { yoga?: string };
+    reference_panchang?: { yoga?: string; nakshatra?: string };
     reference_slots?: Array<{ display_label?: string; score?: number; dominant_choghadiya?: string }>;
     reference_rahu_kaal?: { start?: string; end?: string };
   };
@@ -91,6 +91,7 @@ export async function POST(req: NextRequest) {
     planet_positions: reference_planet_positions as any,
     dateLabel: reference_planet_positions_date ?? 'forecast anchor date',
     yogaName: reference_panchang?.yoga,
+    panchang: reference_panchang,
     slots: reference_slots,
     rahu_kaal: reference_rahu_kaal,
   });

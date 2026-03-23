@@ -197,6 +197,7 @@ Return ONLY valid JSON. No markdown, no backticks.`;
             planet_positions: d.planet_positions as any,
             dateLabel: d.date,
             yogaName: d.panchang?.yoga,
+            panchang: d.panchang,
             slots: d.slots,
             rahu_kaal: d.rahu_kaal,
           })}`

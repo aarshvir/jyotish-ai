@@ -19,7 +19,7 @@ const PLANS = [
   },
   {
     name: '7-Day Forecast',
-    price: '$4.99',
+    price: '$9.99',
     priceNote: 'one-time',
     description: 'Full week of hourly precision',
     features: [

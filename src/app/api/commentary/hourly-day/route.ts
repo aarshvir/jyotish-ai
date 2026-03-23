@@ -187,6 +187,7 @@ export async function POST(req: NextRequest) {
       planet_positions: planetPositions as any,
       dateLabel: date,
       yogaName: panchang?.yoga,
+      panchang: panchang as { yoga?: string; nakshatra?: string } | undefined,
       slots: normalizedSlots,
       rahu_kaal: rahuKaalDay,
     });

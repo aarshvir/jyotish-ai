@@ -1,7 +1,6 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ScoreBadge } from './ScoreBadge';
 
 interface MonthData {
   month: string;
@@ -25,23 +24,6 @@ interface MonthlyAnalysisProps {
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
-  const deriveWeeklyScores = (month: MonthData | undefined): number[] => {
-    if (Array.isArray(month?.weekly_scores) && month.weekly_scores.length > 0) {
-      return month.weekly_scores;
-    }
-    const dayScores = (month?.days ?? [])
-      .map((d) => d.score ?? d.day_score)
-      .filter((v): v is number => typeof v === 'number' && !Number.isNaN(v));
-    if (dayScores.length === 0) return [65, 65, 65, 65];
-    const grouped: number[] = [];
-    for (let i = 0; i < dayScores.length; i += 7) {
-      const weekDays = dayScores.slice(i, i + 7);
-      const avg = Math.round(weekDays.reduce((sum, s) => sum + s, 0) / weekDays.length);
-      grouped.push(avg);
-    }
-    return grouped;
-  };
-
   const today = new Date();
   const monthsData = Array.from({ length: 12 }, (_, i) => {
     const m = new Date(today.getFullYear(), today.getMonth() + i, 1);
@@ -58,7 +40,8 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       theme: (ex?.theme ?? '').trim() || `${label} energy arc.`,
       key_transits: ex?.key_transits ?? [],
       commentary: (ex?.commentary ?? '').trim() || `Monthly overview for ${label}.`,
-      weekly_scores: deriveWeeklyScores(ex),
+      days: ex?.days,
+      weekly_scores: ex?.weekly_scores,
     };
   });
   const getColor = (score: number) => {
@@ -87,8 +70,20 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       </h2>
 
       <div className="space-y-6">
-        {monthsData.map((month, i) => (
-          <motion.div
+        {monthsData.map((month, i) => {
+          const weeklyAvgs = month.weekly_scores || (() => {
+            if (!month.days) return [65, 65, 65, 65];
+            const weeks: number[] = [];
+            for (let wi = 0; wi < month.days.length; wi += 7) {
+              const w = month.days.slice(wi, wi + 7);
+              weeks.push(Math.round(w.reduce((s, d) => s + (d.score || d.day_score || 50), 0) / w.length));
+            }
+            return weeks;
+          })();
+
+          const barColor = (s: number) => (s >= 70 ? 'bg-emerald' : s >= 50 ? 'bg-amber' : 'bg-crimson');
+
+          return <motion.div
             key={i}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -196,16 +191,17 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
             </p>
 
             {/* Week score bar */}
-            {month.weekly_scores && month.weekly_scores.length > 0 && (
+            {weeklyAvgs.length > 0 && (
               <div className="pt-6 border-t border-horizon/40">
                 <p className="font-mono text-xs text-dust tracking-wider uppercase mb-3">
                   Weekly Breakdown
                 </p>
-                <div className="flex gap-2">
-                  {month.weekly_scores.map((score, j) => (
+                <div className="flex gap-2 items-end h-20">
+                  {weeklyAvgs.map((score, j) => (
                     <div key={j} className="flex-1">
                       <div
-                        className={`h-2 rounded-full ${getColor(score)}`}
+                        className={`rounded-sm ${barColor(score)}`}
+                        style={{ height: `${Math.max(8, Math.min(100, score))}%` }}
                         title={`Week ${j + 1}: ${score}`}
                       />
                       <p className="font-mono text-[9px] text-dust text-center mt-1">
@@ -216,8 +212,8 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
                 </div>
               </div>
             )}
-          </motion.div>
-        ))}
+          </motion.div>;
+        })}
       </div>
     </motion.div>
   );

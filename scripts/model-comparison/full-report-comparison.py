@@ -50,7 +50,7 @@ MODELS_TO_RUN = []
 # When False, solo models are loaded from full-results.json (no solo API re-run).
 RUN_SOLO_MODELS = False
 
-# Run 5 redesigned hybrid combos (Part 4).
+# Run 3 hybrid combos (Part 4).
 RUN_HYBRID_COMBOS = True
 
 EPH_URL = os.environ.get("JYOTISH_EPH_URL", "http://localhost:8001")
@@ -322,37 +322,29 @@ JSON format:
         )
         raw = r.content[0].text.strip()
         if raw.startswith("```"):
-            raw = re.sub(r"^```[a-zA-Z]*\n?", "", raw)
+            raw = re.sub(r"^```[a-z]*\n?", "", raw)
             raw = re.sub(r"\n?```$", "", raw)
         raw = raw.strip()
-        scores = None
+        _judge_parse_fallback = {
+            "lagna_accuracy": 0,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 0,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 0,
+            "judge_notes": f"Parse failed: {raw[:200]}",
+            "critical_errors": ["Judge response could not be parsed"],
+        }
         try:
             scores = json.loads(raw)
         except json.JSONDecodeError:
-            match = re.search(r"\{[^{}]*\}", raw, re.DOTALL)
+            match = re.search(r"\{.*\}", raw, re.DOTALL)
             if match:
                 try:
                     scores = json.loads(match.group())
                 except json.JSONDecodeError:
-                    scores = None
-            if scores is None:
-                b0 = raw.find("{")
-                b1 = raw.rfind("}")
-                if b0 != -1 and b1 > b0:
-                    try:
-                        scores = json.loads(raw[b0 : b1 + 1])
-                    except json.JSONDecodeError:
-                        scores = None
-            if scores is None:
-                scores = {
-                    "lagna_accuracy": 0,
-                    "yoga_interpretation": 0,
-                    "dasha_coherence": 0,
-                    "choghadiya_alignment": 0,
-                    "internal_consistency": 0,
-                    "judge_notes": f"Parse failed: {raw[:200]}",
-                    "critical_errors": ["Judge response could not be parsed"],
-                }
+                    scores = dict(_judge_parse_fallback)
+            else:
+                scores = dict(_judge_parse_fallback)
         dims = [
             "lagna_accuracy",
             "yoga_interpretation",

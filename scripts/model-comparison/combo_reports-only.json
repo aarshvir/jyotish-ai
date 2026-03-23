@@ -1,0 +1,1404 @@
+{
+  "combo_reports": [
+    {
+      "model": "Combo: Ultra Premium",
+      "model_id": "hybrid",
+      "is_hybrid": true,
+      "hybrid_sections": {
+        "daily_overviews": "grok-4.20-multi-agent",
+        "hourly": "grok-4.20-multi-agent",
+        "monthly": "claude-sonnet-4-6",
+        "synthesis": "claude-sonnet-4-6",
+        "nativity": "claude-sonnet-4-6"
+      },
+      "started": "2026-03-22T18:44:38.009479",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 446,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 10,
+          "strategy_sections": 7,
+          "caps_headlines": 6,
+          "total_house_refs": 90,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 5.7,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 10,
+          "time_seconds": 228.7,
+          "vedic_accuracy": {
+            "lagna_accuracy": 2,
+            "yoga_interpretation": 6,
+            "dasha_coherence": 4,
+            "choghadiya_alignment": 3,
+            "internal_consistency": 1,
+            "judge_notes": "The commentary is riddled with incorrect house placements throughout \u2014 Moon in Scorpio is correctly H5 for Cancer lagna but repeatedly misidentified as H8 or H11, and nearly every house reference appended to sentences is arbitrarily wrong (e.g., sunrise in H2, Rahu Kaal in H8, Anuradha in H3). The dasha section partially identifies Mercury correctly but fails to specify its H3/H12 rulership and misattributes the peak slot to Moon hora rather than Labh choghadiya at 11:00\u201312:00.",
+            "critical_errors": [
+              "Moon in Scorpio is H5 for Cancer lagna, not H8 or H11 as repeatedly implied throughout the text",
+              "Commentary states 'transit lagna in Taurus activates gains from the eleventh house' \u2014 Taurus is H11 for Cancer lagna, not the transit lagna; this conflates lagna with house sign",
+              "Anuradha nakshatra placed in third house communications context \u2014 no basis for H3 assignment; Anuradha falls in Scorpio which is H5",
+              "Peak slot attributed to 'Moon hora and Labh choghadiya' but ground truth specifies Labh choghadiya at 11:00\u201312:00; Moon hora is not mentioned in ground truth",
+              "Mercury's dasha rulership over H3 (Virgo) and H12 (Gemini) is never explicitly stated, a critical omission for dasha coherence",
+              "Rahu Kaal referenced as 'afternoon' and placed in H8 \u2014 ground truth confirms Rahu Kaal is active but no house assignment is appropriate or given",
+              "Commentary claims Moon rules H4 for Cancer lagna \u2014 Moon rules H1 (Cancer is the lagna itself); H4 is Libra ruled by Venus",
+              "Tithi described as 'Krishna Purnima Amavasya' \u2014 this is internally contradictory (Purnima and Amavasya are opposite tithis) and not supported by ground truth",
+              "Nearly every sentence appends a random house label (e.g., sunrise in H2, surya namaskar in H1, mantras in H12) with no logical or astrological basis",
+              "Harshana yoga correctly identified as happiness but then vaguely applied without reference to celebrations as specified in the correct meaning",
+              "Day score of 71 is stated correctly but the commentary's overwhelmingly positive framing ignores the below-benchmark nature of the score (~76.2 benchmark) and active Rahu Kaal warning"
+            ],
+            "avg_accuracy": 3.2
+          }
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 181,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 18,
+          "total_house_refs": 412,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 9,
+          "time_seconds": 121.0,
+          "vedic_accuracy": {
+            "lagna_accuracy": 3,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 2,
+            "choghadiya_alignment": 3,
+            "internal_consistency": 2,
+            "judge_notes": "The commentary contains multiple fabricated planetary placements (Moon placed in H1 instead of H5/Scorpio, Venus referenced without ground truth basis, Jupiter hora in H6/H9 invented) and completely omits Harshana yoga, which is the key yoga for this slot. Dasha logic is partially correct in identifying Mercury ruling H3 and H12 but introduces unsupported Jupiter hora framing.",
+            "critical_errors": [
+              "Moon is in Scorpio (H5 for Cancer lagna) per ground truth, but commentary incorrectly places Moon in H1 (Cancer lagna itself)",
+              "Harshana yoga (joy, delight, happiness \u2014 auspicious for celebrations) is entirely absent from the commentary \u2014 no mention whatsoever",
+              "Jupiter hora in H6 and H9 is a hallucination \u2014 no ground truth supports Jupiter hora or these house placements",
+              "Venus in H4 and H11 as badhaka lord is fabricated \u2014 no Venus placement data exists in ground truth",
+              "Saturn in H7 and H8 is fabricated \u2014 no Saturn placement data exists in ground truth",
+              "Sun in H2 is fabricated \u2014 no Sun placement data exists in ground truth",
+              "No reference to the best action window of 11:00\u201312:00 as specified in ground truth",
+              "Rahu Kaal being active is not flagged or cautioned against anywhere in the commentary",
+              "Commentary states 'ENGAGE IN LEARNING DURING JUPITER HORA' \u2014 Jupiter hora is a hallucination and contradicts Labh choghadiya framing",
+              "Mars correctly linked to H5 and H10, but described as yogakaraka without grounding \u2014 partially acceptable but overstated given mixed day context"
+            ],
+            "avg_accuracy": 2.0
+          }
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 219,
+          "grandmaster_target": "150+ words",
+          "score_spread": 31,
+          "score_range": "42-73",
+          "total_house_refs": 51,
+          "avg_planets_per_month": 6.8,
+          "quality_score": 9,
+          "time_seconds": 70.9,
+          "vedic_accuracy": {
+            "lagna_accuracy": 6,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 6,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary fails critically on yoga interpretation \u2014 Harshana yoga is never mentioned anywhere in the text, and Mars is incorrectly called 'Yogakaraka' for Cancer lagna (Yogakaraka for Cancer is Mars only in the sense of ruling H5/H10, which is partially correct, but the term is misapplied as Mars rules a dusthana H8 for no lagna \u2014 actually H5 and H10 for Cancer makes Mars a functional benefic but not the classical Yogakaraka). The choghadiya best window of 11:00\u201312:00 (Labh) is entirely absent, and Venus as Badhaka lord is a dubious claim requiring scrutiny. Internal consistency suffers from the date mismatch \u2014 the ground truth is March 2026 but the commentary discusses 'May 2026.'",
+            "critical_errors": [
+              "Harshana yoga is completely absent from the commentary \u2014 no mention of joy, delight, or celebration theme at all, scoring 0 on yoga interpretation",
+              "Commentary is written for 'May 2026' but ground truth date is 2026-03-10 (March), a fundamental date mismatch",
+              "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya \u2014 choghadiya alignment entirely missing",
+              "Mars is called 'Yogakaraka' for Cancer lagna \u2014 Mars rules H5 (Scorpio) and H10 (Aries) making it a functional benefic, but 'Yogakaraka' is a specific term (ruling a kendra AND a trikona) that is debated for Cancer; calling it unambiguously Yogakaraka without qualification is an overstatement",
+              "Venus described as 'Badhaka lord' for Cancer lagna \u2014 for movable (chara) lagna Cancer, the Badhaka house is H11 (Taurus) and its lord is Venus... this is actually correct, but the claim about Venus hora obstructing 4th house domestic peace is an unsupported extrapolation",
+              "Saturn placed in the 8th house \u2014 ground truth provides no confirmation of Saturn's house placement, making this an unverifiable or hallucinated placement",
+              "Jupiter described at 'final degrees of Taurus in the 11th house' \u2014 ground truth does not confirm Jupiter's position, potential hallucination",
+              "Moon described as transiting through multiple houses including 3rd house in Hasta nakshatra \u2014 ground truth specifies Moon in Scorpio (H5 for Cancer), making a 3rd house Moon transit claim inconsistent with the given date"
+            ],
+            "avg_accuracy": 3.2
+          }
+        },
+        "synthesis": {
+          "opening_words": 286,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 3,
+          "windows_with_high_score": 3,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 113,
+          "quality_score": 8,
+          "time_seconds": 84.4,
+          "vedic_accuracy": {
+            "lagna_accuracy": 7,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 7,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 5,
+            "judge_notes": "The commentary completely omits any mention of Harshana yoga and its core meaning of joy/delight/celebration, which is a critical hallucination-by-omission given it is the day's named yoga. The choghadiya best window (11:00\u201312:00, Labh) and the specific date context are entirely absent, replaced by generic dasha-period advice spanning weeks rather than the day in question.",
+            "critical_errors": [
+              "Harshana yoga (joy, delight, auspicious for celebrations) is never mentioned; the commentary treats the day as predominantly challenging/turbulent, directly contradicting the yoga's auspicious meaning \u2014 scores 0 for yoga_interpretation",
+              "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya; choghadiya framework is entirely absent from recommendations",
+              "Commentary describes a 'six-week corridor' and broad dasha-period generalities rather than addressing the specific day (2026-03-10) and its day score of 71",
+              "Saturn aspecting Cancer lagna and 7th house is introduced as a 'dominant transit' with no grounding in the ground truth data \u2014 potential hallucination of planetary placement",
+              "Rahu placed in '6th house' and Jupiter in '9th house' are asserted without any support in the ground truth, constituting unverified positional claims",
+              "The commentary's overwhelmingly negative and cautionary tone (words like 'violently,' 'moratorium,' 'complete risk') is inconsistent with a day score of 71 and an auspicious Harshana yoga",
+              "Mars hora on Wednesday recommendation is plausible for yogakaraka logic but 2026-03-10 is a Tuesday, making the Wednesday Mars hora reference contextually misaligned with the actual date"
+            ],
+            "avg_accuracy": 3.8
+          }
+        },
+        "nativity": {
+          "quality_score": 9,
+          "lagna_words": 200,
+          "dasha_words": 165,
+          "total_house_refs": 12,
+          "time_seconds": 15.8,
+          "vedic_accuracy": {
+            "lagna_accuracy": 2,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 6,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 3,
+            "judge_notes": "The commentary fabricates an entirely invented chart \u2014 Jupiter exalted in H1, Moon in H4/Libra, Mars in H8/Aquarius, Venus in H7/Capricorn, a 9th-house stellium \u2014 none of which appear in the ground truth. Harshana yoga (joy/celebrations) is never mentioned at all, and no choghadiya window or Labh period is referenced anywhere in the text.",
+            "critical_errors": [
+              "Moon placed in H4 (Libra) \u2014 ground truth states Moon is in Scorpio (H5 for Cancer lagna)",
+              "Jupiter exalted in H1 (Cancer) is a fabricated planet placement with no basis in the ground truth",
+              "Mars placed in H8 (Aquarius) \u2014 ground truth shows Mars rules H5 (Scorpio) and H10 (Aries) but does not place Mars in H8",
+              "Venus in H7 (Capricorn) is a fabricated placement not present in the ground truth",
+              "Sun and Saturn placed in a 9th-house stellium in Pisces \u2014 entirely fabricated, not in the ground truth",
+              "Rahu placed in H10 (Aries) as a Mahadasha lord is partially consistent, but Rahu ruling Aries is incorrect \u2014 Rahu does not rule any sign; Mars rules Aries",
+              "Harshana yoga (joy, delight, happiness \u2014 auspicious for celebrations) is completely absent from the commentary \u2014 no mention whatsoever",
+              "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya anywhere in the commentary",
+              "Mercury described as being in Pisces in H9 (debilitated) \u2014 this is a fabricated placement; ground truth only states Mercury rules H3 and H12",
+              "Day score of 71 and Rahu Kaal active are both ignored \u2014 the commentary adopts an overwhelmingly positive tone inconsistent with Rahu Kaal being active and a below-benchmark day score"
+            ],
+            "avg_accuracy": 2.2
+          }
+        }
+      },
+      "errors": [],
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "cost_full_report": 0.672,
+      "overall_quality_score": 9.0,
+      "vedic_accuracy": {
+        "daily": {
+          "lagna_accuracy": 2,
+          "yoga_interpretation": 6,
+          "dasha_coherence": 4,
+          "choghadiya_alignment": 3,
+          "internal_consistency": 1,
+          "judge_notes": "The commentary is riddled with incorrect house placements throughout \u2014 Moon in Scorpio is correctly H5 for Cancer lagna but repeatedly misidentified as H8 or H11, and nearly every house reference appended to sentences is arbitrarily wrong (e.g., sunrise in H2, Rahu Kaal in H8, Anuradha in H3). The dasha section partially identifies Mercury correctly but fails to specify its H3/H12 rulership and misattributes the peak slot to Moon hora rather than Labh choghadiya at 11:00\u201312:00.",
+          "critical_errors": [
+            "Moon in Scorpio is H5 for Cancer lagna, not H8 or H11 as repeatedly implied throughout the text",
+            "Commentary states 'transit lagna in Taurus activates gains from the eleventh house' \u2014 Taurus is H11 for Cancer lagna, not the transit lagna; this conflates lagna with house sign",
+            "Anuradha nakshatra placed in third house communications context \u2014 no basis for H3 assignment; Anuradha falls in Scorpio which is H5",
+            "Peak slot attributed to 'Moon hora and Labh choghadiya' but ground truth specifies Labh choghadiya at 11:00\u201312:00; Moon hora is not mentioned in ground truth",
+            "Mercury's dasha rulership over H3 (Virgo) and H12 (Gemini) is never explicitly stated, a critical omission for dasha coherence",
+            "Rahu Kaal referenced as 'afternoon' and placed in H8 \u2014 ground truth confirms Rahu Kaal is active but no house assignment is appropriate or given",
+            "Commentary claims Moon rules H4 for Cancer lagna \u2014 Moon rules H1 (Cancer is the lagna itself); H4 is Libra ruled by Venus",
+            "Tithi described as 'Krishna Purnima Amavasya' \u2014 this is internally contradictory (Purnima and Amavasya are opposite tithis) and not supported by ground truth",
+            "Nearly every sentence appends a random house label (e.g., sunrise in H2, surya namaskar in H1, mantras in H12) with no logical or astrological basis",
+            "Harshana yoga correctly identified as happiness but then vaguely applied without reference to celebrations as specified in the correct meaning",
+            "Day score of 71 is stated correctly but the commentary's overwhelmingly positive framing ignores the below-benchmark nature of the score (~76.2 benchmark) and active Rahu Kaal warning"
+          ],
+          "avg_accuracy": 3.2
+        },
+        "hourly": {
+          "lagna_accuracy": 3,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 2,
+          "choghadiya_alignment": 3,
+          "internal_consistency": 2,
+          "judge_notes": "The commentary contains multiple fabricated planetary placements (Moon placed in H1 instead of H5/Scorpio, Venus referenced without ground truth basis, Jupiter hora in H6/H9 invented) and completely omits Harshana yoga, which is the key yoga for this slot. Dasha logic is partially correct in identifying Mercury ruling H3 and H12 but introduces unsupported Jupiter hora framing.",
+          "critical_errors": [
+            "Moon is in Scorpio (H5 for Cancer lagna) per ground truth, but commentary incorrectly places Moon in H1 (Cancer lagna itself)",
+            "Harshana yoga (joy, delight, happiness \u2014 auspicious for celebrations) is entirely absent from the commentary \u2014 no mention whatsoever",
+            "Jupiter hora in H6 and H9 is a hallucination \u2014 no ground truth supports Jupiter hora or these house placements",
+            "Venus in H4 and H11 as badhaka lord is fabricated \u2014 no Venus placement data exists in ground truth",
+            "Saturn in H7 and H8 is fabricated \u2014 no Saturn placement data exists in ground truth",
+            "Sun in H2 is fabricated \u2014 no Sun placement data exists in ground truth",
+            "No reference to the best action window of 11:00\u201312:00 as specified in ground truth",
+            "Rahu Kaal being active is not flagged or cautioned against anywhere in the commentary",
+            "Commentary states 'ENGAGE IN LEARNING DURING JUPITER HORA' \u2014 Jupiter hora is a hallucination and contradicts Labh choghadiya framing",
+            "Mars correctly linked to H5 and H10, but described as yogakaraka without grounding \u2014 partially acceptable but overstated given mixed day context"
+          ],
+          "avg_accuracy": 2.0
+        },
+        "monthly": {
+          "lagna_accuracy": 6,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 6,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary fails critically on yoga interpretation \u2014 Harshana yoga is never mentioned anywhere in the text, and Mars is incorrectly called 'Yogakaraka' for Cancer lagna (Yogakaraka for Cancer is Mars only in the sense of ruling H5/H10, which is partially correct, but the term is misapplied as Mars rules a dusthana H8 for no lagna \u2014 actually H5 and H10 for Cancer makes Mars a functional benefic but not the classical Yogakaraka). The choghadiya best window of 11:00\u201312:00 (Labh) is entirely absent, and Venus as Badhaka lord is a dubious claim requiring scrutiny. Internal consistency suffers from the date mismatch \u2014 the ground truth is March 2026 but the commentary discusses 'May 2026.'",
+          "critical_errors": [
+            "Harshana yoga is completely absent from the commentary \u2014 no mention of joy, delight, or celebration theme at all, scoring 0 on yoga interpretation",
+            "Commentary is written for 'May 2026' but ground truth date is 2026-03-10 (March), a fundamental date mismatch",
+            "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya \u2014 choghadiya alignment entirely missing",
+            "Mars is called 'Yogakaraka' for Cancer lagna \u2014 Mars rules H5 (Scorpio) and H10 (Aries) making it a functional benefic, but 'Yogakaraka' is a specific term (ruling a kendra AND a trikona) that is debated for Cancer; calling it unambiguously Yogakaraka without qualification is an overstatement",
+            "Venus described as 'Badhaka lord' for Cancer lagna \u2014 for movable (chara) lagna Cancer, the Badhaka house is H11 (Taurus) and its lord is Venus... this is actually correct, but the claim about Venus hora obstructing 4th house domestic peace is an unsupported extrapolation",
+            "Saturn placed in the 8th house \u2014 ground truth provides no confirmation of Saturn's house placement, making this an unverifiable or hallucinated placement",
+            "Jupiter described at 'final degrees of Taurus in the 11th house' \u2014 ground truth does not confirm Jupiter's position, potential hallucination",
+            "Moon described as transiting through multiple houses including 3rd house in Hasta nakshatra \u2014 ground truth specifies Moon in Scorpio (H5 for Cancer), making a 3rd house Moon transit claim inconsistent with the given date"
+          ],
+          "avg_accuracy": 3.2
+        },
+        "synthesis": {
+          "lagna_accuracy": 7,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 7,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 5,
+          "judge_notes": "The commentary completely omits any mention of Harshana yoga and its core meaning of joy/delight/celebration, which is a critical hallucination-by-omission given it is the day's named yoga. The choghadiya best window (11:00\u201312:00, Labh) and the specific date context are entirely absent, replaced by generic dasha-period advice spanning weeks rather than the day in question.",
+          "critical_errors": [
+            "Harshana yoga (joy, delight, auspicious for celebrations) is never mentioned; the commentary treats the day as predominantly challenging/turbulent, directly contradicting the yoga's auspicious meaning \u2014 scores 0 for yoga_interpretation",
+            "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya; choghadiya framework is entirely absent from recommendations",
+            "Commentary describes a 'six-week corridor' and broad dasha-period generalities rather than addressing the specific day (2026-03-10) and its day score of 71",
+            "Saturn aspecting Cancer lagna and 7th house is introduced as a 'dominant transit' with no grounding in the ground truth data \u2014 potential hallucination of planetary placement",
+            "Rahu placed in '6th house' and Jupiter in '9th house' are asserted without any support in the ground truth, constituting unverified positional claims",
+            "The commentary's overwhelmingly negative and cautionary tone (words like 'violently,' 'moratorium,' 'complete risk') is inconsistent with a day score of 71 and an auspicious Harshana yoga",
+            "Mars hora on Wednesday recommendation is plausible for yogakaraka logic but 2026-03-10 is a Tuesday, making the Wednesday Mars hora reference contextually misaligned with the actual date"
+          ],
+          "avg_accuracy": 3.8
+        },
+        "nativity": {
+          "lagna_accuracy": 2,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 6,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 3,
+          "judge_notes": "The commentary fabricates an entirely invented chart \u2014 Jupiter exalted in H1, Moon in H4/Libra, Mars in H8/Aquarius, Venus in H7/Capricorn, a 9th-house stellium \u2014 none of which appear in the ground truth. Harshana yoga (joy/celebrations) is never mentioned at all, and no choghadiya window or Labh period is referenced anywhere in the text.",
+          "critical_errors": [
+            "Moon placed in H4 (Libra) \u2014 ground truth states Moon is in Scorpio (H5 for Cancer lagna)",
+            "Jupiter exalted in H1 (Cancer) is a fabricated planet placement with no basis in the ground truth",
+            "Mars placed in H8 (Aquarius) \u2014 ground truth shows Mars rules H5 (Scorpio) and H10 (Aries) but does not place Mars in H8",
+            "Venus in H7 (Capricorn) is a fabricated placement not present in the ground truth",
+            "Sun and Saturn placed in a 9th-house stellium in Pisces \u2014 entirely fabricated, not in the ground truth",
+            "Rahu placed in H10 (Aries) as a Mahadasha lord is partially consistent, but Rahu ruling Aries is incorrect \u2014 Rahu does not rule any sign; Mars rules Aries",
+            "Harshana yoga (joy, delight, happiness \u2014 auspicious for celebrations) is completely absent from the commentary \u2014 no mention whatsoever",
+            "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya anywhere in the commentary",
+            "Mercury described as being in Pisces in H9 (debilitated) \u2014 this is a fabricated placement; ground truth only states Mercury rules H3 and H12",
+            "Day score of 71 and Rahu Kaal active are both ignored \u2014 the commentary adopts an overwhelmingly positive tone inconsistent with Rahu Kaal being active and a below-benchmark day score"
+          ],
+          "avg_accuracy": 2.2
+        }
+      },
+      "overall_accuracy_score": 2.9
+    },
+    {
+      "model": "Combo: Flagship Balanced",
+      "model_id": "hybrid",
+      "is_hybrid": true,
+      "hybrid_sections": {
+        "daily_overviews": "grok-4.20-multi-agent",
+        "hourly": "grok-4.20-multi-agent",
+        "monthly": "gpt-5.4-nano",
+        "synthesis": "claude-haiku-4-5-20251001",
+        "nativity": "gpt-5.4-nano"
+      },
+      "started": "2026-03-22T18:54:34.991162",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 311,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 9,
+          "strategy_sections": 7,
+          "caps_headlines": 3,
+          "total_house_refs": 114,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 8.0,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 9,
+          "time_seconds": 277.4,
+          "vedic_accuracy": {
+            "lagna_accuracy": 3,
+            "yoga_interpretation": 3,
+            "dasha_coherence": 1,
+            "choghadiya_alignment": 1,
+            "internal_consistency": 2,
+            "judge_notes": "The commentary is riddled with fabricated planetary house placements (Jupiter in H6/H9, Saturn in H7/H8, Sun in H2) that have no grounding in the ground truth, and obsessively repeats 'Anuradha nakshatra' as a filler phrase without any verification basis. The Rahu-Mercury dasha logic is garbled \u2014 Mercury is incorrectly described as being 'in third and twelfth house' rather than ruling those houses, and Rahu is wrongly treated as a dasha lord disturbing Mercury rather than amplifying themes.",
+            "critical_errors": [
+              "Mercury described as being placed 'in third house and twelfth house' \u2014 ground truth only states Mercury rules H3 and H12, not that it is placed there; this is a hallucination of placement",
+              "Rahu described as having its own dasha ('Rahu in Rahu dasha') separate from Mercury bhukti in a confusing and incoherent way that misrepresents Rahu-Mercury as two separate Rahu/Mercury dashas",
+              "Jupiter assigned to H6 and H9 \u2014 no ground truth supports any Jupiter placement; pure hallucination",
+              "Saturn assigned to H7 and H8 \u2014 no ground truth supports any Saturn placement; pure hallucination",
+              "Sun placed in H2 \u2014 no ground truth supports this placement; hallucination",
+              "Mars described as 'day ruler' with no ground truth basis provided for this claim",
+              "Best action window of 11:00\u201312:00 (Labh choghadiya) is never referenced; instead a fabricated Rahu Kaal of 15:26\u201316:55 is cited (ground truth confirms Rahu Kaal is active but gives no such time range)",
+              "Harshana yoga is mentioned alongside 'Krishna Purnima Amavasya tithi' \u2014 Purnima (full moon) and Amavasya (new moon) are mutually exclusive tithis; this is a direct internal contradiction and factual error",
+              "'Anuradha nakshatra' is repeated approximately 15 times as a blanket tag for every planet and house with no verification from ground truth \u2014 constitutes systematic hallucination",
+              "Moon hora and Venus hora recommendations given with no grounding in the best action window (11:00\u201312:00 Labh choghadiya) from ground truth",
+              "Transit lagna placed in H11 (Taurus) without any ground truth support \u2014 fabricated placement",
+              "Commentary instructs native to 'execute creative work in first house' contradicting Moon's correct placement in H5 (house of creativity), not H1"
+            ],
+            "avg_accuracy": 2.0
+          }
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 149,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 7,
+          "total_house_refs": 356,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 9,
+          "time_seconds": 104.6,
+          "vedic_accuracy": {
+            "lagna_accuracy": 3,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 2,
+            "choghadiya_alignment": 2,
+            "internal_consistency": 2,
+            "judge_notes": "The commentary is riddled with fabricated planetary placements (Jupiter hora, Saturn in H8/H7, Sun in H2, Venus in H4/H11, Ketu in H6) that have no grounding in the ground truth, and Harshana yoga is never mentioned or interpreted at all. The Labh choghadiya is named but no action window of 11:00\u201312:00 is referenced, and the overall structure is incoherent with contradictory house assignments throughout.",
+            "critical_errors": [
+              "Harshana yoga is completely absent from the commentary \u2014 no mention or interpretation of joy/delight/happiness/celebrations",
+              "Moon is placed in H1 (Cancer) but ground truth has Moon in Scorpio = H5 for Cancer lagna",
+              "Jupiter in H9 and H6 simultaneously is contradictory and unsupported by ground truth",
+              "Saturn in H8 and H7 simultaneously is contradictory and fabricated \u2014 no Saturn placement given in ground truth",
+              "Sun in H2 is fabricated \u2014 no Sun placement given in ground truth",
+              "Venus in H4 and H11 simultaneously is fabricated \u2014 no Venus placement given in ground truth",
+              "Mercury as antardasha lord is not identified as ruling H3 (Virgo) and H12 (Gemini) for Cancer lagna",
+              "Rahu described as 'challenging the 1st house' without any basis; Rahu does not rule a sign and its house position is not stated in ground truth",
+              "No reference to the best action window of 11:00\u201312:00",
+              "Jupiter hora is introduced as a concept with no basis in the ground truth data",
+              "Ketu affecting H6 is fabricated with no grounding in the ground truth",
+              "Rahu Kaal being active is not flagged as a caution despite being marked True in ground truth"
+            ],
+            "avg_accuracy": 1.8
+          }
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 181,
+          "grandmaster_target": "150+ words",
+          "score_spread": 33,
+          "score_range": "42-75",
+          "total_house_refs": 10,
+          "avg_planets_per_month": 5.0,
+          "quality_score": 8,
+          "time_seconds": 12.8,
+          "vedic_accuracy": {
+            "lagna_accuracy": 5,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 4,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary contains a critical hallucination calling Mars 'yogakaraka for Cancer lagna' \u2014 Mars rules H5 and H10 for Cancer, which makes it a powerful planet but the classical yogakaraka designation is a stretch and not supported here; more critically, Harshana yoga (joy, delight, celebrations) is never mentioned or interpreted at all, scoring zero. No reference is made to the 11:00\u201312:00 Labh choghadiya window, and the analysis is framed as 'May' when the ground truth date is March 10, 2026.",
+            "critical_errors": [
+              "Harshana yoga is entirely absent from the commentary \u2014 its correct meaning (joy, delight, auspicious for celebrations) is never stated or applied",
+              "Commentary refers to 'May' throughout, but the ground truth date is March 10, 2026 \u2014 wrong month is a factual hallucination",
+              "No mention of the best action window 11:00\u201312:00 or Labh choghadiya \u2014 choghadiya guidance is completely absent",
+              "Mars is called 'yogakaraka for Cancer lagna' \u2014 this is technically incorrect; the classical yogakaraka for Cancer lagna is Mars by some schools but it is stated as established fact without qualification and conflicts with calling Mercury a 'functional malefic', which also lacks grounding in the ground truth data",
+              "Moon is described as moving from Shravana toward Purva Bhadrapada and entering H6 and H7 \u2014 ground truth places Moon in Scorpio (H5 for Cancer lagna) with no support for H6/H7 transit in this daily snapshot",
+              "Mercury described as 'functional malefic' but ground truth only identifies Mercury as ruling H3 (Virgo) and H12 (Gemini) \u2014 H12 rulership can imply mild functional maleficence but this is not stated in ground truth and the label is an unsupported addition",
+              "Rahu-Mercury dasha is correctly identified but commentary incorrectly implies Mars 'gives structure to Mercury's speed', conflating dasha lords with transit influences without basis in the ground truth"
+            ],
+            "avg_accuracy": 2.6
+          }
+        },
+        "synthesis": {
+          "opening_words": 217,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 3,
+          "windows_with_high_score": 3,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 135,
+          "quality_score": 8,
+          "time_seconds": 46.4,
+          "vedic_accuracy": {
+            "lagna_accuracy": 5,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 6,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 3,
+            "judge_notes": "The commentary fundamentally misinterprets Harshana yoga as obstructive rather than joyful/auspicious, which is a critical hallucination-level error. Additionally, the choghadiya best window (11:00\u201312:00, Labh) is never referenced, and the overall tone is deeply negative despite a day score of 71 (above the positive threshold), creating severe internal inconsistency.",
+            "critical_errors": [
+              "Harshana yoga is described as 'deeply obstructive' \u2014 its correct meaning is joy, delight, happiness, and it is auspicious for celebrations; this is a direct factual inversion",
+              "No mention of the best action window 11:00\u201312:00 (Labh choghadiya); the commentary never references Labh as auspicious",
+              "Mercury hora and Venus hora are flagged as periods to 'completely avoid' with no grounding in the ground truth data provided",
+              "Moon is stated to journey across 'Libra, Scorpio, Sagittarius, Capricorn, Aquarius, and Pisces (houses 7\u201312)' \u2014 Moon in Scorpio is H5 for Cancer lagna, not H7; Libra would be H4, making the house numbering sequence incorrect",
+              "Venus described as 'badhaka lord ruling the 11th house' \u2014 for Cancer lagna H11 is Taurus (ruled by Venus), but calling Venus the badhaka lord is an unverified claim not present in ground truth",
+              "Jupiter described as 'in the 12th house conjunct Ketu' \u2014 this planetary placement is not stated in the ground truth and constitutes a hallucination",
+              "Saturn's '7th/8th rulership' is asserted without ground truth support \u2014 for Cancer lagna H7=Capricorn and H8=Aquarius are ruled by Saturn, which is partially correct structurally but introduced without basis in the provided data",
+              "Overall tone is overwhelmingly negative and catastrophizing despite a day score of 71, which is above the positive threshold benchmark"
+            ],
+            "avg_accuracy": 2.8
+          }
+        },
+        "nativity": {
+          "quality_score": 8,
+          "lagna_words": 201,
+          "dasha_words": 185,
+          "total_house_refs": 0,
+          "time_seconds": 4.4,
+          "vedic_accuracy": {
+            "lagna_accuracy": 2,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 2,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 3,
+            "judge_notes": "The commentary fabricates an entirely different chart \u2014 Moon is placed in Libra H4 instead of Scorpio H5, multiple planets are invented in positions not given in the ground truth, and Harshana yoga is never mentioned or interpreted at all. Mercury's antardasha rulership is misidentified as H9 placement rather than correctly ruling H3 and H12 for Cancer lagna.",
+            "critical_errors": [
+              "Moon placed in Libra H4 (Swati nakshatra) \u2014 ground truth states Moon in Scorpio H5",
+              "Harshana yoga is never mentioned anywhere in the commentary \u2014 zero interpretation provided",
+              "Jupiter placed in Cancer H1 \u2014 not mentioned in ground truth; hallucinated placement",
+              "Ketu placed in Libra H4 \u2014 hallucinated, no ground truth basis",
+              "Sun and Saturn placed in Pisces H9 \u2014 hallucinated, no ground truth basis",
+              "Mars placed in Aquarius H8 \u2014 ground truth shows Mars rules H5 (Scorpio) and H10 (Aries), no placement data given; commentary fabricates a specific house",
+              "Venus placed in Capricorn H7 \u2014 hallucinated, no ground truth basis",
+              "Rahu placed in Aries H10 \u2014 while H10=Aries is correct for Cancer lagna, the placement is hallucinated from the ground truth which only confirms Mars rules H10",
+              "Mercury described as placed in Pisces H9 \u2014 ground truth states Mercury rules H3 (Virgo) and H12 (Gemini); H9=Pisces is ruled by Jupiter, not Mercury",
+              "No reference to best action window 11:00\u201312:00 or Labh choghadiya",
+              "No reference to Rahu Kaal being active or caution advised around it",
+              "Day score of 71 context ignored entirely \u2014 no choghadiya framework applied",
+              "Commentary invents a full natal chart with multiple planetary positions unsupported by any ground truth data"
+            ],
+            "avg_accuracy": 1.4
+          }
+        }
+      },
+      "errors": [],
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "cost_full_report": 0.2839,
+      "overall_quality_score": 8.4,
+      "vedic_accuracy": {
+        "daily": {
+          "lagna_accuracy": 3,
+          "yoga_interpretation": 3,
+          "dasha_coherence": 1,
+          "choghadiya_alignment": 1,
+          "internal_consistency": 2,
+          "judge_notes": "The commentary is riddled with fabricated planetary house placements (Jupiter in H6/H9, Saturn in H7/H8, Sun in H2) that have no grounding in the ground truth, and obsessively repeats 'Anuradha nakshatra' as a filler phrase without any verification basis. The Rahu-Mercury dasha logic is garbled \u2014 Mercury is incorrectly described as being 'in third and twelfth house' rather than ruling those houses, and Rahu is wrongly treated as a dasha lord disturbing Mercury rather than amplifying themes.",
+          "critical_errors": [
+            "Mercury described as being placed 'in third house and twelfth house' \u2014 ground truth only states Mercury rules H3 and H12, not that it is placed there; this is a hallucination of placement",
+            "Rahu described as having its own dasha ('Rahu in Rahu dasha') separate from Mercury bhukti in a confusing and incoherent way that misrepresents Rahu-Mercury as two separate Rahu/Mercury dashas",
+            "Jupiter assigned to H6 and H9 \u2014 no ground truth supports any Jupiter placement; pure hallucination",
+            "Saturn assigned to H7 and H8 \u2014 no ground truth supports any Saturn placement; pure hallucination",
+            "Sun placed in H2 \u2014 no ground truth supports this placement; hallucination",
+            "Mars described as 'day ruler' with no ground truth basis provided for this claim",
+            "Best action window of 11:00\u201312:00 (Labh choghadiya) is never referenced; instead a fabricated Rahu Kaal of 15:26\u201316:55 is cited (ground truth confirms Rahu Kaal is active but gives no such time range)",
+            "Harshana yoga is mentioned alongside 'Krishna Purnima Amavasya tithi' \u2014 Purnima (full moon) and Amavasya (new moon) are mutually exclusive tithis; this is a direct internal contradiction and factual error",
+            "'Anuradha nakshatra' is repeated approximately 15 times as a blanket tag for every planet and house with no verification from ground truth \u2014 constitutes systematic hallucination",
+            "Moon hora and Venus hora recommendations given with no grounding in the best action window (11:00\u201312:00 Labh choghadiya) from ground truth",
+            "Transit lagna placed in H11 (Taurus) without any ground truth support \u2014 fabricated placement",
+            "Commentary instructs native to 'execute creative work in first house' contradicting Moon's correct placement in H5 (house of creativity), not H1"
+          ],
+          "avg_accuracy": 2.0
+        },
+        "hourly": {
+          "lagna_accuracy": 3,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 2,
+          "choghadiya_alignment": 2,
+          "internal_consistency": 2,
+          "judge_notes": "The commentary is riddled with fabricated planetary placements (Jupiter hora, Saturn in H8/H7, Sun in H2, Venus in H4/H11, Ketu in H6) that have no grounding in the ground truth, and Harshana yoga is never mentioned or interpreted at all. The Labh choghadiya is named but no action window of 11:00\u201312:00 is referenced, and the overall structure is incoherent with contradictory house assignments throughout.",
+          "critical_errors": [
+            "Harshana yoga is completely absent from the commentary \u2014 no mention or interpretation of joy/delight/happiness/celebrations",
+            "Moon is placed in H1 (Cancer) but ground truth has Moon in Scorpio = H5 for Cancer lagna",
+            "Jupiter in H9 and H6 simultaneously is contradictory and unsupported by ground truth",
+            "Saturn in H8 and H7 simultaneously is contradictory and fabricated \u2014 no Saturn placement given in ground truth",
+            "Sun in H2 is fabricated \u2014 no Sun placement given in ground truth",
+            "Venus in H4 and H11 simultaneously is fabricated \u2014 no Venus placement given in ground truth",
+            "Mercury as antardasha lord is not identified as ruling H3 (Virgo) and H12 (Gemini) for Cancer lagna",
+            "Rahu described as 'challenging the 1st house' without any basis; Rahu does not rule a sign and its house position is not stated in ground truth",
+            "No reference to the best action window of 11:00\u201312:00",
+            "Jupiter hora is introduced as a concept with no basis in the ground truth data",
+            "Ketu affecting H6 is fabricated with no grounding in the ground truth",
+            "Rahu Kaal being active is not flagged as a caution despite being marked True in ground truth"
+          ],
+          "avg_accuracy": 1.8
+        },
+        "monthly": {
+          "lagna_accuracy": 5,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 4,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary contains a critical hallucination calling Mars 'yogakaraka for Cancer lagna' \u2014 Mars rules H5 and H10 for Cancer, which makes it a powerful planet but the classical yogakaraka designation is a stretch and not supported here; more critically, Harshana yoga (joy, delight, celebrations) is never mentioned or interpreted at all, scoring zero. No reference is made to the 11:00\u201312:00 Labh choghadiya window, and the analysis is framed as 'May' when the ground truth date is March 10, 2026.",
+          "critical_errors": [
+            "Harshana yoga is entirely absent from the commentary \u2014 its correct meaning (joy, delight, auspicious for celebrations) is never stated or applied",
+            "Commentary refers to 'May' throughout, but the ground truth date is March 10, 2026 \u2014 wrong month is a factual hallucination",
+            "No mention of the best action window 11:00\u201312:00 or Labh choghadiya \u2014 choghadiya guidance is completely absent",
+            "Mars is called 'yogakaraka for Cancer lagna' \u2014 this is technically incorrect; the classical yogakaraka for Cancer lagna is Mars by some schools but it is stated as established fact without qualification and conflicts with calling Mercury a 'functional malefic', which also lacks grounding in the ground truth data",
+            "Moon is described as moving from Shravana toward Purva Bhadrapada and entering H6 and H7 \u2014 ground truth places Moon in Scorpio (H5 for Cancer lagna) with no support for H6/H7 transit in this daily snapshot",
+            "Mercury described as 'functional malefic' but ground truth only identifies Mercury as ruling H3 (Virgo) and H12 (Gemini) \u2014 H12 rulership can imply mild functional maleficence but this is not stated in ground truth and the label is an unsupported addition",
+            "Rahu-Mercury dasha is correctly identified but commentary incorrectly implies Mars 'gives structure to Mercury's speed', conflating dasha lords with transit influences without basis in the ground truth"
+          ],
+          "avg_accuracy": 2.6
+        },
+        "synthesis": {
+          "lagna_accuracy": 5,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 6,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 3,
+          "judge_notes": "The commentary fundamentally misinterprets Harshana yoga as obstructive rather than joyful/auspicious, which is a critical hallucination-level error. Additionally, the choghadiya best window (11:00\u201312:00, Labh) is never referenced, and the overall tone is deeply negative despite a day score of 71 (above the positive threshold), creating severe internal inconsistency.",
+          "critical_errors": [
+            "Harshana yoga is described as 'deeply obstructive' \u2014 its correct meaning is joy, delight, happiness, and it is auspicious for celebrations; this is a direct factual inversion",
+            "No mention of the best action window 11:00\u201312:00 (Labh choghadiya); the commentary never references Labh as auspicious",
+            "Mercury hora and Venus hora are flagged as periods to 'completely avoid' with no grounding in the ground truth data provided",
+            "Moon is stated to journey across 'Libra, Scorpio, Sagittarius, Capricorn, Aquarius, and Pisces (houses 7\u201312)' \u2014 Moon in Scorpio is H5 for Cancer lagna, not H7; Libra would be H4, making the house numbering sequence incorrect",
+            "Venus described as 'badhaka lord ruling the 11th house' \u2014 for Cancer lagna H11 is Taurus (ruled by Venus), but calling Venus the badhaka lord is an unverified claim not present in ground truth",
+            "Jupiter described as 'in the 12th house conjunct Ketu' \u2014 this planetary placement is not stated in the ground truth and constitutes a hallucination",
+            "Saturn's '7th/8th rulership' is asserted without ground truth support \u2014 for Cancer lagna H7=Capricorn and H8=Aquarius are ruled by Saturn, which is partially correct structurally but introduced without basis in the provided data",
+            "Overall tone is overwhelmingly negative and catastrophizing despite a day score of 71, which is above the positive threshold benchmark"
+          ],
+          "avg_accuracy": 2.8
+        },
+        "nativity": {
+          "lagna_accuracy": 2,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 2,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 3,
+          "judge_notes": "The commentary fabricates an entirely different chart \u2014 Moon is placed in Libra H4 instead of Scorpio H5, multiple planets are invented in positions not given in the ground truth, and Harshana yoga is never mentioned or interpreted at all. Mercury's antardasha rulership is misidentified as H9 placement rather than correctly ruling H3 and H12 for Cancer lagna.",
+          "critical_errors": [
+            "Moon placed in Libra H4 (Swati nakshatra) \u2014 ground truth states Moon in Scorpio H5",
+            "Harshana yoga is never mentioned anywhere in the commentary \u2014 zero interpretation provided",
+            "Jupiter placed in Cancer H1 \u2014 not mentioned in ground truth; hallucinated placement",
+            "Ketu placed in Libra H4 \u2014 hallucinated, no ground truth basis",
+            "Sun and Saturn placed in Pisces H9 \u2014 hallucinated, no ground truth basis",
+            "Mars placed in Aquarius H8 \u2014 ground truth shows Mars rules H5 (Scorpio) and H10 (Aries), no placement data given; commentary fabricates a specific house",
+            "Venus placed in Capricorn H7 \u2014 hallucinated, no ground truth basis",
+            "Rahu placed in Aries H10 \u2014 while H10=Aries is correct for Cancer lagna, the placement is hallucinated from the ground truth which only confirms Mars rules H10",
+            "Mercury described as placed in Pisces H9 \u2014 ground truth states Mercury rules H3 (Virgo) and H12 (Gemini); H9=Pisces is ruled by Jupiter, not Mercury",
+            "No reference to best action window 11:00\u201312:00 or Labh choghadiya",
+            "No reference to Rahu Kaal being active or caution advised around it",
+            "Day score of 71 context ignored entirely \u2014 no choghadiya framework applied",
+            "Commentary invents a full natal chart with multiple planetary positions unsupported by any ground truth data"
+          ],
+          "avg_accuracy": 1.4
+        }
+      },
+      "overall_accuracy_score": 2.1
+    },
+    {
+      "model": "Combo: GPT Thinking Stack",
+      "model_id": "hybrid",
+      "is_hybrid": true,
+      "hybrid_sections": {
+        "daily_overviews": "gpt-5.4-high-reasoning",
+        "hourly": "gpt-5.4-mini",
+        "monthly": "gpt-5.4-nano",
+        "synthesis": "gpt-5.4-high-reasoning",
+        "nativity": "gpt-5.4-nano"
+      },
+      "started": "2026-03-22T19:03:15.626569",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 300,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 9,
+          "strategy_sections": 7,
+          "caps_headlines": 7,
+          "total_house_refs": 56,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 5.6,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 10,
+          "time_seconds": 234.9,
+          "vedic_accuracy": {
+            "lagna_accuracy": 4,
+            "yoga_interpretation": 2,
+            "dasha_coherence": 5,
+            "choghadiya_alignment": 2,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary mischaracterizes Harshana yoga as a discipline/focus tool rather than correctly identifying it as auspicious for joy and celebrations. Multiple house references lack grounding in the Cancer lagna map (e.g., H11=Taurus is never properly invoked for networking gains, Jupiter on H12 is unverified, Saturn on H6 is asserted without chart basis), and the best action window of 11:00\u201312:00 (Labh choghadiya) is ignored in favor of a vague Mars hora reference and a Rahu Kaal window of 15:26\u201316:55 that contradicts the ground truth.",
+            "critical_errors": [
+              "Harshana yoga is described as disciplining action and focusing the mind \u2014 its correct meaning is joy, delight, happiness, auspicious for celebrations; the commentary never mentions this.",
+              "Commentary invents 'Anuradha nakshatra decision gate' framing not supported by ground truth; nakshatra influence is hallucinated.",
+              "Best action window 11:00\u201312:00 (Labh choghadiya) is never referenced; instead a Mars hora and unspecified 'earliest strong display_label' are recommended.",
+              "Rahu Kaal window cited as 15:26\u201316:55 \u2014 ground truth only confirms Rahu Kaal is active but does not specify this time range in the provided data, making it unverifiable/potentially hallucinated.",
+              "Jupiter influence on H12 is asserted without any basis in the ground truth planetary positions provided.",
+              "Saturn pressure on H6 (Sagittarius for Cancer lagna) is asserted without support from the ground truth data.",
+              "Moon-linked timing connected to H11 outcomes is vague and not grounded \u2014 Moon is placed in H5 (Scorpio) per ground truth, not H11.",
+              "Mercury's H3 and H12 rulership is correctly noted, but Rahu is not described as an amplifier; the dasha logic is inconsistent and under-developed.",
+              "Commentary tone is moderately positive but the 'exalted' framing in the headline is unsupported and inflates the day score of 71."
+            ],
+            "avg_accuracy": 3.4
+          }
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 145,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 2,
+          "total_house_refs": 118,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 1,
+          "quality_score": 8,
+          "time_seconds": 24.8,
+          "vedic_accuracy": {
+            "lagna_accuracy": 3,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 3,
+            "choghadiya_alignment": 5,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary fails to mention Harshana yoga at all, instead fabricating a 'Jupiter hora' framing not present in the ground truth, and the house references (9th house of fortune, 6th house) are not grounded in the Cancer lagna map or any chart-specific logic provided. Mercury's dasha rulership over H3 and H12 is never mentioned, and the Jupiter-centric narrative is entirely invented.",
+            "critical_errors": [
+              "Harshana yoga is completely absent from the commentary \u2014 its meaning (joy, delight, happiness, auspicious for celebrations) is never stated or applied",
+              "Commentary fabricates 'Jupiter hora' as the primary framing; no Jupiter hora is referenced in the ground truth data",
+              "9th house reference is unanchored \u2014 commentary treats H9 (Pisces) as receiving Jupiter's influence without any chart-based justification",
+              "6th house (Sagittarius for Cancer lagna) is invoked without logical basis from the provided data",
+              "Mercury's rulership of H3 (Virgo) and H12 (Gemini) for Cancer lagna is never mentioned despite Mercury being the active antardasha lord",
+              "Rahu Kaal being active is not flagged as a caution, which is a significant omission for a day score of 71",
+              "Moon in Scorpio (H5 for Cancer lagna) is entirely ignored despite being a key chart element",
+              "No reference to the best action window of 11:00\u201312:00",
+              "Jupiter is presented as correcting Mercury's dasha distortion \u2014 this is an invented astrological claim with no basis in the ground truth"
+            ],
+            "avg_accuracy": 3.0
+          }
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 180,
+          "grandmaster_target": "150+ words",
+          "score_spread": 32,
+          "score_range": "42-74",
+          "total_house_refs": 18,
+          "avg_planets_per_month": 5.2,
+          "quality_score": 9,
+          "time_seconds": 12.2,
+          "vedic_accuracy": {
+            "lagna_accuracy": 4,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 5,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary fails to mention Harshana yoga at all, missing its core meaning of joy and celebration entirely, and no reference is made to the 11:00\u201312:00 Labh choghadiya window. While H5=Scorpio and H12=Gemini references are partially correct, Rahu is incorrectly assigned to the 4th house without astrological basis, and Mars's H5/H10 rulership is vaguely referenced without accuracy.",
+            "critical_errors": [
+              "Harshana yoga is completely absent from the commentary \u2014 its meaning of joy, delight, and auspiciousness for celebrations is never mentioned",
+              "Rahu is incorrectly stated to 'activate the 4th house' \u2014 Rahu does not rule any sign and has no inherent 4th-house placement established in the ground truth",
+              "No reference to the best action window of 11:00\u201312:00 (Labh choghadiya, score=94)",
+              "Labh choghadiya is not mentioned at all; no choghadiya guidance is provided",
+              "Moon is stated to be in the 4th house initially, but ground truth places Moon in Scorpio = H5 for Cancer lagna \u2014 the 4th house claim is incorrect",
+              "Mercury described as 'functionally malefic' without grounding \u2014 Mercury rules H3 (Virgo) and H12 (Gemini), making it a mixed planet, not straightforwardly malefic",
+              "Saturn's '8th-house endurance' is introduced without any ground truth support \u2014 hallucinated planetary placement",
+              "Jupiter described as 'not fully active from Cancer' \u2014 no ground truth basis for this claim, hallucinated",
+              "The date reference to 'May' is inconsistent with the ground truth date of 2026-03-10 (March)"
+            ],
+            "avg_accuracy": 2.6
+          }
+        },
+        "synthesis": {
+          "opening_words": 180,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": true,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": false,
+          "closing_paragraph_words": 25,
+          "quality_score": 7,
+          "time_seconds": 189.5,
+          "vedic_accuracy": {
+            "lagna_accuracy": 7,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 7,
+            "choghadiya_alignment": 3,
+            "internal_consistency": 5,
+            "judge_notes": "The commentary completely omits any mention of Harshana yoga and its joyful/celebratory meaning, which is a critical hallucination-by-omission failure. The choghadiya alignment is poor as the specific 11:00\u201312:00 Labh window is never mentioned, and the commentary instead vaguely references Mars hora and an unsubstantiated warning about 2026-03-13.",
+            "critical_errors": [
+              "Harshana yoga is never mentioned; its correct meaning (joy, delight, happiness \u2014 auspicious for celebrations) is entirely absent \u2014 scores 0 for yoga_interpretation",
+              "The title claims 'H6 SERVICE AND H12 CLOSURE' placing Rahu in H6, but no ground truth confirms Rahu's house placement \u2014 this is an unverified assertion",
+              "The specific best action window of 11:00\u201312:00 (Labh choghadiya, score=94) is never referenced; instead a vague 'Mars hora with top choghadiya' instruction is substituted",
+              "Warning about 2026-03-13 as a 'worst pressure' day is a hallucination \u2014 no such date is referenced in the ground truth",
+              "Moon in H5 (Scorpio) is correctly placed per Cancer lagna map, but H1 confidence and H9 travel transits are speculative additions not grounded in the provided data",
+              "Rahu Kaal active on 2026-03-10 is noted in ground truth but the commentary associates Rahu Kaal warning with 2026-03-13 instead, misplacing the actual risk date"
+            ],
+            "avg_accuracy": 4.4
+          }
+        },
+        "nativity": {
+          "quality_score": 9,
+          "lagna_words": 205,
+          "dasha_words": 181,
+          "total_house_refs": 7,
+          "time_seconds": 4.3,
+          "vedic_accuracy": {
+            "lagna_accuracy": 1,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 2,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 2,
+            "judge_notes": "The commentary is almost entirely fabricated against the ground truth: Cancer lagna is ruled by Moon, not Jupiter; Moon is placed in Scorpio H5, not Libra H4; Harshana yoga is never mentioned; no choghadiya window is referenced; and Mercury's antardasha lordship is misidentified as H8/H11 rather than the correct H3/H12. The entire planetary placement narrative (Jupiter in H1, Ketu in H4, Saturn/Sun in H9, Rahu in H10 Aries, Mars in H8) appears to be an invented birth chart unrelated to the ground truth data.",
+            "critical_errors": [
+              "Cancer lagna lord is Moon, not Jupiter \u2014 Jupiter does not rule Cancer",
+              "Moon is in Scorpio (H5), not Libra (H4/Swati nakshatra) as stated",
+              "Harshana yoga (joy, delight, auspicious for celebrations) is never mentioned anywhere in the commentary",
+              "Mercury antardasha lordship incorrectly stated as H8 and H11; correct houses are H3 (Virgo) and H12 (Gemini)",
+              "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya",
+              "Rahu Kaal being active is ignored and no caution is flagged for it",
+              "Fabricated planetary placements (Jupiter in H1, Sun/Mercury/Saturn in Pisces H9, Ketu in H4) have no basis in the ground truth",
+              "Rahu described as 'ruler of 10th house' via Aries \u2014 Rahu does not rule any sign and this is a hallucination of lordship",
+              "Day score of 71 and benchmark context are never acknowledged or incorporated into the tone or recommendations"
+            ],
+            "avg_accuracy": 1.0
+          }
+        }
+      },
+      "errors": [],
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "cost_full_report": 0.5231,
+      "overall_quality_score": 8.6,
+      "vedic_accuracy": {
+        "daily": {
+          "lagna_accuracy": 4,
+          "yoga_interpretation": 2,
+          "dasha_coherence": 5,
+          "choghadiya_alignment": 2,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary mischaracterizes Harshana yoga as a discipline/focus tool rather than correctly identifying it as auspicious for joy and celebrations. Multiple house references lack grounding in the Cancer lagna map (e.g., H11=Taurus is never properly invoked for networking gains, Jupiter on H12 is unverified, Saturn on H6 is asserted without chart basis), and the best action window of 11:00\u201312:00 (Labh choghadiya) is ignored in favor of a vague Mars hora reference and a Rahu Kaal window of 15:26\u201316:55 that contradicts the ground truth.",
+          "critical_errors": [
+            "Harshana yoga is described as disciplining action and focusing the mind \u2014 its correct meaning is joy, delight, happiness, auspicious for celebrations; the commentary never mentions this.",
+            "Commentary invents 'Anuradha nakshatra decision gate' framing not supported by ground truth; nakshatra influence is hallucinated.",
+            "Best action window 11:00\u201312:00 (Labh choghadiya) is never referenced; instead a Mars hora and unspecified 'earliest strong display_label' are recommended.",
+            "Rahu Kaal window cited as 15:26\u201316:55 \u2014 ground truth only confirms Rahu Kaal is active but does not specify this time range in the provided data, making it unverifiable/potentially hallucinated.",
+            "Jupiter influence on H12 is asserted without any basis in the ground truth planetary positions provided.",
+            "Saturn pressure on H6 (Sagittarius for Cancer lagna) is asserted without support from the ground truth data.",
+            "Moon-linked timing connected to H11 outcomes is vague and not grounded \u2014 Moon is placed in H5 (Scorpio) per ground truth, not H11.",
+            "Mercury's H3 and H12 rulership is correctly noted, but Rahu is not described as an amplifier; the dasha logic is inconsistent and under-developed.",
+            "Commentary tone is moderately positive but the 'exalted' framing in the headline is unsupported and inflates the day score of 71."
+          ],
+          "avg_accuracy": 3.4
+        },
+        "hourly": {
+          "lagna_accuracy": 3,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 3,
+          "choghadiya_alignment": 5,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary fails to mention Harshana yoga at all, instead fabricating a 'Jupiter hora' framing not present in the ground truth, and the house references (9th house of fortune, 6th house) are not grounded in the Cancer lagna map or any chart-specific logic provided. Mercury's dasha rulership over H3 and H12 is never mentioned, and the Jupiter-centric narrative is entirely invented.",
+          "critical_errors": [
+            "Harshana yoga is completely absent from the commentary \u2014 its meaning (joy, delight, happiness, auspicious for celebrations) is never stated or applied",
+            "Commentary fabricates 'Jupiter hora' as the primary framing; no Jupiter hora is referenced in the ground truth data",
+            "9th house reference is unanchored \u2014 commentary treats H9 (Pisces) as receiving Jupiter's influence without any chart-based justification",
+            "6th house (Sagittarius for Cancer lagna) is invoked without logical basis from the provided data",
+            "Mercury's rulership of H3 (Virgo) and H12 (Gemini) for Cancer lagna is never mentioned despite Mercury being the active antardasha lord",
+            "Rahu Kaal being active is not flagged as a caution, which is a significant omission for a day score of 71",
+            "Moon in Scorpio (H5 for Cancer lagna) is entirely ignored despite being a key chart element",
+            "No reference to the best action window of 11:00\u201312:00",
+            "Jupiter is presented as correcting Mercury's dasha distortion \u2014 this is an invented astrological claim with no basis in the ground truth"
+          ],
+          "avg_accuracy": 3.0
+        },
+        "monthly": {
+          "lagna_accuracy": 4,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 5,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary fails to mention Harshana yoga at all, missing its core meaning of joy and celebration entirely, and no reference is made to the 11:00\u201312:00 Labh choghadiya window. While H5=Scorpio and H12=Gemini references are partially correct, Rahu is incorrectly assigned to the 4th house without astrological basis, and Mars's H5/H10 rulership is vaguely referenced without accuracy.",
+          "critical_errors": [
+            "Harshana yoga is completely absent from the commentary \u2014 its meaning of joy, delight, and auspiciousness for celebrations is never mentioned",
+            "Rahu is incorrectly stated to 'activate the 4th house' \u2014 Rahu does not rule any sign and has no inherent 4th-house placement established in the ground truth",
+            "No reference to the best action window of 11:00\u201312:00 (Labh choghadiya, score=94)",
+            "Labh choghadiya is not mentioned at all; no choghadiya guidance is provided",
+            "Moon is stated to be in the 4th house initially, but ground truth places Moon in Scorpio = H5 for Cancer lagna \u2014 the 4th house claim is incorrect",
+            "Mercury described as 'functionally malefic' without grounding \u2014 Mercury rules H3 (Virgo) and H12 (Gemini), making it a mixed planet, not straightforwardly malefic",
+            "Saturn's '8th-house endurance' is introduced without any ground truth support \u2014 hallucinated planetary placement",
+            "Jupiter described as 'not fully active from Cancer' \u2014 no ground truth basis for this claim, hallucinated",
+            "The date reference to 'May' is inconsistent with the ground truth date of 2026-03-10 (March)"
+          ],
+          "avg_accuracy": 2.6
+        },
+        "synthesis": {
+          "lagna_accuracy": 7,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 7,
+          "choghadiya_alignment": 3,
+          "internal_consistency": 5,
+          "judge_notes": "The commentary completely omits any mention of Harshana yoga and its joyful/celebratory meaning, which is a critical hallucination-by-omission failure. The choghadiya alignment is poor as the specific 11:00\u201312:00 Labh window is never mentioned, and the commentary instead vaguely references Mars hora and an unsubstantiated warning about 2026-03-13.",
+          "critical_errors": [
+            "Harshana yoga is never mentioned; its correct meaning (joy, delight, happiness \u2014 auspicious for celebrations) is entirely absent \u2014 scores 0 for yoga_interpretation",
+            "The title claims 'H6 SERVICE AND H12 CLOSURE' placing Rahu in H6, but no ground truth confirms Rahu's house placement \u2014 this is an unverified assertion",
+            "The specific best action window of 11:00\u201312:00 (Labh choghadiya, score=94) is never referenced; instead a vague 'Mars hora with top choghadiya' instruction is substituted",
+            "Warning about 2026-03-13 as a 'worst pressure' day is a hallucination \u2014 no such date is referenced in the ground truth",
+            "Moon in H5 (Scorpio) is correctly placed per Cancer lagna map, but H1 confidence and H9 travel transits are speculative additions not grounded in the provided data",
+            "Rahu Kaal active on 2026-03-10 is noted in ground truth but the commentary associates Rahu Kaal warning with 2026-03-13 instead, misplacing the actual risk date"
+          ],
+          "avg_accuracy": 4.4
+        },
+        "nativity": {
+          "lagna_accuracy": 1,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 2,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 2,
+          "judge_notes": "The commentary is almost entirely fabricated against the ground truth: Cancer lagna is ruled by Moon, not Jupiter; Moon is placed in Scorpio H5, not Libra H4; Harshana yoga is never mentioned; no choghadiya window is referenced; and Mercury's antardasha lordship is misidentified as H8/H11 rather than the correct H3/H12. The entire planetary placement narrative (Jupiter in H1, Ketu in H4, Saturn/Sun in H9, Rahu in H10 Aries, Mars in H8) appears to be an invented birth chart unrelated to the ground truth data.",
+          "critical_errors": [
+            "Cancer lagna lord is Moon, not Jupiter \u2014 Jupiter does not rule Cancer",
+            "Moon is in Scorpio (H5), not Libra (H4/Swati nakshatra) as stated",
+            "Harshana yoga (joy, delight, auspicious for celebrations) is never mentioned anywhere in the commentary",
+            "Mercury antardasha lordship incorrectly stated as H8 and H11; correct houses are H3 (Virgo) and H12 (Gemini)",
+            "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya",
+            "Rahu Kaal being active is ignored and no caution is flagged for it",
+            "Fabricated planetary placements (Jupiter in H1, Sun/Mercury/Saturn in Pisces H9, Ketu in H4) have no basis in the ground truth",
+            "Rahu described as 'ruler of 10th house' via Aries \u2014 Rahu does not rule any sign and this is a hallucination of lordship",
+            "Day score of 71 and benchmark context are never acknowledged or incorporated into the tone or recommendations"
+          ],
+          "avg_accuracy": 1.0
+        }
+      },
+      "overall_accuracy_score": 2.9
+    },
+    {
+      "model": "Combo: Smart Hybrid",
+      "model_id": "hybrid",
+      "is_hybrid": true,
+      "hybrid_sections": {
+        "daily_overviews": "grok-4.20-multi-agent",
+        "hourly": "gpt-5.4-mini",
+        "monthly": "gpt-5.4-nano",
+        "synthesis": "claude-haiku-4-5-20251001",
+        "nativity": "gpt-5.4-nano"
+      },
+      "started": "2026-03-22T19:12:06.833948",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 300,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 9,
+          "strategy_sections": 7,
+          "caps_headlines": 7,
+          "total_house_refs": 56,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 5.6,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 10,
+          "time_seconds": 2.4,
+          "vedic_accuracy": {
+            "lagna_accuracy": 4,
+            "yoga_interpretation": 3,
+            "dasha_coherence": 5,
+            "choghadiya_alignment": 2,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary contains multiple fabricated or misapplied elements: 'Anuradha yoga' is invented (no such yoga exists in the ground truth), Harshana is incorrectly characterized as a disciplining/focusing force rather than joy/celebration, and the best action window of 11:00\u201312:00 (Labh choghadiya) is never referenced while a fabricated Rahu Kaal window of 15:26\u201316:55 is cited instead of confirming Rahu Kaal is active. House references for H3, H10, and H11 are loosely present but H11 is assigned to gains/networking without grounding in the Cancer lagna map (H11=Taurus), and several planetary attributions (Jupiter on H12, Saturn on H6) are asserted without basis in the ground truth dasha context.",
+            "critical_errors": [
+              "Fabricated 'Anuradha yoga' \u2014 no such yoga exists in the ground truth; the yoga is simply Harshana",
+              "Harshana yoga incorrectly described as 'disciplines action' and 'focuses the mind' \u2014 correct meaning is joy, delight, happiness, auspicious for celebrations",
+              "Best action window 11:00\u201312:00 (Labh choghadiya) never mentioned; instead a fabricated Rahu Kaal window of 15:26\u201316:55 is cited with no ground-truth support",
+              "Jupiter influence on H12 asserted without any basis in the ground truth dasha (Rahu-Mercury); Jupiter is not an active dasha lord",
+              "Saturn pressure on H6 asserted without basis; Saturn is not referenced in the ground truth for this date",
+              "Moon described as connecting to H11 outcomes, but Moon in Scorpio is in H5 for Cancer lagna \u2014 not H11",
+              "Mars hora recommended as 'best hora' but ground truth best window is Labh choghadiya (Mercury-ruled quality), not Mars hora specifically",
+              "Rahu Kaal flagged as a specific time window (15:26\u201316:55) which is unverified; ground truth only confirms Rahu Kaal is active without specifying that slot"
+            ],
+            "avg_accuracy": 3.6
+          }
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 132,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 136,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 9,
+          "time_seconds": 21.0,
+          "vedic_accuracy": {
+            "lagna_accuracy": 6,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 5,
+            "choghadiya_alignment": 4,
+            "internal_consistency": 5,
+            "judge_notes": "The commentary never mentions Harshana yoga at all, which is a critical omission and scores zero on yoga interpretation. Additionally, Jupiter is described as a '9th house' planet without grounding in the Cancer lagna house map, and the commentary invents a 'Jupiter hora' framing not supported by ground truth, while failing to reference the 11:00\u201312:00 best action window explicitly.",
+            "critical_errors": [
+              "Harshana yoga is completely absent from the commentary \u2014 no mention of joy, delight, or celebration theme",
+              "Jupiter described as bringing '9th house' energy into H1 with no basis in the Cancer lagna map or ground truth data",
+              "Commentary invents a 'Jupiter hora' framing not present in ground truth",
+              "Moon in Scorpio (H5) is never mentioned despite being a key placement",
+              "Best action window of 11:00\u201312:00 is not referenced anywhere in the commentary",
+              "Mercury as antardasha lord ruling H3 and H12 is partially referenced ('3rd house impulse' and '12th house urge') but never explicitly identified as Mercury's houses for Cancer lagna",
+              "Rahu Kaal active is acknowledged but its significance is understated given it should flag caution"
+            ],
+            "avg_accuracy": 4.0
+          }
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 166,
+          "grandmaster_target": "150+ words",
+          "score_spread": 32,
+          "score_range": "42-74",
+          "total_house_refs": 9,
+          "avg_planets_per_month": 6.0,
+          "quality_score": 8,
+          "time_seconds": 13.8,
+          "vedic_accuracy": {
+            "lagna_accuracy": 4,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 6,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary is written for May 2026 rather than March 2026, and Harshana yoga is never mentioned or interpreted at all \u2014 a critical omission. No reference is made to the 11:00\u201312:00 Labh choghadiya window, and several house placements (Rahu in H2, Jupiter in H9/H6, Saturn in H7/H8) are asserted without grounding in the ground truth, introducing unverified planetary positions.",
+            "critical_errors": [
+              "Wrong date context: commentary references 'early May 2026' and 'mid-to-late May 2026' but ground truth date is 2026-03-10 (March)",
+              "Harshana yoga is completely absent from the commentary \u2014 no mention or interpretation of the yoga at all, which is a core required element",
+              "Moon placed in H4 first then H5 for Cancer lagna: H4=Libra per Cancer lagna map, not a transit starting point consistent with ground truth (Moon is in Scorpio/H5 on the date)",
+              "Rahu placed in H2 (Leo) with no ground truth support for this house placement",
+              "Jupiter placed influencing H9 and H6 with no ground truth support",
+              "Saturn described as having H7/H8 influence with no ground truth support",
+              "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya",
+              "Rahu Kaal active (True per ground truth) is not mentioned or flagged as a caution",
+              "Mercury described as being 'in the 3rd house' \u2014 ground truth states Mercury rules H3 but does not confirm Mercury is placed in H3",
+              "Day score of 71 is not referenced; tone is moderately positive but somewhat inconsistent with unsubstantiated planetary placements"
+            ],
+            "avg_accuracy": 2.8
+          }
+        },
+        "synthesis": {
+          "opening_words": 391,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 6,
+          "windows_with_high_score": 6,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 136,
+          "quality_score": 8,
+          "time_seconds": 55.6,
+          "vedic_accuracy": {
+            "lagna_accuracy": 6,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 6,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 3,
+            "judge_notes": "The commentary completely omits any mention of Harshana yoga (its joyful, celebratory meaning) and instead frames the entire day in relentlessly negative, conflict-laden terms inconsistent with a day score of 71 and an auspicious yoga. The choghadiya Labh window (11:00\u201312:00) is never referenced, and fabricated 'Mars hora peak days' and 'Venus badhaka collapse' cycles are invented without grounding in the ground truth data.",
+            "critical_errors": [
+              "Harshana yoga is never mentioned; its correct meaning (joy, delight, happiness \u2014 auspicious for celebrations) is entirely absent, replaced by a conflict-dominated narrative",
+              "No reference to the best action window 11:00\u201312:00 or Labh choghadiya; instead fabricated 'Mars hora peak days' are invented",
+              "Rahu placed in the 6th house \u2014 this is a hallucinated placement; the ground truth does not specify Rahu in H6",
+              "Jupiter conjunct Ketu in the 12th house is a hallucinated planetary placement with no basis in the ground truth",
+              "Saturn described as ruling H7 and H8 \u2014 this is incorrect for Cancer lagna (H7=Capricorn ruled by Saturn is correct, but H8=Aquarius is also Saturn-ruled, making this partially correct yet presented without ground truth support and mixed with unsupported claims)",
+              "Venus described as 'badhaka' ruling H11 and H4 \u2014 badhaka for Cancer lagna is actually the lord of H11 (Jupiter rules Pisces/H9 as badhaka lord for movable Cancer lagna); Venus ruling H4 (Libra) and H11 (Taurus) is correct for Cancer lagna but the badhaka designation is misapplied",
+              "Overall tone is overwhelmingly negative (56-point averages, 30\u201342-point troughs) which contradicts the ground truth day score of 71 and an auspicious Harshana yoga",
+              "Fabricated specific 'Mercury malefic days' list (March 9, 13, 16, etc.) with no basis in ground truth",
+              "Mars described as 'yogakaraka' for Cancer lagna \u2014 Mars rules H5 (Scorpio) and H10 (Aries), which technically makes it a yogakaraka, but this is used to invent unsupported 'Mars hora peak days' not found in ground truth"
+            ],
+            "avg_accuracy": 3.0
+          }
+        },
+        "nativity": {
+          "quality_score": 9,
+          "lagna_words": 217,
+          "dasha_words": 193,
+          "total_house_refs": 7,
+          "time_seconds": 4.9,
+          "vedic_accuracy": {
+            "lagna_accuracy": 2,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 2,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 3,
+            "judge_notes": "The commentary fabricates an entirely different nativity \u2014 Moon in Libra H4, Jupiter in H1, Ketu in H4, Mars in Aquarius H8, Saturn/Sun/Mercury in Pisces H9 \u2014 none of which are derivable from the ground truth. Harshana yoga is never mentioned or interpreted, and Mercury's rulership is incorrectly assigned to H9 rather than H3 and H12; no choghadiya window or Labh period is referenced anywhere.",
+            "critical_errors": [
+              "Moon placed in Libra H4 \u2014 ground truth states Moon is in Scorpio H5 for Cancer lagna",
+              "Harshana yoga is completely absent from the commentary; its meaning (joy, delight, auspicious for celebrations) is never stated",
+              "Mercury (antardasha lord) incorrectly assigned rulership of H9 (Pisces); correct rulerships for Cancer lagna are H3 (Virgo) and H12 (Gemini)",
+              "Rahu described as ruling 'themes connected to the 10th house of Aries placement' \u2014 Rahu does not rule any sign; this conflates Rahu's placement with sign lordship",
+              "No reference to the 11:00\u201312:00 best action window or Labh choghadiya",
+              "Jupiter in Cancer H1 is introduced with no basis in the ground truth data",
+              "Ketu in Libra H4 is fabricated \u2014 not present in ground truth",
+              "Sun in Pisces H9 and Saturn in Pisces H9 are fabricated \u2014 not present in ground truth",
+              "Mars placed in Aquarius H8 \u2014 ground truth does not support this placement",
+              "Rahu Kaal being active (a cautionary factor) is ignored despite being flagged as True in ground truth",
+              "Day score of 71 is not acknowledged; overall tone is overly optimistic without tempering for active Rahu Kaal"
+            ],
+            "avg_accuracy": 1.4
+          }
+        }
+      },
+      "errors": [],
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "cost_full_report": 0.2561,
+      "overall_quality_score": 8.8,
+      "vedic_accuracy": {
+        "daily": {
+          "lagna_accuracy": 4,
+          "yoga_interpretation": 3,
+          "dasha_coherence": 5,
+          "choghadiya_alignment": 2,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary contains multiple fabricated or misapplied elements: 'Anuradha yoga' is invented (no such yoga exists in the ground truth), Harshana is incorrectly characterized as a disciplining/focusing force rather than joy/celebration, and the best action window of 11:00\u201312:00 (Labh choghadiya) is never referenced while a fabricated Rahu Kaal window of 15:26\u201316:55 is cited instead of confirming Rahu Kaal is active. House references for H3, H10, and H11 are loosely present but H11 is assigned to gains/networking without grounding in the Cancer lagna map (H11=Taurus), and several planetary attributions (Jupiter on H12, Saturn on H6) are asserted without basis in the ground truth dasha context.",
+          "critical_errors": [
+            "Fabricated 'Anuradha yoga' \u2014 no such yoga exists in the ground truth; the yoga is simply Harshana",
+            "Harshana yoga incorrectly described as 'disciplines action' and 'focuses the mind' \u2014 correct meaning is joy, delight, happiness, auspicious for celebrations",
+            "Best action window 11:00\u201312:00 (Labh choghadiya) never mentioned; instead a fabricated Rahu Kaal window of 15:26\u201316:55 is cited with no ground-truth support",
+            "Jupiter influence on H12 asserted without any basis in the ground truth dasha (Rahu-Mercury); Jupiter is not an active dasha lord",
+            "Saturn pressure on H6 asserted without basis; Saturn is not referenced in the ground truth for this date",
+            "Moon described as connecting to H11 outcomes, but Moon in Scorpio is in H5 for Cancer lagna \u2014 not H11",
+            "Mars hora recommended as 'best hora' but ground truth best window is Labh choghadiya (Mercury-ruled quality), not Mars hora specifically",
+            "Rahu Kaal flagged as a specific time window (15:26\u201316:55) which is unverified; ground truth only confirms Rahu Kaal is active without specifying that slot"
+          ],
+          "avg_accuracy": 3.6
+        },
+        "hourly": {
+          "lagna_accuracy": 6,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 5,
+          "choghadiya_alignment": 4,
+          "internal_consistency": 5,
+          "judge_notes": "The commentary never mentions Harshana yoga at all, which is a critical omission and scores zero on yoga interpretation. Additionally, Jupiter is described as a '9th house' planet without grounding in the Cancer lagna house map, and the commentary invents a 'Jupiter hora' framing not supported by ground truth, while failing to reference the 11:00\u201312:00 best action window explicitly.",
+          "critical_errors": [
+            "Harshana yoga is completely absent from the commentary \u2014 no mention of joy, delight, or celebration theme",
+            "Jupiter described as bringing '9th house' energy into H1 with no basis in the Cancer lagna map or ground truth data",
+            "Commentary invents a 'Jupiter hora' framing not present in ground truth",
+            "Moon in Scorpio (H5) is never mentioned despite being a key placement",
+            "Best action window of 11:00\u201312:00 is not referenced anywhere in the commentary",
+            "Mercury as antardasha lord ruling H3 and H12 is partially referenced ('3rd house impulse' and '12th house urge') but never explicitly identified as Mercury's houses for Cancer lagna",
+            "Rahu Kaal active is acknowledged but its significance is understated given it should flag caution"
+          ],
+          "avg_accuracy": 4.0
+        },
+        "monthly": {
+          "lagna_accuracy": 4,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 6,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary is written for May 2026 rather than March 2026, and Harshana yoga is never mentioned or interpreted at all \u2014 a critical omission. No reference is made to the 11:00\u201312:00 Labh choghadiya window, and several house placements (Rahu in H2, Jupiter in H9/H6, Saturn in H7/H8) are asserted without grounding in the ground truth, introducing unverified planetary positions.",
+          "critical_errors": [
+            "Wrong date context: commentary references 'early May 2026' and 'mid-to-late May 2026' but ground truth date is 2026-03-10 (March)",
+            "Harshana yoga is completely absent from the commentary \u2014 no mention or interpretation of the yoga at all, which is a core required element",
+            "Moon placed in H4 first then H5 for Cancer lagna: H4=Libra per Cancer lagna map, not a transit starting point consistent with ground truth (Moon is in Scorpio/H5 on the date)",
+            "Rahu placed in H2 (Leo) with no ground truth support for this house placement",
+            "Jupiter placed influencing H9 and H6 with no ground truth support",
+            "Saturn described as having H7/H8 influence with no ground truth support",
+            "No reference to the best action window of 11:00\u201312:00 or Labh choghadiya",
+            "Rahu Kaal active (True per ground truth) is not mentioned or flagged as a caution",
+            "Mercury described as being 'in the 3rd house' \u2014 ground truth states Mercury rules H3 but does not confirm Mercury is placed in H3",
+            "Day score of 71 is not referenced; tone is moderately positive but somewhat inconsistent with unsubstantiated planetary placements"
+          ],
+          "avg_accuracy": 2.8
+        },
+        "synthesis": {
+          "lagna_accuracy": 6,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 6,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 3,
+          "judge_notes": "The commentary completely omits any mention of Harshana yoga (its joyful, celebratory meaning) and instead frames the entire day in relentlessly negative, conflict-laden terms inconsistent with a day score of 71 and an auspicious yoga. The choghadiya Labh window (11:00\u201312:00) is never referenced, and fabricated 'Mars hora peak days' and 'Venus badhaka collapse' cycles are invented without grounding in the ground truth data.",
+          "critical_errors": [
+            "Harshana yoga is never mentioned; its correct meaning (joy, delight, happiness \u2014 auspicious for celebrations) is entirely absent, replaced by a conflict-dominated narrative",
+            "No reference to the best action window 11:00\u201312:00 or Labh choghadiya; instead fabricated 'Mars hora peak days' are invented",
+            "Rahu placed in the 6th house \u2014 this is a hallucinated placement; the ground truth does not specify Rahu in H6",
+            "Jupiter conjunct Ketu in the 12th house is a hallucinated planetary placement with no basis in the ground truth",
+            "Saturn described as ruling H7 and H8 \u2014 this is incorrect for Cancer lagna (H7=Capricorn ruled by Saturn is correct, but H8=Aquarius is also Saturn-ruled, making this partially correct yet presented without ground truth support and mixed with unsupported claims)",
+            "Venus described as 'badhaka' ruling H11 and H4 \u2014 badhaka for Cancer lagna is actually the lord of H11 (Jupiter rules Pisces/H9 as badhaka lord for movable Cancer lagna); Venus ruling H4 (Libra) and H11 (Taurus) is correct for Cancer lagna but the badhaka designation is misapplied",
+            "Overall tone is overwhelmingly negative (56-point averages, 30\u201342-point troughs) which contradicts the ground truth day score of 71 and an auspicious Harshana yoga",
+            "Fabricated specific 'Mercury malefic days' list (March 9, 13, 16, etc.) with no basis in ground truth",
+            "Mars described as 'yogakaraka' for Cancer lagna \u2014 Mars rules H5 (Scorpio) and H10 (Aries), which technically makes it a yogakaraka, but this is used to invent unsupported 'Mars hora peak days' not found in ground truth"
+          ],
+          "avg_accuracy": 3.0
+        },
+        "nativity": {
+          "lagna_accuracy": 2,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 2,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 3,
+          "judge_notes": "The commentary fabricates an entirely different nativity \u2014 Moon in Libra H4, Jupiter in H1, Ketu in H4, Mars in Aquarius H8, Saturn/Sun/Mercury in Pisces H9 \u2014 none of which are derivable from the ground truth. Harshana yoga is never mentioned or interpreted, and Mercury's rulership is incorrectly assigned to H9 rather than H3 and H12; no choghadiya window or Labh period is referenced anywhere.",
+          "critical_errors": [
+            "Moon placed in Libra H4 \u2014 ground truth states Moon is in Scorpio H5 for Cancer lagna",
+            "Harshana yoga is completely absent from the commentary; its meaning (joy, delight, auspicious for celebrations) is never stated",
+            "Mercury (antardasha lord) incorrectly assigned rulership of H9 (Pisces); correct rulerships for Cancer lagna are H3 (Virgo) and H12 (Gemini)",
+            "Rahu described as ruling 'themes connected to the 10th house of Aries placement' \u2014 Rahu does not rule any sign; this conflates Rahu's placement with sign lordship",
+            "No reference to the 11:00\u201312:00 best action window or Labh choghadiya",
+            "Jupiter in Cancer H1 is introduced with no basis in the ground truth data",
+            "Ketu in Libra H4 is fabricated \u2014 not present in ground truth",
+            "Sun in Pisces H9 and Saturn in Pisces H9 are fabricated \u2014 not present in ground truth",
+            "Mars placed in Aquarius H8 \u2014 ground truth does not support this placement",
+            "Rahu Kaal being active (a cautionary factor) is ignored despite being flagged as True in ground truth",
+            "Day score of 71 is not acknowledged; overall tone is overly optimistic without tempering for active Rahu Kaal"
+          ],
+          "avg_accuracy": 1.4
+        }
+      },
+      "overall_accuracy_score": 3.0
+    },
+    {
+      "model": "Combo: Ultra Budget",
+      "model_id": "hybrid",
+      "is_hybrid": true,
+      "hybrid_sections": {
+        "daily_overviews": "gpt-5.4-nano",
+        "hourly": "gpt-5.4-nano",
+        "monthly": "gpt-5.4-nano",
+        "synthesis": "gpt-5.4-nano",
+        "nativity": "gpt-5.4-nano"
+      },
+      "started": "2026-03-22T19:14:55.670411",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 258,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 7,
+          "strategy_sections": 3,
+          "caps_headlines": 1,
+          "total_house_refs": 32,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 4.1,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 7,
+          "time_seconds": 17.2,
+          "vedic_accuracy": {
+            "lagna_accuracy": 7,
+            "yoga_interpretation": 5,
+            "dasha_coherence": 5,
+            "choghadiya_alignment": 6,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary correctly maps H5=Scorpio and H10=Aries for Cancer lagna, and identifies Moon in Scorpio as 5th house accurately. However, it fabricates several elements including a 'Krishna Purnima/Amavasya' reference (hallucination), mischaracterizes Harshana as momentum/drive rather than joy/celebration, invents unverified Jupiter and Venus influences, and fails to mention Rahu Kaal despite it being active \u2014 a significant omission. Mercury's H3/H12 rulership for Cancer lagna is never explicitly stated, weakening dasha coherence.",
+            "critical_errors": [
+              "Harshana yoga interpreted as 'increases momentum' and 'decisive action push' \u2014 correct meaning is joy, delight, happiness, auspicious for celebrations; the commentary misses the celebratory/joyful nature entirely",
+              "Fabricated 'Krishna Purnima/Amavasya quiet undertone' \u2014 no such tithi is indicated in the ground truth (hallucination)",
+              "Rahu Kaal active flag is completely ignored with no caution or mention anywhere in the commentary",
+              "Mercury's antardasha rulership over H3 (Virgo) and H12 (Gemini) for Cancer lagna is never stated; commentary only vaguely references Mercury without house attribution",
+              "Invented 'Jupiter mixed influence from earlier cycles' affecting H6 and H9 \u2014 no Jupiter data provided in ground truth (hallucination)",
+              "Invented 'Venus or Mercury influences can scatter focus' \u2014 no Venus placement or influence is given in ground truth (hallucination)",
+              "Mars described as 'Yogakaraka' for Cancer lagna \u2014 Mars rules H5 and H10 for Cancer and can be considered a functional benefic, but calling it Yogakaraka (a term specific to certain lagnas like Taurus/Libra) is technically imprecise for Cancer lagna",
+              "Best action window 11:00\u201312:00 is not explicitly cited; commentary references 'midday Moon-anchored slot' vaguely without pinning the specific hour, reducing precision",
+              "Karana 'Bava' introduced without any ground truth support (hallucination)",
+              "Anuradha nakshatra introduced as a primary interpretive lens without verification in ground truth data"
+            ],
+            "avg_accuracy": 5.4
+          }
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 136,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 0,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 2,
+          "quality_score": 6,
+          "time_seconds": 17.9,
+          "vedic_accuracy": {
+            "lagna_accuracy": 5,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 6,
+            "choghadiya_alignment": 5,
+            "internal_consistency": 3,
+            "judge_notes": "The commentary completely omits Harshana yoga and its correct meaning of joy/delight/celebrations, which is a critical hallucination-level omission. Additionally, Rahu Kaal is stated as false when ground truth confirms it is active (True), and no specific 11:00\u201312:00 action window is referenced.",
+            "critical_errors": [
+              "Harshana yoga is never mentioned; instead Jupiter hora is discussed \u2014 Harshana's correct meaning (joy, delight, celebrations) is entirely absent, scoring 0 for yoga_interpretation",
+              "Rahu_KAAL is stated as false ('Rahu_KAAL=false limits chaos') but ground truth confirms Rahu Kaal is active (True) \u2014 this is a direct factual error",
+              "H6 is assigned to Jupiter hora guidance without grounding in Cancer lagna map; H6=Sagittarius (Jupiter-ruled) is defensible but H9=Pisces (also Jupiter-ruled) is correct \u2014 however H9 reference is used loosely without sign verification",
+              "No reference to the best action window of 11:00\u201312:00 is made anywhere in the commentary",
+              "Moon in Scorpio (H5 for Cancer lagna) is completely ignored despite being a key placement in the ground truth",
+              "Mercury as antardasha lord ruling H3 (Virgo) and H12 (Gemini) is not explicitly stated \u2014 only vague communication references are made"
+            ],
+            "avg_accuracy": 3.8
+          }
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 165,
+          "grandmaster_target": "150+ words",
+          "score_spread": 28,
+          "score_range": "46-74",
+          "total_house_refs": 21,
+          "avg_planets_per_month": 5.3,
+          "quality_score": 9,
+          "time_seconds": 11.7,
+          "vedic_accuracy": {
+            "lagna_accuracy": 2,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 4,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 3,
+            "judge_notes": "The commentary is broadly fabricated \u2014 it describes Moon transiting H6, H7, and H8 when the ground truth places Moon in Scorpio (H5 for Cancer lagna), and it never mentions Harshana yoga at all, let alone its correct meaning of joy/delight. The choghadiya window (11:00\u201312:00, Labh) is entirely absent, and Venus Badhaka references are invented with no grounding in the provided data.",
+            "critical_errors": [
+              "Moon is placed in Scorpio = H5 for Cancer lagna per ground truth, but commentary wrongly describes Moon transiting H6, H7, and H8",
+              "Harshana yoga (joy, delight, auspicious for celebrations) is never mentioned or interpreted anywhere in the commentary",
+              "The 11:00\u201312:00 Labh choghadiya best action window is completely absent from the commentary",
+              "Venus Badhaka lord over H4/H11 is an invented claim with no basis in the ground truth data provided",
+              "Rahu is placed in H5 as if it rules or occupies Scorpio, but ground truth gives no such placement \u2014 this is a hallucination",
+              "Commentary references 'early May' and 'mid-May' dates, but the ground truth date is 2026-03-10 (March), not May",
+              "Mercury's dasha influence is linked only to H3, omitting its rulership of H12 (Gemini) which is specifically noted in ground truth",
+              "Mars is called 'yogakaraka' without context \u2014 while Mars rules H5 and H10 for Cancer lagna (a valid yogakaraka claim), the commentary does not correctly situate this within the actual chart positions given"
+            ],
+            "avg_accuracy": 1.8
+          }
+        },
+        "synthesis": {
+          "opening_words": 174,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 3,
+          "windows_with_high_score": 3,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 84,
+          "quality_score": 8,
+          "time_seconds": 15.1,
+          "vedic_accuracy": {
+            "lagna_accuracy": 6,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 7,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 5,
+            "judge_notes": "The commentary completely omits Harshana yoga and its correct meaning of joy/delight, instead defaulting to a generic cautionary tone that contradicts an auspicious yoga. No mention of the Labh choghadiya window (11:00\u201312:00) or any specific time recommendation is made, and the overall pessimistic framing is inconsistent with a day score of 71 and an auspicious yoga.",
+            "critical_errors": [
+              "Harshana yoga is entirely absent from the commentary \u2014 its correct meaning (joy, delight, happiness; auspicious for celebrations) is never mentioned or applied",
+              "No reference to the best action window 11:00\u201312:00 or Labh choghadiya, which is a key daily recommendation that should appear in synthesis",
+              "Rahu is incorrectly described as having a '6th house effect/focus' as if it rules or is placed in H6 \u2014 the ground truth does not support this placement; this is a hallucination",
+              "Moon in Scorpio (H5 for Cancer lagna) is not identified or utilized \u2014 the commentary vaguely mentions 'Moon journey across houses' without anchoring Moon correctly in H5",
+              "The tone of the commentary is predominantly cautionary and stress-focused, which contradicts the auspicious Harshana yoga and a day score of 71 (above the ~76.2 benchmark threshold for positive framing)",
+              "Mercury described as 'functional malefic' without qualification \u2014 while Mercury rules H3 and H12 for Cancer lagna making it a mild maraka/dusthana lord, labeling it outright as functional malefic without nuance is an oversimplification and potentially misleading"
+            ],
+            "avg_accuracy": 3.6
+          }
+        },
+        "nativity": {
+          "quality_score": 8,
+          "lagna_words": 210,
+          "dasha_words": 165,
+          "total_house_refs": 1,
+          "time_seconds": 3.2,
+          "vedic_accuracy": {
+            "lagna_accuracy": 2,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 3,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 3,
+            "judge_notes": "The commentary fabricates an entirely different chart \u2014 Moon in Libra H4, Mars in Aquarius H8, Venus in Capricorn H7, Jupiter in Cancer H1, Rahu in Aries H10 \u2014 none of which are confirmed by the ground truth, and the Harshana yoga is never mentioned at all. Mercury's antardasha lordship is incorrectly assigned to H9 (Pisces) rather than the correct H3 (Virgo) and H12 (Gemini) for Cancer lagna, and no choghadiya window or Labh period is referenced anywhere.",
+            "critical_errors": [
+              "Moon placed in Libra H4 \u2014 ground truth states Moon is in Scorpio H5 for Cancer lagna",
+              "Mercury described as placed in and ruling Pisces H9 \u2014 Mercury rules H3 (Virgo) and H12 (Gemini) for Cancer lagna, not H9",
+              "Harshana yoga is never mentioned or interpreted anywhere in the commentary",
+              "No reference to the 11:00\u201312:00 best action window or Labh choghadiya",
+              "Rahu Kaal active warning is not mentioned despite ground truth flagging it as True",
+              "Jupiter placed in Cancer H1 is an invented placement with no ground truth support",
+              "Saturn placed in Pisces H9, Sun in Pisces H9, Venus in Capricorn H7, Ketu in Libra H4 \u2014 all fabricated placements not present in ground truth",
+              "Mars placed in Aquarius H8 contradicts ground truth where Mars rules H5 (Scorpio) and H10 (Aries), implying a different placement",
+              "Day score context (71) is ignored; commentary tone is overly optimistic without acknowledging moderate/mixed day quality",
+              "Rahu in Aries H10 is stated but no ground truth confirms Rahu's sign placement; commentary treats Rahu as ruling the profession axis, which is technically incorrect as Rahu rules no sign in classical Jyotish"
+            ],
+            "avg_accuracy": 1.6
+          }
+        }
+      },
+      "errors": [],
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "cost_full_report": 0.0743,
+      "overall_quality_score": 7.6,
+      "vedic_accuracy": {
+        "daily": {
+          "lagna_accuracy": 7,
+          "yoga_interpretation": 5,
+          "dasha_coherence": 5,
+          "choghadiya_alignment": 6,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary correctly maps H5=Scorpio and H10=Aries for Cancer lagna, and identifies Moon in Scorpio as 5th house accurately. However, it fabricates several elements including a 'Krishna Purnima/Amavasya' reference (hallucination), mischaracterizes Harshana as momentum/drive rather than joy/celebration, invents unverified Jupiter and Venus influences, and fails to mention Rahu Kaal despite it being active \u2014 a significant omission. Mercury's H3/H12 rulership for Cancer lagna is never explicitly stated, weakening dasha coherence.",
+          "critical_errors": [
+            "Harshana yoga interpreted as 'increases momentum' and 'decisive action push' \u2014 correct meaning is joy, delight, happiness, auspicious for celebrations; the commentary misses the celebratory/joyful nature entirely",
+            "Fabricated 'Krishna Purnima/Amavasya quiet undertone' \u2014 no such tithi is indicated in the ground truth (hallucination)",
+            "Rahu Kaal active flag is completely ignored with no caution or mention anywhere in the commentary",
+            "Mercury's antardasha rulership over H3 (Virgo) and H12 (Gemini) for Cancer lagna is never stated; commentary only vaguely references Mercury without house attribution",
+            "Invented 'Jupiter mixed influence from earlier cycles' affecting H6 and H9 \u2014 no Jupiter data provided in ground truth (hallucination)",
+            "Invented 'Venus or Mercury influences can scatter focus' \u2014 no Venus placement or influence is given in ground truth (hallucination)",
+            "Mars described as 'Yogakaraka' for Cancer lagna \u2014 Mars rules H5 and H10 for Cancer and can be considered a functional benefic, but calling it Yogakaraka (a term specific to certain lagnas like Taurus/Libra) is technically imprecise for Cancer lagna",
+            "Best action window 11:00\u201312:00 is not explicitly cited; commentary references 'midday Moon-anchored slot' vaguely without pinning the specific hour, reducing precision",
+            "Karana 'Bava' introduced without any ground truth support (hallucination)",
+            "Anuradha nakshatra introduced as a primary interpretive lens without verification in ground truth data"
+          ],
+          "avg_accuracy": 5.4
+        },
+        "hourly": {
+          "lagna_accuracy": 5,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 6,
+          "choghadiya_alignment": 5,
+          "internal_consistency": 3,
+          "judge_notes": "The commentary completely omits Harshana yoga and its correct meaning of joy/delight/celebrations, which is a critical hallucination-level omission. Additionally, Rahu Kaal is stated as false when ground truth confirms it is active (True), and no specific 11:00\u201312:00 action window is referenced.",
+          "critical_errors": [
+            "Harshana yoga is never mentioned; instead Jupiter hora is discussed \u2014 Harshana's correct meaning (joy, delight, celebrations) is entirely absent, scoring 0 for yoga_interpretation",
+            "Rahu_KAAL is stated as false ('Rahu_KAAL=false limits chaos') but ground truth confirms Rahu Kaal is active (True) \u2014 this is a direct factual error",
+            "H6 is assigned to Jupiter hora guidance without grounding in Cancer lagna map; H6=Sagittarius (Jupiter-ruled) is defensible but H9=Pisces (also Jupiter-ruled) is correct \u2014 however H9 reference is used loosely without sign verification",
+            "No reference to the best action window of 11:00\u201312:00 is made anywhere in the commentary",
+            "Moon in Scorpio (H5 for Cancer lagna) is completely ignored despite being a key placement in the ground truth",
+            "Mercury as antardasha lord ruling H3 (Virgo) and H12 (Gemini) is not explicitly stated \u2014 only vague communication references are made"
+          ],
+          "avg_accuracy": 3.8
+        },
+        "monthly": {
+          "lagna_accuracy": 2,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 4,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 3,
+          "judge_notes": "The commentary is broadly fabricated \u2014 it describes Moon transiting H6, H7, and H8 when the ground truth places Moon in Scorpio (H5 for Cancer lagna), and it never mentions Harshana yoga at all, let alone its correct meaning of joy/delight. The choghadiya window (11:00\u201312:00, Labh) is entirely absent, and Venus Badhaka references are invented with no grounding in the provided data.",
+          "critical_errors": [
+            "Moon is placed in Scorpio = H5 for Cancer lagna per ground truth, but commentary wrongly describes Moon transiting H6, H7, and H8",
+            "Harshana yoga (joy, delight, auspicious for celebrations) is never mentioned or interpreted anywhere in the commentary",
+            "The 11:00\u201312:00 Labh choghadiya best action window is completely absent from the commentary",
+            "Venus Badhaka lord over H4/H11 is an invented claim with no basis in the ground truth data provided",
+            "Rahu is placed in H5 as if it rules or occupies Scorpio, but ground truth gives no such placement \u2014 this is a hallucination",
+            "Commentary references 'early May' and 'mid-May' dates, but the ground truth date is 2026-03-10 (March), not May",
+            "Mercury's dasha influence is linked only to H3, omitting its rulership of H12 (Gemini) which is specifically noted in ground truth",
+            "Mars is called 'yogakaraka' without context \u2014 while Mars rules H5 and H10 for Cancer lagna (a valid yogakaraka claim), the commentary does not correctly situate this within the actual chart positions given"
+          ],
+          "avg_accuracy": 1.8
+        },
+        "synthesis": {
+          "lagna_accuracy": 6,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 7,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 5,
+          "judge_notes": "The commentary completely omits Harshana yoga and its correct meaning of joy/delight, instead defaulting to a generic cautionary tone that contradicts an auspicious yoga. No mention of the Labh choghadiya window (11:00\u201312:00) or any specific time recommendation is made, and the overall pessimistic framing is inconsistent with a day score of 71 and an auspicious yoga.",
+          "critical_errors": [
+            "Harshana yoga is entirely absent from the commentary \u2014 its correct meaning (joy, delight, happiness; auspicious for celebrations) is never mentioned or applied",
+            "No reference to the best action window 11:00\u201312:00 or Labh choghadiya, which is a key daily recommendation that should appear in synthesis",
+            "Rahu is incorrectly described as having a '6th house effect/focus' as if it rules or is placed in H6 \u2014 the ground truth does not support this placement; this is a hallucination",
+            "Moon in Scorpio (H5 for Cancer lagna) is not identified or utilized \u2014 the commentary vaguely mentions 'Moon journey across houses' without anchoring Moon correctly in H5",
+            "The tone of the commentary is predominantly cautionary and stress-focused, which contradicts the auspicious Harshana yoga and a day score of 71 (above the ~76.2 benchmark threshold for positive framing)",
+            "Mercury described as 'functional malefic' without qualification \u2014 while Mercury rules H3 and H12 for Cancer lagna making it a mild maraka/dusthana lord, labeling it outright as functional malefic without nuance is an oversimplification and potentially misleading"
+          ],
+          "avg_accuracy": 3.6
+        },
+        "nativity": {
+          "lagna_accuracy": 2,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 3,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 3,
+          "judge_notes": "The commentary fabricates an entirely different chart \u2014 Moon in Libra H4, Mars in Aquarius H8, Venus in Capricorn H7, Jupiter in Cancer H1, Rahu in Aries H10 \u2014 none of which are confirmed by the ground truth, and the Harshana yoga is never mentioned at all. Mercury's antardasha lordship is incorrectly assigned to H9 (Pisces) rather than the correct H3 (Virgo) and H12 (Gemini) for Cancer lagna, and no choghadiya window or Labh period is referenced anywhere.",
+          "critical_errors": [
+            "Moon placed in Libra H4 \u2014 ground truth states Moon is in Scorpio H5 for Cancer lagna",
+            "Mercury described as placed in and ruling Pisces H9 \u2014 Mercury rules H3 (Virgo) and H12 (Gemini) for Cancer lagna, not H9",
+            "Harshana yoga is never mentioned or interpreted anywhere in the commentary",
+            "No reference to the 11:00\u201312:00 best action window or Labh choghadiya",
+            "Rahu Kaal active warning is not mentioned despite ground truth flagging it as True",
+            "Jupiter placed in Cancer H1 is an invented placement with no ground truth support",
+            "Saturn placed in Pisces H9, Sun in Pisces H9, Venus in Capricorn H7, Ketu in Libra H4 \u2014 all fabricated placements not present in ground truth",
+            "Mars placed in Aquarius H8 contradicts ground truth where Mars rules H5 (Scorpio) and H10 (Aries), implying a different placement",
+            "Day score context (71) is ignored; commentary tone is overly optimistic without acknowledging moderate/mixed day quality",
+            "Rahu in Aries H10 is stated but no ground truth confirms Rahu's sign placement; commentary treats Rahu as ruling the profession axis, which is technically incorrect as Rahu rules no sign in classical Jyotish"
+          ],
+          "avg_accuracy": 1.6
+        }
+      },
+      "overall_accuracy_score": 3.2
+    }
+  ]
+}

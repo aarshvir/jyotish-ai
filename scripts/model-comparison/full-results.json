@@ -1,0 +1,1336 @@
+{
+  "generated": "2026-03-22T22:32:37.811380",
+  "score_variance": {
+    "per_date": {
+      "2026-02-17": {
+        "benchmark": 39.2,
+        "live": 38,
+        "variance_pct": 3.1,
+        "within_10pct": true
+      },
+      "2026-02-18": {
+        "benchmark": 53.2,
+        "live": 44,
+        "variance_pct": 17.3,
+        "within_10pct": false
+      },
+      "2026-02-19": {
+        "benchmark": 72.4,
+        "live": 63,
+        "variance_pct": 13.0,
+        "within_10pct": false
+      },
+      "2026-02-20": {
+        "benchmark": 69.3,
+        "live": 65,
+        "variance_pct": 6.2,
+        "within_10pct": true
+      },
+      "2026-02-21": {
+        "benchmark": 55.9,
+        "live": 62,
+        "variance_pct": 10.9,
+        "within_10pct": false
+      },
+      "2026-02-22": {
+        "benchmark": 62.6,
+        "live": 61,
+        "variance_pct": 2.6,
+        "within_10pct": true
+      },
+      "2026-02-23": {
+        "benchmark": 76.8,
+        "live": 76,
+        "variance_pct": 1.0,
+        "within_10pct": true
+      },
+      "2026-02-24": {
+        "benchmark": 66.2,
+        "live": 76,
+        "variance_pct": 14.8,
+        "within_10pct": false
+      },
+      "2026-02-25": {
+        "benchmark": 46.8,
+        "live": 50,
+        "variance_pct": 6.8,
+        "within_10pct": true
+      },
+      "2026-02-26": {
+        "benchmark": 53.0,
+        "live": 53,
+        "variance_pct": 0.0,
+        "within_10pct": true
+      },
+      "2026-02-27": {
+        "benchmark": 59.9,
+        "live": 46,
+        "variance_pct": 23.2,
+        "within_10pct": false
+      },
+      "2026-02-28": {
+        "benchmark": 79.6,
+        "live": 61,
+        "variance_pct": 23.4,
+        "within_10pct": false
+      },
+      "2026-03-01": {
+        "benchmark": 60.2,
+        "live": 67,
+        "variance_pct": 11.3,
+        "within_10pct": false
+      },
+      "2026-03-02": {
+        "benchmark": 38.1,
+        "live": 41,
+        "variance_pct": 7.6,
+        "within_10pct": true
+      },
+      "2026-03-03": {
+        "benchmark": 49.0,
+        "live": 57,
+        "variance_pct": 16.3,
+        "within_10pct": false
+      },
+      "2026-03-04": {
+        "benchmark": 61.2,
+        "live": 51,
+        "variance_pct": 16.7,
+        "within_10pct": false
+      },
+      "2026-03-05": {
+        "benchmark": 57.5,
+        "live": 44,
+        "variance_pct": 23.5,
+        "within_10pct": false
+      },
+      "2026-03-06": {
+        "benchmark": 47.9,
+        "live": 36,
+        "variance_pct": 24.8,
+        "within_10pct": false
+      },
+      "2026-03-07": {
+        "benchmark": 65.2,
+        "live": 54,
+        "variance_pct": 17.2,
+        "within_10pct": false
+      },
+      "2026-03-08": {
+        "benchmark": 66.9,
+        "live": 58,
+        "variance_pct": 13.3,
+        "within_10pct": false
+      },
+      "2026-03-09": {
+        "benchmark": 46.3,
+        "live": 47,
+        "variance_pct": 1.5,
+        "within_10pct": true
+      },
+      "2026-03-10": {
+        "benchmark": 76.2,
+        "live": 71,
+        "variance_pct": 6.8,
+        "within_10pct": true
+      }
+    },
+    "days_within_10pct": 9,
+    "days_total": 22,
+    "avg_variance_pct": 11.9,
+    "pass": false
+  },
+  "accuracy_context": {
+    "date": "2026-03-10",
+    "yoga": "Harshana",
+    "yoga_meaning": "joy, delight, happiness \u2014 auspicious for celebrations",
+    "lagna": "Cancer",
+    "day_score": 71,
+    "benchmark_score": 76.2,
+    "best_slot": {
+      "time": "11:00\u201312:00",
+      "score": 94,
+      "choghadiya": "Labh"
+    },
+    "moon_sign": "Scorpio",
+    "moon_house": 5,
+    "rahu_kaal": true,
+    "md": "Rahu",
+    "ad": "Mercury"
+  },
+  "model_reports": [
+    {
+      "model": "Claude Haiku 4.5",
+      "model_id": "claude-haiku-4-5-20251001",
+      "started": "2026-03-22T15:13:05.172118",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 124,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 4,
+          "strategy_sections": 3,
+          "caps_headlines": 0,
+          "total_house_refs": 16,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 3.4,
+          "overviews_with_nakshatra": 3,
+          "quality_score": 3,
+          "time_seconds": 48.9
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 107,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 72,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 8,
+          "time_seconds": 36.1
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 186,
+          "grandmaster_target": "150+ words",
+          "score_spread": 24,
+          "score_range": "48-72",
+          "total_house_refs": 23,
+          "avg_planets_per_month": 5.8,
+          "quality_score": 9,
+          "time_seconds": 33.6
+        },
+        "synthesis": {
+          "opening_words": 316,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 6,
+          "windows_with_high_score": 6,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 158,
+          "quality_score": 8,
+          "time_seconds": 59.6
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 7.0,
+      "cost_full_report": 0.18
+    },
+    {
+      "model": "Claude Sonnet 4.6",
+      "model_id": "claude-sonnet-4-6",
+      "started": "2026-03-22T15:16:17.390515",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 352,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 10,
+          "strategy_sections": 7,
+          "caps_headlines": 7,
+          "total_house_refs": 34,
+          "total_generic_phrases": 1,
+          "avg_planets_per_overview": 6.0,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 9,
+          "time_seconds": 113.3
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 146,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 4,
+          "total_house_refs": 251,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 1,
+          "quality_score": 8,
+          "time_seconds": 103.6
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 206,
+          "grandmaster_target": "150+ words",
+          "score_spread": 31,
+          "score_range": "42-73",
+          "total_house_refs": 45,
+          "avg_planets_per_month": 5.8,
+          "quality_score": 9,
+          "time_seconds": 64.0
+        },
+        "synthesis": {
+          "opening_words": 296,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 3,
+          "windows_with_high_score": 3,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 126,
+          "quality_score": 8,
+          "time_seconds": 83.2
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 8.5,
+      "cost_full_report": 0.675
+    },
+    {
+      "model": "DeepSeek V3.2",
+      "model_id": "deepseek-chat",
+      "started": "2026-03-22T15:22:35.501321",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 212,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 6,
+          "strategy_sections": 7,
+          "caps_headlines": 0,
+          "total_house_refs": 71,
+          "total_generic_phrases": 1,
+          "avg_planets_per_overview": 4.7,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 6,
+          "time_seconds": 81.8
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 98,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 84,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 2,
+          "quality_score": 7,
+          "time_seconds": 88.4
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 169,
+          "grandmaster_target": "150+ words",
+          "score_spread": 26,
+          "score_range": "48-74",
+          "total_house_refs": 37,
+          "avg_planets_per_month": 4.8,
+          "quality_score": 9,
+          "time_seconds": 72.9
+        },
+        "synthesis": {
+          "opening_words": 141,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 84,
+          "quality_score": 7,
+          "time_seconds": 70.5
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 7.2,
+      "cost_full_report": 0.0228
+    },
+    {
+      "model": "DeepSeek R1",
+      "model_id": "deepseek-reasoner",
+      "started": "2026-03-22T15:28:03.104659",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 203,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 6,
+          "strategy_sections": 7,
+          "caps_headlines": 0,
+          "total_house_refs": 115,
+          "total_generic_phrases": 1,
+          "avg_planets_per_overview": 6.7,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 6,
+          "time_seconds": 268.8
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 7,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 0,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 3,
+          "time_seconds": 142.3
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 135,
+          "grandmaster_target": "150+ words",
+          "score_spread": 27,
+          "score_range": "48-75",
+          "total_house_refs": 44,
+          "avg_planets_per_month": 6.8,
+          "quality_score": 8,
+          "time_seconds": 143.0
+        },
+        "synthesis": {
+          "opening_words": 91,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": false,
+          "closing_paragraph_words": 58,
+          "quality_score": 4,
+          "time_seconds": 137.6
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 5.2,
+      "cost_full_report": 0.1008
+    },
+    {
+      "model": "GPT-5.4 nano",
+      "model_id": "gpt-5.4-nano",
+      "started": "2026-03-22T15:39:48.872685",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 247,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 7,
+          "strategy_sections": 0,
+          "caps_headlines": 7,
+          "total_house_refs": 16,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 4.6,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 7,
+          "time_seconds": 16.0
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 144,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 2,
+          "total_house_refs": 75,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 2,
+          "quality_score": 8,
+          "time_seconds": 19.8
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 170,
+          "grandmaster_target": "150+ words",
+          "score_spread": 32,
+          "score_range": "42-74",
+          "total_house_refs": 21,
+          "avg_planets_per_month": 5.2,
+          "quality_score": 9,
+          "time_seconds": 12.6
+        },
+        "synthesis": {
+          "opening_words": 150,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 3,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 89,
+          "quality_score": 7,
+          "time_seconds": 12.6
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 7.8,
+      "cost_full_report": 0.0552
+    },
+    {
+      "model": "GPT-5.4 mini",
+      "model_id": "gpt-5.4-mini",
+      "started": "2026-03-22T15:41:03.927188",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 252,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 7,
+          "strategy_sections": 7,
+          "caps_headlines": 0,
+          "total_house_refs": 84,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 4.1,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 8,
+          "time_seconds": 15.5
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 147,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 5,
+          "total_house_refs": 182,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 9,
+          "time_seconds": 21.3
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 162,
+          "grandmaster_target": "150+ words",
+          "score_spread": 33,
+          "score_range": "42-75",
+          "total_house_refs": 67,
+          "avg_planets_per_month": 3.8,
+          "quality_score": 9,
+          "time_seconds": 11.3
+        },
+        "synthesis": {
+          "opening_words": 156,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 3,
+          "windows_with_high_score": 3,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 80,
+          "quality_score": 7,
+          "time_seconds": 13.8
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 8.2,
+      "cost_full_report": 0.1995
+    },
+    {
+      "model": "GPT-5.4 Reasoning-High",
+      "model_id": "gpt-5.4-high-reasoning",
+      "started": "2026-03-22T16:24:34.897721",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 300,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 9,
+          "strategy_sections": 7,
+          "caps_headlines": 7,
+          "total_house_refs": 56,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 5.6,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 10,
+          "time_seconds": 254.8
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 134,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 103,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 9,
+          "time_seconds": 212.3
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 130,
+          "grandmaster_target": "150+ words",
+          "score_spread": 25,
+          "score_range": "48-73",
+          "total_house_refs": 42,
+          "avg_planets_per_month": 6.0,
+          "quality_score": 8,
+          "time_seconds": 211.7
+        },
+        "synthesis": {
+          "opening_words": 180,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": true,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": false,
+          "closing_paragraph_words": 25,
+          "quality_score": 7,
+          "time_seconds": 214.5
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 8.5,
+      "cost_full_report": 0.665
+    },
+    {
+      "model": "Gemini 2.5 Flash",
+      "model_id": "gemini-2.0-flash",
+      "started": "2026-03-22T15:42:19.847244",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 300,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 9,
+          "strategy_sections": 7,
+          "caps_headlines": 7,
+          "total_house_refs": 56,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 5.6,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 10,
+          "time_seconds": 1.2
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 134,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 103,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 9,
+          "time_seconds": 0.2
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 130,
+          "grandmaster_target": "150+ words",
+          "score_spread": 25,
+          "score_range": "48-73",
+          "total_house_refs": 42,
+          "avg_planets_per_month": 6.0,
+          "quality_score": 8,
+          "time_seconds": 0.2
+        },
+        "synthesis": {
+          "opening_words": 180,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": true,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": false,
+          "closing_paragraph_words": 25,
+          "quality_score": 7,
+          "time_seconds": 1.1
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 8.5,
+      "cost_full_report": 0.1085
+    },
+    {
+      "model": "Gemini 3.1 Pro",
+      "model_id": "gemini-1.5-pro",
+      "started": "2026-03-22T15:42:36.571720",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 300,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 9,
+          "strategy_sections": 7,
+          "caps_headlines": 7,
+          "total_house_refs": 56,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 5.6,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 10,
+          "time_seconds": 0.9
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 134,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 103,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 9,
+          "time_seconds": 0.2
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 130,
+          "grandmaster_target": "150+ words",
+          "score_spread": 25,
+          "score_range": "48-73",
+          "total_house_refs": 42,
+          "avg_planets_per_month": 6.0,
+          "quality_score": 8,
+          "time_seconds": 0.2
+        },
+        "synthesis": {
+          "opening_words": 180,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": true,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": false,
+          "closing_paragraph_words": 25,
+          "quality_score": 7,
+          "time_seconds": 0.2
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 8.5,
+      "cost_full_report": 0.532
+    },
+    {
+      "model": "Grok 4",
+      "model_id": "grok-4",
+      "started": "2026-03-22T16:39:42.241341",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 387,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 10,
+          "strategy_sections": 7,
+          "caps_headlines": 0,
+          "total_house_refs": 312,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 8.1,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 8,
+          "time_seconds": 225.1
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 142,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 7,
+          "total_house_refs": 1,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 7,
+          "time_seconds": 112.1
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 218,
+          "grandmaster_target": "150+ words",
+          "score_spread": 27,
+          "score_range": "48-75",
+          "total_house_refs": 69,
+          "avg_planets_per_month": 7.2,
+          "quality_score": 9,
+          "time_seconds": 99.5
+        },
+        "synthesis": {
+          "opening_words": 267,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 57,
+          "quality_score": 8,
+          "time_seconds": 103.1
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 8.0,
+      "cost_full_report": 0.675
+    },
+    {
+      "model": "Grok 4.1 Fast Reasoning",
+      "model_id": "grok-4-1-fast-reasoning",
+      "started": "2026-03-22T16:48:56.043389",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 275,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 8,
+          "strategy_sections": 7,
+          "caps_headlines": 0,
+          "total_house_refs": 185,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 8.1,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 8,
+          "time_seconds": 68.6
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 90,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 276,
+          "choghadiya_explained": 18,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 7,
+          "time_seconds": 41.5
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 168,
+          "grandmaster_target": "150+ words",
+          "score_spread": 33,
+          "score_range": "42-75",
+          "total_house_refs": 15,
+          "avg_planets_per_month": 7.8,
+          "quality_score": 8,
+          "time_seconds": 42.5
+        },
+        "synthesis": {
+          "opening_words": 165,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": false,
+          "closing_paragraph_words": 52,
+          "quality_score": 5,
+          "time_seconds": 36.3
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 7.0,
+      "cost_full_report": 0.0245
+    },
+    {
+      "model": "Grok 4.20 Multi-Agent",
+      "model_id": "grok-4.20-multi-agent",
+      "started": "2026-03-22T16:52:19.049144",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 360,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 10,
+          "strategy_sections": 7,
+          "caps_headlines": 6,
+          "total_house_refs": 209,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 7.3,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 10,
+          "time_seconds": 224.9
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 232,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 18,
+          "total_house_refs": 351,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 9,
+          "time_seconds": 129.5
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 182,
+          "grandmaster_target": "150+ words",
+          "score_spread": 30,
+          "score_range": "45-75",
+          "total_house_refs": 77,
+          "avg_planets_per_month": 7.0,
+          "quality_score": 9,
+          "time_seconds": 115.5
+        },
+        "synthesis": {
+          "opening_words": 199,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": false,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": true,
+          "closing_paragraph_words": 78,
+          "quality_score": 8,
+          "time_seconds": 85.7
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 9.0,
+      "cost_full_report": 0.286
+    },
+    {
+      "model": "Grok 4.20 Reasoning",
+      "model_id": "grok-4.20-beta-0309-reasoning",
+      "started": "2026-03-22T17:01:48.663072",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 300,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 9,
+          "strategy_sections": 7,
+          "caps_headlines": 7,
+          "total_house_refs": 56,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 5.6,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 10,
+          "time_seconds": 0.6
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 134,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 103,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 9,
+          "time_seconds": 0.5
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 130,
+          "grandmaster_target": "150+ words",
+          "score_spread": 25,
+          "score_range": "48-73",
+          "total_house_refs": 42,
+          "avg_planets_per_month": 6.0,
+          "quality_score": 8,
+          "time_seconds": 0.6
+        },
+        "synthesis": {
+          "opening_words": 180,
+          "grandmaster_target": "200+ words",
+          "has_caps_headline": true,
+          "strategic_windows": 2,
+          "windows_with_high_score": 2,
+          "domain_priorities_complete": false,
+          "closing_paragraph_words": 25,
+          "quality_score": 7,
+          "time_seconds": 0.5
+        }
+      },
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "errors": [],
+      "overall_quality_score": 8.5,
+      "cost_full_report": 0.286
+    }
+  ],
+  "combo_reports": [
+    {
+      "model": "Combo: Smart Hybrid",
+      "model_id": "hybrid",
+      "is_hybrid": true,
+      "hybrid_sections": {
+        "daily_overviews": "grok-4.20-multi-agent",
+        "hourly": "gpt-5.4-mini",
+        "monthly": "gpt-5.4-nano",
+        "synthesis": "claude-haiku-4-5-20251001",
+        "nativity": "gpt-5.4-nano"
+      },
+      "started": "2026-03-22T22:29:26.411288",
+      "sections": {
+        "daily_overviews": {
+          "days_evaluated": 7,
+          "avg_word_count": 300,
+          "grandmaster_target": "280-350w",
+          "word_count_score": 9,
+          "strategy_sections": 7,
+          "caps_headlines": 7,
+          "total_house_refs": 56,
+          "total_generic_phrases": 0,
+          "avg_planets_per_overview": 5.6,
+          "overviews_with_nakshatra": 7,
+          "quality_score": 10,
+          "time_seconds": 2.3,
+          "vedic_accuracy": {
+            "lagna_accuracy": 5,
+            "yoga_interpretation": 2,
+            "dasha_coherence": 6,
+            "choghadiya_alignment": 2,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary misrepresents Harshana yoga as a discipline/focus mechanism rather than its correct meaning of joy and celebration, which is a fundamental interpretive error. Multiple house references are either unsupported or contradictory (H11 gains via Moon-linked timing is ungrounded; Saturn on H6 and Jupiter on H12 are asserted without basis in the ground truth), and the best action window recommendation centers on Mars hora rather than the verified 11:00\u201312:00 Labh choghadiya peak.",
+            "critical_errors": [
+              "Harshana yoga is described as 'disciplines action' and keeps 'mind focused' \u2014 correct meaning is joy, delight, happiness, auspicious for celebrations; this is a hallucination of meaning",
+              "'Anuradha nakshatra activates decision gates through Saturn influence' \u2014 Anuradha is not mentioned in ground truth and this is an unsupported hallucination",
+              "Best action window recommendation directs use of 'Mars hora' and earliest strong display_label, completely ignoring the verified 11:00\u201312:00 Labh choghadiya best window",
+              "Rahu Kaal window cited as 15:26\u201316:55 \u2014 ground truth confirms Rahu Kaal is active but does not specify this time range; the specific window is fabricated",
+              "Saturn pressure on H6 (Sagittarius) is asserted without any Saturn placement reference in the ground truth",
+              "Jupiter influence on H12 (Gemini) steadying expenditure is asserted without any Jupiter placement reference in the ground truth",
+              "Moon-linked timing connecting to H11 outcomes is ungrounded \u2014 Moon is in H5 (Scorpio) per ground truth, not H11",
+              "Commentary calls the yoga 'Exalted Anuradha Yoga Harshana' conflating nakshatra and yoga into a fabricated combined concept not present in ground truth",
+              "H11 gains emphasis is misplaced \u2014 Mercury rules H3 and H12 for Cancer lagna, not H11; no ground truth basis for H11 focus"
+            ],
+            "avg_accuracy": 3.8
+          }
+        },
+        "hourly": {
+          "slots_evaluated": 18,
+          "avg_word_count": 123,
+          "grandmaster_target": "150-250w",
+          "slots_meeting_min_wc": 0,
+          "total_house_refs": 37,
+          "choghadiya_explained": 17,
+          "directive_caps_lines": 0,
+          "generic_phrases": 0,
+          "quality_score": 8,
+          "time_seconds": 22.3,
+          "vedic_accuracy": {
+            "lagna_accuracy": 3,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 4,
+            "choghadiya_alignment": 5,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary completely omits Harshana yoga and instead fabricates a 'Jupiter hora' framing not supported by the ground truth, introducing 6th and 9th house themes with no grounding in the actual lagna map or slot data. Multiple house references (6th, 9th) are asserted without any sign-to-house verification against the Cancer lagna map, and no correct house assignments are explicitly confirmed.",
+            "critical_errors": [
+              "Harshana yoga is never mentioned; the commentary invents 'Jupiter hora' as the governing factor, which is a hallucination not present in ground truth",
+              "6th-house (Sagittarius) and 9th-house (Pisces) themes are introduced with no astrological justification tied to the active planets or dasha lords for this slot",
+              "Mercury's rulership of H3 (Virgo) and H12 (Gemini) is not mentioned; dasha logic is vague and technically unsupported",
+              "No reference to the best action window of 11:00\u201312:00 is made in the commentary",
+              "Rahu Kaal being active is not acknowledged, which is a significant omission given it is flagged as True in ground truth",
+              "Commentary tone implies a moderately strong slot but fails to integrate the day score of 71 or benchmark context in any meaningful way",
+              "The phrase 'follow-up slot after the primary Mars window' implies a Mars hora or Mars choghadiya context that is not supported by ground truth data"
+            ],
+            "avg_accuracy": 3.2
+          }
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 176,
+          "grandmaster_target": "150+ words",
+          "score_spread": 33,
+          "score_range": "42-75",
+          "total_house_refs": 29,
+          "avg_planets_per_month": 6.2,
+          "quality_score": 9,
+          "time_seconds": 18.8,
+          "vedic_accuracy": {
+            "lagna_accuracy": 0,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 0,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 0,
+            "avg_accuracy": 0.0,
+            "judge_notes": "Judge error: Error code: 529 - {'type': 'error', 'error': {'type': 'overloaded_error', 'message': 'Overloaded'}, ",
+            "critical_errors": []
+          }
+        },
+        "synthesis": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/weeks-synthesis"
+        },
+        "nativity": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/nativity-text"
+        }
+      },
+      "errors": [
+        "synthesis: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/weeks-synthesis",
+        "nativity: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/nativity-text"
+      ],
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "cost_full_report": 0.2561,
+      "overall_quality_score": 5.4,
+      "vedic_accuracy": {
+        "daily": {
+          "lagna_accuracy": 5,
+          "yoga_interpretation": 2,
+          "dasha_coherence": 6,
+          "choghadiya_alignment": 2,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary misrepresents Harshana yoga as a discipline/focus mechanism rather than its correct meaning of joy and celebration, which is a fundamental interpretive error. Multiple house references are either unsupported or contradictory (H11 gains via Moon-linked timing is ungrounded; Saturn on H6 and Jupiter on H12 are asserted without basis in the ground truth), and the best action window recommendation centers on Mars hora rather than the verified 11:00\u201312:00 Labh choghadiya peak.",
+          "critical_errors": [
+            "Harshana yoga is described as 'disciplines action' and keeps 'mind focused' \u2014 correct meaning is joy, delight, happiness, auspicious for celebrations; this is a hallucination of meaning",
+            "'Anuradha nakshatra activates decision gates through Saturn influence' \u2014 Anuradha is not mentioned in ground truth and this is an unsupported hallucination",
+            "Best action window recommendation directs use of 'Mars hora' and earliest strong display_label, completely ignoring the verified 11:00\u201312:00 Labh choghadiya best window",
+            "Rahu Kaal window cited as 15:26\u201316:55 \u2014 ground truth confirms Rahu Kaal is active but does not specify this time range; the specific window is fabricated",
+            "Saturn pressure on H6 (Sagittarius) is asserted without any Saturn placement reference in the ground truth",
+            "Jupiter influence on H12 (Gemini) steadying expenditure is asserted without any Jupiter placement reference in the ground truth",
+            "Moon-linked timing connecting to H11 outcomes is ungrounded \u2014 Moon is in H5 (Scorpio) per ground truth, not H11",
+            "Commentary calls the yoga 'Exalted Anuradha Yoga Harshana' conflating nakshatra and yoga into a fabricated combined concept not present in ground truth",
+            "H11 gains emphasis is misplaced \u2014 Mercury rules H3 and H12 for Cancer lagna, not H11; no ground truth basis for H11 focus"
+          ],
+          "avg_accuracy": 3.8
+        },
+        "hourly": {
+          "lagna_accuracy": 3,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 4,
+          "choghadiya_alignment": 5,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary completely omits Harshana yoga and instead fabricates a 'Jupiter hora' framing not supported by the ground truth, introducing 6th and 9th house themes with no grounding in the actual lagna map or slot data. Multiple house references (6th, 9th) are asserted without any sign-to-house verification against the Cancer lagna map, and no correct house assignments are explicitly confirmed.",
+          "critical_errors": [
+            "Harshana yoga is never mentioned; the commentary invents 'Jupiter hora' as the governing factor, which is a hallucination not present in ground truth",
+            "6th-house (Sagittarius) and 9th-house (Pisces) themes are introduced with no astrological justification tied to the active planets or dasha lords for this slot",
+            "Mercury's rulership of H3 (Virgo) and H12 (Gemini) is not mentioned; dasha logic is vague and technically unsupported",
+            "No reference to the best action window of 11:00\u201312:00 is made in the commentary",
+            "Rahu Kaal being active is not acknowledged, which is a significant omission given it is flagged as True in ground truth",
+            "Commentary tone implies a moderately strong slot but fails to integrate the day score of 71 or benchmark context in any meaningful way",
+            "The phrase 'follow-up slot after the primary Mars window' implies a Mars hora or Mars choghadiya context that is not supported by ground truth data"
+          ],
+          "avg_accuracy": 3.2
+        },
+        "monthly": {
+          "lagna_accuracy": 0,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 0,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 0,
+          "avg_accuracy": 0.0,
+          "judge_notes": "Judge error: Error code: 529 - {'type': 'error', 'error': {'type': 'overloaded_error', 'message': 'Overloaded'}, ",
+          "critical_errors": []
+        },
+        "synthesis": {},
+        "nativity": {}
+      },
+      "overall_accuracy_score": 3.5
+    },
+    {
+      "model": "Combo: GPT Thinking Stack",
+      "model_id": "hybrid",
+      "is_hybrid": true,
+      "hybrid_sections": {
+        "daily_overviews": "gpt-5.4-high-reasoning",
+        "hourly": "gpt-5.4-mini",
+        "monthly": "gpt-5.4-nano",
+        "synthesis": "gpt-5.4-high-reasoning",
+        "nativity": "gpt-5.4-nano"
+      },
+      "started": "2026-03-22T22:31:14.335388",
+      "sections": {
+        "daily_overviews": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/daily-overviews"
+        },
+        "hourly": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/hourly-day"
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 166,
+          "grandmaster_target": "150+ words",
+          "score_spread": 33,
+          "score_range": "42-75",
+          "total_house_refs": 7,
+          "avg_planets_per_month": 4.0,
+          "quality_score": 8,
+          "time_seconds": 12.0,
+          "vedic_accuracy": {
+            "lagna_accuracy": 6,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 7,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 5,
+            "judge_notes": "The commentary completely omits Harshana yoga's correct meaning (joy, delight, auspicious for celebrations) and instead delivers an entirely cautionary, tension-heavy narrative that contradicts a day score of 71 and an auspicious yoga. No mention of the 11:00\u201312:00 Labh choghadiya window, which is a critical omission.",
+            "critical_errors": [
+              "Harshana yoga is never mentioned or interpreted; its correct meaning of joy, delight, and auspiciousness for celebrations is entirely absent \u2014 the commentary tone directly contradicts this yoga",
+              "No reference to the best action window 11:00\u201312:00 or Labh choghadiya; choghadiya guidance is completely missing",
+              "Commentary claims 'Jupiter's constructive Cancer entry is still not yet effective in May' \u2014 this is a hallucination; the ground truth date is March 10, 2026, and no Jupiter-Cancer entry is referenced in the ground truth",
+              "The Moon is stated to traverse H3, H5, H8, and H9 during the month \u2014 Moon in H5 (Scorpio) is confirmed by ground truth, but H3, H8, H9 traversals are speculative assertions not grounded in the provided data",
+              "Rahu described as causing '10th-house reputation swings' implies Rahu is placed or ruling H10; Rahu does not rule any sign and no placement in H10 is given in the ground truth",
+              "Overall tone is excessively cautionary and pessimistic, inconsistent with a day score of 71 (above the ~76.2 benchmark proximity) and an auspicious Harshana yoga"
+            ],
+            "avg_accuracy": 3.6
+          }
+        },
+        "synthesis": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/weeks-synthesis"
+        },
+        "nativity": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/nativity-text"
+        }
+      },
+      "errors": [
+        "daily: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/daily-overviews",
+        "hourly: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/hourly-day",
+        "synthesis: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/weeks-synthesis",
+        "nativity: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/nativity-text"
+      ],
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "cost_full_report": 0.5231,
+      "overall_quality_score": 1.6,
+      "vedic_accuracy": {
+        "daily": {},
+        "hourly": {},
+        "monthly": {
+          "lagna_accuracy": 6,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 7,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 5,
+          "judge_notes": "The commentary completely omits Harshana yoga's correct meaning (joy, delight, auspicious for celebrations) and instead delivers an entirely cautionary, tension-heavy narrative that contradicts a day score of 71 and an auspicious yoga. No mention of the 11:00\u201312:00 Labh choghadiya window, which is a critical omission.",
+          "critical_errors": [
+            "Harshana yoga is never mentioned or interpreted; its correct meaning of joy, delight, and auspiciousness for celebrations is entirely absent \u2014 the commentary tone directly contradicts this yoga",
+            "No reference to the best action window 11:00\u201312:00 or Labh choghadiya; choghadiya guidance is completely missing",
+            "Commentary claims 'Jupiter's constructive Cancer entry is still not yet effective in May' \u2014 this is a hallucination; the ground truth date is March 10, 2026, and no Jupiter-Cancer entry is referenced in the ground truth",
+            "The Moon is stated to traverse H3, H5, H8, and H9 during the month \u2014 Moon in H5 (Scorpio) is confirmed by ground truth, but H3, H8, H9 traversals are speculative assertions not grounded in the provided data",
+            "Rahu described as causing '10th-house reputation swings' implies Rahu is placed or ruling H10; Rahu does not rule any sign and no placement in H10 is given in the ground truth",
+            "Overall tone is excessively cautionary and pessimistic, inconsistent with a day score of 71 (above the ~76.2 benchmark proximity) and an auspicious Harshana yoga"
+          ],
+          "avg_accuracy": 3.6
+        },
+        "synthesis": {},
+        "nativity": {}
+      },
+      "overall_accuracy_score": 3.6
+    },
+    {
+      "model": "Combo: Ultra Budget",
+      "model_id": "hybrid",
+      "is_hybrid": true,
+      "hybrid_sections": {
+        "daily_overviews": "gpt-5.4-nano",
+        "hourly": "gpt-5.4-nano",
+        "monthly": "gpt-5.4-nano",
+        "synthesis": "gpt-5.4-nano",
+        "nativity": "gpt-5.4-nano"
+      },
+      "started": "2026-03-22T22:32:00.407326",
+      "sections": {
+        "daily_overviews": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/daily-overviews"
+        },
+        "hourly": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/hourly-day"
+        },
+        "monthly": {
+          "months_evaluated": 6,
+          "avg_word_count": 183,
+          "grandmaster_target": "150+ words",
+          "score_spread": 33,
+          "score_range": "42-75",
+          "total_house_refs": 15,
+          "avg_planets_per_month": 6.3,
+          "quality_score": 8,
+          "time_seconds": 12.1,
+          "vedic_accuracy": {
+            "lagna_accuracy": 5,
+            "yoga_interpretation": 0,
+            "dasha_coherence": 6,
+            "choghadiya_alignment": 0,
+            "internal_consistency": 4,
+            "judge_notes": "The commentary completely omits Harshana yoga and its correct meaning of joy and celebration, which is a critical hallucination-by-omission failure. The choghadiya window (11:00\u201312:00, Labh) is never referenced, and several house assignments and planetary rulership claims are inaccurate or unverified for Cancer lagna.",
+            "critical_errors": [
+              "Harshana yoga (joy, delight, auspicious for celebrations) is entirely absent from the commentary \u2014 no yoga interpretation provided at all, scoring 0",
+              "No reference to the best action window 11:00\u201312:00 or Labh choghadiya anywhere in the commentary",
+              "Saturn described as ruling H7 and H8 for Cancer lagna \u2014 correct rulerships are H7 (Capricorn) and H8 (Aquarius), but the commentary attributes this to Saturn without verification; Saturn does rule Capricorn (H7) and Aquarius (H8) which is technically correct, yet framing Saturn as 'mixed ownership' malefic is misleading for Cancer lagna where Saturn rules H7/H8",
+              "Jupiter described as having '6th/9th influence' \u2014 for Cancer lagna Jupiter rules H6 (Sagittarius) and H9 (Pisces), making Jupiter a functional mixed planet, but the commentary presents this without acknowledging Jupiter's natural benefic status creates nuance, not straightforward 'lesson/workload' framing",
+              "Moon described as 'commonly moves through the 4th, 5th, and 6th houses' \u2014 ground truth places Moon specifically in Scorpio (H5 for Cancer lagna); vague generalization misrepresents the actual chart data",
+              "Commentary references 'May' as the month but the ground truth date is March 10, 2026 \u2014 wrong month stated",
+              "Rahu described as stirring 'the 8th house of transformation and hidden obstacles for Cancer lagna' without basis in ground truth; Rahu's house placement is not specified in ground truth and this is an unsupported claim",
+              "Day score of 71 is moderately positive yet the commentary's tone is predominantly cautionary and warning-heavy, inconsistent with a score above 70"
+            ],
+            "avg_accuracy": 3.0
+          }
+        },
+        "synthesis": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/weeks-synthesis"
+        },
+        "nativity": {
+          "quality_score": 0,
+          "error": "500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/nativity-text"
+        }
+      },
+      "errors": [
+        "daily: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/daily-overviews",
+        "hourly: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/hourly-day",
+        "synthesis: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/weeks-synthesis",
+        "nativity: 500 Server Error: Internal Server Error for url: http://127.0.0.1:3000/api/commentary/nativity-text"
+      ],
+      "costs": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "cost_full_report": 0.0743,
+      "overall_quality_score": 1.6,
+      "vedic_accuracy": {
+        "daily": {},
+        "hourly": {},
+        "monthly": {
+          "lagna_accuracy": 5,
+          "yoga_interpretation": 0,
+          "dasha_coherence": 6,
+          "choghadiya_alignment": 0,
+          "internal_consistency": 4,
+          "judge_notes": "The commentary completely omits Harshana yoga and its correct meaning of joy and celebration, which is a critical hallucination-by-omission failure. The choghadiya window (11:00\u201312:00, Labh) is never referenced, and several house assignments and planetary rulership claims are inaccurate or unverified for Cancer lagna.",
+          "critical_errors": [
+            "Harshana yoga (joy, delight, auspicious for celebrations) is entirely absent from the commentary \u2014 no yoga interpretation provided at all, scoring 0",
+            "No reference to the best action window 11:00\u201312:00 or Labh choghadiya anywhere in the commentary",
+            "Saturn described as ruling H7 and H8 for Cancer lagna \u2014 correct rulerships are H7 (Capricorn) and H8 (Aquarius), but the commentary attributes this to Saturn without verification; Saturn does rule Capricorn (H7) and Aquarius (H8) which is technically correct, yet framing Saturn as 'mixed ownership' malefic is misleading for Cancer lagna where Saturn rules H7/H8",
+            "Jupiter described as having '6th/9th influence' \u2014 for Cancer lagna Jupiter rules H6 (Sagittarius) and H9 (Pisces), making Jupiter a functional mixed planet, but the commentary presents this without acknowledging Jupiter's natural benefic status creates nuance, not straightforward 'lesson/workload' framing",
+            "Moon described as 'commonly moves through the 4th, 5th, and 6th houses' \u2014 ground truth places Moon specifically in Scorpio (H5 for Cancer lagna); vague generalization misrepresents the actual chart data",
+            "Commentary references 'May' as the month but the ground truth date is March 10, 2026 \u2014 wrong month stated",
+            "Rahu described as stirring 'the 8th house of transformation and hidden obstacles for Cancer lagna' without basis in ground truth; Rahu's house placement is not specified in ground truth and this is an unsupported claim",
+            "Day score of 71 is moderately positive yet the commentary's tone is predominantly cautionary and warning-heavy, inconsistent with a score above 70"
+          ],
+          "avg_accuracy": 3.0
+        },
+        "synthesis": {},
+        "nativity": {}
+      },
+      "overall_accuracy_score": 3.0
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 
 const anthropicClient = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -62,7 +64,6 @@ async function completeOpenAiGpt54HighReasoning(opts: {
   const maxOut = Math.min(opts.maxTokens, 16000);
 
   try {
-    const { default: OpenAI } = await import('openai');
     const client = new OpenAI({ apiKey: opts.apiKey });
     const responsesApi = (
       client as unknown as {
@@ -128,7 +129,6 @@ async function completeGrokResponsesApi(opts: {
   ];
 
   try {
-    const { default: OpenAI } = await import('openai');
     const client = new OpenAI({ apiKey: opts.apiKey, baseURL: 'https://api.x.ai/v1' });
     const responsesApi = (
       client as unknown as {
@@ -221,7 +221,6 @@ export async function completeLlmChat(opts: {
   }
 
   if (modelId.startsWith('gpt-')) {
-    const { default: OpenAI } = await import('openai');
     const key = process.env.OPENAI_API_KEY;
     if (!key) throw new Error('OPENAI_API_KEY is not configured');
     const client = new OpenAI({ apiKey: key });
@@ -240,7 +239,6 @@ export async function completeLlmChat(opts: {
   }
 
   if (modelId.startsWith('gemini-')) {
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
     const key = process.env.GEMINI_API_KEY;
     if (!key) throw new Error('GEMINI_API_KEY is not configured');
     const genAI = new GoogleGenerativeAI(key);
@@ -260,7 +258,6 @@ export async function completeLlmChat(opts: {
   }
 
   if (modelId.startsWith('deepseek-')) {
-    const { default: OpenAI } = await import('openai');
     const key = process.env.DEEPSEEK_API_KEY;
     if (!key) throw new Error('DEEPSEEK_API_KEY is not configured');
     const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com' });
@@ -278,7 +275,6 @@ export async function completeLlmChat(opts: {
   if (modelId.startsWith('grok-')) {
     const key = process.env.GROK_API_KEY;
     if (!key) throw new Error('GROK_API_KEY is not configured');
-    const { default: OpenAI } = await import('openai');
     const client = new OpenAI({ apiKey: key, baseURL: 'https://api.x.ai/v1' });
 
     if (modelId.startsWith('grok-4.20')) {

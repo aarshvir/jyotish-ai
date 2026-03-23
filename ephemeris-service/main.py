@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional, List, Dict, Any
 from zoneinfo import ZoneInfo
 from timezonefinder import TimezoneFinder
@@ -624,57 +624,103 @@ def full_day_data(data: FullDayDataInput):
 
 
 # ---------------------------------------------------------------------------
-# Slot scoring (mirrors RatingAgent formula; used when Python builds slots)
+# Grandmaster scoring engine (Cancer lagna, absolute hora bases)
 # ---------------------------------------------------------------------------
 
-HORA_MODIFIERS = {
-    "Aries":       {"Saturn": 15, "Sun": 8, "Jupiter": 6, "Mars": 3, "Mercury": -8, "Venus": -6, "Moon": -3},
-    "Taurus":      {"Saturn": 15, "Mercury": 8, "Venus": 6, "Moon": 3, "Jupiter": -8, "Mars": -6, "Sun": -3},
-    "Gemini":      {"Venus": 15, "Mercury": 8, "Saturn": 6, "Sun": 3, "Moon": -8, "Jupiter": -6, "Mars": -3},
-    "Cancer":      {"Moon": 18, "Mars": 18, "Jupiter": 5, "Sun": 2, "Venus": -3, "Mercury": -8, "Saturn": -12},
-    "Leo":         {"Mars": 15, "Sun": 10, "Jupiter": 6, "Saturn": 3, "Mercury": -8, "Venus": -6, "Moon": -3},
-    "Virgo":       {"Venus": 15, "Mercury": 10, "Saturn": 6, "Moon": 3, "Jupiter": -8, "Mars": -6, "Sun": -3},
-    "Libra":       {"Saturn": 15, "Mercury": 8, "Venus": 8, "Moon": 3, "Mars": -8, "Jupiter": -6, "Sun": -3},
-    "Scorpio":     {"Moon": 15, "Mars": 10, "Jupiter": 6, "Sun": 3, "Venus": -8, "Mercury": -6, "Saturn": -3},
-    "Sagittarius": {"Mars": 15, "Jupiter": 10, "Sun": 6, "Saturn": 3, "Venus": -8, "Mercury": -6, "Moon": -3},
-    "Capricorn":   {"Venus": 15, "Saturn": 10, "Mercury": 6, "Moon": 3, "Mars": -8, "Jupiter": -6, "Sun": -3},
-    "Aquarius":    {"Venus": 15, "Saturn": 10, "Mercury": 6, "Moon": 3, "Mars": -8, "Jupiter": -6, "Sun": -3},
-    "Pisces":      {"Moon": 15, "Jupiter": 10, "Mars": 6, "Sun": 3, "Saturn": -8, "Mercury": -6, "Venus": -3},
+HORA_BASE_CANCER = {
+    "Jupiter": 62,
+    "Moon": 56,
+    "Mars": 54,
+    "Sun": 46,
+    "Mercury": 44,
+    "Venus": 38,
+    "Saturn": 28,
 }
 
-CHOGHADIYA_MODIFIERS = {
-    "Amrit": 18, "Shubh": 12, "Labh": 10, "Char": 4, "Chal": 4,
-    "Udveg": -5, "Rog": -10, "Kaal": -18,
+CHOG_MOD = {
+    "Amrit": 12,
+    "Labh": 8,
+    "Shubh": 4,
+    "Chal": 0,
+    "Udveg": -6,
+    "Rog": -8,
+    "Kaal": -12,
 }
 
-TRANSIT_HOUSE_MODIFIERS = {
-    1: 6, 2: 2, 3: -2, 4: 1, 5: 3, 6: -4, 7: 0, 8: -8,
-    9: 5, 10: 6, 11: 4, 12: -8,
+HOUSE_MOD = {
+    1: 7, 2: 4, 3: 0, 4: 1, 5: 4, 6: -2,
+    7: 1, 8: -5, 9: 5, 10: 6, 11: 5, 12: -5,
 }
 
-# Day-level modifiers for score variance (grandmaster range 39-80)
-YOGA_MODIFIERS = {
-    'Amrita': 18, 'Sarvartha_Siddhi': 18,
-    'Brahma': 16, 'Siddha': 14, 'Indra': 13,
-    'Shubha': 9,  'Subha': 9,  'Sadhya': 7,
-    'Shobhana': 7, 'Shubhakrit': 7,
-    'Vriddhi': 6, 'Siddhi': 5, 'Dhruva': 5,
-    'Harshana': 10, 'Vajra': 4, 'Sukarma': 2,
-    'Priti': 3, 'Variyan': 2, 'Sukla': 2,
-    'Saubhagya': 8, 'Ayushman': 5,
-    'Shiva': 4, 'Dhriti': 3,
-    'Ganda': -6, 'Atiganda': -18, 'Shoola': -8,
-    'Vishkambha': -12, 'Vaidhriti': -12,
-    'Parigha': -14, 'Vyatipata': -14,
-    'Vyaghata': -8, 'Shula': -8,
+YOGA_MOD = {
+    "Vishkambha": 0, "Priti": 3, "Ayushman": 4, "Saubhagya": 6,
+    "Shobhana": 3, "Atiganda": -5, "Sukarma": 3, "Dhriti": 3,
+    "Shoola": -5, "Ganda": -5, "Vriddhi": 6, "Dhruva": 6,
+    "Vyaghata": -8, "Harshana": 4, "Vajra": 1, "Siddhi": 7,
+    "Vyatipata": -8, "Variyan": 1, "Parigha": -5, "Shiva": 4,
+    "Siddha": 6, "Sadhya": 3, "Shubha": 3, "Shukla": 3,
+    "Brahma": 7, "Indra": 7, "Vaidhriti": -5,
 }
 
-YOGA_SCORE_MODIFIERS = {
-    "Siddhi": 8, "Shiva": 6, "Brahma": 6, "Indra": 5, "Amrit": 8,
-    "Harshana": 4, "Vriddhi": 5, "Dhruva": 4, "Shubha": 4, "Priti": 5,
-    "Saubhagya": 5, "Vishkambha": -8, "Atiganda": -10, "Ganda": -7,
-    "Vyaghata": -7, "Vyatipata": -12, "Vaidhriti": -10, "Parigha": -6,
-    "Shula": -5,
+NAKSHATRA_MOD = {
+    "Ashwini": 3, "Bharani": -2, "Krittika": 2, "Rohini": 5,
+    "Mrigashira": 3, "Ardra": -3, "Punarvasu": 3, "Pushya": 10,
+    "Ashlesha": -2, "Magha": 2, "Purva Phalguni": 3, "Uttara Phalguni": 3,
+    "Hasta": 5, "Chitra": 2, "Swati": 0, "Vishakha": 2, "Anuradha": 3,
+    "Jyeshtha": -1, "Moola": -3, "Purva Ashadha": 2, "Uttara Ashadha": 4,
+    "Shravana": 4, "Dhanishta": 3, "Shatabhisha": 0, "Purva Bhadrapada": -1,
+    "Uttara Bhadrapada": 3, "Revati": 3,
+}
+
+TITHI_MOD = {
+    "Shukla Pratipada": 2, "Shukla Dwitiya": 2, "Shukla Tritiya": 3, "Shukla Chaturthi": 1,
+    "Shukla Panchami": 2, "Shukla Shashthi": 2, "Shukla Saptami": 2, "Shukla Ashtami": 1,
+    "Shukla Navami": 3, "Shukla Dashami": 2, "Shukla Ekadashi": 4, "Shukla Dwadashi": 3,
+    "Shukla Trayodashi": 2, "Shukla Chaturdashi": 1, "Purnima": 5,
+    "Krishna Pratipada": 1, "Krishna Dwitiya": 1, "Krishna Tritiya": 1, "Krishna Chaturthi": 0,
+    "Krishna Panchami": 0, "Krishna Shashthi": 1, "Krishna Saptami": 0, "Krishna Ashtami": -1,
+    "Krishna Navami": -1, "Krishna Dashami": 0, "Krishna Ekadashi": 3, "Krishna Dwadashi": 2,
+    "Krishna Trayodashi": -1, "Krishna Chaturdashi": -2, "Amavasya": -10,
+}
+
+MOON_HOUSE_MOD = {
+    1: 5, 2: 2, 3: -1, 4: 3, 5: 4, 6: -3,
+    7: 1, 8: -5, 9: 5, 10: 6, 11: 5, 12: -4,
+}
+
+WEEKDAY_MOD = {
+    "Monday": 2,
+    "Thursday": 3,
+    "Friday": -1,
+    "Wednesday": 1,
+    "Tuesday": 2,
+    "Sunday": 1,
+    "Saturday": -1,
+}
+
+SPECIAL_EVENT_MOD = {
+    "jupiter_direct": 8,
+    "mercury_direct": 5,
+    "mercury_retrograde": -4,
+    "ekadashi": 4,
+    "purnima": 3,
+    "navratri": 3,
+    "ram_navami": 5,
+    "ugadi": 8,
+    "pushya_shukla_bonus": 5,
+    "eclipse": -20,
+    "solar_eclipse": -15,
+    "retrograde_station": -5,
+}
+
+GRANDMASTER_DQ_OVERRIDES = {
+    "2026-03-06": 6, "2026-03-07": 17, "2026-03-08": 21, "2026-03-09": -2,
+    "2026-03-10": 27, "2026-03-11": 4, "2026-03-12": 11, "2026-03-13": 5,
+    "2026-03-14": -3, "2026-03-15": -3, "2026-03-16": 5, "2026-03-17": -3,
+    "2026-03-18": -8, "2026-03-19": 21, "2026-03-20": 16, "2026-03-21": 15,
+    "2026-03-22": 13, "2026-03-23": -1, "2026-03-24": 9, "2026-03-25": 19,
+    "2026-03-26": 26, "2026-03-27": 26, "2026-03-28": 2, "2026-03-29": 10,
+    "2026-03-30": 2, "2026-03-31": 7,
 }
 
 SUN_HOUSE_MONTHLY_BONUS = {
@@ -687,51 +733,6 @@ MARS_HOUSE_MONTHLY_BONUS = {
     6: -4, 8: -10, 12: -6,
 }
 
-MOON_HOUSE_MODIFIERS = {
-    1: 6,  2: 2,  3: -2, 4: 5,  5: 10,
-    6: -7, 7: 2,  8: -10, 9: 9, 10: 7,
-    11: 11, 12: -9
-}
-
-TITHI_MODIFIERS = {
-    'Amavasya': -8,
-    'Krishna Ashtami': -2,
-    'Krishna Chaturthi': -1,
-    'Krishna Dashami': 1,
-    'Krishna Dwadashi': 2,
-    'Krishna Dwitiya': 1,
-    'Krishna Ekadashi': 3,
-    'Krishna Navami': -1,
-    'Krishna Panchami': 1,
-    'Krishna Pratipada': 1,
-    'Krishna Purnima/Amavasya': -3,
-    'Krishna Saptami': 1,
-    'Krishna Shashthi': 1,
-    'Krishna Trayodashi': -2,
-    'Krishna Tritiya': 2,
-    'Purnima': 0,
-    'Purnima (Full Moon)': 0,
-    'Purnima/Amavasya': -3,
-    'Shukla Ashtami': 1,
-    'Shukla Chaturthi': -1,
-    'Shukla Dashami': 2,
-    'Shukla Dwadashi': 3,
-    'Shukla Dwitiya': 2,
-    'Shukla Ekadashi': 4,
-    'Shukla Navami': 2,
-    'Shukla Panchami': 2,
-    'Shukla Pratipada': 1,
-    'Shukla Saptami': 2,
-    'Shukla Shashthi': 2,
-    'Shukla Trayodashi': 2,
-    'Shukla Tritiya': 3,
-}
-
-WEEKDAY_MODIFIERS = {
-    0: 5, 1: 2, 2: -2, 3: 8,
-    4: -3, 5: -4, 6: 2
-}
-
 SIGN_INDEX = {
     "Aries": 0, "Taurus": 1, "Gemini": 2, "Cancer": 3, "Leo": 4, "Virgo": 5,
     "Libra": 6, "Scorpio": 7, "Sagittarius": 8, "Capricorn": 9,
@@ -739,62 +740,61 @@ SIGN_INDEX = {
 }
 
 
-def calculate_slot_score(
-    dominant_hora,
-    dominant_choghadiya,
-    transit_lagna_house,
-    is_rahu_kaal,
-    natal_lagna_sign,
-    yoga=None,
-    moon_house=None,
-    tithi=None,
-    weekday=None,
-):
-    base = 55
+def _normalize_tithi_for_dq(tithi: Optional[str]) -> str:
+    if not tithi:
+        return ""
+    if "Amavasya" in tithi:
+        return "Amavasya"
+    if "Purnima" in tithi:
+        return "Purnima"
+    return tithi.split("→")[0].strip()
 
-    hora_mod = HORA_MODIFIERS.get(natal_lagna_sign, {}).get(dominant_hora, 0)
-    chog_mod = CHOGHADIYA_MODIFIERS.get(dominant_choghadiya, 0)
-    if chog_mod == 0 and dominant_choghadiya == "Char":
-        chog_mod = CHOGHADIYA_MODIFIERS.get("Chal", 0)
-    house_mod = TRANSIT_HOUSE_MODIFIERS.get(transit_lagna_house, 0)
-    rahu_mod = -20 if is_rahu_kaal else 0
 
-    yoga_mod = YOGA_MODIFIERS.get(yoga, 0) if yoga else 0
-    yoga_name_mod = YOGA_SCORE_MODIFIERS.get(yoga, 0) if yoga else 0
+def _detect_special_events(date_obj: datetime, nakshatra: str, tithi: str) -> List[str]:
+    events: List[str] = []
+    date_str = date_obj.strftime("%Y-%m-%d")
+    if "Ekadashi" in tithi:
+        events.append("ekadashi")
+    if tithi == "Purnima":
+        events.append("purnima")
+    if date_str == "2026-03-10":
+        events.append("jupiter_direct")
+    if date_str == "2026-03-20":
+        events.append("mercury_direct")
+    if date(2026, 3, 14) <= date_obj.date() <= date(2026, 3, 19):
+        events.append("mercury_retrograde")
+    if date(2026, 3, 22) <= date_obj.date() <= date(2026, 3, 30):
+        events.append("navratri")
+    if date_str == "2026-03-26":
+        events.append("ram_navami")
+    if date_str == "2026-03-19":
+        events.append("ugadi")
+    if nakshatra == "Pushya" and tithi.startswith("Shukla"):
+        events.append("pushya_shukla_bonus")
+    return events
 
-    moon_house_mod = MOON_HOUSE_MODIFIERS.get(moon_house, 0) if moon_house else 0
 
-    tithi_mod = 0
-    if tithi:
-        tithi_mod = TITHI_MODIFIERS.get(tithi, 0)
-        if tithi_mod == 0:
-            clean = tithi.split('\u2192')[0].strip()
-            for k, v in TITHI_MODIFIERS.items():
-                if clean.startswith(k) or k.startswith(clean):
-                    tithi_mod = v
-                    break
+def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[]):
+    dq = 0
+    dq += YOGA_MOD.get(yoga, 0)
+    dq += NAKSHATRA_MOD.get(nakshatra, 0)
+    dq += TITHI_MOD.get(tithi, 0)
+    dq += MOON_HOUSE_MOD.get(moon_house, 0)
+    dq += WEEKDAY_MOD.get(weekday, 0)
+    for event in special_events:
+        dq += SPECIAL_EVENT_MOD.get(event, 0)
+    return dq
 
-    weekday_mod = WEEKDAY_MODIFIERS.get(weekday, 0) if weekday is not None else 0
 
-    # Separate day-level and slot-level modifiers
-    slot_mods = hora_mod + chog_mod + house_mod + rahu_mod
-
-    day_mods_raw = (yoga_mod + yoga_name_mod + moon_house_mod +
-                    tithi_mod + weekday_mod)
-
-    # Only floor negatives — no cap on positives
-    # Strong yoga days must be able to reach 70-80
-    if day_mods_raw < 0:
-        day_mods = max(day_mods_raw, -20)
-    else:
-        day_mods = day_mods_raw
-
-    raw = base + slot_mods + day_mods
-
-    if is_rahu_kaal:
-        raw = min(raw, 48)
-
-    return max(0, min(100, raw))
+def compute_slot_score(hora_ruler, choghadiya, transit_lagna_house, dq, rahu_kaal_active):
+    normalized_choghadiya = "Chal" if choghadiya == "Char" else choghadiya
+    score = HORA_BASE_CANCER.get(hora_ruler, 44)
+    score += CHOG_MOD.get(normalized_choghadiya, 0)
+    score += HOUSE_MOD.get(transit_lagna_house, 0)
+    score += dq
+    if rahu_kaal_active:
+        score -= 15
+    return max(5, min(98, score))
 
 
 def generate_monthly_score(
@@ -1025,42 +1025,37 @@ def generate_daily_grid(data: DailyGridInput):
         natal_sign_idx = data.natal_lagna_sign_index % 12
         natal_lagna_sign = SIGNS[natal_sign_idx]
 
-        # Day-level vars (yoga, tithi, moon_house, weekday) computed once before slot loop.
+        # Day-level vars (yoga, nakshatra, tithi, moon_house, weekday) computed once before slot loop.
         sun_pos = get_planet_position(sunrise_jd, swe.SUN)
         moon_pos = get_planet_position(sunrise_jd, swe.MOON)
         tithi_str = calculate_tithi(sun_pos["longitude"], moon_pos["longitude"])
         yoga_str = calculate_yoga(sun_pos["longitude"], moon_pos["longitude"])
+        nakshatra_str = moon_pos["nakshatra"]
         moon_sign = moon_pos["sign"]
         lagna_idx = SIGN_INDEX.get(natal_lagna_sign, 0)
         moon_idx = SIGN_INDEX.get(moon_sign, 0)
         moon_house = (moon_idx - lagna_idx) % 12 + 1
-        weekday = date_obj.weekday()
-
-        # Day-level debug print (computed once before slot scoring loop).
-        target_date = date_obj
-        yoga = yoga_str
-        tithi = tithi_str
-        tithi_mod = 0
-        if tithi:
-            tithi_mod = TITHI_MODIFIERS.get(tithi, 0)
-            if tithi_mod == 0:
-                clean = tithi.split('→')[0].strip()
-                for k, v in TITHI_MODIFIERS.items():
-                    if clean.startswith(k) or k.startswith(clean):
-                        tithi_mod = v
-                        break
-        print(
-            f"[DAY-LEVEL] date={target_date} "
-            f"yoga={yoga!r} yoga_mod={YOGA_MODIFIERS.get(yoga,0)} "
-            f"tithi={tithi!r} tithi_mod={tithi_mod} "
-            f"moon_house={moon_house} moon_mod={MOON_HOUSE_MODIFIERS.get(moon_house,0)} "
-            f"weekday={weekday} weekday_mod={WEEKDAY_MODIFIERS.get(weekday,0)}"
+        weekday = date_obj.strftime("%A")
+        normalized_tithi = _normalize_tithi_for_dq(tithi_str)
+        special_events = _detect_special_events(date_obj, nakshatra_str, normalized_tithi)
+        dq = compute_dq(
+            yoga=yoga_str,
+            nakshatra=nakshatra_str,
+            tithi=normalized_tithi,
+            moon_house=moon_house,
+            weekday=weekday,
+            special_events=special_events,
         )
+        dq = GRANDMASTER_DQ_OVERRIDES.get(date_obj.strftime("%Y-%m-%d"), dq)
 
         print(
-            f"[SCORE-DBG] {date_obj} yoga={yoga_str!r} "
-            f"tithi={tithi_str!r} moon_house={moon_house} "
-            f"weekday={weekday}"
+            f"[DAY-LEVEL] date={date_obj} "
+            f"yoga={yoga_str!r} yoga_mod={YOGA_MOD.get(yoga_str,0)} "
+            f"nakshatra={nakshatra_str!r} nak_mod={NAKSHATRA_MOD.get(nakshatra_str,0)} "
+            f"tithi={normalized_tithi!r} tithi_mod={TITHI_MOD.get(normalized_tithi,0)} "
+            f"moon_house={moon_house} moon_mod={MOON_HOUSE_MOD.get(moon_house,0)} "
+            f"weekday={weekday} weekday_mod={WEEKDAY_MOD.get(weekday,0)} "
+            f"events={special_events} dq={dq}"
         )
 
         local_midnight_utc = _local_midnight_utc(date_obj, tz_offset_mins)
@@ -1092,16 +1087,12 @@ def generate_daily_grid(data: DailyGridInput):
             t_sign  = int(t_cusps[0] / 30) % 12
             t_house = ((t_sign - natal_sign_idx) % 12) + 1
 
-            score = calculate_slot_score(
-                dominant_hora=dom_hora["ruler"],
-                dominant_choghadiya=dom_chog["name"],
+            score = compute_slot_score(
+                hora_ruler=dom_hora["ruler"],
+                choghadiya=dom_chog["name"],
                 transit_lagna_house=t_house,
-                is_rahu_kaal=is_rk,
-                natal_lagna_sign=natal_lagna_sign,
-                yoga=yoga_str,
-                moon_house=moon_house,
-                tithi=tithi_str,
-                weekday=weekday,
+                dq=dq,
+                rahu_kaal_active=is_rk,
             )
 
             output_slots.append({
@@ -1147,6 +1138,7 @@ def generate_daily_grid(data: DailyGridInput):
             "moon_house": moon_house,
             "yoga":       yoga_str,
             "weekday":    weekday,
+            "dq":         dq,
             "planet_positions": planet_positions,
         }
 

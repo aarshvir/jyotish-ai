@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 interface NativitySummary {
   lagna_analysis?: string;
   current_dasha_interpretation?: string;
-  key_yogas?: Array<string | Record<string, unknown>>;
+  key_yogas?: Array<string | { name?: string; yoga_name?: string; description?: string; strength?: string }>;
   functional_benefics?: string[];
   functional_malefics?: string[];
 }
@@ -55,16 +55,6 @@ function safeText(text: string | undefined, fallback: string): string {
   const t = (text ?? '').trim();
   if (!t || /temporarily unavailable/i.test(t)) return fallback;
   return t;
-}
-
-function renderYogaValue(yoga: string | Record<string, unknown>): string {
-  if (typeof yoga === 'string') return yoga;
-  return String(
-    yoga.name ??
-    yoga.yoga_name ??
-    yoga.description ??
-    JSON.stringify(yoga)
-  );
 }
 
 export function NativityCard({
@@ -193,10 +183,10 @@ export function NativityCard({
                   <span
                     key={i}
                     className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber/10 border border-amber/20"
-                    title={renderYogaValue(yoga)}
+                    title={typeof yoga === 'object' ? (yoga.description ?? '') : yoga}
                   >
                     <span className="font-mono text-xs text-amber">
-                      {renderYogaValue(yoga).split('(')[0].trim()}
+                      {(typeof yoga === 'object' ? (yoga.name || yoga.yoga_name || '') : yoga).split('(')[0].trim()}
                     </span>
                   </span>
                 ))}

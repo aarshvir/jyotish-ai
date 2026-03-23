@@ -70,8 +70,8 @@ MEANING: ${meaning}
 STRICT RULE: The yoga meaning above is fixed and verified. Do not reinterpret it. Use this exact meaning when discussing the yoga.
 IMPORTANT: The yoga name is ${display} only.
 Do NOT combine it with nakshatra names.
-Anuradha is a nakshatra, not part of the yoga name.
-The yoga stands alone as: ${display}.`;
+Anuradha, Rohini, Hasta etc are nakshatras, not yoga names.
+Use the yoga name "${display}" as a standalone term only.`;
 }
 
 export type BestSlotLike = {
@@ -116,8 +116,7 @@ export function formatRahuKaalDayBlock(rahuKaal: { start?: string; end?: string 
   return [
     `RAHU KAAL TODAY: ACTIVE`,
     `Time window: ${rahuKaal.start}–${rahuKaal.end}`,
-    `STRICT RULE: Warn against important decisions`,
-    `during ${rahuKaal.start}–${rahuKaal.end} Rahu Kaal.`,
+    `STRICT RULE: Warn against important decisions during ${rahuKaal.start}–${rahuKaal.end} Rahu Kaal.`,
     `Do NOT invent a different Rahu Kaal time.`,
     `Use ONLY ${rahuKaal.start}–${rahuKaal.end}.`,
     ``,
@@ -128,15 +127,39 @@ export function isRahuKaalWindowDefined(rahu_kaal?: { start?: string; end?: stri
   return Boolean(String(rahu_kaal?.start ?? '').trim() && String(rahu_kaal?.end ?? '').trim());
 }
 
+/** Explicit Moon nakshatra vs panchang yoga — placed between planet table and yoga meaning block. */
+export function formatMoonNakshatraVsYogaBlock(
+  moonNakshatra: string | undefined | null,
+  yogaName: string | undefined | null,
+): string {
+  const nk = String(moonNakshatra ?? '').trim();
+  if (!nk) return '';
+  const yogaDisplay =
+    normalizeYogaLookupKey(yogaName ?? '') || String(yogaName ?? '').trim() || 'Unknown';
+  return [
+    `MOON NAKSHATRA TODAY: ${nk}`,
+    `NOTE: ${nk} is the nakshatra (lunar mansion) Moon occupies.`,
+    `It is NOT a yoga. It is NOT part of the yoga name.`,
+    `TODAY'S YOGA IS: ${yogaDisplay} (separate system, separate name)`,
+    `STRICT RULE: Never write "${nk} Yoga" or "${nk} ${yogaDisplay}".`,
+    `The yoga name stands alone as: ${yogaDisplay}`,
+    ``,
+  ].join('\n');
+}
+
 /** One forecast day: positions + yoga + best slot + Rahu Kaal (for daily batch sections, hourly, anchor month, etc.). */
 export function formatDayCommentaryAnchorBlocks(opts: {
   planet_positions?: PlanetPositionsPayload;
   dateLabel: string;
   yogaName?: string;
+  /** Panchang nakshatra (Moon's lunar mansion) — must not be conflated with panchang yoga name. */
+  panchang?: { yoga?: string; nakshatra?: string };
   slots?: Array<{ display_label?: string; score?: number; dominant_choghadiya?: string }>;
   rahu_kaal?: { start?: string; end?: string };
 }): string {
   const pos = formatActualPlanetaryPositionsBlock(opts.planet_positions, { dateLabel: opts.dateLabel });
+  const moonNak = opts.panchang?.nakshatra ?? '';
+  const moonNakBlock = formatMoonNakshatraVsYogaBlock(moonNak, opts.yogaName ?? opts.panchang?.yoga);
   const yogaB = formatYogaInterpretationBlock(opts.yogaName ?? '');
   const yogaDisplay =
     normalizeYogaLookupKey(opts.yogaName ?? '') || String(opts.yogaName ?? '').trim() || 'Unknown';
@@ -146,13 +169,14 @@ Use the yoga name "${yogaDisplay}" alone.`;
   const best = pickBestScoringSlot(opts.slots);
   const bestB = formatBestActionWindowBlock(best);
   const rahuB = formatRahuKaalDayBlock(opts.rahu_kaal ?? null);
-  return [pos, yogaB, nakshatraYogaRule, bestB, rahuB].join('\n\n');
+  const mid = [moonNakBlock, yogaB].filter(Boolean).join('\n\n');
+  return [pos, mid, nakshatraYogaRule, bestB, rahuB].filter(Boolean).join('\n\n');
 }
 
 export type DayAnchorInput = {
   date?: string;
   planet_positions?: PlanetPositionsPayload;
-  panchang?: { yoga?: string };
+  panchang?: { yoga?: string; nakshatra?: string };
   slots?: Array<{ display_label?: string; score?: number; dominant_choghadiya?: string }>;
   rahu_kaal?: { start?: string; end?: string };
 };
@@ -165,6 +189,7 @@ export function formatMultipleDaysCommentaryAnchors(days: DayAnchorInput[]): str
         planet_positions: d.planet_positions,
         dateLabel: d.date!,
         yogaName: d.panchang?.yoga,
+        panchang: d.panchang,
         slots: d.slots,
         rahu_kaal: d.rahu_kaal,
       })
