@@ -713,14 +713,15 @@ SPECIAL_EVENT_MOD = {
     "retrograde_station": -5,
 }
 
-GRANDMASTER_DQ_OVERRIDES = {
-    "2026-03-06": 6, "2026-03-07": 17, "2026-03-08": 21, "2026-03-09": -2,
-    "2026-03-10": 27, "2026-03-11": 4, "2026-03-12": 11, "2026-03-13": 5,
-    "2026-03-14": -3, "2026-03-15": -3, "2026-03-16": 5, "2026-03-17": -3,
-    "2026-03-18": -8, "2026-03-19": 21, "2026-03-20": 16, "2026-03-21": 15,
-    "2026-03-22": 13, "2026-03-23": -1, "2026-03-24": 9, "2026-03-25": 19,
-    "2026-03-26": 26, "2026-03-27": 26, "2026-03-28": 2, "2026-03-29": 10,
-    "2026-03-30": 2, "2026-03-31": 7,
+SPECIAL_EVENTS_CALENDAR = {
+    "mercury_retrograde_start": "2026-02-25",
+    "mercury_retrograde_end": "2026-03-20",
+    "jupiter_direct": ["2026-03-10", "2026-03-11"],
+    "mercury_direct": ["2026-03-20"],
+    "ugadi": ["2026-03-19"],
+    "ram_navami": ["2026-03-26"],
+    "navratri_start": "2026-03-19",
+    "navratri_end": "2026-03-28",
 }
 
 SUN_HOUSE_MONTHLY_BONUS = {
@@ -740,50 +741,77 @@ SIGN_INDEX = {
 }
 
 
-def _normalize_tithi_for_dq(tithi: Optional[str]) -> str:
-    if not tithi:
+def normalize_tithi(tithi_raw: str) -> str:
+    tithi_raw = (tithi_raw or "").strip()
+    if not tithi_raw:
         return ""
-    if "Amavasya" in tithi:
+    if tithi_raw in TITHI_MOD:
+        return tithi_raw
+
+    if "Amavasya" in tithi_raw:
         return "Amavasya"
-    if "Purnima" in tithi:
+    if "Purnima" in tithi_raw:
         return "Purnima"
-    return tithi.split("→")[0].strip()
+
+    base = tithi_raw.split("→")[0].strip().replace("-", " ")
+    if base in TITHI_MOD:
+        return base
+
+    if "Shukla" not in base and "Krishna" not in base:
+        if "Chaturdashi" in base:
+            return "Krishna Chaturdashi"
+        if "Ekadashi" in base:
+            return "Krishna Ekadashi"
+
+    return base
 
 
-def _detect_special_events(date_obj: datetime, nakshatra: str, tithi: str) -> List[str]:
+def get_special_events_for_date(date_str: str) -> List[str]:
     events: List[str] = []
-    date_str = date_obj.strftime("%Y-%m-%d")
-    if "Ekadashi" in tithi:
-        events.append("ekadashi")
-    if tithi == "Purnima":
-        events.append("purnima")
-    if date_str == "2026-03-10":
-        events.append("jupiter_direct")
-    if date_str == "2026-03-20":
-        events.append("mercury_direct")
-    if date(2026, 3, 14) <= date_obj.date() <= date(2026, 3, 19):
+    d = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+    rx_start = datetime.strptime(SPECIAL_EVENTS_CALENDAR["mercury_retrograde_start"], "%Y-%m-%d").date()
+    rx_end = datetime.strptime(SPECIAL_EVENTS_CALENDAR["mercury_retrograde_end"], "%Y-%m-%d").date()
+    if rx_start <= d <= rx_end:
         events.append("mercury_retrograde")
-    if date(2026, 3, 22) <= date_obj.date() <= date(2026, 3, 30):
-        events.append("navratri")
-    if date_str == "2026-03-26":
-        events.append("ram_navami")
-    if date_str == "2026-03-19":
+
+    if date_str in SPECIAL_EVENTS_CALENDAR["jupiter_direct"]:
+        events.append("jupiter_direct")
+    if date_str in SPECIAL_EVENTS_CALENDAR["mercury_direct"]:
+        events.append("mercury_direct")
+    if date_str in SPECIAL_EVENTS_CALENDAR["ugadi"]:
         events.append("ugadi")
-    if nakshatra == "Pushya" and tithi.startswith("Shukla"):
-        events.append("pushya_shukla_bonus")
+    if date_str in SPECIAL_EVENTS_CALENDAR["ram_navami"]:
+        events.append("ram_navami")
+
+    nav_start = datetime.strptime(SPECIAL_EVENTS_CALENDAR["navratri_start"], "%Y-%m-%d").date()
+    nav_end = datetime.strptime(SPECIAL_EVENTS_CALENDAR["navratri_end"], "%Y-%m-%d").date()
+    if nav_start <= d <= nav_end:
+        events.append("navratri")
+
     return events
 
 
 def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[]):
-    dq = 0
-    dq += YOGA_MOD.get(yoga, 0)
-    dq += NAKSHATRA_MOD.get(nakshatra, 0)
-    dq += TITHI_MOD.get(tithi, 0)
-    dq += MOON_HOUSE_MOD.get(moon_house, 0)
-    dq += WEEKDAY_MOD.get(weekday, 0)
+    yoga_val = YOGA_MOD.get(yoga, 0)
+    nak_val = NAKSHATRA_MOD.get(nakshatra, 0)
+    tithi_val = TITHI_MOD.get(tithi, 0)
+    moon_val = MOON_HOUSE_MOD.get(moon_house, 0)
+    day_val = WEEKDAY_MOD.get(weekday, 0)
+
+    dq = yoga_val + nak_val + tithi_val + moon_val + day_val
+
     for event in special_events:
         dq += SPECIAL_EVENT_MOD.get(event, 0)
-    return dq
+
+    major_positive_events = {"jupiter_direct", "ugadi", "ram_navami", "mercury_direct"}
+    has_major_event = bool(set(special_events) & major_positive_events)
+    positive_yoga = yoga_val >= 4
+    positive_moon = moon_val >= 4
+    if has_major_event and positive_yoga and positive_moon:
+        dq += 10
+
+    return max(-20, min(35, dq))
 
 
 def compute_slot_score(hora_ruler, choghadiya, transit_lagna_house, dq, rahu_kaal_active):
@@ -1036,8 +1064,15 @@ def generate_daily_grid(data: DailyGridInput):
         moon_idx = SIGN_INDEX.get(moon_sign, 0)
         moon_house = (moon_idx - lagna_idx) % 12 + 1
         weekday = date_obj.strftime("%A")
-        normalized_tithi = _normalize_tithi_for_dq(tithi_str)
-        special_events = _detect_special_events(date_obj, nakshatra_str, normalized_tithi)
+        date_str = date_obj.strftime("%Y-%m-%d")
+        normalized_tithi = normalize_tithi(tithi_str)
+        special_events = get_special_events_for_date(date_str)
+        if "Ekadashi" in normalized_tithi:
+            special_events.append("ekadashi")
+        if normalized_tithi == "Purnima":
+            special_events.append("purnima")
+        if nakshatra_str == "Pushya" and normalized_tithi.startswith("Shukla"):
+            special_events.append("pushya_shukla_bonus")
         dq = compute_dq(
             yoga=yoga_str,
             nakshatra=nakshatra_str,
@@ -1046,7 +1081,6 @@ def generate_daily_grid(data: DailyGridInput):
             weekday=weekday,
             special_events=special_events,
         )
-        dq = GRANDMASTER_DQ_OVERRIDES.get(date_obj.strftime("%Y-%m-%d"), dq)
 
         print(
             f"[DAY-LEVEL] date={date_obj} "
