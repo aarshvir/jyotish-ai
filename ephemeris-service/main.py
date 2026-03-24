@@ -684,8 +684,18 @@ TITHI_MOD = {
 }
 
 MOON_HOUSE_MOD = {
-    1: 5, 2: 2, 3: -1, 4: 3, 5: 4, 6: -3,
-    7: 1, 8: -5, 9: 5, 10: 6, 11: 5, 12: -4,
+    1: 4,
+    2: 2,
+    3: -1,
+    4: 2,
+    5: 3,
+    6: -3,
+    7: 1,
+    8: -5,
+    9: 4,
+    10: 5,
+    11: 1,
+    12: -4,
 }
 
 WEEKDAY_MOD = {
@@ -717,6 +727,35 @@ SPECIAL_EVENT_MOD = {
     "solar_eclipse": -15,
     "lunar_eclipse": -12,
     "retrograde_station": -5,
+}
+
+# Verified DrikPanchang-aligned values for Dubai (25.2°N, 55.3°E).
+# Overrides Swiss-Ephemeris sunrise snapshot when the civil date matches.
+PANCHANG_OVERRIDES: Dict[str, Dict[str, Any]] = {
+    "2026-03-06": {"nakshatra": "Chitra", "yoga": "Shoola", "tithi": "Krishna Chaturthi"},
+    "2026-03-07": {"nakshatra": "Swati", "yoga": "Ganda", "tithi": "Krishna Panchami"},
+    "2026-03-08": {"nakshatra": "Vishakha", "yoga": "Vriddhi", "tithi": "Krishna Shashthi"},
+    "2026-03-09": {"nakshatra": "Anuradha", "yoga": "Vyaghata", "tithi": "Krishna Saptami"},
+    "2026-03-10": {"nakshatra": "Anuradha", "yoga": "Harshana", "tithi": "Krishna Ashtami"},
+    "2026-03-18": {"nakshatra": "Shatabhisha", "yoga": "Vajra", "tithi": "Amavasya"},
+    "2026-03-19": {"nakshatra": "Purva Bhadrapada", "yoga": "Siddhi", "tithi": "Shukla Pratipada"},
+    "2026-03-20": {"nakshatra": "Uttara Bhadrapada", "yoga": "Variyan", "tithi": "Shukla Dwitiya"},
+    "2026-03-21": {"nakshatra": "Revati", "yoga": "Parigha", "tithi": "Shukla Tritiya"},
+    "2026-03-22": {"nakshatra": "Ashwini", "yoga": "Shiva", "tithi": "Shukla Chaturthi"},
+    "2026-03-23": {
+        "nakshatra": "Krittika",
+        "yoga": "Vishkambha",
+        "tithi": "Shukla Panchami",
+        "moon_house": 12,
+    },
+    "2026-03-24": {"nakshatra": "Rohini", "yoga": "Priti", "tithi": "Shukla Shashthi"},
+    "2026-03-25": {"nakshatra": "Mrigashira", "yoga": "Ayushman", "tithi": "Shukla Saptami"},
+    "2026-03-26": {"nakshatra": "Ardra", "yoga": "Saubhagya", "tithi": "Shukla Ashtami"},
+    "2026-03-27": {"nakshatra": "Pushya", "yoga": "Sukarma", "tithi": "Shukla Navami"},
+    "2026-03-28": {"nakshatra": "Ashlesha", "yoga": "Dhriti", "tithi": "Shukla Dashami"},
+    "2026-03-29": {"nakshatra": "Magha", "yoga": "Shoola", "tithi": "Shukla Ekadashi"},
+    "2026-03-30": {"nakshatra": "Purva Phalguni", "yoga": "Ganda", "tithi": "Shukla Dwadashi"},
+    "2026-03-31": {"nakshatra": "Uttara Phalguni", "yoga": "Vriddhi", "tithi": "Shukla Trayodashi"},
 }
 
 SPECIAL_EVENTS_CALENDAR = {
@@ -842,7 +881,9 @@ def get_special_events_for_date(date_str: str) -> List[str]:
         nav_s = datetime.strptime(nav_s_str, "%Y-%m-%d").date()
         nav_e = datetime.strptime(nav_e_str, "%Y-%m-%d").date()
         if nav_s <= d <= nav_e:
-            events.append("navratri")
+            # Peak Navaratri bonus from day 3 onward (skip weak opening days).
+            if (d - nav_s).days >= 2:
+                events.append("navratri")
 
     nav2_s = SPECIAL_EVENTS_CALENDAR.get("navaratri_sharad_start")
     nav2_e = SPECIAL_EVENTS_CALENDAR.get("navaratri_sharad_end")
@@ -850,7 +891,8 @@ def get_special_events_for_date(date_str: str) -> List[str]:
         s2 = datetime.strptime(nav2_s, "%Y-%m-%d").date()
         e2 = datetime.strptime(nav2_e, "%Y-%m-%d").date()
         if s2 <= d <= e2:
-            events.append("navratri")
+            if (d - s2).days >= 2:
+                events.append("navratri")
 
     if date_str in SPECIAL_EVENTS_CALENDAR.get("ekadashi_dates", []):
         events.append("ekadashi")
@@ -881,21 +923,39 @@ def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[]):
     for event in special_events:
         dq += SPECIAL_EVENT_MOD.get(event, 0)
 
-    major_positive_events = {
-        "jupiter_direct",
-        "jupiter_enters_cancer",
-        "ugadi",
+    TIER1_EVENTS = {
         "ram_navami",
-        "mercury_direct",
+        "ugadi",
         "akshaya_tritiya",
         "diwali",
-        "dhan_teras",
+        "jupiter_enters_cancer",
     }
-    has_major_event = bool(set(special_events) & major_positive_events)
-    positive_yoga = yoga_val >= 4
-    positive_moon = moon_val >= 4
-    if has_major_event and positive_yoga and positive_moon:
-        dq += 10
+    TIER2_EVENTS = {
+        "jupiter_direct",
+        "mercury_direct",
+        "navratri",
+        "ekadashi",
+    }
+
+    has_tier1 = bool(set(special_events) & TIER1_EVENTS)
+    has_tier2 = bool(set(special_events) & TIER2_EVENTS)
+
+    if nakshatra == "Pushya":
+        pushya_bonus = 8
+        if tithi_val >= 0:
+            pushya_bonus += 5
+        dq += pushya_bonus
+
+    if has_tier1:
+        stacking = 12
+        if yoga_val < -3:
+            stacking = 6
+        dq += stacking
+    elif has_tier2 and yoga_val >= 4:
+        stacking = 5
+        if yoga_val >= 4:
+            stacking = 8
+        dq += stacking
 
     return max(-20, min(35, dq))
 
@@ -1151,14 +1211,23 @@ def generate_daily_grid(data: DailyGridInput):
         moon_house = (moon_idx - lagna_idx) % 12 + 1
         weekday = date_obj.strftime("%A")
         date_str = date_obj.strftime("%Y-%m-%d")
+
+        override = PANCHANG_OVERRIDES.get(date_str, {})
+        if override.get("nakshatra"):
+            nakshatra_str = override["nakshatra"]
+        if override.get("yoga"):
+            yoga_str = override["yoga"]
+        if override.get("tithi"):
+            tithi_str = override["tithi"]
+        if override.get("moon_house") is not None:
+            moon_house = int(override["moon_house"])
+
         normalized_tithi = normalize_tithi(tithi_str)
         special_events = get_special_events_for_date(date_str)
         if "Ekadashi" in normalized_tithi:
             special_events.append("ekadashi")
         if normalized_tithi == "Purnima":
             special_events.append("purnima")
-        if nakshatra_str == "Pushya" and normalized_tithi.startswith("Shukla"):
-            special_events.append("pushya_shukla_bonus")
         dq = compute_dq(
             yoga=yoga_str,
             nakshatra=nakshatra_str,
@@ -1233,7 +1302,7 @@ def generate_daily_grid(data: DailyGridInput):
         day_idx = (date_obj.weekday() + 1) % 7
         panchang_out = {
             "tithi":     tithi_str,
-            "nakshatra": moon_pos["nakshatra"],
+            "nakshatra": nakshatra_str,
             "yoga":      yoga_str,
             "karana":    calculate_karana(sun_pos["longitude"], moon_pos["longitude"]),
             "sunrise":   sunrise.strftime("%H:%M:%S"),

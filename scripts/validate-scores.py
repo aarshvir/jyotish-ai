@@ -13,14 +13,14 @@ PAYLOAD_BASE = {
     "natal_lagna_sign_index": 3,
 }
 
-# Grandmaster reference targets (Feb–Mar 2026). Wider tolerance accounts for
-# Swiss Ephemeris + location vs hand-tuned reference, and civil festival dates vs tithi.
 TARGETS = {
-    "2026-03-26": {"target": 78.1, "event": "Ram Navami", "tolerance": 30},
-    "2026-03-27": {"target": 72.3, "event": "Pushya peak", "tolerance": 30},
-    "2026-03-23": {"target": 48.0, "event": "Vishkambha", "tolerance": 30},
-    "2026-03-24": {"target": 58.3, "event": "Priti yoga", "tolerance": 30},
-    "2026-03-28": {"target": 51.8, "event": "Post-Pushya", "tolerance": 30},
+    "2026-03-26": {"target": 78.1, "event": "Ram Navami", "tolerance": 8},
+    "2026-03-27": {"target": 72.3, "event": "Pushya peak", "tolerance": 8},
+    "2026-03-23": {"target": 48.0, "event": "Vishkambha", "tolerance": 8},
+    "2026-03-24": {"target": 58.3, "event": "Priti yoga", "tolerance": 8},
+    "2026-03-28": {"target": 51.8, "event": "Post-Pushya", "tolerance": 8},
+    "2026-03-10": {"target": 75.2, "event": "Jupiter direct window", "tolerance": 8},
+    "2026-03-18": {"target": 38.5, "event": "Amavasya", "tolerance": 8},
 }
 
 
