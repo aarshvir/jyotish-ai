@@ -1,8 +1,11 @@
 'use client';
 
 import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams, useParams } from 'next/navigation';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { motion } from 'framer-motion';
+import './print.css';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { ReportSidebar } from '@/components/report/ReportSidebar';
@@ -34,8 +37,18 @@ const STEPS = [
   'Finalising report',
 ];
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isRouteUuid(id: string) {
+  return UUID_RE.test(id);
+}
+
 function ReportContent() {
+  const routeParams = useParams();
+  const reportIdFromRoute = typeof routeParams?.id === 'string' ? routeParams.id : '';
   const params = useSearchParams();
+  const queryKey = params.toString();
   const name = params.get('name') ?? 'Seeker';
   const date = params.get('date') ?? '';
   const time = params.get('time') ?? '';
@@ -58,10 +71,29 @@ function ReportContent() {
   const [copyLinkError, setCopyLinkError] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [pdfStatus, setPdfStatus] = useState('Download PDF');
   const [stepMessage, setStepMessage] = useState('');
   const [stepDetail, setStepDetail] = useState('');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const hasFetched = useRef(false);
+  const [birthDisplay, setBirthDisplay] = useState<{
+    name: string;
+    date: string;
+    time: string;
+    city: string;
+  } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const genStartRef = useRef(0);
+
+  const displayName = birthDisplay?.name ?? name;
+  const displayDate = birthDisplay?.date ?? date;
+  const displayTime = birthDisplay?.time ?? time;
+  const displayCity = birthDisplay?.city ?? city;
+
+  useEffect(() => {
+    const sb = createClient();
+    void sb.auth.getUser().then(({ data }) => setIsLoggedIn(!!data.user));
+  }, []);
 
   const copyShareLink = useCallback(async () => {
     if (typeof window === 'undefined') return;
@@ -101,16 +133,22 @@ function ReportContent() {
     try {
       window.scrollTo(0, 0);
       await new Promise((resolve) => setTimeout(resolve, 300));
-      await generateReportPDF(name, reportData?.generated_at ?? new Date().toISOString().slice(0, 10));
+      await generateReportPDF(
+        displayName,
+        reportData?.generated_at ?? new Date().toISOString().slice(0, 10),
+        (msg) => {
+          setPdfStatus(msg);
+        }
+      );
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'PDF generation failed';
-      console.error('PDF generation failed:', err);
+      const msg = err instanceof Error ? err.message : 'Print failed';
+      console.error('Print/PDF flow failed:', err);
       setPdfError(msg);
-      alert('PDF generation failed. Please try again.');
     } finally {
+      setPdfStatus('Download PDF');
       setPdfLoading(false);
     }
-  }, [name, reportData]);
+  }, [displayName, reportData]);
 
   const handleDaySelectFromCalendar = useCallback((index: number) => {
     setActiveDayIndex(index);
@@ -118,11 +156,168 @@ function ReportContent() {
   }, []);
 
   useEffect(() => {
-    if (hasFetched.current) return;
-    hasFetched.current = true;
-    console.log('Report page params:', { name, date, time, city, lat, lng, type });
-    generateReport();
-  }, []);
+    hasFetched.current = false;
+  }, [reportIdFromRoute, queryKey]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function init() {
+      if (hasFetched.current) return;
+
+      if (isRouteUuid(reportIdFromRoute)) {
+        const supabase = createClient();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (user) {
+          const { data: row } = await supabase
+            .from('reports')
+            .select('*')
+            .eq('id', reportIdFromRoute)
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          const rd = row?.report_data as Record<string, unknown> | null | undefined;
+          const days = rd?.days;
+          if (!cancelled && row && row.status === 'complete' && Array.isArray(days) && days.length > 0) {
+            hasFetched.current = true;
+            setBirthDisplay({
+              name: String(row.native_name ?? 'Seeker'),
+              date: String(row.birth_date ?? '').slice(0, 10),
+              time: String(row.birth_time ?? '').slice(0, 5),
+              city: String(row.birth_city ?? ''),
+            });
+            setReportData(rd);
+            setIsLoading(false);
+            return;
+          }
+        }
+
+        if (!params.get('date')) {
+          if (!cancelled) {
+            setError(
+              user
+                ? 'Report not found, still generating, or incomplete. Open a new report from Onboard.'
+                : 'Sign in to view saved reports, or use a share link that includes birth details in the URL.'
+            );
+            setIsLoading(false);
+          }
+          hasFetched.current = true;
+          return;
+        }
+      }
+
+      hasFetched.current = true;
+      console.log('Report page params:', { name, date, time, city, lat, lng, type });
+      await generateReport();
+    }
+
+    void init();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per route/query; generateReport is stable enough for this flow
+  }, [reportIdFromRoute, queryKey]);
+
+  async function createReportRecord() {
+    if (!isRouteUuid(reportIdFromRoute)) return;
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const planRaw = params.get('plan_type') || type;
+    const planType = planRaw === 'free' ? 'preview' : planRaw;
+    const birthTimeNorm =
+      time && time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time || '12:00:00';
+
+    const { error } = await supabase.from('reports').insert({
+      id: reportIdFromRoute,
+      user_id: user.id,
+      user_email: user.email ?? '',
+      native_name: params.get('name') || name || 'Unknown',
+      birth_date: params.get('date') || date || '2000-01-01',
+      birth_time: birthTimeNorm,
+      birth_city: params.get('city') || city || 'Unknown',
+      birth_lat: parseFloat(params.get('lat') || lat || '0') || null,
+      birth_lng: parseFloat(params.get('lng') || lng || '0') || null,
+      current_city: params.get('currentCity') || currentCity || null,
+      current_lat: parseFloat(params.get('currentLat') || currentLat || '0') || null,
+      current_lng: parseFloat(params.get('currentLng') || currentLng || '0') || null,
+      timezone_offset: currentTzOffset,
+      plan_type: planType,
+      status: 'generating',
+      payment_status: 'bypass',
+    });
+
+    if (error && error.code !== '23505') {
+      console.error('createReportRecord:', error.message);
+    }
+  }
+
+  async function saveReportToDatabase(reportPayload: Record<string, unknown>) {
+    try {
+      if (!isRouteUuid(reportIdFromRoute)) return;
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const dayScores: Record<string, number> = {};
+      const days = reportPayload.days as Array<{ date?: string; day_score?: number }> | undefined;
+      days?.forEach((d) => {
+        if (d.date && typeof d.day_score === 'number') dayScores[d.date] = d.day_score;
+      });
+
+      const natal = (reportPayload.nativity as { natal_chart?: Record<string, unknown> })?.natal_chart;
+      const nc = natal as Record<string, unknown> | undefined;
+      const cd = nc?.current_dasha as Record<string, string> | undefined;
+
+      const startD = days?.[0]?.date;
+      const endD = days?.length ? days[days.length - 1]?.date : undefined;
+
+      const { error } = await supabase
+        .from('reports')
+        .update({
+          native_name: params.get('name') || name,
+          user_id: user.id,
+          user_email: user.email ?? '',
+          birth_date: params.get('date') || date,
+          birth_time:
+            time && time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time || '12:00:00',
+          birth_city: params.get('city') || city,
+          birth_lat: parseFloat(params.get('lat') || lat || '0') || null,
+          birth_lng: parseFloat(params.get('lng') || lng || '0') || null,
+          current_city: params.get('currentCity') || currentCity || null,
+          current_lat: parseFloat(params.get('currentLat') || currentLat || '0') || null,
+          current_lng: parseFloat(params.get('currentLng') || currentLng || '0') || null,
+          timezone_offset: currentTzOffset,
+          plan_type: params.get('plan_type') || (type === 'free' ? 'preview' : type),
+          report_start_date: startD ?? null,
+          report_end_date: endD ?? null,
+          lagna_sign: (nc?.lagna as string) ?? null,
+          moon_sign: ((nc?.planets as Record<string, { sign?: string }> | undefined)?.Moon?.sign as string) ?? null,
+          moon_nakshatra: (nc?.moon_nakshatra as string) ?? null,
+          dasha_mahadasha: cd?.mahadasha ?? null,
+          dasha_antardasha: cd?.antardasha ?? null,
+          day_scores: dayScores,
+          report_data: reportPayload,
+          status: 'complete',
+          generation_completed_at: new Date().toISOString(),
+          generation_time_seconds: Math.round((Date.now() - genStartRef.current) / 1000),
+        })
+        .eq('id', reportIdFromRoute)
+        .eq('user_id', user.id);
+
+      if (error) console.error('saveReportToDatabase:', error.message);
+    } catch (e) {
+      console.error('saveReportToDatabase', e);
+    }
+  }
 
   async function resilientFetch(url: string, options: RequestInit, retries = 3, delayMs = 2000): Promise<Response> {
     for (let i = 0; i < retries; i++) {
@@ -159,6 +354,8 @@ function ReportContent() {
     try {
       setIsLoading(true);
       setError(null);
+      genStartRef.current = Date.now();
+      await createReportRecord();
       const birthLat = parseFloat(lat) || 0;
       const birthLng = parseFloat(lng) || 0;
       const dayCount = type === 'monthly' || type === 'annual' ? 30 : 7;
@@ -784,6 +981,7 @@ function ReportContent() {
       if (errors.length > 0) console.warn('[VALIDATION] Issues:', errors);
 
       setReportData(finalReport);
+      void saveReportToDatabase(finalReport as unknown as Record<string, unknown>);
       setIsLoading(false);
     } catch (err: any) {
       console.error('Report generation error:', err);
@@ -841,7 +1039,10 @@ function ReportContent() {
           </h1>
           <p className="font-body text-dust text-base mb-8">{error}</p>
           <button
-            onClick={() => { hasFetched.current = false; generateReport(); }}
+            onClick={() => {
+              hasFetched.current = false;
+              void generateReport();
+            }}
             className="px-8 py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
           >
             Try Again
@@ -924,8 +1125,26 @@ function ReportContent() {
           </div>
         )}
 
-        {/* Report actions: Copy Share Link + Download PDF */}
-        <div className="flex flex-wrap items-center justify-end gap-4 mb-6">
+        {/* Report actions: dashboard + Copy Share Link + Print/PDF */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+          <div className="pdf-exclude" data-print-hide>
+            {isLoggedIn ? (
+              <Link
+                href="/dashboard"
+                className="font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-1.5"
+              >
+                ← My Reports
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-1.5"
+              >
+                Sign In to Save →
+              </Link>
+            )}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-4">
           <button
             onClick={copyShareLink}
             className="pdf-exclude font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2"
@@ -941,15 +1160,16 @@ function ReportContent() {
               </>
             )}
           </button>
+          <div className="flex flex-col items-end pdf-exclude" data-print-hide>
           <button
             id="pdf-download-btn"
-            onClick={handleDownloadPDF}
+            onClick={() => void handleDownloadPDF()}
             disabled={pdfLoading}
-            className="pdf-exclude font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="pdf-exclude font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2 disabled:opacity-50"
           >
             {pdfLoading ? (
               <>
-                <span>Generating PDF...</span>
+                <span>{pdfStatus}</span>
                 <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
                   <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -957,13 +1177,18 @@ function ReportContent() {
               </>
             ) : (
               <>
-                <span>Download PDF</span>
+                <span>{pdfStatus}</span>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </>
             )}
           </button>
+          <p className="font-mono text-[10px] text-dust/40 mt-1 pdf-exclude">
+            Select &quot;Save as PDF&quot; in print dialog
+          </p>
+          </div>
+          </div>
         </div>
         {copyLinkError && (
           <div className="mb-4 px-4 py-3 border border-crimson/50 bg-crimson/10 rounded-sm flex items-center gap-3">
@@ -980,10 +1205,10 @@ function ReportContent() {
         <div id="report-content">
           <ReportErrorBoundary fallbackTitle="Nativity">
             <NativityCard
-              name={name}
-              birthDate={date}
-              birthTime={time}
-              birthCity={city}
+              name={displayName}
+              birthDate={displayDate}
+              birthTime={displayTime}
+              birthCity={displayCity}
               lagna={natalChart?.lagna || 'Unknown'}
               lagnaDegree={natalChart?.lagna_degree ?? 0}
               moonSign={natalChart?.planets?.Moon?.sign || 'Unknown'}

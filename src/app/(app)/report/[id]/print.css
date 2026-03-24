@@ -1,0 +1,72 @@
+@media print {
+  /* Hide everything except report content */
+  nav,
+  .pdf-exclude,
+  #pdf-download-btn,
+  .mobile-tabs,
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  /* Force dark background to print */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    background: #0a0a1a !important;
+    color: #e8e0d0 !important;
+  }
+
+  /* Page breaks between major sections */
+  #monthly {
+    page-break-before: always;
+  }
+  #weekly {
+    page-break-before: always;
+  }
+  #daily {
+    page-break-before: always;
+  }
+  #hourly {
+    page-break-before: always;
+  }
+  #synthesis {
+    page-break-before: always;
+  }
+
+  /* Prevent awkward breaks inside cards */
+  .bg-cosmos {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Ensure table rows don't break */
+  tr {
+    page-break-inside: avoid;
+  }
+
+  /* Remove fixed positioning */
+  .fixed {
+    position: static !important;
+  }
+
+  /* Full width for print */
+  .max-w-4xl,
+  .max-w-7xl {
+    max-width: 100% !important;
+  }
+
+  /* Hide scrollbars */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  /* Expand all collapsed hourly slots */
+  [data-collapsed='true'] {
+    display: block !important;
+    max-height: none !important;
+  }
+}

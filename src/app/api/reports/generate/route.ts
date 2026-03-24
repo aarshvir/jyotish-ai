@@ -144,25 +144,50 @@ export async function POST(request: NextRequest) {
       console.warn('Commentary fetch failed (non-fatal):', commentaryErr);
     }
 
+    const birthTimeNormalized =
+      birth_time?.includes(':') && String(birth_time).split(':').length === 2
+        ? `${birth_time}:00`
+        : birth_time || '12:00:00';
+
+    const reportDataPayload = {
+      nativity: nativityAnalysis,
+      forecast: forecastAnalysis,
+      commentary,
+    };
+
     const { data: report, error: reportError } = await supabase
       .from('reports')
       .insert({
         user_id: user.id,
-        birth_chart_id: birthChart.id,
-        report_type: report_type || 'Full Vedic Analysis',
-        status: 'completed',
-        output_json: {
-          nativity: nativityAnalysis,
-          forecast: forecastAnalysis,
-          commentary,
-        },
+        user_email: user.email,
+        native_name: name,
+        birth_date,
+        birth_time: birthTimeNormalized,
+        birth_city,
+        birth_lat: parseFloat(birth_lat) || null,
+        birth_lng: parseFloat(birth_lng) || null,
+        current_city: current_city || null,
+        plan_type: typeof report_type === 'string' ? report_type : '7day',
+        lagna_sign: natalChart?.lagna ?? null,
+        moon_sign: natalChart?.planets?.Moon?.sign ?? null,
+        moon_nakshatra: natalChart?.moon_nakshatra ?? null,
+        dasha_mahadasha: natalChart?.current_dasha?.mahadasha ?? null,
+        dasha_antardasha: natalChart?.current_dasha?.antardasha ?? null,
+        report_data: reportDataPayload,
+        status: 'complete',
+        generation_completed_at: new Date().toISOString(),
+        payment_status: 'free',
       })
       .select()
       .single();
 
     if (reportError) throw reportError;
 
-    await supabase.rpc('increment_reports_used', { user_id: user.id });
+    try {
+      await supabase.rpc('increment_reports_used', { user_id: user.id });
+    } catch {
+      // optional RPC
+    }
 
     return NextResponse.json({
       success: true,

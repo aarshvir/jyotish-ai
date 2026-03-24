@@ -23,21 +23,33 @@ async function logPromoUsage(
 
 async function createFreeReport(
   userId: string,
+  userEmail: string,
   planType: string,
   reportParams?: Record<string, unknown>
 ): Promise<string> {
   const supabase = createServiceClient();
+  const p = reportParams ?? {};
+  const name = String(p.name ?? 'Unknown');
+  const birthDate = String(p.birth_date ?? p.date ?? '2000-01-01');
+  const birthTime = String(p.birth_time ?? p.time ?? '12:00:00');
+  const birthCity = String(p.birth_city ?? p.city ?? 'Unknown');
   const { data, error } = await supabase
     .from('reports')
     .insert({
       user_id: userId,
-      report_type: planType || '7day',
-      status: 'paid',
-      output_json: {
-        ...(reportParams ?? {}),
-        payment_bypass: true,
-        plan_type: planType,
-      },
+      user_email: userEmail,
+      native_name: name,
+      birth_date: birthDate,
+      birth_time: birthTime.includes(':') && birthTime.split(':').length === 2 ? `${birthTime}:00` : birthTime,
+      birth_city: birthCity,
+      birth_lat: p.birth_lat != null ? Number(p.birth_lat) : null,
+      birth_lng: p.birth_lng != null ? Number(p.birth_lng) : null,
+      current_city: p.current_city != null ? String(p.current_city) : null,
+      plan_type: planType || '7day',
+      status: 'complete',
+      payment_status: 'bypass',
+      report_data: { ...p, payment_bypass: true, plan_type: planType },
+      generation_completed_at: new Date().toISOString(),
     })
     .select('id')
     .single();
@@ -76,7 +88,7 @@ export async function POST(request: NextRequest) {
     const plan = typeof planType === 'string' && planType ? planType : '7day';
 
     if (isBypassToken(bypass)) {
-      const reportId = await createFreeReport(user.id, plan, reportParams);
+      const reportId = await createFreeReport(user.id, user.email, plan, reportParams);
       return NextResponse.json({
         bypass: true,
         report_id: reportId,
@@ -87,7 +99,7 @@ export async function POST(request: NextRequest) {
     if (promo_code) {
       const discount = getPromoDiscount(promo_code);
       if (discount === 100) {
-        const reportId = await createFreeReport(user.id, plan, reportParams);
+        const reportId = await createFreeReport(user.id, user.email, plan, reportParams);
         await logPromoUsage(promo_code, user.email, reportId);
         return NextResponse.json({
           bypass: true,

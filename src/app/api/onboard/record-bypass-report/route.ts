@@ -30,13 +30,26 @@ export async function POST(request: NextRequest) {
         ? body.plan_type
         : '7day';
 
+    const birthTime =
+      typeof body?.birth_time === 'string' && body.birth_time
+        ? body.birth_time.includes(':') && body.birth_time.split(':').length === 2
+          ? `${body.birth_time}:00`
+          : body.birth_time
+        : '12:00:00';
+
     const { data, error } = await supabase
       .from('reports')
       .insert({
         user_id: user.id,
-        report_type: planType,
-        status: 'paid',
-        output_json: {
+        user_email: user.email ?? '',
+        native_name: typeof body?.name === 'string' ? body.name : 'Unknown',
+        birth_date: typeof body?.birth_date === 'string' ? body.birth_date : '2000-01-01',
+        birth_time: birthTime,
+        birth_city: typeof body?.birth_city === 'string' ? body.birth_city : 'Unknown',
+        plan_type: planType,
+        status: 'complete',
+        payment_status: 'bypass',
+        report_data: {
           source: 'onboard_bypass',
           plan_type: planType,
           name: body?.name,
@@ -44,6 +57,7 @@ export async function POST(request: NextRequest) {
           birth_time: body?.birth_time,
           birth_city: body?.birth_city,
         },
+        generation_completed_at: new Date().toISOString(),
       })
       .select('id')
       .single();

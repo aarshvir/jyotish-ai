@@ -44,7 +44,7 @@ export default function AuthButton() {
       <Link href="/login">
         <Button variant="ghost">Sign In</Button>
       </Link>
-      <Link href="/signup">
+      <Link href="/login?mode=signup">
         <Button>Get Started</Button>
       </Link>
     </div>

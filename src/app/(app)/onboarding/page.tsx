@@ -39,29 +39,21 @@ export default function OnboardingPage() {
   const onSubmit = async (data: BirthDataForm) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/reports/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: data.name,
-          birth_date: data.date,
-          birth_time: data.time,
-          birth_city: data.birth_city,
-          birth_lat: parseFloat(data.latitude),
-          birth_lng: parseFloat(data.longitude),
-          timezone: data.timezone,
-          current_city: data.current_city,
-          report_type: 'Full Vedic Analysis',
-        }),
+      const id = crypto.randomUUID();
+      const qs = new URLSearchParams({
+        name: data.name,
+        date: data.date,
+        time: data.time,
+        city: data.birth_city,
+        lat: String(parseFloat(data.latitude) || 0),
+        lng: String(parseFloat(data.longitude) || 0),
+        type: 'free',
       });
-
-      if (!response.ok) throw new Error('Failed to generate report');
-
-      const { reportId } = await response.json();
-      router.push(`/report/${reportId}`);
+      if (data.current_city) qs.set('currentCity', data.current_city);
+      router.push(`/report/${id}?${qs.toString()}`);
     } catch (error) {
-      console.error('Error generating report:', error);
-      alert('Failed to generate report. Please try again.');
+      console.error('Error starting report:', error);
+      alert('Failed to start report. Please try again.');
     } finally {
       setIsLoading(false);
     }

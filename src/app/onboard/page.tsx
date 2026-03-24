@@ -738,7 +738,7 @@ function OnboardPageInner() {
 
     const params = new URLSearchParams(paramsObj);
 
-    const finalUrl = `/report/${Date.now()}?${params.toString()}`;
+    const finalUrl = `/report/${crypto.randomUUID()}?${params.toString()}`;
     console.log('📍 Redirecting to:', finalUrl);
     console.log('📊 URL params:', {
       name: form.name,
