@@ -700,6 +700,8 @@ WEEKDAY_MOD = {
 
 SPECIAL_EVENT_MOD = {
     "jupiter_direct": 8,
+    "jupiter_enters_cancer": 12,
+    "jupiter_retrograde": -4,
     "mercury_direct": 5,
     "mercury_retrograde": -4,
     "ekadashi": 4,
@@ -707,21 +709,51 @@ SPECIAL_EVENT_MOD = {
     "navratri": 3,
     "ram_navami": 5,
     "ugadi": 8,
+    "akshaya_tritiya": 10,
+    "diwali": 6,
+    "dhan_teras": 5,
     "pushya_shukla_bonus": 5,
     "eclipse": -20,
     "solar_eclipse": -15,
+    "lunar_eclipse": -12,
     "retrograde_station": -5,
 }
 
 SPECIAL_EVENTS_CALENDAR = {
-    "mercury_retrograde_start": "2026-02-25",
-    "mercury_retrograde_end": "2026-03-20",
+    "mercury_retrograde_periods": [
+        ("2026-02-25", "2026-03-20"),
+        ("2026-06-18", "2026-07-12"),
+        ("2026-10-14", "2026-11-03"),
+    ],
     "jupiter_direct": ["2026-03-10", "2026-03-11"],
-    "mercury_direct": ["2026-03-20"],
+    "jupiter_retrograde_start": "2026-10-09",
+    "jupiter_enters_cancer": ["2026-06-01", "2026-06-02"],
+    "mercury_direct": ["2026-03-20", "2026-07-12", "2026-11-03"],
     "ugadi": ["2026-03-19"],
     "ram_navami": ["2026-03-26"],
-    "navratri_start": "2026-03-19",
-    "navratri_end": "2026-03-28",
+    "navratri_chaitra_start": "2026-03-19",
+    "navratri_chaitra_end": "2026-03-28",
+    "akshaya_tritiya": ["2026-04-29"],
+    "buddha_purnima": ["2026-05-12"],
+    "rath_yatra": ["2026-06-27"],
+    "navaratri_sharad_start": "2026-10-02",
+    "navaratri_sharad_end": "2026-10-11",
+    "diwali": ["2026-10-20"],
+    "dhan_teras": ["2026-10-18"],
+    "ekadashi_dates": [
+        "2026-03-13", "2026-03-28",
+        "2026-04-11", "2026-04-27",
+        "2026-05-11", "2026-05-26",
+        "2026-06-09", "2026-06-25",
+        "2026-07-09", "2026-07-24",
+        "2026-08-07", "2026-08-23",
+        "2026-09-06", "2026-09-21",
+        "2026-10-06", "2026-10-21",
+        "2026-11-05", "2026-11-19",
+        "2026-12-04", "2026-12-19",
+    ],
+    "solar_eclipse": ["2026-08-12"],
+    "lunar_eclipse": ["2026-03-03", "2026-08-28"],
 }
 
 SUN_HOUSE_MONTHLY_BONUS = {
@@ -768,26 +800,71 @@ def normalize_tithi(tithi_raw: str) -> str:
 
 def get_special_events_for_date(date_str: str) -> List[str]:
     events: List[str] = []
-    d = datetime.strptime(date_str, "%Y-%m-%d").date()
+    try:
+        d = datetime.strptime(date_str, "%Y-%m-%d").date()
+    except Exception:
+        return events
 
-    rx_start = datetime.strptime(SPECIAL_EVENTS_CALENDAR["mercury_retrograde_start"], "%Y-%m-%d").date()
-    rx_end = datetime.strptime(SPECIAL_EVENTS_CALENDAR["mercury_retrograde_end"], "%Y-%m-%d").date()
-    if rx_start <= d <= rx_end:
-        events.append("mercury_retrograde")
+    for start_str, end_str in SPECIAL_EVENTS_CALENDAR.get("mercury_retrograde_periods", []):
+        start = datetime.strptime(start_str, "%Y-%m-%d").date()
+        end = datetime.strptime(end_str, "%Y-%m-%d").date()
+        if start <= d <= end:
+            events.append("mercury_retrograde")
+            break
 
-    if date_str in SPECIAL_EVENTS_CALENDAR["jupiter_direct"]:
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("jupiter_direct", []):
         events.append("jupiter_direct")
-    if date_str in SPECIAL_EVENTS_CALENDAR["mercury_direct"]:
+
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("jupiter_enters_cancer", []):
+        events.append("jupiter_enters_cancer")
+
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("mercury_direct", []):
         events.append("mercury_direct")
-    if date_str in SPECIAL_EVENTS_CALENDAR["ugadi"]:
+
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("ugadi", []):
         events.append("ugadi")
-    if date_str in SPECIAL_EVENTS_CALENDAR["ram_navami"]:
+
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("ram_navami", []):
         events.append("ram_navami")
 
-    nav_start = datetime.strptime(SPECIAL_EVENTS_CALENDAR["navratri_start"], "%Y-%m-%d").date()
-    nav_end = datetime.strptime(SPECIAL_EVENTS_CALENDAR["navratri_end"], "%Y-%m-%d").date()
-    if nav_start <= d <= nav_end:
-        events.append("navratri")
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("akshaya_tritiya", []):
+        events.append("akshaya_tritiya")
+
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("diwali", []):
+        events.append("diwali")
+
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("dhan_teras", []):
+        events.append("dhan_teras")
+
+    nav_s_str = SPECIAL_EVENTS_CALENDAR.get("navratri_chaitra_start")
+    nav_e_str = SPECIAL_EVENTS_CALENDAR.get("navratri_chaitra_end")
+    if nav_s_str and nav_e_str:
+        nav_s = datetime.strptime(nav_s_str, "%Y-%m-%d").date()
+        nav_e = datetime.strptime(nav_e_str, "%Y-%m-%d").date()
+        if nav_s <= d <= nav_e:
+            events.append("navratri")
+
+    nav2_s = SPECIAL_EVENTS_CALENDAR.get("navaratri_sharad_start")
+    nav2_e = SPECIAL_EVENTS_CALENDAR.get("navaratri_sharad_end")
+    if nav2_s and nav2_e:
+        s2 = datetime.strptime(nav2_s, "%Y-%m-%d").date()
+        e2 = datetime.strptime(nav2_e, "%Y-%m-%d").date()
+        if s2 <= d <= e2:
+            events.append("navratri")
+
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("ekadashi_dates", []):
+        events.append("ekadashi")
+
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("solar_eclipse", []):
+        events.append("solar_eclipse")
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("lunar_eclipse", []):
+        events.append("lunar_eclipse")
+
+    jup_rx = SPECIAL_EVENTS_CALENDAR.get("jupiter_retrograde_start")
+    if jup_rx:
+        jup_rx_d = datetime.strptime(jup_rx, "%Y-%m-%d").date()
+        if d >= jup_rx_d:
+            events.append("jupiter_retrograde")
 
     return events
 
@@ -804,7 +881,16 @@ def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[]):
     for event in special_events:
         dq += SPECIAL_EVENT_MOD.get(event, 0)
 
-    major_positive_events = {"jupiter_direct", "ugadi", "ram_navami", "mercury_direct"}
+    major_positive_events = {
+        "jupiter_direct",
+        "jupiter_enters_cancer",
+        "ugadi",
+        "ram_navami",
+        "mercury_direct",
+        "akshaya_tritiya",
+        "diwali",
+        "dhan_teras",
+    }
     has_major_event = bool(set(special_events) & major_positive_events)
     positive_yoga = yoga_val >= 4
     positive_moon = moon_val >= 4
@@ -1173,6 +1259,7 @@ def generate_daily_grid(data: DailyGridInput):
             "yoga":       yoga_str,
             "weekday":    weekday,
             "dq":         dq,
+            "special_events": list(special_events),
             "planet_positions": planet_positions,
         }
 

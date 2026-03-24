@@ -3,12 +3,25 @@ import { motion } from 'framer-motion';
 interface HourData {
   time: string;
   end_time: string;
+  display_label?: string;
   score: number;
   hora_planet: string;
   hora_planet_symbol?: string;
   choghadiya: string;
   is_rahu_kaal: boolean;
   reason?: string;
+}
+
+function slotTimeLabel(h: HourData): { start: string; end: string } {
+  if (h.time && h.end_time) {
+    return { start: h.time.slice(0, 5), end: h.end_time.slice(0, 5) };
+  }
+  const raw = h.display_label ?? '';
+  const parts = raw.split(/\u2013|-/).map((s) => s.trim());
+  if (parts.length >= 2) {
+    return { start: parts[0].slice(0, 5), end: parts[1].slice(0, 5) };
+  }
+  return { start: h.time || '—', end: h.end_time || '—' };
 }
 
 interface BestWindowsProps {
@@ -51,6 +64,7 @@ export function BestWindows({ hours, lagna = 'Cancer' }: BestWindowsProps) {
           </p>
           <div className="flex flex-wrap gap-2">
             {optimal.map((hour, i) => {
+              const tl = slotTimeLabel(hour);
               const tooltip = hour.reason || HORA_TOOLTIPS[hour.hora_planet] || `${hour.hora_planet} hora — optimal for key activities`;
               return (
                 <motion.div
@@ -62,7 +76,7 @@ export function BestWindows({ hours, lagna = 'Cancer' }: BestWindowsProps) {
                   title={tooltip}
                 >
                   <span className="font-mono text-xs text-emerald">
-                    {hour.time}–{hour.end_time}
+                    {tl.start}–{tl.end}
                   </span>
                   <span className="text-emerald">·</span>
                   <span className="text-emerald text-sm">
@@ -92,7 +106,7 @@ export function BestWindows({ hours, lagna = 'Cancer' }: BestWindowsProps) {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-crimson/10 border border-crimson/20">
             <span className="text-crimson">⚠</span>
             <span className="font-mono text-xs text-crimson">
-              {rahuKaal[0].time}–{rahuKaal[rahuKaal.length - 1].end_time}
+              {slotTimeLabel(rahuKaal[0]).start}–{slotTimeLabel(rahuKaal[rahuKaal.length - 1]).end}
             </span>
             <span className="text-crimson/50">·</span>
             <span className="font-mono text-xs text-crimson/70">

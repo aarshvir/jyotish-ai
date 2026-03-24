@@ -151,7 +151,8 @@ export function HourlyAnalysis({ hours, lagna }: HourlyAnalysisProps) {
         </AnimatePresence>
 
         {/* Best windows */}
-        <BestWindows hours={displayHours} lagna={lagna} />
+        {/* Full 18-slot day for optimal/RK — waking filter would skew top-3 vs selected day */}
+        <BestWindows hours={hours ?? []} lagna={lagna} />
       </div>
     </motion.div>
   );

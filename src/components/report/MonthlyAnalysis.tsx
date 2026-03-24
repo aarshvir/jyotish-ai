@@ -39,7 +39,17 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       love_score: ex?.love_score,
       theme: (ex?.theme ?? '').trim() || `${label} energy arc.`,
       key_transits: ex?.key_transits ?? [],
-      commentary: (ex?.commentary ?? '').trim() || `Monthly overview for ${label}.`,
+      commentary: (() => {
+        const c = (ex?.commentary ?? '').trim();
+        const sc = ex?.score ?? ex?.overall_score ?? 65;
+        if (
+          !c ||
+          c.includes('Monthly overview will be available when the forecast is generated')
+        ) {
+          return `${label} — Overall score: ${sc}/100. Commentary is generating — refresh in 30 seconds.`;
+        }
+        return c;
+      })(),
       days: ex?.days,
       weekly_scores: ex?.weekly_scores,
     };

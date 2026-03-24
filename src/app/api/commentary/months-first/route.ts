@@ -1,3 +1,4 @@
+/** Vercel / long-running LLM — increase on Pro; hobby plan caps lower. */
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 

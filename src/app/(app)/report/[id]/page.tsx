@@ -44,6 +44,14 @@ function isRouteUuid(id: string) {
   return UUID_RE.test(id);
 }
 
+function monthlyFallbackCommentary(monthLabel: string, overallScore: number) {
+  return `${monthLabel} — Overall score: ${overallScore}/100. Commentary is generating — refresh in 30 seconds.`;
+}
+
+function weeklyFallbackCommentary(weekLabel: string, score: number) {
+  return `${weekLabel || 'This week'} — Week score: ${score}/100. Weekly narrative is generating — refresh in 30 seconds.`;
+}
+
 function ReportContent() {
   const routeParams = useParams();
   const reportIdFromRoute = typeof routeParams?.id === 'string' ? routeParams.id : '';
@@ -721,9 +729,16 @@ function ReportContent() {
               })),
             }),
           });
-          if (months1Res.ok) months1Data = (await months1Res.json()).months ?? [];
+          if (months1Res.ok) {
+            months1Data = (await months1Res.json()).months ?? [];
+          } else {
+            const errText = await months1Res.text();
+            console.error('[PIPELINE] months-first failed:', months1Res.status, errText);
+            setCommentaryPartial(true);
+          }
         } catch (e) {
-          console.warn('[STEP-7] Months 1-6 failed:', e);
+          console.error('[PIPELINE] Months 1-6 exception:', e);
+          setCommentaryPartial(true);
         }
         await sleep(4000);
         setStepDetail('Months 7-12');
@@ -749,35 +764,50 @@ function ReportContent() {
               })),
             }),
           });
-          if (months2Res.ok) months2Data = (await months2Res.json()).months ?? [];
+          if (months2Res.ok) {
+            months2Data = (await months2Res.json()).months ?? [];
+          } else {
+            const errText = await months2Res.text();
+            console.error('[PIPELINE] months-second failed:', months2Res.status, errText);
+            setCommentaryPartial(true);
+          }
         } catch (e) {
-          console.warn('[STEP-7] Months 7-12 failed:', e);
+          console.error('[PIPELINE] Months 7-12 exception:', e);
+          setCommentaryPartial(true);
         }
         await sleep(4000);
 
-        allMonthsData = [...months1Data, ...months2Data].map((m: any) => ({
-          month: m.month_label ?? m.month ?? '',
-          score: m.overall_score ?? m.score ?? 65,
-          overall_score: m.overall_score ?? m.score ?? 65,
-          career_score: m.career_score ?? 65,
-          money_score: m.money_score ?? 65,
-          health_score: m.health_score ?? 65,
-          love_score: m.love_score ?? 65,
-          theme: (m.theme ?? '').trim() || '',
-          key_transits: m.key_transits ?? [],
-          commentary: (m.analysis ?? m.commentary ?? '').trim() || '',
-          weekly_scores: m.weekly_scores ?? [65, 65, 65, 65],
-          domain_scores: {
-            career: m.career_score ?? 65,
-            money: m.money_score ?? 65,
-            health: m.health_score ?? 65,
-            relationships: m.love_score ?? 65,
-          },
-        }));
+        allMonthsData = [...months1Data, ...months2Data].map((m: any) => {
+          const monthLabel = m.month_label ?? m.month ?? '';
+          const overall = m.overall_score ?? m.score ?? 65;
+          const rawCommentary = (m.analysis ?? m.commentary ?? '').trim();
+          return {
+            month: monthLabel,
+            score: overall,
+            overall_score: overall,
+            career_score: m.career_score ?? 65,
+            money_score: m.money_score ?? 65,
+            health_score: m.health_score ?? 65,
+            love_score: m.love_score ?? 65,
+            theme: (m.theme ?? '').trim() || '',
+            key_transits: m.key_transits ?? [],
+            commentary:
+              rawCommentary ||
+              monthlyFallbackCommentary(monthLabel || 'This month', overall),
+            weekly_scores: m.weekly_scores ?? [65, 65, 65, 65],
+            domain_scores: {
+              career: m.career_score ?? 65,
+              money: m.money_score ?? 65,
+              health: m.health_score ?? 65,
+              relationships: m.love_score ?? 65,
+            },
+          };
+        });
         while (allMonthsData.length < 12) {
           const m = new Date(startDate.getFullYear(), startDate.getMonth() + allMonthsData.length, 1);
+          const ml = m.toLocaleString('default', { month: 'long', year: 'numeric' });
           allMonthsData.push({
-            month: m.toLocaleString('default', { month: 'long', year: 'numeric' }),
+            month: ml,
             score: 65,
             overall_score: 65,
             career_score: 65,
@@ -786,7 +816,7 @@ function ReportContent() {
             love_score: 65,
             theme: '',
             key_transits: [],
-            commentary: 'Monthly overview will be available when the forecast is generated.',
+            commentary: monthlyFallbackCommentary(ml, 65),
             weekly_scores: [65, 65, 65, 65],
             domain_scores: { career: 65, money: 65, health: 65, relationships: 65 },
           });
@@ -797,8 +827,9 @@ function ReportContent() {
         const startDate = new Date(forecastDays?.[0]?.date ?? Date.now());
         allMonthsData = Array.from({ length: 12 }, (_, i) => {
           const m = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+          const ml = m.toLocaleString('default', { month: 'long', year: 'numeric' });
           return {
-            month: m.toLocaleString('default', { month: 'long', year: 'numeric' }),
+            month: ml,
             score: 65,
             overall_score: 65,
             career_score: 65,
@@ -807,7 +838,7 @@ function ReportContent() {
             love_score: 65,
             theme: '',
             key_transits: [],
-            commentary: 'Monthly overview will be available when the forecast is generated.',
+            commentary: monthlyFallbackCommentary(ml, 65),
             weekly_scores: [65, 65, 65, 65],
             domain_scores: { career: 65, money: 65, health: 65, relationships: 65 },
           };
@@ -882,30 +913,37 @@ function ReportContent() {
           console.log('[STEP-8] synthesis:', !!weeksSynthData?.period_synthesis);
         } else {
           const errText = await weeksSynthResponse.text();
-          console.error('[STEP-8] HTTP error:', weeksSynthResponse.status, errText.substring(0, 200));
+          console.error('[PIPELINE] weeks-synthesis HTTP error:', weeksSynthResponse.status, errText.substring(0, 500));
+          setCommentaryPartial(true);
         }
       } catch (err: unknown) {
         console.error('[STEP-8] Failed:', err instanceof Error ? err.message : String(err));
       }
 
-      const weekList = (weeksSynthData.weeks ?? []).map((w: any, i: number) => ({
-        week_label: w.week_label ?? `Week ${i + 1}`,
-        week_start: weeksPayload[i]?.start_date ?? '',
-        score: w.overall_score ?? w.score ?? 65,
-        theme: (w.theme ?? '').trim() || '',
-        commentary: (w.analysis ?? w.commentary ?? '').trim() || 'Weekly overview.',
-        daily_scores: weeksPayload[i]?.daily_scores ?? [65, 65, 65, 65, 65, 65, 65],
-        moon_journey: w.moon_signs ?? [],
-        peak_days_count: 2,
-        caution_days_count: 1,
-      }));
+      const weekList = (weeksSynthData.weeks ?? []).map((w: any, i: number) => {
+        const wl = w.week_label ?? `Week ${i + 1}`;
+        const sc = w.overall_score ?? w.score ?? 65;
+        const wc = (w.analysis ?? w.commentary ?? '').trim();
+        return {
+          week_label: wl,
+          week_start: weeksPayload[i]?.start_date ?? '',
+          score: sc,
+          theme: (w.theme ?? '').trim() || '',
+          commentary: wc || weeklyFallbackCommentary(wl, sc),
+          daily_scores: weeksPayload[i]?.daily_scores ?? [65, 65, 65, 65, 65, 65, 65],
+          moon_journey: w.moon_signs ?? [],
+          peak_days_count: 2,
+          caution_days_count: 1,
+        };
+      });
       while (weekList.length < 6) {
+        const wk = `Week ${weekList.length + 1}`;
         weekList.push({
-          week_label: `Week ${weekList.length + 1}`,
+          week_label: wk,
           week_start: '',
           score: 65,
           theme: '',
-          commentary: 'Weekly overview will be available when the forecast is generated.',
+          commentary: weeklyFallbackCommentary(wk, 65),
           daily_scores: [65, 65, 65, 65, 65, 65, 65],
           moon_journey: [],
           peak_days_count: 2,
