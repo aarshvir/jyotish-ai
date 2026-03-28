@@ -2,8 +2,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 
-const anthropicClient = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const anthropicClient = process.env.ANTHROPIC_API_KEY?.trim()
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim() })
   : null;
 
 function extractAnthropicText(response: Anthropic.Message): string {

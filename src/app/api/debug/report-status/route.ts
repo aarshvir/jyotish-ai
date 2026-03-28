@@ -1,10 +1,10 @@
-export const dynamic = 'force-dynamic';
+﻿export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { BYPASS_SECRET } from '@/lib/api/requireAuth';
 
 /**
- * Dependency health for report pipeline. Protected by bypass token only — do not expose publicly.
+ * Dependency health for report pipeline. Protected by bypass token only.
  */
 export async function GET(request: NextRequest) {
   const bypass = new URL(request.url).searchParams.get('bypass');
@@ -14,13 +14,14 @@ export async function GET(request: NextRequest) {
 
   const status: Record<string, unknown> = {};
 
-  const ephUrl =
+  const ephUrl = (
     process.env.EPHEMERIS_SERVICE_URL ||
     process.env.NEXT_PUBLIC_EPHEMERIS_URL ||
-    'http://localhost:8000';
+    'http://localhost:8000'
+  ).trim();
 
   try {
-    const r = await fetch(`${ephUrl.replace(/\/$/, '')}/validate`, {
+    const r = await fetch(` ${ephUrl.replace(/\/\$/, '')}/validate `, {
       signal: AbortSignal.timeout(5000),
     });
     status.ephemeris = { ok: r.ok, url: ephUrl, status: r.status };
@@ -34,8 +35,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const { createClient } = await import('@supabase/supabase-js');
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
+    const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
     if (!url || !key) {
       status.supabase = { ok: false, error: 'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' };
     } else {
@@ -48,11 +49,11 @@ export async function GET(request: NextRequest) {
   }
 
   status.llm = {
-    anthropic: !!process.env.ANTHROPIC_API_KEY,
-    openai: !!process.env.OPENAI_API_KEY,
+    anthropic: !!(process.env.ANTHROPIC_API_KEY?.trim()),
+    openai: !!(process.env.OPENAI_API_KEY?.trim()),
   };
 
-  status.razorpay = { present: !!process.env.RAZORPAY_KEY_ID };
+  status.razorpay = { present: !!(process.env.RAZORPAY_KEY_ID?.trim()) };
 
   return NextResponse.json(status);
 }
