@@ -17,6 +17,7 @@ import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 import { validateReportData } from '@/lib/validation/reportValidation';
 import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
+import { PrintAllDays } from '@/components/report/PrintAllDays';
 
 const STEPS = [
   'Calculating planetary positions',
@@ -1317,6 +1318,10 @@ function ReportContent() {
               onDayClick={handleDaySelectFromCalendar}
             />
           </ReportErrorBoundary>
+
+          {/* Print-only full report — all 7 days × 18 slots with commentary.
+              Hidden on screen, rendered during @media print to bypass tab-based DailyAnalysis. */}
+          <PrintAllDays days={mergedDays} reportName={displayName} />
         </div>
       </main>
     </motion.div>

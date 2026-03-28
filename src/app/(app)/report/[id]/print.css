@@ -1,6 +1,11 @@
 @page {
   size: A4;
-  margin: 18mm 15mm;
+  margin: 15mm 12mm;
+}
+
+/* ── Screen: hide the print-only section ───────────────────────────────── */
+.print-only {
+  display: none !important;
 }
 
 @media print {
@@ -12,8 +17,22 @@
   .mobile-tabs,
   [data-print-hide],
   button,
-  aside {
+  aside,
+  /* Sidebar */
+  .ReportSidebar,
+  [class*="ReportSidebar"] {
     display: none !important;
+  }
+
+  /* ── Hide the interactive (tab-based) daily section + hourly toggles ── */
+  #daily,
+  #hourly {
+    display: none !important;
+  }
+
+  /* ── Show the print-only full-days section ──────────────────────────── */
+  .print-only {
+    display: block !important;
   }
 
   /* ── Colour fidelity ────────────────────────────────────────────── */
@@ -27,8 +46,8 @@
   body {
     background: #0a0a1a !important;
     color: #e8e0d0 !important;
-    font-size: 11pt;
-    line-height: 1.55;
+    font-size: 10pt;
+    line-height: 1.5;
   }
 
   /* ── Layout: full width, no fixed sidebar ───────────────────────── */
@@ -42,19 +61,24 @@
     margin: 0 !important;
   }
 
-  /* Remove overflow clipping so tables print fully */
+  /* Remove overflow clipping */
   .overflow-x-auto,
   .overflow-hidden {
     overflow: visible !important;
   }
 
-  /* Collapse any fixed-positioned elements */
+  /* Collapse fixed/sticky positioning */
   .fixed,
   .sticky {
     position: static !important;
   }
 
-  /* ── Page break controls ────────────────────────────────────────── */
+  /* ── Sidebar offset: undo lg:ml-[200px] ────────────────────────── */
+  .lg\:ml-\[200px\] {
+    margin-left: 0 !important;
+  }
+
+  /* ── Page break controls for existing sections ──────────────────── */
   #nativity {
     page-break-before: avoid;
   }
@@ -66,52 +90,54 @@
     page-break-before: always;
     break-before: page;
   }
-  #daily {
-    page-break-before: always;
-    break-before: page;
-  }
   #synthesis {
     page-break-before: always;
     break-before: page;
   }
 
-  /* Prevent cards and table rows from splitting across pages */
+  /* Cards and table rows stay together */
   .bg-cosmos,
   [class*="rounded-"],
-  tr,
-  .slot-row {
+  tr {
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
-  /* ── Typography adjustments for print ──────────────────────────── */
+  /* ── Typography ─────────────────────────────────────────────────── */
   h1 { font-size: 18pt; }
-  h2 { font-size: 14pt; }
-  h3 { font-size: 12pt; }
+  h2 { font-size: 13pt; }
+  h3 { font-size: 11pt; }
 
-  /* ── Expand collapsed hourly slots so all content prints ───────── */
-  [data-collapsed="true"] {
-    display: block !important;
-    max-height: none !important;
-    height: auto !important;
-  }
-
-  /* ── Ensure links print as plain text (not underlined blue) ─────── */
+  /* ── Links as plain text ────────────────────────────────────────── */
   a {
     color: #d4af37 !important;
     text-decoration: none !important;
   }
 
-  /* ── Print a visible title at the top of page 1 ────────────────── */
+  /* ── Table columns that are hidden on screen: force visible in print ── */
+  .hidden,
+  .md\:hidden,
+  .lg\:hidden,
+  [class*="hidden"] {
+    /* Don't blanket-show everything hidden; only unhide table cells */
+  }
+  td.hidden,
+  th.hidden,
+  td[class*="hidden"],
+  th[class*="hidden"] {
+    display: table-cell !important;
+  }
+
+  /* ── Print header ───────────────────────────────────────────────── */
   body::before {
     content: "VedicHour Forecast";
     display: block;
     font-family: Georgia, serif;
-    font-size: 22pt;
+    font-size: 20pt;
     color: #d4af37;
     text-align: center;
-    padding-bottom: 8mm;
+    padding-bottom: 6mm;
     border-bottom: 1px solid rgba(212, 175, 55, 0.4);
-    margin-bottom: 8mm;
+    margin-bottom: 6mm;
   }
 }
