@@ -46,7 +46,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const hasValidBypass = (() => {
-    const secret = process.env.BYPASS_SECRET || 'VEDICADMIN2026';
+    const secret = (process.env.BYPASS_SECRET || 'VEDICADMIN2026').trim();
     const bp =
       request.nextUrl.searchParams.get('bypass') ||
       request.headers.get('x-bypass-token');

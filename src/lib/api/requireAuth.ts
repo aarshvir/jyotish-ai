@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-const BYPASS_SECRET = process.env.BYPASS_SECRET || 'VEDICADMIN2026';
+// Trim to guard against env var stored with trailing \r\n (common in CI/Windows pipes)
+const BYPASS_SECRET = (process.env.BYPASS_SECRET || 'VEDICADMIN2026').trim();
 
 /** Optional UUID for Supabase rows when using bypass (must exist in auth.users if FK enforced). */
 export const BYPASS_USER_ID =
