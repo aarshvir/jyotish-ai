@@ -4,10 +4,11 @@ import { computeFallbackDayData } from '@/lib/ephemeris/fallback';
 
 export const maxDuration = 300;
 
-const EPHEMERIS_URL =
+const EPHEMERIS_URL = (
   process.env.EPHEMERIS_SERVICE_URL ??
   process.env.EPHEMERIS_API_URL ??
-  'http://localhost:8000';
+  'http://localhost:8000'
+).trim();
 
 /**
  * POST /api/agents/daily-grid

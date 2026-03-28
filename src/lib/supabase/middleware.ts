@@ -1,6 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// Trim env vars to guard against CRLF added by some CI/CD pipelines
+const _supaUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
+const _supaKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
+
 const PROTECTED_PREFIXES = [
   '/dashboard',
   '/auth/consent',
@@ -21,8 +25,8 @@ export async function updateSession(request: NextRequest) {
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    _supaUrl,
+    _supaKey,
     {
       cookies: {
         getAll() {
