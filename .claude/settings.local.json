@@ -30,7 +30,8 @@
       "Bash(python3:*)",
       "Bash(node:*)",
       "Bash(git -C \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" remote -v)",
-      "Bash(git -C \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" status && git -C \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" log --oneline -5)"
+      "Bash(git -C \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" status && git -C \"C:\\\\Users\\\\aarsh\\\\Downloads\\\\jyotish-ai\" log --oneline -5)",
+      "Bash(EPHEMERIS_VALIDATE_BASE=http://127.0.0.1:8000 python scripts/validate-scores.py)"
     ]
   }
 }

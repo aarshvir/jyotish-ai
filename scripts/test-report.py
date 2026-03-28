@@ -6,13 +6,33 @@ Requires: ephemeris on :8001, Next.js on :3000
 import requests, sys, datetime
 
 BASE = "http://localhost:3000"
-EPH  = "http://localhost:8001"
-LAGNA = "Cancer"
-MD, AD = "Rahu", "Mercury"
+EPH  = "http://localhost:8000"
+
+# Aarsh — 5 Jan 1991, 7:45 PM, Lucknow, India → Currently in Dubai, UAE
+LAGNA = "Cancer"            # Cancer lagna (natal)
+MD, AD = "Rahu", "Mercury"  # Current Mahadasha/Antardasha (check ephemeris to confirm)
+
+# Use a fixed reference window that spans diverse day scores (includes known low days)
+# This matches the grandmaster benchmark window used in model-comparison reports.
 DATES = ["2026-03-08","2026-03-09","2026-03-10",
          "2026-03-11","2026-03-12","2026-03-13","2026-03-14"]
-GEO = {"current_lat":25.2048,"current_lng":55.2708,
-       "timezone_offset_minutes":240,"natal_lagna_sign_index":3}
+
+# Natal birth details — Lucknow
+NATAL = {
+    "natal_lat": 26.8467,
+    "natal_lng": 80.9462,
+    "natal_timezone_offset_minutes": 330,   # IST = UTC+5:30
+    "birth_date": "1991-01-05",
+    "birth_time": "19:45",
+}
+
+# Current location — Dubai, UAE
+GEO = {
+    "current_lat": 25.2048,
+    "current_lng": 55.2708,
+    "timezone_offset_minutes": 240,          # GST = UTC+4
+    "natal_lagna_sign_index": 3,             # Cancer = index 3
+}
 
 results = []
 def check(label, ok, got=""):
