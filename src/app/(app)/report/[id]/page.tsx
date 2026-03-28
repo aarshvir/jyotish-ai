@@ -1321,7 +1321,7 @@ function ReportContent() {
 
           {/* Print-only full report — all 7 days × 18 slots with commentary.
               Hidden on screen, rendered during @media print to bypass tab-based DailyAnalysis. */}
-          <PrintAllDays days={mergedDays} reportName={displayName} />
+          <PrintAllDays days={mergedDays} />
         </div>
       </main>
     </motion.div>

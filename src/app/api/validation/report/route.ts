@@ -4,13 +4,14 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { completeLlmChat } from '@/lib/llm/routeCompletion';
 import { safeParseJson } from '@/lib/utils/safeJson';
+import { requireAuth } from '@/lib/api/requireAuth';
 
 /**
  * POST /api/validation/report
  *
  * Three-pass validation engine powered by Claude Sonnet.
  * Pass 1 — Commentary quality: word counts, STRATEGY section, ALL-CAPS headline, no blank slots
- * Pass 2 — Score accuracy:     slot spread >= 20, day score = mean(slots), Rahu Kaal slots low
+ * Pass 2 — Score accuracy:     slot spread >= 15, day score = mean(slots), Rahu Kaal slots low
  * Pass 3 — Consistency:        commentary tone matches score tier, no contradictions
  *
  * Returns:
@@ -237,6 +238,8 @@ Return plain text only.`;
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
   let body: ValidationRequest;
   try {
     body = await req.json();
@@ -334,6 +337,8 @@ export async function POST(req: NextRequest) {
     summary: p2.issues.length === 0
       ? 'All scores within expected ranges.'
       : `${p2.issues.length} scoring issues found. Dates with errors: ${p2.scoringErrors.filter((v, i, a) => a.indexOf(v) === i).join(', ')}`,
+      // Note: spread threshold intentionally set to 15 (conservative); file header said 20 but 15 catches uniform-scoring days.
+
   });
 
   // ── Pass 3: Consistency (LLM sampled) ──

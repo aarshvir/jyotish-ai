@@ -2,10 +2,11 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { safeParseJson } from '@/lib/utils/safeJson';
+import { safeParseJson, parseJsonDefensively } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
 import type { HoraRole, LagnaContext } from '@/lib/agents/lagnaContext';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
+import { requireAuth } from '@/lib/api/requireAuth';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 
 function choghadiyaMeaning(chog: string): string {
@@ -81,34 +82,11 @@ function buildFallbackSlot(slot: any, lagnaSign: string, role?: HoraRole): { slo
   return { slot_index, commentary };
 }
 
-function parseClaudeJsonDefensively(text: string): any {
-  let parsed: any = null;
-  try {
-    parsed = JSON.parse(text);
-  } catch {
-    const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-    if (codeBlock) {
-      try { parsed = JSON.parse(codeBlock[1].trim()); } catch {}
-    }
-    if (!parsed) {
-      const start = text.indexOf('{');
-      const end = text.lastIndexOf('}');
-      if (start >= 0 && end > start) {
-        try { parsed = JSON.parse(text.slice(start, end + 1)); } catch {}
-      }
-    }
-    if (!parsed) {
-      const start = text.indexOf('[');
-      const end = text.lastIndexOf(']');
-      if (start >= 0 && end > start) {
-        try { parsed = { slots: JSON.parse(text.slice(start, end + 1)) }; } catch {}
-      }
-    }
-  }
-  return parsed;
-}
+const parseClaudeJsonDefensively = (text: string) => parseJsonDefensively(text, 'slots');
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
   try {
     // Required defensiveness: parse request body from raw text so malformed payloads
     // do not crash the route before fallback logic can run.

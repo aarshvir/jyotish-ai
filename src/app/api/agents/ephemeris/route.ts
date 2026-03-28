@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EphemerisAgent } from '@/lib/agents/EphemerisAgent';
 import type { NatalChartInput } from '@/lib/agents/types';
+import { requireAuth } from '@/lib/api/requireAuth';
 
 const agent = new EphemerisAgent();
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await request.json();
 

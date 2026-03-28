@@ -39,7 +39,6 @@
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-    color-adjust: exact !important;
   }
 
   html,
@@ -114,13 +113,7 @@
     text-decoration: none !important;
   }
 
-  /* ── Table columns that are hidden on screen: force visible in print ── */
-  .hidden,
-  .md\:hidden,
-  .lg\:hidden,
-  [class*="hidden"] {
-    /* Don't blanket-show everything hidden; only unhide table cells */
-  }
+  /* Force table cells that use responsive hidden classes to be visible in print */
   td.hidden,
   th.hidden,
   td[class*="hidden"],

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NativityAgent } from '@/lib/agents/NativityAgent';
 import type { NatalChartData } from '@/lib/agents/types';
+import { requireAuth } from '@/lib/api/requireAuth';
 
 export const maxDuration = 300;
 
@@ -12,6 +13,8 @@ try {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     if (!agent) {
       return NextResponse.json(

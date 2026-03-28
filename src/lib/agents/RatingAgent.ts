@@ -332,16 +332,7 @@ function getSunSignIndex(dateStr: string): number {
   const d = new Date(dateStr + 'T12:00:00Z');
   const month = d.getUTCMonth(); // 0-11
   const day = d.getUTCDate();
-  // Sidereal sun sign (Lahiri, approx 24 days behind tropical)
-  const approxSignMap: [number, number, number][] = [
-    [0, 14, 9],  // Jan 1-14 → Sagittarius (idx 8... actually Dec/Jan = Sag/Cap)
-    [0, 31, 9],  // Jan 15-31 → Capricorn
-    [1, 12, 10], // Feb 1-12 → Capricorn
-    [1, 28, 10], // Feb 13-28 → Aquarius
-    [2, 14, 11], // Mar 1-14 → Aquarius
-    [2, 31, 11], // Mar 15-31 → Pisces
-  ];
-  // Simplified: sun moves ~1° per day, enters new sign every ~30 days
+  // Simplified sidereal sun sign (Lahiri, approx): sun moves ~1°/day, ~30 days/sign.
   // For Feb 2026: Sun is in Aquarius (sidereal, Lahiri)
   // Jan 14 - Feb 12: Capricorn (9), Feb 13 - Mar 14: Aquarius (10), Mar 15 - Apr 13: Pisces (11)
   if (month === 0 && day < 14) return 8;  // Sagittarius
@@ -387,7 +378,6 @@ export class RatingAgent {
     const lagnaAdj = LAGNA_HORA_DELTA[lagna]?.[hora.hora_ruler] ?? 0;
     const chogScore = CHOGHADIYA_SCORE[normalizeChoghadiya(choghadiya.choghadiya)] ?? 0;
     const rkPenalty = isRahuKaal ? RAHU_KAAL_PENALTY : 0;
-    const total = base + lagnaAdj + chogScore + transitHouseMod + panchangAdj + rkPenalty;
 
     const rating = calculateSlotScore({
       horaRuler: hora.hora_ruler,
@@ -409,7 +399,7 @@ export class RatingAgent {
       hora_score: base + lagnaAdj,
       choghadiya_score: chogScore,
       rahu_kaal_penalty: rkPenalty,
-      total_score: total,
+      total_score: rating,   // same clamped 5-98 value; raw sum was misleading
       rating,
       label,
       transit_lagna: transitSign,

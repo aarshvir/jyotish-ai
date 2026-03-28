@@ -64,6 +64,12 @@ scripts/report-full.png
 scripts/before-submit.png
 scripts/eph-server.log
 scripts/next-server.log
+scripts/tmp-*.txt
+scripts/agent-log*.txt
+scripts/model-comparison/results.json
+scripts/model-comparison/full-results.json
+scripts/model-comparison/report.md
+scripts/model-comparison/full-report.md
 
 # Windows reserved device name (accidental file)
 nul

@@ -86,6 +86,15 @@ export async function POST(request: NextRequest) {
     const lat = parseFloat(birth_lat) || 0;
     const lng = parseFloat(birth_lng) || 0;
 
+    // Resolve timezone offset from stored value (minutes east of UTC).
+    // Falls back to IST (330) only if the field is absent.
+    const tzRaw = timezone ?? requestData.timezone_offset ?? requestData.tz_offset;
+    const timezoneOffset = typeof tzRaw === 'number'
+      ? tzRaw
+      : typeof tzRaw === 'string' && tzRaw !== ''
+        ? parseInt(tzRaw, 10) || 330
+        : 330;
+
     const [nativityResponse, forecastResponse] = await Promise.all([
       fetch(`${baseUrl}/api/agents/nativity`, {
         method: 'POST',
@@ -101,7 +110,7 @@ export async function POST(request: NextRequest) {
           birthLng: lng,
           currentLat: lat,
           currentLng: lng,
-          timezoneOffset: 330,
+          timezoneOffset,
           dateFrom,
           dateTo,
         }),

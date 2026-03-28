@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log('🌍 Geocode API - Looking up:', city);
 
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`,
@@ -31,7 +30,6 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await response.json();
-    console.log('✅ Geocode API - Results:', data.length);
 
     return NextResponse.json(data);
   } catch (error: any) {

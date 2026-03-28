@@ -7,6 +7,7 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
+import { requireAuth } from '@/lib/api/requireAuth';
 
 function buildFallbackMonths(body: any): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; theme: string; key_transits: string[]; analysis: string }[] {
   const fallbackScores = [48, 52, 58, 70, 73, 65];
@@ -44,6 +45,8 @@ function buildFallbackMonths(body: any): { month_index: number; month_label: str
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
   let body: {
     model_override?: string;
     lagnaSign: string;

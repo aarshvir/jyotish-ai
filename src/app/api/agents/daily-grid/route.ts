@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api/requireAuth';
 
 export const maxDuration = 300;
 
@@ -15,6 +16,8 @@ const EPHEMERIS_URL =
  * Body: { date, currentLat, currentLng, timezoneOffset, natal_lagna_sign_index }
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     const { date, currentLat, currentLng, timezoneOffset, natal_lagna_sign_index } =
       await request.json();

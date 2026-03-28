@@ -9,8 +9,11 @@ import {
   formatMultipleDaysCommentaryAnchors,
   type DayAnchorInput,
 } from '@/lib/commentary/planetPositionsPrompt';
+import { requireAuth } from '@/lib/api/requireAuth';
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
   let body: {
     model_override?: string;
     lagnaSign: string;

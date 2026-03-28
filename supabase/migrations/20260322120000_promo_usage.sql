@@ -9,3 +9,9 @@ CREATE TABLE IF NOT EXISTS promo_usage (
 
 CREATE INDEX IF NOT EXISTS idx_promo_usage_code ON promo_usage (code);
 CREATE INDEX IF NOT EXISTS idx_promo_usage_user_email ON promo_usage (user_email);
+
+-- Enable RLS — only service role can read/write promo_usage (via admin client in checkout flow).
+ALTER TABLE promo_usage ENABLE ROW LEVEL SECURITY;
+
+-- No policies for authenticated/anon users — all access goes through service role.
+-- If a user-facing SELECT is ever needed, add an explicit policy here.

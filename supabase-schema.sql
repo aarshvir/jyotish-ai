@@ -1,4 +1,10 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- !! DEPRECATED — DO NOT APPLY !!
+-- This file is the legacy schema and conflicts with supabase/migrations/*.sql.
+-- The canonical schema is managed exclusively through supabase/migrations/.
+-- This file is kept for historical reference only.
+-- See supabase/migrations/20260324_vedic_phase2_reports.sql for the current schema.
+
+-- CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE users (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,

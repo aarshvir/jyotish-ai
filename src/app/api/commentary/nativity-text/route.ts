@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
+import { requireAuth } from '@/lib/api/requireAuth';
 
 const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -18,6 +19,8 @@ function extractText(response: Anthropic.Message): string {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireAuth(req);
+  if (auth instanceof NextResponse) return auth;
   let body: {
     lagnaSign: string;
     lagnaDegreee?: number;

@@ -48,7 +48,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const updates = await request.json();
+    const raw = await request.json();
+
+    // Whitelist — only safe user-editable fields; prevents mass-assignment.
+    const ALLOWED_FIELDS = ['name', 'display_name', 'avatar_url', 'timezone'] as const;
+    const updates: Record<string, unknown> = {};
+    for (const key of ALLOWED_FIELDS) {
+      if (key in raw) updates[key] = raw[key];
+    }
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
 
     const { data: profile, error } = await supabase
       .from('users')

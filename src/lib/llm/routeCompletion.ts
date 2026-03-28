@@ -278,9 +278,11 @@ export async function completeLlmChat(opts: {
       generationConfig: { maxOutputTokens: opts.maxTokens },
     });
     try {
-      return result.response.text();
-    } catch {
-      return '';
+      const text = result.response.text();
+      if (!text) throw new Error('Gemini returned empty response');
+      return text;
+    } catch (geminiErr) {
+      throw new Error(`Gemini text extraction failed: ${geminiErr instanceof Error ? geminiErr.message : String(geminiErr)}`);
     }
   }
 

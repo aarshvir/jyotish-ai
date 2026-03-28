@@ -6,6 +6,8 @@
  * This bypasses the tab-based DailyAnalysis which only mounts the active day.
  */
 
+import { getScoreLabel } from '@/lib/agents/RatingAgent';
+
 interface HourSlot {
   slot_index?: number;
   display_label?: string;
@@ -38,22 +40,20 @@ interface DayData {
 
 interface PrintAllDaysProps {
   days: DayData[];
-  reportName?: string;
 }
 
 const PLANET_SYMBOLS: Record<string, string> = {
   Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿', Jupiter: '♃', Venus: '♀', Saturn: '♄',
 };
 
+const SCORE_COLORS: Record<string, string> = {
+  Peak: '#4caf7d', Excellent: '#4caf7d', Good: '#d4af37',
+  Neutral: '#8a8090', Caution: '#e07a52', Difficult: '#e05252', Avoid: '#e05252',
+};
+
 function scoreLabel(s: number, rk: boolean) {
-  if (rk) return { text: 'RAHU KAAL', color: '#e05252' };
-  if (s >= 85) return { text: '★★★ PEAK', color: '#4caf7d' };
-  if (s >= 75) return { text: '★★ EXCELLENT', color: '#4caf7d' };
-  if (s >= 65) return { text: '★ GOOD', color: '#d4af37' };
-  if (s >= 55) return { text: 'NEUTRAL', color: '#8a8090' };
-  if (s >= 45) return { text: '⚠ CAUTION', color: '#e07a52' };
-  if (s >= 35) return { text: '⚠⚠ DIFFICULT', color: '#e05252' };
-  return { text: '🔴 AVOID', color: '#e05252' };
+  const label = getScoreLabel(s, rk);
+  return { text: label.toUpperCase(), color: SCORE_COLORS[label] ?? '#8a8090' };
 }
 
 function formatDate(dateStr: string) {
@@ -63,7 +63,7 @@ function formatDate(dateStr: string) {
   } catch { return dateStr; }
 }
 
-export function PrintAllDays({ days, reportName }: PrintAllDaysProps) {
+export function PrintAllDays({ days }: PrintAllDaysProps) {
   return (
     <div className="print-only" style={{ display: 'none' }}>
       {days.map((day, di) => {

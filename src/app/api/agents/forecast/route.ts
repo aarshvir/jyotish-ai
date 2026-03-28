@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ForecastAgent } from '@/lib/agents/ForecastAgent';
 import type { ForecastInput } from '@/lib/agents/types';
+import { requireAuth } from '@/lib/api/requireAuth';
 
 export const maxDuration = 300;
 
-let agent: ForecastAgent;
+let agent: ForecastAgent | null = null;
 try {
   agent = new ForecastAgent();
 } catch (initError) {
@@ -12,13 +13,12 @@ try {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(request);
+  if (auth instanceof NextResponse) return auth;
   try {
     const body = await request.json() as ForecastInput;
 
-    console.log('Forecast route called with body keys:', Object.keys(body));
-    console.log('natalChart.lagna:', body.natalChart?.lagna);
-    console.log('dateFrom:', body.dateFrom);
-    console.log('dateTo:', body.dateTo);
+    console.log('[forecast] called, lagna:', body.natalChart?.lagna, 'range:', body.dateFrom, '-', body.dateTo);
 
     if (!agent) {
       return NextResponse.json(
@@ -46,11 +46,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Forecast route error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack?.split('\n').slice(0, 5) : null,
-      },
+      { success: false, error: 'Forecast generation failed' },
       { status: 500 }
     );
   }
