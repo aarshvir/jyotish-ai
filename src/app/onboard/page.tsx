@@ -736,6 +736,10 @@ function OnboardPageInner() {
       }
     }
 
+    if (hasBypass && bypassToken) {
+      paramsObj.bypass = bypassToken;
+    }
+
     const params = new URLSearchParams(paramsObj);
 
     const finalUrl = `/report/${crypto.randomUUID()}?${params.toString()}`;
