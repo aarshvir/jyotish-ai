@@ -24,7 +24,7 @@ function LoginInner() {
     setGoogleLoading(true);
     setError('');
     const supabase = createClient();
-    const next = new URLSearchParams(window.location.search).get('next') ?? '/auth/consent';
+    const next = new URLSearchParams(window.location.search).get('next') ?? '/dashboard';
     const { error: oauthErr } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
