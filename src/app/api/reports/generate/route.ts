@@ -50,12 +50,19 @@ export async function POST(request: NextRequest) {
 
     const baseUrl = process.env.NEXT_PUBLIC_URL || 'http://localhost:3000';
 
+    // Forward the session cookie so child routes can pass requireAuth.
+    const cookieHeader = request.headers.get('cookie') ?? '';
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      ...(cookieHeader ? { cookie: cookieHeader } : {}),
+    };
+
     // Step 1: Ephemeris — matches /api/agents/ephemeris expected shape
     const ephemerisResponse = await fetch(
       `${baseUrl}/api/agents/ephemeris`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           type: 'natal-chart',
           birth_date,
@@ -98,12 +105,12 @@ export async function POST(request: NextRequest) {
     const [nativityResponse, forecastResponse] = await Promise.all([
       fetch(`${baseUrl}/api/agents/nativity`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ natalChart }),
       }),
       fetch(`${baseUrl}/api/agents/forecast`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           natalChart,
           birthLat: lat,
@@ -137,7 +144,7 @@ export async function POST(request: NextRequest) {
     try {
       const commentaryRes = await fetch(`${baseUrl}/api/generate-commentary`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           natalChart,
           nativity: nativityAnalysis,
