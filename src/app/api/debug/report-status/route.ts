@@ -3,9 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BYPASS_SECRET } from '@/lib/api/requireAuth';
 
-/**
- * Dependency health for report pipeline. Protected by bypass token only.
- */
 export async function GET(request: NextRequest) {
   const bypass = new URL(request.url).searchParams.get('bypass');
   if (bypass !== BYPASS_SECRET) {
@@ -21,31 +18,35 @@ export async function GET(request: NextRequest) {
   ).trim();
 
   try {
-    const r = await fetch(` ${ephUrl.replace(/\/\$/, '')}/validate `, {
-      signal: AbortSignal.timeout(5000),
-    });
+    const ephValidateUrl = ephUrl.replace(/\/$/, '') + '/validate';
+    const r = await fetch(ephValidateUrl, { signal: AbortSignal.timeout(5000) });
     status.ephemeris = { ok: r.ok, url: ephUrl, status: r.status };
   } catch (e: unknown) {
-    status.ephemeris = {
-      ok: false,
-      url: ephUrl,
-      error: e instanceof Error ? e.message : String(e),
-    };
+    status.ephemeris = { ok: false, url: ephUrl, error: e instanceof Error ? e.message : String(e) };
   }
+
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  const rawKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+  const url = rawUrl.trim();
+  const key = rawKey.trim();
+
+  status.supabase_url_raw_len = rawUrl.length;
+  status.supabase_url_trimmed_len = url.length;
+  status.supabase_url_preview = url.substring(0, 60);
 
   try {
     const { createClient } = await import('@supabase/supabase-js');
-    const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
-    const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
     if (!url || !key) {
-      status.supabase = { ok: false, error: 'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' };
+      status.supabase = { ok: false, error: 'Missing env vars' };
     } else {
       const sb = createClient(url, key);
       const { error } = await sb.from('reports').select('id').limit(1);
       status.supabase = { ok: !error, error: error?.message };
     }
   } catch (e: unknown) {
-    status.supabase = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    const msg = e instanceof Error ? e.message : String(e);
+    const stk = e instanceof Error ? (e.stack ?? '').substring(0, 200) : '';
+    status.supabase = { ok: false, error: msg, stack: stk };
   }
 
   status.llm = {
