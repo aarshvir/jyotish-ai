@@ -211,11 +211,14 @@ Return ONLY valid JSON. No markdown, no backticks. Start response with { and end
 
     const userPrompt = `Generate hourly commentary for ${date}. Current dasha: ${mahadasha}/${antardasha}.
 
-For each of the 18 time slots write commentary of 140-170 words. Name house numbers. Explain choghadiya meaning in parentheses. End with CAPS directive. No generic language.
-
-The slot that matches the BEST ACTION WINDOW (highest score) above should be described as the primary favorable window when you discuss timing; do not treat a lower-scoring slot as the main recommendation.
-
-Never use: generally, may, could, might, perhaps.
+MANDATORY RULES for each slot commentary (enforce without exception):
+1. Length: 60–90 words per slot. Count carefully. Do not write shorter.
+2. EVERY sentence must name at least one: planet, house number (e.g. H3, H10, "3rd house"), or nakshatra.
+3. State the choghadiya name and its quality in parentheses on first use — e.g. "Amrit (nectar, most auspicious)".
+4. End each commentary with one sentence in ALL CAPS that gives a directive — e.g. "SEND THE CONTRACT NOW AND CONFIRM RECEIPT."
+5. Never use these words: generally, may, could, might, perhaps, various, often.
+6. Rahu Kaal slots: begin with "RAHU KAAL —" and instruct completion only.
+7. The slot with the highest score is the BEST ACTION WINDOW — describe it as the primary opportunity of the day.
 
 Slots:
 ${slotLines}
@@ -227,10 +230,7 @@ Return ONLY valid JSON:
     { "slot_index": 0, "commentary": "..." }
   ]
 }
-Respond with ONLY a JSON object. No preamble.
-No explanation. No markdown. Start with { directly.
-Format: {"slots": [{"slot_index": 0, "commentary": "..."}]}
-Start response with { and end with }. No markdown.`;
+Respond with ONLY a JSON object. No preamble. No markdown. Start with { directly.`;
 
     try {
       const rawText = await completeLlmChat({
@@ -266,7 +266,8 @@ Start response with { and end with }. No markdown.`;
         const slot_index = typeof s.slot_index === 'number' ? s.slot_index : normalizedSlots[i]?.slot_index ?? i;
         const commentary = String(s.commentary ?? '').trim();
         const role = ctx.horaRoles[normalizedSlots[i]?.dominant_hora];
-        if (commentary.length < 40) return buildFallbackSlot(normalizedSlots[i], lagnaSign, role);
+        const wordCount = commentary.split(/\s+/).filter(Boolean).length;
+        if (wordCount < 60) return buildFallbackSlot(normalizedSlots[i], lagnaSign, role);
         return { slot_index, commentary };
       });
 

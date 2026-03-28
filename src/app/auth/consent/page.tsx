@@ -27,12 +27,18 @@ export default function ConsentPage() {
       }
       setUserEmail(user.email || '');
 
-      const { data } = await supabase
+      const { data, error: consentErr } = await supabase
         .from('user_consent')
         .select('id')
         .eq('user_id', user.id)
         .eq('terms_version', TERMS_VERSION)
         .maybeSingle();
+
+      // If the table doesn't exist yet (42P01 = undefined_table), skip consent gate.
+      if (consentErr && (consentErr.code === '42P01' || consentErr.message?.includes('does not exist'))) {
+        router.push('/dashboard');
+        return;
+      }
 
       if (data) {
         router.push('/dashboard');
@@ -63,7 +69,8 @@ export default function ConsentPage() {
       user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
     });
 
-    if (error && error.code !== '23505') {
+    // 23505 = unique violation (already consented), 42P01 = table missing — both are fine to ignore.
+    if (error && error.code !== '23505' && error.code !== '42P01' && !error.message?.includes('does not exist')) {
       console.error('user_consent insert:', error.message);
     }
 

@@ -2,21 +2,10 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaContext';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
-
-const anthropic = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  : null;
-
-function extractText(response: Anthropic.Message): string {
-  return response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('');
-}
+import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 
 function buildFallbackMonths(body: any): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; theme: string; key_transits: string[]; analysis: string }[] {
   const fallbackScores = [70, 73, 68, 62, 58, 52];
@@ -52,10 +41,6 @@ function buildFallbackMonths(body: any): { month_index: number; month_label: str
 }
 
 export async function POST(req: NextRequest) {
-  if (!anthropic) {
-    return NextResponse.json({ error: 'API key missing' }, { status: 500 });
-  }
-
   let body: {
     lagnaSign: string;
     mahadasha: string;
@@ -86,6 +71,10 @@ export async function POST(req: NextRequest) {
     reference_slots,
     reference_rahu_kaal,
   } = body;
+  const modelOverride = typeof (body as any).model_override === 'string' ? (body as any).model_override : undefined;
+  if (!hasLlmCredentials(modelOverride)) {
+    return NextResponse.json({ months: buildFallbackMonths(body) });
+  }
   if (!lagnaSign || !Array.isArray(months) || months.length === 0) {
     return NextResponse.json({ error: 'lagnaSign and months required' }, { status: 400 });
   }
@@ -118,11 +107,17 @@ Return ONLY valid JSON. No markdown, no backticks.`;
 Months to analyse:
 ${JSON.stringify(months, null, 2)}
 
-analysis: Write 150-180 words in grandmaster style. Every sentence must name a planet, house, or nakshatra. Include dominant transit, Moon house journey (3-4 houses), and Rahu-Mercury interaction. End with BEST/WORST line. Never write generic sentences.
+MANDATORY RULES FOR analysis FIELD (enforce all):
+1. Write exactly 150-180 words. Count carefully.
+2. EVERY sentence must name at least one: planet (Sun/Moon/Mars/Mercury/Jupiter/Venus/Saturn/Rahu/Ketu), house number written as "H1" through "H12" or "1st house" through "12th house", or nakshatra name.
+3. End the analysis with EXACTLY this format: "BEST: [specific 2-3 day window or event]. WORST: [specific 2-3 day window or event]."
+4. Include a rating line: "Rating: [number]/100."
+5. Use H-notation for houses (e.g. H3, H6, H10, H12). Do not omit house numbers.
+6. Never use: generally, may, could, might, perhaps.
 
-overall_score: Apply wide modifiers across months; keep a wide range and avoid clustering at 52-65. Scores MUST range 42-75 across 6 months. Do not cluster all months at 52-65.
+overall_score: Scores MUST range 42-75 across 6 months. Do NOT cluster all at 52-65.
 
-Return exactly 6 month objects in this structure:
+Return exactly 6 month objects:
 {
   "months": [
     {
@@ -133,26 +128,23 @@ Return exactly 6 month objects in this structure:
       "money_score": 55,
       "health_score": 55,
       "love_score": 55,
-      "theme": "one italic sentence",
-      "key_transits": ["4-5 strings naming planets/date ranges/house activation/effect"],
-      "analysis": "150-180 word analysis"
+      "theme": "one sentence naming a planet and house",
+      "key_transits": ["4-5 strings naming planet/date range/house (H-notation)/effect"],
+      "analysis": "150-180 words including BEST:/WORST: and Rating:/100"
     }
   ]
 }
 
-Same structure for each of the 6 months. Start with { and end with }.`;
+Start with { and end with }.`;
 
   try {
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 7000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const text = await completeLlmChat({
+      modelOverride,
+      systemPrompt,
+      userPrompt,
+      maxTokens: 7000,
     });
-
-    const text = extractText(response);
     const parsed = safeParseJson<{ months: any[] }>(text);
-
     return NextResponse.json({ months: parsed.months ?? [] });
   } catch (err: any) {
     console.error('[months-second]', err?.message || err);

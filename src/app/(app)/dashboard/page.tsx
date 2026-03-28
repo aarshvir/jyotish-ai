@@ -42,11 +42,27 @@ export default function DashboardPage() {
         return;
       }
 
-      const { data: prof } = await supabase
+      let prof: UserProfile | null = null;
+      const { data: profData } = await supabase
         .from('user_profiles')
         .select('display_name, email')
         .eq('id', user.id)
         .maybeSingle();
+      if (profData) {
+        prof = profData;
+      } else {
+        // Fall back to the users table (populated by login/OAuth upsert)
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('name, email')
+          .eq('id', user.id)
+          .maybeSingle();
+        if (userRow) {
+          prof = { display_name: userRow.name ?? null, email: userRow.email ?? null };
+        } else {
+          prof = { display_name: null, email: user.email ?? null };
+        }
+      }
       setProfile(prof);
 
       const { data: reps } = await supabase
@@ -102,6 +118,12 @@ export default function DashboardPage() {
       month: 'short',
       year: 'numeric',
     });
+  }
+
+  function isToday(dateStr: string) {
+    const d = new Date(dateStr);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
   }
 
   function getReportUrl(report: Report) {
@@ -335,8 +357,16 @@ export default function DashboardPage() {
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#4a4435', marginTop: '4px' }}>
-                      Generated {formatDate(report.created_at)}
+                    <div style={{ fontSize: '12px', color: '#4a4435', marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <span>
+                        {isToday(report.created_at) ? (
+                          <span style={{ color: '#6baa6b', fontWeight: '600' }}>Today · </span>
+                        ) : null}
+                        Generated {formatDate(report.created_at)}
+                      </span>
+                      {report.birth_date && (
+                        <span>· Born {formatDate(report.birth_date)}</span>
+                      )}
                     </div>
                   </div>
 

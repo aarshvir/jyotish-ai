@@ -35,20 +35,23 @@ export const HORA_BASE: Record<string, number> = {
   Saturn:  28,
 };
 
-// ── Per-lagna hora adjustments ───────────────────────────────────────────────
+// ── Per-lagna hora adjustments ────────────────────────────────────────────────
+// Zeroed: the grandmaster formula uses the same base scores for all lagnas.
+// Functional role is expressed through commentary, not score adjustments,
+// to avoid double-counting with the calibrated house modifiers.
 export const LAGNA_HORA_DELTA: Record<string, Record<string, number>> = {
-  Aries:       { Mars: +18, Sun: +12, Jupiter: +10, Mercury: -8,  Venus: -8,  Saturn: -12, Moon: 0   },
-  Taurus:      { Venus: +18, Mercury: +12, Saturn: +10, Jupiter: -8, Sun: -8,  Mars: -6,   Moon: 0   },
-  Gemini:      { Mercury: +18, Venus: +12, Saturn: +8,  Mars: -10,  Jupiter: -6, Sun: 0,   Moon: 0   },
-  Cancer:      { Moon: +20,  Mars: +15,  Jupiter: +10, Sun: +5,   Venus: 0,   Mercury: -10, Saturn: -15 },
-  Leo:         { Sun: +20,  Mars: +15,  Jupiter: +10, Moon: +5,  Venus: -8,  Saturn: -10, Mercury: -6  },
-  Virgo:       { Mercury: +18, Venus: +12, Saturn: +8,  Mars: -10,  Jupiter: -6, Sun: 0,   Moon: 0   },
-  Libra:       { Venus: +18, Saturn: +12, Mercury: +8,  Mars: -12,  Sun: -10,  Jupiter: -5, Moon: 0   },
-  Scorpio:     { Mars: +18,  Jupiter: +12, Moon: +8,   Venus: -10, Mercury: -8, Saturn: -5, Sun: 0    },
-  Sagittarius: { Jupiter: +18, Sun: +12,  Mars: +10,   Venus: -8,  Mercury: -8, Saturn: -5, Moon: 0   },
-  Capricorn:   { Saturn: +18, Venus: +12, Mercury: +8,  Moon: -8,   Sun: -10,  Mars: -5,   Jupiter: 0 },
-  Aquarius:    { Saturn: +18, Venus: +10, Mercury: +8,  Moon: -10,  Sun: -12,  Mars: -5,   Jupiter: 0 },
-  Pisces:      { Jupiter: +18, Moon: +12, Mars: +10,   Venus: -8,  Mercury: -10, Saturn: -5, Sun: 0   },
+  Aries:       {},
+  Taurus:      {},
+  Gemini:      {},
+  Cancer:      {},
+  Leo:         {},
+  Virgo:       {},
+  Libra:       {},
+  Scorpio:     {},
+  Sagittarius: {},
+  Capricorn:   {},
+  Aquarius:    {},
+  Pisces:      {},
 };
 
 // ── Choghadiya alias normalization (Chal ≡ Char for scoring) ──────────────────
@@ -57,33 +60,32 @@ export function normalizeChoghadiya(name: string): string {
   return name;
 }
 
-// ── Choghadiya quality modifiers (Chal and Char equivalent for scoring) ───────
+// ── Choghadiya quality modifiers — calibrated to grandmaster Bible Step 2 ─────
 export const CHOGHADIYA_SCORE: Record<string, number> = {
-  Amrit:  25,
-  Shubh:  18,
-  Labh:   18,
-  Chal:    5,
-  Char:    5,   // Equivalent to Chal per product spec
-  Udveg: -10,
-  Rog:   -15,
-  Kaal:  -15,
+  Amrit:  12,
+  Shubh:   4,
+  Labh:    8,
+  Chal:    0,
+  Char:    0,   // Equivalent to Chal per product spec
+  Udveg:  -6,
+  Rog:    -8,
+  Kaal:  -12,
 };
 
-// ── Transit Lagna House modifiers (from Cancer lagna perspective) ─────────────
-// Houses from lagna that are beneficial vs harmful when rising
+// ── Transit Lagna House modifiers — calibrated to grandmaster Bible Step 3 ────
 const TRANSIT_HOUSE_MOD: Record<number, number> = {
-  1:  +20,   // Own lagna rising — personal power peak
-  2:  +10,   // Wealth, family, speech
-  3:   +3,   // Communication, courage
-  4:   +8,   // Comfort, home, mother
-  5:  +12,   // Creativity, intelligence, children
-  6:   -5,   // Competition, service, disease
-  7:   +5,   // Partnerships, marriage
-  8:  -10,   // Transformation, hidden, obstacles
-  9:  +15,   // Fortune, dharma, guru
-  10: +18,   // Career zenith — peak professional power
-  11: +12,   // Gains, networks, wish fulfillment
-  12:  -8,   // Expenses, isolation, foreign
+  1:  +6,   // Self, identity — always powerful
+  2:  +3,   // Wealth, family, speech
+  3:   0,   // Communication, neutral
+  4:  +1,   // Home, property
+  5:  +4,   // Creativity, romance, children (trikona)
+  6:  -2,   // Enemies, competition, health
+  7:  +1,   // Partnerships
+  8:  -5,   // Transformation, danger (dusthana)
+  9:  +5,   // Fortune, dharma (best trikona)
+  10: +6,   // Career, reputation (best kendra)
+  11: +5,   // Gains, wishes, networks
+  12: -5,   // Losses, expenses (dusthana)
 };
 
 // Map signs to house number from a given lagna
@@ -98,41 +100,97 @@ function getHouseFromLagna(transitSign: string, lagna: string): number {
 }
 
 // ── Panchang quality modifiers (day-level) ──────────────────────────────────
+// All values sourced from Bible Step 6 ranges only. No reverse-engineering of
+// the grandmaster forecast document. The Bible states: yoga -8 to +8, tithi -10
+// to +5, nakshatra -3 to +10, moon house -5 to +8, weekday -2 to +3.
+
+// Yoga quality — Bible range -8 to +8; anchor points: Siddhi/Brahma=+8, Vyaghata/Vyatipata=-8
+// Rankings follow classical Vedic texts (Muhurta Chintamani, Brihat Samhita).
 const YOGA_QUALITY: Record<string, number> = {
-  Vishkambha: -5, Priti: +5, Ayushman: +8, Saubhagya: +10, Shobhana: +5,
-  Atiganda: -8, Sukarma: +5, Dhriti: +5, Shula: -8, Ganda: -10,
-  Vriddhi: +8, Dhruva: +5, Vyaghata: -8, Harshana: +5, Vajra: -5,
-  Siddhi: +10, Vyatipata: -10, Variyan: +3, Parigha: -10, Shiva: +3,
-  Siddha: +8, Sadhya: +5, Shubha: +8, Shukla: +5, Brahma: +5,
-  Indra: +10, Vaidhriti: -10,
+  Vishkambha: -5, Priti: +5, Ayushman: +6, Saubhagya: +6, Shobhana: +5,
+  Atiganda:   -6, Sukarma: +5, Dhriti:  +5, Shula:    -6, Ganda:    -6,
+  Vriddhi:    +6, Dhruva:  +6, Vyaghata:-8, Harshana: +5, Vajra:    -5,
+  Siddhi:     +8, Vyatipata:-8, Variyan: +3, Parigha:  -7, Shiva:    +4,
+  Siddha:     +7, Sadhya:  +5, Shubha:  +7, Shukla:   +4, Brahma:   +8,
+  Indra:      +8, Vaidhriti:-7,
 };
 
+// Tithi quality — Bible range -10 to +5; anchor: Amavasya=-10, Rikta=-3, Jaya=+3, Nanda=+5
+// Tithi groups: Nanda(1,6,11)=+5, Bhadra(2,7,12)=+4, Jaya(3,8,13)=+3,
+//   Rikta(4,9,14)=-3, Poorna(5,10,15)=+5. Chaturdashi and Ashtami extra-malefic.
 const TITHI_QUALITY: Record<string, number> = {
-  Pratipada: +3, Dwitiya: +5, Tritiya: +5, Chaturthi: -3, Panchami: +8,
-  Shashthi: +3, Saptami: +5, Ashtami: -5, Navami: -3, Dashami: +5,
-  Ekadashi: +8, Dwadashi: +3, Trayodashi: +3, Chaturdashi: -8,
+  Pratipada: +5, Dwitiya: +4, Tritiya: +3, Chaturthi: -3, Panchami: +5,
+  Shashthi:  +5, Saptami: +4, Ashtami:  -5, Navami:   -3, Dashami:  +5,
+  Ekadashi:  +5, Dwadashi:+4, Trayodashi:+3, Chaturdashi:-8,
 };
 
-function getPanchangDayAdj(panchang: PanchangData | undefined): number {
+// Nakshatra quality — Bible anchor points: Pushya=+10, Rohini/Hasta=+5, Moola=-3
+// Full 27-nakshatra ranking from standard Muhurta texts.
+const NAKSHATRA_QUALITY: Record<string, number> = {
+  Ashwini:  +5, Bharani:  -3, Krittika: +3, Rohini:    +8, Mrigashira:  +5,
+  Ardra:    -5, Punarvasu:+8, Pushya:  +10, Ashlesha:  -3,
+  Magha:    +3, 'Purva Phalguni': +3, 'Uttara Phalguni': +5, Hasta: +8,
+  Chitra:   +5, Swati:    +4, Vishakha: +5, Anuradha:  +6, Jyeshtha: -3,
+  Moola:    -3, 'Purva Ashadha': +4, 'Uttara Ashadha': +6, Shravana: +6,
+  Dhanishtha:+5, Shatabhisha:+3, 'Purva Bhadrapada': -3,
+  'Uttara Bhadrapada': +6, Revati: +5,
+};
+
+// Moon house position — Bible: 1st/10th/11th = +5 to +8, 6th/8th/12th = -3 to -5
+const MOON_HOUSE_MOD: Record<number, number> = {
+  1: +8, 2: +3, 3:  0, 4: +3, 5: +6,
+  6: -3, 7: +2, 8: -5, 9: +5, 10: +8,
+  11: +8, 12: -4,
+};
+
+// Weekday ruler alignment — Bible: benefic ruler's day +2, malefic ruler's day -1, range -2 to +3
+const WEEKDAY_RULER_MOD: Record<string, number> = {
+  Monday:    +2,  // Moon (Lagna lord — maximum benefic for Cancer)
+  Thursday:  +3,  // Jupiter (chart guardian, closest to Bible's +3 ceiling)
+  Wednesday: +1,  // Mercury (mixed — Antardasha lord but functional malefic)
+  Friday:    -1,  // Venus (Badhaka lord)
+  Saturday:  -2,  // Saturn (Maraka — worst malefic)
+  Sunday:    +1,  // Sun (moderate benefic for Cancer — rules 2nd)
+  Tuesday:   +2,  // Mars (Yogakaraka — strong benefic)
+};
+
+function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'Cancer'): number {
   if (!panchang) return 0;
   let adj = 0;
 
+  // Yoga quality
   const yoga = panchang.yoga || '';
   adj += YOGA_QUALITY[yoga] ?? 0;
 
+  // Tithi quality
   const tithi = panchang.tithi || '';
   for (const [key, val] of Object.entries(TITHI_QUALITY)) {
     if (tithi.includes(key)) { adj += val; break; }
   }
-
   if (tithi.includes('Amavasya')) adj -= 15;
   if (tithi.includes('Purnima')) adj += 5;
+
+  // Nakshatra quality
+  const nakshatra = panchang.nakshatra || '';
+  for (const [name, val] of Object.entries(NAKSHATRA_QUALITY)) {
+    if (nakshatra.includes(name)) { adj += val; break; }
+  }
+
+  // Moon house position
+  const moonSign = panchang.moon_sign || '';
+  if (moonSign) {
+    const moonHouse = getHouseFromLagna(moonSign.split(' ')[0] ?? moonSign, lagna);
+    if (moonHouse > 0) adj += MOON_HOUSE_MOD[moonHouse] ?? 0;
+  }
+
+  // Weekday ruler alignment
+  adj += WEEKDAY_RULER_MOD[panchang.day_ruler] ?? 0;
 
   return adj;
 }
 
-// ── Rahu Kaal penalty ────────────────────────────────────────────────────────
-const RAHU_KAAL_PENALTY = -50;
+// ── Rahu Kaal penalty — calibrated to grandmaster Bible Step 5 ───────────────
+const RAHU_KAAL_PENALTY = -15;
 
 // ── Transit lagna calculation (approximate by hora slot position) ─────────────
 // Each hora is ~1 hour. Lagna moves ~1 sign per 2 hours.
@@ -156,13 +214,9 @@ function getApproxTransitLagnaSign(
   return SIGNS_ORDER[transitIdx];
 }
 
-// ── Score normalisation (0–100) ───────────────────────────────────────────────
-const SCORE_MIN = -90;
-const SCORE_MAX = 130;
-
+// ── Score normalisation — clamp to 5–98 matching grandmaster Bible Step 5 ─────
 function normalise(rawScore: number): number {
-  const clamped = Math.max(SCORE_MIN, Math.min(SCORE_MAX, rawScore));
-  return Math.round(((clamped - SCORE_MIN) / (SCORE_MAX - SCORE_MIN)) * 100);
+  return Math.max(5, Math.min(98, Math.round(rawScore)));
 }
 
 // ── Canonical scoring engine (single source of truth) ─────────────────────────
@@ -364,7 +418,7 @@ export class RatingAgent {
   }
 
   rateDay(date: string, data: FullDayData, lagna: string): DayRating {
-    const panchangAdj = getPanchangDayAdj(data.panchang);
+    const panchangAdj = getPanchangDayAdj(data.panchang, lagna);
     const sunSignIdx = getSunSignIndex(date);
     const sunriseTime = data.panchang?.sunrise || '06:00:00';
 
@@ -388,11 +442,13 @@ export class RatingAgent {
       const choghadiya = findChoghadiya(hora.start_time, data.choghadiya);
       const isRK = inRahuKaal(hora.start_time, data.rahu_kaal);
 
-      const transitSign = getApproxTransitLagnaSign(
-        hora.start_time,
-        sunriseTime,
-        sunSignIdx
-      );
+      // Prefer actual transit_lagna from ephemeris data if the hora entry carries it;
+      // fall back to the calendar approximation only when absent.
+      const ephTransitSign = (hora as HoraEntry & { transit_lagna?: string }).transit_lagna;
+      const transitSign = (ephTransitSign && SIGNS_ORDER.includes(ephTransitSign))
+        ? ephTransitSign
+        : getApproxTransitLagnaSign(hora.start_time, sunriseTime, sunSignIdx);
+
       const transitHouse = getHouseFromLagna(transitSign, lagna);
       const transitMod = TRANSIT_HOUSE_MOD[transitHouse] ?? 0;
 
@@ -442,29 +498,31 @@ export class RatingAgent {
 // ── Sanity checks ─────────────────────────────────────────────────────────────
 
 export function runSanityChecks(): void {
-  // 1. Strong slot: Jupiter hora, Cancer lagna, Amrit choghadiya, 10th house, no Rahu Kaal
+  // 1. Strong slot: Jupiter hora, Cancer lagna, Amrit choghadiya, H1 (+6), no Rahu Kaal
+  // raw = 62 + 5 + 12 + 6 = 85 → clamp → 85
   const strongScore = calculateSlotScore({
     horaRuler: 'Jupiter',
     lagna: 'Cancer',
     choghadiya: 'Amrit',
-    transitHouseMod: 18,
+    transitHouseMod: 6,
     isRahuKaal: false,
   });
-  const strongOk = strongScore >= 85;
-  console.log(`[Sanity] Strong slot: ${strongScore} (>= 85?) ${strongOk ? '✓' : '✗'}`);
-  if (!strongOk) throw new Error(`Strong slot expected >= 85, got ${strongScore}`);
+  const strongOk = strongScore >= 75;
+  console.log(`[Sanity] Strong slot: ${strongScore} (>= 75?) ${strongOk ? '✓' : '✗'}`);
+  if (!strongOk) throw new Error(`Strong slot expected >= 75, got ${strongScore}`);
 
-  // 2. Weak Rahu Kaal: Saturn hora, Kaal choghadiya, 8th house, Rahu Kaal
+  // 2. Weak Rahu Kaal: Saturn hora, Kaal choghadiya, 8th house (-5), Rahu Kaal (-15)
+  // raw = 28 + (-8) + (-12) + (-5) + (-15) = -12 → clamp 5 → 5
   const weakScore = calculateSlotScore({
     horaRuler: 'Saturn',
     lagna: 'Cancer',
     choghadiya: 'Kaal',
-    transitHouseMod: -10,
+    transitHouseMod: -5,
     isRahuKaal: true,
   });
-  const weakOk = weakScore <= 35;
-  console.log(`[Sanity] Weak Rahu Kaal slot: ${weakScore} (<= 35?) ${weakOk ? '✓' : '✗'}`);
-  if (!weakOk) throw new Error(`Weak Rahu Kaal slot expected <= 35, got ${weakScore}`);
+  const weakOk = weakScore <= 20;
+  console.log(`[Sanity] Weak Rahu Kaal slot: ${weakScore} (<= 20?) ${weakOk ? '✓' : '✗'}`);
+  if (!weakOk) throw new Error(`Weak Rahu Kaal slot expected <= 20, got ${weakScore}`);
 
   // 3. Chal/Char equivalence
   const chalScore = calculateSlotScore({

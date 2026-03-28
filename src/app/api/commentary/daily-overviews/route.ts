@@ -207,28 +207,29 @@ Return ONLY valid JSON. No markdown, no backticks.`;
     const userPrompt = `${grahaBlocks}
 
 Generate day_theme and day_overview for EACH of the following ${nDays} days. You MUST return exactly ${nDays} entr${nDays === 1 ? 'y' : 'ies'} in the "days" array — one per day in the same order. Current dasha: ${mahadasha}/${antardasha}.
-For each day, graha signs and whole-sign houses MUST match the ACTUAL PLANETARY POSITIONS block for that date above (not the JSON duplicate alone). The yoga meaning and BEST ACTION WINDOW lines are authoritative for that date.
+For each day, graha signs and whole-sign houses MUST match the ACTUAL PLANETARY POSITIONS block for that date above. The yoga meaning and BEST ACTION WINDOW lines are authoritative for that date.
 
 Days data:
 ${JSON.stringify(batchDays, null, 2)}
 
-day_overview: Write 280-320 words. First line ALL CAPS headline.
-Then STRATEGY: section with 4 specific directives.
-Name specific house numbers, planets, nakshatras.
-Never use: generally, may, could, might, perhaps.
-
-STRATEGY section must include exactly 4 directives in this order:
-1) Primary timing: MUST name the BEST ACTION WINDOW (exact Time + Choghadiya from the fixed block above) as the main recommended window; tie the hora planet to that window.
-2) Strict avoid directive using direct language
-3) Rahu Kaal directive using the exact HH:MM-HH:MM time from the data and one instruction (if Rahu Kaal is ACTIVE above)
-4) Wellness directive with one practice for Cancer lagna
+MANDATORY RULES for day_overview (enforce all, no exceptions):
+1. First line: ALL-CAPS headline (minimum 6 words, ends with period). The headline MUST include the word "RAHU" since current dasha is Rahu-Mercury. Example: "RAHU MERCURY DASHA DEMANDS PRECISION IN H6 DOCUMENTATION."
+2. Total word count: 280–320 words. Count carefully.
+3. EVERY sentence must name at least one of: a planet (Sun/Moon/Mars/Mercury/Jupiter/Venus/Saturn/Rahu/Ketu), a house number (H1 through H12 or "1st house" etc.), or a nakshatra.
+4. Never use these words: generally, may, could, might, perhaps, various, often, sometimes.
+5. The word "Rahu" must appear at least 3 times in each day_overview — in the headline, in the body discussing H6 Rahu activation, and in Directive 3 for Rahu Kaal.
+6. After the opening paragraphs, write a STRATEGY: section with exactly 4 directives:
+   - Directive 1 (Best timing): Name the BEST ACTION WINDOW exact time + hora planet + choghadiya from the anchor block above. Tie the action to a specific house number.
+   - Directive 2 (Avoid): Name what NOT to do. Use direct language ("Do not", "Avoid", "Stop"). Name the afflicting planet and house.
+   - Directive 3 (Rahu Kaal): State the exact Rahu Kaal HH:MM–HH:MM time from the data above and give one specific instruction about Rahu Kaal avoidance.
+   - Directive 4 (Wellness): Give one specific physical or mental practice named for ${lagnaSign} lagna.
 
 Return this exact JSON structure (no extra fields):
 {
   "days": [
     {
       "date": "YYYY-MM-DD",
-      "day_theme": "<15-20 words>",
+      "day_theme": "<15-20 words naming at least 1 planet and 1 house>",
       "day_overview": "<280-320 words>"
     }
   ]

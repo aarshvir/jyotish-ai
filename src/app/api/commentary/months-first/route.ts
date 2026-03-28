@@ -113,11 +113,17 @@ Return ONLY valid JSON. No markdown, no backticks.`;
 Months to analyse:
 ${JSON.stringify(months, null, 2)}
 
-analysis: Write 150-180 words. Include: (1) Dominant transit this month for ${lagnaSign} lagna — name planet, house number, and concrete effect. (2) Which 3-4 house numbers the Moon passes through and what each governs. (3) How Rahu-Mercury dasha interacts — amplifies or conflicts. (4) End with a BEST/WORST line. Never write generic sentences; every sentence names a planet, house, or nakshatra.
+MANDATORY RULES FOR analysis FIELD (enforce all):
+1. Write exactly 150-180 words. Count carefully.
+2. EVERY sentence must name at least one: planet (Sun/Moon/Mars/Mercury/Jupiter/Venus/Saturn/Rahu/Ketu), house number written as "H1" through "H12" or "1st house" through "12th house", or nakshatra name. Do NOT omit house numbers.
+3. End the analysis with EXACTLY this format on its own line: "BEST: [specific 2-3 day window or event]. WORST: [specific 2-3 day window or event]."
+4. Include a rating line: "Rating: [number]/100."
+5. Use "H" notation for houses (e.g. H3, H6, H10, H12). Do not write "the third house" without also writing "H3".
+6. Never use: generally, may, could, might, perhaps.
 
-overall_score: Apply modifiers to base 55 and keep a wide range across months. Jupiter enters Cancer around mid-2026 giving June/July/August scores 70-75. Scores MUST range 42-75 across 6 months. Do not cluster all months at 52-65.
+overall_score RULE (enforce strictly): The first month MUST score 42-48. Later months can be 50-75. Jupiter enters Cancer mid-2026: June=70, July=73, August=75. The spread between max and min MUST be at least 30. Do NOT start at 55 — start at 42-48.
 
-Return exactly 6 month objects in this structure:
+Return exactly 6 month objects:
 {
   "months": [
     {
@@ -128,21 +134,21 @@ Return exactly 6 month objects in this structure:
       "money_score": 55,
       "health_score": 55,
       "love_score": 55,
-      "theme": "one italic sentence",
-      "key_transits": ["4-5 strings naming planets/date ranges/house activation/effect"],
-      "analysis": "150-180 word analysis"
+      "theme": "one sentence naming a planet and house",
+      "key_transits": ["4-5 strings naming planet/date range/house (H-notation)/effect"],
+      "analysis": "150-180 words including BEST:/WORST: and Rating:/100"
     }
   ]
 }
 
-Same structure for each month. Start with { and end with }.`;
+Start with { and end with }.`;
 
   try {
     const text = await completeLlmChat({
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: 7000,
+      maxTokens: 8000,
     });
     const parsed = safeParseJson<{ months: any[] }>(text);
 

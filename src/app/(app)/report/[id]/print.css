@@ -1,72 +1,117 @@
+@page {
+  size: A4;
+  margin: 18mm 15mm;
+}
+
 @media print {
-  /* Hide everything except report content */
+  /* ── Hide UI chrome ─────────────────────────────────────────────── */
   nav,
+  header,
   .pdf-exclude,
   #pdf-download-btn,
   .mobile-tabs,
-  [data-print-hide] {
+  [data-print-hide],
+  button,
+  aside {
     display: none !important;
   }
 
-  /* Force dark background to print */
+  /* ── Colour fidelity ────────────────────────────────────────────── */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
 
+  html,
   body {
     background: #0a0a1a !important;
     color: #e8e0d0 !important;
+    font-size: 11pt;
+    line-height: 1.55;
   }
 
-  /* Page breaks between major sections */
+  /* ── Layout: full width, no fixed sidebar ───────────────────────── */
+  .max-w-4xl,
+  .max-w-7xl,
+  .max-w-6xl,
+  .max-w-5xl,
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Remove overflow clipping so tables print fully */
+  .overflow-x-auto,
+  .overflow-hidden {
+    overflow: visible !important;
+  }
+
+  /* Collapse any fixed-positioned elements */
+  .fixed,
+  .sticky {
+    position: static !important;
+  }
+
+  /* ── Page break controls ────────────────────────────────────────── */
+  #nativity {
+    page-break-before: avoid;
+  }
   #monthly {
     page-break-before: always;
+    break-before: page;
   }
   #weekly {
     page-break-before: always;
+    break-before: page;
   }
   #daily {
     page-break-before: always;
-  }
-  #hourly {
-    page-break-before: always;
+    break-before: page;
   }
   #synthesis {
     page-break-before: always;
+    break-before: page;
   }
 
-  /* Prevent awkward breaks inside cards */
-  .bg-cosmos {
+  /* Prevent cards and table rows from splitting across pages */
+  .bg-cosmos,
+  [class*="rounded-"],
+  tr,
+  .slot-row {
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
-  /* Ensure table rows don't break */
-  tr {
-    page-break-inside: avoid;
-  }
+  /* ── Typography adjustments for print ──────────────────────────── */
+  h1 { font-size: 18pt; }
+  h2 { font-size: 14pt; }
+  h3 { font-size: 12pt; }
 
-  /* Remove fixed positioning */
-  .fixed {
-    position: static !important;
-  }
-
-  /* Full width for print */
-  .max-w-4xl,
-  .max-w-7xl {
-    max-width: 100% !important;
-  }
-
-  /* Hide scrollbars */
-  .overflow-x-auto {
-    overflow: visible !important;
-  }
-
-  /* Expand all collapsed hourly slots */
-  [data-collapsed='true'] {
+  /* ── Expand collapsed hourly slots so all content prints ───────── */
+  [data-collapsed="true"] {
     display: block !important;
     max-height: none !important;
+    height: auto !important;
+  }
+
+  /* ── Ensure links print as plain text (not underlined blue) ─────── */
+  a {
+    color: #d4af37 !important;
+    text-decoration: none !important;
+  }
+
+  /* ── Print a visible title at the top of page 1 ────────────────── */
+  body::before {
+    content: "VedicHour Forecast";
+    display: block;
+    font-family: Georgia, serif;
+    font-size: 22pt;
+    color: #d4af37;
+    text-align: center;
+    padding-bottom: 8mm;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.4);
+    margin-bottom: 8mm;
   }
 }

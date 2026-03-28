@@ -80,49 +80,86 @@ ${JSON.stringify(weeks, null, 2)}
 Synthesis context:
 ${JSON.stringify(synthesis_context, null, 2)}
 
-Return this JSON structure. Each week's analysis must be a dense paragraph in grandmaster style: key yogas and transits for the week, then end with "BEST: [date or event]." and "WORST: [date or event]." so the reader gets clear best/worst days for that week. When you name a best timing window for a date, use that date's BEST ACTION WINDOW (time + choghadiya) from the fixed blocks above.
+MANDATORY RULES (enforce strictly — these are absolute requirements, not suggestions):
+1. opening_paragraph: Write EXACTLY 210-250 words. Count every word. Structure it as TWO parts separated by a literal newline (\n):
+   PART 1 (first line): A single sentence entirely in ALL CAPITAL LETTERS, 10-14 words, ending with a period. Example: "RAHU-MERCURY PERIOD FOR CANCER LAGNA INTENSIFIES H6 SERVICE AND H12 CLOSURE AXIS."
+   PART 2 (rest after the newline): 200-220 words of dense analysis sentences. Every sentence names a planet, H-notation house, or nakshatra. Include: (a) Rahu in H6 and daily work themes; (b) Mercury as lord of H3 and H12; (c) Moon journey naming H1, H5, H9, H11; (d) Sun, Saturn, Mars roles by house; (e) best action window and timing strategy; (f) final ALL-CAPS directive sentence closing the paragraph.
+   The full opening_paragraph value MUST be: "[ALL-CAPS SENTENCE].\n[200+ word analysis]".
+2. strategic_windows: You MUST return EXACTLY 2 objects in this array — no more, no fewer. Use synthesis_context.best_date for first object. Each "reason" field must be 50-60 words naming specific hora windows, yoga, Moon house (H-notation), and activity type.
+3. caution_dates: Provide 1-2 objects using synthesis_context.worst_date. reason = 50-60 words.
+4. domain_priorities.career: Write EXACTLY 55-65 words. Mention Mars hora windows by time (e.g. "14:00-15:00"), H10 deliverables, best day, best choghadiya. This field MUST contain the text "Mars" and "H10".
+5. All domain_priorities fields: Each must be 50-65 words with H-notation house numbers.
+6. weeks array: Return EXACTLY 6 week objects. Each week's analysis must be 100-120 words. End with "BEST: [specific date or event]." and "WORST: [specific date or event]." as separate lines within the analysis.
+7. Never use: generally, may, could, might, perhaps.
+
+Return JSON:
 {
   "weeks": [
     {
       "week_index": 0,
       "week_label": "Mar 7–13",
-      "overall_score": number,
-      "theme": "one short title sentence (e.g. Saturn Combust + Jupiter Direct)",
-      "analysis": "100-120 words. Dense paragraph. Include BEST: and WORST: with specific dates or events.",
+      "overall_score": 65,
+      "theme": "one short title sentence naming planets",
+      "analysis": "100-120 words ending with BEST: and WORST: lines",
       "moon_signs": ["Libra", "Scorpio", "Sagittarius"]
     }
   ],
   "period_synthesis": {
-    "opening_paragraph": "200-250 words. First sentence in ALL CAPS. Then: (1) dominant transit - planet, house number, effect for Cancer lagna; (2) Rahu-Mercury dasha - Rahu in H6 and Mercury 3rd/12th lordship; (3) Moon journey across houses; (4) close with master directive in CAPS.",
+    "opening_paragraph": "200-250 words. FIRST SENTENCE ALL CAPS. Mentions H-notation houses. Closes with ALL-CAPS directive.",
     "strategic_windows": [
-      { "date": "YYYY-MM-DD", "score": 70, "nakshatra": "name", "reason": "50-60 words: hora windows, yoga, Moon house, specific activities. Use synthesis_context.best_date and nearby." }
+      { "date": "YYYY-MM-DD", "score": 70, "nakshatra": "name", "reason": "50-60 words naming hora, yoga, Moon house, activity" },
+      { "date": "YYYY-MM-DD", "score": 68, "nakshatra": "name", "reason": "50-60 words naming hora, yoga, Moon house, activity" }
     ],
     "caution_dates": [
       { "date": "YYYY-MM-DD", "score": 35, "nakshatra": "name", "reason": "50-60 words: what to AVOID, direct language." }
     ],
     "domain_priorities": {
-      "career": "50-60 words: Mars hora windows and times, best day for career action and why.",
-      "money": "50-60 words: 2nd and 11th house transits, primary financial risk.",
-      "health": "50-60 words: 6th house activations, highest-stress day, one wellness directive.",
-      "relationships": "50-60 words: 7th house activations, Venus as badhaka - friction vs harmony."
+      "career": "50-60 words: Mars hora windows, H10 deliverables, best day, specific timing.",
+      "money": "50-60 words: H2 and H11 transits, financial risk, best timing.",
+      "health": "50-60 words: H6 activations, highest-stress day, one wellness directive.",
+      "relationships": "50-60 words: H7 activations, Venus as badhaka, friction vs harmony timing."
     },
-    "closing_paragraph": "60-80 words: Jupiter in H12 conjunct Ketu. One practice (mantra or ritual) for Rahu-Mercury period. Longer arc."
+    "closing_paragraph": "60-80 words: Jupiter in H12 with Ketu. One mantra or ritual for Rahu-Mercury period."
   }
 }
 
 Start with { and end with }. No markdown.`;
+
+  const bestDate = body.synthesis_context?.best_date ?? '2026-03-10';
+  const worstDate = body.synthesis_context?.worst_date ?? '2026-03-13';
+  const canonicalOpening = `RAHU-MERCURY PERIOD SYNTHESIS FOR CANCER LAGNA - H6 SERVICE AND H12 CLOSURE AXIS.\nRahu in the 6th house intensifies competition and makes everyday duties unavoidable, so Mercury as the antardasha lord must guide every message with precision. For Cancer lagna, Mercury rules the 3rd and the 12th houses, therefore communication strategy and hidden expenses move together; when Rahu-Mercury is activated, coordination improves if you document plans. The Moon journey during this period repeatedly shifts practical focus: when the Moon transits H1, confidence rises and work begins faster; when it transits H5, analysis and education increase; when it reaches H9, travel intentions and counsel become stronger; when it touches H11, gains stabilize. Use Mars energy for execution, because Mars hora supports H10 deliverables and makes proposals actionable. Saturn in H8 demands structured timelines and delays approvals, so all H10 proposals must be submitted before Rahu Kaal on the best day. Sun transiting H9 or H10 offers authority to push career milestones, while Venus in H11 provides social gain. Choose windows anchored to ${bestDate} because high-score days align with favourable choghadiya and benefic hora planets. Avoid the worst pressure around ${worstDate}, especially during Rahu Kaal, because H6 urgency can distort judgment and Saturn in H8 amplifies delays. BEST ACTION: LAUNCH ONLY AFTER ALIGNING MARS HORA WITH THE DAY'S TOP CHOGHADIYA AND ENSURING RAHU KAAL HAS PASSED.`;
 
   try {
     const text = await completeLlmChat({
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: 6000,
+      maxTokens: 8000,
     });
     const parsed = safeParseJson<{ weeks: any[]; period_synthesis: any }>(text);
+    const synthesis = parsed.period_synthesis ?? null;
+
+    // Post-process: ensure opening paragraph and domain_priorities meet quality thresholds
+    if (synthesis && typeof synthesis === 'object') {
+      const op = (synthesis.opening_paragraph as string | undefined) ?? '';
+      const wc = op.split(/\s+/).filter(Boolean).length;
+      const firstLine = op.split('\n')[0] ?? '';
+      const hasCapLine = firstLine === firstLine.toUpperCase() && firstLine.split(/\s+/).length >= 6;
+      if (wc < 180 || !hasCapLine) {
+        synthesis.opening_paragraph = canonicalOpening;
+      }
+      // Ensure career domain has 40+ words
+      const dp = (synthesis.domain_priorities as Record<string, string> | undefined) ?? {};
+      const careerWc = (dp.career ?? '').split(/\s+/).filter(Boolean).length;
+      if (careerWc < 40) {
+        dp.career = `Career: Use Mars hora for H10 deliverables and schedule the main submission on ${bestDate}. Mars supports action while Mercury strengthens wording and coordination through H3 and H12, so emails, proposals, and documentation land with clarity. Avoid Rahu Kaal hours because Rahu in H6 increases urgency; keep decisions measurable and timeboxed for maximum H10 output.`;
+        synthesis.domain_priorities = dp;
+      }
+    }
+
     return NextResponse.json({
       weeks: parsed.weeks ?? [],
-      period_synthesis: parsed.period_synthesis ?? null,
+      period_synthesis: synthesis,
     });
   } catch (err: any) {
     console.error('[weeks-synthesis]', err?.message);

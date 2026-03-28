@@ -192,16 +192,43 @@ export async function completeLlmChat(opts: {
 
   // Anthropic (default or explicit claude-*)
   if (!raw || modelId.startsWith('claude-')) {
-    if (!anthropicClient) {
-      throw new Error('ANTHROPIC_API_KEY is not configured');
+    if (anthropicClient) {
+      try {
+        const response = await anthropicClient.messages.create({
+          model: modelId.startsWith('claude-') ? modelId : 'claude-sonnet-4-6',
+          max_tokens: opts.maxTokens,
+          system: opts.systemPrompt,
+          messages: [{ role: 'user', content: opts.userPrompt }],
+        });
+        return extractAnthropicText(response);
+      } catch (anthropicErr: unknown) {
+        const msg = anthropicErr instanceof Error ? anthropicErr.message : String(anthropicErr);
+        // If billing/quota error and OpenAI key is available, fall through to OpenAI gpt-4o
+        const isBillingError = msg.includes('credit balance') || msg.includes('quota') || msg.includes('billing') || msg.includes('429') || msg.includes('400');
+        if (!isBillingError || !process.env.OPENAI_API_KEY) {
+          throw anthropicErr;
+        }
+        console.warn('[LLM] Anthropic billing error, falling back to gpt-4o:', msg.slice(0, 80));
+        // Fall through to OpenAI below
+      }
+    } else if (!process.env.OPENAI_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY is not configured and no fallback available');
     }
-    const response = await anthropicClient.messages.create({
-      model: modelId.startsWith('claude-') ? modelId : 'claude-sonnet-4-6',
-      max_tokens: opts.maxTokens,
-      system: opts.systemPrompt,
-      messages: [{ role: 'user', content: opts.userPrompt }],
-    });
-    return extractAnthropicText(response);
+
+    // OpenAI fallback when Anthropic is unavailable or over quota
+    if (process.env.OPENAI_API_KEY) {
+      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      const r = await client.chat.completions.create({
+        model: 'gpt-4o',
+        max_tokens: Math.min(opts.maxTokens, 16000),
+        messages: [
+          { role: 'system', content: opts.systemPrompt },
+          { role: 'user', content: opts.userPrompt },
+        ],
+      });
+      return (r.choices[0]?.message?.content ?? '').trim();
+    }
+    throw new Error('No LLM credentials available');
   }
 
   if (modelId === 'gpt-5.4-high-reasoning') {
