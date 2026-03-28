@@ -30,23 +30,28 @@ export async function GET(request: NextRequest) {
   const url = rawUrl.trim();
   const key = rawKey.trim();
 
-  status.supabase_url_raw_len = rawUrl.length;
-  status.supabase_url_trimmed_len = url.length;
-  status.supabase_url_preview = url.substring(0, 60);
+  status.supabase_debug = {
+    url_raw_len: rawUrl.length,
+    url_trimmed_len: url.length,
+    url_preview: url.substring(0, 60),
+    key_raw_len: rawKey.length,
+    key_trimmed_len: key.length,
+    key_prefix: key.substring(0, 20),
+  };
 
   try {
-    const { createClient } = await import('@supabase/supabase-js');
-    if (!url || !key) {
-      status.supabase = { ok: false, error: 'Missing env vars' };
-    } else {
-      const sb = createClient(url, key);
-      const { error } = await sb.from('reports').select('id').limit(1);
-      status.supabase = { ok: !error, error: error?.message };
-    }
+    const testRes = await fetch(url + '/rest/v1/reports?select=id&limit=1', {
+      headers: {
+        apikey: key,
+        Authorization: 'Bearer ' + key,
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    const body = await testRes.text();
+    status.supabase = { ok: testRes.ok, status: testRes.status, body_preview: body.substring(0, 100) };
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
-    const stk = e instanceof Error ? (e.stack ?? '').substring(0, 200) : '';
-    status.supabase = { ok: false, error: msg, stack: stk };
+    status.supabase = { ok: false, error: msg };
   }
 
   status.llm = {
