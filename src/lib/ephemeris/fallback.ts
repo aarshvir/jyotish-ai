@@ -11,7 +11,12 @@
  * Transit lagna: approximated from local sidereal time (~±1 sign accuracy).
  * Panchang (tithi/nakshatra/yoga): uses override table for known dates,
  * otherwise leaves fields empty so the scoring engine skips those modifiers.
+ *
+ * Slot scores use the same formula as RatingAgent (calculateSlotScore + getPanchangDayAdj).
  */
+
+import type { PanchangData } from '@/lib/agents/types';
+import { calculateSlotScore, getPanchangDayAdj, TRANSIT_HOUSE_MOD } from '@/lib/agents/RatingAgent';
 
 // ── Constants shared with Python service ───────────────────────────────────
 
@@ -91,7 +96,8 @@ function toDeg(rad: number) { return rad * 180 / Math.PI; }
  * Based on NOAA Solar Calculator / Spencer (1971) / Meeus approximation.
  */
 function computeSunriseSunset(date: Date, lat: number, lng: number): { sunrise: Date; sunset: Date } {
-  const jd = date.getTime() / 86400000 + 2440587.5; // Julian day at midnight UTC
+  // +0.5: NOAA / J2000.0 convention uses JD at noon; midnight UTC without it shifts n by −0.5 (wrong day).
+  const jd = date.getTime() / 86400000 + 2440587.5 + 0.5;
   const n = Math.floor(jd - 2451545.0 + 0.0008);
 
   // Mean solar noon in fractional Julian day (0 = midnight UTC)
@@ -232,55 +238,42 @@ function approximateTransitLagna(
   return { sign: transitSign, house };
 }
 
-// ── Scoring constants (mirrors RatingAgent.ts) ─────────────────────────────
+function buildPanchangForDay(
+  dateStr: string,
+  jsDay: number,
+  natalLagnaSignIndex: number,
+): { panchang: Record<string, string | number>; panchangAdj: number; lagnaStr: string } {
+  const ov = PANCHANG_OVERRIDES[dateStr] ?? {};
+  const lagnaStr = SIGNS[Math.max(0, Math.min(11, natalLagnaSignIndex))] ?? 'Cancer';
+  const moonHouse = ov.moon_house;
+  const moonSign =
+    typeof moonHouse === 'number' && moonHouse >= 1 && moonHouse <= 12
+      ? SIGNS[(natalLagnaSignIndex + moonHouse - 1 + 12) % 12]
+      : '';
 
-const HORA_BASE: Record<string, number> = {
-  Sun: 78, Moon: 68, Mars: 48, Mercury: 72, Jupiter: 85, Venus: 82, Saturn: 45,
-};
-const CHOG_SCORE: Record<string, number> = {
-  Amrit: 18, Shubh: 12, Labh: 10, Chal: 2, Rog: -6, Kaal: -8, Udveg: -10,
-};
-const TRANSIT_HOUSE: Record<number, number> = {
-  1: 6, 2: 2, 3: -2, 4: 2, 5: 10, 6: -4,
-  7: 2, 8: -12, 9: 8, 10: 14, 11: 10, 12: -8,
-};
+  const full: PanchangData = {
+    tithi: ov.tithi ?? '',
+    nakshatra: ov.nakshatra ?? '',
+    yoga: ov.yoga ?? '',
+    karana: '',
+    sunrise: '06:00:00',
+    sunset: '18:00:00',
+    moon_sign: moonSign,
+    day_ruler: DAY_RULERS[jsDay],
+  };
 
-function clamp(v: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, v));
-}
-
-function computeScore(hora: string, chog: string, house: number, isRahuKaal: boolean, panchangAdj: number): number {
-  const base     = HORA_BASE[hora] ?? 60;
-  const chogMod  = CHOG_SCORE[chog] ?? 0;
-  const houseMod = TRANSIT_HOUSE[house] ?? 0;
-  const rkPen    = isRahuKaal ? -30 : 0;
-  const raw = base + chogMod + houseMod + panchangAdj + rkPen;
-  return clamp(Math.round(raw), 5, 98);
-}
-
-// ── Panchang adjustment from overrides ────────────────────────────────────
-
-const YOGA_ADJ: Record<string, number> = {
-  Amrit: 8, Siddhi: 6, Shubh: 5, Labha: 5, Pushkara: 5, Brahma: 4,
-  Indra: 4, Priti: 3, Ayushman: 3, Sukarma: 3, Dhruva: 3, Vriddhi: 2,
-  Variyan: 2, Harshana: 2, Dhriti: 2, Soma: 2, Sukla: 1, Sadhya: 1,
-  Sobhana: 1, Attiganda: -2, Shoola: -3, Ganda: -4, Vishkambha: -4,
-  Atiganda: -4, Vyaghata: -5, Vajra: -6, Siddha: 3, Parigha: -3, Shiva: 3,
-};
-const TITHI_ADJ: Record<string, number> = {
-  Purnima: 8, 'Shukla Ekadashi': 5, 'Krishna Ekadashi': 5, 'Shukla Panchami': 3,
-  'Shukla Saptami': 2, 'Shukla Navami': 3, 'Shukla Tritiya': 2, 'Shukla Dwitiya': 2,
-  'Shukla Shashthi': 1, 'Shukla Ashtami': -2, 'Shukla Chaturdashi': -2,
-  'Krishna Saptami': -1, 'Krishna Ashtami': -2, 'Krishna Chaturdashi': -4,
-  Amavasya: -6, 'Shukla Chaturthi': 0, 'Shukla Dashami': 2, 'Shukla Dwadashi': 3,
-  'Shukla Trayodashi': 1, 'Krishna Chaturthi': -1, 'Krishna Panchami': -1,
-  'Krishna Shashthi': -1,
-};
-
-function getPanchangAdj(dateStr: string): number {
-  const ov = PANCHANG_OVERRIDES[dateStr];
-  if (!ov) return 0;
-  return (YOGA_ADJ[ov.yoga ?? ''] ?? 0) + (TITHI_ADJ[ov.tithi ?? ''] ?? 0);
+  const panchangAdj = getPanchangDayAdj(full, lagnaStr);
+  return {
+    panchang: {
+      yoga: full.yoga,
+      nakshatra: full.nakshatra,
+      tithi: full.tithi,
+      moon_sign: full.moon_sign,
+      day_ruler: full.day_ruler,
+    },
+    panchangAdj,
+    lagnaStr,
+  };
 }
 
 // ── Main export ────────────────────────────────────────────────────────────
@@ -336,8 +329,7 @@ export function computeFallbackDayData(
   // Local midnight in UTC (for building slot timestamps)
   const localMidnightUtc = new Date(dateUtc.getTime() - timezoneOffsetMinutes * 60_000);
 
-  const panchangAdj = getPanchangAdj(dateStr);
-  const ov = PANCHANG_OVERRIDES[dateStr] ?? {};
+  const { panchang, panchangAdj, lagnaStr } = buildPanchangForDay(dateStr, jsDay, natalLagnaSignIndex);
 
   const slots: FallbackSlot[] = [];
   for (let i = 0; i < 18; i++) {
@@ -358,7 +350,15 @@ export function computeFallbackDayData(
       midMs, sunrise.getTime(), natalLagnaSignIndex, dateStr
     );
 
-    const score = computeScore(hora, chog, transitHouse, isRahuKaal, panchangAdj);
+    const transitMod = TRANSIT_HOUSE_MOD[transitHouse] ?? 0;
+    const score = calculateSlotScore({
+      horaRuler: hora,
+      lagna: lagnaStr,
+      choghadiya: chog,
+      transitHouseMod: transitMod,
+      isRahuKaal,
+      panchangAdj,
+    });
     const hour    = 6 + i;
     const endHour = hour + 1;
 
@@ -381,11 +381,7 @@ export function computeFallbackDayData(
 
   return {
     date: dateStr,
-    panchang: {
-      yoga:      ov.yoga      ?? '',
-      nakshatra: ov.nakshatra ?? '',
-      tithi:     ov.tithi     ?? '',
-    },
+    panchang,
     rahu_kaal: {
       start: rkStart.toISOString(),
       end:   rkEnd.toISOString(),

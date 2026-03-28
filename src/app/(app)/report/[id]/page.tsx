@@ -18,6 +18,10 @@ import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 import { validateReportData } from '@/lib/validation/reportValidation';
 import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
 import { PrintAllDays } from '@/components/report/PrintAllDays';
+import { batchedPromiseAll } from '@/lib/async/batchedPromiseAll';
+
+/** When true, skips the 3-pass Sonnet validation to shorten generation time (set on Vercel). */
+const SKIP_VALIDATION = process.env.NEXT_PUBLIC_SKIP_VALIDATION === 'true';
 
 const STEPS = [
   'Calculating planetary positions',
@@ -46,6 +50,13 @@ function monthlyFallbackCommentary(monthLabel: string, overallScore: number) {
 
 function weeklyFallbackCommentary(weekLabel: string, score: number) {
   return `${weekLabel || 'This week'} — Week score: ${score}/100. Weekly narrative is generating — refresh in 30 seconds.`;
+}
+
+/** True when stored report looks like an all-default / failed generation (stale 50s). */
+function isPlaceholderReportData(rd: Record<string, unknown> | null | undefined): boolean {
+  const days = rd?.days as Array<{ day_score?: number }> | undefined;
+  if (!Array.isArray(days) || days.length === 0) return true;
+  return days.every((d) => (d.day_score ?? 50) === 50);
 }
 
 function ReportContent() {
@@ -88,6 +99,13 @@ function ReportContent() {
   } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const genStartRef = useRef(0);
+
+  const authJsonHeaders = useCallback((): Record<string, string> => {
+    const h: Record<string, string> = { 'Content-Type': 'application/json' };
+    const b = params.get('bypass');
+    if (b) h['x-bypass-token'] = b;
+    return h;
+  }, [params]);
 
   const displayName = birthDisplay?.name ?? name;
   const displayDate = birthDisplay?.date ?? date;
@@ -185,7 +203,14 @@ function ReportContent() {
 
           const rd = row?.report_data as Record<string, unknown> | null | undefined;
           const days = rd?.days;
-          if (!cancelled && row && row.status === 'complete' && Array.isArray(days) && days.length > 0) {
+          if (
+            !cancelled &&
+            row &&
+            row.status === 'complete' &&
+            Array.isArray(days) &&
+            days.length > 0 &&
+            !isPlaceholderReportData(rd)
+          ) {
             hasFetched.current = true;
             setBirthDisplay({
               name: String(row.native_name ?? 'Seeker'),
@@ -264,6 +289,10 @@ function ReportContent() {
 
   async function saveReportToDatabase(reportPayload: Record<string, unknown>) {
     try {
+      if (isPlaceholderReportData(reportPayload)) {
+        console.warn('[saveReport] Skipping DB save: placeholder report (all day_score 50)');
+        return;
+      }
       if (!isRouteUuid(reportIdFromRoute)) return;
       const supabase = createClient();
       const {
@@ -341,8 +370,6 @@ function ReportContent() {
     throw new Error(`Failed to fetch ${url} after ${retries} retries`);
   }
 
-  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
   function formatDayLabel(dateStr: string): string {
     try {
       const d = new Date(dateStr + 'T12:00:00Z');
@@ -382,7 +409,7 @@ function ReportContent() {
         setCurrentStepIndex(0);
         const ephemerisRes = await resilientFetch('/api/agents/ephemeris', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authJsonHeaders(),
           body: JSON.stringify({
             type: 'natal-chart',
             birth_date: date,
@@ -412,7 +439,7 @@ function ReportContent() {
         setCurrentStepIndex(1);
         const nativityRes = await resilientFetch('/api/agents/nativity', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authJsonHeaders(),
           body: JSON.stringify({ natalChart: ephemerisData }),
         }, 2, 3000);
         if (nativityRes.ok) {
@@ -438,7 +465,7 @@ function ReportContent() {
             try {
               const res = await resilientFetch('/api/agents/daily-grid', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: authJsonHeaders(),
                 body: JSON.stringify({ date: d, currentLat: cLat, currentLng: cLng, timezoneOffset, natal_lagna_sign_index }),
               }, 2, 2000);
               if (!res.ok) return null;
@@ -561,8 +588,8 @@ function ReportContent() {
         });
 
         const [overviewRes, natTextRes] = await Promise.all([
-          fetch('/api/commentary/daily-overviews', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: overviewBody }),
-          fetch('/api/commentary/nativity-text', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: natTextBody }),
+          fetch('/api/commentary/daily-overviews', { method: 'POST', headers: authJsonHeaders(), body: overviewBody }),
+          fetch('/api/commentary/nativity-text', { method: 'POST', headers: authJsonHeaders(), body: natTextBody }),
         ]);
 
         const fallbackOverview = 'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
@@ -601,13 +628,13 @@ function ReportContent() {
       setStepDetail(`${forecastDays.length} days in parallel`);
       setCurrentStepIndex(4);
       try {
-        console.log('[STEP-6] Starting parallel hourly...');
-        const hourlyResults = await Promise.all(
-          forecastDays.map(async (day: any, i: number) => {
+        console.log('[STEP-6] Starting batched hourly (2 concurrent)...');
+        const hourlyResults = await batchedPromiseAll(
+          forecastDays.map((day: any, i: number) => async () => {
             try {
               const res = await fetch('/api/commentary/hourly-day', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: authJsonHeaders(),
                 body: JSON.stringify({
                   lagnaSign: ephemerisData.lagna,
                   mahadasha,
@@ -635,7 +662,8 @@ function ReportContent() {
               console.error(`[HOURLY] Day ${i + 1} failed:`, err);
               return { dayIndex: i, slots: [] };
             }
-          })
+          }),
+          2
         );
 
         hourlyResults.forEach(({ dayIndex, slots }: any) => {
@@ -784,8 +812,6 @@ function ReportContent() {
       setStepMessage('Writing period synthesis...');
       setStepDetail('6 weekly summaries + strategic windows');
 
-      await sleep(4000);
-
       const reportStart = new Date(forecastDays[0].date);
       const weeksPayload = Array.from({ length: 6 }, (_, i) => {
         const wStart = new Date(reportStart);
@@ -812,7 +838,7 @@ function ReportContent() {
         console.log('[STEP-8] weeksPayload length:', weeksPayload?.length);
         const weeksSynthResponse = await fetch('/api/commentary/weeks-synthesis', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authJsonHeaders(),
           body: JSON.stringify({
             lagnaSign: ephemerisData.lagna ?? 'Cancer',
             mahadasha: mahadasha ?? 'Rahu',
@@ -884,80 +910,83 @@ function ReportContent() {
         });
       }
 
-      // ── STEP 9: Validation loops ──
-      console.log('[STEP-9] Starting 3-pass validation...');
-      try {
-        setStepMessage('Validating commentary quality...');
-        setStepDetail('Pass 1: checking word counts, STRATEGY sections, headlines');
-        setCurrentStepIndex(7);
+      // ── STEP 9: Validation loops (optional — saves 30–45s when SKIP_VALIDATION=true) ──
+      if (!SKIP_VALIDATION) {
+        console.log('[STEP-9] Starting 3-pass validation...');
+        try {
+          setStepMessage('Validating commentary quality...');
+          setStepDetail('Pass 1: checking word counts, STRATEGY sections, headlines');
+          setCurrentStepIndex(7);
 
-        const validationBody = {
-          lagnaSign: ephemerisData.lagna ?? 'Cancer',
-          mahadasha,
-          antardasha,
-          days: forecastDays.map((d: any) => ({
-            date: d.date,
-            day_score: d.day_score,
-            day_overview: d.day_overview ?? '',
-            slots: (d.slots ?? []).map((s: any) => ({
-              slot_index: s.slot_index,
-              display_label: s.display_label,
-              score: s.score,
-              is_rahu_kaal: s.is_rahu_kaal,
-              dominant_hora: s.dominant_hora,
-              dominant_choghadiya: s.dominant_choghadiya,
-              commentary: s.commentary ?? '',
+          const validationBody = {
+            lagnaSign: ephemerisData.lagna ?? 'Cancer',
+            mahadasha,
+            antardasha,
+            days: forecastDays.map((d: any) => ({
+              date: d.date,
+              day_score: d.day_score,
+              day_overview: d.day_overview ?? '',
+              slots: (d.slots ?? []).map((s: any) => ({
+                slot_index: s.slot_index,
+                display_label: s.display_label,
+                score: s.score,
+                is_rahu_kaal: s.is_rahu_kaal,
+                dominant_hora: s.dominant_hora,
+                dominant_choghadiya: s.dominant_choghadiya,
+                commentary: s.commentary ?? '',
+              })),
             })),
-          })),
-          synthesis_opening: weeksSynthData?.period_synthesis?.opening_paragraph ?? '',
-        };
+            synthesis_opening: weeksSynthData?.period_synthesis?.opening_paragraph ?? '',
+          };
 
-        setStepDetail('Pass 2: checking score ranges and slot spreads');
-        setCurrentStepIndex(8);
-        setStepDetail('Pass 3: checking tone consistency');
-        setCurrentStepIndex(9);
+          setStepDetail('Pass 2: checking score ranges and slot spreads');
+          setCurrentStepIndex(8);
+          setStepDetail('Pass 3: checking tone consistency');
+          setCurrentStepIndex(9);
 
-        const validationRes = await fetch('/api/validation/report', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(validationBody),
-        });
+          const validationRes = await fetch('/api/validation/report', {
+            method: 'POST',
+            headers: authJsonHeaders(),
+            body: JSON.stringify(validationBody),
+          });
 
-        if (validationRes.ok) {
-          const validationData = await validationRes.json();
-          console.log('[VALIDATION]', validationData.summary);
+          if (validationRes.ok) {
+            const validationData = await validationRes.json();
+            console.log('[VALIDATION]', validationData.summary);
 
-          // Apply corrections from validation
-          if (validationData.corrections?.length > 0) {
-            console.log(`[VALIDATION] Applying ${validationData.corrections.length} corrections`);
-            validationData.corrections.forEach((correction: any) => {
-              if (correction.type === 'day_overview' && correction.date) {
-                const day = forecastDays.find((d: any) => d.date === correction.date);
-                if (day && correction.fixed_text) {
-                  day.day_overview = correction.fixed_text;
-                  console.log(`[VALIDATION] Fixed day overview for ${correction.date}`);
-                }
-              } else if (correction.type === 'slot_commentary' && correction.date !== undefined && correction.slot_index !== undefined) {
-                const day = forecastDays.find((d: any) => d.date === correction.date);
-                if (day) {
-                  const slot = day.slots.find((s: any) => s.slot_index === correction.slot_index);
-                  if (slot && correction.fixed_text) {
-                    slot.commentary = correction.fixed_text;
-                    console.log(`[VALIDATION] Fixed slot ${correction.slot_index} on ${correction.date}`);
+            if (validationData.corrections?.length > 0) {
+              console.log(`[VALIDATION] Applying ${validationData.corrections.length} corrections`);
+              validationData.corrections.forEach((correction: any) => {
+                if (correction.type === 'day_overview' && correction.date) {
+                  const day = forecastDays.find((d: any) => d.date === correction.date);
+                  if (day && correction.fixed_text) {
+                    day.day_overview = correction.fixed_text;
+                    console.log(`[VALIDATION] Fixed day overview for ${correction.date}`);
+                  }
+                } else if (correction.type === 'slot_commentary' && correction.date !== undefined && correction.slot_index !== undefined) {
+                  const day = forecastDays.find((d: any) => d.date === correction.date);
+                  if (day) {
+                    const slot = day.slots.find((s: any) => s.slot_index === correction.slot_index);
+                    if (slot && correction.fixed_text) {
+                      slot.commentary = correction.fixed_text;
+                      console.log(`[VALIDATION] Fixed slot ${correction.slot_index} on ${correction.date}`);
+                    }
                   }
                 }
-              }
-            });
-          }
+              });
+            }
 
-          if (!validationData.clean) {
-            console.warn('[VALIDATION] Issues remain after corrections:', validationData.total_issues);
+            if (!validationData.clean) {
+              console.warn('[VALIDATION] Issues remain after corrections:', validationData.total_issues);
+            }
+          } else {
+            console.warn('[VALIDATION] Validation call failed, continuing with unvalidated report');
           }
-        } else {
-          console.warn('[VALIDATION] Validation call failed, continuing with unvalidated report');
+        } catch (valErr) {
+          console.error('[VALIDATION] Error during validation, continuing:', valErr);
         }
-      } catch (valErr) {
-        console.error('[VALIDATION] Error during validation, continuing:', valErr);
+      } else {
+        console.log('[STEP-9] Skipped (NEXT_PUBLIC_SKIP_VALIDATION=true)');
       }
 
       // ── STEP 10: Assemble final report ──
@@ -1321,7 +1350,7 @@ function ReportContent() {
 
           {/* Print-only full report — all 7 days × 18 slots with commentary.
               Hidden on screen, rendered during @media print to bypass tab-based DailyAnalysis. */}
-          <PrintAllDays days={mergedDays} />
+          <PrintAllDays days={mergedDays} weeks={safeWeekly} />
         </div>
       </main>
     </motion.div>

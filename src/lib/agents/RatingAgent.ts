@@ -1,6 +1,7 @@
 /**
  * RatingAgent
- * Deterministic scoring engine matching grandmaster methodology.
+ * Deterministic scoring engine from the Universal Methodology Bible (published ranges/tables).
+ * Do not tune constants to match any proprietary sample forecast — use offline checks for validation only.
  *
  * Scoring layers (additive):
  *   1. Hora base score           (planet-specific)
@@ -24,7 +25,7 @@ import type {
   PanchangData,
 } from './types';
 
-// ── Hora base scores (validated against grandmaster doc) ─────────────────────
+// ── Hora base scores (Methodology Bible layer 1) ─────────────────────────────
 export const HORA_BASE: Record<string, number> = {
   Jupiter: 62,
   Moon:    56,
@@ -60,7 +61,7 @@ export function normalizeChoghadiya(name: string): string {
   return name;
 }
 
-// ── Choghadiya quality modifiers — calibrated to grandmaster Bible Step 2 ─────
+// ── Choghadiya quality modifiers (Methodology Bible Step 2) ───────────────────
 export const CHOGHADIYA_SCORE: Record<string, number> = {
   Amrit:  12,
   Shubh:   4,
@@ -72,8 +73,8 @@ export const CHOGHADIYA_SCORE: Record<string, number> = {
   Kaal:  -12,
 };
 
-// ── Transit Lagna House modifiers — calibrated to grandmaster Bible Step 3 ────
-const TRANSIT_HOUSE_MOD: Record<number, number> = {
+// ── Transit Lagna House modifiers (Methodology Bible Step 3) ─────────────────
+export const TRANSIT_HOUSE_MOD: Record<number, number> = {
   1:  +6,   // Self, identity — always powerful
   2:  +3,   // Wealth, family, speech
   3:   0,   // Communication, neutral
@@ -154,7 +155,8 @@ const WEEKDAY_RULER_MOD: Record<string, number> = {
   Tuesday:   +2,  // Mars (Yogakaraka — strong benefic)
 };
 
-function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'Cancer'): number {
+/** Day-level panchang adjustment (same for all slots that day). Exported for TS ephemeris fallback parity. */
+export function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'Cancer'): number {
   if (!panchang) return 0;
   let adj = 0;
 
@@ -189,7 +191,7 @@ function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'Cancer')
   return adj;
 }
 
-// ── Rahu Kaal penalty — calibrated to grandmaster Bible Step 5 ───────────────
+// ── Rahu Kaal penalty (Methodology Bible Step 5) ─────────────────────────────
 const RAHU_KAAL_PENALTY = -15;
 
 // ── Transit lagna calculation (approximate by hora slot position) ─────────────
@@ -214,7 +216,7 @@ function getApproxTransitLagnaSign(
   return SIGNS_ORDER[transitIdx];
 }
 
-// ── Score normalisation — clamp to 5–98 matching grandmaster Bible Step 5 ─────
+// ── Score normalisation — clamp to 5–98 (Methodology Bible Step 5) ───────────
 function normalise(rawScore: number): number {
   return Math.max(5, Math.min(98, Math.round(rawScore)));
 }

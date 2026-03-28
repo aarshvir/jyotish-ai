@@ -30,6 +30,11 @@
     display: none !important;
   }
 
+  /* Weekly is rendered inside `.print-only` (PrintAllDays) to avoid blank PDF pages */
+  #weekly {
+    display: none !important;
+  }
+
   /* ── Show the print-only full-days section ──────────────────────────── */
   .print-only {
     display: block !important;

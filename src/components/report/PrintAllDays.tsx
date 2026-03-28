@@ -7,6 +7,7 @@
  */
 
 import { getScoreLabel } from '@/lib/agents/RatingAgent';
+import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 
 interface HourSlot {
   slot_index?: number;
@@ -38,8 +39,21 @@ interface DayData {
   hourlySlots?: HourSlot[];
 }
 
+interface WeekData {
+  week_label: string;
+  week_start: string;
+  score: number;
+  theme: string;
+  commentary: string;
+  daily_scores?: number[];
+  moon_journey?: string[];
+  peak_days_count?: number;
+  caution_days_count?: number;
+}
+
 interface PrintAllDaysProps {
   days: DayData[];
+  weeks?: WeekData[];
 }
 
 const PLANET_SYMBOLS: Record<string, string> = {
@@ -63,9 +77,17 @@ function formatDate(dateStr: string) {
   } catch { return dateStr; }
 }
 
-export function PrintAllDays({ days }: PrintAllDaysProps) {
+export function PrintAllDays({ days, weeks }: PrintAllDaysProps) {
   return (
     <div className="print-only" style={{ display: 'none' }}>
+      {weeks && weeks.length > 0 && (
+        <div
+          className="print-weekly-section"
+          style={{ pageBreakAfter: 'always', breakAfter: 'page', paddingTop: '4mm' }}
+        >
+          <WeeklyAnalysis weeks={weeks} />
+        </div>
+      )}
       {days.map((day, di) => {
         const slots = (day.hourlySlots ?? []).sort((a, b) => (a.slot_index ?? 0) - (b.slot_index ?? 0));
         const sl = scoreLabel(day.day_score, false);
