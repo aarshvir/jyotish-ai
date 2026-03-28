@@ -63,17 +63,17 @@ function LoginInner() {
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user?.id && user.email) {
-      await supabase.from('users').upsert(
+      await supabase.from('user_profiles').upsert(
         {
           id: user.id,
           email: user.email,
-          name: user.email.split('@')[0],
+          display_name: user.email.split('@')[0],
         },
         { onConflict: 'id' }
       );
     }
 
-    const next = searchParams.get('next') ?? '/auth/consent';
+    const next = searchParams.get('next') ?? '/dashboard';
     router.push(next);
     router.refresh();
   }

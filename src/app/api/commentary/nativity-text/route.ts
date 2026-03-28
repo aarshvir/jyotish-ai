@@ -7,8 +7,8 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
 
-const anthropic = process.env.ANTHROPIC_API_KEY
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const anthropic = process.env.ANTHROPIC_API_KEY?.trim()
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim() })
   : null;
 
 function extractText(response: Anthropic.Message): string {

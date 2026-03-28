@@ -73,3 +73,7 @@ scripts/model-comparison/full-report.md
 
 # Windows reserved device name (accidental file)
 nul
+
+.vercel
+
+supabase/.temp/
