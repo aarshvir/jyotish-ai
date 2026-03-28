@@ -1,7 +1,15 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const PROTECTED_PREFIXES = ['/dashboard', '/auth/consent', '/settings', '/account', '/api/user'];
+const PROTECTED_PREFIXES = [
+  '/dashboard',
+  '/auth/consent',
+  '/settings',
+  '/account',
+  '/api/user',
+  '/onboard',
+  '/report',
+];
 
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
@@ -39,7 +47,9 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && isProtectedRoute(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
+    const returnTo = request.nextUrl.pathname + request.nextUrl.search;
     url.pathname = '/login';
+    url.search = `?next=${encodeURIComponent(returnTo)}`;
     return NextResponse.redirect(url);
   }
 

@@ -24,10 +24,11 @@ function LoginInner() {
     setGoogleLoading(true);
     setError('');
     const supabase = createClient();
+    const next = new URLSearchParams(window.location.search).get('next') ?? '/auth/consent';
     const { error: oauthErr } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/auth/consent`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
@@ -72,7 +73,8 @@ function LoginInner() {
       );
     }
 
-    router.push('/auth/consent');
+    const next = searchParams.get('next') ?? '/auth/consent';
+    router.push(next);
     router.refresh();
   }
 
