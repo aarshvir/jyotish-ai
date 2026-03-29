@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { getPromoDiscount } from '@/lib/bypass';
+import { createClient } from '@/lib/supabase/client';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -490,6 +491,16 @@ function OnboardPageInner() {
   const [promoCode, setPromoCode]           = useState('');
 
   const promoDiscount = getPromoDiscount(promoCode);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) {
+        router.replace(`/login?next=${encodeURIComponent('/onboard' + window.location.search)}`);
+      }
+    });
+  }, [router]);
 
   // Check for ?plan= URL param and pre-select report type
   useEffect(() => {

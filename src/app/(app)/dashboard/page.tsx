@@ -51,17 +51,7 @@ export default function DashboardPage() {
       if (profData) {
         prof = profData;
       } else {
-        // Fall back to the users table (populated by login/OAuth upsert)
-        const { data: userRow } = await supabase
-          .from('users')
-          .select('name, email')
-          .eq('id', user.id)
-          .maybeSingle();
-        if (userRow) {
-          prof = { display_name: userRow.name ?? null, email: userRow.email ?? null };
-        } else {
-          prof = { display_name: null, email: user.email ?? null };
-        }
+        prof = { display_name: null, email: user.email ?? null };
       }
       setProfile(prof);
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
-import { useSearchParams, useParams } from 'next/navigation';
+import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
@@ -63,6 +63,7 @@ function ReportContent() {
   const routeParams = useParams();
   const reportIdFromRoute = typeof routeParams?.id === 'string' ? routeParams.id : '';
   const params = useSearchParams();
+  const router = useRouter();
   const queryKey = params.toString();
   const name = params.get('name') ?? 'Seeker';
   const date = params.get('date') ?? '';
@@ -187,50 +188,53 @@ function ReportContent() {
     async function init() {
       if (hasFetched.current) return;
 
+      // Always require authentication — API routes all enforce requireAuth
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        if (!cancelled) {
+          const returnTo = window.location.pathname + window.location.search;
+          router.replace(`/login?next=${encodeURIComponent(returnTo)}`);
+        }
+        return;
+      }
+
       if (isRouteUuid(reportIdFromRoute)) {
-        const supabase = createClient();
-        const {
-          data: { user },
-        } = await supabase.auth.getUser();
+        const { data: row } = await supabase
+          .from('reports')
+          .select('*')
+          .eq('id', reportIdFromRoute)
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-        if (user) {
-          const { data: row } = await supabase
-            .from('reports')
-            .select('*')
-            .eq('id', reportIdFromRoute)
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          const rd = row?.report_data as Record<string, unknown> | null | undefined;
-          const days = rd?.days;
-          if (
-            !cancelled &&
-            row &&
-            row.status === 'complete' &&
-            Array.isArray(days) &&
-            days.length > 0 &&
-            !isPlaceholderReportData(rd)
-          ) {
-            hasFetched.current = true;
-            setBirthDisplay({
-              name: String(row.native_name ?? 'Seeker'),
-              date: String(row.birth_date ?? '').slice(0, 10),
-              time: String(row.birth_time ?? '').slice(0, 5),
-              city: String(row.birth_city ?? ''),
-            });
-            setReportData(rd);
-            setIsLoading(false);
-            return;
-          }
+        const rd = row?.report_data as Record<string, unknown> | null | undefined;
+        const days = rd?.days;
+        if (
+          !cancelled &&
+          row &&
+          row.status === 'complete' &&
+          Array.isArray(days) &&
+          days.length > 0 &&
+          !isPlaceholderReportData(rd)
+        ) {
+          hasFetched.current = true;
+          setBirthDisplay({
+            name: String(row.native_name ?? 'Seeker'),
+            date: String(row.birth_date ?? '').slice(0, 10),
+            time: String(row.birth_time ?? '').slice(0, 5),
+            city: String(row.birth_city ?? ''),
+          });
+          setReportData(rd);
+          setIsLoading(false);
+          return;
         }
 
         if (!params.get('date')) {
           if (!cancelled) {
-            setError(
-              user
-                ? 'Report not found, still generating, or incomplete. Open a new report from Onboard.'
-                : 'Sign in to view saved reports, or use a share link that includes birth details in the URL.'
-            );
+            setError('Report not found, still generating, or incomplete. Open a new report from the dashboard.');
             setIsLoading(false);
           }
           hasFetched.current = true;
@@ -723,12 +727,12 @@ function ReportContent() {
         const [months1Res, months2Res] = await Promise.all([
           fetch('/api/commentary/months-first', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authJsonHeaders(),
             body: JSON.stringify({ ...refPayload, months: allMonths.slice(0, 6) }),
           }),
           fetch('/api/commentary/months-second', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authJsonHeaders(),
             body: JSON.stringify({ ...refPayload, months: allMonths.slice(6, 12) }),
           }),
         ]);
