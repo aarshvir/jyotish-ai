@@ -51,12 +51,20 @@ export default function Navbar() {
         </div>
 
         {/* CTA */}
-        <Link
-          href="/onboard"
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-sm bg-amber text-space text-sm font-body font-medium tracking-wide hover:bg-amber-glow transition-colors duration-200"
-        >
-          Get Report
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-sm border border-amber/40 text-amber text-sm font-body font-medium tracking-wide hover:bg-amber/10 transition-colors duration-200"
+          >
+            Login
+          </Link>
+          <Link
+            href="/onboard"
+            className="inline-flex items-center gap-2 px-5 py-2 rounded-sm bg-amber text-space text-sm font-body font-medium tracking-wide hover:bg-amber-glow transition-colors duration-200"
+          >
+            Get Report
+          </Link>
+        </div>
       </div>
     </nav>
   );
