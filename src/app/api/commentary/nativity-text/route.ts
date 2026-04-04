@@ -2,21 +2,9 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
-
-const anthropic = process.env.ANTHROPIC_API_KEY?.trim()
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim() })
-  : null;
-
-function extractText(response: Anthropic.Message): string {
-  return response.content
-    .filter((b): b is Anthropic.TextBlock => b.type === 'text')
-    .map((b) => b.text)
-    .join('');
-}
 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -58,9 +46,9 @@ export async function POST(req: NextRequest) {
   const modelOverride =
     typeof body.model_override === 'string' ? body.model_override.trim() : undefined;
 
-  if (modelOverride && !hasLlmCredentials(modelOverride)) {
+  if (!hasLlmCredentials(modelOverride)) {
     return NextResponse.json(
-      { error: 'API key missing for selected model_override provider' },
+      { error: 'API key missing for selected or default LLM provider' },
       { status: 503 },
     );
   }
@@ -106,26 +94,12 @@ Return this exact JSON:
 Start with { and end with }. No markdown.`;
 
   try {
-    let rawText: string;
-    if (modelOverride) {
-      rawText = await completeLlmChat({
-        modelOverride,
-        systemPrompt,
-        userPrompt,
-        maxTokens: 2000,
-      });
-    } else {
-      if (!anthropic) {
-        return NextResponse.json({ error: 'API key missing' }, { status: 500 });
-      }
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1500,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-      });
-      rawText = extractText(response);
-    }
+    const rawText = await completeLlmChat({
+      modelOverride,
+      systemPrompt,
+      userPrompt,
+      maxTokens: 2000,
+    });
 
     const parsed = safeParseJson<{ lagna_analysis?: string; dasha_interpretation?: string }>(rawText);
     return NextResponse.json({

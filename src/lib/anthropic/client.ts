@@ -1,48 +1,66 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 
-const apiKey = process.env.ANTHROPIC_API_KEY;
+const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
 
 export const anthropic = apiKey
   ? new Anthropic({ apiKey })
   : (null as unknown as Anthropic);
 
+const FALLBACK_SYSTEM =
+  'You are an expert Vedic astrology assistant. Answer with clarity and precision.';
+
 export async function generateAstrologyAnalysis(prompt: string): Promise<string> {
-  if (!anthropic) {
-    throw new Error('ANTHROPIC_API_KEY is not set. Check .env.local');
-  }
-
   const delays = [2000, 4000, 8000];
-  let lastError: any;
+  let lastError: unknown;
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const message = await anthropic.messages.create({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 16000,
-        messages: [{ role: 'user', content: prompt }],
-      });
+  if (anthropic && apiKey) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const message = await anthropic.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 16000,
+          messages: [{ role: 'user', content: prompt }],
+        });
 
-      const textContent = message.content.find((block) => block.type === 'text');
-      return textContent && 'text' in textContent ? textContent.text : '';
-    } catch (error: any) {
-      lastError = error;
-      const status = error?.status;
+        const textContent = message.content.find((block) => block.type === 'text');
+        return textContent && 'text' in textContent ? textContent.text : '';
+      } catch (error: unknown) {
+        lastError = error;
+        const status = (error as { status?: number })?.status;
 
-      if (status === 401) throw new Error('Invalid Anthropic API key. Check .env.local');
+        if (status === 401) {
+          console.warn('generateAstrologyAnalysis: Anthropic 401 — trying fallback chain');
+          break;
+        }
 
-      if ((status === 429 || status === 529) && attempt < 2) {
-        const delay = status === 529 ? 5000 : delays[attempt];
-        console.warn(`Anthropic ${status}, retrying in ${delay}ms...`);
-        await new Promise((r) => setTimeout(r, delay));
-        continue;
-      }
+        if ((status === 429 || status === 529) && attempt < 2) {
+          const delay = status === 529 ? 5000 : delays[attempt];
+          console.warn(`Anthropic ${status}, retrying in ${delay}ms...`);
+          await new Promise((r) => setTimeout(r, delay));
+          continue;
+        }
 
-      if (attempt < 2) {
-        await new Promise((r) => setTimeout(r, delays[attempt]));
-        continue;
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, delays[attempt]));
+          continue;
+        }
       }
     }
   }
 
-  throw lastError ?? new Error('Anthropic API call failed after retries');
+  if (hasAnyChatFallbackKey()) {
+    try {
+      return await runChatFallbackChain({
+        systemPrompt: FALLBACK_SYSTEM,
+        userPrompt: prompt,
+        maxTokens: 16000,
+      });
+    } catch (fallbackErr) {
+      lastError = fallbackErr;
+    }
+  }
+
+  if (lastError instanceof Error) throw lastError;
+  throw new Error('ANTHROPIC_API_KEY is not set and no fallback LLM keys configured');
 }

@@ -24,7 +24,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Jyotish AI — Vedic Astrology, Hour by Hour',
+  title: 'VedicHour — Vedic Astrology, Hour by Hour',
   description:
     'AI-powered Vedic astrology forecasts with hourly precision. Know exactly when to act — and when to rest.',
 };

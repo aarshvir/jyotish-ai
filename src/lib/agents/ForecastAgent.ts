@@ -6,6 +6,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
+import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 import { EphemerisAgent } from './EphemerisAgent';
 import { RatingAgent } from './RatingAgent';
 import type {
@@ -130,20 +131,29 @@ async function callClaudeWithBackoff(
   throw lastError ?? new Error('Claude call failed after retries');
 }
 
+const FORECAST_SYSTEM =
+  'You are a Vedic astrologer. Return only valid JSON. No prose, no markdown. Dense paragraphs only. Never invent scores — match provided numeric inputs exactly.';
+
 export class ForecastAgent {
   private ephemeris: EphemerisAgent;
   private rating: RatingAgent;
-  private claude: Anthropic;
+  private claude: Anthropic | null;
 
   constructor() {
     this.ephemeris = new EphemerisAgent();
     this.rating = new RatingAgent();
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === 'your_anthropic_api_key') {
-      throw new Error('ANTHROPIC_API_KEY is not set in environment variables');
+    const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+    if (apiKey && apiKey !== 'your_anthropic_api_key') {
+      this.claude = new Anthropic({ apiKey });
+    } else {
+      this.claude = null;
     }
-    this.claude = new Anthropic({ apiKey });
+    if (!this.claude && !hasAnyChatFallbackKey()) {
+      throw new Error(
+        'No LLM configured: set ANTHROPIC_API_KEY and/or OPENAI_API_KEY / GEMINI_API_KEY for forecast narratives'
+      );
+    }
   }
 
   async generateForecast(input: ForecastInput): Promise<ForecastOutput> {
@@ -252,17 +262,35 @@ export class ForecastAgent {
       weekly_summary: 'Forecast period overview. Prioritise high-score windows for important activities.',
     };
 
+    const prompt = buildForecastPrompt(input, dates, dayData, ratings);
+    let rawText: string | null = null;
+
     try {
-      const prompt = buildForecastPrompt(input, dates, dayData, ratings);
-      const rawText = await callClaudeWithBackoff(this.claude, prompt, 16000);
+      if (this.claude) {
+        try {
+          rawText = await callClaudeWithBackoff(this.claude, prompt, 16000);
+        } catch (claudeErr: unknown) {
+          console.warn('ForecastAgent - Claude failed, trying fallback chain:', (claudeErr as Error)?.message);
+        }
+      }
+      if ((rawText == null || rawText === '') && hasAnyChatFallbackKey()) {
+        rawText = await runChatFallbackChain({
+          systemPrompt: FORECAST_SYSTEM,
+          userPrompt: prompt,
+          maxTokens: 16000,
+        });
+      }
+      if (rawText == null || rawText === '') {
+        return emptyResult;
+      }
       try {
         return safeParseJson<{ days: DayNarrative[]; weekly_summary: string }>(rawText);
       } catch {
         console.error('ForecastAgent - JSON parse error. Raw:', rawText.slice(0, 400));
         return emptyResult;
       }
-    } catch (error: any) {
-      console.error('ForecastAgent - Narrative generation failed:', error?.message);
+    } catch (error: unknown) {
+      console.error('ForecastAgent - Narrative generation failed:', (error as Error)?.message);
       return emptyResult;
     }
   }

@@ -51,7 +51,7 @@ export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean
   return (
     <>
       {/* Desktop sidebar */}
-      <nav className="pdf-exclude hidden lg:block fixed left-0 top-24 w-48 h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin">
+      <nav className="pdf-exclude hidden lg:block fixed left-0 top-[var(--nav-height)] w-48 h-[calc(100vh-var(--nav-height))] overflow-y-auto scrollbar-thin z-40">
         <div className="space-y-1 px-6">
           {NAV_ITEMS.map((item) => (
             <button
@@ -70,7 +70,7 @@ export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean
       </nav>
 
       {/* Mobile/Tablet top tabs */}
-      <div className="pdf-exclude lg:hidden sticky top-0 z-40 bg-space/95 backdrop-blur-sm border-b border-horizon">
+      <div className="pdf-exclude lg:hidden sticky top-[var(--nav-height)] z-40 bg-space/95 backdrop-blur-sm border-b border-horizon">
         <div className="overflow-x-auto scrollbar-thin">
           <div className="flex gap-2 px-6 py-4 min-w-max">
             {NAV_ITEMS.map((item) => (

@@ -24,6 +24,19 @@ interface UserProfile {
   email: string | null;
 }
 
+function scoreTone(score: number | null) {
+  if (score == null) {
+    return { text: 'text-dust', bg: 'bg-dust/10', border: 'border-dust/30', bar: 'bg-dust' };
+  }
+  if (score >= 70) {
+    return { text: 'text-emerald', bg: 'bg-emerald/10', border: 'border-emerald/40', bar: 'bg-emerald' };
+  }
+  if (score >= 50) {
+    return { text: 'text-amber', bg: 'bg-amber/10', border: 'border-amber/40', bar: 'bg-amber' };
+  }
+  return { text: 'text-crimson', bg: 'bg-crimson/10', border: 'border-crimson/40', bar: 'bg-crimson' };
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [reports, setReports] = useState<Report[]>([]);
@@ -70,24 +83,11 @@ export default function DashboardPage() {
     void load();
   }, [router]);
 
-  async function handleSignOut() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/');
-  }
-
   function getAvgScore(dayScores: Record<string, number> | null) {
     if (!dayScores) return null;
     const vals = Object.values(dayScores);
     if (!vals.length) return null;
     return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-  }
-
-  function getScoreColor(score: number | null) {
-    if (!score) return '#6b6350';
-    if (score >= 70) return '#6baa6b';
-    if (score >= 50) return '#d4af37';
-    return '#e06b6b';
   }
 
   function getPlanLabel(plan: string) {
@@ -122,222 +122,86 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          background: '#0a0a1a',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div style={{ color: '#d4af37', fontFamily: 'system-ui' }}>Loading your reports...</div>
+      <div className="flex min-h-[calc(100vh-var(--nav-height))] items-center justify-center bg-space">
+        <p className="font-body text-sm text-amber">Loading your reports…</p>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0a1a 0%, #0d0d2b 50%, #0a0a1a 100%)',
-        color: '#e8e0d0',
-        fontFamily: 'system-ui',
-      }}
-    >
-      <header
-        style={{
-          padding: '20px 40px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          borderBottom: '1px solid rgba(212,175,55,0.15)',
-        }}
-      >
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: '20px', fontWeight: '700', color: '#d4af37', fontFamily: 'Georgia, serif' }}>
-            VedicHour
-          </span>
-        </Link>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <span style={{ fontSize: '13px', color: '#6b6350' }}>
-            {profile?.display_name || profile?.email}
-          </span>
-          <Link
-            href="/onboard"
-            style={{
-              padding: '8px 20px',
-              background: 'linear-gradient(135deg, #d4af37, #b8962e)',
-              color: '#0a0a1a',
-              borderRadius: '6px',
-              textDecoration: 'none',
-              fontSize: '13px',
-              fontWeight: '600',
-            }}
-          >
-            New Report
-          </Link>
-          <button
-            type="button"
-            onClick={() => void handleSignOut()}
-            style={{
-              padding: '8px 16px',
-              background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.1)',
-              borderRadius: '6px',
-              color: '#6b6350',
-              fontSize: '13px',
-              cursor: 'pointer',
-            }}
-          >
-            Sign Out
-          </button>
-        </div>
-      </header>
-
-      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '48px 24px' }}>
-        <div style={{ marginBottom: '40px' }}>
-          <p
-            style={{
-              fontSize: '12px',
-              letterSpacing: '0.2em',
-              color: '#d4af37',
-              textTransform: 'uppercase',
-              marginBottom: '8px',
-            }}
-          >
-            Your Oracle
+    <div className="min-h-[calc(100vh-var(--nav-height))] bg-gradient-to-br from-space via-cosmos to-space font-body text-star">
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+        <header className="mb-10 border-b border-horizon/60 pb-8">
+          <p className="mb-2 font-mono text-xs uppercase tracking-[0.2em] text-amber">Your oracle</p>
+          <h1 className="mb-2 font-display text-3xl font-normal text-star sm:text-4xl">Report history</h1>
+          <p className="text-sm text-dust">
+            {profile?.display_name ? (
+              <>
+                <span className="text-star/90">{profile.display_name}</span>
+                {profile.email ? <span className="text-dust"> · {profile.email}</span> : null}
+              </>
+            ) : (
+              profile?.email ?? 'Signed in'
+            )}
           </p>
-          <h1 style={{ fontSize: '32px', fontWeight: '400', fontFamily: 'Georgia, serif', marginBottom: '8px' }}>
-            Report History
-          </h1>
-          <p style={{ fontSize: '14px', color: '#6b6350' }}>
+          <p className="mt-3 text-sm text-dust">
             {reports.length === 0
               ? 'No reports yet — generate your first forecast'
               : `${reports.length} report${reports.length !== 1 ? 's' : ''} generated`}
           </p>
-        </div>
+        </header>
 
         {reports.length === 0 && (
-          <div
-            style={{
-              textAlign: 'center',
-              padding: '80px 24px',
-              background: 'rgba(255,255,255,0.02)',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: '12px',
-            }}
-          >
-            <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.4 }}>✦</div>
-            <p style={{ color: '#a09880', marginBottom: '24px', fontSize: '16px' }}>Your cosmic timeline is empty</p>
+          <div className="rounded-xl border border-horizon/80 bg-nebula/30 px-6 py-20 text-center">
+            <div className="mb-4 text-5xl opacity-40">✦</div>
+            <p className="mb-6 text-base text-dust">Your cosmic timeline is empty</p>
             <Link
               href="/onboard"
-              style={{
-                display: 'inline-block',
-                padding: '12px 32px',
-                background: 'linear-gradient(135deg, #d4af37, #b8962e)',
-                color: '#0a0a1a',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                fontSize: '15px',
-                fontWeight: '600',
-              }}
+              className="inline-block rounded-sm bg-amber px-8 py-3 text-sm font-semibold text-space transition-colors hover:bg-amber-glow"
             >
-              Generate Your First Report →
+              Generate your first report →
             </Link>
           </div>
         )}
 
         {reports.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <ul className="flex flex-col gap-4">
             {reports.map((report) => {
               const avgScore = getAvgScore(report.day_scores);
-              const scoreColor = getScoreColor(avgScore);
+              const tone = scoreTone(avgScore);
               const isComplete = report.status === 'complete';
 
               return (
-                <div
+                <li
                   key={report.id}
-                  style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '12px',
-                    padding: '24px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '20px',
-                    flexWrap: 'wrap',
-                  }}
+                  className="flex flex-wrap items-center gap-5 rounded-xl border border-horizon/60 bg-nebula/20 p-5 sm:p-6"
                 >
                   <div
-                    style={{
-                      width: '64px',
-                      height: '64px',
-                      borderRadius: '12px',
-                      flexShrink: 0,
-                      background: `${scoreColor}15`,
-                      border: `1px solid ${scoreColor}40`,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
+                    className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border ${tone.border} ${tone.bg}`}
                   >
                     {avgScore != null ? (
                       <>
-                        <span style={{ fontSize: '22px', fontWeight: '700', color: scoreColor, lineHeight: 1 }}>
-                          {avgScore}
-                        </span>
-                        <span style={{ fontSize: '10px', color: `${scoreColor}80`, marginTop: '2px' }}>avg</span>
+                        <span className={`text-xl font-bold leading-none ${tone.text}`}>{avgScore}</span>
+                        <span className={`mt-0.5 text-[10px] opacity-80 ${tone.text}`}>avg</span>
                       </>
                     ) : (
-                      <span style={{ fontSize: '20px', opacity: 0.3 }}>
-                        {report.status === 'generating' ? '...' : '?'}
+                      <span className="text-xl opacity-30 text-dust">
+                        {report.status === 'generating' ? '…' : '?'}
                       </span>
                     )}
                   </div>
 
-                  <div style={{ flex: 1, minWidth: '200px' }}>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        marginBottom: '4px',
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <span style={{ fontSize: '16px', fontWeight: '600', color: '#e8e0d0' }}>
-                        {report.native_name}
-                      </span>
-                      <span
-                        style={{
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          fontSize: '11px',
-                          fontWeight: '600',
-                          background: 'rgba(212,175,55,0.1)',
-                          color: '#d4af37',
-                          letterSpacing: '0.05em',
-                        }}
-                      >
+                  <div className="min-w-[200px] flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <span className="text-base font-semibold text-star">{report.native_name}</span>
+                      <span className="rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide bg-amber/10 text-amber">
                         {getPlanLabel(report.plan_type)}
                       </span>
                       {report.status === 'generating' && (
-                        <span
-                          style={{
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            fontSize: '11px',
-                            background: 'rgba(100,100,200,0.1)',
-                            color: '#8888cc',
-                          }}
-                        >
-                          Generating...
-                        </span>
+                        <span className="rounded px-2 py-0.5 text-[11px] bg-nebula text-dust">Generating…</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '13px', color: '#6b6350', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <div className="flex flex-wrap gap-3 text-sm text-dust">
                       <span>{report.birth_city || 'Unknown location'}</span>
                       {report.lagna_sign && <span>{report.lagna_sign} Lagna</span>}
                       {report.dasha_mahadasha && (
@@ -347,64 +211,49 @@ export default function DashboardPage() {
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '12px', color: '#4a4435', marginTop: '4px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <div className="mt-1 flex flex-wrap gap-2 text-xs text-dust/70">
                       <span>
                         {isToday(report.created_at) ? (
-                          <span style={{ color: '#6baa6b', fontWeight: '600' }}>Today · </span>
+                          <span className="font-semibold text-emerald">Today · </span>
                         ) : null}
                         Generated {formatDate(report.created_at)}
                       </span>
-                      {report.birth_date && (
-                        <span>· Born {formatDate(report.birth_date)}</span>
-                      )}
+                      {report.birth_date && <span>· Born {formatDate(report.birth_date)}</span>}
                     </div>
                   </div>
 
                   {report.day_scores && Object.keys(report.day_scores).length > 0 && (
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '32px' }}>
+                    <div className="flex h-8 items-end gap-0.5">
                       {Object.entries(report.day_scores)
                         .slice(0, 7)
-                        .map(([date, score]) => (
-                          <div
-                            key={date}
-                            title={`${date}: ${score}`}
-                            style={{
-                              width: '8px',
-                              height: `${(score / 100) * 32}px`,
-                              borderRadius: '2px',
-                              background: score >= 70 ? '#6baa6b' : score >= 50 ? '#d4af37' : '#e06b6b',
-                              opacity: 0.8,
-                            }}
-                          />
-                        ))}
+                        .map(([date, score]) => {
+                          const t = scoreTone(score);
+                          return (
+                            <div
+                              key={date}
+                              title={`${date}: ${score}`}
+                              className={`w-2 rounded-sm opacity-80 ${t.bar}`}
+                              style={{ height: `${(score / 100) * 32}px`, minHeight: '4px' }}
+                            />
+                          );
+                        })}
                     </div>
                   )}
 
                   {isComplete && (
                     <Link
                       href={getReportUrl(report)}
-                      style={{
-                        padding: '10px 20px',
-                        background: 'rgba(212,175,55,0.1)',
-                        border: '1px solid rgba(212,175,55,0.3)',
-                        borderRadius: '8px',
-                        color: '#d4af37',
-                        textDecoration: 'none',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        flexShrink: 0,
-                        whiteSpace: 'nowrap',
-                      }}
+                      className="shrink-0 whitespace-nowrap rounded-lg border border-amber/40 bg-amber/10 px-5 py-2.5 text-sm font-semibold text-amber transition-colors hover:bg-amber/20"
                     >
-                      View Report →
+                      View report →
                     </Link>
                   )}
-                </div>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
-      </main>
+      </div>
     </div>
   );
 }

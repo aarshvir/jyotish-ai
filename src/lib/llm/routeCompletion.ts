@@ -1,6 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
+import {
+  anthropicFailureIsRetriableWithFallback,
+  geminiFailureIsRetriable,
+  hasAnyChatFallbackKey,
+  openAiFailureIsRetriable,
+  runChatFallbackChain,
+} from '@/lib/llm/fallbackChain';
 
 const anthropicClient = process.env.ANTHROPIC_API_KEY?.trim()
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim() })
@@ -13,10 +20,18 @@ function extractAnthropicText(response: Anthropic.Message): string {
     .join('');
 }
 
-/** True if we have an API key for the provider implied by model_override (default: Anthropic). */
+/** True if we have an API key for the provider implied by model_override (default: Anthropic or chat fallback chain). */
 export function hasLlmCredentials(modelOverride?: string | null): boolean {
   const m = String(modelOverride ?? '').trim();
-  if (!m || m.startsWith('claude-')) return Boolean(process.env.ANTHROPIC_API_KEY);
+  if (!m || m.startsWith('claude-')) {
+    return Boolean(
+      process.env.ANTHROPIC_API_KEY?.trim() ||
+        process.env.OPENAI_API_KEY?.trim() ||
+        process.env.GEMINI_API_KEY?.trim() ||
+        (process.env.DEEPSEEK_API_KEY?.trim() &&
+          process.env.LLM_FALLBACK_DEEPSEEK_ENABLED?.trim().toLowerCase() === 'true')
+    );
+  }
   if (m.startsWith('gpt-')) return Boolean(process.env.OPENAI_API_KEY);
   if (m.startsWith('gemini-')) return Boolean(process.env.GEMINI_API_KEY);
   if (m.startsWith('deepseek-')) return Boolean(process.env.DEEPSEEK_API_KEY);
@@ -202,33 +217,31 @@ export async function completeLlmChat(opts: {
         });
         return extractAnthropicText(response);
       } catch (anthropicErr: unknown) {
-        const msg = anthropicErr instanceof Error ? anthropicErr.message : String(anthropicErr);
-        // If billing/quota error and OpenAI key is available, fall through to OpenAI gpt-4o
-        const isBillingError = msg.includes('credit balance') || msg.includes('quota') || msg.includes('billing') || msg.includes('429') || msg.includes('400');
-        if (!isBillingError || !process.env.OPENAI_API_KEY) {
+        if (!anthropicFailureIsRetriableWithFallback(anthropicErr)) {
           throw anthropicErr;
         }
-        console.warn('[LLM] Anthropic billing error, falling back to gpt-4o:', msg.slice(0, 80));
-        // Fall through to OpenAI below
+        const msg =
+          anthropicErr instanceof Error ? anthropicErr.message : String(anthropicErr);
+        console.warn('[LLM] Anthropic failed, running fallback chain:', msg.slice(0, 120));
+        if (!hasAnyChatFallbackKey()) {
+          throw anthropicErr;
+        }
+        return runChatFallbackChain({
+          systemPrompt: opts.systemPrompt,
+          userPrompt: opts.userPrompt,
+          maxTokens: opts.maxTokens,
+        });
       }
-    } else if (!process.env.OPENAI_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY is not configured and no fallback available');
     }
 
-    // OpenAI fallback when Anthropic is unavailable or over quota
-    if (process.env.OPENAI_API_KEY) {
-      const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-      const r = await client.chat.completions.create({
-        model: 'gpt-4o',
-        max_tokens: Math.min(opts.maxTokens, 16000),
-        messages: [
-          { role: 'system', content: opts.systemPrompt },
-          { role: 'user', content: opts.userPrompt },
-        ],
+    if (hasAnyChatFallbackKey()) {
+      return runChatFallbackChain({
+        systemPrompt: opts.systemPrompt,
+        userPrompt: opts.userPrompt,
+        maxTokens: opts.maxTokens,
       });
-      return (r.choices[0]?.message?.content ?? '').trim();
     }
-    throw new Error('No LLM credentials available');
+    throw new Error('ANTHROPIC_API_KEY is not configured and no fallback providers available');
   }
 
   if (modelId === 'gpt-5.4-high-reasoning') {
@@ -252,37 +265,64 @@ export async function completeLlmChat(opts: {
     if (!key) throw new Error('OPENAI_API_KEY is not configured');
     const client = new OpenAI({ apiKey: key });
     const useCompletionTokens = /^gpt-5/i.test(modelId);
-    const r = await client.chat.completions.create({
-      model: modelId,
-      ...(useCompletionTokens
-        ? { max_completion_tokens: Math.min(opts.maxTokens, 16000) }
-        : { max_tokens: opts.maxTokens }),
-      messages: [
-        { role: 'system', content: opts.systemPrompt },
-        { role: 'user', content: opts.userPrompt },
-      ],
-    });
-    return (r.choices[0]?.message?.content ?? '').trim();
+    try {
+      const r = await client.chat.completions.create({
+        model: modelId,
+        ...(useCompletionTokens
+          ? { max_completion_tokens: Math.min(opts.maxTokens, 16000) }
+          : { max_tokens: opts.maxTokens }),
+        messages: [
+          { role: 'system', content: opts.systemPrompt },
+          { role: 'user', content: opts.userPrompt },
+        ],
+      });
+      return (r.choices[0]?.message?.content ?? '').trim();
+    } catch (openErr: unknown) {
+      if (!openAiFailureIsRetriable(openErr) || !hasAnyChatFallbackKey()) {
+        throw openErr;
+      }
+      console.warn('[LLM] OpenAI primary model failed, continuing fallback chain');
+      return runChatFallbackChain({
+        systemPrompt: opts.systemPrompt,
+        userPrompt: opts.userPrompt,
+        maxTokens: opts.maxTokens,
+        skipOpenAI: true,
+      });
+    }
   }
 
   if (modelId.startsWith('gemini-')) {
     const key = process.env.GEMINI_API_KEY;
     if (!key) throw new Error('GEMINI_API_KEY is not configured');
-    const genAI = new GoogleGenerativeAI(key);
-    const model = genAI.getGenerativeModel({
-      model: modelId,
-      systemInstruction: opts.systemPrompt,
-    });
-    const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: opts.userPrompt }] }],
-      generationConfig: { maxOutputTokens: opts.maxTokens },
-    });
     try {
-      const text = result.response.text();
-      if (!text) throw new Error('Gemini returned empty response');
-      return text;
-    } catch (geminiErr) {
-      throw new Error(`Gemini text extraction failed: ${geminiErr instanceof Error ? geminiErr.message : String(geminiErr)}`);
+      const genAI = new GoogleGenerativeAI(key);
+      const model = genAI.getGenerativeModel({
+        model: modelId,
+        systemInstruction: opts.systemPrompt,
+      });
+      const result = await model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: opts.userPrompt }] }],
+        generationConfig: { maxOutputTokens: opts.maxTokens },
+      });
+      try {
+        const text = result.response.text();
+        if (!text) throw new Error('Gemini returned empty response');
+        return text;
+      } catch (geminiErr) {
+        throw new Error(
+          `Gemini text extraction failed: ${geminiErr instanceof Error ? geminiErr.message : String(geminiErr)}`
+        );
+      }
+    } catch (geminiOuter: unknown) {
+      if (!geminiFailureIsRetriable(geminiOuter) || !hasAnyChatFallbackKey()) {
+        throw geminiOuter;
+      }
+      console.warn('[LLM] Gemini primary failed, running OpenAI → Gemini → DeepSeek fallback chain');
+      return runChatFallbackChain({
+        systemPrompt: opts.systemPrompt,
+        userPrompt: opts.userPrompt,
+        maxTokens: opts.maxTokens,
+      });
     }
   }
 

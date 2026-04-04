@@ -51,7 +51,7 @@ export default function Hero() {
         >
           <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse" />
           <span className="font-mono text-xs text-amber tracking-[0.2em] uppercase">
-            Swiss Ephemeris · Lahiri Ayanamsa · Vimshottari Dasha
+            VedicHour · Swiss Ephemeris · Lahiri Ayanamsa · Vimshottari Dasha
           </span>
         </motion.div>
 

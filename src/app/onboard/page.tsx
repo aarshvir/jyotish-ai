@@ -801,8 +801,8 @@ function OnboardPageInner() {
         )}
         {/* Logo */}
         <div className="text-center mb-10">
-          <span className="font-display font-semibold text-xl tracking-[0.15em] text-star/70">
-            JYOTISH AI
+          <span className="font-display font-semibold text-xl tracking-[0.08em] text-star/70">
+            VedicHour
           </span>
         </div>
 
@@ -878,7 +878,7 @@ function OnboardPageInner() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-space/95 backdrop-blur-sm flex flex-col items-center justify-center z-50"
+            className="fixed inset-0 bg-space/95 backdrop-blur-sm flex flex-col items-center justify-center z-[60]"
           >
             <motion.div
               animate={{ rotate: 360 }}

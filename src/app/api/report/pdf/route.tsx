@@ -64,7 +64,7 @@ function ReportPdfDocument({ payload }: { payload: PdfReportPayload }) {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>Jyotish AI — Report: {name}</Text>
+        <Text style={styles.title}>VedicHour — Report: {name}</Text>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Nativity</Text>

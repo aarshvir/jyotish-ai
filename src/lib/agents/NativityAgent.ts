@@ -1,12 +1,14 @@
 /**
  * NativityAgent
  * Sends the natal chart JSON to Claude claude-sonnet-4-6 with extended thinking
- * and returns a structured NativityProfile.
+ * and returns a structured NativityProfile. Falls back to OpenAI → Gemini → DeepSeek
+ * via runChatFallbackChain when Anthropic is unavailable or exhausted.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
 import type { NatalChartData, NativityProfile } from './types';
 import { safeParseJson } from '@/lib/utils/safeJson';
+import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 
 const SYSTEM_PROMPT = `You are a grandmaster Vedic astrologer with 30 years of classical training. Analyze the natal chart with depth matching Parashara and Jaimini traditions.
 
@@ -100,63 +102,96 @@ function extractTextContent(response: Anthropic.Message): string {
     .join('');
 }
 
+function anthropicKeyOk(): string | null {
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey || apiKey === 'your_anthropic_api_key') return null;
+  return apiKey;
+}
+
 export class NativityAgent {
-  private client: Anthropic;
+  private client: Anthropic | null;
 
   constructor() {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey || apiKey === 'your_anthropic_api_key') {
-      throw new Error('ANTHROPIC_API_KEY is not set in environment variables');
+    const key = anthropicKeyOk();
+    this.client = key ? new Anthropic({ apiKey: key }) : null;
+    if (!this.client && !hasAnyChatFallbackKey()) {
+      throw new Error(
+        'No LLM configured: set ANTHROPIC_API_KEY and/or OPENAI_API_KEY / GEMINI_API_KEY (and optional DeepSeek fallback)'
+      );
     }
-    this.client = new Anthropic({ apiKey });
   }
 
   async analyze(natalChart: NatalChartData): Promise<NativityProfile> {
     const delays = [3000, 6000, 12000];
-    let lastError: any;
+    let lastError: unknown;
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        console.log(`NativityAgent attempt ${attempt + 1}/3 with extended thinking`);
-        const response = await this.client.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 16000,
-          thinking: {
-            type: 'enabled',
-            budget_tokens: 8000,
-          },
-          temperature: 1,
-          messages: [{
-            role: 'user',
-            content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart)}`,
-          }],
-        });
+    if (this.client) {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          console.log(`NativityAgent attempt ${attempt + 1}/3 with extended thinking`);
+          const response = await this.client.messages.create({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 16000,
+            thinking: {
+              type: 'enabled',
+              budget_tokens: 8000,
+            },
+            temperature: 1,
+            messages: [
+              {
+                role: 'user',
+                content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart)}`,
+              },
+            ],
+          });
 
-        const text = extractTextContent(response);
-        console.log(`NativityAgent response: ${text.length} chars`);
-        return safeParseJson<NativityProfile>(text);
-      } catch (error: any) {
-        lastError = error;
-        const status = error?.status;
+          const text = extractTextContent(response);
+          console.log(`NativityAgent response: ${text.length} chars`);
+          return safeParseJson<NativityProfile>(text);
+        } catch (error: unknown) {
+          lastError = error;
+          const status = (error as { status?: number })?.status;
 
-        if (status === 401) throw new Error('Invalid Anthropic API key');
-        if (status === 400) { console.error('NativityAgent 400:', error?.message); throw error; }
+          if (status === 401) {
+            console.warn('NativityAgent: Anthropic 401 — will try fallback chain');
+            break;
+          }
+          if (status === 400) {
+            console.error('NativityAgent 400:', (error as Error)?.message);
+            throw error;
+          }
 
-        if ((status === 429 || status === 529) && attempt < 2) {
-          const delay = delays[attempt];
-          console.warn(`NativityAgent: Anthropic ${status}, retrying in ${delay}ms...`);
-          await new Promise((r) => setTimeout(r, delay));
-          continue;
-        }
-        if (attempt < 2) {
-          console.error(`NativityAgent attempt ${attempt + 1} failed:`, error?.message);
-          await new Promise((r) => setTimeout(r, delays[attempt]));
-          continue;
+          if ((status === 429 || status === 529) && attempt < 2) {
+            const delay = delays[attempt];
+            console.warn(`NativityAgent: Anthropic ${status}, retrying in ${delay}ms...`);
+            await new Promise((r) => setTimeout(r, delay));
+            continue;
+          }
+          if (attempt < 2) {
+            console.error(`NativityAgent attempt ${attempt + 1} failed:`, (error as Error)?.message);
+            await new Promise((r) => setTimeout(r, delays[attempt]));
+            continue;
+          }
         }
       }
     }
 
-    console.error('NativityAgent: all retries failed, returning fallback:', lastError?.message);
+    if (hasAnyChatFallbackKey()) {
+      try {
+        console.warn('NativityAgent: using backup LLM chain (no extended thinking)');
+        const text = await runChatFallbackChain({
+          systemPrompt: SYSTEM_PROMPT,
+          userPrompt: buildUserPrompt(natalChart),
+          maxTokens: 16000,
+        });
+        return safeParseJson<NativityProfile>(text);
+      } catch (fallbackErr) {
+        console.error('NativityAgent: fallback chain failed:', (fallbackErr as Error)?.message);
+        lastError = fallbackErr;
+      }
+    }
+
+    console.error('NativityAgent: all paths failed, returning minimal fallback:', lastError);
     return buildFallbackNativity(natalChart);
   }
 }

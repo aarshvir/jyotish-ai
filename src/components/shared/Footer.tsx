@@ -6,13 +6,13 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           {/* Logo */}
-          <span className="font-display font-semibold text-lg tracking-[0.12em] text-star/70">
-            JYOTISH AI
+          <span className="font-display font-semibold text-lg tracking-[0.08em] text-star/70">
+            VedicHour
           </span>
 
           {/* Links */}
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-body text-dust">
-            <Link href="#how-it-works" className="hover:text-star transition-colors">How It Works</Link>
+            <Link href="/#how-it-works" className="hover:text-star transition-colors">How It Works</Link>
             <Link href="/pricing" className="hover:text-star transition-colors">Pricing</Link>
             <Link href="/refund" className="hover:text-star transition-colors">Refund Policy</Link>
             <Link href="/privacy" className="hover:text-star transition-colors">Privacy</Link>
@@ -21,7 +21,7 @@ export default function Footer() {
 
           {/* Copyright */}
           <p className="font-mono text-xs text-dust/60 tracking-wider">
-            © {new Date().getFullYear()} JYOTISH AI
+            © {new Date().getFullYear()} VedicHour
           </p>
         </div>
       </div>

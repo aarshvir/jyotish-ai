@@ -22,7 +22,11 @@ export async function POST(request: NextRequest) {
 
     if (!agent) {
       return NextResponse.json(
-        { success: false, error: 'ForecastAgent failed to initialize — check ANTHROPIC_API_KEY' },
+        {
+          success: false,
+          error:
+            'ForecastAgent failed to initialize — set ANTHROPIC_API_KEY and/or OPENAI_API_KEY / GEMINI_API_KEY for fallback',
+        },
         { status: 500 }
       );
     }

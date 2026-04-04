@@ -1072,10 +1072,10 @@ function ReportContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-dark flex flex-col items-center justify-center gap-8 px-6">
+      <div className="min-h-[calc(100vh-var(--nav-height))] bg-dark flex flex-col items-center justify-center gap-8 px-6">
         <StarField />
         <div className="text-amber text-4xl">🪐</div>
-        <h1 className="text-star text-2xl font-bold">Jyotish AI</h1>
+        <h1 className="text-star text-2xl font-bold">VedicHour</h1>
         <div className="text-center">
           <p className="text-star text-xl font-semibold">{stepMessage || 'Preparing...'}</p>
           <p className="text-dust text-sm mt-2">{stepDetail || ''}</p>
@@ -1110,7 +1110,7 @@ function ReportContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-space flex flex-col items-center justify-center px-6 py-20">
+      <div className="min-h-[calc(100vh-var(--nav-height))] bg-space flex flex-col items-center justify-center px-6 py-20">
         <StarField />
         <div className="max-w-md text-center relative z-10">
           <div className="text-crimson text-6xl mb-6">⚠</div>
@@ -1194,7 +1194,7 @@ function ReportContent() {
       <StarField />
       <ReportSidebar reportLoaded={!!reportData} />
 
-      <main className="lg:ml-[200px] px-6 py-12 max-w-4xl mx-auto relative z-10">
+      <main className="lg:ml-[200px] px-6 pb-12 pt-6 lg:pt-12 max-w-4xl mx-auto relative z-10">
         {/* Commentary partial banner */}
         {commentaryPartial && (
           <div className="mb-6 px-4 py-3 border border-amber/30 bg-amber/5 rounded-sm flex items-center gap-3">

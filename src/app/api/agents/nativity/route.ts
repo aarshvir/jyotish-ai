@@ -18,7 +18,11 @@ export async function POST(request: NextRequest) {
   try {
     if (!agent) {
       return NextResponse.json(
-        { success: false, error: 'NativityAgent failed to initialize — check ANTHROPIC_API_KEY in .env.local' },
+        {
+          success: false,
+          error:
+            'NativityAgent failed to initialize — set ANTHROPIC_API_KEY and/or OPENAI_API_KEY / GEMINI_API_KEY for fallback',
+        },
         { status: 500 }
       );
     }
