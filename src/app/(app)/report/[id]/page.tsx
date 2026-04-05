@@ -211,6 +211,8 @@ function ReportContent() {
   const hasFetched = useRef(false);
   /** Cached Supabase user — set once in init(), reused to avoid repeated getUser() roundtrips. */
   const userRef = useRef<{ id: string; email?: string } | null>(null);
+  /** Active EventSource for server-side pipeline streaming. */
+  const esRef = useRef<EventSource | null>(null);
   const [birthDisplay, setBirthDisplay] = useState<{
     name: string;
     date: string;
@@ -226,6 +228,65 @@ function ReportContent() {
     if (b) h['x-bypass-token'] = b;
     return h;
   }, [params]);
+
+  /** Opens an SSE connection to the server-side pipeline and wires up state updates. */
+  function startStreamedPipeline() {
+    if (typeof window === 'undefined') return;
+    esRef.current?.close();
+
+    const sseUrl = new URL(`/api/reports/${reportIdFromRoute}/stream`, window.location.origin);
+    params.forEach((val, key) => sseUrl.searchParams.set(key, val));
+
+    setIsLoading(true);
+    setError(null);
+    setStepMessage('Preparing...');
+    setStepDetail('');
+    setCurrentStepIndex(0);
+
+    const es = new EventSource(sseUrl.toString());
+    esRef.current = es;
+
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data as string) as {
+          type: string;
+          step?: number;
+          message?: string;
+          detail?: string;
+          reportData?: import('@/lib/agents/types').ReportData;
+          message_text?: string;
+        };
+        if (data.type === 'ping') return;
+        if (data.type === 'step_started') {
+          setCurrentStepIndex(clampStep(data.step ?? 0));
+          setStepMessage(data.message ?? '');
+          setStepDetail(data.detail ?? '');
+        } else if (data.type === 'report_completed') {
+          if (data.reportData) {
+            setReportData(data.reportData);
+          }
+          setIsLoading(false);
+          es.close();
+          esRef.current = null;
+        } else if (data.type === 'error') {
+          setError(data.message ?? 'Generation failed');
+          setIsLoading(false);
+          es.close();
+          esRef.current = null;
+        }
+      } catch (e) {
+        console.error('[SSE] parse error:', e);
+      }
+    };
+
+    es.onerror = () => {
+      if (es.readyState === EventSource.CLOSED) {
+        setError('Connection lost. Please try again.');
+        setIsLoading(false);
+        esRef.current = null;
+      }
+    };
+  }
 
   const displayName = birthDisplay?.name ?? name;
   const displayDate = birthDisplay?.date ?? date;
@@ -364,14 +425,16 @@ function ReportContent() {
 
       hasFetched.current = true;
       console.log('Report page params:', { name, date, time, city, lat, lng, type });
-      await generateReport();
+      startStreamedPipeline();
     }
 
     void init();
     return () => {
       cancelled = true;
+      esRef.current?.close();
+      esRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per route/query; generateReport is stable enough for this flow
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per route/query; startStreamedPipeline is stable enough for this flow
   }, [reportIdFromRoute, queryKey]);
 
   async function createReportRecord() {
@@ -1245,7 +1308,7 @@ function ReportContent() {
           <button
             onClick={() => {
               hasFetched.current = false;
-              void generateReport();
+              startStreamedPipeline();
             }}
             className="px-8 py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
           >

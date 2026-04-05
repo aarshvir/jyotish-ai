@@ -1,3 +1,4 @@
+/* INACTIVE — Stripe payments not yet live; route kept for future activation. */
 import { NextRequest, NextResponse } from 'next/server';
 import { getStripeClient, isTestMode } from '@/lib/stripe/server';
 import { createServiceClient } from '@/lib/supabase/admin';

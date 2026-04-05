@@ -36,7 +36,8 @@
       "Bash(vercel env:*)",
       "Bash(powershell -Command \"Start-Process powershell -ArgumentList ''-NoExit -Command while\\($true\\){[System.Windows.Forms.SendKeys]::SendWait\\(\"\"{F15}\"\"\\); Start-Sleep -Seconds 60}'' -WindowStyle Hidden\")",
       "Bash(grep -n \"setCurrentStepIndex\" src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
-      "Bash(grep -n \"getUser\\\\|supabase\\\\.auth\" src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)"
+      "Bash(grep -n \"getUser\\\\|supabase\\\\.auth\" src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
+      "Bash(grep -n \"generateReport\\\\|createReportRecord\\\\|saveReportToDatabase\" src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)"
     ]
   }
 }

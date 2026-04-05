@@ -1,3 +1,4 @@
+/* INACTIVE — Stripe payments not yet live; route kept for future activation. */
 import { NextRequest, NextResponse } from 'next/server';
 import { createCheckoutSession, isTestMode } from '@/lib/stripe/server';
 
