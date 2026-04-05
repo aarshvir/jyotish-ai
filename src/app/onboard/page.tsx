@@ -604,27 +604,6 @@ function OnboardPageInner() {
     setForm((prev) => ({ ...prev, reportType: id }));
   }
 
-  // Detect timezone offset (minutes east of UTC) for a given lat/lng
-  function detectTzOffset(lat: number, lng: number): number {
-    // Approximate: use browser timezone for current location, or estimate from longitude
-    // Each 15 degrees of longitude ≈ 1 hour
-    // Known offsets for common cities:
-    const knownTz: Record<string, number> = {
-      // Dubai / UAE: UTC+4 = 240 min
-      'dubai': 240, 'uae': 240, 'abu dhabi': 240, 'sharjah': 240,
-      // India: UTC+5:30 = 330 min
-      'india': 330, 'mumbai': 330, 'delhi': 330, 'bangalore': 330, 'lucknow': 330,
-      // Singapore / HK: UTC+8 = 480 min
-      'singapore': 480, 'hong kong': 480,
-      // London: UTC+0 or UTC+1 (BST)
-      'london': 0, 'uk': 0,
-      // New York: UTC-5 = -300 min
-      'new york': -300, 'nyc': -300,
-    };
-    // Return -based on browser timezone as best guess
-    return -(new Date().getTimezoneOffset());
-  }
-
   async function geocodeCity(city: string, isCurrent = false) {
     if (!city.trim()) return;
 

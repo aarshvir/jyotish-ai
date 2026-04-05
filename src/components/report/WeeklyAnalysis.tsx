@@ -48,13 +48,6 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
       commentary: (base.commentary ?? '').trim() || 'Weekly overview will be available when the forecast is generated.',
     };
   });
-  const getColor = (score: number) => {
-    if (score >= 75) return 'bg-emerald';
-    if (score >= 55) return 'bg-amber';
-    if (score >= 45) return 'bg-amber/60';
-    return 'bg-crimson/80';
-  };
-
   const getBarBg = (score: number) => {
     if (score >= 75) return { backgroundColor: '#10b981' };
     if (score >= 55) return { backgroundColor: '#f59e0b' };

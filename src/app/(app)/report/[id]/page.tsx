@@ -149,6 +149,9 @@ const STEPS = [
   'Finalising report',
 ];
 
+/** Clamp a step index to the valid STEPS range so UI never shows undefined. */
+const clampStep = (n: number) => Math.max(0, Math.min(n, STEPS.length - 1));
+
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -206,6 +209,8 @@ function ReportContent() {
   const [stepDetail, setStepDetail] = useState('');
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const hasFetched = useRef(false);
+  /** Cached Supabase user — set once in init(), reused to avoid repeated getUser() roundtrips. */
+  const userRef = useRef<{ id: string; email?: string } | null>(null);
   const [birthDisplay, setBirthDisplay] = useState<{
     name: string;
     date: string;
@@ -315,6 +320,7 @@ function ReportContent() {
         }
         return;
       }
+      userRef.current = { id: user.id, email: user.email ?? undefined };
 
       if (isRouteUuid(reportIdFromRoute)) {
         const { data: row } = await supabase
@@ -370,11 +376,9 @@ function ReportContent() {
 
   async function createReportRecord() {
     if (!isRouteUuid(reportIdFromRoute)) return;
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = userRef.current;
     if (!user) return;
+    const supabase = createClient();
 
     const planRaw = params.get('plan_type') || type;
     const planType = planRaw === 'free' ? 'preview' : planRaw;
@@ -412,11 +416,9 @@ function ReportContent() {
         return;
       }
       if (!isRouteUuid(reportIdFromRoute)) return;
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const user = userRef.current;
       if (!user) return;
+      const supabase = createClient();
 
       const dayScores: Record<string, number> = {};
       const days = reportPayload.days as Array<{ date?: string; day_score?: number }> | undefined;
@@ -933,7 +935,7 @@ function ReportContent() {
 
       // ── STEP 8: Weeks + Synthesis ──
       console.log('[STEP-8] Starting weeks-synthesis');
-      setCurrentStepIndex(14);
+      setCurrentStepIndex(clampStep(6));
       setStepMessage('Writing period synthesis...');
       setStepDetail('6 weekly summaries + strategic windows');
 

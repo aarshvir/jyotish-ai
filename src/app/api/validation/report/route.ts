@@ -264,7 +264,7 @@ export async function POST(req: NextRequest) {
   const lagnaSign = sanitizeLagnaSign(body.lagnaSign ?? 'Cancer');
   const mahadasha = sanitizePlanetName(body.mahadasha ?? 'Rahu');
   const antardasha = sanitizePlanetName(body.antardasha ?? 'Mercury');
-  const { days = [], synthesis_opening } = body;
+  const { days = [] } = body;
 
   // ── Passes 1 + 2: synchronous checks ──
   const p1 = runPass1Checks(days);

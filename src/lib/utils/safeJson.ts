@@ -44,7 +44,7 @@ export function parseJsonDefensively<T = unknown>(
 }
 
 export function safeParseJson<T = unknown>(raw: string): T {
-  let text = raw
+  const text = raw
     .replace(/^```json\s*/im, '')
     .replace(/^```\s*/im, '')
     .replace(/```\s*$/im, '')

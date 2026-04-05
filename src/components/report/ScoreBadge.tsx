@@ -21,7 +21,6 @@ export function ScoreBadge({ score: rawScore, size = 'md', showLabel = false, an
       return;
     }
 
-    const duration = 1200;
     const steps = 60;
     const increment = score / steps;
     let current = 0;
