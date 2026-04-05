@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { completeLlmChat } from '@/lib/llm/routeCompletion';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/api/rateLimit';
 
 /**
  * POST /api/validation/report
@@ -82,7 +84,7 @@ function runPass1Checks(days: DayInput[]): { issues: string[]; criticalSlots: Sl
       const swc = (slot.commentary ?? '').split(/\s+/).filter(Boolean).length;
       if (swc < 40) {
         issues.push(`Day ${day.date} slot ${slot.slot_index}: commentary too short (${swc} words)`);
-        criticalSlots.push({ ...slot, date: day.date } as any);
+        criticalSlots.push({ ...slot, date: day.date } as SlotInput & { date: string });
       }
     }
   }
@@ -170,8 +172,10 @@ If no issues, return: {"issues": [], "corrections_needed": false}`;
       issues: parsed?.issues ?? [],
       llmCorrections: [],
     };
-  } catch {
-    return { issues: [], llmCorrections: [] };
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[validation/Pass3] LLM call failed:', msg.slice(0, 200));
+    return { issues: ['Pass 3 check skipped (LLM unavailable)'], llmCorrections: [] };
   }
 }
 
@@ -240,6 +244,16 @@ Return plain text only.`;
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+
+  const rlKey = getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined);
+  const rl = checkRateLimit(rlKey, RATE_LIMITS.validation.limit, RATE_LIMITS.validation.windowMs);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests.', passes: [], corrections: [], total_issues: 0, total_corrections: 0, clean: true },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+    );
+  }
+
   let body: ValidationRequest;
   try {
     body = await req.json();
@@ -247,13 +261,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { lagnaSign = 'Cancer', mahadasha = 'Rahu', antardasha = 'Mercury', days = [], synthesis_opening } = body;
+  const lagnaSign = sanitizeLagnaSign(body.lagnaSign ?? 'Cancer');
+  const mahadasha = sanitizePlanetName(body.mahadasha ?? 'Rahu');
+  const antardasha = sanitizePlanetName(body.antardasha ?? 'Mercury');
+  const { days = [], synthesis_opening } = body;
 
-  const results: ValidationResult[] = [];
-  const allCorrections: Correction[] = [];
-
-  // ── Pass 1: Commentary quality ──
+  // ── Passes 1 + 2: synchronous checks ──
   const p1 = runPass1Checks(days);
+  const p2 = runPass2Checks(days);
+
   const p1Result: ValidationResult = {
     pass: 1,
     issues_found: p1.issues.length,
@@ -261,96 +277,89 @@ export async function POST(req: NextRequest) {
     summary: p1.issues.length === 0 ? 'All commentary meets quality thresholds.' : `${p1.issues.length} quality issues found.`,
   };
 
-  // Generate corrections only for critical failures (missing STRATEGY or <100 words)
+  // Identify items needing LLM correction
   const criticalDayCorrections = p1.criticalDays.filter(d => {
     const wc = (d.day_overview ?? '').split(/\s+/).filter(Boolean).length;
     return wc < 100 || !d.day_overview.includes('STRATEGY');
   });
-
-  if (criticalDayCorrections.length > 0) {
-    const dayFixes = await Promise.all(
-      criticalDayCorrections.slice(0, 3).map(async day => {
-        const fixed = await generateCorrection('day_overview', {
-          date: day.date,
-          lagnaSign,
-          mahadasha,
-          antardasha,
-          day_score: day.day_score,
-        });
-        if (fixed && fixed.length > 80) {
-          const correction: Correction = {
-            type: 'day_overview',
-            date: day.date,
-            fixed_text: fixed,
-            reason: `Day overview failed quality check (wc=${(day.day_overview ?? '').split(/\s+/).filter(Boolean).length})`,
-          };
-          p1Result.corrections.push(correction);
-          return correction;
-        }
-        return null;
-      })
-    );
-    allCorrections.push(...dayFixes.filter((c): c is Correction => c !== null));
-  }
-
-  // Fix critically short slot commentaries (< 25 words only — avoid regenerating slightly short ones)
-  const criticalSlots = p1.criticalSlots.filter(s => {
+  const criticalSlots = p1.criticalSlots.filter((s: SlotInput & { date?: string }) => {
     const swc = (s.commentary ?? '').split(/\s+/).filter(Boolean).length;
     return swc < 25;
   });
 
-  if (criticalSlots.length > 0) {
-    const slotFixes = await Promise.all(
-      criticalSlots.slice(0, 5).map(async (slot: any) => {
-        const fixed = await generateCorrection('slot_commentary', {
-          date: slot.date,
-          lagnaSign,
-          mahadasha,
-          antardasha,
-          slot,
-        });
-        if (fixed && fixed.length > 50) {
-          const correction: Correction = {
-            type: 'slot_commentary',
-            date: slot.date,
-            slot_index: slot.slot_index,
-            fixed_text: fixed,
-            reason: `Slot commentary critically short (${(slot.commentary ?? '').split(/\s+/).filter(Boolean).length} words)`,
-          };
-          p1Result.corrections.push(correction);
-          return correction;
-        }
-        return null;
-      })
-    );
-    allCorrections.push(...slotFixes.filter((c): c is Correction => c !== null));
-  }
+  // ── Parallelize: day fixes + slot fixes + Pass 3 LLM ──
+  const [dayFixes, slotFixes, p3] = await Promise.all([
+    criticalDayCorrections.length > 0
+      ? Promise.all(
+          criticalDayCorrections.slice(0, 3).map(async day => {
+            const fixed = await generateCorrection('day_overview', {
+              date: day.date, lagnaSign, mahadasha, antardasha, day_score: day.day_score,
+            });
+            if (fixed && fixed.length > 80) {
+              const correction: Correction = {
+                type: 'day_overview',
+                date: day.date,
+                fixed_text: fixed,
+                reason: `Day overview failed quality check (wc=${(day.day_overview ?? '').split(/\s+/).filter(Boolean).length})`,
+              };
+              p1Result.corrections.push(correction);
+              return correction;
+            }
+            return null;
+          })
+        )
+      : Promise.resolve([] as Array<Correction | null>),
 
-  results.push(p1Result);
+    criticalSlots.length > 0
+      ? Promise.all(
+          criticalSlots.slice(0, 5).map(async (slot: SlotInput & { date?: string }) => {
+            const slotDate = slot.date ?? '';
+            const fixed = await generateCorrection('slot_commentary', {
+              date: slotDate, lagnaSign, mahadasha, antardasha, slot,
+            });
+            if (fixed && fixed.length > 50) {
+              const correction: Correction = {
+                type: 'slot_commentary',
+                date: slotDate,
+                slot_index: slot.slot_index,
+                fixed_text: fixed,
+                reason: `Slot commentary critically short (${(slot.commentary ?? '').split(/\s+/).filter(Boolean).length} words)`,
+              };
+              p1Result.corrections.push(correction);
+              return correction;
+            }
+            return null;
+          })
+        )
+      : Promise.resolve([] as Array<Correction | null>),
 
-  // ── Pass 2: Score accuracy ──
-  const p2 = runPass2Checks(days);
-  results.push({
-    pass: 2,
-    issues_found: p2.issues.length,
-    corrections: [],
-    summary: p2.issues.length === 0
-      ? 'All scores within expected ranges.'
-      : `${p2.issues.length} scoring issues found. Dates with errors: ${p2.scoringErrors.filter((v, i, a) => a.indexOf(v) === i).join(', ')}`,
-      // Note: spread threshold intentionally set to 15 (conservative); file header said 20 but 15 catches uniform-scoring days.
+    runPass3Consistency(days, lagnaSign, mahadasha, antardasha),
+  ]);
 
-  });
+  const allCorrections: Correction[] = [
+    ...dayFixes.filter((c): c is Correction => c !== null),
+    ...slotFixes.filter((c): c is Correction => c !== null),
+  ];
 
-  // ── Pass 3: Consistency (LLM sampled) ──
-  const p3 = await runPass3Consistency(days, lagnaSign, mahadasha, antardasha);
-  results.push({
-    pass: 3,
-    issues_found: p3.issues.length,
-    corrections: p3.llmCorrections,
-    summary: p3.issues.length === 0
-      ? 'Commentary is internally consistent.'
-      : `${p3.issues.length} consistency issues: ${p3.issues.slice(0, 3).join('; ')}`,
-  });
+  const results: ValidationResult[] = [
+    p1Result,
+    {
+      pass: 2,
+      issues_found: p2.issues.length,
+      corrections: [],
+      summary: p2.issues.length === 0
+        ? 'All scores within expected ranges.'
+        : `${p2.issues.length} scoring issues found. Dates with errors: ${p2.scoringErrors.filter((v, i, a) => a.indexOf(v) === i).join(', ')}`,
+    },
+    {
+      pass: 3,
+      issues_found: p3.issues.length,
+      corrections: p3.llmCorrections,
+      summary: p3.issues.length === 0
+        ? 'Commentary is internally consistent.'
+        : `${p3.issues.length} consistency issues: ${p3.issues.slice(0, 3).join('; ')}`,
+    },
+  ];
 
   const totalIssues = results.reduce((sum, r) => sum + r.issues_found, 0);
   const totalCorrections = allCorrections.length;

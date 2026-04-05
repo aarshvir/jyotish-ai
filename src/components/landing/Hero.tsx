@@ -108,7 +108,7 @@ export default function Hero() {
         >
           <Link
             href="/onboard"
-            className="group relative inline-flex items-center gap-2 px-8 py-3.5 bg-amber text-space font-body font-medium text-base rounded-sm hover:bg-amber-glow transition-colors duration-200 overflow-hidden"
+            className="group relative inline-flex items-center gap-2 px-8 py-3.5 bg-amber text-space font-body font-medium text-base rounded-sm hover:bg-amber-glow transition-colors duration-200 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-space"
           >
             <span className="relative z-10">Generate My Report</span>
             <svg
@@ -120,7 +120,7 @@ export default function Hero() {
           </Link>
           <Link
             href="#hourly-preview"
-            className="inline-flex items-center gap-2 px-8 py-3.5 border border-horizon text-dust font-body text-base rounded-sm hover:border-amber/40 hover:text-star transition-all duration-200"
+            className="inline-flex items-center gap-2 px-8 py-3.5 border border-horizon text-dust font-body text-base rounded-sm hover:border-amber/40 hover:text-star transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 focus-visible:ring-offset-2 focus-visible:ring-offset-space"
           >
             See Sample Report
           </Link>

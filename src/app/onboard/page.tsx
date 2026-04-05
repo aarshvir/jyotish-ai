@@ -25,6 +25,7 @@ interface FormData {
   currentLng: number | null;
   currentTzOffset: number | null;
   reportType: ReportPlanId;
+  forecastStartDate: string; // optional — YYYY-MM-DD; defaults to today on report page
 }
 
 interface GeoResult {
@@ -87,11 +88,11 @@ function slideVariants(dir: 1 | -1) {
 
 // ── Field wrapper ─────────────────────────────────────────────────────────────
 
-function Field({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
+function Field({ label, hint, htmlFor, children }: { label: string; hint: string; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1.5">
-        <label className="font-mono text-xs text-dust/80 tracking-[0.12em] uppercase">{label}</label>
+        <label htmlFor={htmlFor} className="font-mono text-xs text-dust/80 tracking-[0.12em] uppercase">{label}</label>
         {hint && <span className="font-mono text-[10px] text-dust/50">{hint}</span>}
       </div>
       {children}
@@ -120,8 +121,9 @@ function Step1({ form, update, onNext }: Step1Props) {
       <p className="font-body text-dust text-sm mb-8">Begin your journey.</p>
 
       <div className="space-y-5">
-        <Field label="Full Name" hint="">
+        <Field label="Full Name" hint="" htmlFor="onboard-name">
           <input
+            id="onboard-name"
             type="text"
             className="cosmic-input"
             placeholder="Arjuna Sharma"
@@ -131,8 +133,9 @@ function Step1({ form, update, onNext }: Step1Props) {
             required
           />
         </Field>
-        <Field label="Email Address" hint="">
+        <Field label="Email Address" hint="" htmlFor="onboard-email">
           <input
+            id="onboard-email"
             type="email"
             className="cosmic-input"
             placeholder="you@example.com"
@@ -189,8 +192,9 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
 
       <div className="space-y-5">
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Birth Date" hint="">
+          <Field label="Birth Date" hint="" htmlFor="onboard-birth-date">
             <input
+              id="onboard-birth-date"
               type="date"
               className="cosmic-input"
               value={form.birthDate}
@@ -198,8 +202,9 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
               required
             />
           </Field>
-          <Field label="Birth Time" hint="HH:MM · local">
+          <Field label="Birth Time" hint="HH:MM · local" htmlFor="onboard-birth-time">
             <input
+              id="onboard-birth-time"
               type="time"
               className="cosmic-input"
               value={form.birthTime}
@@ -209,8 +214,9 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
           </Field>
         </div>
 
-        <Field label="Birth City" hint="For natal chart calculation">
+        <Field label="Birth City" hint="For natal chart calculation" htmlFor="onboard-birth-city">
           <input
+            id="onboard-birth-city"
             type="text"
             className="cosmic-input"
             placeholder="Lucknow, India"
@@ -251,8 +257,9 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
 
         {/* Current city divider */}
         <div className="pt-2 border-t border-horizon/30">
-          <Field label="Current City" hint="Where you live NOW — for accurate daily timing">
+          <Field label="Current City" hint="Where you live NOW — for accurate daily timing" htmlFor="onboard-current-city">
             <input
+              id="onboard-current-city"
               type="text"
               className="cosmic-input"
               placeholder="Dubai, UAE (or same as birth city)"
@@ -303,6 +310,22 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
           </motion.div>
         )}
       </div>
+
+        {/* Forecast start date */}
+        <div className="pt-2 border-t border-horizon/30">
+          <Field label="Forecast Start Date" hint="Optional — past or future" htmlFor="onboard-forecast-start">
+            <input
+              id="onboard-forecast-start"
+              type="date"
+              className="cosmic-input"
+              value={form.forecastStartDate}
+              onChange={(e) => update('forecastStartDate', e.target.value)}
+            />
+          </Field>
+          <p className="font-mono text-[10px] text-dust/40 mt-1.5">
+            Leave blank to start from today. Enter any past or future date to analyse that period.
+          </p>
+        </div>
 
       <div className="flex gap-3 mt-8">
         <button
@@ -475,6 +498,7 @@ function OnboardPageInner() {
     birthLat: null, birthLng: null,
     currentCity: '', currentLat: null, currentLng: null, currentTzOffset: null,
     reportType: 'free',
+    forecastStartDate: '',
   });
   const [geo, setGeo]                       = useState<GeoResult | null>(null);
   const [geoLoading, setGeoLoading]         = useState(false);
@@ -713,6 +737,7 @@ function OnboardPageInner() {
       lat:  String(form.birthLat ?? ''),
       lng:  String(form.birthLng ?? ''),
       type: effectiveType,
+      ...(form.forecastStartDate ? { forecastStart: form.forecastStartDate } : {}),
     };
 
     if (effectiveType !== 'free') {

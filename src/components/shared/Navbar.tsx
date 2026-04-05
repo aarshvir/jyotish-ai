@@ -22,7 +22,7 @@ export default function Navbar() {
       }`}
     >
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-        <Link href="/" className="group flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+        <Link href="/" className="group flex min-w-0 shrink-0 items-center gap-2 sm:gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm">
           <svg
             width="28"
             height="28"
@@ -46,10 +46,10 @@ export default function Navbar() {
 
         {/* Desktop nav links */}
         <div className="hidden items-center gap-8 text-sm font-body text-dust lg:flex">
-          <Link href="/#how-it-works" className="tracking-wide transition-colors hover:text-star">
+          <Link href="/#how-it-works" className="tracking-wide transition-colors hover:text-star focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm px-1">
             How it works
           </Link>
-          <Link href="/pricing" className="tracking-wide transition-colors hover:text-star">
+          <Link href="/pricing" className="tracking-wide transition-colors hover:text-star focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm px-1">
             Pricing
           </Link>
         </div>

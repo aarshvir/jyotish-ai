@@ -143,7 +143,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
 
             {/* Multi-domain scores with progress bars */}
             {(month.career_score ?? month.money_score ?? month.health_score ?? month.love_score) != null && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
                 <div className="text-center">
                   <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">Overall</p>
                   <p className={`font-mono text-xl font-bold ${getScoreColor(month.overall_score ?? 50)}`}>

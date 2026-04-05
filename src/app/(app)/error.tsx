@@ -1,8 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 
 export default function Error({
   error,
@@ -16,16 +14,22 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="container mx-auto py-12 px-4 max-w-2xl">
-      <Card>
-        <CardContent className="pt-6 text-center space-y-4">
-          <h1 className="text-2xl font-bold">Something went wrong</h1>
-          <p className="text-muted-foreground">
-            We encountered an error loading your data.
-          </p>
-          <Button onClick={reset}>Try Again</Button>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--nav-height))] bg-gradient-to-br from-space via-dark to-space">
+      <div className="text-center px-6">
+        <div className="text-5xl mb-6 text-amber opacity-30">⚠</div>
+        <h1 className="font-display text-3xl font-normal mb-4 text-star">
+          Something went wrong
+        </h1>
+        <p className="font-body text-sm mb-10 text-dust/50 max-w-[360px] leading-[1.7]">
+          We encountered an error loading your data. Please try again.
+        </p>
+        <button
+          onClick={reset}
+          className="px-8 py-3 min-h-[44px] bg-gradient-to-r from-amber to-amber/80 text-space rounded-md text-sm font-semibold font-mono cursor-pointer hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-space"
+        >
+          Try Again
+        </button>
+      </div>
     </div>
   );
 }

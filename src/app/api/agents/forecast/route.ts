@@ -47,8 +47,9 @@ export async function POST(request: NextRequest) {
     const forecast = await agent.generateForecast(body);
     return NextResponse.json({ success: true, data: forecast });
 
-  } catch (error) {
-    console.error('❌ Forecast route error:', error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('❌ Forecast route error:', msg.slice(0, 200));
     return NextResponse.json(
       { success: false, error: 'Forecast generation failed' },
       { status: 500 }

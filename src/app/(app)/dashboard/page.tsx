@@ -55,28 +55,23 @@ export default function DashboardPage() {
         return;
       }
 
-      let prof: UserProfile | null = null;
-      const { data: profData } = await supabase
-        .from('user_profiles')
-        .select('display_name, email')
-        .eq('id', user.id)
-        .maybeSingle();
-      if (profData) {
-        prof = profData;
-      } else {
-        prof = { display_name: null, email: user.email ?? null };
-      }
-      setProfile(prof);
+      const [{ data: profData }, { data: reps }] = await Promise.all([
+        supabase
+          .from('user_profiles')
+          .select('display_name, email')
+          .eq('id', user.id)
+          .maybeSingle(),
+        supabase
+          .from('reports')
+          .select(
+            'id, native_name, birth_date, birth_city, plan_type, status, created_at, day_scores, lagna_sign, dasha_mahadasha, dasha_antardasha'
+          )
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(20),
+      ]);
 
-      const { data: reps } = await supabase
-        .from('reports')
-        .select(
-          'id, native_name, birth_date, birth_city, plan_type, status, created_at, day_scores, lagna_sign, dasha_mahadasha, dasha_antardasha'
-        )
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(20);
-
+      setProfile(profData ?? { display_name: null, email: user.email ?? null });
       setReports((reps as Report[]) || []);
       setLoading(false);
     }
@@ -157,7 +152,7 @@ export default function DashboardPage() {
             <p className="mb-6 text-base text-dust">Your cosmic timeline is empty</p>
             <Link
               href="/onboard"
-              className="inline-block rounded-sm bg-amber px-8 py-3 text-sm font-semibold text-space transition-colors hover:bg-amber-glow"
+              className="inline-block rounded-sm bg-amber px-8 py-3 min-h-[44px] text-sm font-semibold text-space transition-colors hover:bg-amber-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-space"
             >
               Generate your first report →
             </Link>
@@ -243,7 +238,7 @@ export default function DashboardPage() {
                   {isComplete && (
                     <Link
                       href={getReportUrl(report)}
-                      className="shrink-0 whitespace-nowrap rounded-lg border border-amber/40 bg-amber/10 px-5 py-2.5 text-sm font-semibold text-amber transition-colors hover:bg-amber/20"
+                      className="shrink-0 whitespace-nowrap rounded-lg border border-amber/40 bg-amber/10 px-5 py-2.5 min-h-[44px] text-sm font-semibold text-amber transition-colors hover:bg-amber/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60"
                     >
                       View report →
                     </Link>

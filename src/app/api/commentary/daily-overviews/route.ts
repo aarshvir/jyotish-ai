@@ -7,8 +7,17 @@ import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaCo
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/api/rateLimit';
 
-function buildFallbackDay(d: any, lagnaSign: string): { date: string; day_theme: string; day_overview: string } {
+interface DayInputShape {
+  date?: string;
+  panchang?: { tithi?: string; nakshatra?: string; yoga?: string; karana?: string; moon_sign?: string; sunrise?: string; sunset?: string; day_ruler?: string };
+  rahu_kaal?: { start?: string; end?: string };
+  day_score?: number;
+}
+
+function buildFallbackDay(d: DayInputShape, lagnaSign: string): { date: string; day_theme: string; day_overview: string } {
   const date = String(d?.date ?? '');
   const p = d?.panchang ?? {};
   const nakshatra = String(p?.nakshatra ?? 'Pushya');
@@ -70,7 +79,7 @@ function buildFallbackDay(d: any, lagnaSign: string): { date: string; day_theme:
   // Build a ~280-320 word overview by using fixed, non-generic directives.
   const day_overview =
     `${headline}\n` +
-    `For Cancer lagna, the ${nakshatra} nakshatra activates decision gates through ${lord} influence, turning planning into concrete movement. ` +
+    `For ${lagnaSign} lagna, the ${nakshatra} nakshatra activates decision gates through ${lord} influence, turning planning into concrete movement. ` +
     `Mercury channeling supports clear wording in H3, so convert thoughts into a written plan and then execute the plan step-by-step without delay. ` +
     `The yoga ${yoga} keeps the mind focused: ${yogaMeaning10} ` +
     `Because moon-linked timing connects today’s flow to H11 outcomes, prioritize measurable deliverables that improve networking, gains, and visibility. ` +
@@ -85,11 +94,11 @@ function buildFallbackDay(d: any, lagnaSign: string): { date: string; day_theme:
     `Best hora: use the hora planet ${dayRuler} and the earliest strong display_label; send the single partnership message that moves H11 gains now.\n` +
     `Strict avoid: do not sign agreements, do not start new financial commitments, and do not promise deadlines you cannot meet.\n` +
     `Rahu Kaal: if the window ${rahuWindow} appears, complete existing work only and stop initiation until the window ends.\n` +
-    `Wellness: for Cancer lagna, practice 9 minutes of breath-counting, then recite “Om Namah Shivaya” once with each count to stabilize attention.`;
+    `Wellness: for ${lagnaSign} lagna, practice 9 minutes of breath-counting to stabilize attention and ground the lagna lord energy.`;
 
   // Theme: must mention at least 2 planets or 1 planet and 1 house number.
   const day_theme =
-    `${dayRuler} emphasizes H11 gains while ${yoga} energizes ${nakshatra} from ${moonSign} orbit, shaping action and focus for Cancer lagna.`;
+    `${dayRuler} emphasizes H11 gains while ${yoga} energizes ${nakshatra} from ${moonSign} orbit, shaping action and focus for ${lagnaSign} lagna.`;
 
   return { date, day_theme, day_overview };
 }
@@ -116,6 +125,16 @@ const parseClaudeJsonDefensively = (text: string) => parseJsonDefensively(text, 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+
+  const rlKey = getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined);
+  const rl = checkRateLimit(rlKey, RATE_LIMITS.commentary.limit, RATE_LIMITS.commentary.windowMs);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests. Please wait before generating another report.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+    );
+  }
+
   try {
   let body: {
     model_override?: string;
@@ -136,15 +155,18 @@ export async function POST(req: NextRequest) {
     try {
       body = await req.json();
     } catch {
-      return NextResponse.json({ days: [] }, { status: 200 });
+      return NextResponse.json({ error: 'Invalid JSON body', days: [] }, { status: 400 });
     }
 
     const modelOverride = typeof body.model_override === 'string' ? body.model_override : undefined;
     if (!hasLlmCredentials(modelOverride)) {
-      return NextResponse.json({ days: [] }, { status: 200 });
+      return NextResponse.json({ days: [], partial: true }, { status: 206 });
     }
 
-    const { lagnaSign, mahadasha, antardasha, days } = body;
+    const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
+    const mahadasha = sanitizePlanetName(body.mahadasha);
+    const antardasha = sanitizePlanetName(body.antardasha);
+    const { days } = body;
     if (!lagnaSign) {
       return NextResponse.json({ days: [] }, { status: 200 });
     }
@@ -221,23 +243,23 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
       userPrompt,
       maxTokens: max_tokens,
     });
-    let parsed: any = null;
+    let parsed: { days: Array<{ date: string; day_theme: string; day_overview: string }> } | null = null;
     try {
       parsed = safeParseJson<{ days: Array<{ date: string; day_theme: string; day_overview: string }> }>(text);
     } catch {
-      parsed = parseClaudeJsonDefensively(text);
+      parsed = parseClaudeJsonDefensively(text) as typeof parsed;
     }
     if (!parsed) {
       console.error('[DAILY-OVERVIEWS] All JSON parse attempts failed, using fallback');
       console.error('[DAILY-OVERVIEWS] Raw text sample:', text.slice(0, 200));
-      return batchDays.map((day: any) => ({
+      return batchDays.map((day) => ({
         date: day?.date ?? '',
         day_theme: 'Planetary energies active today.',
         day_overview: `${day?.panchang?.yoga || 'Mixed'} yoga with Moon in house ${day?.panchang?.moon_sign || 'transit'}. Day score: ${day?.day_score ?? 50}/100. Review timing carefully before major actions.`,
       }));
     }
     const normalized = parsed?.days ?? [];
-    return normalized.map((d: any) => ({
+    return normalized.map((d) => ({
       ...d,
       day_overview: normalizeDayOverview(d.day_overview),
     }));
@@ -268,16 +290,18 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
     }
 
     return NextResponse.json({ days: out });
-    } catch (err: any) {
-      console.error('[daily-overviews]', err?.message || err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[daily-overviews] LLM batch failed:', msg.slice(0, 200));
       return NextResponse.json(
-        { days: days.map((d: any) => buildFallbackDay(d, lagnaSign)) },
-        { status: 200 }
+        { days: days.map((d) => buildFallbackDay(d, lagnaSign)), partial: true },
+        { status: 206 }
       );
     }
-  } catch (err: any) {
-    console.error('[daily-overviews] Fatal:', err?.message || err);
-    return NextResponse.json({ days: [] }, { status: 200 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[daily-overviews] Fatal:', msg.slice(0, 200));
+    return NextResponse.json({ error: 'Commentary generation failed', days: [] }, { status: 500 });
   }
 }
 

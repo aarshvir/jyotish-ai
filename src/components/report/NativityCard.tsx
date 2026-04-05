@@ -110,7 +110,7 @@ export function NativityCard({
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Left: Native details + analysis */}
         <div>
-          <h1 className="font-display font-semibold text-star text-4xl mb-4">
+          <h1 className="font-display font-semibold text-star text-3xl sm:text-4xl mb-4">
             {name.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
           </h1>
 
@@ -257,7 +257,7 @@ export function NativityCard({
           {nativity?.current_year_theme && (
             <div className="py-3 px-4 rounded-sm bg-amber/5 border border-amber/20">
               <p className="font-mono text-xs text-amber tracking-[0.15em] uppercase mb-2">
-                2026 Theme
+                {new Date().getFullYear()} Theme
               </p>
               <p className="font-display text-star text-sm leading-[1.7]">
                 {nativity.current_year_theme}

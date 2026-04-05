@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(req: NextRequest) {
   try {
     const city = req.nextUrl.searchParams.get('city');
-    
+
     if (!city) {
       return NextResponse.json(
         { error: 'City parameter is required' },
@@ -11,18 +11,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
-
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`,
       {
         headers: {
-          'User-Agent': 'Jyotish-AI/1.0',
+          'User-Agent': 'VedicHour/1.0 (vedichour.com)',
         },
       }
     );
 
     if (!response.ok) {
-      console.error('❌ Geocode API - Nominatim error:', response.status);
+      console.error('Geocode API - Nominatim error:', response.status);
       return NextResponse.json(
         { error: 'Geocoding service unavailable' },
         { status: 503 }
@@ -31,12 +30,15 @@ export async function GET(req: NextRequest) {
 
     const data = await response.json();
 
-    return NextResponse.json(data);
-  } catch (error: any) {
-    console.error('❌ Geocode API error:', error);
-    return NextResponse.json(
-      { error: error.message || 'Geocoding failed' },
-      { status: 500 }
-    );
+    // Cache geocoding results for 7 days — city coordinates don't change
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400',
+      },
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Geocoding failed';
+    console.error('Geocode API error:', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

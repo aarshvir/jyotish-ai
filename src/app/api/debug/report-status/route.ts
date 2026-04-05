@@ -59,7 +59,5 @@ export async function GET(request: NextRequest) {
     openai: !!(process.env.OPENAI_API_KEY?.trim()),
   };
 
-  status.razorpay = { present: !!(process.env.RAZORPAY_KEY_ID?.trim()) };
-
   return NextResponse.json(status);
 }

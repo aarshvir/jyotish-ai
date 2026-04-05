@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -19,6 +19,118 @@ import { validateReportData } from '@/lib/validation/reportValidation';
 import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
 import { PrintAllDays } from '@/components/report/PrintAllDays';
 import { batchedPromiseAll } from '@/lib/async/batchedPromiseAll';
+import type {
+  NatalChartData,
+  NativityProfile,
+  NativityData,
+  MonthSummary,
+  ReportData,
+  PanchangData,
+} from '@/lib/agents/types';
+
+// ── Pipeline-internal types (not exported — used only in generateReport) ──
+
+interface DayGridSlotRaw {
+  slot_index?: number;
+  display_label?: string;
+  dominant_hora?: string;
+  hora_ruler?: string;
+  dominant_choghadiya?: string;
+  choghadiya?: string;
+  transit_lagna?: string;
+  transit_lagna_house?: number;
+  is_rahu_kaal?: boolean;
+  score?: number;
+  start_iso?: string;
+  end_iso?: string;
+  midpoint_iso?: string;
+}
+
+interface DayGridApiResult {
+  date?: string;
+  panchang?: Partial<PanchangData>;
+  rahu_kaal?: { start?: string; end?: string };
+  day_score?: number;
+  planet_positions?: unknown;
+  slots?: DayGridSlotRaw[];
+}
+
+interface ForecastSlotIntermediate {
+  slot_index: number;
+  display_label: string;
+  dominant_hora: string;
+  dominant_choghadiya: string;
+  transit_lagna: string;
+  transit_lagna_house: number;
+  is_rahu_kaal: boolean;
+  score: number;
+  start_iso?: string;
+  end_iso?: string;
+  midpoint_iso?: string;
+  commentary?: string;
+  commentary_short?: string;
+}
+
+interface ForecastDayIntermediate {
+  date: string;
+  panchang: Partial<PanchangData>;
+  rahu_kaal: { start: string; end: string };
+  day_score: number;
+  planet_positions?: unknown;
+  slots: ForecastSlotIntermediate[];
+  day_theme?: string;
+  day_overview?: string;
+}
+
+interface MonthApiResult {
+  month_label?: string;
+  month?: string;
+  overall_score?: number;
+  score?: number;
+  career_score?: number;
+  money_score?: number;
+  health_score?: number;
+  love_score?: number;
+  theme?: string;
+  key_transits?: string[];
+  analysis?: string;
+  commentary?: string;
+  weekly_scores?: number[];
+}
+
+interface WeekApiResult {
+  week_label?: string;
+  overall_score?: number;
+  score?: number;
+  theme?: string;
+  analysis?: string;
+  commentary?: string;
+  moon_signs?: string[];
+}
+
+interface WeeksSynthApiResult {
+  weeks?: WeekApiResult[];
+  period_synthesis?: {
+    opening_paragraph?: string;
+    strategic_windows?: unknown[];
+    caution_dates?: unknown[];
+    domain_priorities?: Record<string, string>;
+    closing_paragraph?: string;
+  } | null;
+}
+
+interface DayOverviewApiResult {
+  date: string;
+  day_theme?: string;
+  day_overview?: string;
+}
+
+interface ValidationCorrection {
+  type: 'day_overview' | 'slot_commentary';
+  date?: string;
+  slot_index?: number;
+  fixed_text?: string;
+}
 
 /** When true, skips the 3-pass Sonnet validation to shorten generation time (set on Vercel). */
 const SKIP_VALIDATION = process.env.NEXT_PUBLIC_SKIP_VALIDATION === 'true';
@@ -77,10 +189,12 @@ function ReportContent() {
   const currentLng = params.get('currentLng') ?? lng;
   const currentCity = params.get('currentCity') ?? city;
   const currentTzOffset = params.get('currentTz') ? parseInt(params.get('currentTz')!) : null;
+  // Optional: custom forecast start date (YYYY-MM-DD). Defaults to today.
+  const forecastStartParam = params.get('forecastStart') ?? '';
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [reportData, setReportData] = useState<any>(null);
+  const [reportData, setReportData] = useState<ReportData | null>(null);
   const [commentaryPartial, setCommentaryPartial] = useState(false);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
   const [copyLinkFeedback, setCopyLinkFeedback] = useState(false);
@@ -227,7 +341,7 @@ function ReportContent() {
             time: String(row.birth_time ?? '').slice(0, 5),
             city: String(row.birth_city ?? ''),
           });
-          setReportData(rd);
+          setReportData(rd as unknown as ReportData);
           setIsLoading(false);
           return;
         }
@@ -361,8 +475,8 @@ function ReportContent() {
       try {
         const res = await fetch(url, options);
         return res;
-      } catch (err: any) {
-        const isNetworkError = err.name === 'TypeError' || err.message?.includes('Failed to fetch') || err.message?.includes('SUSPENDED') || err.message?.includes('aborted');
+      } catch (err: unknown) {
+        const isNetworkError = err instanceof Error && (err.name === 'TypeError' || err.message?.includes('Failed to fetch') || err.message?.includes('SUSPENDED') || err.message?.includes('aborted'));
         if (isNetworkError && i < retries - 1) {
           console.warn(`Network error on ${url}, retry ${i + 1}/${retries} in ${delayMs}ms...`);
           await new Promise(r => setTimeout(r, delayMs * (i + 1)));
@@ -398,14 +512,24 @@ function ReportContent() {
       const cLat = parseFloat(currentLat) || birthLat;
       const cLng = parseFloat(currentLng) || birthLng;
       const SIGNS_FOR_LAGNA = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
-      const today = new Date();
+      // Use custom forecast start if provided, else today
+      const today = forecastStartParam && /^\d{4}-\d{2}-\d{2}$/.test(forecastStartParam)
+        ? new Date(forecastStartParam + 'T12:00:00')
+        : new Date();
       const dateRange: string[] = Array.from({ length: dayCount }, (_, i) => {
         const d = new Date(today.getTime() + i * 24 * 60 * 60 * 1000);
         return d.toISOString().split('T')[0];
       });
 
       // ── STEP 1: Ephemeris ──
-      let ephemerisData: any = { lagna: 'Cancer', current_dasha: {}, planets: {} };
+      let ephemerisData: NatalChartData = {
+        lagna: 'Cancer',
+        lagna_degree: 0,
+        planets: {},
+        moon_nakshatra: '',
+        dasha_sequence: [],
+        current_dasha: { mahadasha: '', antardasha: '', start_date: '', end_date: '' },
+      };
       try {
         console.log('[STEP-1] Starting...');
         setStepMessage('Reading the stars...');
@@ -434,57 +558,63 @@ function ReportContent() {
         console.error('[STEP-1] Failed:', err instanceof Error ? err.message : String(err));
       }
 
-      // ── STEP 2: Nativity ──
-      let nativityProfile: any = null;
-      try {
-        console.log('[STEP-2] Starting...');
-        setStepMessage('Analysing your birth chart...');
-        setStepDetail('Extended thinking: mapping yogas and house lordships');
-        setCurrentStepIndex(1);
-        const nativityRes = await resilientFetch('/api/agents/nativity', {
-          method: 'POST',
-          headers: authJsonHeaders(),
-          body: JSON.stringify({ natalChart: ephemerisData }),
-        }, 2, 3000);
-        if (nativityRes.ok) {
-          const nativityRaw = await nativityRes.json();
-          nativityProfile = nativityRaw.data || nativityRaw;
-        }
-        console.log('[STEP-2] Complete');
-      } catch (natErr: any) {
-        console.error('[STEP-2] Failed:', natErr instanceof Error ? natErr.message : String(natErr));
-      }
+      // ── STEP 2+3: Nativity + Daily grids (parallel) ──
+      setStepMessage('Analysing birth chart & calculating hourly scores...');
+      setStepDetail('Nativity analysis and daily grid calculation in parallel');
+      setCurrentStepIndex(1);
+      console.log('[STEP-2+3] Starting parallel nativity + daily grids...');
 
       const natal_lagna_sign_index = Math.max(0, SIGNS_FOR_LAGNA.indexOf(ephemerisData?.lagna ?? ''));
 
-      // ── STEP 3: Daily grids ──
-      let dailyGridResults: any[] = [];
-      try {
-        console.log('[STEP-3] Starting...');
-        setStepMessage('Calculating hourly scores...');
-        setStepDetail('Computing 18 slots × ' + dayCount + ' days');
-        setCurrentStepIndex(2);
-        dailyGridResults = await Promise.all(
-          dateRange.map(async (d) => {
-            try {
-              const res = await resilientFetch('/api/agents/daily-grid', {
-                method: 'POST',
-                headers: authJsonHeaders(),
-                body: JSON.stringify({ date: d, currentLat: cLat, currentLng: cLng, timezoneOffset, natal_lagna_sign_index }),
-              }, 2, 2000);
-              if (!res.ok) return null;
-              return await res.json();
-            } catch {
-              return null;
-            }
-          })
-        );
-        console.log('[STEP-3] Complete');
-      } catch (err) {
-        console.error('[STEP-3] Failed:', err instanceof Error ? err.message : String(err));
-      }
+      let nativityProfile: NativityProfile | null = null;
+      let dailyGridResults: (DayGridApiResult | null)[] = [];
 
-      const forecastDays: any[] = dailyGridResults.map((r, i) => {
+      await Promise.all([
+        // Step 2: Nativity
+        (async () => {
+          try {
+            const nativityRes = await resilientFetch('/api/agents/nativity', {
+              method: 'POST',
+              headers: authJsonHeaders(),
+              body: JSON.stringify({ natalChart: ephemerisData }),
+            }, 2, 3000);
+            if (nativityRes.ok) {
+              const nativityRaw = await nativityRes.json();
+              nativityProfile = nativityRaw.data || nativityRaw;
+            }
+            console.log('[STEP-2] Nativity complete');
+          } catch (natErr: unknown) {
+            console.error('[STEP-2] Failed:', natErr instanceof Error ? natErr.message : String(natErr));
+          }
+        })(),
+        // Step 3: Daily grids
+        (async () => {
+          try {
+            setCurrentStepIndex(2);
+            dailyGridResults = await Promise.all(
+              dateRange.map(async (d) => {
+                try {
+                  const res = await resilientFetch('/api/agents/daily-grid', {
+                    method: 'POST',
+                    headers: authJsonHeaders(),
+                    body: JSON.stringify({ date: d, currentLat: cLat, currentLng: cLng, timezoneOffset, natal_lagna_sign_index }),
+                  }, 2, 2000);
+                  if (!res.ok) return null;
+                  return await res.json();
+                } catch {
+                  return null;
+                }
+              })
+            );
+            console.log('[STEP-3] Daily grids complete');
+          } catch (err: unknown) {
+            console.error('[STEP-3] Failed:', err instanceof Error ? err.message : String(err));
+          }
+        })(),
+      ]);
+      console.log('[STEP-2+3] Complete');
+
+      const forecastDays: ForecastDayIntermediate[] = dailyGridResults.map((r, i) => {
         if (!r) {
           return {
             date: dateRange[i],
@@ -510,8 +640,8 @@ function ReportContent() {
           rahu_kaal: { start: rahu.start ?? '', end: rahu.end ?? '' },
           day_score: r.day_score ?? 50,
           planet_positions: r.planet_positions ?? undefined,
-          slots: (r.slots ?? []).map((s: any) => ({
-            slot_index: s.slot_index,
+          slots: (r.slots ?? []).map((s, si) => ({
+            slot_index: s.slot_index ?? si,
             display_label: s.display_label ?? '06:00–07:00',
             dominant_hora: s.dominant_hora ?? s.hora_ruler ?? '',
             dominant_choghadiya: s.dominant_choghadiya ?? s.choghadiya ?? '',
@@ -526,15 +656,15 @@ function ReportContent() {
         };
       });
 
-      const nativityData: any = {
+      const np = nativityProfile as NativityProfile | null;
+      const nativityData: NativityData = {
         natal_chart: ephemerisData,
-        lagna_analysis: nativityProfile?.lagna_analysis ?? '',
-        current_dasha_interpretation:
-          nativityProfile?.current_dasha_interpretation ?? '',
-        key_yogas: nativityProfile?.yogas ?? [],
-        functional_benefics: nativityProfile?.functional_benefics ?? [],
-        functional_malefics: nativityProfile?.functional_malefics ?? [],
-        profile: nativityProfile,
+        lagna_analysis: np !== null ? np.lagna_analysis : '',
+        current_dasha_interpretation: np !== null ? np.current_dasha_interpretation : '',
+        key_yogas: np !== null ? np.yogas : [],
+        functional_benefics: np !== null ? np.functional_benefics : [],
+        functional_malefics: np !== null ? np.functional_malefics : [],
+        profile: np !== null ? np : undefined,
       };
       try {
         // eslint-disable-next-line no-console
@@ -549,10 +679,15 @@ function ReportContent() {
       const mahadasha = dasha.mahadasha ?? 'Unknown';
       const antardasha = dasha.antardasha ?? 'Unknown';
 
-      // ── STEP 4+5: Daily overviews + Nativity text (parallel) ──
-      setStepMessage('Writing daily forecasts & natal analysis...');
-      setStepDetail('Running daily overviews and natal commentary in parallel');
+      // ── STEP 4+5+6+7: Daily overviews, Nativity text, Hourly commentary, Monthly — all parallel ──
+      setStepMessage('Writing commentary, hourly analysis & monthly forecast...');
+      setStepDetail('4 tasks running in parallel');
       setCurrentStepIndex(3);
+      let allMonthsData: MonthSummary[] = [];
+      console.log('[STEP-4+5+6+7] Starting all commentary in parallel...');
+      await Promise.all([
+      // ── 4+5: Daily overviews + Nativity text ──
+      (async () => {
       try {
         console.log('[STEP-4+5] Starting parallel...');
         const overviewBody = JSON.stringify({
@@ -563,14 +698,14 @@ function ReportContent() {
             date: d.date,
             panchang: d.panchang,
             planet_positions: d.planet_positions,
-            slots: d.slots.map((s: any) => ({
+            slots: d.slots.map((s) => ({
               display_label: s.display_label,
               score: s.score,
               dominant_choghadiya: s.dominant_choghadiya,
             })),
             day_score: d.day_score,
             rahu_kaal: d.rahu_kaal,
-            peak_slots: d.slots.filter((s: any) => s.score >= 75).slice(0, 3).map((s: any) => ({
+            peak_slots: d.slots.filter((s) => s.score >= 75).slice(0, 3).map((s) => ({
               display_label: s.display_label,
               dominant_hora: s.dominant_hora,
               dominant_choghadiya: s.dominant_choghadiya,
@@ -599,12 +734,12 @@ function ReportContent() {
         const fallbackOverview = 'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
         if (overviewRes.ok) {
           const overviewData = await overviewRes.json();
-          (overviewData.days ?? []).forEach((od: any) => {
-            const day = forecastDays.find((d: any) => d.date === od.date);
+          (overviewData.days ?? [] as DayOverviewApiResult[]).forEach((od: DayOverviewApiResult) => {
+            const day = forecastDays.find((d) => d.date === od.date);
             if (day) { day.day_theme = od.day_theme ?? ''; day.day_overview = od.day_overview ?? ''; }
           });
         }
-        forecastDays.forEach((day: any) => {
+        forecastDays.forEach((day) => {
           if (!day.day_overview || day.day_overview.length < 80 || !day.day_overview.includes('STRATEGY')) {
             day.day_overview = fallbackOverview;
             if (!day.day_theme) day.day_theme = 'Use hourly scores and peak windows.';
@@ -621,20 +756,18 @@ function ReportContent() {
         console.error('[STEP-4+5] Failed:', e instanceof Error ? e.message : String(e));
         setCommentaryPartial(true);
         const fallbackOverview = 'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
-        forecastDays.forEach((day: any) => {
+        forecastDays.forEach((day) => {
           day.day_overview = day.day_overview || fallbackOverview;
           if (!day.day_theme) day.day_theme = 'Use hourly scores and peak windows.';
         });
       }
-
-      // ── STEP 6: Hourly commentary — all days in parallel ──
-      setStepMessage('Writing all hourly commentary...');
-      setStepDetail(`${forecastDays.length} days in parallel`);
-      setCurrentStepIndex(4);
+      })(), // end Step 4+5 async IIFE
+      // ── 6: Hourly commentary — all days (batched, concurrency=2) ──
+      (async () => {
       try {
         console.log('[STEP-6] Starting batched hourly (2 concurrent)...');
         const hourlyResults = await batchedPromiseAll(
-          forecastDays.map((day: any, i: number) => async () => {
+          forecastDays.map((day, i: number) => async () => {
             try {
               const res = await fetch('/api/commentary/hourly-day', {
                 method: 'POST',
@@ -648,7 +781,7 @@ function ReportContent() {
                   planet_positions: day.planet_positions,
                   panchang: day.panchang,
                   rahu_kaal: day.rahu_kaal,
-                  slots: day.slots.map((s: any) => ({
+                  slots: day.slots.map((s) => ({
                     slot_index: s.slot_index,
                     display_label: s.display_label,
                     dominant_hora: s.dominant_hora,
@@ -670,11 +803,11 @@ function ReportContent() {
           2
         );
 
-        hourlyResults.forEach(({ dayIndex, slots }: any) => {
+        hourlyResults.forEach(({ dayIndex, slots }: { dayIndex: number; slots?: Array<{ slot_index: number; commentary?: string; commentary_short?: string }> }) => {
           const day = forecastDays[dayIndex];
           if (!day) return;
-          (slots ?? []).forEach((hs: any) => {
-            const slot = day.slots.find((s: any) => s.slot_index === hs.slot_index);
+          (slots ?? []).forEach((hs) => {
+            const slot = day.slots.find((s) => s.slot_index === hs.slot_index);
             if (slot) {
               slot.commentary = hs.commentary ?? '';
               const firstSent = hs.commentary?.split('.')[0]?.trim();
@@ -682,7 +815,7 @@ function ReportContent() {
             }
           });
           // Fallback for any slots without commentary
-          day.slots.forEach((slot: any) => {
+          day.slots.forEach((slot) => {
             if (!slot.commentary) {
               slot.commentary = `${slot.dominant_hora} hora, ${slot.dominant_choghadiya} choghadiya. Score: ${slot.score}/100.` + (slot.is_rahu_kaal ? ' Rahu Kaal — avoid new initiations.' : '');
               slot.commentary_short = slot.commentary.split('.')[0] + '.';
@@ -693,14 +826,11 @@ function ReportContent() {
       } catch (err) {
         console.error('[STEP-6] Failed, continuing:', err instanceof Error ? err.message : String(err));
       }
-
-      // ── STEP 7: Monthly — both batches in parallel ──
-      let allMonthsData: any[] = [];
+      })(), // end Step 6 async IIFE
+      // ── 7: Monthly — both batches in parallel ──
+      (async () => {
       try {
         console.log('[STEP-7] Starting parallel monthly...');
-        setStepMessage('Generating full monthly forecast...');
-        setStepDetail('Months 1–6 and 7–12 in parallel');
-        setCurrentStepIndex(5);
         const startDate = new Date(forecastDays[0].date);
         const allMonths = Array.from({ length: 12 }, (_, i) => {
           const d = new Date(startDate);
@@ -717,7 +847,7 @@ function ReportContent() {
           reference_planet_positions_date: forecastDays[0]?.date,
           reference_panchang: forecastDays[0]?.panchang,
           reference_rahu_kaal: forecastDays[0]?.rahu_kaal,
-          reference_slots: forecastDays[0]?.slots?.map((s: any) => ({
+          reference_slots: forecastDays[0]?.slots?.map((s) => ({
             display_label: s.display_label,
             score: s.score,
             dominant_choghadiya: s.dominant_choghadiya,
@@ -737,12 +867,12 @@ function ReportContent() {
           }),
         ]);
 
-        const months1Data: any[] = months1Res.ok ? ((await months1Res.json()).months ?? []) : [];
-        const months2Data: any[] = months2Res.ok ? ((await months2Res.json()).months ?? []) : [];
+        const months1Data: MonthApiResult[] = months1Res.ok ? ((await months1Res.json()).months ?? []) : [];
+        const months2Data: MonthApiResult[] = months2Res.ok ? ((await months2Res.json()).months ?? []) : [];
         if (!months1Res.ok) { console.error('[STEP-7] months-first failed:', months1Res.status); setCommentaryPartial(true); }
         if (!months2Res.ok) { console.error('[STEP-7] months-second failed:', months2Res.status); setCommentaryPartial(true); }
 
-        allMonthsData = [...months1Data, ...months2Data].map((m: any) => {
+        allMonthsData = [...months1Data, ...months2Data].map((m) => {
           const monthLabel = m.month_label ?? m.month ?? '';
           const overall = m.overall_score ?? m.score ?? 65;
           const rawCommentary = (m.analysis ?? m.commentary ?? '').trim();
@@ -750,10 +880,6 @@ function ReportContent() {
             month: monthLabel,
             score: overall,
             overall_score: overall,
-            career_score: m.career_score ?? 65,
-            money_score: m.money_score ?? 65,
-            health_score: m.health_score ?? 65,
-            love_score: m.love_score ?? 65,
             theme: (m.theme ?? '').trim() || '',
             key_transits: m.key_transits ?? [],
             commentary:
@@ -766,7 +892,7 @@ function ReportContent() {
               health: m.health_score ?? 65,
               relationships: m.love_score ?? 65,
             },
-          };
+          } satisfies MonthSummary;
         });
         while (allMonthsData.length < 12) {
           const m = new Date(startDate.getFullYear(), startDate.getMonth() + allMonthsData.length, 1);
@@ -775,10 +901,6 @@ function ReportContent() {
             month: ml,
             score: 65,
             overall_score: 65,
-            career_score: 65,
-            money_score: 65,
-            health_score: 65,
-            love_score: 65,
             theme: '',
             key_transits: [],
             commentary: monthlyFallbackCommentary(ml, 65),
@@ -797,10 +919,6 @@ function ReportContent() {
             month: ml,
             score: 65,
             overall_score: 65,
-            career_score: 65,
-            money_score: 65,
-            health_score: 65,
-            love_score: 65,
             theme: '',
             key_transits: [],
             commentary: monthlyFallbackCommentary(ml, 65),
@@ -809,6 +927,9 @@ function ReportContent() {
           };
         });
       }
+      })(), // end Step 7 async IIFE
+      ]); // end Promise.all for Steps 4+5+6+7
+      console.log('[STEP-4+5+6+7] All parallel commentary complete');
 
       // ── STEP 8: Weeks + Synthesis ──
       console.log('[STEP-8] Starting weeks-synthesis');
@@ -829,15 +950,15 @@ function ReportContent() {
           week_label: `${fmt(wStart)} – ${fmt(wEnd)}`,
           start_date: wStart.toISOString().split('T')[0],
           end_date: wEnd.toISOString().split('T')[0],
-          daily_scores: weekDays.map((d: any) => d.day_score ?? 55),
+          daily_scores: weekDays.map((d) => d.day_score ?? 55),
         };
       });
 
-      const allScores = forecastDays.map((d: any) => d.day_score ?? 55);
-      const bestDay = forecastDays.reduce((a: any, b: any) => (a.day_score ?? 0) > (b.day_score ?? 0) ? a : b);
-      const worstDay = forecastDays.reduce((a: any, b: any) => (a.day_score ?? 100) < (b.day_score ?? 100) ? a : b);
+      const allScores = forecastDays.map((d) => d.day_score ?? 55);
+      const bestDay = forecastDays.reduce((a, b) => (a.day_score ?? 0) > (b.day_score ?? 0) ? a : b);
+      const worstDay = forecastDays.reduce((a, b) => (a.day_score ?? 100) < (b.day_score ?? 100) ? a : b);
 
-      let weeksSynthData: any = { weeks: [], period_synthesis: null };
+      let weeksSynthData: WeeksSynthApiResult = { weeks: [], period_synthesis: null };
       try {
         console.log('[STEP-8] weeksPayload length:', weeksPayload?.length);
         const weeksSynthResponse = await fetch('/api/commentary/weeks-synthesis', {
@@ -849,12 +970,12 @@ function ReportContent() {
             antardasha: antardasha ?? 'Mercury',
             reportStartDate: forecastDays[0].date,
             weeks: weeksPayload,
-            planet_positions_by_date: forecastDays.map((d: any) => ({
+            planet_positions_by_date: forecastDays.map((d) => ({
               date: d.date,
               planet_positions: d.planet_positions,
               panchang: d.panchang,
               rahu_kaal: d.rahu_kaal,
-              slots: d.slots?.map((s: any) => ({
+              slots: d.slots?.map((s) => ({
                 display_label: s.display_label,
                 score: s.score,
                 dominant_choghadiya: s.dominant_choghadiya,
@@ -883,7 +1004,7 @@ function ReportContent() {
         console.error('[STEP-8] Failed:', err instanceof Error ? err.message : String(err));
       }
 
-      const weekList = (weeksSynthData.weeks ?? []).map((w: any, i: number) => {
+      const weekList = (weeksSynthData.weeks ?? []).map((w, i: number) => {
         const wl = w.week_label ?? `Week ${i + 1}`;
         const sc = w.overall_score ?? w.score ?? 65;
         const wc = (w.analysis ?? w.commentary ?? '').trim();
@@ -926,11 +1047,11 @@ function ReportContent() {
             lagnaSign: ephemerisData.lagna ?? 'Cancer',
             mahadasha,
             antardasha,
-            days: forecastDays.map((d: any) => ({
+            days: forecastDays.map((d) => ({
               date: d.date,
               day_score: d.day_score,
               day_overview: d.day_overview ?? '',
-              slots: (d.slots ?? []).map((s: any) => ({
+              slots: (d.slots ?? []).map((s) => ({
                 slot_index: s.slot_index,
                 display_label: s.display_label,
                 score: s.score,
@@ -960,17 +1081,17 @@ function ReportContent() {
 
             if (validationData.corrections?.length > 0) {
               console.log(`[VALIDATION] Applying ${validationData.corrections.length} corrections`);
-              validationData.corrections.forEach((correction: any) => {
+              (validationData.corrections as ValidationCorrection[]).forEach((correction) => {
                 if (correction.type === 'day_overview' && correction.date) {
-                  const day = forecastDays.find((d: any) => d.date === correction.date);
+                  const day = forecastDays.find((d) => d.date === correction.date);
                   if (day && correction.fixed_text) {
                     day.day_overview = correction.fixed_text;
                     console.log(`[VALIDATION] Fixed day overview for ${correction.date}`);
                   }
                 } else if (correction.type === 'slot_commentary' && correction.date !== undefined && correction.slot_index !== undefined) {
-                  const day = forecastDays.find((d: any) => d.date === correction.date);
+                  const day = forecastDays.find((d) => d.date === correction.date);
                   if (day) {
-                    const slot = day.slots.find((s: any) => s.slot_index === correction.slot_index);
+                    const slot = day.slots.find((s) => s.slot_index === correction.slot_index);
                     if (slot && correction.fixed_text) {
                       slot.commentary = correction.fixed_text;
                       console.log(`[VALIDATION] Fixed slot ${correction.slot_index} on ${correction.date}`);
@@ -1016,28 +1137,28 @@ function ReportContent() {
         return 'Avoid';
       };
 
-      const daysForReport = forecastDays.map((d: any) => ({
+      const daysForReport = forecastDays.map((d) => ({
         date: d.date,
         day_label: formatDayLabel(d.date),
         day_score: d.day_score,
-        day_label_tier: toLabel(d.day_score, false) as import('@/lib/agents/types').RatingLabel,
+        day_label_tier: toLabel(d.day_score, false),
         day_theme: (d.day_theme ?? '').trim() || `Day score ${d.day_score}.`,
         overview: (d.day_overview ?? '').trim() || `Day score ${d.day_score}. Use hora and choghadiya to time activities.`,
         panchang: d.panchang ?? {},
         rahu_kaal: d.rahu_kaal?.start ? { start: d.rahu_kaal.start.slice(0, 5), end: d.rahu_kaal.end.slice(0, 5) } : null,
-        slots: (d.slots ?? []).map((s: any) => ({
+        slots: (d.slots ?? []).map((s) => ({
           ...s,
-          hora_planet: s.dominant_hora ?? s.hora_planet ?? 'Moon',
-          hora_planet_symbol: PLANET_SYMBOLS[s.dominant_hora ?? s.hora_planet] ?? '☽',
-          choghadiya: s.dominant_choghadiya ?? s.choghadiya ?? 'Chal',
-          choghadiya_quality: s.choghadiya_quality ?? 'Neutral',
+          hora_planet: s.dominant_hora ?? 'Moon',
+          hora_planet_symbol: PLANET_SYMBOLS[s.dominant_hora] ?? '☽',
+          choghadiya: s.dominant_choghadiya ?? 'Chal',
+          choghadiya_quality: 'Neutral',
           commentary: (s.commentary ?? '').trim() || `${s.dominant_hora} hora. Score ${s.score}.`,
           commentary_short: (s.commentary_short ?? '').trim() || (s.commentary ?? '').split('.')[0] + '.' || '—',
           score: s.score ?? 50,
           label: toLabel(s.score ?? 50, s.is_rahu_kaal ?? false),
         })),
-        peak_count: (d.slots ?? []).filter((s: any) => (s.score ?? 50) >= 75 && !(s.is_rahu_kaal ?? false)).length,
-        caution_count: (d.slots ?? []).filter((s: any) => (s.score ?? 50) < 45 || (s.is_rahu_kaal ?? false)).length,
+        peak_count: (d.slots ?? []).filter((s) => (s.score ?? 50) >= 75 && !(s.is_rahu_kaal ?? false)).length,
+        caution_count: (d.slots ?? []).filter((s) => (s.score ?? 50) < 45 || (s.is_rahu_kaal ?? false)).length,
       }));
 
       const finalReport = {
@@ -1057,15 +1178,16 @@ function ReportContent() {
         },
       };
 
-      const errors = validateReportData(finalReport);
+      const finalReportTyped = finalReport as unknown as ReportData;
+      const errors = validateReportData(finalReportTyped);
       if (errors.length > 0) console.warn('[VALIDATION] Issues:', errors);
 
-      setReportData(finalReport);
+      setReportData(finalReportTyped);
       void saveReportToDatabase(finalReport as unknown as Record<string, unknown>);
       setIsLoading(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Report generation error:', err);
-      setError(err?.message || 'Failed to generate report');
+      setError(err instanceof Error ? err.message : 'Failed to generate report');
       setIsLoading(false);
     }
   }
@@ -1134,20 +1256,20 @@ function ReportContent() {
 
   if (!reportData) return null;
 
-  const natalChart = reportData.nativity?.natal_chart ?? reportData.natalChart;
+  const natalChart = reportData.nativity?.natal_chart ?? (reportData as unknown as { natalChart?: NatalChartData }).natalChart;
   const safeMonthly = Array.isArray(reportData.months) ? reportData.months : [];
   const safeWeekly = Array.isArray(reportData.weeks) ? reportData.weeks : [];
-  const reportDays: any[] = reportData.days ?? [];
+  const reportDays = reportData.days ?? [];
 
-  const mergedDays = reportDays.map((day: any) => {
+  const mergedDays = reportDays.map((day) => {
     const slots = day.slots ?? [];
     const peakFromGrid = slots
-      .filter((s: any) => (s.score ?? 0) >= 75 && !(s.is_rahu_kaal ?? false))
+      .filter((s) => (s.score ?? 0) >= 75 && !(s.is_rahu_kaal ?? false))
       .slice(0, 3)
-      .map((s: any) => ({
+      .map((s) => ({
         time: s.display_label ?? '',
-        hora: s.hora_planet ?? s.dominant_hora ?? '',
-        choghadiya: s.choghadiya ?? s.dominant_choghadiya ?? '',
+        hora: s.hora_planet ?? '',
+        choghadiya: s.choghadiya ?? '',
         score: s.score ?? 0,
         reason: '',
       }));
@@ -1159,22 +1281,22 @@ function ReportContent() {
       day_theme: day.day_theme ?? '',
       day_rating_label: (day.day_score ?? 50) >= 70 ? 'EXCELLENT' : (day.day_score ?? 50) >= 50 ? 'GOOD' : 'CHALLENGING',
       panchang: day.panchang ?? {},
-      day_overview: day.overview ?? day.day_overview ?? 'Overview is being generated.',
+      day_overview: day.overview ?? 'Overview is being generated.',
       rahu_kaal: rahuKaalFormatted,
       best_windows: peakFromGrid,
       avoid_windows: [],
       peak_count: day.peak_count ?? peakFromGrid.length,
       caution_count: day.caution_count ?? 0,
       hours: null,
-      hourlySlots: slots.map((s: any) => ({
+      hourlySlots: slots.map((s) => ({
         slot_index: s.slot_index,
         display_label: s.display_label,
         time: s.start_iso?.slice(11, 19) ?? '',
         end_time: s.end_iso?.slice(11, 19) ?? '',
         score: s.score ?? 50,
-        hora_planet: s.hora_planet ?? s.dominant_hora ?? '',
+        hora_planet: s.hora_planet ?? '',
         hora_planet_symbol: s.hora_planet_symbol ?? '',
-        choghadiya: s.choghadiya ?? s.dominant_choghadiya ?? '',
+        choghadiya: s.choghadiya ?? '',
         choghadiya_quality: s.choghadiya_quality ?? '',
         is_rahu_kaal: s.is_rahu_kaal ?? false,
         transit_lagna: s.transit_lagna ?? '',
@@ -1315,12 +1437,12 @@ function ReportContent() {
                   : undefined
               }
               nativity={
-                reportData?.nativity?.profile ??
+                (reportData?.nativity?.profile ??
                 reportData?.nativity ?? {
                   planetary_positions: [],
                   life_themes: [],
                   current_year_theme: '',
-                }
+                }) as NativityProfile | undefined
               }
             />
           </ReportErrorBoundary>
@@ -1347,7 +1469,7 @@ function ReportContent() {
           <ReportErrorBoundary fallbackTitle="Period Synthesis">
             <PeriodSynthesis
               synthesis={reportData?.synthesis ?? ''}
-              dailyScores={mergedDays.map((d: any) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
+              dailyScores={mergedDays.map((d) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
               onDayClick={handleDaySelectFromCalendar}
             />
           </ReportErrorBoundary>

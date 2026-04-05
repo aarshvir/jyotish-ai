@@ -39,10 +39,11 @@ export async function POST(request: NextRequest) {
 
     const profile = await agent.analyze(natalChart);
     return NextResponse.json({ success: true, data: profile });
-  } catch (error: any) {
-    console.error('Nativity route error:', error?.message);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('Nativity route error:', msg.slice(0, 200));
     return NextResponse.json(
-      { success: false, error: error?.message || String(error) },
+      { success: false, error: msg },
       { status: 500 }
     );
   }

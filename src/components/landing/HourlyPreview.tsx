@@ -76,7 +76,7 @@ export default function HourlyPreview() {
         </div>
 
         {/* Chart container */}
-        <div className="bg-cosmos border border-horizon rounded-sm p-6 md:p-10 overflow-x-auto">
+        <div className="bg-cosmos border border-horizon rounded-sm p-4 sm:p-6 md:p-10 overflow-x-auto" aria-label="Hourly score chart - scroll horizontally to see all hours">
           {/* Chart top — legend */}
           <div className="flex items-center gap-6 mb-8 flex-wrap">
             {[

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { buildLagnaContext } from '@/lib/agents/lagnaContext';
 
 interface HourData {
   time: string;
@@ -34,17 +35,11 @@ const PLANET_SYMBOLS: Record<string, string> = {
   Jupiter: '♃', Venus: '♀', Saturn: '♄',
 };
 
-const HORA_TOOLTIPS: Record<string, string> = {
-  Moon: 'Lagna lord hora — peak emotional clarity and personal authority',
-  Mars: 'Yogakaraka hora — strongest career and intelligence activation',
-  Jupiter: '9th lord hora — dharma, wisdom, mentors, and fortune',
-  Mercury: '12th lord hora — research and writing, but watch for scattered energy',
-  Saturn: 'Badhaka hora — avoid new initiatives, good for discipline and routine',
-  Sun: 'Functional neutral — authority and government matters',
-  Venus: '4th+11th lord hora — mixed, good for comfort and networking',
-};
-
 export function BestWindows({ hours, lagna = 'Cancer' }: BestWindowsProps) {
+  const lagnaCtx = buildLagnaContext(lagna);
+  const horaTooltips: Record<string, string> = Object.fromEntries(
+    Object.entries(lagnaCtx.horaRoles).map(([planet, role]) => [planet, role.description])
+  );
   // Find top 3 optimal hours (excluding Rahu Kaal)
   const optimal = hours
     .filter((h) => !h.is_rahu_kaal)
@@ -65,7 +60,7 @@ export function BestWindows({ hours, lagna = 'Cancer' }: BestWindowsProps) {
           <div className="flex flex-wrap gap-2">
             {optimal.map((hour, i) => {
               const tl = slotTimeLabel(hour);
-              const tooltip = hour.reason || HORA_TOOLTIPS[hour.hora_planet] || `${hour.hora_planet} hora — optimal for key activities`;
+              const tooltip = hour.reason || horaTooltips[hour.hora_planet] || `${hour.hora_planet} hora — optimal for key activities`;
               return (
                 <motion.div
                   key={i}

@@ -147,8 +147,9 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
             <button
               key={day?.date ?? i}
               onClick={() => onDayClick?.(i)}
-              className={`w-12 h-12 rounded-sm ${getColor(day?.score ?? 50)} border border-horizon/40 hover:border-amber/60 transition-all flex flex-col items-center justify-center gap-0.5`}
+              className={`w-12 h-12 rounded-sm ${getColor(day?.score ?? 50)} border border-horizon/40 hover:border-amber/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 transition-all flex flex-col items-center justify-center gap-0.5`}
               title={`${day?.date ?? ''}: ${day?.score ?? 50}`}
+              aria-label={`Go to ${day?.date ?? `day ${i + 1}`} — score ${day?.score ?? 50}`}
             >
               <span className={`font-mono text-[11px] font-bold ${getScoreColor(day?.score ?? 50)}`}>
                 {getScorePrefix(day?.score ?? 50)}{day?.score ?? 50}

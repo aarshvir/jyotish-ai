@@ -19,30 +19,46 @@ const sections = [
 
 export default function PrivacyPage() {
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0a1a 0%, #0d0d2b 50%, #0a0a1a 100%)', color: '#e8e0d0', fontFamily: "'Georgia', serif" }}>
-      <header style={{ padding: '24px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(212,175,55,0.15)' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}><span style={{ fontSize: '22px', fontWeight: '700', color: '#d4af37' }}>VedicHour</span></Link>
-        <Link href="/pricing" style={{ color: '#a09880', textDecoration: 'none', fontSize: '14px', fontFamily: 'system-ui' }}>Pricing →</Link>
+    <div className="min-h-screen bg-gradient-to-br from-space via-dark to-space text-star font-display">
+      <header className="px-5 sm:px-8 lg:px-12 py-5 flex justify-between items-center border-b border-amber/15">
+        <Link
+          href="/"
+          className="no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm"
+        >
+          <span className="text-xl sm:text-2xl font-bold text-amber tracking-wider font-mono">VedicHour</span>
+        </Link>
+        <Link
+          href="/pricing"
+          className="text-dust/60 hover:text-amber transition-colors text-sm font-mono no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm"
+        >
+          Pricing →
+        </Link>
       </header>
-      <main style={{ maxWidth: '780px', margin: '0 auto', padding: '60px 24px 100px' }}>
-        <p style={{ fontSize: '12px', letterSpacing: '0.2em', color: '#d4af37', textTransform: 'uppercase', marginBottom: '12px', fontFamily: 'system-ui' }}>Legal</p>
-        <h1 style={{ fontSize: '40px', fontWeight: '400', margin: '0 0 16px' }}>Privacy Policy</h1>
-        <p style={{ color: '#6b6350', fontSize: '14px', fontFamily: 'system-ui', marginBottom: '48px' }}>Last updated: 22 March 2026</p>
-        <div style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.2)', borderRadius: '12px', padding: '24px 28px', marginBottom: '48px', fontFamily: 'system-ui', fontSize: '14px', color: '#a09880', lineHeight: 1.7 }}>
-          <strong style={{ color: '#d4af37' }}>Summary:</strong> We collect your birth data (date, time, place) and email only to generate and deliver your report. We do not sell your data. Payments are handled by Paddle, not us. Request data deletion anytime: privacy@vedichour.com.
+
+      <main className="max-w-[780px] mx-auto px-5 sm:px-8 pt-14 sm:pt-20 pb-20 sm:pb-28">
+        <p className="text-xs tracking-[0.2em] text-amber uppercase mb-3 font-mono">Legal</p>
+        <h1 className="text-4xl sm:text-5xl font-light mb-4 leading-tight">Privacy Policy</h1>
+        <p className="text-sm text-dust/50 font-sans mb-12">Last updated: 22 March 2026</p>
+
+        {/* Summary callout */}
+        <div className="bg-amber/[0.05] border border-amber/20 rounded-xl px-7 py-6 mb-12 text-sm text-dust/70 font-sans leading-relaxed">
+          <strong className="text-amber">Summary:</strong> We collect your birth data (date, time, place) and email only to generate and deliver your report. We do not sell your data. Payments are handled by Paddle, not us. Request data deletion anytime: privacy@vedichour.com.
         </div>
+
+        {/* Sections */}
         {sections.map((s, i) => (
-          <div key={i} style={{ padding: '32px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#d4af37' }}>{s.title}</h2>
-            <p style={{ fontSize: '15px', color: '#a09880', lineHeight: 1.9, fontFamily: 'system-ui', margin: 0, whiteSpace: 'pre-line' }}>{s.content}</p>
+          <div key={i} className="py-8 border-b border-white/[0.06]">
+            <h2 className="text-base font-semibold mb-4 text-amber font-display">{s.title}</h2>
+            <p className="text-sm text-dust/70 leading-[1.9] font-sans whitespace-pre-line">{s.content}</p>
           </div>
         ))}
       </main>
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '32px 48px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px', fontFamily: 'system-ui', fontSize: '13px', color: '#6b6350' }}>
-        <span>© 2026 VedicHour.</span>
-        <div style={{ display: 'flex', gap: '24px' }}>
-          <Link href="/terms" style={{ color: '#6b6350', textDecoration: 'none' }}>Terms</Link>
-          <Link href="/refund" style={{ color: '#6b6350', textDecoration: 'none' }}>Refunds</Link>
+
+      <footer className="border-t border-white/6 px-5 sm:px-8 lg:px-12 py-7 flex flex-col sm:flex-row justify-between items-center gap-4 font-mono text-xs text-dust/50">
+        <span>© {new Date().getFullYear()} VedicHour. All rights reserved.</span>
+        <div className="flex gap-5 sm:gap-6">
+          <Link href="/terms" className="text-dust/50 hover:text-amber transition-colors no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">Terms</Link>
+          <Link href="/refund" className="text-dust/50 hover:text-amber transition-colors no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">Refunds</Link>
         </div>
       </footer>
     </div>

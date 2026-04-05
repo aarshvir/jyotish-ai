@@ -91,7 +91,7 @@ async function callClaudeWithBackoff(
   retries = 3
 ): Promise<string> {
   const delays = [2000, 4000, 8000];
-  let lastError: any;
+  let lastError: unknown;
 
   for (let i = 0; i < retries; i++) {
     try {
@@ -104,13 +104,13 @@ async function callClaudeWithBackoff(
 
       const text = response.content.find((b) => b.type === 'text')?.text ?? '';
       return text;
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastError = error;
-      const status = error?.status;
+      const status = (error as { status?: number })?.status;
 
       if (status === 401) throw new Error('Invalid Anthropic API key. Check .env.local ANTHROPIC_API_KEY');
       if (status === 400) {
-        console.error('Anthropic 400 bad request:', error?.message);
+        console.error('Anthropic 400 bad request:', (error as Error)?.message);
         throw error;
       }
 

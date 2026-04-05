@@ -38,9 +38,6 @@ const WEEK_FALLBACK: WeekData = {
 };
 
 export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
-  // eslint-disable-next-line no-console
-  console.log('[WEEKLY] weeks:', weeks?.length ?? 0);
-
   const weeksData = Array.from({ length: 6 }, (_, i) => {
     const w = (weeks ?? [])[i];
     const base = w ? { ...WEEK_FALLBACK, ...w } : { ...WEEK_FALLBACK };
@@ -98,7 +95,7 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
         Weekly Breakdown
       </h2>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid sm:grid-cols-2 gap-6">
         {weeksData.map((week, i) => {
           const peakCount = week.peak_days_count ?? (week.daily_scores?.filter(s => s >= 75).length ?? 0);
           const cautionCount = week.caution_days_count ?? (week.daily_scores?.filter(s => s < 50).length ?? 0);

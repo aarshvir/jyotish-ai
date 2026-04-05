@@ -94,7 +94,7 @@ function ReportPdfDocument({ payload }: { payload: PdfReportPayload }) {
         {safeMonthly.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Monthly Analysis</Text>
-            {safeMonthly.slice(0, 12).map((m: any, i: number) => (
+            {safeMonthly.slice(0, 12).map((m, i) => (
               <View key={i} style={styles.section}>
                 <Text style={styles.label}>{m.month ?? `Month ${i + 1}`} (Score: {m.score ?? '—'})</Text>
                 <Text style={styles.body}>{m.commentary ?? ''}</Text>
@@ -106,7 +106,7 @@ function ReportPdfDocument({ payload }: { payload: PdfReportPayload }) {
         {safeWeekly.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Weekly Analysis</Text>
-            {safeWeekly.map((w: any, i: number) => (
+            {safeWeekly.map((w, i) => (
               <View key={i} style={styles.section}>
                 <Text style={styles.label}>{w.week_label ?? `Week ${i + 1}`} (Score: {w.score ?? '—'})</Text>
                 <Text style={styles.body}>{w.commentary ?? ''}</Text>
@@ -148,7 +148,7 @@ function ReportPdfDocument({ payload }: { payload: PdfReportPayload }) {
                 <Text style={[styles.tableCell, { flex: 0.4 }]}>Score</Text>
                 <Text style={[styles.tableCell, { flex: 2 }]}>Commentary</Text>
               </View>
-              {day.hourlySlots.map((slot: any, si: number) => (
+              {day.hourlySlots.map((slot, si) => (
                 <View key={si} style={styles.tableRow}>
                   <Text style={[styles.tableCell, { flex: 0.8 }]}>{slot.display_label ?? '—'}</Text>
                   <Text style={[styles.tableCell, { flex: 0.6 }]}>{slot.hora_planet ?? '—'}</Text>
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
 
     const blob = await pdf(<ReportPdfDocument payload={payload} />).toBlob();
     const buffer = Buffer.from(await blob.arrayBuffer());
-    const filename = `Jyotish_AI_Report_${payload.name.replace(/\s+/g, '_')}.pdf`;
+    const filename = `VedicHour_Report_${payload.name.replace(/\s+/g, '_')}.pdf`;
 
     return new NextResponse(buffer, {
       status: 200,

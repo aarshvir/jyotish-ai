@@ -10,6 +10,7 @@ import {
   type DayAnchorInput,
 } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -51,10 +52,13 @@ export async function POST(req: NextRequest) {
       period_synthesis: null,
       partial: true,
       error: 'API key missing for selected model',
-    });
+    }, { status: 206 });
   }
 
-  const { lagnaSign, mahadasha, antardasha, weeks, synthesis_context, planet_positions_by_date } = body;
+  const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
+  const mahadasha = sanitizePlanetName(body.mahadasha);
+  const antardasha = sanitizePlanetName(body.antardasha);
+  const { weeks, synthesis_context, planet_positions_by_date } = body;
   if (!lagnaSign || !weeks?.length) {
     return NextResponse.json({ error: 'lagnaSign and weeks required' }, { status: 400 });
   }
@@ -130,7 +134,7 @@ Start with { and end with }. No markdown.`;
 
   const bestDate = body.synthesis_context?.best_date ?? '2026-03-10';
   const worstDate = body.synthesis_context?.worst_date ?? '2026-03-13';
-  const canonicalOpening = `RAHU-MERCURY PERIOD SYNTHESIS FOR CANCER LAGNA - H6 SERVICE AND H12 CLOSURE AXIS.\nRahu in the 6th house intensifies competition and makes everyday duties unavoidable, so Mercury as the antardasha lord must guide every message with precision. For Cancer lagna, Mercury rules the 3rd and the 12th houses, therefore communication strategy and hidden expenses move together; when Rahu-Mercury is activated, coordination improves if you document plans. The Moon journey during this period repeatedly shifts practical focus: when the Moon transits H1, confidence rises and work begins faster; when it transits H5, analysis and education increase; when it reaches H9, travel intentions and counsel become stronger; when it touches H11, gains stabilize. Use Mars energy for execution, because Mars hora supports H10 deliverables and makes proposals actionable. Saturn in H8 demands structured timelines and delays approvals, so all H10 proposals must be submitted before Rahu Kaal on the best day. Sun transiting H9 or H10 offers authority to push career milestones, while Venus in H11 provides social gain. Choose windows anchored to ${bestDate} because high-score days align with favourable choghadiya and benefic hora planets. Avoid the worst pressure around ${worstDate}, especially during Rahu Kaal, because H6 urgency can distort judgment and Saturn in H8 amplifies delays. BEST ACTION: LAUNCH ONLY AFTER ALIGNING MARS HORA WITH THE DAY'S TOP CHOGHADIYA AND ENSURING RAHU KAAL HAS PASSED.`;
+  const canonicalOpening = `${mahadasha.toUpperCase()}-${antardasha.toUpperCase()} PERIOD SYNTHESIS FOR ${lagnaSign.toUpperCase()} LAGNA - DASHA THEMES AND ACTION AXIS.\n${mahadasha} as the mahadasha lord activates key house themes for ${lagnaSign} lagna, while ${antardasha} as the antardasha lord shapes the quality and direction of results. The Moon journey during this period repeatedly shifts practical focus: when the Moon transits H1, confidence rises and work begins faster; when it transits H5, analysis and education increase; when it reaches H9, travel intentions and counsel become stronger; when it touches H11, gains stabilize. Use Mars energy for execution, because Mars hora supports H10 deliverables and makes proposals actionable. Choose windows anchored to ${bestDate} because high-score days align with favourable choghadiya and benefic hora planets. Avoid the worst pressure around ${worstDate}, especially during Rahu Kaal, because dasha urgency can distort judgment. BEST ACTION: LAUNCH ONLY AFTER ALIGNING MARS HORA WITH THE DAY'S TOP CHOGHADIYA AND ENSURING RAHU KAAL HAS PASSED.`;
 
   try {
     const text = await completeLlmChat({
@@ -139,7 +143,10 @@ Start with { and end with }. No markdown.`;
       userPrompt,
       maxTokens: 8000,
     });
-    const parsed = safeParseJson<{ weeks: any[]; period_synthesis: any }>(text);
+    const parsed = safeParseJson<{
+      weeks: Array<{ week_label?: string; score?: number; theme?: string; commentary?: string; daily_scores?: number[]; moon_journey?: string[]; peak_days_count?: number; caution_days_count?: number }>;
+      period_synthesis: { opening_paragraph?: string; strategic_windows?: unknown[]; caution_dates?: unknown[]; domain_priorities?: Record<string, string>; closing_paragraph?: string };
+    }>(text);
     const synthesis = parsed.period_synthesis ?? null;
 
     // Post-process: ensure opening paragraph and domain_priorities meet quality thresholds
@@ -164,11 +171,12 @@ Start with { and end with }. No markdown.`;
       weeks: parsed.weeks ?? [],
       period_synthesis: synthesis,
     });
-  } catch (err: any) {
-    console.error('[weeks-synthesis]', err?.message);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[weeks-synthesis]', msg.slice(0, 200));
     const fallbackAnalysis =
       'Fallback weekly overview. Use daily scores and hourly table as primary guidance. BEST: use synthesis_context.best_date and high-score days. WORST: avoid synthesis_context.worst_date and low-score days. Commentary service temporarily degraded.';
-    const fallbackWeeks = (body.weeks ?? []).slice(0, 6).map((w: any, i: number) => ({
+    const fallbackWeeks = (body.weeks ?? []).slice(0, 6).map((w, i) => ({
       week_index: i,
       week_label: w.week_label ?? `Week ${i + 1}`,
       overall_score: 65,
@@ -179,10 +187,11 @@ Start with { and end with }. No markdown.`;
     }));
     const bestDate = body.synthesis_context?.best_date ?? '2026-03-10';
     const worstDate = body.synthesis_context?.worst_date ?? '2026-03-13';
-    const opening = `RAHU-MERCURY PERIOD SYNTHESIS FOR CANCER LAGNA - H6 SERVICE AND H12 CLOSURE.
-Rahu in the 6th house intensifies competition and makes everyday duties unavoidable, so Mercury as the antardasha lord must guide every message with precision. For Cancer lagna, Mercury rules the 3rd and the 12th houses, therefore communication strategy and hidden expenses move together; when Rahu-Mercury is activated, coordination improves if you document plans. The Moon journey during this period repeatedly shifts practical focus: when the Moon transits the 1st house, confidence rises and work begins faster; when it transits the 5th house, analysis and education increase; when it reaches the 9th house, travel intentions and counsel become stronger; when it touches the 11th house, gains stabilize. Use Mars energy for execution, because Mars hora supports H10 deliverables and makes proposals actionable. Choose best windows anchored to ${bestDate} because high-score days align with favourable choghadiya and benefic hora planets. Avoid the worst pressure around ${worstDate}, especially during Rahu Kaal, because H6 urgency can distort judgment. BEST ACTION: launch only after you align Mars hora with the day’s top choghadiya.`;
+    const opening = `${mahadasha.toUpperCase()}-${antardasha.toUpperCase()} PERIOD SYNTHESIS FOR ${lagnaSign.toUpperCase()} LAGNA - DASHA THEMES AND ACTION AXIS.
+${mahadasha} as the mahadasha lord activates key house themes for ${lagnaSign} lagna, while ${antardasha} as the antardasha lord shapes the quality and direction of results. The Moon journey during this period repeatedly shifts practical focus: when the Moon transits the 1st house, confidence rises and work begins faster; when it transits the 5th house, analysis and education increase; when it reaches the 9th house, travel intentions and counsel become stronger; when it touches the 11th house, gains stabilize. Use Mars energy for execution, because Mars hora supports H10 deliverables and makes proposals actionable. Choose best windows anchored to ${bestDate} because high-score days align with favourable choghadiya and benefic hora planets. Avoid the worst pressure around ${worstDate}, especially during Rahu Kaal, because dasha urgency can distort judgment. BEST ACTION: launch only after you align Mars hora with the day’s top choghadiya.`;
     return NextResponse.json({
       weeks: fallbackWeeks,
+      partial: true,
       period_synthesis: {
         opening_paragraph: opening,
         strategic_windows: [
@@ -198,6 +207,6 @@ Rahu in the 6th house intensifies competition and makes everyday duties unavoida
         },
         closing_paragraph: 'Jupiter in 12th with Ketu supports moksha axis. One mantra or remedial practice during Rahu-Mercury period. Rely on score tables until full commentary is available.',
       },
-    });
+    }, { status: 206 });
   }
 }

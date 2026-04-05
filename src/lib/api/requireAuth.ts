@@ -2,7 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 // Trim to guard against env var stored with trailing \r\n (common in CI/Windows pipes)
-const BYPASS_SECRET = (process.env.BYPASS_SECRET || 'VEDICADMIN2026').trim();
+const _rawBypass = (process.env.BYPASS_SECRET ?? '').trim();
+
+if (!_rawBypass) {
+  console.warn(
+    '[requireAuth] BYPASS_SECRET env var is not set — bypass authentication is DISABLED. ' +
+    'Set BYPASS_SECRET in your environment to enable admin bypass access.'
+  );
+}
+
+/** Bypass secret — empty string means bypass is disabled */
+export const BYPASS_SECRET = _rawBypass;
 
 /** Optional UUID for Supabase rows when using bypass (must exist in auth.users if FK enforced). */
 export const BYPASS_USER_ID =
@@ -26,7 +36,7 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
   const bypass =
     url.searchParams.get('bypass') || request.headers.get('x-bypass-token');
 
-  if (bypass === BYPASS_SECRET) {
+  if (BYPASS_SECRET && bypass === BYPASS_SECRET) {
     return {
       user: {
         id: BYPASS_USER_ID,
@@ -50,5 +60,3 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
     return NextResponse.json({ error: 'Auth check failed' }, { status: 500 });
   }
 }
-
-export { BYPASS_SECRET };

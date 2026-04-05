@@ -37,7 +37,7 @@ const PLANS = [
   {
     name: 'Monthly Oracle',
     price: '$19.99',
-    priceNote: 'per month',
+    priceNote: 'one-time',
     description: '30 days of guidance',
     features: [
       'Everything in 7-Day',
@@ -127,7 +127,7 @@ export default function Pricing() {
                 <div className="space-y-3">
                   <Link
                     href={plan.href}
-                    className={`w-full block text-center py-3 rounded-sm font-body text-sm font-medium tracking-wide transition-colors duration-200 ${
+                    className={`w-full block text-center py-3.5 min-h-[44px] rounded-sm font-body text-sm font-medium tracking-wide transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 ${
                       plan.featured
                         ? 'bg-amber text-space hover:bg-amber-glow'
                         : 'border border-horizon text-dust hover:border-amber/40 hover:text-star'

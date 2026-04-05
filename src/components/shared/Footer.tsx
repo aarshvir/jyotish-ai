@@ -12,11 +12,11 @@ export default function Footer() {
 
           {/* Links */}
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-body text-dust">
-            <Link href="/#how-it-works" className="hover:text-star transition-colors">How It Works</Link>
-            <Link href="/pricing" className="hover:text-star transition-colors">Pricing</Link>
-            <Link href="/refund" className="hover:text-star transition-colors">Refund Policy</Link>
-            <Link href="/privacy" className="hover:text-star transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-star transition-colors">Terms</Link>
+            <Link href="/#how-it-works" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm px-0.5">How It Works</Link>
+            <Link href="/pricing" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm px-0.5">Pricing</Link>
+            <Link href="/refund" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm px-0.5">Refund Policy</Link>
+            <Link href="/privacy" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm px-0.5">Privacy</Link>
+            <Link href="/terms" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm px-0.5">Terms</Link>
           </div>
 
           {/* Copyright */}

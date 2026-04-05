@@ -57,7 +57,8 @@ export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean
             <button
               key={item.id}
               onClick={() => scrollToSection(item.id)}
-              className={`w-full text-left py-3 px-4 rounded-sm font-mono text-xs uppercase tracking-wider transition-all ${
+              aria-current={activeSection === item.id ? 'location' : undefined}
+              className={`w-full text-left py-3 px-4 rounded-sm font-mono text-xs uppercase tracking-wider transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 ${
                 activeSection === item.id
                   ? 'text-amber bg-amber/5 border-l-2 border-amber'
                   : 'text-dust hover:text-star hover:bg-nebula/40'
@@ -77,7 +78,8 @@ export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                className={`px-4 py-2 rounded-sm font-mono text-xs uppercase tracking-wider whitespace-nowrap transition-all ${
+                aria-current={activeSection === item.id ? 'location' : undefined}
+              className={`px-4 py-2 rounded-sm font-mono text-xs uppercase tracking-wider whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 ${
                   activeSection === item.id
                     ? 'bg-amber text-space'
                     : 'bg-cosmos border border-horizon text-dust hover:border-amber/40 hover:text-star'

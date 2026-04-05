@@ -8,21 +8,26 @@ import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaCo
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/api/rateLimit';
 
-function buildFallbackMonths(body: any): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; theme: string; key_transits: string[]; analysis: string }[] {
+function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mahadasha?: string; antardasha?: string }): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; theme: string; key_transits: string[]; analysis: string }[] {
   const fallbackScores = [48, 52, 58, 70, 73, 65];
   const inputMonths = Array.isArray(body?.months) ? body.months : [];
+  const lagnaSign = body?.lagnaSign ?? 'the native\'s lagna';
+  const mahadasha = body?.mahadasha ?? 'current mahadasha';
+  const antardasha = body?.antardasha ?? 'current antardasha';
 
-  return inputMonths.slice(0, 6).map((m: any, i: number) => {
+  return (inputMonths as Array<Record<string, unknown>>).slice(0, 6).map((m, i: number) => {
     const overall_score = fallbackScores[i % fallbackScores.length];
     const month_label = String(m?.month_label ?? `Month ${i + 1}`);
     const analysis =
-      `PHASE LINE — ${month_label} for Cancer lagna. ` +
-      `Jupiter emphasis activates H12 while Saturn themes activate H8 through concrete transit work. ` +
-      `Mars influence in H1 shapes courage and immediate execution. ` +
-      `Mercury interaction highlights H3 for communication and service outcomes, with Rahu-like pressure demanding careful wording. ` +
-      `Moon passage supports H11 gains and stabilizes the wealth channel. ` +
-      `In this month, Rahu-Mercury axis strengthens competition yet forces disciplined commitments, so plan actions inside supportive windows. ` +
+      `PHASE LINE — ${month_label} for ${lagnaSign} lagna. ` +
+      `${mahadasha}-${antardasha} dasha activates key house themes through planetary transit patterns. ` +
+      `Jupiter emphasis shapes wisdom and expansion while Saturn demands disciplined structure and delayed outcomes. ` +
+      `Mars influence supports courage and immediate execution in career-linked houses. ` +
+      `Mercury interaction highlights communication and service outcomes, requiring precise wording and planning. ` +
+      `Moon passage shifts emotional priorities through multiple houses, stabilizing gains on high-score days. ` +
       `Best days follow whenever the hourly table aligns with benefic hora planets and favorable choghadiya. ` +
       `Worst days appear when the schedule overlaps inauspicious choghadiya, so delay signatures and avoid friction. ` +
       `Career action should target H10 deliverables, and health focus must protect H6 routines. ` +
@@ -47,6 +52,16 @@ function buildFallbackMonths(body: any): { month_index: number; month_label: str
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+
+  const rlKey = getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined);
+  const rl = checkRateLimit(rlKey, RATE_LIMITS.commentary.limit, RATE_LIMITS.commentary.windowMs);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests.', months: [] },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+    );
+  }
+
   let body: {
     model_override?: string;
     lagnaSign: string;
@@ -70,13 +85,13 @@ export async function POST(req: NextRequest) {
   const modelOverride =
     typeof body.model_override === 'string' ? body.model_override.trim() : undefined;
   if (!hasLlmCredentials(modelOverride)) {
-    return NextResponse.json({ months: buildFallbackMonths(body) });
+    return NextResponse.json({ months: buildFallbackMonths(body), partial: true }, { status: 206 });
   }
 
+  const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
+  const mahadasha = sanitizePlanetName(body.mahadasha);
+  const antardasha = sanitizePlanetName(body.antardasha);
   const {
-    lagnaSign,
-    mahadasha,
-    antardasha,
     months,
     reference_planet_positions,
     reference_planet_positions_date,
@@ -153,12 +168,13 @@ Start with { and end with }.`;
       userPrompt,
       maxTokens: 8000,
     });
-    const parsed = safeParseJson<{ months: any[] }>(text);
+    const parsed = safeParseJson<{ months: unknown[] }>(text);
 
-    return NextResponse.json({ months: parsed.months ?? [] });
-  } catch (err: any) {
-    console.error('[months-first]', err?.message || err);
-    return NextResponse.json({ months: buildFallbackMonths(body) });
+    return NextResponse.json({ months: parsed?.months ?? [] });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[months-first]', msg);
+    return NextResponse.json({ months: buildFallbackMonths(body), partial: true }, { status: 206 });
   }
 }
 

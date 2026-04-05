@@ -10,7 +10,7 @@ export default function PricingPage() {
       description: 'Discover your cosmic blueprint',
       features: ['Complete natal birth chart','Lagna (rising sign) analysis','Sample hora schedule for today','Dasha period overview','Planetary strength indicators'],
       cta: 'Get Free Preview',
-      href: '/onboard?plan=preview',
+      href: '/onboard?plan=free',
       highlight: false,
       badge: null,
     },
@@ -50,47 +50,98 @@ export default function PricingPage() {
   ]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0a0a1a 0%, #0d0d2b 50%, #0a0a1a 100%)', color: '#e8e0d0', fontFamily: "'Georgia', serif" }}>
-      <header style={{ padding: '24px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(212, 175, 55, 0.15)' }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: '22px', fontWeight: '700', color: '#d4af37', letterSpacing: '0.05em' }}>VedicHour</span>
+    <div className="min-h-screen bg-gradient-to-br from-space via-dark to-space text-star font-display">
+      {/* Header */}
+      <header className="px-5 sm:px-8 lg:px-12 py-5 flex justify-between items-center border-b border-amber/15">
+        <Link href="/" className="no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm">
+          <span className="text-xl sm:text-2xl font-bold text-amber tracking-wider font-mono">VedicHour</span>
         </Link>
-        <Link href="/onboard" style={{ padding: '10px 24px', background: 'linear-gradient(135deg, #d4af37, #b8962e)', color: '#0a0a1a', borderRadius: '6px', textDecoration: 'none', fontSize: '14px', fontWeight: '600', fontFamily: 'system-ui' }}>Get Started</Link>
+        <Link
+          href="/onboard"
+          className="px-5 py-2.5 min-h-[44px] flex items-center bg-gradient-to-r from-amber to-amber/80 text-space rounded-md text-sm font-semibold font-mono hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-space"
+        >
+          Get Started
+        </Link>
       </header>
-      <section style={{ textAlign: 'center', padding: '80px 24px 60px' }}>
-        <p style={{ fontSize: '12px', letterSpacing: '0.25em', color: '#d4af37', textTransform: 'uppercase', marginBottom: '16px', fontFamily: 'system-ui' }}>Transparent Pricing</p>
-        <h1 style={{ fontSize: 'clamp(36px, 5vw, 60px)', fontWeight: '400', margin: '0 0 20px', lineHeight: 1.2 }}>Choose Your Oracle</h1>
-        <p style={{ fontSize: '18px', color: '#a09880', maxWidth: '520px', margin: '0 auto', lineHeight: 1.7, fontFamily: 'system-ui' }}>AI-powered Vedic astrology reports with hour-by-hour precision. One-time payments. Instant delivery. No subscriptions.</p>
+
+      {/* Hero */}
+      <section className="text-center px-5 sm:px-8 pt-14 sm:pt-20 pb-12 sm:pb-16">
+        <p className="text-xs tracking-[0.25em] text-amber uppercase mb-4 font-mono">Transparent Pricing</p>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light mb-5 leading-tight">Choose Your Oracle</h1>
+        <p className="text-base sm:text-lg text-dust/70 max-w-lg mx-auto leading-relaxed font-sans">
+          AI-powered Vedic astrology reports with hour-by-hour precision. One-time payments. Instant delivery. No subscriptions.
+        </p>
       </section>
-      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 24px 80px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '24px' }}>
-        {plans.map((plan) => (
-          <div key={plan.name} style={{ background: plan.highlight ? 'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.04))' : 'rgba(255,255,255,0.03)', border: plan.highlight ? '1px solid rgba(212,175,55,0.5)' : '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '36px 28px', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-            {plan.badge && (
-              <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: plan.highlight ? 'linear-gradient(135deg, #d4af37, #b8962e)' : 'rgba(212,175,55,0.2)', color: plan.highlight ? '#0a0a1a' : '#d4af37', padding: '4px 16px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: 'system-ui', whiteSpace: 'nowrap' }}>{plan.badge}</div>
-            )}
-            <div style={{ marginBottom: '24px' }}>
-              <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '8px', color: plan.highlight ? '#d4af37' : '#e8e0d0' }}>{plan.name}</h2>
-              <p style={{ fontSize: '13px', color: '#6b6350', fontFamily: 'system-ui', marginBottom: '20px' }}>{plan.description}</p>
-              <span style={{ fontSize: '40px', fontWeight: '700', color: plan.price === 'Free' ? '#6baa6b' : '#e8e0d0' }}>{plan.price}</span>
-              <p style={{ fontSize: '12px', color: '#6b6350', fontFamily: 'system-ui', marginTop: '4px' }}>{plan.priceNote}</p>
+
+      {/* Plans grid */}
+      <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 sm:gap-6">
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className={`relative flex flex-col rounded-2xl p-7 sm:p-8 ${
+                plan.highlight
+                  ? 'bg-gradient-to-br from-amber/12 to-amber/4 border border-amber/50'
+                  : 'bg-white/[0.03] border border-white/8'
+              }`}
+            >
+              {plan.badge && (
+                <div className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase font-mono whitespace-nowrap ${
+                  plan.highlight
+                    ? 'bg-gradient-to-r from-amber to-amber/80 text-space'
+                    : 'bg-amber/20 text-amber'
+                }`}>
+                  {plan.badge}
+                </div>
+              )}
+
+              {/* Plan header */}
+              <div className="mb-6">
+                <h2 className={`text-lg sm:text-xl font-semibold mb-2 ${plan.highlight ? 'text-amber' : 'text-star'}`}>
+                  {plan.name}
+                </h2>
+                <p className="text-sm text-dust/60 font-sans mb-4 leading-relaxed">{plan.description}</p>
+                <span className={`text-4xl font-bold ${plan.price === 'Free' ? 'text-emerald' : 'text-star'}`}>
+                  {plan.price}
+                </span>
+                <p className="text-xs text-dust/50 font-mono mt-1">{plan.priceNote}</p>
+              </div>
+
+              {/* Features */}
+              <ul className="list-none p-0 mb-7 flex-1 space-y-0">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2.5 py-2 border-b border-white/4 text-sm text-dust/70 font-sans leading-snug">
+                    <span className="text-amber flex-shrink-0 mt-0.5">✦</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA */}
+              <Link
+                href={plan.href}
+                className={`flex items-center justify-center text-center px-4 py-3.5 min-h-[48px] rounded-lg text-sm font-semibold font-mono no-underline transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 ${
+                  plan.highlight
+                    ? 'bg-gradient-to-r from-amber to-amber/80 text-space border-0'
+                    : plan.price === 'Free'
+                    ? 'bg-transparent text-emerald border border-emerald/40 hover:bg-emerald/5'
+                    : 'bg-amber/15 text-amber border border-amber/30 hover:bg-amber/20'
+                }`}
+              >
+                {plan.cta}
+              </Link>
             </div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', flex: 1 }}>
-              {plan.features.map((feature) => (
-                <li key={feature} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '14px', color: '#a09880', fontFamily: 'system-ui', lineHeight: 1.5 }}>
-                  <span style={{ color: '#d4af37', flexShrink: 0 }}>✦</span>{feature}
-                </li>
-              ))}
-            </ul>
-            <Link href={plan.href} style={{ display: 'block', textAlign: 'center', padding: '14px', borderRadius: '8px', textDecoration: 'none', fontSize: '15px', fontWeight: '600', fontFamily: 'system-ui', background: plan.highlight ? 'linear-gradient(135deg, #d4af37, #b8962e)' : plan.price === 'Free' ? 'transparent' : 'rgba(212,175,55,0.15)', color: plan.highlight ? '#0a0a1a' : plan.price === 'Free' ? '#6baa6b' : '#d4af37', border: plan.price === 'Free' ? '1px solid rgba(107,170,107,0.4)' : plan.highlight ? 'none' : '1px solid rgba(212,175,55,0.3)' }}>{plan.cta}</Link>
-          </div>
-        ))}
+          ))}
+        </div>
       </section>
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '32px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', fontFamily: 'system-ui', fontSize: '13px', color: '#6b6350' }}>
-        <span>© 2026 VedicHour. All rights reserved.</span>
-        <div style={{ display: 'flex', gap: '24px' }}>
-          <Link href="/terms" style={{ color: '#6b6350', textDecoration: 'none' }}>Terms</Link>
-          <Link href="/privacy" style={{ color: '#6b6350', textDecoration: 'none' }}>Privacy</Link>
-          <Link href="/refund" style={{ color: '#6b6350', textDecoration: 'none' }}>Refunds</Link>
+
+      {/* Footer */}
+      <footer className="border-t border-white/6 px-5 sm:px-8 lg:px-12 py-7 flex flex-col sm:flex-row justify-between items-center gap-4 font-mono text-xs text-dust/50">
+        <span>© {new Date().getFullYear()} VedicHour. All rights reserved.</span>
+        <div className="flex gap-5 sm:gap-6">
+          <Link href="/terms" className="text-dust/50 hover:text-amber transition-colors no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">Terms</Link>
+          <Link href="/privacy" className="text-dust/50 hover:text-amber transition-colors no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">Privacy</Link>
+          <Link href="/refund" className="text-dust/50 hover:text-amber transition-colors no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">Refunds</Link>
         </div>
       </footer>
     </div>

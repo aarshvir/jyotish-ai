@@ -79,194 +79,104 @@ function LoginInner() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0a1a 0%, #0d0d2b 50%, #0a0a1a 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-        fontFamily: 'system-ui',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '420px',
-          width: '100%',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(212,175,55,0.15)',
-          borderRadius: '16px',
-          padding: '40px 36px',
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div
-              style={{
-                fontSize: '24px',
-                fontWeight: '700',
-                color: '#d4af37',
-                fontFamily: 'Georgia, serif',
-                marginBottom: '8px',
-              }}
-            >
-              VedicHour
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-space via-dark to-space flex items-center justify-center p-6">
+      <div className="w-full max-w-[420px] bg-white/[0.03] border border-amber/15 rounded-2xl p-8 sm:p-10">
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <Link
+            href="/"
+            className="inline-block font-display font-semibold text-2xl tracking-[0.08em] text-amber hover:text-amber-glow transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm"
+          >
+            VedicHour
           </Link>
-          <p style={{ fontSize: '14px', color: '#6b6350' }}>
+          <p className="font-body text-sm text-dust mt-2">
             {mode === 'login' ? 'Sign in to your account' : 'Create your account'}
           </p>
         </div>
 
-        <div
-          style={{
-            display: 'flex',
-            background: 'rgba(255,255,255,0.04)',
-            borderRadius: '8px',
-            padding: '4px',
-            marginBottom: '24px',
-          }}
-        >
+        {/* Mode toggle */}
+        <div className="flex bg-white/[0.04] rounded-lg p-1 mb-6" role="group" aria-label="Authentication mode">
           {(['login', 'signup'] as const).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMode(m)}
-              style={{
-                flex: 1,
-                padding: '8px',
-                borderRadius: '6px',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '13px',
-                fontWeight: '500',
-                transition: 'all 0.2s',
-                background: mode === m ? 'rgba(212,175,55,0.2)' : 'transparent',
-                color: mode === m ? '#d4af37' : '#6b6350',
-              }}
+              aria-pressed={mode === m}
+              className={`flex-1 py-2 rounded-md font-body text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 ${
+                mode === m
+                  ? 'bg-amber/20 text-amber'
+                  : 'text-dust hover:text-star'
+              }`}
             >
               {m === 'login' ? 'Sign In' : 'Sign Up'}
             </button>
           ))}
         </div>
 
+        {/* Google OAuth */}
         <button
           type="button"
           onClick={() => void handleGoogleLogin()}
           disabled={googleLoading || loading}
-          style={{
-            width: '100%',
-            padding: '13px',
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '8px',
-            color: '#e8e0d0',
-            fontSize: '15px',
-            fontWeight: '500',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            marginBottom: '20px',
-            opacity: googleLoading ? 0.7 : 1,
-          }}
+          aria-label="Continue with Google"
+          className="w-full flex items-center justify-center gap-2.5 py-3 min-h-[48px] bg-white/[0.06] border border-white/10 rounded-lg font-body text-sm font-medium text-star hover:bg-white/10 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 disabled:opacity-60 disabled:cursor-not-allowed mb-5"
         >
           {googleLoading ? (
-            <span style={{ fontSize: '13px' }}>Redirecting to Google...</span>
+            <span className="font-mono text-xs text-dust">Redirecting to Google…</span>
           ) : (
             <>
-              <svg width="18" height="18" viewBox="0 0 48 48">
-                <path
-                  fill="#EA4335"
-                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
-                />
+              <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
               </svg>
               Continue with Google
             </>
           )}
         </button>
 
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            marginBottom: '20px',
-          }}
-        >
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-          <span style={{ fontSize: '12px', color: '#4a4435' }}>or</span>
-          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+        {/* Divider */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="flex-1 h-px bg-white/[0.08]" />
+          <span className="font-mono text-xs text-dust/50">or</span>
+          <div className="flex-1 h-px bg-white/[0.08]" />
         </div>
 
-        <form onSubmit={(e) => void handleEmailAuth(e)}>
-          <div style={{ marginBottom: '14px' }}>
+        {/* Email / password form */}
+        <form onSubmit={(e) => void handleEmailAuth(e)} noValidate>
+          <div className="mb-3.5">
+            <label htmlFor="login-email" className="sr-only">Email address</label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="Email address"
-              style={{
-                width: '100%',
-                padding: '11px 14px',
-                boxSizing: 'border-box',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: '#e8e0d0',
-                fontSize: '14px',
-                outline: 'none',
-              }}
+              autoComplete="email"
+              className="w-full px-4 py-3 min-h-[48px] bg-white/[0.05] border border-white/10 rounded-lg font-body text-sm text-star placeholder:text-dust/40 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/30 transition-colors"
             />
           </div>
-          <div style={{ marginBottom: '20px' }}>
+          <div className="mb-5">
+            <label htmlFor="login-password" className="sr-only">Password</label>
             <input
+              id="login-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Password"
               minLength={6}
-              style={{
-                width: '100%',
-                padding: '11px 14px',
-                boxSizing: 'border-box',
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '8px',
-                color: '#e8e0d0',
-                fontSize: '14px',
-                outline: 'none',
-              }}
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              className="w-full px-4 py-3 min-h-[48px] bg-white/[0.05] border border-white/10 rounded-lg font-body text-sm text-star placeholder:text-dust/40 focus:outline-none focus:border-amber/50 focus:ring-1 focus:ring-amber/30 transition-colors"
             />
           </div>
 
           {error && (
             <div
-              style={{
-                padding: '10px 14px',
-                marginBottom: '14px',
-                background: 'rgba(220,50,50,0.1)',
-                border: '1px solid rgba(220,50,50,0.3)',
-                borderRadius: '6px',
-                fontSize: '13px',
-                color: '#e88080',
-              }}
+              role="alert"
+              className="px-4 py-2.5 mb-4 bg-crimson/10 border border-crimson/30 rounded-lg font-body text-sm text-crimson/90"
             >
               {error}
             </div>
@@ -275,48 +185,25 @@ function LoginInner() {
           <button
             type="submit"
             disabled={loading || googleLoading}
-            style={{
-              width: '100%',
-              padding: '13px',
-              background: 'linear-gradient(135deg, #d4af37, #b8962e)',
-              color: '#0a0a1a',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '15px',
-              fontWeight: '600',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-            }}
+            className="w-full py-3 min-h-[48px] bg-gradient-to-r from-amber to-amber/80 text-space font-body text-sm font-semibold rounded-lg hover:from-amber-glow hover:to-amber transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 focus-visible:ring-offset-2 focus-visible:ring-offset-space disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {loading
-              ? mode === 'signup'
-                ? 'Creating account...'
-                : 'Signing in...'
-              : mode === 'signup'
-                ? 'Create Account'
-                : 'Sign In'}
+              ? mode === 'signup' ? 'Creating account…' : 'Signing in…'
+              : mode === 'signup' ? 'Create Account' : 'Sign In'}
           </button>
         </form>
 
-        <p
-          style={{
-            marginTop: '20px',
-            textAlign: 'center',
-            fontSize: '12px',
-            color: '#4a4435',
-            lineHeight: 1.6,
-          }}
-        >
+        <p className="mt-5 text-center font-body text-xs text-dust/50 leading-relaxed">
           By continuing you agree to our{' '}
-          <Link href="/terms" target="_blank" style={{ color: '#d4af37', textDecoration: 'none' }}>
+          <Link href="/terms" target="_blank" className="text-amber hover:text-amber-glow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">
             Terms
           </Link>
           {', '}
-          <Link href="/privacy" target="_blank" style={{ color: '#d4af37', textDecoration: 'none' }}>
+          <Link href="/privacy" target="_blank" className="text-amber hover:text-amber-glow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">
             Privacy
           </Link>
           {' & '}
-          <Link href="/refund" target="_blank" style={{ color: '#d4af37', textDecoration: 'none' }}>
+          <Link href="/refund" target="_blank" className="text-amber hover:text-amber-glow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">
             Refund Policy
           </Link>
         </p>
@@ -329,17 +216,8 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div
-          style={{
-            minHeight: '100vh',
-            background: '#0a0a1a',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#d4af37',
-          }}
-        >
-          Loading…
+        <div className="min-h-screen bg-space flex items-center justify-center">
+          <span className="font-mono text-sm text-amber animate-pulse">Loading…</span>
         </div>
       }
     >

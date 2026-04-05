@@ -32,6 +32,30 @@ interface FullDayInput {
 
 const FETCH_TIMEOUT_MS = 60_000;
 
+// ── In-process TTL cache ──────────────────────────────────────────────────────
+// Keyed by "{path}:{JSON.stringify(body)}", TTL = 24 h (86400 s).
+// Natal chart is deterministic for the same birth data; panchang/hora are
+// date-specific and also deterministic, so caching is safe.
+const CACHE_TTL_MS = 86_400_000; // 24 h
+interface CacheEntry { value: unknown; expiresAt: number }
+const ephemerisCache = new Map<string, CacheEntry>();
+
+function cacheGet<T>(key: string): T | null {
+  const entry = ephemerisCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { ephemerisCache.delete(key); return null; }
+  return entry.value as T;
+}
+
+function cacheSet(key: string, value: unknown): void {
+  // Limit map size to 512 entries to prevent unbounded growth in long-running servers
+  if (ephemerisCache.size >= 512) {
+    const firstKey = ephemerisCache.keys().next().value;
+    if (firstKey !== undefined) ephemerisCache.delete(firstKey);
+  }
+  ephemerisCache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 export class EphemerisAgent {
   private readonly baseUrl: string;
 
@@ -44,7 +68,11 @@ export class EphemerisAgent {
   }
 
   private async post<T>(path: string, body: unknown, retries = 1): Promise<T> {
-    let lastError: Error | null = null;
+    const cacheKey = `${path}:${JSON.stringify(body)}`;
+    const cached = cacheGet<T>(cacheKey);
+    if (cached !== null) return cached;
+
+    let lastError: unknown = null;
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       const controller = new AbortController();
@@ -67,18 +95,21 @@ export class EphemerisAgent {
           throw new Error(`EphemerisAgent ${path} → HTTP ${res.status}: ${text}`);
         }
 
-        return res.json() as Promise<T>;
-      } catch (error: any) {
+        const result = await res.json() as T;
+        cacheSet(cacheKey, result);
+        return result;
+      } catch (error: unknown) {
         clearTimeout(timer);
         lastError = error;
 
-        if (error?.cause?.code === 'ECONNREFUSED' || error?.message?.includes('ECONNREFUSED')) {
+        const err = error as { cause?: { code?: string }; message?: string; name?: string };
+        if (err?.cause?.code === 'ECONNREFUSED' || err?.message?.includes('ECONNREFUSED')) {
           throw new Error(
             `Ephemeris service offline at ${this.baseUrl}. Start it with: cd ephemeris-service && py -m uvicorn main:app --reload`
           );
         }
 
-        if (error.name === 'AbortError') {
+        if (err.name === 'AbortError') {
           throw new Error(`EphemerisAgent ${path} timed out after ${FETCH_TIMEOUT_MS / 1000}s`);
         }
 
@@ -86,7 +117,7 @@ export class EphemerisAgent {
       }
     }
 
-    throw lastError ?? new Error(`EphemerisAgent ${path} failed`);
+    throw lastError instanceof Error ? lastError : new Error(`EphemerisAgent ${path} failed`);
   }
 
   getNatalChart(input: NatalChartInput): Promise<NatalChartData> {

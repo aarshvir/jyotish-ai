@@ -16,6 +16,8 @@ interface HourSlot {
   commentary?: string;
   transit_lagna?: string;
   transit_lagna_house?: number;
+  display_label?: string;
+  slot_index?: number;
 }
 
 interface DayData {
@@ -38,6 +40,7 @@ interface DayData {
     choghadiya: string;
     score: number;
     reason?: string;
+    display_label?: string;
   }>;
   avoid_windows?: Array<{
     time: string;
@@ -47,6 +50,7 @@ interface DayData {
   caution_count?: number;
   hours?: HourSlot[] | null;
   hourlySlots?: HourSlot[];
+  slots?: HourSlot[];
 }
 
 interface DailyAnalysisProps {
@@ -94,7 +98,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
   };
 
   const hourlyData: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
-  const slotsForSummary = (currentDay as any).slots ?? hourlyData ?? [];
+  const slotsForSummary = currentDay.slots ?? hourlyData ?? [];
   const peakCount =
     currentDay.peak_count ??
     (slotsForSummary as HourSlot[]).filter((s) => s?.score >= 75).length ??
@@ -105,8 +109,8 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
     (slotsForSummary as HourSlot[]).filter((s) => s?.score <= 45).length ??
     0;
   const peakWindows = (slotsForSummary as HourSlot[])
-    .filter((s) => s?.score >= 75 && (s as any).display_label)
-    .map((s: any) => s.display_label as string)
+    .filter((s) => s?.score >= 75 && s.display_label)
+    .map((s) => s.display_label as string)
     .join(' · ');
   const avgScore = score;
 
@@ -130,7 +134,10 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
             <button
               key={day?.date || i}
               onClick={() => setSelectedDay(i)}
-              className={`px-4 py-3 rounded-sm font-mono uppercase tracking-wider transition-all whitespace-pre-line leading-tight ${
+              aria-selected={selectedDay === i}
+              aria-label={`${day?.date ?? ''} forecast`}
+              role="tab"
+              className={`px-4 py-3 rounded-sm font-mono uppercase tracking-wider transition-all whitespace-pre-line leading-tight min-h-[44px] ${
                 selectedDay === i
                   ? 'border-b-2 border-amber text-star bg-nebula/40 text-sm'
                   : 'text-dust hover:text-star text-xs'
@@ -154,12 +161,12 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
         >
           {/* Score + peaks header */}
           <div className="flex flex-col items-start gap-2 mb-6">
-            <div className="flex items-baseline gap-3">
-              <span className={`font-display font-semibold text-5xl ${scoreColor}`}>
+            <div className="flex items-baseline gap-2 sm:gap-3 flex-wrap">
+              <span className={`font-display font-semibold text-4xl sm:text-5xl ${scoreColor}`}>
                 {score}
               </span>
-              <span className="text-xl text-dust">/100</span>
-              <span className="text-lg font-semibold ml-2 text-dust">
+              <span className="text-lg sm:text-xl text-dust">/100</span>
+              <span className="text-base sm:text-lg font-semibold ml-1 sm:ml-2 text-dust">
                 {getScoreLabel(score)}
               </span>
               <span className="ml-auto font-mono text-xs text-dust/70">
@@ -244,7 +251,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                         .map(t => t.trim().split(':').slice(0, 2).join(':'))
                         .join('\u2013');
                     };
-                    const timeStr = fmtLabel(w.time ?? (w as any).display_label ?? '');
+                    const timeStr = fmtLabel(w.time ?? w.display_label ?? '');
                     return (
                     <div
                       key={i}

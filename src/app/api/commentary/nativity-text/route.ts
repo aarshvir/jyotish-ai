@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -29,16 +30,16 @@ export async function POST(req: NextRequest) {
   }
 
   const {
-    lagnaSign,
     lagnaDegreee,
     moonSign,
     moonNakshatra,
-    mahadasha,
-    antardasha,
     md_end,
     ad_end,
     planets,
   } = body;
+  const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
+  const mahadasha = sanitizePlanetName(body.mahadasha);
+  const antardasha = sanitizePlanetName(body.antardasha);
   if (!lagnaSign) {
     return NextResponse.json({ error: 'lagnaSign required' }, { status: 400 });
   }
@@ -103,8 +104,8 @@ Start with { and end with }. No markdown.`;
 
     const parsed = safeParseJson<{ lagna_analysis?: string; dasha_interpretation?: string }>(rawText);
     return NextResponse.json({
-      lagna_analysis: parsed.lagna_analysis ?? '',
-      dasha_interpretation: parsed.dasha_interpretation ?? '',
+      lagna_analysis: parsed?.lagna_analysis ?? '',
+      dasha_interpretation: parsed?.dasha_interpretation ?? '',
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

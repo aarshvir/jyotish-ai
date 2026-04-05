@@ -66,142 +66,229 @@ export function HourlyTable({ hours }: HourlyTableProps) {
   const displayCommentary = (c: string | undefined) => (c?.trim() || COMMENTARY_FALLBACK);
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-horizon">
-            <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3 whitespace-nowrap">
-              Time
-            </th>
-            <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3">
-              Hora
-            </th>
-            <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3">
-              Choghadiya
-            </th>
-            <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3 hidden lg:table-cell">
-              Transit Lagna
-            </th>
-            <th className="font-mono text-xs uppercase text-dust text-center py-3 px-3">
-              Score
-            </th>
-            <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3 hidden md:table-cell">
-              Commentary
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {hasDataError && (
-            <tr className="bg-crimson/20 border-b border-crimson/40">
-              <td colSpan={6} className="py-3 px-3 font-mono text-xs text-crimson">
-                ⚠ Data error: expected 18 hourly slots (06:00–24:00), got {sortedHours.length}. Some rows may be missing.
-              </td>
-            </tr>
-          )}
-          {sortedHours.map((hour, i) => {
-            const scoreInfo = getScoreLabel(hour.score, hour.is_rahu_kaal);
-            const isExpanded = expandedIndex === i;
-            const commentary = displayCommentary(hour.commentary);
-            const timeLabel = hour.display_label ?? hour.time?.slice(0, 5) ?? '—';
+    <>
+      {/* Mobile card view — shown below md */}
+      <div className="md:hidden space-y-2">
+        {hasDataError && (
+          <div className="py-3 px-3 font-mono text-xs text-crimson bg-crimson/10 border border-crimson/30 rounded-sm">
+            ⚠ Data error: expected 18 slots, got {sortedHours.length}.
+          </div>
+        )}
+        {sortedHours.map((hour, i) => {
+          const scoreInfo = getScoreLabel(hour.score, hour.is_rahu_kaal);
+          const isExpanded = expandedIndex === i;
+          const commentary = displayCommentary(hour.commentary);
+          const timeLabel = hour.display_label ?? hour.time?.slice(0, 5) ?? '—';
 
-            return (
-              <>
-                <tr
-                  key={`row-${hour.slot_index ?? i}`}
-                  className={`hover:bg-nebula/40 transition-colors cursor-pointer ${
-                    hour.is_rahu_kaal ? 'bg-crimson/5' : ''
-                  } ${isExpanded ? 'bg-nebula/20' : ''}`}
-                  onClick={() => setExpandedIndex(isExpanded ? null : i)}
-                >
-                  {/* Time */}
-                  <td className="font-mono text-sm text-star py-3 px-3 whitespace-nowrap">
-                    <span className={`mr-1 ${scoreInfo.color}`}>
-                      {hour.is_rahu_kaal ? '⚠' : hour.score >= 75 ? '★' : hour.score < 45 ? '🔴' : ''}
-                    </span>
-                    {timeLabel}
-                  </td>
+          return (
+            <div
+              key={`card-${hour.slot_index ?? i}`}
+              className={`border rounded-sm transition-colors ${
+                hour.is_rahu_kaal
+                  ? 'border-crimson/30 bg-crimson/5'
+                  : 'border-horizon bg-cosmos'
+              } ${isExpanded ? 'border-amber/40' : ''}`}
+            >
+              {/* Card header — tappable */}
+              <button
+                className="w-full flex items-center gap-3 px-4 py-3 text-left min-h-[52px]"
+                onClick={() => setExpandedIndex(isExpanded ? null : i)}
+                aria-expanded={isExpanded}
+                aria-label={`${timeLabel} – ${scoreInfo.label}`}
+              >
+                {/* Time + icon */}
+                <span className="font-mono text-sm text-star whitespace-nowrap w-24 shrink-0">
+                  <span className={`mr-1 ${scoreInfo.color}`}>
+                    {hour.is_rahu_kaal ? '⚠' : hour.score >= 75 ? '★' : hour.score < 45 ? '🔴' : ''}
+                  </span>
+                  {timeLabel}
+                </span>
 
-                  {/* Hora Planet */}
-                  <td className="py-3 px-3">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-amber text-sm">
-                        {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || ''}
+                {/* Hora */}
+                <span className="flex items-center gap-1 min-w-0">
+                  <span className="text-amber text-sm shrink-0">
+                    {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || ''}
+                  </span>
+                  <span className="font-mono text-xs text-dust truncate">
+                    {hour.hora_planet}
+                  </span>
+                </span>
+
+                {/* Choghadiya */}
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-xs shrink-0 ${getChoghadiyaBg(hour.choghadiya)}`}>
+                  {hour.choghadiya}
+                </span>
+
+                {/* Score — pushed right */}
+                <span className={`font-mono text-base font-bold ml-auto shrink-0 ${getScoreNumColor(hour.score, hour.is_rahu_kaal)}`}>
+                  {hour.score}
+                </span>
+
+                {/* Expand chevron */}
+                <span className={`font-mono text-xs text-dust/40 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                  ▾
+                </span>
+              </button>
+
+              {/* Expanded commentary */}
+              {isExpanded && (
+                <div className="px-4 pb-4 border-t border-horizon/30">
+                  <div className="flex items-center gap-2 mt-3 mb-2 flex-wrap">
+                    <span className={`font-mono text-xs ${scoreInfo.color}`}>{scoreInfo.label}</span>
+                    {hour.transit_lagna && (
+                      <span className="font-mono text-xs text-dust/60">
+                        {hour.transit_lagna}{hour.transit_lagna_house ? ` · H${hour.transit_lagna_house}` : ''}
                       </span>
-                      <span className="font-mono text-xs text-dust">
-                        {hour.hora_planet}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Choghadiya */}
-                  <td className="py-3 px-3">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-xs ${getChoghadiyaBg(hour.choghadiya)}`}>
-                      {hour.choghadiya}
-                    </span>
-                  </td>
-
-                  {/* Transit Lagna */}
-                  <td className="py-3 px-3 hidden lg:table-cell">
-                    {hour.transit_lagna ? (
-                      <span className="font-mono text-xs text-dust/80 whitespace-nowrap">
-                        {hour.transit_lagna}
-                        {hour.transit_lagna_house ? (
-                          <span className="ml-1 text-amber/60">· H{hour.transit_lagna_house}</span>
-                        ) : null}
-                      </span>
-                    ) : (
-                      <span className="text-dust/30 text-xs">—</span>
                     )}
-                  </td>
+                  </div>
+                  <div className="font-display text-star text-sm leading-[1.8]">
+                    {commentary}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
-                  {/* Score */}
-                  <td className="py-3 px-3 text-center">
-                    <span className={`font-mono text-lg font-bold ${getScoreNumColor(hour.score, hour.is_rahu_kaal)}`}>
-                      {hour.score}
-                    </span>
-                  </td>
+      {/* Desktop table — shown at md and above */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-horizon">
+              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3 whitespace-nowrap">
+                Time
+              </th>
+              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3">
+                Hora
+              </th>
+              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3">
+                Choghadiya
+              </th>
+              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3 hidden lg:table-cell">
+                Transit Lagna
+              </th>
+              <th className="font-mono text-xs uppercase text-dust text-center py-3 px-3">
+                Score
+              </th>
+              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3">
+                Commentary
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {hasDataError && (
+              <tr className="bg-crimson/20 border-b border-crimson/40">
+                <td colSpan={6} className="py-3 px-3 font-mono text-xs text-crimson">
+                  ⚠ Data error: expected 18 hourly slots (06:00–24:00), got {sortedHours.length}. Some rows may be missing.
+                </td>
+              </tr>
+            )}
+            {sortedHours.map((hour, i) => {
+              const scoreInfo = getScoreLabel(hour.score, hour.is_rahu_kaal);
+              const isExpanded = expandedIndex === i;
+              const commentary = displayCommentary(hour.commentary);
+              const timeLabel = hour.display_label ?? hour.time?.slice(0, 5) ?? '—';
 
-                  {/* Commentary preview */}
-                  <td className="py-3 px-3 hidden md:table-cell">
-                    <span className={`pdf-exclude font-mono text-xs transition-colors ${isExpanded ? 'text-amber' : 'text-dust/60 hover:text-amber'}`}>
-                      {isExpanded ? '↑ Close' : 'Read analysis →'}
-                    </span>
-                  </td>
-                </tr>
+              return (
+                <>
+                  <tr
+                    key={`row-${hour.slot_index ?? i}`}
+                    className={`hover:bg-nebula/40 transition-colors cursor-pointer ${
+                      hour.is_rahu_kaal ? 'bg-crimson/5' : ''
+                    } ${isExpanded ? 'bg-nebula/20' : ''}`}
+                    onClick={() => setExpandedIndex(isExpanded ? null : i)}
+                  >
+                    {/* Time */}
+                    <td className="font-mono text-sm text-star py-3 px-3 whitespace-nowrap">
+                      <span className={`mr-1 ${scoreInfo.color}`}>
+                        {hour.is_rahu_kaal ? '⚠' : hour.score >= 75 ? '★' : hour.score < 45 ? '🔴' : ''}
+                      </span>
+                      {timeLabel}
+                    </td>
 
-                {/* Expanded commentary row */}
-                {isExpanded && (
-                  <tr key={`expanded-${hour.slot_index ?? i}`} className="bg-nebula/10 border-b border-horizon/20">
-                    <td colSpan={6} className="px-4 py-4">
-                      <div className="max-w-3xl">
-                        <div className="flex items-center gap-3 mb-3">
-                          <span className="text-amber text-base">
-                            {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || ''}
-                          </span>
-                          <span className="font-mono text-xs text-amber tracking-wider uppercase">
-                            {hour.hora_planet} Hora · {timeLabel}
-                          </span>
-                          {hour.transit_lagna && (
-                            <span className="font-mono text-xs text-dust/60">
-                              {hour.transit_lagna} H{hour.transit_lagna_house}
-                            </span>
-                          )}
-                          <span className={`font-mono text-xs font-bold ${getScoreNumColor(hour.score, hour.is_rahu_kaal)}`}>
-                            {scoreInfo.icon} {hour.score}
-                          </span>
-                        </div>
-                        <div className="font-display text-star text-sm leading-[1.8] whitespace-pre-line">
-                          {commentary}
-                        </div>
+                    {/* Hora Planet */}
+                    <td className="py-3 px-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-amber text-sm">
+                          {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || ''}
+                        </span>
+                        <span className="font-mono text-xs text-dust">
+                          {hour.hora_planet}
+                        </span>
                       </div>
                     </td>
+
+                    {/* Choghadiya */}
+                    <td className="py-3 px-3">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-xs ${getChoghadiyaBg(hour.choghadiya)}`}>
+                        {hour.choghadiya}
+                      </span>
+                    </td>
+
+                    {/* Transit Lagna */}
+                    <td className="py-3 px-3 hidden lg:table-cell">
+                      {hour.transit_lagna ? (
+                        <span className="font-mono text-xs text-dust/80 whitespace-nowrap">
+                          {hour.transit_lagna}
+                          {hour.transit_lagna_house ? (
+                            <span className="ml-1 text-amber/60">· H{hour.transit_lagna_house}</span>
+                          ) : null}
+                        </span>
+                      ) : (
+                        <span className="text-dust/30 text-xs">—</span>
+                      )}
+                    </td>
+
+                    {/* Score */}
+                    <td className="py-3 px-3 text-center">
+                      <span className={`font-mono text-lg font-bold ${getScoreNumColor(hour.score, hour.is_rahu_kaal)}`}>
+                        {hour.score}
+                      </span>
+                    </td>
+
+                    {/* Commentary preview */}
+                    <td className="py-3 px-3">
+                      <span className={`pdf-exclude font-mono text-xs transition-colors ${isExpanded ? 'text-amber' : 'text-dust/60 hover:text-amber'}`}>
+                        {isExpanded ? '↑ Close' : 'Read analysis →'}
+                      </span>
+                    </td>
                   </tr>
-                )}
-              </>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+
+                  {/* Expanded commentary row */}
+                  {isExpanded && (
+                    <tr key={`expanded-${hour.slot_index ?? i}`} className="bg-nebula/10 border-b border-horizon/20">
+                      <td colSpan={6} className="px-4 py-4">
+                        <div className="max-w-3xl">
+                          <div className="flex items-center gap-3 mb-3">
+                            <span className="text-amber text-base">
+                              {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || ''}
+                            </span>
+                            <span className="font-mono text-xs text-amber tracking-wider uppercase">
+                              {hour.hora_planet} Hora · {timeLabel}
+                            </span>
+                            {hour.transit_lagna && (
+                              <span className="font-mono text-xs text-dust/60">
+                                {hour.transit_lagna} H{hour.transit_lagna_house}
+                              </span>
+                            )}
+                            <span className={`font-mono text-xs font-bold ${getScoreNumColor(hour.score, hour.is_rahu_kaal)}`}>
+                              {scoreInfo.icon} {hour.score}
+                            </span>
+                          </div>
+                          <div className="font-display text-star text-sm leading-[1.8] whitespace-pre-line">
+                            {commentary}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }

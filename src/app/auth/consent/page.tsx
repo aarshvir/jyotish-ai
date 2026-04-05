@@ -79,73 +79,30 @@ export default function ConsentPage() {
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: '100vh',
-          background: '#0a0a1a',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <div style={{ color: '#d4af37', fontFamily: 'system-ui' }}>Loading...</div>
+      <div className="min-h-screen bg-space flex items-center justify-center">
+        <p className="text-amber font-mono text-sm">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a0a1a 0%, #0d0d2b 50%, #0a0a1a 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-        fontFamily: 'system-ui',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '480px',
-          width: '100%',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(212,175,55,0.2)',
-          borderRadius: '16px',
-          padding: '40px 36px',
-        }}
-      >
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ fontSize: '28px', marginBottom: '8px' }}>✦</div>
-          <h1
-            style={{
-              fontSize: '22px',
-              fontWeight: '400',
-              color: '#e8e0d0',
-              fontFamily: 'Georgia, serif',
-              marginBottom: '6px',
-            }}
-          >
-            Before You Begin
-          </h1>
-          <p style={{ fontSize: '13px', color: '#6b6350' }}>Signed in as {userEmail}</p>
+    <div className="min-h-screen bg-gradient-to-br from-space via-dark to-space flex items-center justify-center p-6">
+      <div className="w-full max-w-[480px] bg-white/[0.03] border border-amber/20 rounded-2xl px-8 sm:px-10 py-10">
+        {/* Header */}
+        <div className="text-center mb-7">
+          <div className="text-2xl text-amber/60 mb-2">✦</div>
+          <h1 className="text-xl font-light text-star font-display mb-1.5">Before You Begin</h1>
+          <p className="text-xs text-dust/50 font-mono">Signed in as {userEmail}</p>
         </div>
 
-        <div
-          style={{
-            background: 'rgba(212,175,55,0.05)',
-            border: '1px solid rgba(212,175,55,0.15)',
-            borderRadius: '10px',
-            padding: '20px',
-            marginBottom: '24px',
-          }}
-        >
-          <p style={{ fontSize: '13px', color: '#a09880', lineHeight: 1.8, margin: 0 }}>
+        {/* Info box */}
+        <div className="bg-amber/[0.05] border border-amber/15 rounded-xl px-5 py-5 mb-6">
+          <p className="text-sm text-dust/70 font-sans leading-relaxed">
             VedicHour reports are for{' '}
-            <strong style={{ color: '#d4af37' }}>entertainment and self-reflection only</strong> — not
+            <strong className="text-amber font-semibold">entertainment and self-reflection only</strong> — not
             professional advice. Please read and agree to:
           </p>
-          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="mt-3 flex flex-col gap-2">
             {[
               { label: 'Terms of Service', href: '/terms' },
               { label: 'Privacy Policy', href: '/privacy' },
@@ -155,7 +112,7 @@ export default function ConsentPage() {
                 key={item.href}
                 href={item.href}
                 target="_blank"
-                style={{ fontSize: '13px', color: '#d4af37', textDecoration: 'none' }}
+                className="text-sm text-amber no-underline hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm"
               >
                 → {item.label}
               </Link>
@@ -163,54 +120,35 @@ export default function ConsentPage() {
           </div>
         </div>
 
-        <label
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '12px',
-            cursor: 'pointer',
-            marginBottom: '24px',
-          }}
-        >
+        {/* Checkbox */}
+        <label className="flex items-start gap-3 cursor-pointer mb-6">
           <input
             type="checkbox"
             checked={checked}
             onChange={(e) => setChecked(e.target.checked)}
-            style={{
-              width: '18px',
-              height: '18px',
-              accentColor: '#d4af37',
-              marginTop: '2px',
-              flexShrink: 0,
-              cursor: 'pointer',
-            }}
+            className="w-[18px] h-[18px] mt-0.5 shrink-0 cursor-pointer accent-amber"
           />
-          <span style={{ fontSize: '14px', color: '#a09880', lineHeight: 1.6 }}>
+          <span className="text-sm text-dust/70 font-sans leading-relaxed">
             I agree to the Terms of Service, Privacy Policy, and Refund Policy. I understand reports
             are for entertainment purposes only.
           </span>
         </label>
 
+        {/* Submit */}
         <button
           type="button"
           onClick={() => void handleConsent()}
           disabled={!checked || submitting}
-          style={{
-            width: '100%',
-            padding: '14px',
-            background: checked ? 'linear-gradient(135deg, #d4af37, #b8962e)' : 'rgba(255,255,255,0.06)',
-            color: checked ? '#0a0a1a' : '#6b6350',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '15px',
-            fontWeight: '600',
-            cursor: checked ? 'pointer' : 'not-allowed',
-          }}
+          className={`w-full py-3.5 min-h-[48px] rounded-lg text-sm font-semibold font-mono transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-space ${
+            checked
+              ? 'bg-gradient-to-r from-amber to-amber/80 text-space cursor-pointer hover:opacity-90'
+              : 'bg-white/[0.06] text-dust/40 cursor-not-allowed'
+          }`}
         >
           {submitting ? 'Saving...' : 'Continue to VedicHour →'}
         </button>
 
-        <p style={{ fontSize: '11px', color: '#4a4435', textAlign: 'center', marginTop: '14px' }}>
+        <p className="text-[11px] text-dust/30 font-mono text-center mt-4">
           Acceptance recorded with timestamp · Version {TERMS_VERSION}
         </p>
       </div>

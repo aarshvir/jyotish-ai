@@ -7,6 +7,8 @@ import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaCo
 import type { HoraRole, LagnaContext } from '@/lib/agents/lagnaContext';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/api/rateLimit';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 
 function choghadiyaMeaning(chog: string): string {
@@ -24,7 +26,18 @@ function choghadiyaMeaning(chog: string): string {
   return map[k] ?? 'meaning varies';
 }
 
-function buildFallbackSlot(slot: any, lagnaSign: string, role?: HoraRole): { slot_index: number; commentary: string } {
+interface SlotShape {
+  slot_index?: number;
+  display_label?: string;
+  dominant_hora?: string;
+  dominant_choghadiya?: string;
+  transit_lagna?: string;
+  transit_lagna_house?: number;
+  is_rahu_kaal?: boolean;
+  score?: number;
+}
+
+function buildFallbackSlot(slot: SlotShape, lagnaSign: string, role?: HoraRole): { slot_index: number; commentary: string } {
   const slot_index = typeof slot?.slot_index === 'number' ? slot.slot_index : 0;
   const display_label = String(slot?.display_label ?? '');
   const dominant_hora = String(slot?.dominant_hora ?? 'Sun');
@@ -87,30 +100,40 @@ const parseClaudeJsonDefensively = (text: string) => parseJsonDefensively(text, 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+
+  const rlKey = getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined);
+  const rl = checkRateLimit(rlKey, RATE_LIMITS.commentary.limit, RATE_LIMITS.commentary.windowMs);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many requests.', slots: [] },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+    );
+  }
+
   try {
     // Required defensiveness: parse request body from raw text so malformed payloads
     // do not crash the route before fallback logic can run.
     const rawBody = await req.text();
-    let body: any = {};
+    let body: Record<string, unknown> = {};
     try {
-      body = rawBody ? JSON.parse(rawBody) : {};
+      body = rawBody ? (JSON.parse(rawBody) as Record<string, unknown>) : {};
     } catch {
       // Try recovering object payload from noisy wrappers / markdown / extra chars.
       const recovered = parseClaudeJsonDefensively(rawBody || '');
-      body = recovered && typeof recovered === 'object' ? recovered : {};
+      body = (recovered && typeof recovered === 'object' ? recovered : {}) as Record<string, unknown>;
     }
     const modelOverride = typeof body?.model_override === 'string' ? body.model_override : undefined;
     if (!hasLlmCredentials(modelOverride)) {
       return NextResponse.json({ slots: [] }, { status: 200 });
     }
 
-    const lagnaSign = String(body?.lagnaSign ?? '');
-    const mahadasha = String(body?.mahadasha ?? '');
-    const antardasha = String(body?.antardasha ?? '');
+    const lagnaSign = sanitizeLagnaSign(body?.lagnaSign);
+    const mahadasha = sanitizePlanetName(body?.mahadasha);
+    const antardasha = sanitizePlanetName(body?.antardasha);
     const date = String(body?.date ?? '');
     const planetPositions = body?.planet_positions;
-    const panchang = body?.panchang;
-    const rahuKaalDay = body?.rahu_kaal;
+    const panchang = body?.panchang as { yoga?: string; nakshatra?: string } | undefined;
+    const rahuKaalDay = body?.rahu_kaal as { start?: string; end?: string } | undefined;
     const rawSlots = body?.slots;
 
     const slots = Array.isArray(rawSlots) ? rawSlots : [];
@@ -165,7 +188,7 @@ export async function POST(req: NextRequest) {
       planet_positions: planetPositions as any,
       dateLabel: date,
       yogaName: panchang?.yoga,
-      panchang: panchang as { yoga?: string; nakshatra?: string } | undefined,
+      panchang: panchang,
       slots: normalizedSlots,
       rahu_kaal: rahuKaalDay,
     });
@@ -219,18 +242,18 @@ Respond with ONLY a JSON object. No preamble. No markdown. Start with { directly
       });
       console.log('[HOURLY] Raw response length:', rawText.length);
       console.log('[HOURLY] Raw first 100 chars:', rawText.slice(0, 100));
-      let parsed: any = null;
+      let parsed: { date?: string; slots?: Array<{ slot_index: number; commentary: string }> } | null = null;
       try {
         parsed = safeParseJson<{ date?: string; slots?: Array<{ slot_index: number; commentary: string }> }>(rawText);
       } catch {
-        parsed = parseClaudeJsonDefensively(rawText);
+        parsed = parseClaudeJsonDefensively(rawText) as typeof parsed;
       }
 
       if (!parsed) {
         console.error('[HOURLY] All JSON parse attempts failed, using fallback');
         console.error('[HOURLY] Raw text sample:', rawText.slice(0, 200));
         return NextResponse.json({
-          slots: normalizedSlots.map((s: any, i: number) => ({
+          slots: normalizedSlots.map((s, i) => ({
             slot_index: s.slot_index ?? i,
             display_label: s.display_label ?? '',
             commentary: `${s.dominant_hora} hora with ${s.dominant_choghadiya} choghadiya. Score: ${s.score}/100.`,
@@ -240,7 +263,7 @@ Respond with ONLY a JSON object. No preamble. No markdown. Start with { directly
         });
       }
 
-      const out = (parsed.slots ?? []).slice(0, 18).map((s: any, i: number) => {
+      const out = (parsed.slots ?? []).slice(0, 18).map((s, i) => {
         const slot_index = typeof s.slot_index === 'number' ? s.slot_index : normalizedSlots[i]?.slot_index ?? i;
         const commentary = String(s.commentary ?? '').trim();
         const role = ctx.horaRoles[normalizedSlots[i]?.dominant_hora];
@@ -256,19 +279,22 @@ Respond with ONLY a JSON object. No preamble. No markdown. Start with { directly
         return buildFallbackSlot(s, lagnaSign, role);
       });
       return NextResponse.json({ date, slots: filled }, { status: 200 });
-    } catch (err: any) {
-      console.error('[hourly-day] Claude/parse failure:', err?.message || err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[hourly-day] Claude/parse failure:', msg.slice(0, 200));
       return NextResponse.json(
         {
           date,
-          slots: normalizedSlots.map((s: any) => buildFallbackSlot(s, lagnaSign, ctx.horaRoles[s.dominant_hora])),
+          slots: normalizedSlots.map((s) => buildFallbackSlot(s, lagnaSign, ctx.horaRoles[s.dominant_hora])),
+          partial: true,
         },
-        { status: 200 }
+        { status: 206 }
       );
     }
-  } catch (err: any) {
-    console.error('[HOURLY] Fatal error:', err?.message || err);
-    return NextResponse.json({ slots: [], partial: true, error: String(err) }, { status: 200 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[HOURLY] Fatal error:', msg.slice(0, 200));
+    return NextResponse.json({ slots: [], partial: true, error: msg.slice(0, 100) }, { status: 206 });
   }
 }
 

@@ -63,10 +63,12 @@ export function HourlyAnalysis({ hours, lagna }: HourlyAnalysisProps) {
 
         <div className="flex items-center gap-2">
           {/* Time filter toggle */}
-          <div className="flex items-center gap-1 p-1 bg-cosmos border border-horizon rounded-sm">
+          <div className="flex items-center gap-1 p-1 bg-cosmos border border-horizon rounded-sm" role="group" aria-label="Time range filter">
             <button
               onClick={() => setTimeFilter('waking')}
-              className={`px-3 py-1.5 rounded-sm font-mono text-xs uppercase tracking-wider transition-colors ${
+              aria-pressed={timeFilter === 'waking'}
+              aria-label="Show waking hours 6am to 11pm"
+              className={`px-3 py-1.5 min-h-[36px] rounded-sm font-mono text-xs uppercase tracking-wider transition-colors ${
                 timeFilter === 'waking'
                   ? 'bg-amber/20 text-amber'
                   : 'text-dust hover:text-star'
@@ -76,7 +78,9 @@ export function HourlyAnalysis({ hours, lagna }: HourlyAnalysisProps) {
             </button>
             <button
               onClick={() => setTimeFilter('full')}
-              className={`px-3 py-1.5 rounded-sm font-mono text-xs uppercase tracking-wider transition-colors ${
+              aria-pressed={timeFilter === 'full'}
+              aria-label="Show all 24 hours"
+              className={`px-3 py-1.5 min-h-[36px] rounded-sm font-mono text-xs uppercase tracking-wider transition-colors ${
                 timeFilter === 'full'
                   ? 'bg-amber/20 text-amber'
                   : 'text-dust hover:text-star'
@@ -87,10 +91,12 @@ export function HourlyAnalysis({ hours, lagna }: HourlyAnalysisProps) {
           </div>
 
           {/* View mode toggle */}
-          <div className="flex items-center gap-1 p-1 bg-cosmos border border-horizon rounded-sm">
+          <div className="flex items-center gap-1 p-1 bg-cosmos border border-horizon rounded-sm" role="group" aria-label="View mode">
             <button
               onClick={() => setViewMode('visual')}
-              className={`px-4 py-2 rounded-sm font-mono text-xs uppercase tracking-wider transition-colors ${
+              aria-pressed={viewMode === 'visual'}
+              aria-label="Visual chart view"
+              className={`px-4 py-2 min-h-[36px] rounded-sm font-mono text-xs uppercase tracking-wider transition-colors ${
                 viewMode === 'visual'
                   ? 'bg-amber text-space'
                   : 'text-dust hover:text-star'
@@ -100,7 +106,9 @@ export function HourlyAnalysis({ hours, lagna }: HourlyAnalysisProps) {
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`px-4 py-2 rounded-sm font-mono text-xs uppercase tracking-wider transition-colors ${
+              aria-pressed={viewMode === 'table'}
+              aria-label="Table view"
+              className={`px-4 py-2 min-h-[36px] rounded-sm font-mono text-xs uppercase tracking-wider transition-colors ${
                 viewMode === 'table'
                   ? 'bg-amber text-space'
                   : 'text-dust hover:text-star'
