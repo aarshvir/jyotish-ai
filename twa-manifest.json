@@ -1,0 +1,15 @@
+{
+  "manifest_version": 1,
+  "package_id": "com.vedichour.app",
+  "url": "https://www.vedichour.com",
+  "app_name": "VedicHour",
+  "short_name": "VedicHour",
+  "icon_url": "https://www.vedichour.com/icons/icon-512.png",
+  "launcher_icon_url": "https://www.vedichour.com/icons/icon-192.png",
+  "scope": "/",
+  "status_bar_color": "#080C18",
+  "display_mode": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#080C18",
+  "background_color": "#080C18"
+}

@@ -1,0 +1,145 @@
+{
+  "release_date": "2026-04-05T20:00:00Z",
+  "status": "PARTIAL_SUCCESS_WITH_BLOCKERS",
+  "go_live": false,
+  "steps": {
+    "A_preflight": {
+      "status": "PASS",
+      "commands": [
+        "git status --short",
+        "node -v && npm -v && npx next --version",
+        "npm ci"
+      ],
+      "result": "Node v22.19.0, npm 10.9.3, Next.js 14.2.35; dependencies ready"
+    },
+    "A_build": {
+      "status": "PASS",
+      "command": "npx next build",
+      "result": "Build succeeded; all routes compiled"
+    },
+    "B_deploy": {
+      "status": "PASS",
+      "command": "vercel --prod --yes",
+      "deployment_url": "https://www.vedichour.com",
+      "deployment_id": "dpl_77tdw1JeZr1Pj1R5cieGvpmdTa1B",
+      "result": "Production aliased to www.vedichour.com"
+    },
+    "B_endpoint_manifest": {
+      "status": "PASS",
+      "url": "https://www.vedichour.com/manifest.webmanifest",
+      "status_code": 200,
+      "content_type": "application/manifest+json",
+      "result": "Manifest reachable and valid"
+    },
+    "B_endpoint_assetlinks": {
+      "status": "PASS",
+      "url": "https://www.vedichour.com/.well-known/assetlinks.json",
+      "status_code": 200,
+      "content_type": "application/json; charset=utf-8",
+      "result": "Asset links endpoint reachable; currently returns [] (env vars not set)"
+    },
+    "C_twa_bubblewrap_init": {
+      "status": "BLOCKED",
+      "reason": "Interactive prompt (JDK/SDK installation) cannot be automated without pre-configured environment",
+      "attempted_command": "echo 'y' | npx @bubblewrap/cli init --manifest=https://www.vedichour.com/manifest.webmanifest",
+      "exit_code": 1,
+      "blocker": "C.1_BUBBLEWRAP_INTERACTIVE_SETUP",
+      "mitigation": "Created minimal twa-manifest.json for reference; user must complete Bubblewrap init on local machine with UI",
+      "next_step": "1) User runs: bubblewrap init --manifest=https://www.vedichour.com/manifest.webmanifest\n2) Follow prompts for JDK/SDK installation\n3) User runs: bubblewrap build\n4) Generate app-release-bundle.aab\n5) Return AAB path for Play upload"
+    },
+    "D_play_upload": {
+      "status": "BLOCKED",
+      "reason": "Awaiting AAB from Bubblewrap; also requires Play Console service account JSON",
+      "blocker": "D.1_AAB_NOT_GENERATED",
+      "mitigation": "Ready to upload once AAB exists and service account is configured",
+      "next_step": "1) Ensure service account JSON exists at secure location\n2) Set env: export PLAY_SERVICE_ACCOUNT_JSON_PATH=/path/to/play-key.json\n3) Once AAB ready: fastlane supply --aab <AAB_PATH> --package_name com.vedichour.app --track internal --json_key $PLAY_SERVICE_ACCOUNT_JSON_PATH --skip_upload_images true --skip_upload_screenshots true --skip_upload_metadata true"
+    },
+    "E_assetlinks_finalization": {
+      "status": "PENDING",
+      "reason": "Awaiting Play App Signing SHA-256 fingerprint from Play Console",
+      "blocker": "E.1_PLAY_SIGNING_FINGERPRINT_UNKNOWN",
+      "mitigation": "Once app is uploaded to Play internal testing, obtain fingerprint from Play Console > App integrity > App signing",
+      "next_step": "1) After Play upload completes, navigate to Play Console\n2) App integrity section > App signing\n3) Copy SHA-256 certificate fingerprint\n4) Set Vercel env: ANDROID_TWA_SHA256_FINGERPRINTS=<SHA256_COLON_HEX>\n5) Re-deploy: vercel --prod --yes\n6) Verify assetlinks endpoint returns non-empty JSON"
+    },
+    "F_verification": {
+      "status": "PARTIAL",
+      "checks": {
+        "manifest_reachable": {
+          "status": "PASS",
+          "url": "https://www.vedichour.com/manifest.webmanifest",
+          "verified": true
+        },
+        "assetlinks_reachable": {
+          "status": "PASS",
+          "url": "https://www.vedichour.com/.well-known/assetlinks.json",
+          "verified": true,
+          "note": "Currently [] (waiting for env vars)"
+        },
+        "aab_exists": {
+          "status": "BLOCKED",
+          "reason": "Bubblewrap build not yet run"
+        },
+        "play_release_exists": {
+          "status": "BLOCKED",
+          "reason": "Play upload not yet run"
+        }
+      }
+    }
+  ],
+  "blockers": [
+    {
+      "id": "C.1_BUBBLEWRAP_INTERACTIVE_SETUP",
+      "severity": "MANDATORY",
+      "description": "Bubblewrap init is interactive (JDK/SDK installation prompts). Automated non-UI execution not supported.",
+      "action": "User must complete JDK/SDK setup on local machine",
+      "command": "bubblewrap init --manifest=https://www.vedichour.com/manifest.webmanifest\nFollow prompts; accept JDK and SDK downloads\nConfirm twa-manifest.json is created"
+    },
+    {
+      "id": "D.1_AAB_NOT_GENERATED",
+      "severity": "DEPENDS_ON_C.1",
+      "description": "Android App Bundle (.aab) cannot be built until Bubblewrap init completes.",
+      "action": "Run bubblewrap build after init",
+      "command": "bubblewrap build"
+    },
+    {
+      "id": "D.2_PLAY_SERVICE_ACCOUNT_MISSING",
+      "severity": "DEPENDS_ON_USER_GCP_SETUP",
+      "description": "Google Cloud service account JSON not found. Required for Play upload automation.",
+      "action": "Create service account in Google Cloud Console with Play API access; download JSON key",
+      "gcp_steps": [
+        "Go to https://console.cloud.google.com",
+        "Create service account: 'vedichour-play-upload'",
+        "Grant role: 'Play API User'",
+        "Create and download JSON key",
+        "Save securely: ~/secure/play-service-account.json"
+      ],
+      "command": "export PLAY_SERVICE_ACCOUNT_JSON_PATH=~/secure/play-service-account.json"
+    },
+    {
+      "id": "D.3_PLAY_CONSOLE_APP_NOT_LISTED",
+      "severity": "DEPENDS_ON_USER_PLAY_SETUP",
+      "description": "Play Console app listing not verified. Package name and store listing required for upload.",
+      "action": "Create app in Play Console; ensure com.vedichour.app is registered",
+      "play_steps": [
+        "Go to https://play.google.com/console",
+        "Create new app: 'VedicHour'",
+        "Package name: 'com.vedichour.app'",
+        "Complete store listing (description, privacy policy, screenshots placeholder, etc.)"
+      ],
+      "command": "Verify package name matches; record Play Console app ID"
+    },
+    {
+      "id": "E.1_PLAY_SIGNING_FINGERPRINT_UNKNOWN",
+      "severity": "DEPENDS_ON_D_SUCCESS",
+      "description": "Play App Signing SHA-256 fingerprint not yet obtained. Needed for Digital Asset Links verification.",
+      "action": "After Play upload, obtain fingerprint from Play Console App integrity section",
+      "command": "Play Console > [App] > App integrity > App signing > Copy SHA-256 certificate fingerprint\nThen: vercel env add ANDROID_TWA_SHA256_FINGERPRINTS\nVercel redeploy: vercel --prod --yes"
+    }
+  ],
+  "artifacts": {
+    "twa_manifest": "twa-manifest.json (reference configuration)",
+    "release_scripts": "scripts/release/ (automation scripts)"
+  },
+  "go_live_decision": "NO — blockers C.1, D.1, D.2, D.3, E.1 must be resolved first",
+  "go_live_summary": "Web deployment and PWA setup complete. Android TWA requires user interaction for Bubblewrap JDK/SDK setup, Play Console configuration, and Play API service account. Follow blocker resolution steps in order."
+}
