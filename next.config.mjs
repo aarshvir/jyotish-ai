@@ -12,6 +12,14 @@ const nextConfig = {
   // Compress all responses
   compress: true,
 
+  // Serve local fonts — no Google Fonts network dependency at build time
+  serverExternalPackages: [
+    '@anthropic-ai/sdk',
+    '@react-pdf/renderer',
+    'openai',
+    '@google/generative-ai',
+  ],
+
   // Security & caching headers
   async headers() {
     return [
@@ -28,8 +36,8 @@ const nextConfig = {
             value: [
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://maps.googleapis.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' data: https://fonts.gstatic.com",
+              "style-src 'self' 'unsafe-inline'",
+              "font-src 'self' data:",
               "img-src 'self' data: blob: https:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.stripe.com https://maps.googleapis.com https://api.opencagedata.com",
               "frame-src https://js.stripe.com https://hooks.stripe.com",
@@ -61,12 +69,6 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
-    serverExternalPackages: [
-      '@anthropic-ai/sdk',
-      '@react-pdf/renderer',
-      'openai',
-      '@google/generative-ai',
-    ],
   },
 };
 
