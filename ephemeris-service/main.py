@@ -163,7 +163,7 @@ def calculate_houses(jd: float, lat: float, lng: float) -> List[float]:
 
 
 def get_house_number(planet_long: float, house_cusps: List[float]) -> int:
-    """Determine which house a planet is in"""
+    """DEPRECATED: Placidus system. Use get_whole_sign_house() instead."""
     for i in range(12):
         cusp_start = house_cusps[i]
         cusp_end = house_cusps[(i + 1) % 12]
@@ -175,6 +175,17 @@ def get_house_number(planet_long: float, house_cusps: List[float]) -> int:
             if cusp_start <= planet_long < cusp_end:
                 return i + 1
     return 1
+
+
+def get_whole_sign_house(planet_longitude: float, lagna_longitude: float) -> int:
+    """
+    Whole-sign house system (Parashari/Vedic standard).
+    The sign containing the lagna = House 1, next sign = House 2, etc.
+    Planet's exact degree doesn't matter — only its sign.
+    """
+    planet_sign = int(planet_longitude / 30) % 12  # 0=Aries ... 11=Pisces
+    lagna_sign = int(lagna_longitude / 30) % 12
+    return ((planet_sign - lagna_sign + 12) % 12) + 1
 
 
 def calculate_vimshottari_dasha(moon_longitude: float, birth_date: datetime) -> List[Dict]:
@@ -357,7 +368,7 @@ def natal_chart(data: NatalChartInput):
 
         for name, planet_id in planet_map.items():
             pos = get_planet_position(jd, planet_id)
-            house = get_house_number(pos["longitude"], house_cusps)
+            house = get_whole_sign_house(pos["longitude"], lagna_long)  # FIX 1: whole-sign
 
             planets[name] = {
                 "sign": pos["sign"],
@@ -379,7 +390,7 @@ def natal_chart(data: NatalChartInput):
         ketu_degree = ketu_long % 30
         ketu_nakshatra_num = int(ketu_long / (360/27))
         ketu_nakshatra_pada = int((ketu_long % (360/27)) / (360/27/4)) + 1
-        ketu_house = get_house_number(ketu_long, house_cusps)
+        ketu_house = get_whole_sign_house(ketu_long, lagna_long)  # FIX 1: whole-sign
         
         planets["Ketu"] = {
             "sign": SIGNS[ketu_sign_num],
@@ -394,13 +405,17 @@ def natal_chart(data: NatalChartInput):
         dasha_sequence = calculate_vimshottari_dasha(moon_longitude, birth_datetime)
         current_dasha = get_current_dasha(dasha_sequence, datetime.now())
         
+        # Detect yogas (FIX 4: detect_yogas)
+        yogas = detect_yogas(planets, lagna_sign_num, lagna_long)
+        
         return {
             "lagna": SIGNS[lagna_sign_num],
             "lagna_degree": round(lagna_degree, 4),
             "planets": planets,
             "moon_nakshatra": planets["Moon"]["nakshatra"],
             "dasha_sequence": dasha_sequence,
-            "current_dasha": current_dasha
+            "current_dasha": current_dasha,
+            "yogas": yogas
         }
         
     except Exception as e:
@@ -624,9 +639,178 @@ def full_day_data(data: FullDayDataInput):
 
 
 # ---------------------------------------------------------------------------
-# Grandmaster scoring engine (Cancer lagna, absolute hora bases)
+# Grandmaster scoring engine (lagna-agnostic hora bases)
 # ---------------------------------------------------------------------------
 
+# Lordship mapping: which signs each planet rules
+PLANET_LORDSHIPS = {
+    "Sun":     [4],     # Leo
+    "Moon":    [3],     # Cancer
+    "Mars":    [0, 7],  # Aries, Scorpio
+    "Mercury": [2, 5],  # Gemini, Virgo
+    "Jupiter": [8, 11], # Sagittarius, Pisces
+    "Venus":   [1, 6],  # Taurus, Libra
+    "Saturn":  [9, 10], # Capricorn, Aquarius
+}
+
+# House categories
+KENDRA_HOUSES = {1, 4, 7, 10}
+TRIKONA_HOUSES = {1, 5, 9}
+DUSTHANA_HOUSES = {6, 8, 12}
+
+def compute_hora_base_for_lagna(lagna_sign_index: int) -> Dict[str, int]:
+    """
+    Compute HORA_BASE values for any lagna based on functional lordship.
+    Returns dict: {"Jupiter": 62, "Moon": 56, ...} specific to this lagna.
+    
+    Logic:
+    - Lagna lord: 56
+    - Yogakaraka (kendra + trikona, not lagna): 58-62
+    - Trikona lord (5/9, not dusthana): 52-58
+    - Kendra lord (4/7/10, not dusthana): 46
+    - Dusthana lord (6/8/12): 28-38
+    - Others (2/3/11): 40-44
+    """
+    bases = {}
+    
+    for planet, ruled_signs in PLANET_LORDSHIPS.items():
+        ruled_houses = set()
+        for sign_idx in ruled_signs:
+            house = ((sign_idx - lagna_sign_index + 12) % 12) + 1
+            ruled_houses.add(house)
+        
+        is_lagna_lord = 1 in ruled_houses
+        is_kendra_lord = bool(ruled_houses & KENDRA_HOUSES)
+        is_trikona_lord = bool(ruled_houses & TRIKONA_HOUSES)
+        is_dusthana_lord = bool(ruled_houses & DUSTHANA_HOUSES)
+        is_yogakaraka = is_kendra_lord and is_trikona_lord and not is_lagna_lord
+        
+        if is_lagna_lord:
+            bases[planet] = 56
+        elif is_yogakaraka:
+            if {5, 10} <= ruled_houses:
+                bases[planet] = 62  # Best yogakaraka
+            elif {5, 4} <= ruled_houses or {9, 10} <= ruled_houses:
+                bases[planet] = 58
+            else:
+                bases[planet] = 54
+        elif is_trikona_lord and not is_dusthana_lord:
+            bases[planet] = 54 if 9 in ruled_houses else 52
+        elif is_kendra_lord and not is_dusthana_lord:
+            bases[planet] = 46
+        elif is_dusthana_lord:
+            if 8 in ruled_houses:
+                bases[planet] = 28  # Worst
+            elif 12 in ruled_houses:
+                bases[planet] = 34
+            else:
+                bases[planet] = 38  # 6th lord (upachaya)
+        else:  # 2, 3, 11
+            if 2 in ruled_houses:
+                bases[planet] = 44
+            elif 11 in ruled_houses:
+                bases[planet] = 42
+            else:
+                bases[planet] = 40
+    
+    return bases
+
+
+def detect_yogas(planets: Dict, lagna_sign_index: int, lagna_long: float) -> List[str]:
+    """
+    Detect major Vedic yogas from natal chart using whole-sign houses.
+    """
+    yogas = []
+    
+    def ws_house(planet_long):
+        return get_whole_sign_house(planet_long, lagna_long)
+    
+    def planet_sign(planet_long):
+        return int(planet_long / 30) % 12
+    
+    # Convert planet positions to full longitudes
+    planet_longs = {}
+    for pname in ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]:
+        if pname in planets:
+            degree = planets[pname]["degree"]
+            sign_idx = SIGNS.index(planets[pname]["sign"])
+            planet_longs[pname] = (sign_idx * 30) + degree
+    
+    if not planet_longs:
+        return yogas
+    
+    # 1. HAMSA YOGA: Jupiter in own/exalted sign (Sag/Pisces/Cancer) + kendra
+    if "Jupiter" in planet_longs:
+        jup_long = planet_longs["Jupiter"]
+        jup_sign = planet_sign(jup_long)
+        jup_house = ws_house(jup_long)
+        if jup_sign in [3, 8, 11] and jup_house in [1, 4, 7, 10]:
+            yogas.append("Hamsa Mahapurusha Yoga")
+    
+    # 2. SASA YOGA: Saturn in own/exalted sign (Cap/Aqu/Libra) + kendra
+    if "Saturn" in planet_longs:
+        sat_long = planet_longs["Saturn"]
+        sat_sign = planet_sign(sat_long)
+        sat_house = ws_house(sat_long)
+        if sat_sign in [6, 9, 10] and sat_house in [1, 4, 7, 10]:
+            yogas.append("Sasa Mahapurusha Yoga")
+    
+    # 3. RUCHAKA YOGA: Mars in own/exalted (Aries/Scorpio/Cap) + kendra
+    if "Mars" in planet_longs:
+        mars_long = planet_longs["Mars"]
+        mars_sign = planet_sign(mars_long)
+        mars_house = ws_house(mars_long)
+        if mars_sign in [0, 7, 9] and mars_house in [1, 4, 7, 10]:
+            yogas.append("Ruchaka Mahapurusha Yoga")
+    
+    # 4. MALAVYA YOGA: Venus in own/exalted (Taurus/Libra/Pisces) + kendra
+    if "Venus" in planet_longs:
+        ven_long = planet_longs["Venus"]
+        ven_sign = planet_sign(ven_long)
+        ven_house = ws_house(ven_long)
+        if ven_sign in [1, 6, 11] and ven_house in [1, 4, 7, 10]:
+            yogas.append("Malavya Mahapurusha Yoga")
+    
+    # 5. BHADRA YOGA: Mercury in own/exalted (Gemini/Virgo) + kendra
+    if "Mercury" in planet_longs:
+        merc_long = planet_longs["Mercury"]
+        merc_sign = planet_sign(merc_long)
+        merc_house = ws_house(merc_long)
+        if merc_sign in [2, 5] and merc_house in [1, 4, 7, 10]:
+            yogas.append("Bhadra Mahapurusha Yoga")
+    
+    # 6. GAJA KESARI YOGA: Jupiter in kendra FROM MOON (not lagna)
+    if "Jupiter" in planet_longs and "Moon" in planet_longs:
+        jup_long = planet_longs["Jupiter"]
+        moon_long = planet_longs["Moon"]
+        moon_sign_idx = planet_sign(moon_long)
+        jup_sign_idx = planet_sign(jup_long)
+        jup_from_moon = ((jup_sign_idx - moon_sign_idx + 12) % 12) + 1
+        if jup_from_moon in [1, 4, 7, 10]:
+            yogas.append("Gaja Kesari Yoga")
+    
+    # 7. BUDHA-ADITYA YOGA: Sun and Mercury in SAME SIGN
+    if "Sun" in planet_longs and "Mercury" in planet_longs:
+        sun_sign = planet_sign(planet_longs["Sun"])
+        merc_sign = planet_sign(planet_longs["Mercury"])
+        if sun_sign == merc_sign:
+            yogas.append("Budha-Aditya Yoga")
+    
+    # 8. YOGAKARAKA RAJA YOGA: Check if any planet rules both kendra + trikona
+    for pname in PLANET_LORDSHIPS:
+        ruled_signs = PLANET_LORDSHIPS[pname]
+        ruled_houses = set()
+        for sign_idx in ruled_signs:
+            house = ((sign_idx - lagna_sign_index + 12) % 12) + 1
+            ruled_houses.add(house)
+        
+        if (ruled_houses & KENDRA_HOUSES) and (ruled_houses & TRIKONA_HOUSES) and 1 not in ruled_houses:
+            yogas.append(f"Yogakaraka Raja Yoga ({pname})")
+    
+    return yogas
+
+
+# Legacy Cancer Lagna hardcoded values (for reference/validation)
 HORA_BASE_CANCER = {
     "Jupiter": 62,
     "Moon": 56,
@@ -960,9 +1144,16 @@ def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[]):
     return max(-20, min(35, dq))
 
 
-def compute_slot_score(hora_ruler, choghadiya, transit_lagna_house, dq, rahu_kaal_active):
+def compute_slot_score(hora_ruler, choghadiya, transit_lagna_house, dq, rahu_kaal_active, hora_base=None):
+    """
+    V3 Grandmaster scoring formula.
+    hora_base: dict from compute_hora_base_for_lagna() — user-specific, lagna-dependent
+    """
+    if hora_base is None:
+        hora_base = HORA_BASE_CANCER  # Fallback for legacy compatibility
+    
     normalized_choghadiya = "Chal" if choghadiya == "Char" else choghadiya
-    score = HORA_BASE_CANCER.get(hora_ruler, 44)
+    score = hora_base.get(hora_ruler, 44)
     score += CHOG_MOD.get(normalized_choghadiya, 0)
     score += HOUSE_MOD.get(transit_lagna_house, 0)
     score += dq
@@ -1236,6 +1427,9 @@ def generate_daily_grid(data: DailyGridInput):
             weekday=weekday,
             special_events=special_events,
         )
+        
+        # FIX 2B: Compute lagna-specific HORA_BASE (not hardcoded Cancer)
+        hora_base = compute_hora_base_for_lagna(natal_sign_idx)
 
         print(
             f"[DAY-LEVEL] date={date_obj} "
@@ -1282,6 +1476,7 @@ def generate_daily_grid(data: DailyGridInput):
                 transit_lagna_house=t_house,
                 dq=dq,
                 rahu_kaal_active=is_rk,
+                hora_base=hora_base,  # FIX 3: Pass user-specific hora_base
             )
 
             output_slots.append({
