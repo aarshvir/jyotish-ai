@@ -56,21 +56,21 @@ const REPORT_TYPES = [
     id: '7day' as const,
     plan_type: '7day' as const,
     title: '7-Day Forecast',
-    price: '$9.99',
+    price: '₹799',
     description: 'Hourly ratings + AI narrative for 7 days',
   },
   {
     id: 'monthly' as const,
     plan_type: 'monthly' as const,
     title: 'Monthly Oracle',
-    price: '$19.99',
+    price: '₹1,499',
     description: '30-day calendar + nativity analysis + PDF',
   },
   {
     id: 'annual' as const,
     plan_type: 'annual' as const,
     title: 'Annual Oracle',
-    price: '$49.99',
+    price: '₹3,999',
     description: 'Full year forecast + monthly breakdowns + PDF',
     bestValue: true,
   },
@@ -437,7 +437,7 @@ function Step3({
         {promoDiscount > 0 && (
           <p className="font-mono text-xs text-emerald mt-2 tracking-wide">
             ✓ {promoDiscount}% discount
-            {fullPromo ? ' — no payment required' : ' applies at Stripe checkout'}
+            {fullPromo ? ' — no payment required' : ' applies at checkout'}
           </p>
         )}
       </div>
@@ -515,6 +515,21 @@ function OnboardPageInner() {
   const [promoCode, setPromoCode]           = useState('');
 
   const promoDiscount = getPromoDiscount(promoCode);
+
+  /** Lazily injects the Razorpay checkout.js script into the page. */
+  function loadRazorpayScript(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).Razorpay) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Razorpay'));
+      document.body.appendChild(script);
+    });
+  }
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -755,19 +770,87 @@ function OnboardPageInner() {
       paramsObj.bypass = bypassToken;
     }
 
-    const params = new URLSearchParams(paramsObj);
+    const reportId = crypto.randomUUID();
+    const isPaidPlan = effectiveType !== 'free';
+    const needsPayment = isPaidPlan && !hasBypass && promoDiscount < 100;
 
-    const finalUrl = `/report/${crypto.randomUUID()}?${params.toString()}`;
+    const params = new URLSearchParams(paramsObj);
+    if (needsPayment) params.set('payment_status', 'paid');
+    const finalUrl = `/report/${reportId}?${params.toString()}`;
+
     console.log('📍 Redirecting to:', finalUrl);
-    console.log('📊 URL params:', {
-      name: form.name,
-      date: form.birthDate,
-      time: form.birthTime,
-      city: form.birthCity,
-      lat: form.birthLat,
-      lng: form.birthLng,
-      type: form.reportType,
-    });
+
+    if (needsPayment) {
+      try {
+        await loadRazorpayScript();
+
+        const orderRes = await fetch('/api/razorpay/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ planType: effectiveType, reportId }),
+        });
+        const order = await orderRes.json() as {
+          orderId: string; amount: number; currency: string; keyId: string; testMode?: boolean;
+        };
+
+        if (order.testMode || order.orderId?.startsWith('test_')) {
+          // Test mode — skip payment
+          router.push(finalUrl);
+          return;
+        }
+
+        setIsLoading(false); // Show Razorpay popup instead of loading overlay
+
+        const RazorpayConstructor = (window as unknown as { Razorpay: new (opts: unknown) => { open: () => void } }).Razorpay;
+        const rzp = new RazorpayConstructor({
+          key: order.keyId,
+          amount: order.amount,
+          currency: order.currency,
+          order_id: order.orderId,
+          name: 'VedicHour',
+          description: `${effectiveType === '7day' ? '7-Day Forecast' : effectiveType === 'monthly' ? 'Monthly Oracle' : 'Annual Oracle'}`,
+          image: '/icons/icon-192.png',
+          handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
+            try {
+              await fetch('/api/razorpay/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  orderId: response.razorpay_order_id,
+                  paymentId: response.razorpay_payment_id,
+                  signature: response.razorpay_signature,
+                  planType: effectiveType,
+                  reportId,
+                  amount: order.amount,
+                  currency: order.currency,
+                }),
+              });
+            } catch (e) {
+              console.error('Payment verification failed (non-blocking):', e);
+            }
+            router.push(finalUrl);
+          },
+          modal: {
+            ondismiss: () => {
+              setIsLoading(false);
+            },
+          },
+          prefill: {
+            name: form.name,
+            email: form.email,
+          },
+          theme: { color: '#d4af37' },
+        });
+        rzp.open();
+        return;
+      } catch (err) {
+        console.error('Razorpay checkout failed:', err);
+        setIsLoading(false);
+        return;
+      }
+    }
 
     router.push(finalUrl);
   }

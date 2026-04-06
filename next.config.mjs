@@ -18,6 +18,7 @@ const nextConfig = {
     '@react-pdf/renderer',
     'openai',
     '@google/generative-ai',
+    'razorpay',
   ],
 
   // Security & caching headers
@@ -35,12 +36,12 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://maps.googleapis.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://maps.googleapis.com https://checkout.razorpay.com",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.stripe.com https://maps.googleapis.com https://api.opencagedata.com",
-              "frame-src https://js.stripe.com https://hooks.stripe.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.stripe.com https://maps.googleapis.com https://api.opencagedata.com https://api.razorpay.com https://lumberjack.razorpay.com",
+              "frame-src https://js.stripe.com https://hooks.stripe.com https://api.razorpay.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 interface MonthData {
@@ -24,8 +25,9 @@ interface MonthlyAnalysisProps {
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
+  const monthsData = useMemo(() => {
   const today = new Date();
-  const monthsData = Array.from({ length: 12 }, (_, i) => {
+  return Array.from({ length: 12 }, (_, i) => {
     const m = new Date(today.getFullYear(), today.getMonth() + i, 1);
     const label = `${MONTH_NAMES[m.getMonth()]} ${m.getFullYear()}`;
     const ex = (months ?? [])[i];
@@ -54,6 +56,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       weekly_scores: ex?.weekly_scores,
     };
   });
+  }, [months]);
   const getColor = (score: number) => {
     if (score >= 70) return 'bg-emerald';
     if (score >= 50) return 'bg-amber';

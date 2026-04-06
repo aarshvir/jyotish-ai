@@ -16,7 +16,7 @@ export default function PricingPage() {
     },
     {
       name: '7-Day Forecast',
-      price: '$9.99',
+      price: '₹799',
       priceNote: 'One-time payment',
       description: 'Hour-by-hour cosmic timing for a week',
       features: ['Full natal chart analysis','7-day hour-by-hour forecast','18 hourly slots per day with scores','Choghadiya & hora timing','Daily STRATEGY section','Auspicious window identification','Rahu Kaal warnings','PDF download'],
@@ -27,7 +27,7 @@ export default function PricingPage() {
     },
     {
       name: 'Monthly Oracle',
-      price: '$19.99',
+      price: '₹1,499',
       priceNote: 'One-time payment',
       description: '30 days of precision cosmic guidance',
       features: ['Everything in 7-Day Forecast','30-day complete forecast','Monthly theme analysis','Weekly synthesis','Career, wealth, health windows','Best muhurta dates highlighted','Nativity deep analysis','High-resolution PDF report'],
@@ -38,7 +38,7 @@ export default function PricingPage() {
     },
     {
       name: 'Annual Oracle',
-      price: '$49.99',
+      price: '₹3,999',
       priceNote: 'One-time payment',
       description: 'Your complete cosmic year ahead',
       features: ['Everything in Monthly Oracle','Full 12-month forecast','Month-by-month breakdown','Annual theme & dasha analysis','Peak opportunity windows','Yearly muhurta calendar','Priority generation','Premium PDF + digital access'],

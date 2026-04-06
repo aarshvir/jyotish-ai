@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 const COMMENTARY_FALLBACK = 'Use this period according to the hora lord\'s functional role for your lagna.';
 
@@ -61,7 +61,10 @@ function getChoghadiyaBg(choghadiya: string): string {
 export function HourlyTable({ hours }: HourlyTableProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
-  const sortedHours = [...(hours ?? [])].sort((a, b) => (a.slot_index ?? 0) - (b.slot_index ?? 0));
+  const sortedHours = useMemo(
+    () => [...(hours ?? [])].sort((a, b) => (a.slot_index ?? 0) - (b.slot_index ?? 0)),
+    [hours],
+  );
   const hasDataError = sortedHours.length !== 18;
   const displayCommentary = (c: string | undefined) => (c?.trim() || COMMENTARY_FALLBACK);
 

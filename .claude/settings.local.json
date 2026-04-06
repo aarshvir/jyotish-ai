@@ -37,7 +37,10 @@
       "Bash(powershell -Command \"Start-Process powershell -ArgumentList ''-NoExit -Command while\\($true\\){[System.Windows.Forms.SendKeys]::SendWait\\(\"\"{F15}\"\"\\); Start-Sleep -Seconds 60}'' -WindowStyle Hidden\")",
       "Bash(grep -n \"setCurrentStepIndex\" src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
       "Bash(grep -n \"getUser\\\\|supabase\\\\.auth\" src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
-      "Bash(grep -n \"generateReport\\\\|createReportRecord\\\\|saveReportToDatabase\" src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)"
+      "Bash(grep -n \"generateReport\\\\|createReportRecord\\\\|saveReportToDatabase\" src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
+      "Bash(npm install:*)",
+      "Bash(npm list:*)",
+      "Bash(grep -n \"9.99\\\\|19.99\\\\|49.99\\\\|$\" src/app/\\\\\\(marketing\\\\\\)/pricing/page.tsx)"
     ]
   }
 }
