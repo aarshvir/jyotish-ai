@@ -33,7 +33,6 @@ export async function GET(
   };
 
   const base = request.nextUrl.origin;
-  // Forward Cookie + bypass token so internal API routes stay authenticated
   const authHeaders: Record<string, string> = {};
   const cookie = request.headers.get('cookie');
   if (cookie) authHeaders['cookie'] = cookie;
@@ -42,10 +41,24 @@ export async function GET(
 
   const encoder = new TextEncoder();
   let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       streamController = controller;
+
+      // Heartbeat every 15s — keeps the SSE connection alive through long LLM calls
+      heartbeatTimer = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(': ping\n\n'));
+        } catch {
+          if (heartbeatTimer) clearInterval(heartbeatTimer);
+        }
+      }, 15_000);
+    },
+    cancel() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      streamController = null;
     },
   });
 
@@ -58,10 +71,15 @@ export async function GET(
     }
   }
 
-  // Send ping to establish connection
+  function closeStream() {
+    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    try { streamController?.close(); } catch { /* already closed */ }
+    streamController = null;
+  }
+
+  // Send initial ping to confirm connection
   send({ type: 'ping' });
 
-  // Run pipeline in background — do NOT await here so the Response returns immediately
   void generateReportPipeline(
     reportId,
     auth.user.id,
@@ -70,8 +88,7 @@ export async function GET(
     (event) => {
       send(event);
       if (event.type === 'report_completed' || event.type === 'error') {
-        try { streamController?.close(); } catch { /* already closed */ }
-        streamController = null;
+        closeStream();
       }
     },
     base,
