@@ -8,7 +8,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 /**
  * POST /api/razorpay/verify-payment
  * Body: { orderId, paymentId, signature, planType, reportId, amount, currency }
- * Verifies Razorpay signature and records payment in DB.
+ * Verifies Razorpay signature, logs to razorpay_payments, marks report as paid.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -34,9 +34,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid payment signature' }, { status: 400 });
   }
 
+  const db = createServiceClient();
+
+  // Log payment
   try {
-    const db = createServiceClient();
-    await db.from('payments').insert({
+    await db.from('razorpay_payments').insert({
       user_id: auth.user.id,
       razorpay_order_id: orderId,
       razorpay_payment_id: paymentId,
@@ -47,8 +49,20 @@ export async function POST(request: NextRequest) {
       status: 'completed',
     });
   } catch (err) {
-    // Log but don't fail — payment is verified, DB write is best-effort
-    console.error('[razorpay/verify-payment] DB insert failed:', err);
+    console.error('[razorpay/verify-payment] payment log failed:', err);
+  }
+
+  // Mark report as paid
+  if (reportId) {
+    try {
+      await db
+        .from('reports')
+        .update({ payment_status: 'paid', payment_provider: 'razorpay' })
+        .eq('id', reportId)
+        .eq('user_id', auth.user.id);
+    } catch (err) {
+      console.error('[razorpay/verify-payment] report update failed:', err);
+    }
   }
 
   return NextResponse.json({ ok: true, verified: true });
