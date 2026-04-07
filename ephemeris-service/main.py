@@ -339,8 +339,9 @@ def natal_chart(data: NatalChartInput):
         # Convert local birth time to UTC using birth coordinates, then get Julian Day
         birth_utc = local_to_utc(data.birth_date, data.birth_time, data.birth_lat, data.birth_lng)
         jd = get_julian_day(birth_utc)
-        # Keep local datetime for dasha start reference (calendar date of birth)
-        birth_datetime = datetime.strptime(f"{data.birth_date} {data.birth_time}", "%Y-%m-%d %H:%M:%S")
+        # Dasha calculation uses local birth DATE at midnight (not actual birth time or UTC)
+        # This ensures Vimshottari dasha periods align with the calendar date of birth
+        birth_datetime = datetime.strptime(data.birth_date, "%Y-%m-%d")
         
         # Calculate house cusps
         house_cusps = calculate_houses(jd, data.birth_lat, data.birth_lng)
