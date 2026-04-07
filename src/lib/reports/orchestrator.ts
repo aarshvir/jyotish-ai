@@ -508,7 +508,7 @@ export async function generateReportPipeline(
     };
 
     // ── STEP 4+5+6+7: Commentary (parallel) ──────────────────────────────
-    onStep({ type: 'step_started', step: 3, message: 'Writing commentary, hourly analysis & monthly forecast...', detail: '4 tasks running in parallel' });
+    onStep({ type: 'step_started', step: 3, message: 'Writing daily commentary...', detail: 'Analyzing each day with your birth chart' });
 
     let allMonthsData: MonthSummary[] = [];
 
@@ -593,6 +593,7 @@ export async function generateReportPipeline(
 
       // Step 6: Hourly commentary (batched, concurrency=2)
       (async () => {
+        onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: 'Analysing 18 slots per day in parallel' });
         try {
           const hourlyResults = await batchedPromiseAll(
             forecastDays.map((day, i) => async () => {
@@ -663,6 +664,7 @@ export async function generateReportPipeline(
 
       // Step 7: Monthly
       (async () => {
+        onStep({ type: 'step_started', step: 5, message: 'Building monthly forecast...', detail: 'Generating 12-month oracle' });
         try {
           const startDate = new Date(forecastDays[0].date);
           const allMonths = Array.from({ length: 12 }, (_, i) => {
