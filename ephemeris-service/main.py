@@ -837,80 +837,143 @@ HOUSE_MOD = {
 }
 
 YOGA_MOD = {
-    "Vishkambha": 0, "Priti": 3, "Ayushman": 4, "Saubhagya": 6,
-    "Shobhana": 3, "Atiganda": -5, "Sukarma": 3, "Dhriti": 3,
-    "Shoola": -5, "Ganda": -5, "Vriddhi": 6, "Dhruva": 6,
-    "Vyaghata": -8, "Harshana": 4, "Vajra": 1, "Siddhi": 7,
-    "Vyatipata": -8, "Variyan": 1, "Parigha": -5, "Shiva": 4,
-    "Siddha": 6, "Sadhya": 3, "Shubha": 3, "Shukla": 3,
-    "Brahma": 7, "Indra": 7, "Vaidhriti": -5,
+    "Vishkambha": -4,   # Obstruction — mildly negative (was 0)
+    "Priti": 4,         # Love — positive
+    "Ayushman": 6,      # Longevity — strong positive (was 4)
+    "Saubhagya": 10,    # Good fortune — very strong (was 6)
+    "Shobhana": 5,      # Radiance — positive (was 3)
+    "Atiganda": -18,    # Great obstacle — devastatingly negative (was -5)
+    "Sukarma": 3,       # Good deeds — mild positive
+    "Dhriti": 5,        # Steadfastness — solid positive (was 3)
+    "Shoola": -8,       # Spear/piercing — strongly negative (was -5)
+    "Ganda": -14,       # Knot/danger — very negative (was -5)
+    "Vriddhi": 10,      # Growth — very strong positive (was 6)
+    "Dhruva": 8,        # Fixed/permanent — strong positive (was 6)
+    "Vyaghata": -16,    # Destruction — devastatingly negative (was -8)
+    "Harshana": 8,      # Joy — strong positive (was 4)
+    "Vajra": 2,         # Thunderbolt — mildly positive
+    "Siddhi": 10,       # Perfection — very strong (was 7)
+    "Vyatipata": -14,   # Calamity — very negative (was -8)
+    "Variyan": 2,       # Comfort — mild positive
+    "Parigha": -8,      # Iron gate — negative (was -5)
+    "Shiva": 6,         # Auspicious — positive (was 4)
+    "Siddha": 8,        # Accomplished — strong positive (was 6)
+    "Sadhya": 4,        # Achievable — positive (was 3)
+    "Shubha": 4,        # Auspicious — positive (was 3)
+    "Shukla": 4,        # Bright — positive (was 3)
+    "Brahma": 12,       # Supreme creative intelligence (was 7)
+    "Indra": 12,        # King of gods (was 7)
+    "Vaidhriti": -10,   # Great misfortune (was -5)
 }
 
 NAKSHATRA_MOD = {
-    "Ashwini": 3, "Bharani": -2, "Krittika": 2, "Rohini": 5,
-    "Mrigashira": 3, "Ardra": -3, "Punarvasu": 3, "Pushya": 10,
-    "Ashlesha": -2, "Magha": 2, "Purva Phalguni": 3, "Uttara Phalguni": 3,
-    "Hasta": 5, "Chitra": 2, "Swati": 0, "Vishakha": 2, "Anuradha": 3,
-    "Jyeshtha": -1, "Moola": -3, "Purva Ashadha": 2, "Uttara Ashadha": 4,
-    "Shravana": 4, "Dhanishta": 3, "Shatabhisha": 0, "Purva Bhadrapada": -1,
-    "Uttara Bhadrapada": 3, "Revati": 3,
+    "Ashwini": 4,              # Speed/healing — positive (was 3)
+    "Bharani": -4,             # Death/restraint — negative (was -2)
+    "Krittika": 3,             # Purifying fire (was 2)
+    "Rohini": 8,               # Moon's FAVORITE — peak lunar comfort (was 5)
+    "Mrigashira": 3,           # Searching/quest
+    "Ardra": -8,               # Storm/tears — strongly negative (was -3)
+    "Punarvasu": 4,            # Return of light (was 3)
+    "Pushya": 15,              # SUPREME nakshatra — universally auspicious (was 10)
+    "Ashlesha": -6,            # Serpent/poison — dangerous (was -2)
+    "Magha": 4,                # Throne/ancestors — regal (was 2)
+    "Purva Phalguni": 4,       # Pleasure/creativity (was 3)
+    "Uttara Phalguni": 3,      # Contracts/patronage
+    "Hasta": 6,                # Skill/craftsmanship — Moon-ruled (was 5)
+    "Chitra": 3,               # Brilliant jewel (was 2)
+    "Swati": 0,                # Independence — neutral
+    "Vishakha": 2,             # Determination
+    "Anuradha": 4,             # Devotion/friendship (was 3)
+    "Jyeshtha": -2,            # Chief but aggressive (was -1)
+    "Moola": -6,               # Root destruction — ganda moola (was -3)
+    "Purva Ashadha": 2,        # Invincible
+    "Uttara Ashadha": 5,       # Victory (was 4)
+    "Shravana": 5,             # Listening/learning (was 4)
+    "Dhanishta": 3,            # Wealth/Mars-ruled
+    "Shatabhisha": -2,         # Hundred physicians — Rahu-ruled, edgy (was 0)
+    "Purva Bhadrapada": -3,    # Burning/intense (was -1)
+    "Uttara Bhadrapada": 4,    # Depth/Saturn-ruled wisdom (was 3)
+    "Revati": 3,               # Nourishment/wealth
 }
 
 TITHI_MOD = {
-    "Shukla Pratipada": 2, "Shukla Dwitiya": 2, "Shukla Tritiya": 3, "Shukla Chaturthi": 1,
-    "Shukla Panchami": 2, "Shukla Shashthi": 2, "Shukla Saptami": 2, "Shukla Ashtami": 1,
-    "Shukla Navami": 3, "Shukla Dashami": 2, "Shukla Ekadashi": 4, "Shukla Dwadashi": 3,
-    "Shukla Trayodashi": 2, "Shukla Chaturdashi": 1, "Purnima": 5,
-    "Krishna Pratipada": 1, "Krishna Dwitiya": 1, "Krishna Tritiya": 1, "Krishna Chaturthi": 0,
-    "Krishna Panchami": 0, "Krishna Shashthi": 1, "Krishna Saptami": 0, "Krishna Ashtami": -1,
-    "Krishna Navami": -1, "Krishna Dashami": 0, "Krishna Ekadashi": 3, "Krishna Dwadashi": 2,
-    "Krishna Trayodashi": -1, "Krishna Chaturdashi": -2, "Amavasya": -10,
+    "Shukla Pratipada": 2,
+    "Shukla Dwitiya": 3,
+    "Shukla Tritiya": 5,       # Tritiya is strong — Akshaya Tritiya base (was 3)
+    "Shukla Chaturthi": 1,
+    "Shukla Panchami": 3,      # Panchami associated with Saraswati (was 2)
+    "Shukla Shashthi": 2,
+    "Shukla Saptami": 3,       # Saptami sacred — Ganga Saptami etc (was 2)
+    "Shukla Ashtami": 0,       # Ashtami is mixed — Durga but also Kaal Bhairav (was 1)
+    "Shukla Navami": 4,        # Navami very auspicious — Ram Navami etc (was 3)
+    "Shukla Dashami": 3,       # Vijaya Dashami energy (was 2)
+    "Shukla Ekadashi": 6,      # Ekadashi supreme fasting day (was 4)
+    "Shukla Dwadashi": 3,
+    "Shukla Trayodashi": 3,    # Pradosh Vrat day (was 2)
+    "Shukla Chaturdashi": 2,   # Narasimha Jayanti etc (was 1)
+    "Purnima": 5,              # Full Moon — strong but not supreme
+    "Krishna Pratipada": 0,    # Waning begins — neutral (was 1)
+    "Krishna Dwitiya": 0,
+    "Krishna Tritiya": 0,
+    "Krishna Chaturthi": -1,
+    "Krishna Panchami": -1,
+    "Krishna Shashthi": 0,
+    "Krishna Saptami": -1,
+    "Krishna Ashtami": -3,     # Half-moon waning — emotionally turbulent (was -1)
+    "Krishna Navami": -3,      # Approaching darkness (was -1)
+    "Krishna Dashami": -1,
+    "Krishna Ekadashi": 5,     # Krishna Ekadashi still sacred (was 3)
+    "Krishna Dwadashi": 1,
+    "Krishna Trayodashi": -2,  # Pradosh partially saves (was -1)
+    "Krishna Chaturdashi": -5, # Pre-Amavasya darkness (was -2)
+    "Amavasya": -25,           # CRITICAL for Cancer Lagna — Moon lord at ZERO (was -10)
 }
 
 MOON_HOUSE_MOD = {
-    1: 4,
-    2: 2,
-    3: -1,
-    4: 2,
-    5: 3,
-    6: -3,
-    7: 1,
-    8: -5,
-    9: 4,
-    10: 5,
-    11: 1,
-    12: -4,
+    1: 6,       # Moon in own sign house — personal power peak (was 4)
+    2: 3,       # Wealth/family — positive (was 2)
+    3: -2,      # Effort/struggle — slightly negative (was -1)
+    4: 3,       # Comfort/home — positive (was 2)
+    5: 5,       # Creativity/romance — strong positive (was 3)
+    6: -6,      # Competition/enemies/disease — genuinely negative (was -3)
+    7: 1,       # Partnerships — neutral-positive
+    8: -12,     # Danger/transformation — DEEPLY negative (was -5)
+    9: 6,       # Fortune/dharma — strong positive (was 4)
+    10: 8,      # Career/authority — very strong (was 5)
+    11: 5,      # Gains/networks — strong positive (was 1)
+    12: -8,     # Losses/isolation — strongly negative (was -4)
 }
 
 WEEKDAY_MOD = {
-    "Monday": 2,
-    "Thursday": 3,
-    "Friday": -1,
-    "Wednesday": 1,
-    "Tuesday": 2,
-    "Sunday": 1,
-    "Saturday": -1,
+    "Monday": 4,      # Moon-day for Cancer Lagna lord (was 2)
+    "Thursday": 5,    # Jupiter-day for chart's greatest benefic (was 3)
+    "Friday": -3,     # Venus Badhaka day for Cancer Lagna (was -1)
+    "Wednesday": 0,   # Mercury neutral during dasha (was 1)
+    "Tuesday": 3,     # Mars Yogakaraka day (was 2)
+    "Sunday": 2,      # Sun 2nd lord — mild positive (was 1)
+    "Saturday": -4,   # Saturn Maraka day — genuinely dangerous (was -1)
 }
 
 SPECIAL_EVENT_MOD = {
-    "jupiter_direct": 8,
-    "jupiter_enters_cancer": 12,
-    "jupiter_retrograde": -4,
-    "mercury_direct": 5,
-    "mercury_retrograde": -4,
-    "ekadashi": 4,
-    "purnima": 3,
-    "navratri": 3,
-    "ram_navami": 5,
-    "ugadi": 8,
-    "akshaya_tritiya": 10,
-    "diwali": 6,
-    "dhan_teras": 5,
-    "pushya_shukla_bonus": 5,
-    "eclipse": -20,
-    "solar_eclipse": -15,
-    "lunar_eclipse": -12,
-    "retrograde_station": -5,
+    "jupiter_direct": 10,           # Jupiter stations are powerful (was 8)
+    "jupiter_enters_cancer": 18,    # THE transit event of the decade for Cancer (was 12)
+    "jupiter_retrograde": -6,       # Benefic reversal (was -4)
+    "mercury_direct": 6,            # Antardasha lord clarity returns (was 5)
+    "mercury_retrograde": -8,       # Antardasha lord reversed — significant (was -4)
+    "ekadashi": 5,                  # Sacred fasting day (was 4)
+    "purnima": 4,                   # Full Moon — moderate positive (was 3)
+    "navratri": 5,                  # Divine feminine energy (was 3)
+    "ram_navami": 8,                # Major festival (was 5)
+    "ugadi": 10,                    # Vedic New Year (was 8)
+    "akshaya_tritiya": 18,          # SUPREME day of year — imperishable (was 10)
+    "diwali": 10,                   # Festival of lights (was 6)
+    "dhan_teras": 8,                # Wealth worship day (was 5)
+    "pushya_shukla_bonus": 8,       # Supreme nakshatra (was 5)
+    "eclipse": -25,                 # Eclipses are devastating (was -20)
+    "solar_eclipse": -20,           # Solar eclipse — authority under shadow (was -15)
+    "lunar_eclipse": -18,           # Lunar eclipse — emotions/Moon afflicted (was -12)
+    "retrograde_station": -8,       # Station = maximum intensity (was -5)
+    "baisakhi": 8,                  # Solar new year + Sun enters exaltation
 }
 
 # Verified DrikPanchang-aligned values for Dubai (25.2°N, 55.3°E).
@@ -956,7 +1019,8 @@ SPECIAL_EVENTS_CALENDAR = {
     "ram_navami": ["2026-03-26"],
     "navratri_chaitra_start": "2026-03-19",
     "navratri_chaitra_end": "2026-03-28",
-    "akshaya_tritiya": ["2026-04-29"],
+    "akshaya_tritiya": ["2026-04-19"],
+    "baisakhi": ["2026-04-14"],
     "buddha_purnima": ["2026-05-12"],
     "rath_yatra": ["2026-06-27"],
     "navaratri_sharad_start": "2026-10-02",
@@ -1003,10 +1067,19 @@ def normalize_tithi(tithi_raw: str) -> str:
     if tithi_raw in TITHI_MOD:
         return tithi_raw
 
-    if "Amavasya" in tithi_raw:
-        return "Amavasya"
+    # When two tithis straddle a day (e.g. "Purnima/Amavasya" or "Shukla Tritiya/Chaturthi"),
+    # take the FIRST (primary) tithi — the one active at sunrise.
+    if "/" in tithi_raw:
+        first = tithi_raw.split("/")[0].strip()
+        result = normalize_tithi(first)
+        if result:
+            return result
+
+    # Single-tithi compound via "→" or "-" separators
     if "Purnima" in tithi_raw:
         return "Purnima"
+    if "Amavasya" in tithi_raw:
+        return "Amavasya"
 
     base = tithi_raw.split("→")[0].strip().replace("-", " ")
     if base in TITHI_MOD:
@@ -1052,6 +1125,9 @@ def get_special_events_for_date(date_str: str) -> List[str]:
 
     if date_str in SPECIAL_EVENTS_CALENDAR.get("akshaya_tritiya", []):
         events.append("akshaya_tritiya")
+
+    if date_str in SPECIAL_EVENTS_CALENDAR.get("baisakhi", []):
+        events.append("baisakhi")
 
     if date_str in SPECIAL_EVENTS_CALENDAR.get("diwali", []):
         events.append("diwali")
@@ -1113,6 +1189,7 @@ def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[]):
         "akshaya_tritiya",
         "diwali",
         "jupiter_enters_cancer",
+        "baisakhi",
     }
     TIER2_EVENTS = {
         "jupiter_direct",
@@ -1131,17 +1208,17 @@ def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[]):
         dq += pushya_bonus
 
     if has_tier1:
-        stacking = 12
+        stacking = 15            # Tier1 events deserve massive boost (was 12)
         if yoga_val < -3:
-            stacking = 6
+            stacking = 8         # Even bad-yoga Tier1 days get a floor (was 6)
         dq += stacking
-    elif has_tier2 and yoga_val >= 4:
-        stacking = 5
-        if yoga_val >= 4:
-            stacking = 8
+    elif has_tier2 and yoga_val >= 0:
+        stacking = 8             # Tier2 with neutral+ yoga (was conditional 5/8)
+        if yoga_val >= 6:
+            stacking = 12        # Tier2 + great yoga = strong day (was 8)
         dq += stacking
 
-    return max(-20, min(35, dq))
+    return max(-40, min(45, dq))
 
 
 def compute_slot_score(hora_ruler, choghadiya, transit_lagna_house, dq, rahu_kaal_active, hora_base=None):
