@@ -165,7 +165,7 @@ Start with { and end with }. No markdown.`;
       const dp = (synthesis.domain_priorities as Record<string, string> | undefined) ?? {};
       const careerWc = (dp.career ?? '').split(/\s+/).filter(Boolean).length;
       if (careerWc < 40) {
-        dp.career = `Career: Use Mars hora for H10 deliverables and schedule the main submission on ${bestDate}. Mars supports action while Mercury strengthens wording and coordination through H3 and H12, so emails, proposals, and documentation land with clarity. Avoid Rahu Kaal hours because Rahu in H6 increases urgency; keep decisions measurable and timeboxed for maximum H10 output.`;
+        dp.career = `Career: Schedule the main submission on ${bestDate} during benefic horas. Mars supports decisive action while Mercury strengthens communication and coordination, so proposals and documentation land with clarity. Avoid Rahu Kaal windows; keep decisions measurable and timeboxed.`;
         synthesis.domain_priorities = dp;
       }
     }
@@ -203,12 +203,12 @@ ${mahadasha} as the mahadasha lord activates key house themes for ${lagnaSign} l
         ],
         caution_dates: [{ date: body.synthesis_context?.worst_date ?? '2026-03-13', score: 34, nakshatra: '—', reason: 'Avoid new commitments and speculative actions; use for completion and routine only.' }],
         domain_priorities: {
-          career: `Career: Use Mars hora for H10 deliverables and schedule the main submission on ${bestDate}. Mars supports action while Mercury strengthens wording and coordination through H3 and H12, so emails, proposals, and documentation land with clarity. Avoid Rahu Kaal-heavy hours because Rahu in H6 increases urgency and Saturn influence in H8 delays approvals; keep decisions measurable and timeboxed.`,
-          money: '2nd and 11th house transits favour gains on high-score days; avoid major expenditure on worst-date days.',
-          health: '6th house activations; prioritise rest on low-score days and hydrate. One wellness directive: short walks during favourable horas.',
-          relationships: '7th house and Venus as badhaka; gentle gestures on favourable days, avoid confrontations on worst days.',
+          career: `Career: Use benefic horas and schedule key deliverables on ${bestDate}. Favour high-score days for proposals, coordination, and approvals. Avoid Rahu Kaal windows and low-score days for new initiations; keep decisions measurable and timeboxed.`,
+          money: 'High-score days favour gains; avoid major expenditure or new financial commitments on worst-date days. Use daily scores and Rahu Kaal markers as primary filters.',
+          health: 'Rest and recovery are most effective on low-score days. Prioritise hydration and short walks during favourable horas. Avoid physical strain during Rahu Kaal.',
+          relationships: 'Gentle gestures and clear communication are most effective on high-score days. Avoid confrontations or important conversations on low-score days or during Rahu Kaal.',
         },
-        closing_paragraph: 'Jupiter in 12th with Ketu supports moksha axis. One mantra or remedial practice during Rahu-Mercury period. Rely on score tables until full commentary is available.',
+        closing_paragraph: `${mahadasha}-${antardasha} dasha period: rely on daily scores and hourly tables as primary guidance until full commentary is available. Best day: ${bestDate}. Worst day: ${worstDate}.`,
       },
     }, { status: 206 });
   }

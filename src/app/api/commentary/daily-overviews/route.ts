@@ -69,36 +69,32 @@ function buildFallbackDay(d: DayInputShape, lagnaSign: string): { date: string; 
   };
   const rahuWindow = `${fmtTime(rahuStart)}-${fmtTime(rahuEnd)}`.replace(/-$/, '-');
 
-  const yogaMeaning10 = `Yoga ${yoga} disciplines action through house logic and returns stable results.`;
+  // Deterministic fallback — no hardcoded house numbers or dasha lord names.
+  const headline = `${nakshatra.toUpperCase()} NAKSHATRA ${yoga.toUpperCase()} YOGA - ${dayRuler.toUpperCase()} DAY FOR ${lagnaSign.toUpperCase()} LAGNA.`;
 
-  // Deterministic fallback must satisfy quality checks even when Anthropic fails.
-  // Agent D's HTML heuristic counts uppercase "sentences" split by '.'.
-  // So we must terminate the all-caps headline with a period.
-  const headline = `EXALTED ${nakshatra.toUpperCase()} YOGA ${yoga.toUpperCase()} - DECISION GATE FOR ${lagnaSign.toUpperCase()} LAGNA.`;
-
-  // Build a ~280-320 word overview by using fixed, non-generic directives.
   const day_overview =
     `${headline}\n` +
     `For ${lagnaSign} lagna, the ${nakshatra} nakshatra activates decision gates through ${lord} influence, turning planning into concrete movement. ` +
-    `Mercury channeling supports clear wording in H3, so convert thoughts into a written plan and then execute the plan step-by-step without delay. ` +
-    `The yoga ${yoga} keeps the mind focused: ${yogaMeaning10} ` +
-    `Because moon-linked timing connects today’s flow to H11 outcomes, prioritize measurable deliverables that improve networking, gains, and visibility. ` +
+    `The yoga ${yoga} disciplines focused action and returns stable, measurable results. ` +
+    `${lord} channeling supports clarity in communication and execution; convert thoughts into a written plan and execute step-by-step without delay. ` +
+    `Because Moon-linked timing connects today's flow to gains and visibility, prioritize deliverables that improve networks and outcomes for ${lagnaSign} lagna. ` +
     `If any peak window in the hourly table is marked by Rahu Kaal, treat that segment as completion-only and close pending actions inside existing boundaries. ` +
-    `Saturn pressure on H6 demands discipline in service, documentation, and health routines, so set a specific maintenance task and finish it. ` +
-    `Jupiter influence on H12 steadies expenditure logic and prevents escalation, so audit every cost before the final commit. ` +
-    `Mars initiative in H10 supports one decisive push, so pick the single deliverable that unlocks the rest and act immediately. ` +
-    `Take communication tasks in H3 before midday, then shift to H6 repair and compliance after midday. ` +
-    (sunrise && sunset ? `Track the daylight arc from ${sunrise} to ${sunset} for steady pacing and consistent progress.` : `Use sunrise timing as the first anchor for consistent pacing and progress.`) +
-    `Well-managed intent also strengthens Rahu-Mercury coordination through house governance, so keep the message precise and the next step explicit. ` +
+    `${dayRuler} as day ruler demands discipline in service, documentation, and health routines; set a specific maintenance task and finish it before sunset. ` +
+    `Jupiter influence steadies expenditure logic and prevents escalation, so audit every cost before the final commit when ${nakshatra} governs the arc. ` +
+    `${lord} initiative supports one decisive push — pick the single deliverable that unlocks the rest and act immediately. ` +
+    (sunrise && sunset
+      ? `Track the daylight arc from ${sunrise} to ${sunset} for steady pacing and consistent progress. `
+      : `Use sunrise timing as the first anchor for consistent pacing and progress. `) +
+    `Well-managed intent strengthens ${lord} coordination through house governance; keep the message precise and the next step explicit. ` +
     `STRATEGY:\n` +
-    `Best hora: use the hora planet ${dayRuler} and the earliest strong display_label; send the single partnership message that moves H11 gains now.\n` +
+    `Best hora: use ${dayRuler} hora during the earliest high-scoring window in the hourly table; lead with the single action that moves the key priority now.\n` +
     `Strict avoid: do not sign agreements, do not start new financial commitments, and do not promise deadlines you cannot meet.\n` +
-    `Rahu Kaal: if the window ${rahuWindow} appears, complete existing work only and stop initiation until the window ends.\n` +
-    `Wellness: for ${lagnaSign} lagna, practice 9 minutes of breath-counting to stabilize attention and ground the lagna lord energy.`;
+    `Rahu Kaal: if the window ${rahuWindow} appears, complete existing work only and stop new initiations until the window ends.\n` +
+    `Wellness: for ${lagnaSign} lagna, practice 9 minutes of breath-counting or a short walk to stabilize attention and ground lagna lord energy.`;
 
   // Theme: must mention at least 2 planets or 1 planet and 1 house number.
   const day_theme =
-    `${dayRuler} emphasizes H11 gains while ${yoga} energizes ${nakshatra} from ${moonSign} orbit, shaping action and focus for ${lagnaSign} lagna.`;
+    `${dayRuler} activates ${nakshatra} nakshatra through ${yoga} yoga, shaping focus and momentum for ${lagnaSign} lagna in ${moonSign}.`;
 
   return { date, day_theme, day_overview };
 }
@@ -213,11 +209,11 @@ Days data:
 ${JSON.stringify(batchDays, null, 2)}
 
 MANDATORY RULES for day_overview (enforce all, no exceptions):
-1. First line: ALL-CAPS headline (minimum 6 words, ends with period). The headline MUST include the word "RAHU" since current dasha is Rahu-Mercury. Example: "RAHU MERCURY DASHA DEMANDS PRECISION IN H6 DOCUMENTATION."
+1. First line: ALL-CAPS headline (minimum 6 words, ends with period). The headline MUST name the current Mahadasha lord (${mahadasha}) or a key planet in transit. Example: "${mahadasha.toUpperCase()} ${antardasha.toUpperCase()} DASHA CALLS FOR PRECISE AND MEASURED ACTION TODAY."
 2. Total word count: 280–320 words. Count carefully.
 3. EVERY sentence must name at least one of: a planet (Sun/Moon/Mars/Mercury/Jupiter/Venus/Saturn/Rahu/Ketu), a house number (H1 through H12 or "1st house" etc.), or a nakshatra.
 4. Never use these words: generally, may, could, might, perhaps, various, often, sometimes.
-5. The word "Rahu" must appear at least 3 times in each day_overview — in the headline, in the body discussing H6 Rahu activation, and in Directive 3 for Rahu Kaal.
+5. The current Mahadasha lord (${mahadasha}) must appear at least once in each day_overview, either by planet name or as a dasha reference.
 6. After the opening paragraphs, write a STRATEGY: section with exactly 4 directives:
    - Directive 1 (Best timing): Name the BEST ACTION WINDOW exact time + hora planet + choghadiya from the anchor block above. Tie the action to a specific house number.
    - Directive 2 (Avoid): Name what NOT to do. Use direct language ("Do not", "Avoid", "Stop"). Name the afflicting planet and house.

@@ -79,7 +79,8 @@ export function HourlyChart({ hours }: HourlyChartProps) {
         style={{ height: `${MAX_BAR_HEIGHT + 4}px` }}
       >
         {sortedHours.map((hour, i) => {
-          const barH = Math.max(6, (hour.score / 100) * MAX_BAR_HEIGHT);
+          const safeScore = Number.isFinite(Number(hour.score)) ? Number(hour.score) : 50;
+          const barH = Math.max(6, (safeScore / 100) * MAX_BAR_HEIGHT);
           const isHovered = hoveredIndex === i;
 
           return (

@@ -351,14 +351,7 @@ export async function generateReportPipeline(
     // ── STEP 1: Ephemeris ─────────────────────────────────────────────────
     onStep({ type: 'step_started', step: 0, message: 'Reading the stars...', detail: 'Calculating planetary positions' });
 
-    let ephemerisData: NatalChartData = {
-      lagna: 'Cancer',
-      lagna_degree: 0,
-      planets: {},
-      moon_nakshatra: '',
-      dasha_sequence: [],
-      current_dasha: { mahadasha: '', antardasha: '', start_date: '', end_date: '' },
-    };
+    let ephemerisData: NatalChartData;
 
     try {
       const ephRes = await resilientFetch(`${base}/api/agents/ephemeris`, {
@@ -380,7 +373,10 @@ export async function generateReportPipeline(
       const ephResult = await ephRes.json();
       ephemerisData = ephResult.data ?? ephResult;
     } catch (err) {
-      console.error('[orchestrator][STEP-1] failed:', err instanceof Error ? err.message : String(err));
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[orchestrator][STEP-1] failed:', msg);
+      onStep({ type: 'error', message: `Birth chart calculation failed: ${msg}. Please try again.` });
+      return;
     }
 
     onStep({ type: 'step_completed', step: 0 });
@@ -578,6 +574,17 @@ export async function generateReportPipeline(
             const natTextData = await natTextRes.json();
             if (natTextData.lagna_analysis) nativityData.lagna_analysis = natTextData.lagna_analysis;
             if (natTextData.dasha_interpretation) nativityData.current_dasha_interpretation = natTextData.dasha_interpretation;
+          } else {
+            // Inject a deterministic fallback so lagna_analysis is never blank
+            const lagna = ephemerisData.lagna ?? 'Unknown';
+            const md = ephemerisData.current_dasha?.mahadasha ?? 'Unknown';
+            const ad = ephemerisData.current_dasha?.antardasha ?? 'Unknown';
+            if (!nativityData.lagna_analysis) {
+              nativityData.lagna_analysis = `${lagna} lagna shapes the native's fundamental disposition. The ${md}-${ad} period is currently active. Refer to the daily and hourly scores for timing guidance.`;
+            }
+            if (!nativityData.current_dasha_interpretation) {
+              nativityData.current_dasha_interpretation = `${md} Mahadasha with ${ad} Antardasha is active. Use high-score days and benefic horas for important actions.`;
+            }
           }
           onStep({ type: 'partial_report_updated', field: 'daily_overviews' });
         } catch (e) {

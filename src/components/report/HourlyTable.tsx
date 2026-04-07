@@ -124,7 +124,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
 
                 {/* Score — pushed right */}
                 <span className={`font-mono text-base font-bold ml-auto shrink-0 ${getScoreNumColor(hour.score, hour.is_rahu_kaal)}`}>
-                  {hour.score}
+                  {Number.isFinite(Number(hour.score)) ? hour.score : '—'}
                 </span>
 
                 {/* Expand chevron */}
