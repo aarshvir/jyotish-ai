@@ -1210,7 +1210,9 @@ def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[]):
     has_tier1 = bool(set(special_events) & TIER1_EVENTS)
     has_tier2 = bool(set(special_events) & TIER2_EVENTS)
 
-    if nakshatra == "Pushya":
+    # Pushya bonus only when the explicit calendar event fires (Pushya + Shukla tithi combo).
+    # The base NAKSHATRA_MOD already captures daily Pushya strength; this avoids double-counting.
+    if nakshatra == "Pushya" and "pushya_shukla_bonus" in special_events:
         pushya_bonus = 8
         if tithi_val >= 0:
             pushya_bonus += 5
@@ -1501,9 +1503,10 @@ def generate_daily_grid(data: DailyGridInput):
 
         normalized_tithi = normalize_tithi(tithi_str)
         special_events = get_special_events_for_date(date_str)
-        if "Ekadashi" in normalized_tithi:
+        # Guard against duplicates from get_special_events_for_date + tithi-based detection
+        if "Ekadashi" in normalized_tithi and "ekadashi" not in special_events:
             special_events.append("ekadashi")
-        if normalized_tithi == "Purnima":
+        if normalized_tithi == "Purnima" and "purnima" not in special_events:
             special_events.append("purnima")
         dq = compute_dq(
             yoga=yoga_str,
