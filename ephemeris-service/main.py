@@ -945,15 +945,6 @@ MOON_HOUSE_MOD = {
     12: -8,     # Losses/isolation — strongly negative (was -4)
 }
 
-WEEKDAY_MOD = {
-    "Monday": 4,      # Moon-day for Cancer Lagna lord (was 2)
-    "Thursday": 5,    # Jupiter-day for chart's greatest benefic (was 3)
-    "Friday": -3,     # Venus Badhaka day for Cancer Lagna (was -1)
-    "Wednesday": 0,   # Mercury neutral during dasha (was 1)
-    "Tuesday": 3,     # Mars Yogakaraka day (was 2)
-    "Sunday": 2,      # Sun 2nd lord — mild positive (was 1)
-    "Saturday": -4,   # Saturn Maraka day — genuinely dangerous (was -1)
-}
 
 SPECIAL_EVENT_MOD = {
     "jupiter_direct": 10,           # Jupiter stations are powerful (was 8)
@@ -1180,12 +1171,53 @@ def get_special_events_for_date(date_str: str) -> List[str]:
     return events
 
 
-def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[]):
+WEEKDAY_RULERS = {
+    "Sunday": "Sun",
+    "Monday": "Moon",
+    "Tuesday": "Mars",
+    "Wednesday": "Mercury",
+    "Thursday": "Jupiter",
+    "Friday": "Venus",
+    "Saturday": "Saturn",
+}
+
+def compute_weekday_mod(weekday: str, lagna_sign_index: int) -> int:
+    """
+    Derive weekday modifier from the day-ruler's functional role for this lagna.
+    Uses the same HORA_BASE logic: a planet with higher base score for this lagna
+    gets a larger weekday bonus, and dusthana lords get a penalty.
+    Returns a value in [-5, +6] range.
+    """
+    ruler = WEEKDAY_RULERS.get(weekday)
+    if ruler is None:
+        return 0
+    hora_base = compute_hora_base_for_lagna(lagna_sign_index)
+    base = hora_base.get(ruler, 44)
+    # Map hora_base onto [-5, +6]: midpoint is 44 (neutral)
+    # base >= 60 → +6, base >= 54 → +4, base >= 48 → +2
+    # base <= 32 → -5, base <= 38 → -3, base <= 44 → 0
+    if base >= 60:
+        return 6
+    elif base >= 54:
+        return 4
+    elif base >= 48:
+        return 2
+    elif base >= 44:
+        return 0
+    elif base >= 38:
+        return -2
+    elif base >= 32:
+        return -4
+    else:
+        return -5
+
+
+def compute_dq(yoga, nakshatra, tithi, moon_house, weekday, special_events=[], lagna_sign_index: int = 3):
     yoga_val = YOGA_MOD.get(yoga, 0)
     nak_val = NAKSHATRA_MOD.get(nakshatra, 0)
     tithi_val = TITHI_MOD.get(tithi, 0)
     moon_val = MOON_HOUSE_MOD.get(moon_house, 0)
-    day_val = WEEKDAY_MOD.get(weekday, 0)
+    day_val = compute_weekday_mod(weekday, lagna_sign_index)
 
     dq = yoga_val + nak_val + tithi_val + moon_val + day_val
 
@@ -1515,6 +1547,7 @@ def generate_daily_grid(data: DailyGridInput):
             moon_house=moon_house,
             weekday=weekday,
             special_events=special_events,
+            lagna_sign_index=natal_sign_idx,
         )
         
         # FIX 2B: Compute lagna-specific HORA_BASE (not hardcoded Cancer)
@@ -1526,7 +1559,7 @@ def generate_daily_grid(data: DailyGridInput):
             f"nakshatra={nakshatra_str!r} nak_mod={NAKSHATRA_MOD.get(nakshatra_str,0)} "
             f"tithi={normalized_tithi!r} tithi_mod={TITHI_MOD.get(normalized_tithi,0)} "
             f"moon_house={moon_house} moon_mod={MOON_HOUSE_MOD.get(moon_house,0)} "
-            f"weekday={weekday} weekday_mod={WEEKDAY_MOD.get(weekday,0)} "
+            f"weekday={weekday} weekday_mod={compute_weekday_mod(weekday, natal_sign_idx)} "
             f"events={special_events} dq={dq}"
         )
 
