@@ -229,63 +229,58 @@ function ReportContent() {
     return h;
   }, [params]);
 
-  /** Opens an SSE connection to the server-side pipeline and wires up state updates. */
-  function startStreamedPipeline() {
+  /** Polls the server to check if report is complete (no need to keep browser open). */
+  function startPollingForReport() {
     if (typeof window === 'undefined') return;
     esRef.current?.close();
 
-    const sseUrl = new URL(`/api/reports/${reportIdFromRoute}/stream`, window.location.origin);
-    params.forEach((val, key) => sseUrl.searchParams.set(key, val));
-
     setIsLoading(true);
     setError(null);
-    setStepMessage('Preparing...');
-    setStepDetail('');
-    setCurrentStepIndex(0);
+    setStepMessage('Report generating in background...');
+    setStepDetail('You can close this tab and check back later');
+    setCurrentStepIndex(1);
 
-    const es = new EventSource(sseUrl.toString());
-    esRef.current = es;
-
-    es.onmessage = (event) => {
+    const pollInterval = setInterval(async () => {
       try {
-        const data = JSON.parse(event.data as string) as {
-          type: string;
-          step?: number;
-          message?: string;
-          detail?: string;
-          reportData?: import('@/lib/agents/types').ReportData;
-          message_text?: string;
-        };
-        if (data.type === 'ping') return;
-        if (data.type === 'step_started') {
-          setCurrentStepIndex(clampStep(data.step ?? 0));
-          setStepMessage(data.message ?? '');
-          setStepDetail(data.detail ?? '');
-        } else if (data.type === 'report_completed') {
-          if (data.reportData) {
-            setReportData(data.reportData);
-          }
-          setIsLoading(false);
-          es.close();
-          esRef.current = null;
-        } else if (data.type === 'error') {
-          setError(data.message ?? 'Generation failed');
-          setIsLoading(false);
-          es.close();
-          esRef.current = null;
-        }
-      } catch (e) {
-        console.error('[SSE] parse error:', e);
-      }
-    };
+        const response = await fetch(`/api/reports/${reportIdFromRoute}/status`, {
+          method: 'GET',
+          headers: authJsonHeaders(),
+        });
 
-    es.onerror = () => {
-      if (es.readyState === EventSource.CLOSED) {
-        setError('Connection lost. Please try again.');
-        setIsLoading(false);
-        esRef.current = null;
+        if (!response.ok) {
+          clearInterval(pollInterval);
+          setError('Report not found');
+          setIsLoading(false);
+          return;
+        }
+
+        const data = await response.json() as {
+          status: string;
+          isComplete: boolean;
+          report: any;
+          lagna_sign: string;
+          dasha_mahadasha: string;
+          dasha_antardasha: string;
+        };
+
+        if (data.isComplete && data.report) {
+          clearInterval(pollInterval);
+          setReportData(data.report);
+          setIsLoading(false);
+          setStepMessage('Report complete!');
+          setStepDetail('');
+        } else if (data.status === 'error') {
+          clearInterval(pollInterval);
+          setError('Generation failed');
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.error('[Polling] error:', err);
       }
-    };
+    }, 2000); // Poll every 2 seconds
+
+    // Cleanup on unmount
+    return () => clearInterval(pollInterval);
   }
 
   const displayName = birthDisplay?.name ?? name;
@@ -425,7 +420,7 @@ function ReportContent() {
 
       hasFetched.current = true;
       console.log('Report page params:', { name, date, time, city, lat, lng, type });
-      startStreamedPipeline();
+      startPollingForReport();
     }
 
     void init();
@@ -1308,7 +1303,7 @@ function ReportContent() {
           <button
             onClick={() => {
               hasFetched.current = false;
-              startStreamedPipeline();
+              startPollingForReport();
             }}
             className="px-8 py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
           >

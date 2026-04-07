@@ -4,10 +4,12 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
+import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 
 /**
- * Creates a `reports` row in `generating` state. Client then opens `/report/[id]?...`
- * to run the pipeline (Phase 2 will move execution here + SSE).
+ * Creates a `reports` row in `generating` state and starts background computation.
+ * Client then polls `/api/reports/[id]/status` to check status.
+ * Computation starts independently via async fire-and-forget.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -43,5 +45,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ reportId, ok: true });
+  // Prepare background task
+  const input: PipelineInput = {
+    name: body.name ?? 'Seeker',
+    date: body.birth_date ?? '',
+    time: body.birth_time ?? '12:00:00',
+    city: body.birth_city ?? '',
+    lat: parseFloat(body.birth_lat ?? '0') || 0,
+    lng: parseFloat(body.birth_lng ?? '0') || 0,
+    currentLat: parseFloat(body.current_lat ?? body.birth_lat ?? '0') || 0,
+    currentLng: parseFloat(body.current_lng ?? body.birth_lng ?? '0') || 0,
+    currentCity: body.current_city ?? body.birth_city ?? '',
+    timezoneOffset: body.timezone_offset ?? -new Date().getTimezoneOffset(),
+    type: body.plan_type ?? '7day',
+    forecastStart: body.forecast_start ?? undefined,
+    planType: body.plan_type ?? '7day',
+    paymentStatus: 'bypass',
+  };
+
+  const base = request.nextUrl.origin;
+  const authHeaders: Record<string, string> = {};
+  const cookie = request.headers.get('cookie');
+  if (cookie) authHeaders['cookie'] = cookie;
+
+  // Fire-and-forget: start computation in background without blocking the response
+  // This task will continue running on Vercel even after the response is sent
+  generateReportPipeline(reportId, auth.user.id, auth.user.email ?? '', input, () => {}, base, authHeaders)
+    .catch((err) => console.error(`[reports/start] background pipeline failed for ${reportId}:`, err));
+
+  // Return immediately so client can start polling
+  return NextResponse.json({ reportId, ok: true, status: 'generating' });
 }
