@@ -83,9 +83,6 @@ Lagna: ${lagnaSign} ${(lagnaDegreee ?? 0).toFixed(2)}°
 Moon: ${moonSign} / ${moonNakshatra}
 Current dasha: ${mahadasha} MD (until ${md_end ?? '?'}) / ${antardasha} AD (until ${ad_end ?? '?'})
 
-Additional chart payload (reference only; graha signs/houses above are authoritative):
-${JSON.stringify(planets, null, 2)}
-
 Return this exact JSON:
 {
   "lagna_analysis": "150-200 words. Must cover: ${lagnaSign} rising sign character and physical traits, lagna lord placement and house (e.g. Moon in Leo 2H for Cancer lagna means X), dominant yoga of the chart and its effect, overall life direction. Name specific planets, houses, nakshatras in every sentence.",

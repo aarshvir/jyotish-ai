@@ -166,6 +166,7 @@ If no issues, return: {"issues": [], "corrections_needed": false}`;
       systemPrompt: 'You are a Vedic astrology report QA agent. Return valid JSON only.',
       userPrompt: prompt,
       maxTokens: 500,
+      modelOverride: 'claude-haiku-4-5-20251001',
     });
     const parsed = safeParseJson<{ issues: string[]; corrections_needed: boolean }>(response ?? '{}');
     return {
@@ -233,6 +234,7 @@ Return plain text only.`;
       systemPrompt: 'You write concise Vedic hourly commentary. Plain text only.',
       userPrompt: prompt,
       maxTokens: 200,
+      modelOverride: 'claude-haiku-4-5-20251001',
     });
     return response ?? '';
   }

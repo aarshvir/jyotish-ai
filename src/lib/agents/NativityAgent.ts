@@ -134,7 +134,7 @@ export class NativityAgent {
             max_tokens: 16000,
             thinking: {
               type: 'enabled',
-              budget_tokens: 8000,
+              budget_tokens: 4000,
             },
             temperature: 1,
             messages: [

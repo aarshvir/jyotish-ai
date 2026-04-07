@@ -66,7 +66,10 @@ export async function POST(req: NextRequest) {
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
 
-  const forecastAnchors = formatMultipleDaysCommentaryAnchors(planet_positions_by_date ?? []);
+  // Use only the first day as a reference anchor — the synthesis doesn't need all 7 days of positions
+  const forecastAnchors = formatMultipleDaysCommentaryAnchors(
+    planet_positions_by_date?.length ? [planet_positions_by_date[0]] : []
+  );
 
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a planet, house, or nakshatra.
 
