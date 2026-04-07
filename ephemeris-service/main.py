@@ -1003,6 +1003,14 @@ PANCHANG_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "2026-03-29": {"nakshatra": "Magha", "yoga": "Shoola", "tithi": "Shukla Ekadashi"},
     "2026-03-30": {"nakshatra": "Purva Phalguni", "yoga": "Ganda", "tithi": "Shukla Dwadashi"},
     "2026-03-31": {"nakshatra": "Uttara Phalguni", "yoga": "Vriddhi", "tithi": "Shukla Trayodashi"},
+    # April 2026 — DrikPanchang-aligned for Dubai (25.2°N, 55.3°E, UTC+4)
+    "2026-04-12": {"tithi": "Krishna Dashami"},
+    "2026-04-13": {"tithi": "Krishna Ekadashi"},   # Varuthini Ekadashi
+    "2026-04-14": {"tithi": "Krishna Dwadashi"},    # Baisakhi / Mesha Sankranti
+    "2026-04-15": {"tithi": "Krishna Trayodashi"},
+    "2026-04-16": {"tithi": "Krishna Chaturdashi"},
+    "2026-04-17": {"tithi": "Amavasya"},
+    "2026-04-18": {"tithi": "Shukla Pratipada"},
 }
 
 SPECIAL_EVENTS_CALENDAR = {
@@ -1029,7 +1037,7 @@ SPECIAL_EVENTS_CALENDAR = {
     "dhan_teras": ["2026-10-18"],
     "ekadashi_dates": [
         "2026-03-13", "2026-03-28",
-        "2026-04-11", "2026-04-27",
+        "2026-04-13", "2026-04-27",
         "2026-05-11", "2026-05-26",
         "2026-06-09", "2026-06-25",
         "2026-07-09", "2026-07-24",
