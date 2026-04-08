@@ -115,6 +115,13 @@ export default function DashboardPage() {
     return `/report/${report.id}`;
   }
 
+  function isStale(report: Report) {
+    // Reports stuck in 'generating' for more than 30 minutes are considered failed
+    if (report.status !== 'generating') return false;
+    const ageMs = Date.now() - new Date(report.created_at).getTime();
+    return ageMs > 30 * 60 * 1000;
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[calc(100vh-var(--nav-height))] items-center justify-center bg-space">
@@ -165,6 +172,8 @@ export default function DashboardPage() {
               const avgScore = getAvgScore(report.day_scores);
               const tone = scoreTone(avgScore);
               const isComplete = report.status === 'complete';
+              const isFailed = report.status === 'error' || isStale(report);
+              const isGenerating = report.status === 'generating' && !isFailed;
 
               return (
                 <li
@@ -172,7 +181,7 @@ export default function DashboardPage() {
                   className="flex flex-wrap items-center gap-5 rounded-xl border border-horizon/60 bg-nebula/20 p-5 sm:p-6"
                 >
                   <div
-                    className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border ${tone.border} ${tone.bg}`}
+                    className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-xl border ${isFailed ? 'border-crimson/30 bg-crimson/10' : tone.border + ' ' + tone.bg}`}
                   >
                     {avgScore != null ? (
                       <>
@@ -180,8 +189,8 @@ export default function DashboardPage() {
                         <span className={`mt-0.5 text-[10px] opacity-80 ${tone.text}`}>avg</span>
                       </>
                     ) : (
-                      <span className="text-xl opacity-30 text-dust">
-                        {report.status === 'generating' ? '…' : '?'}
+                      <span className={`text-xl opacity-30 ${isFailed ? 'text-crimson' : 'text-dust'}`}>
+                        {isFailed ? '✕' : isGenerating ? '…' : '?'}
                       </span>
                     )}
                   </div>
@@ -192,8 +201,11 @@ export default function DashboardPage() {
                       <span className="rounded px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide bg-amber/10 text-amber">
                         {getPlanLabel(report.plan_type)}
                       </span>
-                      {report.status === 'generating' && (
+                      {isGenerating && (
                         <span className="rounded px-2 py-0.5 text-[11px] bg-nebula text-dust">Generating…</span>
+                      )}
+                      {isFailed && (
+                        <span className="rounded px-2 py-0.5 text-[11px] bg-crimson/10 text-crimson">Failed</span>
                       )}
                     </div>
                     <div className="flex flex-wrap gap-3 text-sm text-dust">
@@ -241,6 +253,14 @@ export default function DashboardPage() {
                       className="shrink-0 whitespace-nowrap rounded-lg border border-amber/40 bg-amber/10 px-5 py-2.5 min-h-[44px] text-sm font-semibold text-amber transition-colors hover:bg-amber/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60"
                     >
                       View report →
+                    </Link>
+                  )}
+                  {isFailed && (
+                    <Link
+                      href="/onboard"
+                      className="shrink-0 whitespace-nowrap rounded-lg border border-dust/30 bg-nebula/40 px-5 py-2.5 min-h-[44px] text-sm font-semibold text-dust transition-colors hover:bg-nebula/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dust/40"
+                    >
+                      Retry →
                     </Link>
                   )}
                 </li>
