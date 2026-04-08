@@ -131,12 +131,7 @@ export class NativityAgent {
           console.log(`NativityAgent attempt ${attempt + 1}/3 with extended thinking`);
           const response = await this.client.messages.create({
             model: 'claude-sonnet-4-6',
-            max_tokens: 16000,
-            thinking: {
-              type: 'enabled',
-              budget_tokens: 4000,
-            },
-            temperature: 1,
+            max_tokens: 2000,
             messages: [
               {
                 role: 'user',
