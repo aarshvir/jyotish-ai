@@ -598,7 +598,7 @@ export async function generateReportPipeline(
         }
       })(),
 
-      // Step 6: Hourly commentary (batched, concurrency=2)
+      // Step 6: Hourly commentary (batched, concurrency=4)
       (async () => {
         onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: 'Analysing 18 slots per day in parallel' });
         try {
@@ -636,7 +636,7 @@ export async function generateReportPipeline(
                 return { dayIndex: i, slots: [] };
               }
             }),
-            2,
+            4,
           );
 
           hourlyResults.forEach(({ dayIndex, slots }: { dayIndex: number; slots?: Array<{ slot_index: number; commentary?: string; commentary_short?: string }> }) => {
