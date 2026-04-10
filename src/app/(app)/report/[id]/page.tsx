@@ -229,10 +229,86 @@ function ReportContent() {
     return h;
   }, [params]);
 
-  /** Polls the server to check if report is complete (no need to keep browser open). */
-  function startPollingForReport() {
+  /**
+   * Opens a server-sent event stream to /api/reports/[id]/stream.
+   * The server runs the full pipeline — generation continues even if the user
+   * briefly navigates away (up to Vercel's 300 s maxDuration).
+   * On report_completed the UI is updated from the event payload.
+   */
+  function startStreamedPipeline() {
     if (typeof window === 'undefined') return;
     esRef.current?.close();
+
+    setIsLoading(true);
+    setError(null);
+    setStepMessage('Reading the stars...');
+    setStepDetail('Calculating planetary positions');
+    setCurrentStepIndex(0);
+
+    const sp = new URLSearchParams();
+    sp.set('name', params.get('name') ?? name);
+    sp.set('date', params.get('date') ?? date);
+    sp.set('time', params.get('time') ?? time);
+    sp.set('city', params.get('city') ?? city);
+    sp.set('lat', params.get('lat') ?? lat);
+    sp.set('lng', params.get('lng') ?? lng);
+    sp.set('currentLat', params.get('currentLat') ?? currentLat);
+    sp.set('currentLng', params.get('currentLng') ?? currentLng);
+    sp.set('currentCity', params.get('currentCity') ?? currentCity);
+    if (params.get('currentTz')) sp.set('currentTz', params.get('currentTz')!);
+    sp.set('type', params.get('type') ?? type);
+    sp.set('plan_type', params.get('plan_type') ?? params.get('type') ?? type);
+    if (params.get('forecastStart')) sp.set('forecastStart', params.get('forecastStart')!);
+    const bypassToken = params.get('bypass');
+    if (bypassToken) sp.set('bypass', bypassToken);
+
+    const url = `/api/reports/${reportIdFromRoute}/stream?${sp.toString()}`;
+    const es = new EventSource(url);
+    esRef.current = es;
+
+    es.onmessage = (e) => {
+      try {
+        const event = JSON.parse(e.data) as {
+          type: string;
+          step?: number;
+          message?: string;
+          detail?: string;
+          reportData?: ReportData;
+        };
+
+        if (event.type === 'step_started') {
+          setCurrentStepIndex(clampStep(event.step ?? 0));
+          if (event.message) setStepMessage(event.message);
+          if (event.detail) setStepDetail(event.detail);
+        } else if (event.type === 'report_completed' && event.reportData) {
+          es.close();
+          esRef.current = null;
+          setReportData(event.reportData);
+          setIsLoading(false);
+          setStepMessage('');
+          setStepDetail('');
+        } else if (event.type === 'error') {
+          es.close();
+          esRef.current = null;
+          setError('Generation failed — please retry');
+          setIsLoading(false);
+        }
+      } catch {
+        // ignore malformed event
+      }
+    };
+
+    es.onerror = () => {
+      es.close();
+      esRef.current = null;
+      setError('Connection lost — please retry');
+      setIsLoading(false);
+    };
+  }
+
+  /** Polls the server to check if a background report has completed (user returning to page). */
+  function startPollingForReport() {
+    if (typeof window === 'undefined') return;
 
     setIsLoading(true);
     setError(null);
@@ -257,29 +333,23 @@ function ReportContent() {
         const data = await response.json() as {
           status: string;
           isComplete: boolean;
-          report: any;
-          lagna_sign: string;
-          dasha_mahadasha: string;
-          dasha_antardasha: string;
+          report: ReportData;
         };
 
         if (data.isComplete && data.report) {
           clearInterval(pollInterval);
           setReportData(data.report);
           setIsLoading(false);
-          setStepMessage('Report complete!');
-          setStepDetail('');
         } else if (data.status === 'error') {
           clearInterval(pollInterval);
-          setError('Generation failed');
+          setError('Generation failed — please retry');
           setIsLoading(false);
         }
       } catch (err) {
         console.error('[Polling] error:', err);
       }
-    }, 2000); // Poll every 2 seconds
+    }, 3000);
 
-    // Cleanup on unmount
     return () => clearInterval(pollInterval);
   }
 
@@ -420,7 +490,7 @@ function ReportContent() {
 
       hasFetched.current = true;
       console.log('Report page params:', { name, date, time, city, lat, lng, type });
-      void generateReport();
+      startStreamedPipeline();
     }
 
     void init();
@@ -1303,7 +1373,7 @@ function ReportContent() {
           <button
             onClick={() => {
               hasFetched.current = false;
-              startPollingForReport();
+              startStreamedPipeline();
             }}
             className="px-8 py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
           >
