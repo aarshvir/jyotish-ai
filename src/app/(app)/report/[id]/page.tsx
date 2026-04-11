@@ -19,20 +19,6 @@ import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
 import { PrintAllDays } from '@/components/report/PrintAllDays';
 import type { NatalChartData, NativityProfile, ReportData } from '@/lib/agents/types';
 
-const STEPS = [
-  'Calculating planetary positions',
-  'Analysing birth chart',
-  'Scoring 126 hourly windows',
-  'Writing daily forecasts & natal analysis',
-  'Writing all hourly commentary (7 days in parallel)',
-  'Generating full monthly forecast',
-  'Writing period synthesis',
-  'Validating commentary quality',
-  'Validating score accuracy',
-  'Validating consistency',
-  'Finalising report',
-];
-
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -45,6 +31,125 @@ function isPlaceholderReportData(rd: Record<string, unknown> | null | undefined)
   const days = rd?.days as Array<{ day_score?: number }> | undefined;
   if (!Array.isArray(days) || days.length === 0) return true;
   return days.every((d) => (d.day_score ?? 50) === 50);
+}
+
+const GENERATION_MESSAGES = [
+  'Reading planetary positions at the moment of birth…',
+  'Calculating lagna and house lordships…',
+  'Scoring 126 hourly windows across 7 days…',
+  'Writing natal chart analysis…',
+  'Generating daily overviews for each day…',
+  'Writing hour-by-hour commentary…',
+  'Building 12-month forecast…',
+  'Composing weekly synthesis…',
+  'Finalising and saving your report…',
+];
+
+function GeneratingScreen({
+  elapsedSeconds,
+  onElapsed,
+  generationStartRef,
+}: {
+  elapsedSeconds: number;
+  onElapsed: (s: number) => void;
+  generationStartRef: React.MutableRefObject<number | null>;
+}) {
+  useEffect(() => {
+    const t = setInterval(() => {
+      const start = generationStartRef.current ?? Date.now();
+      onElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [generationStartRef, onElapsed]);
+
+  const msgIndex = Math.min(
+    Math.floor(elapsedSeconds / 18),
+    GENERATION_MESSAGES.length - 1,
+  );
+  const progressPct = Math.min(95, Math.round((elapsedSeconds / 160) * 100));
+  const mins = Math.floor(elapsedSeconds / 60);
+  const secs = elapsedSeconds % 60;
+  const elapsed = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+  return (
+    <div className="min-h-[calc(100vh-var(--nav-height))] bg-dark flex flex-col items-center justify-center gap-8 px-6">
+      <StarField />
+
+      <div className="text-amber text-5xl animate-spin" style={{ animationDuration: '8s' }}>🪐</div>
+
+      <div className="text-center max-w-md">
+        <h1 className="text-star text-2xl font-bold mb-1">Generating your report</h1>
+        <p className="text-dust text-sm">
+          Running on our servers — safe to close this tab and return later.
+        </p>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full max-w-md">
+        <div className="flex justify-between items-center mb-1.5">
+          <span className="font-mono text-xs text-amber">{progressPct}%</span>
+          <span className="font-mono text-xs text-dust">{elapsed}</span>
+        </div>
+        <div className="h-1.5 bg-nebula rounded-full overflow-hidden">
+          <div
+            className="h-full bg-amber rounded-full transition-all duration-1000 ease-out"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Rotating message */}
+      <div className="w-full max-w-md bg-nebula/30 border border-amber/10 rounded-lg p-4 text-center min-h-[3.5rem] flex items-center justify-center">
+        <p className="font-mono text-xs text-amber leading-relaxed">
+          {GENERATION_MESSAGES[msgIndex]}
+        </p>
+      </div>
+
+      {/* Step list — accurate phases, no fake live tracking */}
+      <div className="w-full max-w-md space-y-1.5">
+        {[
+          'Ephemeris & birth chart',
+          'Hourly slot scoring (7 days × 18 slots)',
+          'Nativity analysis',
+          'Daily overviews + hourly commentary',
+          'Monthly forecast (12 months)',
+          'Weekly synthesis',
+          'Final assembly & save',
+        ].map((label, i) => {
+          const approxDoneAt = [10, 25, 80, 110, 115, 135, 155];
+          const done = elapsedSeconds > (approxDoneAt[i] ?? 999);
+          const active = !done && elapsedSeconds > (approxDoneAt[i - 1] ?? 0);
+          return (
+            <div
+              key={i}
+              className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-500 ${
+                active ? 'bg-amber/8 border border-amber/20' : ''
+              } ${done ? 'opacity-40' : ''}`}
+            >
+              <div
+                className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-mono ${
+                  done
+                    ? 'bg-emerald text-dark'
+                    : active
+                    ? 'bg-amber text-dark animate-pulse'
+                    : 'bg-nebula text-dust'
+                }`}
+              >
+                {done ? '✓' : i + 1}
+              </div>
+              <span className={`text-xs ${active ? 'text-star font-medium' : 'text-dust'}`}>
+                {label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="text-dust/60 text-xs text-center max-w-sm">
+        Typical generation time: 2–4 minutes. The link above stays valid — you can bookmark it and come back.
+      </p>
+    </div>
+  );
 }
 
 function ReportContent() {
@@ -77,9 +182,6 @@ function ReportContent() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfStatus, setPdfStatus] = useState('Download PDF');
-  const [stepMessage, setStepMessage] = useState('');
-  const [stepDetail, setStepDetail] = useState('');
-  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const hasFetched = useRef(false);
   /** Cached Supabase user — set once in init(), reused to avoid repeated getUser() roundtrips. */
   const userRef = useRef<{ id: string; email?: string } | null>(null);
@@ -90,6 +192,8 @@ function ReportContent() {
     city: string;
   } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const generationStartRef = useRef<number | null>(null);
 
   const authJsonHeaders = useCallback((): Record<string, string> => {
     const h: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -167,9 +271,8 @@ function ReportContent() {
 
     setIsLoading(true);
     setError(null);
-    setStepMessage('Report generating in the cloud…');
-    setStepDetail('You can close this tab and open this link again in a few minutes.');
-    setCurrentStepIndex(1);
+    generationStartRef.current = Date.now();
+    setElapsedSeconds(0);
 
     pollIntervalRef.current = setInterval(async () => {
       if (pollCancelRef.current) return;
@@ -195,8 +298,6 @@ function ReportContent() {
         if (data.isComplete && data.report) {
           stopReportPolling();
           setReportData(data.report);
-          setStepMessage('');
-          setStepDetail('');
           setIsLoading(false);
 
           const uid = userRef.current?.id;
@@ -233,9 +334,8 @@ function ReportContent() {
     if (!isRouteUuid(reportIdFromRoute)) return;
     setIsLoading(true);
     setError(null);
-    setStepMessage('Starting report generation…');
-    setStepDetail('This runs on the server — you can leave this page.');
-    setCurrentStepIndex(0);
+    generationStartRef.current = Date.now();
+    setElapsedSeconds(0);
 
     await createReportRecord();
 
@@ -490,41 +590,7 @@ function ReportContent() {
   }, [reportIdFromRoute, queryKey, kickOffBackgroundGeneration, startPollingForReport, stopReportPolling]);
 
   if (isLoading) {
-    return (
-      <div className="min-h-[calc(100vh-var(--nav-height))] bg-dark flex flex-col items-center justify-center gap-8 px-6">
-        <StarField />
-        <div className="text-amber text-4xl">🪐</div>
-        <h1 className="text-star text-2xl font-bold">VedicHour</h1>
-        <div className="text-center">
-          <p className="text-star text-xl font-semibold">{stepMessage || 'Preparing...'}</p>
-          <p className="text-dust text-sm mt-2">{stepDetail || ''}</p>
-        </div>
-        <div className="w-full max-w-md space-y-2">
-          {STEPS.map((step, i) => (
-            <div
-              key={i}
-              className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-500 ${
-                currentStepIndex > i ? 'opacity-50' : ''
-              } ${currentStepIndex === i ? 'bg-amber/10 border border-amber/20' : ''}`}
-            >
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                  currentStepIndex > i ? 'bg-emerald text-dark' : currentStepIndex === i ? 'bg-amber text-dark animate-pulse' : 'bg-nebula text-dust'
-                }`}
-              >
-                {currentStepIndex > i ? '✓' : i + 1}
-              </div>
-              <span className={`text-sm ${currentStepIndex === i ? 'text-star font-medium' : 'text-dust'}`}>
-                {step}
-              </span>
-            </div>
-          ))}
-        </div>
-        <p className="text-dust text-xs">
-          Generating grandmaster-quality analysis… This usually takes a few minutes. It runs on the server — you can close this tab and reopen this link later.
-        </p>
-      </div>
-    );
+    return <GeneratingScreen elapsedSeconds={elapsedSeconds} onElapsed={setElapsedSeconds} generationStartRef={generationStartRef} />;
   }
 
   if (error) {
