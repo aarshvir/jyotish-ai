@@ -17,6 +17,10 @@ interface DayInputShape {
   day_score?: number;
 }
 
+/**
+ * V2 fallback: concise daily briefing grounded in panchang data.
+ * No dense astrology recital. Answers: what are the top windows, what to avoid, why.
+ */
 function buildFallbackDay(d: DayInputShape, lagnaSign: string): { date: string; day_theme: string; day_overview: string } {
   const date = String(d?.date ?? '');
   const p = d?.panchang ?? {};
@@ -24,42 +28,8 @@ function buildFallbackDay(d: DayInputShape, lagnaSign: string): { date: string; 
   const yoga = String(p?.yoga ?? 'Shubha');
   const moonSign = String(p?.moon_sign ?? 'Aries');
   const dayRuler = String(p?.day_ruler ?? 'Sun');
+  const dayScore = d?.day_score ?? 50;
 
-  // Use a minimal, deterministic lord map when known; otherwise default to Jupiter.
-  const nakshatraLord: Record<string, string> = {
-    Ashwini: 'Mars',
-    Bharani: 'Venus',
-    Krittika: 'Sun',
-    Rohini: 'Moon',
-    Mrigashira: 'Mars',
-    Ardra: 'Rahu',
-    Punarvasu: 'Jupiter',
-    Pushya: 'Jupiter',
-    Ashlesha: 'Mercury',
-    Magha: 'Ketu',
-    PurvaPhalguni: 'Venus',
-    UttaraPhalguni: 'Sun',
-    Hasta: 'Moon',
-    Chitra: 'Mars',
-    Swati: 'Vayu',
-    Vishakha: 'Jupiter',
-    Anuradha: 'Saturn',
-    Jyeshtha: 'Mercury',
-    Mula: 'Ketu',
-    PurvaAshadha: 'Jupiter',
-    UttaraAshadha: 'Sun',
-    Shravana: 'Moon',
-    Dhanishta: 'Saturn',
-    Shatabhisha: 'Rahu',
-    PurvaBhadrapada: 'Jupiter',
-    UttaraBhadrapada: 'Saturn',
-    Revati: 'Jupiter',
-  };
-
-  const lord = nakshatraLord[nakshatra] ?? 'Jupiter';
-
-  const sunrise = String(p?.sunrise ?? '');
-  const sunset = String(p?.sunset ?? '');
   const rahuStart = String(d?.rahu_kaal?.start ?? '');
   const rahuEnd = String(d?.rahu_kaal?.end ?? '');
   const fmtTime = (t: string) => {
@@ -67,34 +37,25 @@ function buildFallbackDay(d: DayInputShape, lagnaSign: string): { date: string; 
     const s = t.includes('T') ? t.split('T')[1] : t;
     return s.slice(0, 5);
   };
-  const rahuWindow = `${fmtTime(rahuStart)}-${fmtTime(rahuEnd)}`.replace(/-$/, '-');
+  const rahuWindow = rahuStart ? `${fmtTime(rahuStart)}–${fmtTime(rahuEnd)}` : '';
 
-  // Deterministic fallback — no hardcoded house numbers or dasha lord names.
-  const headline = `${nakshatra.toUpperCase()} NAKSHATRA ${yoga.toUpperCase()} YOGA - ${dayRuler.toUpperCase()} DAY FOR ${lagnaSign.toUpperCase()} LAGNA.`;
+  const strengthWord = dayScore >= 65 ? 'productive' : dayScore >= 50 ? 'moderate' : 'careful';
+
+  const day_theme =
+    `${dayRuler} day with ${nakshatra} nakshatra and ${yoga} yoga — a ${strengthWord} day for ${lagnaSign} lagna. Moon in ${moonSign}.`;
 
   const day_overview =
-    `${headline}\n` +
-    `For ${lagnaSign} lagna, the ${nakshatra} nakshatra activates decision gates through ${lord} influence, turning planning into concrete movement. ` +
-    `The yoga ${yoga} disciplines focused action and returns stable, measurable results. ` +
-    `${lord} channeling supports clarity in communication and execution; convert thoughts into a written plan and execute step-by-step without delay. ` +
-    `Because Moon-linked timing connects today's flow to gains and visibility, prioritize deliverables that improve networks and outcomes for ${lagnaSign} lagna. ` +
-    `If any peak window in the hourly table is marked by Rahu Kaal, treat that segment as completion-only and close pending actions inside existing boundaries. ` +
-    `${dayRuler} as day ruler demands discipline in service, documentation, and health routines; set a specific maintenance task and finish it before sunset. ` +
-    `Jupiter influence steadies expenditure logic and prevents escalation, so audit every cost before the final commit when ${nakshatra} governs the arc. ` +
-    `${lord} initiative supports one decisive push — pick the single deliverable that unlocks the rest and act immediately. ` +
-    (sunrise && sunset
-      ? `Track the daylight arc from ${sunrise} to ${sunset} for steady pacing and consistent progress. `
-      : `Use sunrise timing as the first anchor for consistent pacing and progress. `) +
-    `Well-managed intent strengthens ${lord} coordination through house governance; keep the message precise and the next step explicit. ` +
-    `STRATEGY:\n` +
-    `Best hora: use ${dayRuler} hora during the earliest high-scoring window in the hourly table; lead with the single action that moves the key priority now.\n` +
-    `Strict avoid: do not sign agreements, do not start new financial commitments, and do not promise deadlines you cannot meet.\n` +
-    `Rahu Kaal: if the window ${rahuWindow} appears, complete existing work only and stop new initiations until the window ends.\n` +
-    `Wellness: for ${lagnaSign} lagna, practice 9 minutes of breath-counting or a short walk to stabilize attention and ground lagna lord energy.`;
-
-  // Theme: must mention at least 2 planets or 1 planet and 1 house number.
-  const day_theme =
-    `${dayRuler} activates ${nakshatra} nakshatra through ${yoga} yoga, shaping focus and momentum for ${lagnaSign} lagna in ${moonSign}.`;
+    `Day score: ${dayScore}/100. This is a ${strengthWord} day overall.\n\n` +
+    `${nakshatra} nakshatra with ${yoga} yoga sets the tone. ` +
+    `Check the hourly table for your best action windows — focus important work there. ` +
+    `${dayScore >= 65 ? 'Multiple strong windows support decisive action today.' : dayScore >= 50 ? 'A few decent windows exist — use them for your priorities.' : 'Limited strong windows today — be selective about timing.'}\n\n` +
+    (rahuWindow
+      ? `Rahu Kaal (${rahuWindow}): do not start new projects or sign commitments during this window. Complete existing work only.\n\n`
+      : '') +
+    `Strategy:\n` +
+    `- Use your highest-scoring hourly windows for important decisions and actions.\n` +
+    `- Avoid new commitments during weak or Rahu Kaal windows.\n` +
+    `- ${dayScore >= 50 ? `${dayRuler} day energy supports structured execution — lead with your top priority.` : `${dayRuler} day calls for patience — focus on review, preparation, and completing existing work.`}`;
 
   return { date, day_theme, day_overview };
 }

@@ -1,6 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import {
+  getCanonicalScoreLabel,
+  getLabelColor,
+  getLabelIcon,
+  getScoreNumColor,
+} from '@/lib/guidance/labels';
+import type { SlotGuidanceV2 } from '@/lib/guidance/types';
 
 const COMMENTARY_FALLBACK = 'Use this period according to the hora lord\'s functional role for your lagna.';
 
@@ -18,6 +25,7 @@ interface HourData {
   transit_lagna_house?: number;
   is_rahu_kaal: boolean;
   commentary?: string;
+  guidance_v2?: SlotGuidanceV2;
 }
 
 interface HourlyTableProps {
@@ -35,21 +43,11 @@ const PLANET_SYMBOLS: Record<string, string> = {
 };
 
 function getScoreLabel(score: number, isRahuKaal: boolean): { label: string; color: string; icon: string } {
+  const ratingLabel = getCanonicalScoreLabel(score, isRahuKaal);
   if (isRahuKaal) return { label: 'RAHU KAAL', color: 'text-crimson', icon: '⚠' };
-  if (score >= 85) return { label: '★★★ PEAK', color: 'text-emerald', icon: '★★★' };
-  if (score >= 75) return { label: '★★ EXCELLENT', color: 'text-emerald', icon: '★★' };
-  if (score >= 65) return { label: '★ GOOD', color: 'text-amber', icon: '★' };
-  if (score >= 55) return { label: 'NEUTRAL', color: 'text-dust', icon: '—' };
-  if (score >= 45) return { label: '⚠ CAUTION', color: 'text-orange-400', icon: '⚠' };
-  if (score >= 35) return { label: '⚠⚠ DIFFICULT', color: 'text-crimson', icon: '⚠⚠' };
-  return { label: '🔴 AVOID', color: 'text-crimson', icon: '🔴' };
-}
-
-function getScoreNumColor(score: number, isRahuKaal: boolean): string {
-  if (isRahuKaal || score < 45) return 'text-crimson';
-  if (score >= 65) return 'text-emerald';
-  if (score >= 55) return 'text-amber';
-  return 'text-orange-400';
+  const color = getLabelColor(ratingLabel);
+  const icon = getLabelIcon(ratingLabel, isRahuKaal);
+  return { label: `${icon} ${ratingLabel.toUpperCase()}`, color, icon };
 }
 
 function getChoghadiyaBg(choghadiya: string): string {
@@ -133,7 +131,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                 </span>
               </button>
 
-              {/* Expanded commentary */}
+              {/* Expanded commentary + V2 guidance */}
               {isExpanded && (
                 <div className="px-4 pb-4 border-t border-horizon/30">
                   <div className="flex items-center gap-2 mt-3 mb-2 flex-wrap">
@@ -144,8 +142,44 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                       </span>
                     )}
                   </div>
+
+                  {/* V2 guidance chips */}
+                  {hour.guidance_v2 && (
+                    <div className="space-y-2 mb-3">
+                      {hour.guidance_v2.best_for.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className="font-mono text-xs text-emerald/70 mr-1">Best for:</span>
+                          {hour.guidance_v2.best_for.map((b, bi) => (
+                            <span key={bi} className="px-2 py-0.5 rounded-sm bg-emerald/10 border border-emerald/20 font-mono text-xs text-emerald">{b}</span>
+                          ))}
+                        </div>
+                      )}
+                      {hour.guidance_v2.avoid_for.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className="font-mono text-xs text-crimson/70 mr-1">Avoid:</span>
+                          {hour.guidance_v2.avoid_for.map((a, ai) => (
+                            <span key={ai} className="px-2 py-0.5 rounded-sm bg-crimson/10 border border-crimson/20 font-mono text-xs text-crimson">{a}</span>
+                          ))}
+                        </div>
+                      )}
+                      {hour.guidance_v2.still_ok_for.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          <span className="font-mono text-xs text-amber/70 mr-1">Still OK:</span>
+                          {hour.guidance_v2.still_ok_for.map((s, si) => (
+                            <span key={si} className="px-2 py-0.5 rounded-sm bg-amber/10 border border-amber/20 font-mono text-xs text-amber">{s}</span>
+                          ))}
+                        </div>
+                      )}
+                      {hour.guidance_v2.if_unavoidable && (
+                        <p className="font-mono text-xs text-dust/80 italic">
+                          {hour.guidance_v2.if_unavoidable}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   <div className="font-display text-star text-sm leading-[1.8]">
-                    {commentary}
+                    {hour.guidance_v2?.summary_plain || commentary}
                   </div>
                 </div>
               )}

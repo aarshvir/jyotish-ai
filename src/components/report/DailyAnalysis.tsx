@@ -3,6 +3,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HourlyAnalysis } from './HourlyAnalysis';
+import {
+  getCanonicalScoreLabel,
+  getLabelIcon,
+} from '@/lib/guidance/labels';
+import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
 
 interface HourSlot {
   time: string;
@@ -18,6 +23,7 @@ interface HourSlot {
   transit_lagna_house?: number;
   display_label?: string;
   slot_index?: number;
+  guidance_v2?: SlotGuidanceV2;
 }
 
 interface DayData {
@@ -51,6 +57,7 @@ interface DayData {
   hours?: HourSlot[] | null;
   hourlySlots?: HourSlot[];
   slots?: HourSlot[];
+  briefing_v2?: DayBriefingV2;
 }
 
 interface DailyAnalysisProps {
@@ -87,14 +94,10 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
   const score = currentDay.day_score ?? 50;
   const scoreColor = score >= 65 ? 'text-emerald' : score >= 45 ? 'text-amber' : 'text-crimson';
 
-  const getScoreLabel = (s: number) => {
-    if (s >= 85) return '★★★ PEAK';
-    if (s >= 75) return '★★ EXCELLENT';
-    if (s >= 65) return '★ GOOD';
-    if (s >= 55) return 'NEUTRAL';
-    if (s >= 45) return '⚠ CAUTION';
-    if (s >= 35) return '⚠⚠ DIFFICULT';
-    return '🔴 AVOID';
+  const getScoreLabelDisplay = (s: number) => {
+    const label = getCanonicalScoreLabel(s);
+    const icon = getLabelIcon(label);
+    return `${icon} ${label.toUpperCase()}`;
   };
 
   const hourlyData: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
@@ -167,7 +170,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
               </span>
               <span className="text-lg sm:text-xl text-dust">/100</span>
               <span className="text-base sm:text-lg font-semibold ml-1 sm:ml-2 text-dust">
-                {getScoreLabel(score)}
+                {getScoreLabelDisplay(score)}
               </span>
               <span className="ml-auto font-mono text-xs text-dust/70">
                 {peakCount > 0 && (
@@ -230,8 +233,33 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
             </p>
           )}
 
+          {/* V2 Day Briefing — decision-support first */}
+          {currentDay.briefing_v2 && (
+            <div className="bg-nebula/20 border border-horizon rounded-sm p-5 mb-6 max-w-2xl mx-auto space-y-3">
+              {currentDay.briefing_v2.best_overall_for.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs text-emerald tracking-wider uppercase">Best for:</span>
+                  {currentDay.briefing_v2.best_overall_for.map((b, i) => (
+                    <span key={i} className="px-2 py-1 rounded-sm bg-emerald/10 border border-emerald/20 font-mono text-xs text-emerald">{b}</span>
+                  ))}
+                </div>
+              )}
+              {currentDay.briefing_v2.not_ideal_for.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs text-crimson/70 tracking-wider uppercase">Less ideal:</span>
+                  {currentDay.briefing_v2.not_ideal_for.map((n, i) => (
+                    <span key={i} className="px-2 py-1 rounded-sm bg-crimson/10 border border-crimson/20 font-mono text-xs text-crimson">{n}</span>
+                  ))}
+                </div>
+              )}
+              <p className="font-mono text-xs text-dust leading-relaxed">
+                {currentDay.briefing_v2.why_today}
+              </p>
+            </div>
+          )}
+
           {/* Day overview */}
-          <p className="font-display text-star text-base leading-[1.8] text-center max-w-2xl mx-auto mb-8">
+          <p className="font-display text-star text-base leading-[1.8] text-center max-w-2xl mx-auto mb-8 whitespace-pre-line">
             {currentDay.day_overview || 'Overview unavailable'}
           </p>
 

@@ -10,21 +10,7 @@ import { requireAuth } from '@/lib/api/requireAuth';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/api/rateLimit';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
-
-function choghadiyaMeaning(chog: string): string {
-  const k = chog.trim();
-  const map: Record<string, string> = {
-    Amrit: 'Nectar, most auspicious',
-    Shubh: 'Auspicious',
-    Labh: 'Gains',
-    Char: 'Neutral transition',
-    Chal: 'Neutral transition',
-    Udveg: 'Tension and effort',
-    Rog: 'Inauspicious strain',
-    Kaal: 'Critical, inauspicious',
-  };
-  return map[k] ?? 'meaning varies';
-}
+import { buildSlotGuidance } from '@/lib/guidance/builder';
 
 interface SlotShape {
   slot_index?: number;
@@ -37,61 +23,29 @@ interface SlotShape {
   score?: number;
 }
 
-function buildFallbackSlot(slot: SlotShape, lagnaSign: string, role?: HoraRole): { slot_index: number; commentary: string } {
+/**
+ * V2 fallback: short, honest, grounded in score + actual slot data.
+ * Never sounds like a grandmaster recital. Always gives actionable guidance.
+ */
+function buildFallbackSlot(slot: SlotShape): { slot_index: number; commentary: string } {
   const slot_index = typeof slot?.slot_index === 'number' ? slot.slot_index : 0;
   const display_label = String(slot?.display_label ?? '');
   const dominant_hora = String(slot?.dominant_hora ?? 'Sun');
   const dominant_choghadiya = String(slot?.dominant_choghadiya ?? 'Shubh');
-  const transit_lagna = String(slot?.transit_lagna ?? 'Aries');
   const transit_lagna_house = typeof slot?.transit_lagna_house === 'number' ? slot.transit_lagna_house : 1;
   const is_rahu_kaal = Boolean(slot?.is_rahu_kaal);
+  const score = typeof slot?.score === 'number' ? slot.score : 50;
 
-  const meaning = choghadiyaMeaning(dominant_choghadiya);
-  const housesText =
-    role?.houses?.length
-      ? role.houses.map((h) => `H${h}`).join(' and ')
-      : `H${transit_lagna_house}`;
-  const quality =
-    role?.quality === 'yogakaraka' ? 'YOGAKARAKA'
-    : role?.quality === 'lagna_lord' ? 'LAGNA LORD'
-    : role?.quality === 'badhaka' ? 'BADHAKA'
-    : role?.quality === 'benefic' ? 'BENEFIC'
-    : role?.quality === 'malefic' ? 'MALEFIC'
-    : 'NEUTRAL';
+  const guidance = buildSlotGuidance({
+    score,
+    hora_planet: dominant_hora,
+    choghadiya: dominant_choghadiya,
+    transit_lagna_house,
+    is_rahu_kaal,
+    display_label,
+  });
 
-  const chogClass =
-    dominant_choghadiya === 'Amrit' || dominant_choghadiya === 'Shubh' || dominant_choghadiya === 'Labh'
-      ? 'excellent/good'
-      : dominant_choghadiya === 'Udveg' || dominant_choghadiya === 'Rog'
-      ? 'caution'
-      : dominant_choghadiya === 'Kaal'
-      ? 'avoid'
-      : 'neutral';
-
-  const ra = is_rahu_kaal
-    ? 'RAHU KAAL - COMPLETE EXISTING WORK ONLY. DO NOT INITIATE ANYTHING NEW. '
-    : '';
-
-  const horaAction =
-    dominant_hora === 'Mercury' ? 'send the decisive message and confirm the next step'
-    : dominant_hora === 'Mars' ? 'initiate the training run and complete one hard deliverable'
-    : dominant_hora === 'Jupiter' ? 'request guidance and lock the next consultation'
-    : dominant_hora === 'Venus' ? 'schedule the relationship conversation and finalize the venue'
-    : dominant_hora === 'Saturn' ? 'finish paperwork and complete the backlog with full accuracy'
-    : dominant_hora === 'Moon' ? 'deliver the update clearly and prepare the emotional support'
-    : 'begin the key move with a focused commitment';
-
-  const commentary =
-    `${dominant_hora} hora rules ${housesText} for ${lagnaSign} lagna. ` +
-    `It is classified as ${quality} and it acts through ${display_label}. ` +
-    `Do one action: ${horaAction} inside the domain of the relevant houses only. ` +
-    `Transit lagna ${transit_lagna} = H${transit_lagna_house} from ${lagnaSign} lagna, so direct the outcome toward H${transit_lagna_house} governance. ` +
-    `When you focus on H${transit_lagna_house} tasks, the ${dominant_hora} hora becomes usable and reduces rework in the next step. ` +
-    `${dominant_choghadiya} choghadiya (${meaning}) ${dominant_choghadiya === 'Kaal' ? 'suppresses ambition' : 'amplifies workable progress'}, and net quality is ${chogClass}. ` +
-    `If a decision appears between two paths, choose the path that completes the ${dominant_hora} action within ${display_label} and keeps H${transit_lagna_house} progress visible. ` +
-    `${ra}Use this slot to finish one measurable step, then write the follow-up in one line so it can be executed immediately. ` +
-    `END: ${is_rahu_kaal ? 'COMPLETE ONLY DURING RAHU KAAL.' : 'EXECUTE THE ONE MOST IMPORTANT TASK.'}`;
-
+  const commentary = guidance.summary_plain;
   return { slot_index, commentary };
 }
 
@@ -266,17 +220,15 @@ Respond with ONLY a JSON object. No preamble. No markdown. Start with { directly
       const out = (parsed.slots ?? []).slice(0, 18).map((s, i) => {
         const slot_index = typeof s.slot_index === 'number' ? s.slot_index : normalizedSlots[i]?.slot_index ?? i;
         const commentary = String(s.commentary ?? '').trim();
-        const role = ctx.horaRoles[normalizedSlots[i]?.dominant_hora];
         const wordCount = commentary.split(/\s+/).filter(Boolean).length;
-        if (wordCount < 60) return buildFallbackSlot(normalizedSlots[i], lagnaSign, role);
+        if (wordCount < 60) return buildFallbackSlot(normalizedSlots[i]);
         return { slot_index, commentary };
       });
 
       // Fill any missing slots from fallback.
       const filled = normalizedSlots.map((s, i) => {
         if (out[i]?.commentary) return out[i];
-        const role = ctx.horaRoles[s.dominant_hora];
-        return buildFallbackSlot(s, lagnaSign, role);
+        return buildFallbackSlot(s);
       });
       return NextResponse.json({ date, slots: filled }, { status: 200 });
     } catch (err: unknown) {
@@ -285,7 +237,7 @@ Respond with ONLY a JSON object. No preamble. No markdown. Start with { directly
       return NextResponse.json(
         {
           date,
-          slots: normalizedSlots.map((s) => buildFallbackSlot(s, lagnaSign, ctx.horaRoles[s.dominant_hora])),
+          slots: normalizedSlots.map((s) => buildFallbackSlot(s)),
           partial: true,
         },
         { status: 206 }

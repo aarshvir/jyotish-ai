@@ -15,6 +15,9 @@ import type {
   ReportData,
   PanchangData,
 } from '@/lib/agents/types';
+import { getCanonicalScoreLabel } from '@/lib/guidance/labels';
+import { buildSlotGuidance, buildDayBriefing } from '@/lib/guidance/builder';
+import { isV2GuidanceEnabled } from '@/lib/guidance/featureFlag';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
 
@@ -158,18 +161,15 @@ const PLANET_SYMBOLS: Record<string, string> = {
   Jupiter: '♃', Venus: '♀', Saturn: '♄',
 };
 
+/**
+ * Uses the canonical score-to-label function to eliminate threshold drift.
+ * Previously this had Neutral at ≥55 instead of ≥50 — now uses single source of truth.
+ */
 function toLabel(
   score: number,
   isRk: boolean,
 ): 'Peak' | 'Excellent' | 'Good' | 'Neutral' | 'Caution' | 'Difficult' | 'Avoid' {
-  if (isRk) return 'Avoid';
-  if (score >= 85) return 'Peak';
-  if (score >= 75) return 'Excellent';
-  if (score >= 65) return 'Good';
-  if (score >= 55) return 'Neutral';
-  if (score >= 45) return 'Caution';
-  if (score >= 35) return 'Difficult';
-  return 'Avoid';
+  return getCanonicalScoreLabel(score, isRk);
 }
 
 function formatDayLabel(dateStr: string): string {
@@ -924,36 +924,81 @@ export async function generateReportPipeline(
     // ── STEP 10: Assemble final report ────────────────────────────────────
     onStep({ type: 'step_started', step: 10, message: 'Finalising your report...', detail: 'Assembling all sections' });
 
-    const daysForReport = forecastDays.map((d) => ({
-      date: d.date,
-      day_label: formatDayLabel(d.date),
-      day_score: d.day_score,
-      day_label_tier: toLabel(d.day_score, false),
-      day_theme: (d.day_theme ?? '').trim() || `Day score ${d.day_score}.`,
-      overview:
-        (d.day_overview ?? '').trim() ||
-        `Day score ${d.day_score}. Use hora and choghadiya to time activities.`,
-      panchang: d.panchang ?? {},
-      rahu_kaal: d.rahu_kaal?.start
-        ? { start: d.rahu_kaal.start.slice(0, 5), end: d.rahu_kaal.end.slice(0, 5) }
-        : null,
-      slots: (d.slots ?? []).map((s) => ({
-        ...s,
-        hora_planet: s.dominant_hora ?? 'Moon',
-        hora_planet_symbol: PLANET_SYMBOLS[s.dominant_hora] ?? '☽',
-        choghadiya: s.dominant_choghadiya ?? 'Chal',
-        choghadiya_quality: 'Neutral',
-        commentary: (s.commentary ?? '').trim() || `${s.dominant_hora} hora. Score ${s.score}.`,
-        commentary_short:
-          (s.commentary_short ?? '').trim() ||
-          ((s.commentary ?? '').split('.')[0] + '.') ||
-          '—',
-        score: s.score ?? 50,
-        label: toLabel(s.score ?? 50, s.is_rahu_kaal ?? false),
-      })),
-      peak_count: (d.slots ?? []).filter((s) => (s.score ?? 50) >= 75 && !(s.is_rahu_kaal ?? false)).length,
-      caution_count: (d.slots ?? []).filter((s) => (s.score ?? 50) < 45 || (s.is_rahu_kaal ?? false)).length,
-    }));
+    const v2Enabled = isV2GuidanceEnabled();
+
+    const daysForReport = forecastDays.map((d) => {
+      const mappedSlots = (d.slots ?? []).map((s) => {
+        const slotScore = s.score ?? 50;
+        const isRk = s.is_rahu_kaal ?? false;
+        const horaPlanet = s.dominant_hora ?? 'Moon';
+        const chog = s.dominant_choghadiya ?? 'Chal';
+
+        const guidanceV2 = v2Enabled
+          ? buildSlotGuidance({
+              score: slotScore,
+              hora_planet: horaPlanet,
+              choghadiya: chog,
+              transit_lagna_house: s.transit_lagna_house ?? 1,
+              is_rahu_kaal: isRk,
+              display_label: s.display_label,
+            })
+          : undefined;
+
+        const fallbackCommentary = guidanceV2?.summary_plain ?? `${horaPlanet} hora. Score ${slotScore}.`;
+
+        return {
+          ...s,
+          hora_planet: horaPlanet,
+          hora_planet_symbol: PLANET_SYMBOLS[horaPlanet] ?? '☽',
+          choghadiya: chog,
+          choghadiya_quality: 'Neutral',
+          commentary: (s.commentary ?? '').trim() || fallbackCommentary,
+          commentary_short:
+            (s.commentary_short ?? '').trim() ||
+            ((s.commentary ?? '').split('.')[0] + '.') ||
+            '—',
+          score: slotScore,
+          label: toLabel(slotScore, isRk),
+          ...(guidanceV2 ? { guidance_v2: guidanceV2 } : {}),
+        };
+      });
+
+      const briefingV2 = v2Enabled
+        ? buildDayBriefing({
+            date: d.date,
+            day_score: d.day_score,
+            panchang: d.panchang ?? {},
+            slots: mappedSlots.map((s) => ({
+              slot_index: s.slot_index,
+              score: s.score,
+              is_rahu_kaal: s.is_rahu_kaal,
+              hora_planet: s.hora_planet ?? s.dominant_hora,
+              choghadiya: s.choghadiya ?? s.dominant_choghadiya,
+              display_label: s.display_label,
+              guidance: s.guidance_v2,
+            })),
+          })
+        : undefined;
+
+      return {
+        date: d.date,
+        day_label: formatDayLabel(d.date),
+        day_score: d.day_score,
+        day_label_tier: toLabel(d.day_score, false),
+        day_theme: (d.day_theme ?? '').trim() || `Day score ${d.day_score}.`,
+        overview:
+          (d.day_overview ?? '').trim() ||
+          `Day score ${d.day_score}. Use hora and choghadiya to time activities.`,
+        panchang: d.panchang ?? {},
+        rahu_kaal: d.rahu_kaal?.start
+          ? { start: d.rahu_kaal.start.slice(0, 5), end: d.rahu_kaal.end.slice(0, 5) }
+          : null,
+        slots: mappedSlots,
+        peak_count: mappedSlots.filter((s) => s.score >= 75 && !s.is_rahu_kaal).length,
+        caution_count: mappedSlots.filter((s) => s.score < 45 || s.is_rahu_kaal).length,
+        ...(briefingV2 ? { briefing_v2: briefingV2 } : {}),
+      };
+    });
 
     const finalReport = {
       report_id: `gen-${Date.now()}`,

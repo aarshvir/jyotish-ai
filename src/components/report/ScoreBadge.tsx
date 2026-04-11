@@ -46,10 +46,11 @@ export function ScoreBadge({ score: rawScore, size = 'md', showLabel = false, an
   };
 
   const getLabel = (s: number) => {
+    // Uses canonical thresholds: ≥85 Peak, ≥75 Excellent, ≥65 Good, ≥50 Neutral, ≥45 Caution, ≥35 Difficult, else Avoid
     if (s >= 85) return '★★★ PEAK';
     if (s >= 75) return '★★ EXCELLENT';
     if (s >= 65) return '★ GOOD';
-    if (s >= 55) return 'NEUTRAL';
+    if (s >= 50) return 'NEUTRAL';
     if (s >= 45) return '⚠ CAUTION';
     if (s >= 35) return '⚠⚠ DIFFICULT';
     return '🔴 AVOID';
