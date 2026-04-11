@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
 import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 
 /** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
@@ -34,9 +35,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'reportId required' }, { status: 400 });
   }
 
-  const supabase = await createClient();
+  // Use service client (bypasses RLS) for all DB writes in this route so it works
+  // both for real users and bypass-authenticated server-side calls.
+  const db = createServiceClient();
 
-  const { data: existing } = await supabase
+  // Also keep the anon client for reading (respects RLS for real users via cookie session).
+  // For bypass auth the service client is used for both read and write.
+  const readDb = auth.isAdmin ? db : await createClient();
+
+  const { data: existing } = await readDb
     .from('reports')
     .select('status, report_data')
     .eq('id', reportId)
@@ -61,7 +68,7 @@ export async function POST(request: NextRequest) {
         ? parseInt(tzBody, 10) || 0
         : 0;
 
-  const { error } = await supabase.from('reports').insert({
+  const { error } = await db.from('reports').insert({
     id: reportId,
     user_id: auth.user.id,
     user_email: auth.user.email ?? '',
