@@ -1,15 +1,28 @@
-export const maxDuration = 60;
+export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 
+/** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
+function birthTimeToPipelineTime(s: string): string {
+  const raw = (s || '12:00:00').trim();
+  const parts = raw.split(':').filter((p) => p.length > 0);
+  if (parts.length >= 2) {
+    const h = parts[0].padStart(2, '0');
+    const m = parts[1].padStart(2, '0');
+    return `${h}:${m}`;
+  }
+  return '12:00';
+}
+
 /**
  * Creates a `reports` row in `generating` state and starts background computation.
- * Client then polls `/api/reports/[id]/status` to check status.
- * Computation starts independently via async fire-and-forget.
+ * Client polls `/api/reports/[id]/status` — safe to close the browser after this returns.
+ * `waitUntil` keeps the serverless invocation alive until the pipeline finishes (Vercel).
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -22,6 +35,32 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from('reports')
+    .select('status, report_data')
+    .eq('id', reportId)
+    .eq('user_id', auth.user.id)
+    .maybeSingle();
+
+  const rd = existing?.report_data as { days?: unknown[] } | null | undefined;
+  const alreadyDone =
+    existing?.status === 'complete' &&
+    Array.isArray(rd?.days) &&
+    (rd!.days as unknown[]).length > 0;
+
+  if (alreadyDone) {
+    return NextResponse.json({ reportId, ok: true, status: 'complete', skipped: true });
+  }
+
+  const tzBody = body.timezone_offset;
+  const timezoneOffset =
+    typeof tzBody === 'number' && Number.isFinite(tzBody)
+      ? tzBody
+      : typeof tzBody === 'string' && tzBody.trim() !== ''
+        ? parseInt(tzBody, 10) || 0
+        : 0;
+
   const { error } = await supabase.from('reports').insert({
     id: reportId,
     user_id: auth.user.id,
@@ -35,7 +74,7 @@ export async function POST(request: NextRequest) {
     current_city: body.current_city ?? null,
     current_lat: body.current_lat ?? null,
     current_lng: body.current_lng ?? null,
-    timezone_offset: body.timezone_offset ?? null,
+    timezone_offset: timezoneOffset || null,
     plan_type: body.plan_type ?? '7day',
     status: 'generating',
     payment_status: body.payment_status ?? 'free',
@@ -45,22 +84,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Prepare background task
+  const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
+
   const input: PipelineInput = {
     name: body.name ?? 'Seeker',
     date: body.birth_date ?? '',
-    time: body.birth_time ?? '12:00:00',
+    time: pipelineTime,
     city: body.birth_city ?? '',
     lat: parseFloat(body.birth_lat ?? '0') || 0,
     lng: parseFloat(body.birth_lng ?? '0') || 0,
     currentLat: parseFloat(body.current_lat ?? body.birth_lat ?? '0') || 0,
     currentLng: parseFloat(body.current_lng ?? body.birth_lng ?? '0') || 0,
     currentCity: body.current_city ?? body.birth_city ?? '',
-    timezoneOffset: body.timezone_offset ?? -new Date().getTimezoneOffset(),
+    timezoneOffset,
     type: body.plan_type ?? '7day',
     forecastStart: body.forecast_start ?? undefined,
     planType: body.plan_type ?? '7day',
-    paymentStatus: 'bypass',
+    paymentStatus: body.payment_status ?? 'bypass',
   };
 
   const base = request.nextUrl.origin;
@@ -68,11 +108,17 @@ export async function POST(request: NextRequest) {
   const cookie = request.headers.get('cookie');
   if (cookie) authHeaders['cookie'] = cookie;
 
-  // Fire-and-forget: start computation in background without blocking the response
-  // This task will continue running on Vercel even after the response is sent
-  generateReportPipeline(reportId, auth.user.id, auth.user.email ?? '', input, () => {}, base, authHeaders)
-    .catch((err) => console.error(`[reports/start] background pipeline failed for ${reportId}:`, err));
+  const pipeline = generateReportPipeline(
+    reportId,
+    auth.user.id,
+    auth.user.email ?? '',
+    input,
+    () => {},
+    base,
+    authHeaders,
+  ).catch((err) => console.error(`[reports/start] background pipeline failed for ${reportId}:`, err));
 
-  // Return immediately so client can start polling
+  waitUntil(pipeline);
+
   return NextResponse.json({ reportId, ok: true, status: 'generating' });
 }

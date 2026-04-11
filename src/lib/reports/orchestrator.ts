@@ -192,6 +192,24 @@ function weeklyFallback(label: string, score: number): string {
   return `${label || 'This week'} — Week score: ${score}/100. Weekly narrative is generating — refresh in 30 seconds.`;
 }
 
+/** Ephemeris expects HH:MM:SS; `input.time` may be HH:MM or HH:MM:SS. */
+function formatEphemerisBirthTime(t: string): string {
+  const raw = (t || '12:00').trim();
+  const parts = raw.split(':').filter((p) => p.length > 0);
+  if (parts.length >= 3) {
+    const h = parts[0].padStart(2, '0');
+    const m = parts[1].padStart(2, '0');
+    const s = (parts[2] ?? '00').replace(/\D/g, '').slice(0, 2).padStart(2, '0') || '00';
+    return `${h}:${m}:${s}`;
+  }
+  if (parts.length === 2) {
+    const h = parts[0].padStart(2, '0');
+    const m = parts[1].padStart(2, '0');
+    return `${h}:${m}:00`;
+  }
+  return '12:00:00';
+}
+
 async function resilientFetch(
   url: string,
   options: RequestInit,
@@ -360,7 +378,7 @@ export async function generateReportPipeline(
         body: JSON.stringify({
           type: 'natal-chart',
           birth_date: input.date,
-          birth_time: `${input.time}:00`,
+          birth_time: formatEphemerisBirthTime(input.time),
           birth_city: input.city,
           birth_lat: input.lat,
           birth_lng: input.lng,
@@ -1037,5 +1055,14 @@ export async function generateReportPipeline(
     const message = err instanceof Error ? err.message : 'Failed to generate report';
     console.error('[orchestrator] fatal error:', message);
     onStep({ type: 'error', message });
+    try {
+      await db
+        .from('reports')
+        .update({ status: 'error' })
+        .eq('id', reportId)
+        .eq('user_id', userId);
+    } catch (markErr) {
+      console.error('[orchestrator] failed to mark report as error:', markErr);
+    }
   }
 }
