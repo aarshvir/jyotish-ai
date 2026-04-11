@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { waitUntil } from '@vercel/functions';
-import { requireAuth } from '@/lib/api/requireAuth';
+import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 
@@ -104,9 +104,18 @@ export async function POST(request: NextRequest) {
   };
 
   const base = request.nextUrl.origin;
+
+  // Use bypass secret for server-to-server calls inside the pipeline.
+  // Browser session cookies cannot be used here because waitUntil runs after
+  // the response is sent and the session may no longer be valid.
   const authHeaders: Record<string, string> = {};
-  const cookie = request.headers.get('cookie');
-  if (cookie) authHeaders['cookie'] = cookie;
+  if (BYPASS_SECRET) {
+    authHeaders['x-bypass-token'] = BYPASS_SECRET;
+  } else {
+    // Fallback: pass cookies (only reliable when session is still live)
+    const cookie = request.headers.get('cookie');
+    if (cookie) authHeaders['cookie'] = cookie;
+  }
 
   const pipeline = generateReportPipeline(
     reportId,
