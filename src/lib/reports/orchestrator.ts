@@ -251,6 +251,39 @@ export async function generateReportPipeline(
   const skipValidation = process.env.NEXT_PUBLIC_SKIP_VALIDATION === 'true';
 
   const db = createServiceClient();
+  const pipelineT0 = Date.now();
+  /** Wall-clock budget so we mark `error` before Vercel hard-kills the invocation (leaves orphan `generating`). */
+  const budgetMs =
+    Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 760_000;
+
+  function logStep(step: string, extra?: Record<string, unknown>) {
+    console.log(
+      JSON.stringify({
+        event: 'orchestrator_step',
+        reportId,
+        step,
+        ms: Date.now() - pipelineT0,
+        ...extra,
+      }),
+    );
+  }
+
+  async function assertWithinBudget(phase: string): Promise<void> {
+    const elapsed = Date.now() - pipelineT0;
+    if (elapsed > budgetMs) {
+      logStep('budget_exceeded', { phase, budgetMs });
+      try {
+        await db
+          .from('reports')
+          .update({ status: 'error', updated_at: new Date().toISOString() })
+          .eq('id', reportId)
+          .eq('user_id', userId);
+      } catch (e) {
+        console.error('[orchestrator] budget mark error failed:', e);
+      }
+      throw new Error(`Pipeline time budget exceeded (${phase})`);
+    }
+  }
 
   // Helper: upsert report row
   async function dbInsertGenerating() {
@@ -279,6 +312,7 @@ export async function generateReportPipeline(
         plan_type: planType,
         status: 'generating',
         payment_status: input.paymentStatus ?? 'bypass',
+        updated_at: new Date().toISOString(),
       },
       { onConflict: 'id', ignoreDuplicates: false },
     );
@@ -294,7 +328,12 @@ export async function generateReportPipeline(
   ) {
     const { error } = await db
       .from('reports')
-      .update({ lagna_sign: lagna, dasha_mahadasha: mahadasha, dasha_antardasha: antardasha })
+      .update({
+        lagna_sign: lagna,
+        dasha_mahadasha: mahadasha,
+        dasha_antardasha: antardasha,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', reportId)
       .eq('user_id', userId);
     if (error) console.error('[orchestrator] dbSaveEphemeris:', error.message);
@@ -307,7 +346,7 @@ export async function generateReportPipeline(
     });
     const { error } = await db
       .from('reports')
-      .update({ day_scores: dayScores })
+      .update({ day_scores: dayScores, updated_at: new Date().toISOString() })
       .eq('id', reportId)
       .eq('user_id', userId);
     if (error) console.error('[orchestrator] dbSaveDayScores:', error.message);
@@ -343,6 +382,7 @@ export async function generateReportPipeline(
         report_data: reportPayload,
         status: 'complete',
         generation_completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq('id', reportId)
       .eq('user_id', userId);
@@ -351,6 +391,7 @@ export async function generateReportPipeline(
 
   try {
     await dbInsertGenerating();
+    logStep('db_insert_generating');
 
     const dayCount = input.type === 'monthly' || input.type === 'annual' ? 30 : 7;
     const cLat = input.currentLat || input.lat;
@@ -367,6 +408,7 @@ export async function generateReportPipeline(
     });
 
     // ── STEP 1: Ephemeris ─────────────────────────────────────────────────
+    await assertWithinBudget('pre_ephemeris');
     onStep({ type: 'step_started', step: 0, message: 'Reading the stars...', detail: 'Calculating planetary positions' });
 
     let ephemerisData: NatalChartData;
@@ -394,10 +436,20 @@ export async function generateReportPipeline(
       const msg = err instanceof Error ? err.message : String(err);
       console.error('[orchestrator][STEP-1] failed:', msg);
       onStep({ type: 'error', message: `Birth chart calculation failed: ${msg}. Please try again.` });
+      try {
+        await db
+          .from('reports')
+          .update({ status: 'error', updated_at: new Date().toISOString() })
+          .eq('id', reportId)
+          .eq('user_id', userId);
+      } catch (e) {
+        console.error('[orchestrator] mark error after ephemeris fail:', e);
+      }
       return;
     }
 
     onStep({ type: 'step_completed', step: 0 });
+    logStep('ephemeris_done');
 
     // Save ephemeris data immediately
     const dasha = ephemerisData?.current_dasha ?? {};
@@ -406,6 +458,7 @@ export async function generateReportPipeline(
     void dbSaveEphemeris(ephemerisData.lagna, mahadasha, antardasha);
 
     // ── STEP 2+3: Nativity + Daily grids (parallel) ──────────────────────
+    await assertWithinBudget('pre_nativity_grids');
     onStep({ type: 'step_started', step: 1, message: 'Analysing birth chart & calculating hourly scores...', detail: 'Nativity analysis and daily grid calculation in parallel' });
 
     const natal_lagna_sign_index = Math.max(0, SIGNS_FOR_LAGNA.indexOf(ephemerisData?.lagna ?? ''));
@@ -463,6 +516,7 @@ export async function generateReportPipeline(
     ]);
 
     onStep({ type: 'step_completed', step: 1 });
+    logStep('nativity_grids_done');
 
     const forecastDays: ForecastDayIntermediate[] = dailyGridResults.map((r, i) => {
       if (!r) {
@@ -509,6 +563,7 @@ export async function generateReportPipeline(
     // Save day scores after grids
     void dbSaveDayScores(forecastDays);
     onStep({ type: 'partial_report_updated', field: 'day_scores' });
+    await assertWithinBudget('pre_commentary');
 
     const np = nativityProfile as NativityProfile | null;
     const nativityData: NativityData = {
@@ -783,6 +838,8 @@ export async function generateReportPipeline(
     ]);
 
     onStep({ type: 'step_completed', step: 3 });
+    logStep('commentary_months_done');
+    await assertWithinBudget('pre_weeks_synthesis');
 
     // ── STEP 8: Weeks + Synthesis ─────────────────────────────────────────
     onStep({ type: 'step_started', step: 6, message: 'Writing period synthesis...', detail: '6 weekly summaries + strategic windows' });
@@ -876,6 +933,8 @@ export async function generateReportPipeline(
     }
 
     onStep({ type: 'step_completed', step: 6 });
+    logStep('weeks_synthesis_done');
+    await assertWithinBudget('pre_validation');
 
     // ── STEP 9: Validation ────────────────────────────────────────────────
     if (!skipValidation) {
@@ -940,6 +999,7 @@ export async function generateReportPipeline(
     }
 
     // ── STEP 10: Assemble final report ────────────────────────────────────
+    await assertWithinBudget('pre_assemble');
     onStep({ type: 'step_started', step: 10, message: 'Finalising your report...', detail: 'Assembling all sections' });
 
     const v2Enabled = isV2GuidanceEnabled();
@@ -1048,6 +1108,7 @@ export async function generateReportPipeline(
     // Save to DB
     await dbSaveFinal(finalReport as unknown as Record<string, unknown>);
     onStep({ type: 'step_completed', step: 10 });
+    logStep('report_saved_complete');
 
     // Emit completion
     onStep({ type: 'report_completed', reportData: finalReportTyped });
@@ -1058,7 +1119,7 @@ export async function generateReportPipeline(
     try {
       await db
         .from('reports')
-        .update({ status: 'error' })
+        .update({ status: 'error', updated_at: new Date().toISOString() })
         .eq('id', reportId)
         .eq('user_id', userId);
     } catch (markErr) {

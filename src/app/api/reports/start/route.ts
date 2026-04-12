@@ -1,4 +1,4 @@
-export const maxDuration = 300;
+export const maxDuration = 800;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -7,6 +7,9 @@ import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
+
+/** If a row is `generating` and younger than this, skip starting a duplicate pipeline. */
+const YOUNG_GENERATING_MS = 12 * 60 * 1000;
 
 /** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
 function birthTimeToPipelineTime(s: string): string {
@@ -20,10 +23,20 @@ function birthTimeToPipelineTime(s: string): string {
   return '12:00';
 }
 
+function isYoungGenerating(generationStartedAt: string | null | undefined): boolean {
+  if (!generationStartedAt) return false;
+  const t = new Date(generationStartedAt).getTime();
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t < YOUNG_GENERATING_MS;
+}
+
 /**
  * Creates a `reports` row in `generating` state and starts background computation.
  * Client polls `/api/reports/[id]/status` — safe to close the browser after this returns.
  * `waitUntil` keeps the serverless invocation alive until the pipeline finishes (Vercel).
+ *
+ * Idempotency: if the row is already `generating` with a fresh `generation_started_at`,
+ * returns 202 without a second `waitUntil` (avoids duplicate pipelines).
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -35,17 +48,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'reportId required' }, { status: 400 });
   }
 
-  // Use service client (bypasses RLS) for all DB writes in this route so it works
-  // both for real users and bypass-authenticated server-side calls.
   const db = createServiceClient();
-
-  // Also keep the anon client for reading (respects RLS for real users via cookie session).
-  // For bypass auth the service client is used for both read and write.
   const readDb = auth.isAdmin ? db : await createClient();
 
   const { data: existing } = await readDb
     .from('reports')
-    .select('status, report_data')
+    .select('status, report_data, generation_started_at')
     .eq('id', reportId)
     .eq('user_id', auth.user.id)
     .maybeSingle();
@@ -60,6 +68,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ reportId, ok: true, status: 'complete', skipped: true });
   }
 
+  const forceRestart = body.forceRestart === true;
+
+  if (
+    existing?.status === 'generating' &&
+    isYoungGenerating(existing.generation_started_at) &&
+    !forceRestart
+  ) {
+    return NextResponse.json(
+      {
+        reportId,
+        ok: true,
+        status: 'generating',
+        skippedPipeline: true,
+        message: 'Generation already in progress — keep polling status.',
+      },
+      { status: 202 },
+    );
+  }
+
   const tzBody = body.timezone_offset;
   const timezoneOffset =
     typeof tzBody === 'number' && Number.isFinite(tzBody)
@@ -68,27 +95,34 @@ export async function POST(request: NextRequest) {
         ? parseInt(tzBody, 10) || 0
         : 0;
 
-  const { error } = await db.from('reports').insert({
-    id: reportId,
-    user_id: auth.user.id,
-    user_email: auth.user.email ?? '',
-    native_name: body.name ?? 'Unknown',
-    birth_date: body.birth_date ?? '2000-01-01',
-    birth_time: body.birth_time ?? '12:00:00',
-    birth_city: body.birth_city ?? 'Unknown',
-    birth_lat: body.birth_lat ?? null,
-    birth_lng: body.birth_lng ?? null,
-    current_city: body.current_city ?? null,
-    current_lat: body.current_lat ?? null,
-    current_lng: body.current_lng ?? null,
-    timezone_offset: timezoneOffset || null,
-    plan_type: body.plan_type ?? '7day',
-    status: 'generating',
-    payment_status: body.payment_status ?? 'free',
-  });
+  const nowIso = new Date().toISOString();
 
-  if (error && error.code !== '23505') {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const { error: upsertError } = await db.from('reports').upsert(
+    {
+      id: reportId,
+      user_id: auth.user.id,
+      user_email: auth.user.email ?? '',
+      native_name: body.name ?? 'Unknown',
+      birth_date: body.birth_date ?? '2000-01-01',
+      birth_time: body.birth_time ?? '12:00:00',
+      birth_city: body.birth_city ?? 'Unknown',
+      birth_lat: body.birth_lat ?? null,
+      birth_lng: body.birth_lng ?? null,
+      current_city: body.current_city ?? null,
+      current_lat: body.current_lat ?? null,
+      current_lng: body.current_lng ?? null,
+      timezone_offset: timezoneOffset || null,
+      plan_type: body.plan_type ?? '7day',
+      status: 'generating',
+      payment_status: body.payment_status ?? 'free',
+      generation_started_at: nowIso,
+      updated_at: nowIso,
+    },
+    { onConflict: 'id' },
+  );
+
+  if (upsertError) {
+    return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
   const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
@@ -112,14 +146,10 @@ export async function POST(request: NextRequest) {
 
   const base = request.nextUrl.origin;
 
-  // Use bypass secret for server-to-server calls inside the pipeline.
-  // Browser session cookies cannot be used here because waitUntil runs after
-  // the response is sent and the session may no longer be valid.
   const authHeaders: Record<string, string> = {};
   if (BYPASS_SECRET) {
     authHeaders['x-bypass-token'] = BYPASS_SECRET;
   } else {
-    // Fallback: pass cookies (only reliable when session is still live)
     const cookie = request.headers.get('cookie');
     if (cookie) authHeaders['cookie'] = cookie;
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense, type MutableRefObject } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -34,25 +34,27 @@ function isPlaceholderReportData(rd: Record<string, unknown> | null | undefined)
 }
 
 const GENERATION_MESSAGES = [
-  'Reading planetary positions at the moment of birth…',
-  'Calculating lagna and house lordships…',
-  'Scoring 126 hourly windows across 7 days…',
-  'Writing natal chart analysis…',
-  'Generating daily overviews for each day…',
-  'Writing hour-by-hour commentary…',
-  'Building 12-month forecast…',
-  'Composing weekly synthesis…',
-  'Finalising and saving your report…',
+  'Computing ephemeris and natal positions…',
+  'Scoring hourly windows for each forecast day…',
+  'Running nativity and commentary models (this is the slowest part)…',
+  'Writing daily overviews and slot-by-slot text…',
+  'Building the 12-month layer and weekly synthesis…',
+  'Validating and assembling the final report…',
 ];
+
+/** Stop polling after this if status is still `generating` (server likely dead or orphaned row). */
+const CLIENT_GENERATING_TIMEOUT_MS = 15 * 60 * 1000;
 
 function GeneratingScreen({
   elapsedSeconds,
   onElapsed,
   generationStartRef,
+  serverPoll,
 }: {
   elapsedSeconds: number;
   onElapsed: (s: number) => void;
-  generationStartRef: React.MutableRefObject<number | null>;
+  generationStartRef: MutableRefObject<number | null>;
+  serverPoll: { status: string; progress: number } | null;
 }) {
   useEffect(() => {
     const t = setInterval(() => {
@@ -63,13 +65,19 @@ function GeneratingScreen({
   }, [generationStartRef, onElapsed]);
 
   const msgIndex = Math.min(
-    Math.floor(elapsedSeconds / 18),
+    Math.floor(elapsedSeconds / 22),
     GENERATION_MESSAGES.length - 1,
   );
-  const progressPct = Math.min(95, Math.round((elapsedSeconds / 160) * 100));
   const mins = Math.floor(elapsedSeconds / 60);
   const secs = elapsedSeconds % 60;
   const elapsed = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
+  const serverLine =
+    serverPoll?.status === 'generating'
+      ? `Server status: generating (poll progress ${serverPoll.progress}%)`
+      : serverPoll?.status
+        ? `Server status: ${serverPoll.status}`
+        : 'Waiting for first status response…';
 
   return (
     <div className="min-h-[calc(100vh-var(--nav-height))] bg-dark flex flex-col items-center justify-center gap-8 px-6">
@@ -84,69 +92,32 @@ function GeneratingScreen({
         </p>
       </div>
 
-      {/* Progress bar */}
+      {/* Indeterminate progress — not tied to fake % complete */}
       <div className="w-full max-w-md">
         <div className="flex justify-between items-center mb-1.5">
-          <span className="font-mono text-xs text-amber">{progressPct}%</span>
+          <span className="font-mono text-xs text-amber">In progress</span>
           <span className="font-mono text-xs text-dust">{elapsed}</span>
         </div>
-        <div className="h-1.5 bg-nebula rounded-full overflow-hidden">
-          <div
-            className="h-full bg-amber rounded-full transition-all duration-1000 ease-out"
-            style={{ width: `${progressPct}%` }}
-          />
+        <div className="h-2 w-full bg-nebula rounded-full overflow-hidden">
+          <div className="h-full w-full bg-gradient-to-r from-amber/20 via-amber/70 to-amber/20 animate-pulse" />
         </div>
+        <p className="font-mono text-[10px] text-dust/80 mt-2">{serverLine}</p>
       </div>
 
-      {/* Rotating message */}
       <div className="w-full max-w-md bg-nebula/30 border border-amber/10 rounded-lg p-4 text-center min-h-[3.5rem] flex items-center justify-center">
-        <p className="font-mono text-xs text-amber leading-relaxed">
-          {GENERATION_MESSAGES[msgIndex]}
+        <p className="font-mono text-xs text-amber leading-relaxed">{GENERATION_MESSAGES[msgIndex]}</p>
+      </div>
+
+      <div className="w-full max-w-md rounded-lg border border-dust/20 bg-space/40 p-4">
+        <p className="text-dust text-xs leading-relaxed">
+          Phases (ephemeris → grids → nativity → commentary → months → synthesis → save) run on the server.
+          The list is not a live step tracker — long waits usually mean heavy AI calls or a retry after a provider
+          slowdown. If nothing changes for many minutes, use Try again or open the link later.
         </p>
       </div>
 
-      {/* Step list — accurate phases, no fake live tracking */}
-      <div className="w-full max-w-md space-y-1.5">
-        {[
-          'Ephemeris & birth chart',
-          'Hourly slot scoring (7 days × 18 slots)',
-          'Nativity analysis',
-          'Daily overviews + hourly commentary',
-          'Monthly forecast (12 months)',
-          'Weekly synthesis',
-          'Final assembly & save',
-        ].map((label, i) => {
-          const approxDoneAt = [10, 25, 80, 110, 115, 135, 155];
-          const done = elapsedSeconds > (approxDoneAt[i] ?? 999);
-          const active = !done && elapsedSeconds > (approxDoneAt[i - 1] ?? 0);
-          return (
-            <div
-              key={i}
-              className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-500 ${
-                active ? 'bg-amber/8 border border-amber/20' : ''
-              } ${done ? 'opacity-40' : ''}`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-mono ${
-                  done
-                    ? 'bg-emerald text-dark'
-                    : active
-                    ? 'bg-amber text-dark animate-pulse'
-                    : 'bg-nebula text-dust'
-                }`}
-              >
-                {done ? '✓' : i + 1}
-              </div>
-              <span className={`text-xs ${active ? 'text-star font-medium' : 'text-dust'}`}>
-                {label}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
       <p className="text-dust/60 text-xs text-center max-w-sm">
-        Typical generation time: 2–4 minutes. The link above stays valid — you can bookmark it and come back.
+        Typical time: about 3–8 minutes. This page stops waiting automatically after about 15 minutes and offers a retry.
       </p>
     </div>
   );
@@ -194,6 +165,7 @@ function ReportContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const generationStartRef = useRef<number | null>(null);
+  const [serverPoll, setServerPoll] = useState<{ status: string; progress: number } | null>(null);
 
   const authJsonHeaders = useCallback((): Record<string, string> => {
     const h: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -271,12 +243,25 @@ function ReportContent() {
 
     setIsLoading(true);
     setError(null);
+    setServerPoll(null);
     generationStartRef.current = Date.now();
     setElapsedSeconds(0);
 
-    pollIntervalRef.current = setInterval(async () => {
+    const pollIntervalMs = 3000;
+    const pollLoopStartedAt = Date.now();
+
+    const tick = async () => {
       if (pollCancelRef.current) return;
       try {
+        if (Date.now() - pollLoopStartedAt > CLIENT_GENERATING_TIMEOUT_MS) {
+          stopReportPolling();
+          setError(
+            'Generation is taking unusually long or was interrupted on the server. Try again. If it keeps happening, check Vercel logs for timeouts or contact support.',
+          );
+          setIsLoading(false);
+          return;
+        }
+
         const response = await fetch(`/api/reports/${reportIdFromRoute}/status`, {
           method: 'GET',
           headers: authJsonHeaders(),
@@ -292,8 +277,11 @@ function ReportContent() {
         const data = (await response.json()) as {
           status: string;
           isComplete: boolean;
+          progress?: number;
           report: ReportData | null;
         };
+
+        setServerPoll({ status: data.status, progress: typeof data.progress === 'number' ? data.progress : 0 });
 
         if (data.isComplete && data.report) {
           stopReportPolling();
@@ -326,11 +314,14 @@ function ReportContent() {
       } catch (err) {
         console.error('[Polling] error:', err);
       }
-    }, 3000);
+    };
+
+    void tick();
+    pollIntervalRef.current = setInterval(() => void tick(), pollIntervalMs);
   }, [reportIdFromRoute, authJsonHeaders, stopReportPolling]);
 
   /** Inserts row (if needed), POSTs /api/reports/start, then polls until complete. */
-  const kickOffBackgroundGeneration = useCallback(async () => {
+  const kickOffBackgroundGeneration = useCallback(async (opts?: { forceRestart?: boolean }) => {
     if (!isRouteUuid(reportIdFromRoute)) return;
     setIsLoading(true);
     setError(null);
@@ -361,6 +352,7 @@ function ReportContent() {
       plan_type: planType,
       forecast_start: forecastStartParam || undefined,
       payment_status: 'bypass',
+      ...(opts?.forceRestart ? { forceRestart: true } : {}),
     };
 
     const res = await fetch('/api/reports/start', {
@@ -590,7 +582,14 @@ function ReportContent() {
   }, [reportIdFromRoute, queryKey, kickOffBackgroundGeneration, startPollingForReport, stopReportPolling]);
 
   if (isLoading) {
-    return <GeneratingScreen elapsedSeconds={elapsedSeconds} onElapsed={setElapsedSeconds} generationStartRef={generationStartRef} />;
+    return (
+      <GeneratingScreen
+        elapsedSeconds={elapsedSeconds}
+        onElapsed={setElapsedSeconds}
+        generationStartRef={generationStartRef}
+        serverPoll={serverPoll}
+      />
+    );
   }
 
   if (error) {
@@ -606,7 +605,7 @@ function ReportContent() {
           <button
             onClick={() => {
               hasFetched.current = false;
-              void kickOffBackgroundGeneration();
+              void kickOffBackgroundGeneration({ forceRestart: true });
             }}
             className="px-8 py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
           >

@@ -1,4 +1,4 @@
-export const maxDuration = 10;
+export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -7,8 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 
 /**
- * Poll endpoint: client calls this every 2 seconds to check if report is done.
- * Returns { status, progress, report_data } so UI can update.
+ * Poll endpoint: client calls this every few seconds to check if report is done.
  */
 export async function GET(
   request: NextRequest,
@@ -18,12 +17,13 @@ export async function GET(
   if (auth instanceof NextResponse) return auth;
 
   const { id: reportId } = context.params;
-  // Use service client for bypass (admin) to avoid RLS blocking reads on the bypass user ID.
   const supabase = auth.isAdmin ? createServiceClient() : await createClient();
 
   const { data, error } = await supabase
     .from('reports')
-    .select('id, status, report_data, lagna_sign, dasha_mahadasha, dasha_antardasha, day_scores, native_name, birth_date, birth_time, birth_city')
+    .select(
+      'id, status, report_data, lagna_sign, dasha_mahadasha, dasha_antardasha, day_scores, native_name, birth_date, birth_time, birth_city, generation_started_at, updated_at, created_at',
+    )
     .eq('id', reportId)
     .eq('user_id', auth.user.id)
     .single();
@@ -49,5 +49,8 @@ export async function GET(
     birth_date: data?.birth_date,
     birth_time: data?.birth_time,
     birth_city: data?.birth_city,
+    generation_started_at: data?.generation_started_at ?? null,
+    updated_at: data?.updated_at ?? null,
+    created_at: data?.created_at ?? null,
   });
 }
