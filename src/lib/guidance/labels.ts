@@ -8,7 +8,7 @@
  *   ≥85 Peak, ≥75 Excellent, ≥65 Good, ≥50 Neutral, ≥45 Caution, ≥35 Difficult, else Avoid
  */
 
-import type { RatingLabel } from '@/lib/agents/types';
+import type { DayOutcomeTier, RatingLabel } from '@/lib/agents/types';
 import type { GuidanceLabel } from './types';
 
 export const SCORE_LABEL_THRESHOLDS: Array<{ min: number; label: RatingLabel }> = [
@@ -31,6 +31,25 @@ export function getCanonicalScoreLabel(score: number, isRahuKaal = false): Ratin
     if (score >= min) return label;
   }
   return 'Avoid';
+}
+
+/**
+ * Whole-day score label (fixed bands). Hourly slots still use {@link getCanonicalScoreLabel}.
+ * Bands: [0,20) AVOID … [80,100] EXCELLENT (see product contract).
+ */
+export function getDayOutcomeTier(score: number): { tier: DayOutcomeTier; emoji: string } {
+  const s = Math.round(Number(score));
+  if (s >= 80) return { tier: 'EXCELLENT', emoji: '⭐' };
+  if (s >= 65) return { tier: 'FAVORABLE', emoji: '🟢' };
+  if (s >= 50) return { tier: 'MODERATE', emoji: '🔵' };
+  if (s >= 35) return { tier: 'CAUTION', emoji: '🟡' };
+  if (s >= 20) return { tier: 'CHALLENGING', emoji: '🟠' };
+  return { tier: 'AVOID', emoji: '🔴' };
+}
+
+export function formatDayOutcomeLabel(score: number): string {
+  const { tier, emoji } = getDayOutcomeTier(score);
+  return `${emoji} ${tier}`;
 }
 
 /**

@@ -18,6 +18,9 @@ import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
 import { PrintAllDays } from '@/components/report/PrintAllDays';
 import type { NatalChartData, NativityProfile, ReportData } from '@/lib/agents/types';
+import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
+import { buildFunctionalLordGroups } from '@/lib/engine/functionalNature';
+import { lagnaSignToIndex } from '@/lib/engine/horaBase';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -641,7 +644,7 @@ function ReportContent() {
       date: day.date ?? '',
       day_score: day.day_score ?? 50,
       day_theme: day.day_theme ?? '',
-      day_rating_label: (day.day_score ?? 50) >= 70 ? 'EXCELLENT' : (day.day_score ?? 50) >= 50 ? 'GOOD' : 'CHALLENGING',
+      day_rating_label: formatDayOutcomeLabel(day.day_score ?? 50),
       panchang: day.panchang ?? {},
       day_overview: day.overview ?? 'Overview is being generated.',
       rahu_kaal: rahuKaalFormatted,
@@ -776,16 +779,35 @@ function ReportContent() {
               }
               nativitySummary={
                 reportData?.nativity
-                  ? {
-                      lagna_analysis: reportData.nativity.lagna_analysis ?? '',
-                      current_dasha_interpretation:
-                        reportData.nativity.current_dasha_interpretation ?? '',
-                      key_yogas: reportData.nativity.key_yogas ?? [],
-                      functional_benefics:
-                        reportData.nativity.functional_benefics ?? [],
-                      functional_malefics:
-                        reportData.nativity.functional_malefics ?? [],
-                    }
+                  ? (() => {
+                      const flg = natalChart?.functional_lord_groups;
+                      const useEngine =
+                        flg &&
+                        ((flg.benefics?.length ?? 0) > 0 ||
+                          (flg.malefics?.length ?? 0) > 0 ||
+                          (flg.neutral?.length ?? 0) > 0 ||
+                          (flg.badhaka?.length ?? 0) > 0);
+                      const lagnaName = natalChart?.lagna?.trim();
+                      const tsFlg =
+                        !useEngine && lagnaName && lagnaName !== 'Unknown'
+                          ? buildFunctionalLordGroups(lagnaSignToIndex(lagnaName))
+                          : null;
+                      const effective = useEngine ? flg! : tsFlg;
+                      return {
+                        lagna_analysis: reportData.nativity.lagna_analysis ?? '',
+                        current_dasha_interpretation:
+                          reportData.nativity.current_dasha_interpretation ?? '',
+                        key_yogas: reportData.nativity.key_yogas ?? [],
+                        functional_benefics: effective
+                          ? effective.benefics
+                          : (reportData.nativity.functional_benefics ?? []),
+                        functional_malefics: effective
+                          ? effective.malefics
+                          : (reportData.nativity.functional_malefics ?? []),
+                        functional_neutral: effective ? effective.neutral : undefined,
+                        badhaka_lines: effective ? effective.badhaka : undefined,
+                      };
+                    })()
                   : undefined
               }
               nativity={

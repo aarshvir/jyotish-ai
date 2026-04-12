@@ -10,7 +10,6 @@ from main import (
     compute_hora_base_for_lagna,
     detect_yogas,
     SIGNS,
-    PLANET_LORDSHIPS,
 )
 
 # Reference: 1991-01-05, 19:45, Lucknow, Cancer lagna
@@ -18,7 +17,8 @@ from main import (
 REFERENCE_CHART = {
     "lagna": "Cancer",
     "lagna_sign_index": 3,
-    "lagna_long": 20.77,  # degrees
+    # Full sidereal longitude (°): Cancer + 20.77° within sign
+    "lagna_long": 3 * 30 + 20.77,
     "planets": {
         "Jupiter":  {"sign": "Cancer", "degree": 16.89, "house_ws": 1,  "house_old": 12},
         "Saturn":   {"sign": "Capricorn", "degree": 1.58, "house_ws": 7,  "house_old": 6},
@@ -81,7 +81,7 @@ def test_fix_2_hora_base_agnostic():
     expected_values = {
         "Jupiter": 62,  # 9th lord (trikona) + exalted → yogakaraka-like
         "Moon": 56,     # Lagna lord
-        "Mars": 54,     # Rules H5+H10 (yogakaraka)
+        "Mars": 62,     # Rules H5+H10 (yogakaraka)
         "Sun": 46,      # 2nd lord
         "Mercury": 34,  # 12th+3rd (dusthana)
         "Venus": 42,    # 11th+4th

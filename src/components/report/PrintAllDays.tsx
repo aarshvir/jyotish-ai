@@ -7,6 +7,7 @@
  */
 
 import { getScoreLabel } from '@/lib/agents/RatingAgent';
+import { formatDayOutcomeLabel, getDayOutcomeTier } from '@/lib/guidance/labels';
 import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 
 interface HourSlot {
@@ -60,14 +61,28 @@ const PLANET_SYMBOLS: Record<string, string> = {
   Sun: '☉', Moon: '☽', Mars: '♂', Mercury: '☿', Jupiter: '♃', Venus: '♀', Saturn: '♄',
 };
 
-const SCORE_COLORS: Record<string, string> = {
+const OUTCOME_COLORS: Record<string, string> = {
+  EXCELLENT: '#4caf7d',
+  FAVORABLE: '#4caf7d',
+  MODERATE: '#d4af37',
+  CAUTION: '#e07a52',
+  CHALLENGING: '#e05252',
+  AVOID: '#e05252',
+};
+
+function dayOutcomeLabel(s: number) {
+  const { tier } = getDayOutcomeTier(s);
+  return { text: formatDayOutcomeLabel(s), color: OUTCOME_COLORS[tier] ?? '#8a8090' };
+}
+
+const SLOT_LABEL_COLORS: Record<string, string> = {
   Peak: '#4caf7d', Excellent: '#4caf7d', Good: '#d4af37',
   Neutral: '#8a8090', Caution: '#e07a52', Difficult: '#e05252', Avoid: '#e05252',
 };
 
-function scoreLabel(s: number, rk: boolean) {
+function slotScoreLabel(s: number, rk: boolean) {
   const label = getScoreLabel(s, rk);
-  return { text: label.toUpperCase(), color: SCORE_COLORS[label] ?? '#8a8090' };
+  return { text: label.toUpperCase(), color: SLOT_LABEL_COLORS[label] ?? '#8a8090' };
 }
 
 function formatDate(dateStr: string) {
@@ -90,7 +105,7 @@ export function PrintAllDays({ days, weeks }: PrintAllDaysProps) {
       )}
       {days.map((day, di) => {
         const slots = (day.hourlySlots ?? []).sort((a, b) => (a.slot_index ?? 0) - (b.slot_index ?? 0));
-        const sl = scoreLabel(day.day_score, false);
+        const sl = dayOutcomeLabel(day.day_score);
 
         return (
           <div
@@ -153,10 +168,13 @@ export function PrintAllDays({ days, weeks }: PrintAllDaysProps) {
               </thead>
               <tbody>
                 {slots.map((slot, si) => {
-                  const sl2 = scoreLabel(slot.score, slot.is_rahu_kaal);
+                  const sl2 = slotScoreLabel(slot.score, slot.is_rahu_kaal);
                   const rowBg = slot.is_rahu_kaal ? 'rgba(224,82,82,0.05)' : slot.score >= 75 ? 'rgba(76,175,125,0.04)' : 'transparent';
                   const timeLabel = slot.display_label ?? slot.time?.slice(0, 5) ?? '—';
-                  const commentary = (slot.commentary ?? '').trim() || `${slot.hora_planet} hora · ${slot.choghadiya} choghadiya.`;
+                  const rawCom = (slot.commentary ?? '').trim() || `${slot.hora_planet} hora · ${slot.choghadiya} choghadiya.`;
+                  const directiveOnly = (rawCom.split(/\n\n/)[0] ?? rawCom).trim();
+                  const commentary =
+                    directiveOnly.length > 140 ? `${directiveOnly.slice(0, 137)}…` : directiveOnly;
                   const planetSym = slot.hora_planet_symbol || PLANET_SYMBOLS[slot.hora_planet] || '';
 
                   return (

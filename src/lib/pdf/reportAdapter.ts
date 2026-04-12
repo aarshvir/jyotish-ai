@@ -8,7 +8,7 @@
 
 import type { ReportData } from '@/lib/agents/types';
 import type { PdfReportPayload } from '@/lib/schema/dtos';
-import { getCanonicalScoreLabel } from '@/lib/guidance/labels';
+import { getCanonicalScoreLabel, getDayOutcomeTier } from '@/lib/guidance/labels';
 import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
 
 interface ReportMetadata {
@@ -53,7 +53,7 @@ export function reportDataToPdfPayload(
       return {
         date: day.date,
         day_score: day.day_score,
-        day_label_tier: getCanonicalScoreLabel(day.day_score),
+        day_label_tier: getDayOutcomeTier(day.day_score).tier,
         day_theme: day.day_theme ?? '',
         overview_short: truncateOverview(day.overview ?? '', 200),
         panchang: day.panchang,

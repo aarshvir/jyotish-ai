@@ -39,6 +39,13 @@ export interface CurrentDasha {
   end_date: string;
 }
 
+export interface FunctionalLordGroups {
+  benefics: string[];
+  malefics: string[];
+  neutral: string[];
+  badhaka: string[];
+}
+
 export interface NatalChartData {
   lagna: string;
   lagna_degree: number;
@@ -46,6 +53,10 @@ export interface NatalChartData {
   moon_nakshatra: string;
   dasha_sequence: DashaEntry[];
   current_dasha: CurrentDasha;
+  /** Ephemeris engine: Sun…Saturn → benefic | malefic | neutral | badhaka */
+  functional_nature?: Record<string, 'benefic' | 'malefic' | 'neutral' | 'badhaka'>;
+  /** Ephemeris engine: grouped UI lines with houses ruled */
+  functional_lord_groups?: FunctionalLordGroups;
 }
 
 export interface PanchangData {
@@ -125,6 +136,15 @@ export interface NativityProfile {
 // =============================================================================
 
 export type RatingLabel = 'Peak' | 'Excellent' | 'Good' | 'Neutral' | 'Caution' | 'Difficult' | 'Avoid';
+
+/** Fixed bands for whole-day score (VedicHour contract — distinct from hourly RatingLabel). */
+export type DayOutcomeTier =
+  | 'AVOID'
+  | 'CHALLENGING'
+  | 'CAUTION'
+  | 'MODERATE'
+  | 'FAVORABLE'
+  | 'EXCELLENT';
 
 export interface RatedSlot {
   start_time: string;
@@ -309,8 +329,8 @@ export interface DayForecast {
    */
   day_score: number;
 
-  /** 7-tier label for the day. */
-  day_label_tier: RatingLabel;
+  /** Whole-day outcome tier (fixed score bands). */
+  day_label_tier: DayOutcomeTier;
 
   /** One-line italic theme for the day, e.g. "Yogakaraka surges — act boldly". */
   day_theme: string;

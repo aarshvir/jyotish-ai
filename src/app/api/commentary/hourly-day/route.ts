@@ -27,6 +27,35 @@ interface SlotShape {
  * V2 fallback: short, honest, grounded in score + actual slot data.
  * Never sounds like a grandmaster recital. Always gives actionable guidance.
  */
+function clipWords(text: string, max: number): string {
+  const w = text.trim().split(/\s+/).filter(Boolean);
+  return w.slice(0, max).join(' ');
+}
+
+function deriveDirective(slot: SlotShape): string {
+  const score = typeof slot?.score === 'number' ? slot.score : 50;
+  if (slot?.is_rahu_kaal) return 'RAHU KAAL — ROUTINE TASKS ONLY; AVOID NEW STARTS.';
+  if (score >= 80) return 'ACT ON YOUR TOP PRIORITY IN THIS WINDOW.';
+  if (score >= 65) return 'PUSH IMPORTANT WORK WHILE CONDITIONS HOLD.';
+  if (score >= 50) return 'KEEP MOMENTUM; DELAY IRREVERSIBLE COMMITS IF UNSURE.';
+  return 'STAY CONSERVATIVE — PREPARE, REVIEW, WAIT FOR CLEARER AIR.';
+}
+
+function finalizeHourlyCommentary(raw: string | undefined, slot: SlotShape): string {
+  const directive = deriveDirective(slot);
+  let body = (raw ?? '').trim().replace(/\s+/g, ' ');
+  body = body.replace(/\s+[A-Z][A-Z0-9,\s'’\-—]{10,}\.?\s*$/, '').trim();
+  body = clipWords(body, 35);
+  const hora = String(slot?.dominant_hora ?? 'Sun');
+  const chog = String(slot?.dominant_choghadiya ?? 'Shubh');
+  const th = typeof slot?.transit_lagna_house === 'number' ? slot.transit_lagna_house : 1;
+  if (body.length < 25) {
+    body = `${hora} hora with ${chog} choghadiya; transit emphasis H${th}.`;
+    body = clipWords(body, 30);
+  }
+  return `${directive}\n\n${body}`;
+}
+
 function buildFallbackSlot(slot: SlotShape): { slot_index: number; commentary: string } {
   const slot_index = typeof slot?.slot_index === 'number' ? slot.slot_index : 0;
   const display_label = String(slot?.display_label ?? '');
@@ -45,7 +74,7 @@ function buildFallbackSlot(slot: SlotShape): { slot_index: number; commentary: s
     display_label,
   });
 
-  const commentary = guidance.summary_plain;
+  const commentary = finalizeHourlyCommentary(guidance.summary_plain, slot);
   return { slot_index, commentary };
 }
 
@@ -167,13 +196,12 @@ Return ONLY valid JSON. No markdown, no backticks. Start response with { and end
     const userPrompt = `Generate hourly commentary for ${date}. Current dasha: ${mahadasha}/${antardasha}.
 
 MANDATORY RULES for each slot commentary (enforce without exception):
-1. Length: 60–90 words per slot. Count carefully. Do not write shorter.
-2. EVERY sentence must name at least one: planet, house number (e.g. H3, H10, "3rd house"), or nakshatra.
-3. State the choghadiya name and its quality in parentheses on first use — e.g. "Amrit (nectar, most auspicious)".
-4. End each commentary with one sentence in ALL CAPS that gives a directive — e.g. "SEND THE CONTRACT NOW AND CONFIRM RECEIPT."
+1. FIRST line: ONE ALL-CAPS action directive, max 15 words (e.g. "DRAFT PLANS BUT DELAY SIGNING.").
+2. Then ONE or TWO short sentences (total body max ~40 words) unique to this slot: hora ruler role, choghadiya quality, transit lagna house, Rahu Kaal if flagged. Do NOT repeat the same planet-by-planet boilerplate across slots.
+3. Total max ~50 words per slot including the caps line.
+4. Rahu Kaal slots: caps line must start with "RAHU KAAL —".
 5. Never use these words: generally, may, could, might, perhaps, various, often.
-6. Rahu Kaal slots: begin with "RAHU KAAL —" and instruct completion only.
-7. The slot with the highest score is the BEST ACTION WINDOW — describe it as the primary opportunity of the day.
+6. The highest-score slot is the primary opportunity of the day — say so briefly in that slot only.
 
 Slots:
 ${slotLines}
@@ -219,9 +247,11 @@ Respond with ONLY a JSON object. No preamble. No markdown. Start with { directly
 
       const out = (parsed.slots ?? []).slice(0, 18).map((s, i) => {
         const slot_index = typeof s.slot_index === 'number' ? s.slot_index : normalizedSlots[i]?.slot_index ?? i;
-        const commentary = String(s.commentary ?? '').trim();
+        const raw = String(s.commentary ?? '').trim();
+        const slot = normalizedSlots[i];
+        const commentary = finalizeHourlyCommentary(raw, slot);
         const wordCount = commentary.split(/\s+/).filter(Boolean).length;
-        if (wordCount < 60) return buildFallbackSlot(normalizedSlots[i]);
+        if (wordCount < 8) return buildFallbackSlot(slot);
         return { slot_index, commentary };
       });
 

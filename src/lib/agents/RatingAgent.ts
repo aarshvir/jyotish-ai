@@ -24,17 +24,7 @@ import type {
   RatingLabel,
   PanchangData,
 } from './types';
-
-// ── Hora base scores (Methodology Bible layer 1) ─────────────────────────────
-export const HORA_BASE: Record<string, number> = {
-  Jupiter: 62,
-  Moon:    56,
-  Mars:    54,
-  Sun:     46,
-  Mercury: 44,
-  Venus:   38,
-  Saturn:  28,
-};
+import { computeHoraBaseForLagna, LAGNA_SIGNS_ORDER } from '@/lib/engine/horaBase';
 
 // ── Per-lagna hora adjustments ────────────────────────────────────────────────
 // Zeroed: the grandmaster formula uses the same base scores for all lagnas.
@@ -226,10 +216,27 @@ function normalise(rawScore: number): number {
 export interface SlotScoreInput {
   horaRuler: string;
   lagna: string;
+  /** When set, overrides `lagna` string resolution for HORA_BASE (0–11). */
+  lagnaSignIndex?: number;
   choghadiya: string;
   transitHouseMod: number;
   isRahuKaal: boolean;
   panchangAdj?: number;
+}
+
+function resolveLagnaSignIndex(input: SlotScoreInput): number {
+  if (
+    typeof input.lagnaSignIndex === 'number' &&
+    Number.isFinite(input.lagnaSignIndex) &&
+    input.lagnaSignIndex >= 0 &&
+    input.lagnaSignIndex <= 11
+  ) {
+    return input.lagnaSignIndex;
+  }
+  const ix = LAGNA_SIGNS_ORDER.indexOf(input.lagna as (typeof LAGNA_SIGNS_ORDER)[number]);
+  if (ix >= 0) return ix;
+  console.warn('[RatingAgent] Unknown lagna for HORA_BASE; defaulting to Cancer (3).');
+  return 3;
 }
 
 /**
@@ -238,7 +245,9 @@ export interface SlotScoreInput {
  * Output clamped to 0–100.
  */
 export function calculateSlotScore(input: SlotScoreInput): number {
-  const base = HORA_BASE[input.horaRuler] ?? 44;
+  const lagnaIdx = resolveLagnaSignIndex(input);
+  const horaTable = computeHoraBaseForLagna(lagnaIdx);
+  const base = horaTable[input.horaRuler] ?? 44;
   const lagnaMod = LAGNA_HORA_DELTA[input.lagna]?.[input.horaRuler] ?? 0;
   const chogMod = CHOGHADIYA_SCORE[normalizeChoghadiya(input.choghadiya)] ?? 0;
   const transitMod = input.transitHouseMod;
@@ -376,7 +385,9 @@ export class RatingAgent {
     transitSign?: string,
     transitHouse?: number,
   ): RatedSlot {
-    const base = HORA_BASE[hora.hora_ruler] ?? 44;
+    const lagnaIdx = resolveLagnaSignIndex({ horaRuler: hora.hora_ruler, lagna, choghadiya: choghadiya.choghadiya, transitHouseMod, isRahuKaal, panchangAdj });
+    const hb = computeHoraBaseForLagna(lagnaIdx);
+    const base = hb[hora.hora_ruler] ?? 44;
     const lagnaAdj = LAGNA_HORA_DELTA[lagna]?.[hora.hora_ruler] ?? 0;
     const chogScore = CHOGHADIYA_SCORE[normalizeChoghadiya(choghadiya.choghadiya)] ?? 0;
     const rkPenalty = isRahuKaal ? RAHU_KAAL_PENALTY : 0;
@@ -491,7 +502,7 @@ export class RatingAgent {
 
 export function runSanityChecks(): void {
   // 1. Strong slot: Jupiter hora, Cancer lagna, Amrit choghadiya, H1 (+6), no Rahu Kaal
-  // raw = 62 + 5 + 12 + 6 = 85 → clamp → 85
+  // raw ≈ 62 + 0 (lagna delta) + 12 + 6 = 80 → clamp → 80
   const strongScore = calculateSlotScore({
     horaRuler: 'Jupiter',
     lagna: 'Cancer',
@@ -504,7 +515,7 @@ export function runSanityChecks(): void {
   if (!strongOk) throw new Error(`Strong slot expected >= 75, got ${strongScore}`);
 
   // 2. Weak Rahu Kaal: Saturn hora, Kaal choghadiya, 8th house (-5), Rahu Kaal (-15)
-  // raw = 28 + (-8) + (-12) + (-5) + (-15) = -12 → clamp 5 → 5
+  // raw = 28 + 0 + (-12) + (-5) + (-15) = -4 → clamp 5 → 5
   const weakScore = calculateSlotScore({
     horaRuler: 'Saturn',
     lagna: 'Cancer',

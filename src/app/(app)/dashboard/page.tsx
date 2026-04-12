@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { RightNowCard } from '@/components/dashboard/RightNowCard';
 
 interface Report {
   id: string;
@@ -133,6 +134,8 @@ export default function DashboardPage() {
   return (
     <div className="min-h-[calc(100vh-var(--nav-height))] bg-gradient-to-br from-space via-cosmos to-space font-body text-star">
       <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+        <RightNowCard className="mb-10" />
+
         <header className="mb-10 border-b border-horizon/60 pb-8">
           <p className="mb-2 font-mono text-xs uppercase tracking-[0.2em] text-amber">Your oracle</p>
           <h1 className="mb-2 font-display text-3xl font-normal text-star sm:text-4xl">Report history</h1>

@@ -15,7 +15,7 @@ import type {
   ReportData,
   PanchangData,
 } from '@/lib/agents/types';
-import { getCanonicalScoreLabel } from '@/lib/guidance/labels';
+import { getCanonicalScoreLabel, getDayOutcomeTier } from '@/lib/guidance/labels';
 import { buildSlotGuidance, buildDayBriefing } from '@/lib/guidance/builder';
 import { isV2GuidanceEnabled } from '@/lib/guidance/featureFlag';
 
@@ -215,17 +215,22 @@ async function resilientFetch(
   options: RequestInit,
   retries = 3,
   delayMs = 2000,
+  timeoutMs = 30_000,
 ): Promise<Response> {
   for (let i = 0; i < retries; i++) {
     try {
-      return await fetch(url, options);
+      // Fresh AbortSignal per attempt — timeout signals cannot be reused across retries.
+      return await fetch(url, { ...options, signal: AbortSignal.timeout(timeoutMs) });
     } catch (err: unknown) {
       const isNetwork =
         err instanceof Error &&
         (err.name === 'TypeError' ||
+          err.name === 'AbortError' ||
+          err.name === 'TimeoutError' ||
           err.message?.includes('Failed to fetch') ||
           err.message?.includes('SUSPENDED') ||
-          err.message?.includes('aborted'));
+          err.message?.includes('aborted') ||
+          err.message?.includes('timed out'));
       if (isNetwork && i < retries - 1) {
         await new Promise((r) => setTimeout(r, delayMs * (i + 1)));
         continue;
@@ -255,6 +260,23 @@ export async function generateReportPipeline(
   /** Wall-clock budget so we mark `error` before Vercel hard-kills the invocation (leaves orphan `generating`). */
   const budgetMs =
     Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 760_000;
+
+  /**
+   * Hard-kill backstop: fires after budgetMs even if a fetch is stuck and
+   * assertWithinBudget() never gets called. Marks row error so the client
+   * stops polling and can offer a retry.
+   */
+  let hardKillTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+    console.error(`[orchestrator] hard-kill timeout (${budgetMs}ms) for ${reportId}`);
+    onStep({ type: 'error', message: 'Report generation timed out — please try again.' });
+    db.from('reports')
+      .update({ status: 'error', updated_at: new Date().toISOString() })
+      .eq('id', reportId)
+      .eq('user_id', userId)
+      .then(({ error }) => {
+        if (error) console.error('[orchestrator] hard-kill DB update failed:', error.message);
+      });
+  }, budgetMs);
 
   function logStep(step: string, extra?: Record<string, unknown>) {
     console.log(
@@ -474,7 +496,7 @@ export async function generateReportPipeline(
             method: 'POST',
             headers: h,
             body: JSON.stringify({ natalChart: ephemerisData }),
-          }, 2, 3000);
+          }, 2, 3000, 90_000);
           if (natRes.ok) {
             const raw = await natRes.json();
             nativityProfile = raw.data ?? raw;
@@ -622,8 +644,8 @@ export async function generateReportPipeline(
           });
 
           const [overviewRes, natTextRes] = await Promise.all([
-            fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody }),
-            fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody }),
+            fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody, signal: AbortSignal.timeout(150_000) }),
+            fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.timeout(90_000) }),
           ]);
 
           const fallbackOverview =
@@ -681,6 +703,7 @@ export async function generateReportPipeline(
                 const res = await fetch(`${base}/api/commentary/hourly-day`, {
                   method: 'POST',
                   headers: h,
+                  signal: AbortSignal.timeout(120_000),
                   body: JSON.stringify({
                     lagnaSign: ephemerisData.lagna,
                     mahadasha,
@@ -775,11 +798,11 @@ export async function generateReportPipeline(
 
           const [m1Res, m2Res] = await Promise.all([
             fetch(`${base}/api/commentary/months-first`, {
-              method: 'POST', headers: h,
+              method: 'POST', headers: h, signal: AbortSignal.timeout(150_000),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(0, 6) }),
             }),
             fetch(`${base}/api/commentary/months-second`, {
-              method: 'POST', headers: h,
+              method: 'POST', headers: h, signal: AbortSignal.timeout(150_000),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(6, 12) }),
             }),
           ]);
@@ -870,6 +893,7 @@ export async function generateReportPipeline(
       const synthRes = await fetch(`${base}/api/commentary/weeks-synthesis`, {
         method: 'POST',
         headers: h,
+        signal: AbortSignal.timeout(150_000),
         body: JSON.stringify({
           lagnaSign: ephemerisData.lagna ?? 'Cancer',
           mahadasha: mahadasha ?? 'Rahu',
@@ -968,6 +992,7 @@ export async function generateReportPipeline(
         const valRes = await fetch(`${base}/api/validation/report`, {
           method: 'POST',
           headers: h,
+          signal: AbortSignal.timeout(120_000),
           body: JSON.stringify(validationBody),
         });
 
@@ -1062,7 +1087,7 @@ export async function generateReportPipeline(
         date: d.date,
         day_label: formatDayLabel(d.date),
         day_score: d.day_score,
-        day_label_tier: toLabel(d.day_score, false),
+        day_label_tier: getDayOutcomeTier(d.day_score ?? 50).tier,
         day_theme: (d.day_theme ?? '').trim() || `Day score ${d.day_score}.`,
         overview:
           (d.day_overview ?? '').trim() ||
@@ -1124,6 +1149,12 @@ export async function generateReportPipeline(
         .eq('user_id', userId);
     } catch (markErr) {
       console.error('[orchestrator] failed to mark report as error:', markErr);
+    }
+  } finally {
+    // Always cancel the hard-kill timer so it doesn't fire after a clean finish.
+    if (hardKillTimer !== null) {
+      clearTimeout(hardKillTimer);
+      hardKillTimer = null;
     }
   }
 }

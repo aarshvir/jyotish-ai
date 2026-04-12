@@ -203,6 +203,39 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
               {month.commentary}
             </p>
 
+            {month.days && month.days.length > 0 && (
+              <div className="mb-6">
+                <p className="font-mono text-xs text-dust tracking-wider uppercase mb-2">
+                  Daily scores (sparkline)
+                </p>
+                <div className="flex gap-px items-end h-16 rounded-sm border border-horizon/50 px-1 py-1 bg-nebula/10">
+                  {(() => {
+                    const scores = month.days!.map((d) => d.day_score ?? d.score ?? 50);
+                    const order = scores
+                      .map((sc, idx) => ({ sc, idx }))
+                      .sort((a, b) => a.sc - b.sc);
+                    const worstIdx = new Set(order.slice(0, 3).map((o) => o.idx));
+                    const bestIdx = new Set(order.slice(-3).map((o) => o.idx));
+                    return month.days!.map((d, di) => {
+                      const sc = d.day_score ?? d.score ?? 50;
+                      const h = Math.max(8, Math.round((sc / 100) * 56));
+                      let cls = barColor(sc);
+                      if (bestIdx.has(di)) cls = 'bg-emerald ring-1 ring-emerald/40';
+                      else if (worstIdx.has(di)) cls = 'bg-crimson ring-1 ring-crimson/40';
+                      return (
+                        <div
+                          key={di}
+                          className={`flex-1 rounded-t ${cls}`}
+                          style={{ height: `${h}px` }}
+                          title={`Day ${di + 1}: ${sc}`}
+                        />
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
+
             {/* Week score bar */}
             {weeklyAvgs.length > 0 && (
               <div className="pt-6 border-t border-horizon/40">

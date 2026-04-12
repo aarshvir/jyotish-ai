@@ -30,6 +30,10 @@ function buildUserPrompt(chart: NatalChartData): string {
     )
     .join('\n');
 
+  const engineFn =
+    chart.functional_lord_groups &&
+    `\nAUTHORITATIVE ENGINE GROUPS (whole-sign; do not contradict in functional lists or prose):\n${JSON.stringify(chart.functional_lord_groups)}\n`;
+
   return `Analyze this natal chart and return a JSON NativityProfile.
 
 NATAL CHART
@@ -39,7 +43,7 @@ ${planets}
 Moon nakshatra: ${chart.moon_nakshatra ?? 'Unknown'}
 Current dasha: ${chart.current_dasha?.mahadasha ?? 'unknown'} MD / ${chart.current_dasha?.antardasha ?? 'unknown'} AD
   (${chart.current_dasha?.start_date ?? '?'} → ${chart.current_dasha?.end_date ?? '?'})
-
+${engineFn ?? ''}
 INSTRUCTIONS — analyze for ${chart.lagna ?? 'Unknown'} Lagna:
 1. Functional benefics: planets ruling kendras (1,4,7,10) and trikonas (1,5,9).
 2. Functional malefics: planets ruling dusthanas (3,6,8,12) without trikona lordship.

@@ -13,6 +13,8 @@ export { ALL_ACTION_CATEGORIES } from './types';
 
 export {
   getCanonicalScoreLabel,
+  getDayOutcomeTier,
+  formatDayOutcomeLabel,
   getGuidanceLabel,
   SCORE_LABEL_THRESHOLDS,
   GUIDANCE_LABEL_MAP,

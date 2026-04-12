@@ -354,6 +354,7 @@ export function computeFallbackDayData(
     const score = calculateSlotScore({
       horaRuler: hora,
       lagna: lagnaStr,
+      lagnaSignIndex: natalLagnaSignIndex,
       choghadiya: chog,
       transitHouseMod: transitMod,
       isRahuKaal,

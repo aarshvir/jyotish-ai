@@ -5,7 +5,7 @@
  * (No Jest/Vitest in this project — uses simple assertion-based test runner.)
  */
 
-import { getCanonicalScoreLabel, getGuidanceLabel } from '../lib/guidance/labels';
+import { getCanonicalScoreLabel, getGuidanceLabel, getDayOutcomeTier } from '../lib/guidance/labels';
 import { buildSlotGuidance, buildDayBriefing } from '../lib/guidance/builder';
 import { validateReportData, validateReportSemantics } from '../lib/validation/reportValidation';
 import { calculateSlotScore, calculateDayScore, getScoreLabel } from '../lib/agents/RatingAgent';
@@ -87,6 +87,18 @@ test('Canonical label: 20 → Avoid', () => {
 test('Rahu Kaal always → Avoid', () => {
   assertEqual(getCanonicalScoreLabel(90, true), 'Avoid', 'RK score 90');
   assertEqual(getCanonicalScoreLabel(50, true), 'Avoid', 'RK score 50');
+});
+
+test('Day outcome tier bands', () => {
+  assertEqual(getDayOutcomeTier(90).tier, 'EXCELLENT', 'day 90');
+  assertEqual(getDayOutcomeTier(80).tier, 'EXCELLENT', 'day 80');
+  assertEqual(getDayOutcomeTier(70).tier, 'FAVORABLE', 'day 70');
+  assertEqual(getDayOutcomeTier(65).tier, 'FAVORABLE', 'day 65');
+  assertEqual(getDayOutcomeTier(55).tier, 'MODERATE', 'day 55');
+  assertEqual(getDayOutcomeTier(50).tier, 'MODERATE', 'day 50');
+  assertEqual(getDayOutcomeTier(40).tier, 'CAUTION', 'day 40');
+  assertEqual(getDayOutcomeTier(25).tier, 'CHALLENGING', 'day 25');
+  assertEqual(getDayOutcomeTier(10).tier, 'AVOID', 'day 10');
 });
 
 // ── 2. Parity with RatingAgent.getScoreLabel ─────────────────────────────────
@@ -319,7 +331,7 @@ function makeMinimalDay(date: string): DayForecast {
     date,
     day_label: 'Test Day',
     day_score: mean,
-    day_label_tier: 'Neutral',
+    day_label_tier: 'MODERATE',
     day_theme: 'Test theme.',
     overview: 'Test overview text.',
     panchang: { tithi: 'Pratipada', nakshatra: 'Rohini', yoga: 'Siddhi', karana: 'Bava', sunrise: '06:00', sunset: '18:30', moon_sign: 'Cancer', day_ruler: 'Sunday' },

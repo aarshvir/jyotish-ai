@@ -153,28 +153,18 @@ def local_to_utc(birth_date: str, birth_time: str, lat: float, lng: float) -> da
     return utc_dt.replace(tzinfo=None)
 
 
-def calculate_houses(jd: float, lat: float, lng: float) -> List[float]:
-    """Calculate sidereal house cusps using Placidus system"""
-    houses = swe.houses(jd, lat, lng, b'P')
-    # swe.houses() returns tropical cusps; subtract ayanamsa for sidereal Lagna
-    ayanamsa = swe.get_ayanamsa_ut(jd)
-    sidereal_cusps = tuple((c - ayanamsa) % 360 for c in houses[0])
-    return sidereal_cusps
-
-
-def get_house_number(planet_long: float, house_cusps: List[float]) -> int:
-    """DEPRECATED: Placidus system. Use get_whole_sign_house() instead."""
-    for i in range(12):
-        cusp_start = house_cusps[i]
-        cusp_end = house_cusps[(i + 1) % 12]
-        
-        if cusp_end < cusp_start:
-            if planet_long >= cusp_start or planet_long < cusp_end:
-                return i + 1
-        else:
-            if cusp_start <= planet_long < cusp_end:
-                return i + 1
-    return 1
+def get_sidereal_ascendant_longitude(jd: float, lat: float, lng: float) -> float:
+    """
+    Sidereal ascendant longitude (0–360°) at UT jd for lat/lng.
+    Uses Swiss Ephemeris whole-sign house flag ``W`` for ascendant computation only
+    (no Placidus house sectors anywhere).
+    """
+    try:
+        _, ascmc = swe.houses(jd, lat, lng, b'W')
+    except Exception:
+        _, ascmc = swe.houses(jd, lat, lng, b'E')
+    asc_tropical = float(ascmc[0]) % 360.0
+    return (asc_tropical - swe.get_ayanamsa_ut(jd)) % 360.0
 
 
 def get_whole_sign_house(planet_longitude: float, lagna_longitude: float) -> int:
@@ -188,8 +178,8 @@ def get_whole_sign_house(planet_longitude: float, lagna_longitude: float) -> int
     return ((planet_sign - lagna_sign + 12) % 12) + 1
 
 
-def calculate_vimshottari_dasha(moon_longitude: float, birth_date: datetime) -> List[Dict]:
-    """Calculate Vimshottari Dasha sequence using Moon's sidereal longitude for proper balance"""
+def calculate_vimshottari_dasha(moon_longitude: float, birth_moment_utc: datetime) -> List[Dict]:
+    """Calculate Vimshottari Dasha sequence using Moon's sidereal longitude and the birth instant (UTC)."""
     NAK_SPAN = 360.0 / 27  # 13°20' per nakshatra
 
     nakshatra_num = int(moon_longitude / NAK_SPAN)
@@ -198,8 +188,8 @@ def calculate_vimshottari_dasha(moon_longitude: float, birth_date: datetime) -> 
     start_planet_idx = nakshatra_num % 9
     first_planet = DASHA_SEQUENCE[start_planet_idx]
 
-    # First dasha began before birth; calculate its actual start date
-    first_dasha_start = birth_date - timedelta(days=fraction_elapsed * DASHA_YEARS[first_planet] * 365.25)
+    # First dasha began before birth; anchor balance to the actual birth instant (UTC)
+    first_dasha_start = birth_moment_utc - timedelta(days=fraction_elapsed * DASHA_YEARS[first_planet] * 365.25)
 
     dasha_list = []
     current_date = first_dasha_start
@@ -339,15 +329,8 @@ def natal_chart(data: NatalChartInput):
         # Convert local birth time to UTC using birth coordinates, then get Julian Day
         birth_utc = local_to_utc(data.birth_date, data.birth_time, data.birth_lat, data.birth_lng)
         jd = get_julian_day(birth_utc)
-        # Dasha calculation uses local birth DATE at midnight (not actual birth time or UTC)
-        # This ensures Vimshottari dasha periods align with the calendar date of birth
-        birth_datetime = datetime.strptime(data.birth_date, "%Y-%m-%d")
-        
-        # Calculate house cusps
-        house_cusps = calculate_houses(jd, data.birth_lat, data.birth_lng)
-        
-        # Calculate Lagna (Ascendant)
-        lagna_long = house_cusps[0]
+        # Sidereal ascendant at birth (whole-sign system uses this longitude only)
+        lagna_long = get_sidereal_ascendant_longitude(jd, data.birth_lat, data.birth_lng)
         lagna_sign_num = int(lagna_long / 30)
         lagna_degree = lagna_long % 30
         
@@ -402,13 +385,16 @@ def natal_chart(data: NatalChartInput):
             "house": ketu_house
         }
         
-        # Calculate Vimshottari Dasha using moon longitude for correct balance
-        dasha_sequence = calculate_vimshottari_dasha(moon_longitude, birth_datetime)
+        # Vimshottari balance anchored to actual birth moment in UTC
+        dasha_sequence = calculate_vimshottari_dasha(moon_longitude, birth_utc)
         current_dasha = get_current_dasha(dasha_sequence, datetime.now())
         
         # Detect yogas (FIX 4: detect_yogas)
         yogas = detect_yogas(planets, lagna_sign_num, lagna_long)
         
+        fn_groups = build_functional_lord_groups(lagna_sign_num)
+        fn_map = classify_functional_nature(lagna_sign_num)
+
         return {
             "lagna": SIGNS[lagna_sign_num],
             "lagna_degree": round(lagna_degree, 4),
@@ -416,7 +402,9 @@ def natal_chart(data: NatalChartInput):
             "moon_nakshatra": planets["Moon"]["nakshatra"],
             "dasha_sequence": dasha_sequence,
             "current_dasha": current_dasha,
-            "yogas": yogas
+            "yogas": yogas,
+            "functional_nature": fn_map,
+            "functional_lord_groups": fn_groups,
         }
         
     except Exception as e:
@@ -643,78 +631,145 @@ def full_day_data(data: FullDayDataInput):
 # Grandmaster scoring engine (lagna-agnostic hora bases)
 # ---------------------------------------------------------------------------
 
-# Lordship mapping: which signs each planet rules
-PLANET_LORDSHIPS = {
-    "Sun":     [4],     # Leo
-    "Moon":    [3],     # Cancer
-    "Mars":    [0, 7],  # Aries, Scorpio
-    "Mercury": [2, 5],  # Gemini, Virgo
-    "Jupiter": [8, 11], # Sagittarius, Pisces
-    "Venus":   [1, 6],  # Taurus, Libra
-    "Saturn":  [9, 10], # Capricorn, Aquarius
-}
+# Whole-sign sign lords (0=Aries … 11=Pisces)
+SIGN_LORD = [
+    "Mars", "Venus", "Mercury", "Moon", "Sun", "Mercury",
+    "Venus", "Mars", "Jupiter", "Saturn", "Saturn", "Jupiter",
+]
 
-# House categories
+SEVEN_GRAHAS = ("Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn")
+
+# House categories (shared)
 KENDRA_HOUSES = {1, 4, 7, 10}
 TRIKONA_HOUSES = {1, 5, 9}
 DUSTHANA_HOUSES = {6, 8, 12}
 
+
+def get_house_lord(lagna_index: int, house_number: int) -> str:
+    """Lord of ``house_number`` (1–12) for ``lagna_index`` (0–11)."""
+    sign_index = (lagna_index + house_number - 1) % 12
+    return SIGN_LORD[sign_index]
+
+
+def get_badhaka_lord(lagna_index: int) -> str:
+    """Badhaka lord: 11th for movable, 9th for fixed, 7th for dual lagna."""
+    MOVABLE = {0, 3, 6, 9}
+    FIXED = {1, 4, 7, 10}
+    if lagna_index in MOVABLE:
+        badhaka_house = 11
+    elif lagna_index in FIXED:
+        badhaka_house = 9
+    else:
+        badhaka_house = 7
+    return get_house_lord(lagna_index, badhaka_house)
+
+
+def _houses_ruled_by_planet(lagna_index: int, planet: str) -> List[int]:
+    return [h for h in range(1, 13) if get_house_lord(lagna_index, h) == planet]
+
+
+def _house_hora_weight(h: int) -> int:
+    """Single-house contribution toward hora base (before yogakaraka / blends)."""
+    w = {
+        1: 56, 2: 46, 3: 40, 4: 46, 5: 54, 6: 38,
+        7: 46, 8: 28, 9: 54, 10: 46, 11: 42, 12: 34,
+    }
+    return w.get(h, 40)
+
+
 def compute_hora_base_for_lagna(lagna_sign_index: int) -> Dict[str, int]:
     """
-    Compute HORA_BASE values for any lagna based on functional lordship.
-    Returns dict: {"Jupiter": 62, "Moon": 56, ...} specific to this lagna.
-    
-    Logic:
-    - Lagna lord: 56
-    - Yogakaraka (kendra + trikona, not lagna): 58-62
-    - Trikona lord (5/9, not dusthana): 52-58
-    - Kendra lord (4/7/10, not dusthana): 46
-    - Dusthana lord (6/8/12): 28-38
-    - Others (2/3/11): 40-44
+    Lagna-specific HORA_BASE for the seven classical grahas.
+    Calibrated to Cancer reference (Grandmaster) and key lagna sanity checks.
     """
-    bases = {}
-    
-    for planet, ruled_signs in PLANET_LORDSHIPS.items():
-        ruled_houses = set()
-        for sign_idx in ruled_signs:
-            house = ((sign_idx - lagna_sign_index + 12) % 12) + 1
-            ruled_houses.add(house)
-        
-        is_lagna_lord = 1 in ruled_houses
-        is_kendra_lord = bool(ruled_houses & KENDRA_HOUSES)
-        is_trikona_lord = bool(ruled_houses & TRIKONA_HOUSES)
-        is_dusthana_lord = bool(ruled_houses & DUSTHANA_HOUSES)
-        is_yogakaraka = is_kendra_lord and is_trikona_lord and not is_lagna_lord
-        
-        if is_lagna_lord:
-            bases[planet] = 56
-        elif is_yogakaraka:
-            if {5, 10} <= ruled_houses:
-                bases[planet] = 62  # Best yogakaraka
-            elif {5, 4} <= ruled_houses or {9, 10} <= ruled_houses:
-                bases[planet] = 58
-            else:
-                bases[planet] = 54
-        elif is_trikona_lord and not is_dusthana_lord:
-            bases[planet] = 54 if 9 in ruled_houses else 52
-        elif is_kendra_lord and not is_dusthana_lord:
-            bases[planet] = 46
-        elif is_dusthana_lord:
-            if 8 in ruled_houses:
-                bases[planet] = 28  # Worst
-            elif 12 in ruled_houses:
-                bases[planet] = 34
-            else:
-                bases[planet] = 38  # 6th lord (upachaya)
-        else:  # 2, 3, 11
-            if 2 in ruled_houses:
-                bases[planet] = 44
-            elif 11 in ruled_houses:
-                bases[planet] = 42
-            else:
-                bases[planet] = 40
-    
-    return bases
+    lagna_index = lagna_sign_index % 12
+    badhaka = get_badhaka_lord(lagna_index)
+    hora_base: Dict[str, int] = {}
+
+    for planet in SEVEN_GRAHAS:
+        hs_list = _houses_ruled_by_planet(lagna_index, planet)
+        hs = set(hs_list)
+        if not hs:
+            hora_base[planet] = 40
+            continue
+
+        is_ll = 1 in hs
+        non_h1_kendra = hs & {4, 7, 10}
+        tri_59 = hs & {5, 9}
+        is_yk = bool(non_h1_kendra) and bool(tri_59)
+
+        if is_ll and is_yk:
+            s = 58
+        elif is_yk:
+            s = 62
+        elif is_ll:
+            s = 56
+        elif 8 in hs:
+            s = 28
+        elif 9 in hs and (6 in hs or 12 in hs):
+            s = 62
+        elif hs >= {3, 12}:
+            s = 34
+        else:
+            s = max(_house_hora_weight(h) for h in hs)
+            if planet == badhaka:
+                s = min(s, 42)
+
+        hora_base[planet] = max(28, min(62, int(s)))
+
+    return hora_base
+
+
+def classify_functional_nature(lagna_index: int) -> Dict[str, str]:
+    """
+    Per-lagna functional nature for the seven grahas.
+    Returns planet -> benefic | malefic | neutral | badhaka
+    """
+    lagna_index = lagna_index % 12
+    badhaka_lord = get_badhaka_lord(lagna_index)
+    result: Dict[str, str] = {}
+
+    for planet in SEVEN_GRAHAS:
+        houses = _houses_ruled_by_planet(lagna_index, planet)
+        if planet == badhaka_lord:
+            result[planet] = "badhaka"
+        elif any(h in {1, 5, 9} for h in houses):
+            result[planet] = "benefic"
+        elif any(h in {6, 8, 12} for h in houses) and not any(h in {1, 5, 9} for h in houses):
+            result[planet] = "malefic"
+        elif any(h in {4, 7, 10} for h in houses):
+            result[planet] = "neutral"
+        else:
+            result[planet] = "neutral"
+
+    return result
+
+
+def build_functional_lord_groups(lagna_index: int) -> Dict[str, List[str]]:
+    """UI-ready strings: planet with houses ruled (whole-sign)."""
+    lagna_index = lagna_index % 12
+    nature = classify_functional_nature(lagna_index)
+    groups: Dict[str, List[str]] = {
+        "benefics": [],
+        "malefics": [],
+        "neutral": [],
+        "badhaka": [],
+    }
+    label_for = {
+        "benefic": "benefics",
+        "malefic": "malefics",
+        "neutral": "neutral",
+        "badhaka": "badhaka",
+    }
+    for planet in SEVEN_GRAHAS:
+        houses = sorted(_houses_ruled_by_planet(lagna_index, planet))
+        if not houses:
+            continue
+        hh = ", ".join(f"H{h}" for h in houses)
+        line = f"{planet} — {hh}"
+        key = label_for[nature[planet]]
+        groups[key].append(line)
+    return groups
 
 
 def detect_yogas(planets: Dict, lagna_sign_index: int, lagna_long: float) -> List[str]:
@@ -797,14 +852,9 @@ def detect_yogas(planets: Dict, lagna_sign_index: int, lagna_long: float) -> Lis
         if sun_sign == merc_sign:
             yogas.append("Budha-Aditya Yoga")
     
-    # 8. YOGAKARAKA RAJA YOGA: Check if any planet rules both kendra + trikona
-    for pname in PLANET_LORDSHIPS:
-        ruled_signs = PLANET_LORDSHIPS[pname]
-        ruled_houses = set()
-        for sign_idx in ruled_signs:
-            house = ((sign_idx - lagna_sign_index + 12) % 12) + 1
-            ruled_houses.add(house)
-        
+    # 8. YOGAKARAKA RAJA YOGA: planet rules both kendra + trikona (excluding lagna-only)
+    for pname in SEVEN_GRAHAS:
+        ruled_houses = set(_houses_ruled_by_planet(lagna_sign_index, pname))
         if (ruled_houses & KENDRA_HOUSES) and (ruled_houses & TRIKONA_HOUSES) and 1 not in ruled_houses:
             yogas.append(f"Yogakaraka Raja Yoga ({pname})")
     
@@ -1588,8 +1638,8 @@ def generate_daily_grid(data: DailyGridInput):
                      >= _RAHU_KAAL_OVERLAP_THRESHOLD_SECS)
 
             mid_jd = get_julian_day(midpoint_utc)
-            t_cusps = calculate_houses(mid_jd, data.current_lat, data.current_lng)
-            t_sign  = int(t_cusps[0] / 30) % 12
+            t_lagna_long = get_sidereal_ascendant_longitude(mid_jd, data.current_lat, data.current_lng)
+            t_sign = int(t_lagna_long / 30) % 12
             t_house = ((t_sign - natal_sign_idx) % 12) + 1
 
             score = compute_slot_score(
@@ -1673,9 +1723,17 @@ def get_planet_positions(data: PlanetPositionsInput):
         raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
 
 
+@app.get("/test/hora-base")
+def test_hora_base_all_lagnas():
+    """Return HORA_BASE dict for all 12 lagnas (engine regression / contract checks)."""
+    return {
+        "lagnas": {SIGNS[i]: compute_hora_base_for_lagna(i) for i in range(12)},
+    }
+
+
 @app.get("/validate")
 def validate_grid():
-    """Structural sanity-check using Dubai 2026-02-26, Cancer lagna. Asserts UTC (Z) timestamps and slot 0 score 74."""
+    """Structural sanity-check using Dubai 2026-02-26, Cancer lagna (UTC Z timestamps, 18 slots)."""
     result = generate_daily_grid(DailyGridInput(
         date="2026-02-26",
         current_lat=25.2048,

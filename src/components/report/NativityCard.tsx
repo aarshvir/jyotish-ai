@@ -8,6 +8,9 @@ interface NativitySummary {
   key_yogas?: Array<string | { name?: string; yoga_name?: string; description?: string; strength?: string }>;
   functional_benefics?: string[];
   functional_malefics?: string[];
+  /** Whole-sign engine lines, e.g. "Saturn — H3, H4" */
+  functional_neutral?: string[];
+  badhaka_lines?: string[];
 }
 
 interface PlanetaryPosition {
@@ -228,6 +231,42 @@ export function NativityCard({
                     <span className="font-mono text-xs text-crimson">
                       {planet}
                     </span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(nativitySummary?.badhaka_lines?.length ?? 0) > 0 && (
+            <div>
+              <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+                Badhaka
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(nativitySummary?.badhaka_lines ?? []).map((line, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber/10 border border-amber/30"
+                  >
+                    <span className="font-mono text-xs text-amber">{line}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(nativitySummary?.functional_neutral?.length ?? 0) > 0 && (
+            <div>
+              <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+                Neutral
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {(nativitySummary?.functional_neutral ?? []).map((line, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-horizon/40 border border-horizon"
+                  >
+                    <span className="font-mono text-xs text-dust">{line}</span>
                   </span>
                 ))}
               </div>

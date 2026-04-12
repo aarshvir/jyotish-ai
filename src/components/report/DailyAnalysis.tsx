@@ -1,12 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HourlyAnalysis } from './HourlyAnalysis';
-import {
-  getCanonicalScoreLabel,
-  getLabelIcon,
-} from '@/lib/guidance/labels';
+import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
 import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
 
 interface HourSlot {
@@ -89,19 +86,40 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
   };
 
   const currentDay = days[selectedDay] ?? days[0];
+
+  const slotsForSummary = useMemo((): HourSlot[] => {
+    if (!currentDay) return [];
+    const hourlyData: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
+    return (currentDay.slots ?? hourlyData ?? []) as HourSlot[];
+  }, [currentDay]);
+
+  const playbook = useMemo(() => {
+    if (!currentDay) {
+      return {
+        peak: undefined as HourSlot | undefined,
+        second: undefined as HourSlot | undefined,
+        rk: null as DayData['rahu_kaal'],
+        theme: 'Use hourly scores to sequence work and rest.',
+      };
+    }
+    const list = slotsForSummary.filter(Boolean);
+    const nonRk = list.filter((s) => !s?.is_rahu_kaal);
+    const sorted = [...nonRk].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+    const peak = sorted[0];
+    const second = sorted[1];
+    const rk = currentDay.rahu_kaal;
+    const theme =
+      (currentDay.day_theme ?? '').trim() ||
+      [currentDay.panchang?.yoga, currentDay.panchang?.nakshatra].filter(Boolean).join(' · ') ||
+      'Use hourly scores to sequence work and rest.';
+    return { peak, second, rk, theme };
+  }, [currentDay, slotsForSummary]);
+
   if (!currentDay) return null;
 
   const score = currentDay.day_score ?? 50;
   const scoreColor = score >= 65 ? 'text-emerald' : score >= 45 ? 'text-amber' : 'text-crimson';
 
-  const getScoreLabelDisplay = (s: number) => {
-    const label = getCanonicalScoreLabel(s);
-    const icon = getLabelIcon(label);
-    return `${icon} ${label.toUpperCase()}`;
-  };
-
-  const hourlyData: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
-  const slotsForSummary = currentDay.slots ?? hourlyData ?? [];
   const peakCount =
     currentDay.peak_count ??
     (slotsForSummary as HourSlot[]).filter((s) => s?.score >= 75).length ??
@@ -170,7 +188,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
               </span>
               <span className="text-lg sm:text-xl text-dust">/100</span>
               <span className="text-base sm:text-lg font-semibold ml-1 sm:ml-2 text-dust">
-                {getScoreLabelDisplay(score)}
+                {formatDayOutcomeLabel(score)}
               </span>
               <span className="ml-auto font-mono text-xs text-dust/70">
                 {peakCount > 0 && (
@@ -193,6 +211,37 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                 Peak windows: {peakWindows}
               </p>
             )}
+          </div>
+
+          {/* Today's Playbook — top slots + Rahu Kaal + theme */}
+          <div className="mb-8 rounded-sm border border-amber/25 bg-nebula/20 p-5 max-w-3xl mx-auto">
+            <p className="font-mono text-xs text-amber tracking-[0.2em] uppercase mb-3">
+              Today&apos;s Playbook
+            </p>
+            <div className="space-y-3 font-mono text-sm text-star">
+              {playbook.peak && (
+                <p>
+                  <span className="text-emerald">Peak</span> · {playbook.peak.display_label ?? '—'} (score{' '}
+                  {playbook.peak.score ?? '—'}) — {(playbook.peak as HourSlot).hora_planet || '—'} hora ·{' '}
+                  {(playbook.peak as HourSlot).choghadiya || '—'}
+                </p>
+              )}
+              {playbook.second && (
+                <p>
+                  <span className="text-amber">Second</span> · {playbook.second.display_label ?? '—'} (score{' '}
+                  {playbook.second.score ?? '—'}) — {(playbook.second as HourSlot).hora_planet || '—'} hora ·{' '}
+                  {(playbook.second as HourSlot).choghadiya || '—'}
+                </p>
+              )}
+              {playbook.rk && (playbook.rk.start || playbook.rk.end) && (
+                <p className="text-crimson">
+                  Rahu Kaal · {playbook.rk.start ?? '—'}–{playbook.rk.end ?? '—'} — keep to routine tasks only.
+                </p>
+              )}
+              <p className="text-dust text-xs leading-relaxed border-t border-horizon/40 pt-3">
+                Today&apos;s theme: {playbook.theme}
+              </p>
+            </div>
           </div>
 
           {/* Panchang */}

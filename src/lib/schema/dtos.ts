@@ -5,7 +5,7 @@
  * All commentary / validation / PDF routes should use these.
  */
 
-import type { PanchangData, RatingLabel } from '@/lib/agents/types';
+import type { DayOutcomeTier, PanchangData, RatingLabel } from '@/lib/agents/types';
 import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
 
 // ── Hourly-Day Commentary Route ──────────────────────────────────────────────
@@ -112,7 +112,7 @@ export interface PdfSlot {
 export interface PdfDay {
   date: string;
   day_score: number;
-  day_label_tier: RatingLabel;
+  day_label_tier: DayOutcomeTier;
   day_theme: string;
   overview_short: string;
   panchang?: Partial<PanchangData>;
