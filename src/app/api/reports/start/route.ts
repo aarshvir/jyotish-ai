@@ -1,4 +1,5 @@
-export const maxDuration = 800;
+/** Vercel cap for non-Enterprise plans is 300s; keep in sync with `vercel.json`. */
+export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
