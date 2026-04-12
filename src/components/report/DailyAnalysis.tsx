@@ -120,6 +120,8 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
   const score = currentDay.day_score ?? 50;
   const scoreColor = score >= 65 ? 'text-emerald' : score >= 45 ? 'text-amber' : 'text-crimson';
 
+  const hourlyData: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
+
   const peakCount =
     currentDay.peak_count ??
     (slotsForSummary as HourSlot[]).filter((s) => s?.score >= 75).length ??
