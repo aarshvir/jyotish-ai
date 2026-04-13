@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
     if (cookie) authHeaders['cookie'] = cookie;
   }
 
-  const pipeline = generateReportPipeline(
+  const pipelinePromise = generateReportPipeline(
     reportId,
     auth.user.id,
     auth.user.email ?? '',
@@ -163,9 +163,12 @@ export async function POST(request: NextRequest) {
     () => {},
     base,
     authHeaders,
-  ).catch((err) => console.error(`[reports/start] background pipeline failed for ${reportId}:`, err));
+  ).catch((err) => {
+    console.error(`[reports/start] background pipeline failed for ${reportId}:`, err);
+  });
 
-  waitUntil(pipeline);
+  // Required on Vercel: bare fire-and-forget is terminated when the response is sent.
+  waitUntil(pipelinePromise);
 
-  return NextResponse.json({ reportId, ok: true, status: 'generating' });
+  return NextResponse.json({ reportId, ok: true, status: 'generating' }, { status: 202 });
 }

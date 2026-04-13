@@ -40,7 +40,20 @@
       "Bash(grep -n \"generateReport\\\\|createReportRecord\\\\|saveReportToDatabase\" src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
       "Bash(npm install:*)",
       "Bash(npm list:*)",
-      "Bash(grep -n \"9.99\\\\|19.99\\\\|49.99\\\\|$\" src/app/\\\\\\(marketing\\\\\\)/pricing/page.tsx)"
+      "Bash(grep -n \"9.99\\\\|19.99\\\\|49.99\\\\|$\" src/app/\\\\\\(marketing\\\\\\)/pricing/page.tsx)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(cat:*)",
+      "Bash(grep -n \"status\\\\|\\\\.status\\\\|/status\\\\|Cannot read\\\\|\\\\[0\\\\]\" C:/Users/aarsh/Downloads/jyotish-ai/src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
+      "Bash(grep -n \"authJsonHeaders\\\\|startPolling\\\\|startStreamed\" C:/Users/aarsh/Downloads/jyotish-ai/src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
+      "Bash(grep -n \"startStreamedPipeline\\\\|startPollingForReport\\\\|generateReport\" C:/Users/aarsh/Downloads/jyotish-ai/src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
+      "Bash(grep -n \"EventSource\\\\|startStream\\\\|esRef\\\\|stream\" C:/Users/aarsh/Downloads/jyotish-ai/src/app/\\\\\\(app\\\\\\)/report/[id]/page.tsx)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(vercel:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npx supabase:*)"
     ]
   }
 }
