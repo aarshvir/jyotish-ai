@@ -656,7 +656,7 @@ export async function generateReportPipeline(
           const fallbackOverview =
             'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
 
-          if (overviewRes.ok) {
+          if (overviewRes.ok || overviewRes.status === 206) {
             const overviewData = await overviewRes.json();
             (overviewData.days ?? [] as DayOverviewApiResult[]).forEach((od: DayOverviewApiResult) => {
               const day = forecastDays.find((d) => d.date === od.date);
@@ -735,7 +735,7 @@ export async function generateReportPipeline(
           type BatchSlot = { slot_index: number; commentary?: string; commentary_short?: string };
           type BatchDay = { dayIndex: number; slots?: BatchSlot[] };
           let hourlyResults: BatchDay[] = [];
-          if (res.ok) {
+          if (res.ok || res.status === 206) {
             const json = (await res.json()) as { days?: BatchDay[] };
             hourlyResults = json.days ?? [];
           }
