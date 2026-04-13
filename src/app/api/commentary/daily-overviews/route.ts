@@ -223,22 +223,30 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
   };
 
   try {
-    // Prevent truncation: do the first 4 days in one call, then the remainder.
-    const batch1 = days.slice(0, 4);
-    const batch2 = days.slice(4);
-
+    // 7-day (and short) reports: one LLM round-trip to halve latency vs 4+remainder.
+    // Longer horizons: keep 4+remainder to avoid output truncation.
     let out: Array<{ date: string; day_theme: string; day_overview: string }> = [];
 
-    if (batch1.length) {
-      const r1 = await callBatches(batch1, 8000, modelOverride);
-      out.push(...(r1.length ? r1 : batch1.map((d) => buildFallbackDay(d, lagnaSign))));
-      // Ensure any AI/fallback objects also have normalized headlines.
-      out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
-    }
-    if (batch2.length) {
-      const r2 = await callBatches(batch2, 6000, modelOverride);
-      out.push(...(r2.length ? r2 : batch2.map((d) => buildFallbackDay(d, lagnaSign))));
-      out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
+    if (days.length > 0 && days.length <= 8) {
+      const r = await callBatches(days, 14_000, modelOverride);
+      out = (r.length ? r : days.map((d) => buildFallbackDay(d, lagnaSign))).map((d) => ({
+        ...d,
+        day_overview: normalizeDayOverview(d.day_overview),
+      }));
+    } else {
+      const batch1 = days.slice(0, 4);
+      const batch2 = days.slice(4);
+
+      if (batch1.length) {
+        const r1 = await callBatches(batch1, 8000, modelOverride);
+        out.push(...(r1.length ? r1 : batch1.map((d) => buildFallbackDay(d, lagnaSign))));
+        out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
+      }
+      if (batch2.length) {
+        const r2 = await callBatches(batch2, 6000, modelOverride);
+        out.push(...(r2.length ? r2 : batch2.map((d) => buildFallbackDay(d, lagnaSign))));
+        out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
+      }
     }
 
     // Ensure exact day count is preserved.

@@ -4,7 +4,6 @@
  * and emits SSE-style events via `onStep`. Saves progress to Supabase incrementally.
  */
 
-import { batchedPromiseAll } from '@/lib/async/batchedPromiseAll';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { validateReportData } from '@/lib/validation/reportValidation';
 import type {
@@ -257,9 +256,9 @@ export async function generateReportPipeline(
 
   const db = createServiceClient();
   const pipelineT0 = Date.now();
-  /** Wall-clock budget so we mark `error` before Vercel hard-kills the invocation (leaves orphan `generating`). */
+  /** Wall-clock budget — default < Vercel 300s so we mark `error` before FUNCTION_INVOCATION_TIMEOUT. */
   const budgetMs =
-    Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 760_000;
+    Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 265_000;
 
   /**
    * Hard-kill backstop: fires after budgetMs even if a fetch is stuck and
@@ -643,9 +642,15 @@ export async function generateReportPipeline(
             planets: ephemerisData.planets ?? {},
           });
 
+          const nativityHasText =
+            (np?.lagna_analysis?.trim().length ?? 0) >= 80 &&
+            (np?.current_dasha_interpretation?.trim().length ?? 0) >= 80;
+
           const [overviewRes, natTextRes] = await Promise.all([
             fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody, signal: AbortSignal.timeout(150_000) }),
-            fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.timeout(90_000) }),
+            nativityHasText
+              ? Promise.resolve(new Response('', { status: 204 }))
+              : fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.timeout(90_000) }),
           ]);
 
           const fallbackOverview =
@@ -665,11 +670,11 @@ export async function generateReportPipeline(
             }
           });
 
-          if (natTextRes.ok) {
+          if (natTextRes.ok && natTextRes.status !== 204) {
             const natTextData = await natTextRes.json();
             if (natTextData.lagna_analysis) nativityData.lagna_analysis = natTextData.lagna_analysis;
             if (natTextData.dasha_interpretation) nativityData.current_dasha_interpretation = natTextData.dasha_interpretation;
-          } else {
+          } else if (!nativityHasText) {
             // Inject a deterministic fallback so lagna_analysis is never blank
             const lagna = ephemerisData.lagna ?? 'Unknown';
             const md = ephemerisData.current_dasha?.mahadasha ?? 'Unknown';
@@ -693,49 +698,49 @@ export async function generateReportPipeline(
         }
       })(),
 
-      // Step 6: Hourly commentary (batched, concurrency=7 — all days in one round)
+      // Step 6: Hourly commentary — ONE batched LLM call (Path A; avoids 7× serverless chains)
       (async () => {
-        onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: 'Analysing 18 slots per day in parallel' });
+        onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: 'Single batched pass for all forecast days' });
         try {
-          const hourlyResults = await batchedPromiseAll(
-            forecastDays.map((day, i) => async () => {
-              try {
-                const res = await fetch(`${base}/api/commentary/hourly-day`, {
-                  method: 'POST',
-                  headers: h,
-                  signal: AbortSignal.timeout(120_000),
-                  body: JSON.stringify({
-                    lagnaSign: ephemerisData.lagna,
-                    mahadasha,
-                    antardasha,
-                    dayIndex: i,
-                    date: day.date,
-                    planet_positions: day.planet_positions,
-                    panchang: day.panchang,
-                    rahu_kaal: day.rahu_kaal,
-                    slots: day.slots.map((s) => ({
-                      slot_index: s.slot_index,
-                      display_label: s.display_label,
-                      dominant_hora: s.dominant_hora,
-                      dominant_choghadiya: s.dominant_choghadiya,
-                      transit_lagna: s.transit_lagna,
-                      transit_lagna_house: s.transit_lagna_house,
-                      is_rahu_kaal: s.is_rahu_kaal,
-                      score: s.score,
-                    })),
-                  }),
-                });
-                if (!res.ok) return { dayIndex: i, slots: [] };
-                return { dayIndex: i, ...(await res.json()) };
-              } catch (err) {
-                console.error(`[orchestrator][HOURLY] day ${i + 1} failed:`, err);
-                return { dayIndex: i, slots: [] };
-              }
-            }),
-            7,
-          );
+          const batchBody = JSON.stringify({
+            lagnaSign: ephemerisData.lagna,
+            mahadasha,
+            antardasha,
+            days: forecastDays.map((day, i) => ({
+              dayIndex: i,
+              date: day.date,
+              planet_positions: day.planet_positions,
+              panchang: day.panchang,
+              rahu_kaal: day.rahu_kaal,
+              slots: day.slots.map((s) => ({
+                slot_index: s.slot_index,
+                display_label: s.display_label,
+                dominant_hora: s.dominant_hora,
+                dominant_choghadiya: s.dominant_choghadiya,
+                transit_lagna: s.transit_lagna,
+                transit_lagna_house: s.transit_lagna_house,
+                is_rahu_kaal: s.is_rahu_kaal,
+                score: s.score,
+              })),
+            })),
+          });
 
-          hourlyResults.forEach(({ dayIndex, slots }: { dayIndex: number; slots?: Array<{ slot_index: number; commentary?: string; commentary_short?: string }> }) => {
+          const res = await fetch(`${base}/api/commentary/hourly-batch`, {
+            method: 'POST',
+            headers: h,
+            signal: AbortSignal.timeout(240_000),
+            body: batchBody,
+          });
+
+          type BatchSlot = { slot_index: number; commentary?: string; commentary_short?: string };
+          type BatchDay = { dayIndex: number; slots?: BatchSlot[] };
+          let hourlyResults: BatchDay[] = [];
+          if (res.ok) {
+            const json = (await res.json()) as { days?: BatchDay[] };
+            hourlyResults = json.days ?? [];
+          }
+
+          hourlyResults.forEach(({ dayIndex, slots }) => {
             const day = forecastDays[dayIndex];
             if (!day) return;
             (slots ?? []).forEach((hs) => {
