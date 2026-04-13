@@ -372,7 +372,11 @@ function ReportContent() {
       return;
     }
 
-    const started = (await res.json()) as { status?: string; skipped?: boolean };
+    const started = (await res.json()) as {
+      status?: string;
+      skipped?: boolean;
+      skippedPipeline?: boolean;
+    };
     if (started.status === 'complete' && started.skipped) {
       const sb = createClient();
       const uid = userRef.current?.id;
@@ -396,6 +400,17 @@ function ReportContent() {
           return;
         }
       }
+    }
+
+    if (!started.skippedPipeline) {
+      void fetch('/api/reports/run', {
+        method: 'POST',
+        headers: authJsonHeaders(),
+        body: JSON.stringify({
+          reportId: reportIdFromRoute,
+          forecast_start: startBody.forecast_start,
+        }),
+      }).catch((e) => console.error('[report] /api/reports/run failed', e));
     }
 
     startPollingForReport();

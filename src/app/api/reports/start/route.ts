@@ -3,26 +3,12 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { waitUntil } from '@vercel/functions';
-import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
+import { requireAuth } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 
 /** If a row is `generating` and younger than this, skip starting a duplicate pipeline. */
 const YOUNG_GENERATING_MS = 12 * 60 * 1000;
-
-/** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
-function birthTimeToPipelineTime(s: string): string {
-  const raw = (s || '12:00:00').trim();
-  const parts = raw.split(':').filter((p) => p.length > 0);
-  if (parts.length >= 2) {
-    const h = parts[0].padStart(2, '0');
-    const m = parts[1].padStart(2, '0');
-    return `${h}:${m}`;
-  }
-  return '12:00';
-}
 
 function isYoungGenerating(generationStartedAt: string | null | undefined): boolean {
   if (!generationStartedAt) return false;
@@ -32,12 +18,10 @@ function isYoungGenerating(generationStartedAt: string | null | undefined): bool
 }
 
 /**
- * Creates a `reports` row in `generating` state and starts background computation.
- * Client polls `/api/reports/[id]/status` — safe to close the browser after this returns.
- * `waitUntil` keeps the serverless invocation alive until the pipeline finishes (Vercel).
- *
- * Idempotency: if the row is already `generating` with a fresh `generation_started_at`,
- * returns 202 without a second `waitUntil` (avoids duplicate pipelines).
+ * Creates or updates a `reports` row in `generating` state. The client must then POST
+ * `/api/reports/run` (same session) so the pipeline runs in a **separate** invocation —
+ * on Next 14 App Router, `@vercel/functions` `waitUntil` can be a no-op when the platform
+ * request context is missing, which would kill work as soon as this handler returns 202.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -126,49 +110,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
-  const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
-
-  const input: PipelineInput = {
-    name: body.name ?? 'Seeker',
-    date: body.birth_date ?? '',
-    time: pipelineTime,
-    city: body.birth_city ?? '',
-    lat: parseFloat(body.birth_lat ?? '0') || 0,
-    lng: parseFloat(body.birth_lng ?? '0') || 0,
-    currentLat: parseFloat(body.current_lat ?? body.birth_lat ?? '0') || 0,
-    currentLng: parseFloat(body.current_lng ?? body.birth_lng ?? '0') || 0,
-    currentCity: body.current_city ?? body.birth_city ?? '',
-    timezoneOffset,
-    type: body.plan_type ?? '7day',
-    forecastStart: body.forecast_start ?? undefined,
-    planType: body.plan_type ?? '7day',
-    paymentStatus: body.payment_status ?? 'bypass',
-  };
-
-  const base = request.nextUrl.origin;
-
-  const authHeaders: Record<string, string> = {};
-  if (BYPASS_SECRET) {
-    authHeaders['x-bypass-token'] = BYPASS_SECRET;
-  } else {
-    const cookie = request.headers.get('cookie');
-    if (cookie) authHeaders['cookie'] = cookie;
-  }
-
-  const pipelinePromise = generateReportPipeline(
-    reportId,
-    auth.user.id,
-    auth.user.email ?? '',
-    input,
-    () => {},
-    base,
-    authHeaders,
-  ).catch((err) => {
-    console.error(`[reports/start] background pipeline failed for ${reportId}:`, err);
-  });
-
-  // Required on Vercel: bare fire-and-forget is terminated when the response is sent.
-  waitUntil(pipelinePromise);
-
-  return NextResponse.json({ reportId, ok: true, status: 'generating' }, { status: 202 });
+  return NextResponse.json(
+    { reportId, ok: true, status: 'generating', runRequired: true },
+    { status: 202 },
+  );
 }
