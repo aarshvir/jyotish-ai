@@ -13,6 +13,10 @@ const anthropicClient = process.env.ANTHROPIC_API_KEY?.trim()
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim() })
   : null;
 
+if (!anthropicClient) {
+  console.warn('[LLM] ANTHROPIC_API_KEY not set — Anthropic will not be used as primary model');
+}
+
 function extractAnthropicText(response: Anthropic.Message): string {
   return response.content
     .filter((b): b is Anthropic.TextBlock => b.type === 'text')
@@ -208,6 +212,7 @@ export async function completeLlmChat(opts: {
   // Anthropic (default or explicit claude-*)
   if (!raw || modelId.startsWith('claude-')) {
     if (anthropicClient) {
+      console.log(`[LLM] Using Anthropic model: ${modelId}`);
       try {
         const response = await anthropicClient.messages.create({
           model: modelId.startsWith('claude-') ? modelId : 'claude-sonnet-4-6',
@@ -217,11 +222,13 @@ export async function completeLlmChat(opts: {
         });
         return extractAnthropicText(response);
       } catch (anthropicErr: unknown) {
+        const errStatus = (anthropicErr as { status?: number })?.status;
+        const errMsg = anthropicErr instanceof Error ? anthropicErr.message : String(anthropicErr);
+        console.error(`[LLM] Anthropic ${modelId} failed — HTTP ${errStatus ?? 'unknown'}: ${errMsg.slice(0, 200)}`);
         if (!anthropicFailureIsRetriableWithFallback(anthropicErr)) {
           throw anthropicErr;
         }
-        const msg =
-          anthropicErr instanceof Error ? anthropicErr.message : String(anthropicErr);
+        const msg = errMsg;
         console.warn('[LLM] Anthropic failed, running fallback chain:', msg.slice(0, 120));
         if (!hasAnyChatFallbackKey()) {
           throw anthropicErr;
@@ -235,6 +242,7 @@ export async function completeLlmChat(opts: {
     }
 
     if (hasAnyChatFallbackKey()) {
+      console.warn('[LLM] Anthropic client not initialised — no ANTHROPIC_API_KEY. Running fallback chain.');
       return runChatFallbackChain({
         systemPrompt: opts.systemPrompt,
         userPrompt: opts.userPrompt,

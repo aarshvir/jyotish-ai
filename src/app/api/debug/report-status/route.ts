@@ -1,4 +1,4 @@
-﻿export const dynamic = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { BYPASS_SECRET } from '@/lib/api/requireAuth';
@@ -55,9 +55,72 @@ export async function GET(request: NextRequest) {
   }
 
   status.llm = {
-    anthropic: !!(process.env.ANTHROPIC_API_KEY?.trim()),
-    openai: !!(process.env.OPENAI_API_KEY?.trim()),
+    anthropic_key_present: !!(process.env.ANTHROPIC_API_KEY?.trim()),
+    openai_key_present: !!(process.env.OPENAI_API_KEY?.trim()),
+    gemini_key_present: !!(process.env.GEMINI_API_KEY?.trim()),
+    grok_key_present: !!(process.env.GROK_API_KEY?.trim()),
   };
+
+  // Live probe Anthropic — does the key actually work?
+  const anthropicKey = (process.env.ANTHROPIC_API_KEY ?? '').trim();
+  if (anthropicKey) {
+    try {
+      const probeRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 16,
+          messages: [{ role: 'user', content: 'Reply OK' }],
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const probeBody = await probeRes.json().catch(() => ({}));
+      status.llm_probe_anthropic = {
+        http_status: probeRes.status,
+        ok: probeRes.status === 200,
+        error: probeRes.status !== 200 ? (probeBody as { error?: { message?: string } }).error?.message : undefined,
+      };
+    } catch (e: unknown) {
+      status.llm_probe_anthropic = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  } else {
+    status.llm_probe_anthropic = { ok: false, error: 'ANTHROPIC_API_KEY not set' };
+  }
+
+  // Live probe OpenAI — does the key actually work?
+  const openaiKey = (process.env.OPENAI_API_KEY ?? '').trim();
+  if (openaiKey) {
+    try {
+      const probeRes = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${openaiKey}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          max_tokens: 8,
+          messages: [{ role: 'user', content: 'Reply OK' }],
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const probeBody = await probeRes.json().catch(() => ({}));
+      status.llm_probe_openai = {
+        http_status: probeRes.status,
+        ok: probeRes.status === 200,
+        error: probeRes.status !== 200 ? (probeBody as { error?: { message?: string } }).error?.message : undefined,
+      };
+    } catch (e: unknown) {
+      status.llm_probe_openai = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  } else {
+    status.llm_probe_openai = { ok: false, error: 'OPENAI_API_KEY not set' };
+  }
 
   return NextResponse.json(status);
 }
