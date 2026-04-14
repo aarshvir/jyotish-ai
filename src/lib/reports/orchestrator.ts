@@ -256,9 +256,11 @@ export async function generateReportPipeline(
 
   const db = createServiceClient();
   const pipelineT0 = Date.now();
-  /** Wall-clock budget — default < Vercel 300s so we mark `error` before FUNCTION_INVOCATION_TIMEOUT. */
+  /** Wall-clock budget — default < Vercel 300s so we mark `error` before FUNCTION_INVOCATION_TIMEOUT.
+   *  Set to 280s: leaves ~20s for assembly + DB write before the 300s hard kill.
+   *  Override with REPORT_PIPELINE_BUDGET_MS env var for plans with higher maxDuration. */
   const budgetMs =
-    Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 265_000;
+    Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 280_000;
 
   /**
    * Shared abort controller wired into every commentary fetch.
@@ -997,7 +999,13 @@ export async function generateReportPipeline(
     logStep('weeks_synthesis_done');
 
     // ── STEP 9: Validation ────────────────────────────────────────────────
-    if (!skipValidation) {
+    // Skip validation if already past 85% of budget — prioritize saving the report.
+    const budgetUsed = Date.now() - pipelineT0;
+    const skipValidationBudget = budgetUsed > budgetMs * 0.85;
+    if (skipValidationBudget) {
+      console.warn(`[orchestrator] skipping validation — ${Math.round(budgetUsed / 1000)}s elapsed (${Math.round((budgetUsed / budgetMs) * 100)}% of budget)`);
+    }
+    if (!skipValidation && !skipValidationBudget) {
       onStep({ type: 'step_started', step: 7, message: 'Validating commentary quality...', detail: 'Pass 1: checking word counts, STRATEGY sections, headlines' });
 
       try {
