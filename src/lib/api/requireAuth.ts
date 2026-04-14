@@ -16,7 +16,7 @@ export const BYPASS_SECRET = _rawBypass;
 
 /** Optional UUID for Supabase rows when using bypass (must exist in auth.users if FK enforced). */
 export const BYPASS_USER_ID =
-  process.env.BYPASS_USER_ID || '00000000-0000-4000-8000-000000000001';
+  (process.env.BYPASS_USER_ID ?? '').trim() || '00000000-0000-4000-8000-000000000001';
 
 export type AuthResult =
   | { user: { id: string; email?: string; role?: string }; isAdmin?: boolean }
