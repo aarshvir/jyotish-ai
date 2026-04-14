@@ -557,7 +557,14 @@ function ReportContent() {
             time: String(row?.birth_time ?? '').slice(0, 5),
             city: String(row?.birth_city ?? ''),
           });
-          startPollingForReport();
+          // If we have birth params, re-kick generation — the server will either start the
+          // pipeline (if the previous invocation timed out) or return skippedPipeline if
+          // a live run is already within its 350s window.
+          if (params.get('date')) {
+            void kickOffBackgroundGeneration();
+          } else {
+            startPollingForReport();
+          }
           return;
         }
 

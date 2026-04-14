@@ -8,8 +8,12 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 
-/** If a row is `generating` and younger than this, skip starting a duplicate pipeline. */
-const YOUNG_GENERATING_MS = 12 * 60 * 1000;
+/**
+ * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
+ * Must be longer than `maxDuration` (300s) so a still-running inline pipeline isn't
+ * restarted. Set to 350s — safely above 300s but fast enough to recover from crashes.
+ */
+const YOUNG_GENERATING_MS = 350 * 1000;
 
 /** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
 function birthTimeToPipelineTime(s: string): string {
