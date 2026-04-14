@@ -261,19 +261,33 @@ export async function generateReportPipeline(
     Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 265_000;
 
   /**
+   * Shared abort controller wired into every commentary fetch.
+   * The hard-kill timer calls .abort() so all in-flight LLM fetch calls
+   * terminate immediately, letting the pipeline unwind to assertWithinBudget
+   * which does an *awaited* DB update — far more reliable than fire-and-forget.
+   */
+  const budgetAbortController = new AbortController();
+  const budgetSignal = budgetAbortController.signal;
+
+  /**
    * Hard-kill backstop: fires after budgetMs even if a fetch is stuck and
-   * assertWithinBudget() never gets called. Marks row error so the client
-   * stops polling and can offer a retry.
+   * assertWithinBudget() never gets called. Aborts all pending commentary
+   * fetches so the pipeline can reach assertWithinBudget, then also does a
+   * direct DB update as a safety net.
    */
   let hardKillTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
     console.error(`[orchestrator] hard-kill timeout (${budgetMs}ms) for ${reportId}`);
     onStep({ type: 'error', message: 'Report generation timed out — please try again.' });
+    // Abort all in-flight commentary fetches so Promise.all unwinds immediately.
+    budgetAbortController.abort(new Error('Pipeline budget exceeded'));
+    // Direct DB update as safety net (pipeline may still reach assertWithinBudget faster).
     db.from('reports')
       .update({ status: 'error', updated_at: new Date().toISOString() })
       .eq('id', reportId)
       .eq('user_id', userId)
       .then(({ error }) => {
         if (error) console.error('[orchestrator] hard-kill DB update failed:', error.message);
+        else console.log('[orchestrator] hard-kill DB update succeeded for', reportId);
       });
   }, budgetMs);
 
@@ -610,10 +624,32 @@ export async function generateReportPipeline(
       profile: np ?? undefined,
     };
 
-    // ── STEP 4+5+6+7: Commentary (parallel) ──────────────────────────────
+    // ── STEP 4+5+6+7+8: Commentary + weeks-synthesis (parallel) ─────────
     onStep({ type: 'step_started', step: 3, message: 'Writing daily commentary...', detail: 'Analyzing each day with your birth chart' });
 
     let allMonthsData: MonthSummary[] = [];
+    let weeksSynthData: WeeksSynthApiResult = { weeks: [], period_synthesis: null };
+
+    // Pre-compute weeks payload before the parallel block (depends only on forecastDays)
+    const reportStart = new Date(forecastDays[0].date);
+    const weeksPayload = Array.from({ length: 6 }, (_, i) => {
+      const wStart = new Date(reportStart);
+      wStart.setDate(wStart.getDate() + i * 7);
+      const wEnd = new Date(wStart);
+      wEnd.setDate(wEnd.getDate() + 6);
+      const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+      const weekDays = forecastDays.slice(i * 7, (i + 1) * 7);
+      return {
+        week_index: i,
+        week_label: `${fmt(wStart)} – ${fmt(wEnd)}`,
+        start_date: wStart.toISOString().split('T')[0],
+        end_date: wEnd.toISOString().split('T')[0],
+        daily_scores: weekDays.map((d) => d.day_score ?? 55),
+      };
+    });
+    const allScores = forecastDays.map((d) => d.day_score ?? 55);
+    const bestDay = forecastDays.reduce((a, b) => ((a.day_score ?? 0) > (b.day_score ?? 0) ? a : b));
+    const worstDay = forecastDays.reduce((a, b) => ((a.day_score ?? 100) < (b.day_score ?? 100) ? a : b));
 
     await Promise.all([
       // Steps 4+5: Daily overviews + Nativity text
@@ -660,10 +696,10 @@ export async function generateReportPipeline(
             (np?.current_dasha_interpretation?.trim().length ?? 0) >= 80;
 
           const [overviewRes, natTextRes] = await Promise.all([
-            fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody, signal: AbortSignal.timeout(150_000) }),
+            fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody, signal: AbortSignal.any([AbortSignal.timeout(140_000), budgetSignal]) }),
             nativityHasText
               ? Promise.resolve(new Response('', { status: 204 }))
-              : fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.timeout(90_000) }),
+              : fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.any([AbortSignal.timeout(80_000), budgetSignal]) }),
           ]);
 
           const fallbackOverview =
@@ -742,7 +778,7 @@ export async function generateReportPipeline(
           const res = await fetch(`${base}/api/commentary/hourly-batch`, {
             method: 'POST',
             headers: h,
-            signal: AbortSignal.timeout(240_000),
+            signal: AbortSignal.any([AbortSignal.timeout(160_000), budgetSignal]),
             body: batchBody,
           });
 
@@ -818,11 +854,11 @@ export async function generateReportPipeline(
 
           const [m1Res, m2Res] = await Promise.all([
             fetch(`${base}/api/commentary/months-first`, {
-              method: 'POST', headers: h, signal: AbortSignal.timeout(150_000),
+              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(130_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(0, 6) }),
             }),
             fetch(`${base}/api/commentary/months-second`, {
-              method: 'POST', headers: h, signal: AbortSignal.timeout(150_000),
+              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(130_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(6, 12) }),
             }),
           ]);
@@ -879,78 +915,57 @@ export async function generateReportPipeline(
           });
         }
       })(),
+
+      // Step 8: Weeks + Synthesis (now parallel with months/commentary)
+      (async () => {
+        onStep({ type: 'step_started', step: 6, message: 'Writing period synthesis...', detail: '6 weekly summaries + strategic windows' });
+        try {
+          const synthRes = await fetch(`${base}/api/commentary/weeks-synthesis`, {
+            method: 'POST',
+            headers: h,
+            signal: AbortSignal.any([AbortSignal.timeout(120_000), budgetSignal]),
+            body: JSON.stringify({
+              lagnaSign: ephemerisData.lagna ?? 'Cancer',
+              mahadasha: mahadasha ?? 'Rahu',
+              antardasha: antardasha ?? 'Mercury',
+              reportStartDate: forecastDays[0].date,
+              weeks: weeksPayload,
+              planet_positions_by_date: forecastDays.map((d) => ({
+                date: d.date,
+                planet_positions: d.planet_positions,
+                panchang: d.panchang,
+                rahu_kaal: d.rahu_kaal,
+                slots: d.slots?.map((s) => ({
+                  display_label: s.display_label,
+                  score: s.score,
+                  dominant_choghadiya: s.dominant_choghadiya,
+                })),
+              })),
+              synthesis_context: {
+                total_days: forecastDays.length,
+                best_date: bestDay.date,
+                best_score: bestDay.day_score ?? 0,
+                worst_date: worstDay.date,
+                worst_score: worstDay.day_score ?? 0,
+                avg_score: Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / (allScores.length || 1)),
+              },
+            }),
+          });
+          if (synthRes.ok) {
+            weeksSynthData = await synthRes.json();
+          } else {
+            console.error('[orchestrator][STEP-8] weeks-synthesis failed:', synthRes.status);
+          }
+        } catch (err) {
+          console.error('[orchestrator][STEP-8] failed:', err instanceof Error ? err.message : String(err));
+        }
+      })(),
     ]);
 
     onStep({ type: 'step_completed', step: 3 });
     logStep('commentary_months_done');
-    void dbSetProgress('Commentary & monthly layer complete', 78);
-    await assertWithinBudget('pre_weeks_synthesis');
-
-    // ── STEP 8: Weeks + Synthesis ─────────────────────────────────────────
-    onStep({ type: 'step_started', step: 6, message: 'Writing period synthesis...', detail: '6 weekly summaries + strategic windows' });
-
-    const reportStart = new Date(forecastDays[0].date);
-    const weeksPayload = Array.from({ length: 6 }, (_, i) => {
-      const wStart = new Date(reportStart);
-      wStart.setDate(wStart.getDate() + i * 7);
-      const wEnd = new Date(wStart);
-      wEnd.setDate(wEnd.getDate() + 6);
-      const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      const weekDays = forecastDays.slice(i * 7, (i + 1) * 7);
-      return {
-        week_index: i,
-        week_label: `${fmt(wStart)} – ${fmt(wEnd)}`,
-        start_date: wStart.toISOString().split('T')[0],
-        end_date: wEnd.toISOString().split('T')[0],
-        daily_scores: weekDays.map((d) => d.day_score ?? 55),
-      };
-    });
-
-    const allScores = forecastDays.map((d) => d.day_score ?? 55);
-    const bestDay = forecastDays.reduce((a, b) => ((a.day_score ?? 0) > (b.day_score ?? 0) ? a : b));
-    const worstDay = forecastDays.reduce((a, b) => ((a.day_score ?? 100) < (b.day_score ?? 100) ? a : b));
-
-    let weeksSynthData: WeeksSynthApiResult = { weeks: [], period_synthesis: null };
-    try {
-      const synthRes = await fetch(`${base}/api/commentary/weeks-synthesis`, {
-        method: 'POST',
-        headers: h,
-        signal: AbortSignal.timeout(150_000),
-        body: JSON.stringify({
-          lagnaSign: ephemerisData.lagna ?? 'Cancer',
-          mahadasha: mahadasha ?? 'Rahu',
-          antardasha: antardasha ?? 'Mercury',
-          reportStartDate: forecastDays[0].date,
-          weeks: weeksPayload,
-          planet_positions_by_date: forecastDays.map((d) => ({
-            date: d.date,
-            planet_positions: d.planet_positions,
-            panchang: d.panchang,
-            rahu_kaal: d.rahu_kaal,
-            slots: d.slots?.map((s) => ({
-              display_label: s.display_label,
-              score: s.score,
-              dominant_choghadiya: s.dominant_choghadiya,
-            })),
-          })),
-          synthesis_context: {
-            total_days: forecastDays.length,
-            best_date: bestDay.date,
-            best_score: bestDay.day_score ?? 0,
-            worst_date: worstDay.date,
-            worst_score: worstDay.day_score ?? 0,
-            avg_score: Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / (allScores.length || 1)),
-          },
-        }),
-      });
-      if (synthRes.ok) {
-        weeksSynthData = await synthRes.json();
-      } else {
-        console.error('[orchestrator][STEP-8] weeks-synthesis failed:', synthRes.status);
-      }
-    } catch (err) {
-      console.error('[orchestrator][STEP-8] failed:', err instanceof Error ? err.message : String(err));
-    }
+    void dbSetProgress('Commentary, months & weekly synthesis complete', 88);
+    await assertWithinBudget('pre_validation');
 
     const weekList = (weeksSynthData.weeks ?? []).map((w, i: number) => {
       const wl = w.week_label ?? `Week ${i + 1}`;
@@ -980,8 +995,6 @@ export async function generateReportPipeline(
 
     onStep({ type: 'step_completed', step: 6 });
     logStep('weeks_synthesis_done');
-    void dbSetProgress('Weekly synthesis complete', 88);
-    await assertWithinBudget('pre_validation');
 
     // ── STEP 9: Validation ────────────────────────────────────────────────
     if (!skipValidation) {
@@ -1015,7 +1028,7 @@ export async function generateReportPipeline(
         const valRes = await fetch(`${base}/api/validation/report`, {
           method: 'POST',
           headers: h,
-          signal: AbortSignal.timeout(120_000),
+          signal: AbortSignal.any([AbortSignal.timeout(90_000), budgetSignal]),
           body: JSON.stringify(validationBody),
         });
 
