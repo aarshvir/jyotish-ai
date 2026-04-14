@@ -57,7 +57,7 @@ function GeneratingScreen({
   elapsedSeconds: number;
   onElapsed: (s: number) => void;
   generationStartRef: MutableRefObject<number | null>;
-  serverPoll: { status: string; progress: number } | null;
+  serverPoll: { status: string; progress: number; generation_step?: string | null } | null;
 }) {
   useEffect(() => {
     const t = setInterval(() => {
@@ -67,20 +67,23 @@ function GeneratingScreen({
     return () => clearInterval(t);
   }, [generationStartRef, onElapsed]);
 
-  const msgIndex = Math.min(
-    Math.floor(elapsedSeconds / 22),
-    GENERATION_MESSAGES.length - 1,
-  );
   const mins = Math.floor(elapsedSeconds / 60);
   const secs = elapsedSeconds % 60;
   const elapsed = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
 
-  const serverLine =
-    serverPoll?.status === 'generating'
-      ? `Server status: generating (poll progress ${serverPoll.progress}%)`
-      : serverPoll?.status
-        ? `Server status: ${serverPoll.status}`
-        : 'Waiting for first status response…';
+  // Real progress from server; fall back to a slow crawl so the bar always moves
+  const realProgress = serverPoll?.progress ?? 0;
+  // If server hasn't responded yet, animate from 0→4% based on elapsed time (max 4%)
+  const fallbackProgress = serverPoll ? 0 : Math.min(4, Math.floor(elapsedSeconds / 5));
+  const displayProgress = Math.max(realProgress, fallbackProgress);
+
+  // Real phase label from server; fall back to elapsed-time-based message
+  const phaseLabel =
+    serverPoll?.generation_step
+      ? serverPoll.generation_step
+      : serverPoll?.status === 'generating'
+        ? GENERATION_MESSAGES[Math.min(Math.floor(elapsedSeconds / 22), GENERATION_MESSAGES.length - 1)]
+        : 'Connecting to server…';
 
   return (
     <div className="min-h-[calc(100vh-var(--nav-height))] bg-dark flex flex-col items-center justify-center gap-8 px-6">
@@ -95,28 +98,26 @@ function GeneratingScreen({
         </p>
       </div>
 
-      {/* Indeterminate progress — not tied to fake % complete */}
+      {/* Real progress bar tied to server milestones */}
       <div className="w-full max-w-md">
         <div className="flex justify-between items-center mb-1.5">
-          <span className="font-mono text-xs text-amber">In progress</span>
+          <span className="font-mono text-xs text-amber">{displayProgress}% complete</span>
           <span className="font-mono text-xs text-dust">{elapsed}</span>
         </div>
         <div className="h-2 w-full bg-nebula rounded-full overflow-hidden">
-          <div className="h-full w-full bg-gradient-to-r from-amber/20 via-amber/70 to-amber/20 animate-pulse" />
+          {displayProgress > 0 ? (
+            <div
+              className="h-full bg-gradient-to-r from-amber/60 to-amber transition-all duration-1000 ease-out rounded-full"
+              style={{ width: `${displayProgress}%` }}
+            />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-r from-amber/20 via-amber/70 to-amber/20 animate-pulse" />
+          )}
         </div>
-        <p className="font-mono text-[10px] text-dust/80 mt-2">{serverLine}</p>
       </div>
 
       <div className="w-full max-w-md bg-nebula/30 border border-amber/10 rounded-lg p-4 text-center min-h-[3.5rem] flex items-center justify-center">
-        <p className="font-mono text-xs text-amber leading-relaxed">{GENERATION_MESSAGES[msgIndex]}</p>
-      </div>
-
-      <div className="w-full max-w-md rounded-lg border border-dust/20 bg-space/40 p-4">
-        <p className="text-dust text-xs leading-relaxed">
-          Phases (ephemeris → grids → nativity → commentary → months → synthesis → save) run on the server.
-          The list is not a live step tracker — long waits usually mean heavy AI calls or a retry after a provider
-          slowdown. If nothing changes for many minutes, use Try again or open the link later.
-        </p>
+        <p className="font-mono text-xs text-amber leading-relaxed">{phaseLabel}</p>
       </div>
 
       <p className="text-dust/60 text-xs text-center max-w-sm">
@@ -168,7 +169,7 @@ function ReportContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const generationStartRef = useRef<number | null>(null);
-  const [serverPoll, setServerPoll] = useState<{ status: string; progress: number } | null>(null);
+  const [serverPoll, setServerPoll] = useState<{ status: string; progress: number; generation_step?: string | null } | null>(null);
 
   const authJsonHeaders = useCallback((): Record<string, string> => {
     const h: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -281,10 +282,31 @@ function ReportContent() {
           status: string;
           isComplete: boolean;
           progress?: number;
+          generation_step?: string | null;
           report: ReportData | null;
+          generation_started_at?: string | null;
         };
 
-        setServerPoll({ status: data.status, progress: typeof data.progress === 'number' ? data.progress : 0 });
+        setServerPoll({
+          status: data.status,
+          progress: typeof data.progress === 'number' ? data.progress : 0,
+          generation_step: data.generation_step ?? null,
+        });
+
+        // If the server says still generating but generation_started_at is older than
+        // Vercel's maxDuration (300s) + buffer (60s), the serverless function is dead.
+        // Stop waiting and show the retry button immediately rather than after 15 min.
+        if (data.status === 'generating' && data.generation_started_at) {
+          const startedMs = new Date(data.generation_started_at).getTime();
+          if (!Number.isNaN(startedMs) && Date.now() - startedMs > 360_000) {
+            stopReportPolling();
+            setError(
+              'The server did not finish in time (likely a timeout). Use Try again to restart.',
+            );
+            setIsLoading(false);
+            return;
+          }
+        }
 
         if (data.isComplete && data.report) {
           stopReportPolling();

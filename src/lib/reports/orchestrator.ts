@@ -306,6 +306,15 @@ export async function generateReportPipeline(
     }
   }
 
+  // Helper: write real-time progress so the poll endpoint can expose it
+  async function dbSetProgress(step: string, progress: number) {
+    await db
+      .from('reports')
+      .update({ generation_step: step, generation_progress: progress, updated_at: new Date().toISOString() })
+      .eq('id', reportId)
+      .eq('user_id', userId);
+  }
+
   // Helper: upsert report row
   async function dbInsertGenerating() {
     const planRaw = input.planType ?? input.type;
@@ -413,6 +422,7 @@ export async function generateReportPipeline(
   try {
     await dbInsertGenerating();
     logStep('db_insert_generating');
+    void dbSetProgress('Starting pipeline', 0);
 
     const dayCount = input.type === 'monthly' || input.type === 'annual' ? 30 : 7;
     const cLat = input.currentLat || input.lat;
@@ -471,6 +481,7 @@ export async function generateReportPipeline(
 
     onStep({ type: 'step_completed', step: 0 });
     logStep('ephemeris_done');
+    void dbSetProgress('Birth chart computed', 8);
 
     // Save ephemeris data immediately
     const dasha = ephemerisData?.current_dasha ?? {};
@@ -538,6 +549,7 @@ export async function generateReportPipeline(
 
     onStep({ type: 'step_completed', step: 1 });
     logStep('nativity_grids_done');
+    void dbSetProgress('Nativity & hourly grids complete', 22);
 
     const forecastDays: ForecastDayIntermediate[] = dailyGridResults.map((r, i) => {
       if (!r) {
@@ -583,6 +595,7 @@ export async function generateReportPipeline(
 
     // Save day scores after grids
     void dbSaveDayScores(forecastDays);
+    void dbSetProgress('Day scores saved', 25);
     onStep({ type: 'partial_report_updated', field: 'day_scores' });
     await assertWithinBudget('pre_commentary');
 
@@ -686,6 +699,7 @@ export async function generateReportPipeline(
               nativityData.current_dasha_interpretation = `${md} Mahadasha with ${ad} Antardasha is active. Use high-score days and benefic horas for important actions.`;
             }
           }
+          void dbSetProgress('Daily overviews & nativity text written', 50);
           onStep({ type: 'partial_report_updated', field: 'daily_overviews' });
         } catch (e) {
           console.error('[orchestrator][STEP-4+5] failed:', e instanceof Error ? e.message : String(e));
@@ -764,6 +778,7 @@ export async function generateReportPipeline(
               }
             });
           });
+          void dbSetProgress('Hourly commentary written', 65);
           onStep({ type: 'partial_report_updated', field: 'hourly_commentary' });
         } catch (err) {
           console.error('[orchestrator][STEP-6] failed:', err instanceof Error ? err.message : String(err));
@@ -847,6 +862,7 @@ export async function generateReportPipeline(
               domain_scores: { career: 65, money: 65, health: 65, relationships: 65 },
             });
           }
+          void dbSetProgress('12-month forecast written', 75);
           onStep({ type: 'partial_report_updated', field: 'months' });
         } catch (e) {
           console.error('[orchestrator][STEP-7] failed:', e instanceof Error ? e.message : String(e));
@@ -867,6 +883,7 @@ export async function generateReportPipeline(
 
     onStep({ type: 'step_completed', step: 3 });
     logStep('commentary_months_done');
+    void dbSetProgress('Commentary & monthly layer complete', 78);
     await assertWithinBudget('pre_weeks_synthesis');
 
     // ── STEP 8: Weeks + Synthesis ─────────────────────────────────────────
@@ -963,6 +980,7 @@ export async function generateReportPipeline(
 
     onStep({ type: 'step_completed', step: 6 });
     logStep('weeks_synthesis_done');
+    void dbSetProgress('Weekly synthesis complete', 88);
     await assertWithinBudget('pre_validation');
 
     // ── STEP 9: Validation ────────────────────────────────────────────────
@@ -1022,6 +1040,7 @@ export async function generateReportPipeline(
             });
           }
         }
+        void dbSetProgress('Validation complete', 93);
         onStep({ type: 'step_completed', step: 9 });
       } catch (err) {
         console.error('[orchestrator][STEP-9] validation error:', err);
@@ -1136,6 +1155,7 @@ export async function generateReportPipeline(
     if (errors.length > 0) console.warn('[orchestrator] validation issues:', errors);
 
     // Save to DB
+    void dbSetProgress('Saving report', 97);
     await dbSaveFinal(finalReport as unknown as Record<string, unknown>);
     onStep({ type: 'step_completed', step: 10 });
     logStep('report_saved_complete');

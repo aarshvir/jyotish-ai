@@ -22,7 +22,7 @@ export async function GET(
   const { data, error } = await supabase
     .from('reports')
     .select(
-      'id, status, report_data, lagna_sign, dasha_mahadasha, dasha_antardasha, day_scores, native_name, birth_date, birth_time, birth_city, generation_started_at, updated_at, created_at',
+      'id, status, report_data, lagna_sign, dasha_mahadasha, dasha_antardasha, day_scores, native_name, birth_date, birth_time, birth_city, generation_started_at, generation_step, generation_progress, updated_at, created_at',
     )
     .eq('id', reportId)
     .eq('user_id', auth.user.id)
@@ -36,11 +36,20 @@ export async function GET(
   const isComplete = status === 'complete';
   const reportData = data?.report_data as Record<string, unknown> | null;
 
+  // Use real server-side progress when available; fall back to coarse defaults.
+  const serverProgress = typeof data?.generation_progress === 'number' ? data.generation_progress : null;
+  const progress = isComplete
+    ? 100
+    : status === 'error'
+      ? 0
+      : (serverProgress ?? (status === 'generating' ? 5 : 0));
+
   return NextResponse.json({
     id: reportId,
     status,
     isComplete,
-    progress: isComplete ? 100 : status === 'generating' ? 50 : 0,
+    progress,
+    generation_step: data?.generation_step ?? null,
     report: isComplete ? reportData : null,
     lagna_sign: data?.lagna_sign,
     dasha_mahadasha: data?.dasha_mahadasha,
