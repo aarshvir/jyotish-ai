@@ -215,12 +215,17 @@ async function resilientFetch(
   retries = 3,
   delayMs = 2000,
   timeoutMs = 30_000,
+  extraSignal?: AbortSignal,
 ): Promise<Response> {
   for (let i = 0; i < retries; i++) {
     try {
-      // Fresh AbortSignal per attempt — timeout signals cannot be reused across retries.
-      return await fetch(url, { ...options, signal: AbortSignal.timeout(timeoutMs) });
+      const timeoutSig = AbortSignal.timeout(timeoutMs);
+      const signal = extraSignal
+        ? AbortSignal.any([timeoutSig, extraSignal])
+        : timeoutSig;
+      return await fetch(url, { ...options, signal });
     } catch (err: unknown) {
+      if (extraSignal?.aborted) throw err;
       const isNetwork =
         err instanceof Error &&
         (err.name === 'TypeError' ||
@@ -432,7 +437,10 @@ export async function generateReportPipeline(
       })
       .eq('id', reportId)
       .eq('user_id', userId);
-    if (error) console.error('[orchestrator] dbSaveFinal:', error.message);
+    if (error) {
+      console.error('[orchestrator] dbSaveFinal:', error.message);
+      throw new Error(`Failed to save report to database: ${error.message}`);
+    }
   }
 
   try {
@@ -472,7 +480,7 @@ export async function generateReportPipeline(
           birth_lat: input.lat,
           birth_lng: input.lng,
         }),
-      });
+      }, 3, 2000, 30_000, budgetSignal);
       if (!ephRes.ok) {
         const e = await ephRes.json().catch(() => ({}));
         throw new Error((e as { error?: string }).error ?? 'Ephemeris failed');
@@ -522,7 +530,7 @@ export async function generateReportPipeline(
             method: 'POST',
             headers: h,
             body: JSON.stringify({ natalChart: ephemerisData }),
-          }, 2, 3000, 90_000);
+          }, 2, 3000, 90_000, budgetSignal);
           if (natRes.ok) {
             const raw = await natRes.json();
             nativityProfile = raw.data ?? raw;
@@ -548,7 +556,7 @@ export async function generateReportPipeline(
                     timezoneOffset: input.timezoneOffset,
                     natal_lagna_sign_index,
                   }),
-                }, 2, 2000);
+                }, 2, 2000, 30_000, budgetSignal);
                 if (!res.ok) return null;
                 return await res.json();
               } catch {
@@ -1175,13 +1183,12 @@ export async function generateReportPipeline(
     const errors = validateReportData(finalReportTyped);
     if (errors.length > 0) console.warn('[orchestrator] validation issues:', errors);
 
-    // Save to DB
+    // Save to DB — throws on failure so the outer catch marks status='error'
     void dbSetProgress('Saving report', 97);
     await dbSaveFinal(finalReport as unknown as Record<string, unknown>);
-    onStep({ type: 'step_completed', step: 10 });
     logStep('report_saved_complete');
-
-    // Emit completion
+    void dbSetProgress('Report complete', 100);
+    onStep({ type: 'step_completed', step: 10 });
     onStep({ type: 'report_completed', reportData: finalReportTyped });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to generate report';
