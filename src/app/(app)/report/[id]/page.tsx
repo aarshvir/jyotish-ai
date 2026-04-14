@@ -633,8 +633,8 @@ function ReportContent() {
       <div className="min-h-[calc(100vh-var(--nav-height))] bg-space flex flex-col items-center justify-center px-6 py-20">
         <StarField />
         <div className="max-w-md text-center relative z-10">
-          <div className="text-crimson text-6xl mb-6">⚠</div>
-          <h1 className="font-display font-semibold text-star text-3xl mb-4">
+          <div className="text-caution text-6xl mb-6">⚠</div>
+          <h1 className="font-body font-semibold text-star text-headline-lg mb-4">
             Generation Failed
           </h1>
           <p className="font-body text-dust text-base mb-8">{error}</p>
@@ -643,7 +643,7 @@ function ReportContent() {
               hasFetched.current = false;
               void kickOffBackgroundGeneration({ forceRestart: true });
             }}
-            className="px-8 py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
+            className="btn-primary px-8 py-3"
           >
             Try Again
           </button>
@@ -740,7 +740,7 @@ function ReportContent() {
             className="pdf-exclude font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2"
           >
             {copyLinkFeedback ? (
-              <span className="text-emerald">Link copied!</span>
+              <span className="text-success">Link copied!</span>
             ) : (
               <>
                 <span>Copy Share Link</span>
@@ -781,15 +781,15 @@ function ReportContent() {
           </div>
         </div>
         {copyLinkError && (
-          <div className="mb-4 px-4 py-3 border border-crimson/50 bg-crimson/10 rounded-sm flex items-center gap-3">
-            <span className="text-crimson text-sm">⚠</span>
-            <p className="font-mono text-xs text-crimson">{copyLinkError}</p>
+          <div className="mb-4 px-4 py-3 border border-caution/40 bg-caution/10 rounded-card flex items-center gap-3">
+            <span className="text-caution text-body-sm">⚠</span>
+            <p className="font-mono text-mono-sm text-caution">{copyLinkError}</p>
           </div>
         )}
         {pdfError && (
-          <div className="mb-4 px-4 py-3 border border-crimson/50 bg-crimson/10 rounded-sm flex items-center gap-3">
-            <span className="text-crimson text-sm">⚠</span>
-            <p className="font-mono text-xs text-crimson">{pdfError}</p>
+          <div className="mb-4 px-4 py-3 border border-caution/40 bg-caution/10 rounded-card flex items-center gap-3">
+            <span className="text-caution text-body-sm">⚠</span>
+            <p className="font-mono text-mono-sm text-caution">{pdfError}</p>
           </div>
         )}
         <div id="report-content">

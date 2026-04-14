@@ -14,39 +14,28 @@ export function ScoreBadge({ score: rawScore, size = 'md', showLabel = false, an
   const score = Number.isFinite(rawScore) ? rawScore : 0;
   const [displayScore, setDisplayScore] = useState(animate ? 0 : score);
 
-  // Count-up animation
   useEffect(() => {
-    if (!animate) {
-      setDisplayScore(score);
-      return;
-    }
-
+    if (!animate) { setDisplayScore(score); return; }
     const steps = 60;
     const increment = score / steps;
     let current = 0;
     let frame = 0;
-
     const counter = () => {
       frame++;
       current = Math.min(score, increment * frame);
       setDisplayScore(Math.round(current));
-
-      if (current < score) {
-        requestAnimationFrame(counter);
-      }
+      if (current < score) requestAnimationFrame(counter);
     };
-
     requestAnimationFrame(counter);
   }, [score, animate]);
 
   const getColor = (s: number) => {
-    if (s >= 65) return 'text-emerald';
+    if (s >= 65) return 'text-success';
     if (s >= 45) return 'text-amber';
-    return 'text-crimson';
+    return 'text-caution';
   };
 
   const getLabel = (s: number) => {
-    // Uses canonical thresholds: ≥85 Peak, ≥75 Excellent, ≥65 Good, ≥50 Neutral, ≥45 Caution, ≥35 Difficult, else Avoid
     if (s >= 85) return '★★★ PEAK';
     if (s >= 75) return '★★ EXCELLENT';
     if (s >= 65) return '★ GOOD';
@@ -69,12 +58,12 @@ export function ScoreBadge({ score: rawScore, size = 'md', showLabel = false, an
         initial={animate ? { opacity: 0, scale: 0.8 } : undefined}
         animate={animate ? { opacity: 1, scale: 1 } : undefined}
         transition={{ duration: 0.5, ease: 'easeOut' }}
-        className={`font-display font-semibold ${sizeClasses[size]} ${getColor(score)} leading-none`}
+        className={`font-mono font-bold ${sizeClasses[size]} ${getColor(score)} leading-none tabular-nums`}
       >
         {displayScore}
       </motion.div>
       {showLabel && (
-        <span className={`font-mono text-xs tracking-[0.2em] uppercase ${getColor(score)}`}>
+        <span className={`font-mono text-label-sm tracking-[0.15em] uppercase ${getColor(score)}`}>
           {getLabel(score)}
         </span>
       )}

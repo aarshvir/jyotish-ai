@@ -15,41 +15,39 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`pdf-exclude fixed top-0 left-0 right-0 z-50 h-[var(--nav-height)] transition-all duration-300 ${
+      className={`pdf-exclude fixed top-0 left-0 right-0 z-50 h-[var(--nav-height)] transition-all duration-250 ${
         scrolled
-          ? 'bg-space/80 backdrop-blur-md border-b border-horizon/60'
+          ? 'bg-space/85 backdrop-blur-md border-b border-horizon/40'
           : 'bg-transparent'
       }`}
+      role="navigation"
+      aria-label="Main navigation"
     >
-      <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
-        <Link href="/" className="group flex min-w-0 shrink-0 items-center gap-2 sm:gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm">
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 28 28"
-            fill="none"
-            className="shrink-0 text-amber"
-            aria-hidden
-          >
-            <circle cx="14" cy="14" r="13" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-            <circle cx="14" cy="14" r="9" stroke="currentColor" strokeWidth="0.8" opacity="0.8" />
+      <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-3 px-5 sm:px-6">
+        <Link
+          href="/"
+          className="group flex min-w-0 shrink-0 items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button"
+          aria-label="VedicHour home"
+        >
+          <svg width="26" height="26" viewBox="0 0 28 28" fill="none" className="shrink-0 text-amber" aria-hidden>
+            <circle cx="14" cy="14" r="13" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+            <circle cx="14" cy="14" r="9" stroke="currentColor" strokeWidth="0.8" opacity="0.7" />
             <circle cx="14" cy="14" r="3" fill="currentColor" />
-            <line x1="14" y1="1" x2="14" y2="5" stroke="currentColor" strokeWidth="1" opacity="0.7" />
-            <line x1="14" y1="23" x2="14" y2="27" stroke="currentColor" strokeWidth="1" opacity="0.7" />
-            <line x1="1" y1="14" x2="5" y2="14" stroke="currentColor" strokeWidth="1" opacity="0.7" />
-            <line x1="23" y1="14" x2="27" y2="14" stroke="currentColor" strokeWidth="1" opacity="0.7" />
+            <line x1="14" y1="1" x2="14" y2="5" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+            <line x1="14" y1="23" x2="14" y2="27" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+            <line x1="1" y1="14" x2="5" y2="14" stroke="currentColor" strokeWidth="1" opacity="0.6" />
+            <line x1="23" y1="14" x2="27" y2="14" stroke="currentColor" strokeWidth="1" opacity="0.6" />
           </svg>
-          <span className="font-display text-base font-semibold tracking-wide text-star group-hover:text-amber-glow transition-colors sm:text-xl sm:tracking-[0.08em]">
+          <span className="font-display text-lg font-semibold tracking-wide text-star group-hover:text-amber-light transition-colors">
             VedicHour
           </span>
         </Link>
 
-        {/* Desktop nav links */}
-        <div className="hidden items-center gap-8 text-sm font-body text-dust lg:flex">
-          <Link href="/#how-it-works" className="tracking-wide transition-colors hover:text-star focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm px-1">
+        <div className="hidden items-center gap-7 font-body text-body-sm text-dust lg:flex">
+          <Link href="/#how-it-works" className="tracking-wide transition-colors hover:text-star focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-1 py-0.5">
             How it works
           </Link>
-          <Link href="/pricing" className="tracking-wide transition-colors hover:text-star focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm px-1">
+          <Link href="/pricing" className="tracking-wide transition-colors hover:text-star focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-1 py-0.5">
             Pricing
           </Link>
         </div>

@@ -25,17 +25,17 @@ interface FormData {
   currentLng: number | null;
   currentTzOffset: number | null;
   reportType: ReportPlanId;
-  forecastStartDate: string; // optional — YYYY-MM-DD; defaults to today on report page
+  forecastStartDate: string;
 }
 
 interface GeoResult {
   display: string;
   lat: number;
   lng: number;
-  tzOffset?: number; // minutes east of UTC
+  tzOffset?: number;
 }
 
-// ── Loading overlay stages ────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 
 const STAGES = [
   'Calculating planetary positions…',
@@ -43,7 +43,11 @@ const STAGES = [
   'Weaving your forecast…',
 ];
 
-// ── Report type options ───────────────────────────────────────────────────────
+const STEP_META = [
+  { label: 'About You', est: '30 sec' },
+  { label: 'Birth Details', est: '1 min' },
+  { label: 'Choose Plan', est: '30 sec' },
+];
 
 const REPORT_TYPES = [
   {
@@ -58,6 +62,7 @@ const REPORT_TYPES = [
     title: '7-Day Forecast',
     price: '₹799',
     description: 'Hourly ratings + AI narrative for 7 days',
+    popular: true,
   },
   {
     id: 'monthly' as const,
@@ -76,31 +81,36 @@ const REPORT_TYPES = [
   },
 ] as const;
 
-// ── Slide transition variants ─────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function slideVariants(dir: 1 | -1) {
   return {
-    initial: { opacity: 0, x: dir * 40 },
-    animate: { opacity: 1, x: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-    exit:    { opacity: 0, x: dir * -40, transition: { duration: 0.25 } },
+    initial: { opacity: 0, x: dir * 36 },
+    animate: { opacity: 1, x: 0, transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
+    exit: { opacity: 0, x: dir * -36, transition: { duration: 0.2 } },
   };
 }
 
-// ── Field wrapper ─────────────────────────────────────────────────────────────
-
-function Field({ label, hint, htmlFor, children }: { label: string; hint: string; htmlFor?: string; children: React.ReactNode }) {
+function Field({ label, hint, why, htmlFor, children }: {
+  label: string; hint?: string; why?: string; htmlFor?: string; children: React.ReactNode;
+}) {
   return (
     <div>
       <div className="flex items-baseline justify-between mb-1.5">
-        <label htmlFor={htmlFor} className="font-mono text-xs text-dust/80 tracking-[0.12em] uppercase">{label}</label>
-        {hint && <span className="font-mono text-[10px] text-dust/50">{hint}</span>}
+        <label htmlFor={htmlFor} className="font-mono text-label-sm text-dust/80 tracking-[0.1em] uppercase">{label}</label>
+        {hint && <span className="font-mono text-mono-sm text-dust/40">{hint}</span>}
       </div>
       {children}
+      {why && (
+        <p className="font-body text-body-sm text-dust/40 mt-1.5 leading-snug italic">
+          {why}
+        </p>
+      )}
     </div>
   );
 }
 
-// ── Step 1 — module level ─────────────────────────────────────────────────────
+// ── Step 1: Identity ──────────────────────────────────────────────────────────
 
 interface Step1Props {
   form: FormData;
@@ -114,14 +124,15 @@ function Step1({ form, update, onNext }: Step1Props) {
 
   return (
     <>
-      <h1 className="font-display font-semibold text-star mb-2"
-          style={{ fontSize: 'clamp(32px, 4vw, 48px)' }}>
-        Who Are You?
+      <h1 className="font-body font-semibold text-star text-headline-lg mb-1.5">
+        Begin Your Forecast
       </h1>
-      <p className="font-body text-dust text-sm mb-8">Begin your journey.</p>
+      <p className="font-body text-body-sm text-dust mb-7">
+        Tell us who you are. This takes about 2 minutes total.
+      </p>
 
-      <div className="space-y-5">
-        <Field label="Full Name" hint="" htmlFor="onboard-name">
+      <div className="space-y-4">
+        <Field label="Full Name" htmlFor="onboard-name" why="Used to personalize your report.">
           <input
             id="onboard-name"
             type="text"
@@ -133,7 +144,7 @@ function Step1({ form, update, onNext }: Step1Props) {
             required
           />
         </Field>
-        <Field label="Email Address" hint="" htmlFor="onboard-email">
+        <Field label="Email Address" htmlFor="onboard-email" why="We send your report here. Never shared.">
           <input
             id="onboard-email"
             type="email"
@@ -146,23 +157,22 @@ function Step1({ form, update, onNext }: Step1Props) {
         </Field>
       </div>
 
-      <p className="font-mono text-xs text-dust/50 mt-6 mb-8 tracking-wide">
-        Your data is encrypted and never sold.
-      </p>
+      <div className="flex items-center gap-2 mt-5 mb-7">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-success shrink-0" aria-hidden>
+          <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2"/>
+          <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="2"/>
+        </svg>
+        <span className="font-mono text-mono-sm text-dust/50">Encrypted & never sold</span>
+      </div>
 
-      <button
-        className="w-full py-3.5 bg-amber text-space font-body font-medium rounded-sm
-                   hover:bg-amber-glow transition-colors disabled:opacity-40"
-        disabled={!canProceed}
-        onClick={onNext}
-      >
+      <button className="btn-primary w-full" disabled={!canProceed} onClick={onNext}>
         Continue
       </button>
     </>
   );
 }
 
-// ── Step 2 — module level ─────────────────────────────────────────────────────
+// ── Step 2: Birth Details ─────────────────────────────────────────────────────
 
 interface Step2Props {
   form: FormData;
@@ -182,17 +192,16 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
   currentGeo, currentGeoLoading, currentGeoError, onNext, onBack }: Step2Props) {
   return (
     <>
-      <h1 className="font-display font-semibold text-star mb-2"
-          style={{ fontSize: 'clamp(28px, 3.5vw, 44px)' }}>
-        When and Where Did You Arrive?
+      <h1 className="font-body font-semibold text-star text-headline-lg mb-1.5">
+        Birth Details
       </h1>
-      <p className="font-body text-dust text-sm mb-8">
-        Exact birth time gives precise Lagna. Current city gives accurate timing.
+      <p className="font-body text-body-sm text-dust mb-7">
+        Exact birth time gives precise Lagna. Approximate time still works — we show confidence bands.
       </p>
 
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Birth Date" hint="" htmlFor="onboard-birth-date">
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Birth Date" htmlFor="onboard-birth-date">
             <input
               id="onboard-birth-date"
               type="date"
@@ -202,7 +211,8 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
               required
             />
           </Field>
-          <Field label="Birth Time" hint="HH:MM · local" htmlFor="onboard-birth-time">
+          <Field label="Birth Time" hint="HH:MM · local" htmlFor="onboard-birth-time"
+                 why="Determines your rising sign (Lagna). Unknown? Use 12:00 — we adjust confidence.">
             <input
               id="onboard-birth-time"
               type="time"
@@ -214,7 +224,7 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
           </Field>
         </div>
 
-        <Field label="Birth City" hint="For natal chart calculation" htmlFor="onboard-birth-city">
+        <Field label="Birth City" htmlFor="onboard-birth-city" why="For calculating planetary positions at your birth location.">
           <input
             id="onboard-birth-city"
             type="text"
@@ -228,36 +238,29 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
         </Field>
 
         {geoLoading && (
-          <p className="font-mono text-xs text-amber/60 animate-pulse tracking-wide">
+          <p className="font-mono text-mono-sm text-amber/60 animate-pulse tracking-wide">
             Locating birth coordinates…
           </p>
         )}
         {geoError && !geoLoading && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-sm bg-crimson/10 border border-crimson/20"
-          >
-            <span className="text-crimson text-sm">⚠</span>
-            <span className="font-mono text-xs text-crimson tracking-wide">{geoError}</span>
-          </motion.div>
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-button bg-caution/10 border border-caution/20">
+            <span className="text-caution text-body-sm">⚠</span>
+            <span className="font-mono text-mono-sm text-caution tracking-wide">{geoError}</span>
+          </div>
         )}
         {geo && !geoLoading && !geoError && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-sm bg-emerald/10 border border-emerald/20"
-          >
-            <span className="text-emerald text-sm">📍</span>
-            <span className="font-mono text-xs text-emerald tracking-wide">
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-button bg-success/10 border border-success/20">
+            <span className="text-success text-body-sm">📍</span>
+            <span className="font-mono text-mono-sm text-success tracking-wide">
               {geo.display} ({geo.lat.toFixed(2)}°, {geo.lng.toFixed(2)}°)
             </span>
-          </motion.div>
+          </div>
         )}
 
-        {/* Current city divider */}
-        <div className="pt-2 border-t border-horizon/30">
-          <Field label="Current City" hint="Where you live NOW — for accurate daily timing" htmlFor="onboard-current-city">
+        <div className="pt-3 border-t border-horizon/30">
+          <Field label="Current City" htmlFor="onboard-current-city"
+                 hint="Optional"
+                 why="Hora times are calculated for where you live now. Leave blank to use birth city.">
             <input
               id="onboard-current-city"
               type="text"
@@ -272,48 +275,36 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
               }}
             />
           </Field>
-          <p className="font-mono text-[10px] text-dust/40 mt-1.5">
-            Hora times and scores are calculated for your current location. Leave blank to use birth city.
-          </p>
         </div>
 
         {currentGeoLoading && (
-          <p className="font-mono text-xs text-amber/60 animate-pulse tracking-wide">
+          <p className="font-mono text-mono-sm text-amber/60 animate-pulse tracking-wide">
             Locating current city…
           </p>
         )}
         {currentGeoError && !currentGeoLoading && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-sm bg-crimson/10 border border-crimson/20"
-          >
-            <span className="text-crimson text-sm">⚠</span>
-            <span className="font-mono text-xs text-crimson tracking-wide">{currentGeoError}</span>
-          </motion.div>
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-button bg-caution/10 border border-caution/20">
+            <span className="text-caution text-body-sm">⚠</span>
+            <span className="font-mono text-mono-sm text-caution tracking-wide">{currentGeoError}</span>
+          </div>
         )}
         {currentGeo && !currentGeoLoading && !currentGeoError && form.currentCity.trim() !== form.birthCity.trim() && (
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-sm bg-emerald/10 border border-emerald/20"
-          >
-            <span className="text-emerald text-sm">🌍</span>
-            <span className="font-mono text-xs text-emerald tracking-wide">
+          <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-button bg-success/10 border border-success/20">
+            <span className="text-success text-body-sm">🌍</span>
+            <span className="font-mono text-mono-sm text-success tracking-wide">
               {currentGeo.display} ({currentGeo.lat.toFixed(2)}°, {currentGeo.lng.toFixed(2)}°)
               {currentGeo.tzOffset !== undefined && (
-                <span className="text-emerald/70 ml-2">
+                <span className="text-success/70 ml-2">
                   · UTC{currentGeo.tzOffset >= 0 ? '+' : ''}{(currentGeo.tzOffset / 60).toFixed(1)}
                 </span>
               )}
             </span>
-          </motion.div>
+          </div>
         )}
-      </div>
 
-        {/* Forecast start date */}
-        <div className="pt-2 border-t border-horizon/30">
-          <Field label="Forecast Start Date" hint="Optional — past or future" htmlFor="onboard-forecast-start">
+        <div className="pt-3 border-t border-horizon/30">
+          <Field label="Forecast Start Date" hint="Optional" htmlFor="onboard-forecast-start"
+                 why="Leave blank to start from today. Enter any past or future date to analyse that period.">
             <input
               id="onboard-forecast-start"
               type="date"
@@ -322,20 +313,15 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
               onChange={(e) => update('forecastStartDate', e.target.value)}
             />
           </Field>
-          <p className="font-mono text-[10px] text-dust/40 mt-1.5">
-            Leave blank to start from today. Enter any past or future date to analyse that period.
-          </p>
         </div>
+      </div>
 
-      <div className="flex gap-3 mt-8">
-        <button
-          className="flex-1 py-3 border border-horizon text-dust font-body text-sm rounded-sm hover:border-amber/30 hover:text-star transition-colors"
-          onClick={onBack}
-        >
+      <div className="flex gap-3 mt-7">
+        <button className="btn-secondary flex-1 py-3" onClick={onBack}>
           Back
         </button>
         <button
-          className="flex-[2] py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors disabled:opacity-40"
+          className="btn-primary flex-[2] py-3"
           disabled={!form.birthDate || !form.birthTime || !form.birthCity.trim()}
           onClick={onNext}
         >
@@ -346,7 +332,7 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
   );
 }
 
-// ── Step 3 — module level ─────────────────────────────────────────────────────
+// ── Step 3: Plan Selection ────────────────────────────────────────────────────
 
 interface Step3Props {
   form: FormData;
@@ -362,120 +348,103 @@ interface Step3Props {
 }
 
 function Step3({
-  form,
-  setReportType,
-  onSubmit,
-  onAdminFreeSubmit,
-  onBack,
-  promoCode,
-  setPromoCode,
-  promoDiscount,
-  hasBypass,
-  isAdmin,
+  form, setReportType, onSubmit, onAdminFreeSubmit, onBack,
+  promoCode, setPromoCode, promoDiscount, hasBypass, isAdmin,
 }: Step3Props) {
-  const paidPlan =
-    form.reportType === '7day' ||
-    form.reportType === 'monthly' ||
-    form.reportType === 'annual';
+  const paidPlan = form.reportType === '7day' || form.reportType === 'monthly' || form.reportType === 'annual';
   const fullPromo = paidPlan && promoDiscount >= 100;
 
   return (
     <>
-      <h1 className="font-display font-semibold text-star mb-2"
-          style={{ fontSize: 'clamp(28px, 3.5vw, 44px)' }}>
-        Choose Your Oracle
+      <h1 className="font-body font-semibold text-star text-headline-lg mb-1.5">
+        Choose Your Report
       </h1>
-      <p className="font-body text-dust text-sm mb-8">
-        Select a report type to generate.
+      <p className="font-body text-body-sm text-dust mb-7">
+        One-time payment. Instant delivery. No subscriptions.
       </p>
 
-      <div className="space-y-4 mb-8">
+      <div className="space-y-3 mb-6">
         {REPORT_TYPES.map((rt) => (
           <button
             key={rt.id}
-            className={`w-full text-left px-5 py-4 rounded-sm border transition-all duration-200 ${
+            className={`w-full text-left px-4 py-3.5 rounded-card border transition-all duration-200 ${
               form.reportType === rt.id
-                ? 'border-amber bg-amber/8 text-star'
-                : 'border-horizon text-dust hover:border-amber/30 hover:text-star'
+                ? 'border-amber bg-amber/[0.06] shadow-glow-amber'
+                : 'border-horizon hover:border-amber/25'
             }`}
             onClick={() => setReportType(rt.id)}
           >
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="font-display font-semibold text-lg">{rt.title}</span>
+            <div className="flex items-center justify-between gap-2 mb-0.5">
+              <span className="font-body text-title-lg text-star">{rt.title}</span>
               <div className="flex items-center gap-2 shrink-0">
-                {'bestValue' in rt && rt.bestValue && (
-                  <span className="font-mono text-[9px] tracking-[0.12em] px-2 py-0.5 rounded-sm bg-amber text-space uppercase whitespace-nowrap">
-                    BEST VALUE
+                {'popular' in rt && rt.popular && (
+                  <span className="font-mono text-label-sm px-2 py-0.5 rounded-badge bg-amber text-space uppercase tracking-wider">
+                    Popular
                   </span>
                 )}
-                <span className="font-mono text-sm text-amber">{rt.price}</span>
+                {'bestValue' in rt && rt.bestValue && (
+                  <span className="font-mono text-label-sm px-2 py-0.5 rounded-badge bg-amber/20 text-amber uppercase tracking-wider">
+                    Best Value
+                  </span>
+                )}
+                <span className="font-mono text-mono-lg text-amber">{rt.price}</span>
               </div>
             </div>
-            <p className="font-body text-xs text-dust">{rt.description}</p>
+            <p className="font-body text-body-sm text-dust">{rt.description}</p>
             {form.reportType === rt.id && (
-              <div className="mt-2 flex items-center gap-1.5">
+              <div className="mt-1.5 flex items-center gap-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-amber" />
-                <span className="font-mono text-[10px] text-amber tracking-wider">SELECTED</span>
+                <span className="font-mono text-label-sm text-amber tracking-wider">SELECTED</span>
               </div>
             )}
           </button>
         ))}
       </div>
 
-      <div className="mb-6">
-        <label className="font-mono text-xs text-dust/80 tracking-[0.12em] uppercase block mb-1.5">
-          Promo code (optional)
+      <div className="mb-5">
+        <label className="font-mono text-label-sm text-dust/60 tracking-[0.1em] uppercase block mb-1.5">
+          Promo code
         </label>
         <input
           type="text"
           className="cosmic-input"
-          placeholder="Promo code (optional)"
+          placeholder="Enter code (optional)"
           value={promoCode}
           onChange={(e) => setPromoCode(e.target.value)}
           autoComplete="off"
         />
         {promoDiscount > 0 && (
-          <p className="font-mono text-xs text-emerald mt-2 tracking-wide">
-            ✓ {promoDiscount}% discount
-            {fullPromo ? ' — no payment required' : ' applies at checkout'}
+          <p className="font-mono text-mono-sm text-success mt-2 tracking-wide">
+            ✓ {promoDiscount}% discount{fullPromo ? ' — no payment required' : ' at checkout'}
           </p>
         )}
       </div>
 
-      <div className="space-y-4">
-        <div className="flex flex-col gap-3">
-          <div className="flex gap-3">
-            <button
-              className="flex-1 py-3 border border-horizon text-dust font-body text-sm rounded-sm hover:border-amber/30 hover:text-star transition-colors"
-              onClick={onBack}
-            >
-              Back
-            </button>
-            <button
-              className="flex-[2] py-3 bg-amber text-space font-body font-medium rounded-sm hover:bg-amber-glow transition-colors"
-              onClick={onSubmit}
-            >
-              {hasBypass || fullPromo ? 'Generate Report Free' : 'Generate Report'}
-            </button>
-          </div>
-          {isAdmin && (
-            <button
-              type="button"
-              className="w-full py-3 border border-emerald/50 text-emerald font-body text-sm rounded-sm hover:bg-emerald/10 transition-colors"
-              onClick={onAdminFreeSubmit}
-            >
-              Generate Free Report (admin)
-            </button>
-          )}
+      <div className="space-y-3">
+        <div className="flex gap-3">
+          <button className="btn-secondary flex-1 py-3" onClick={onBack}>
+            Back
+          </button>
+          <button className="btn-primary flex-[2] py-3" onClick={onSubmit}>
+            {hasBypass || fullPromo ? 'Generate Report Free' : 'Generate Report'}
+          </button>
         </div>
+        {isAdmin && (
+          <button
+            type="button"
+            className="w-full py-3 border border-success/40 text-success font-body text-body-sm rounded-button hover:bg-success/10 transition-colors"
+            onClick={onAdminFreeSubmit}
+          >
+            Generate Free Report (admin)
+          </button>
+        )}
 
-        {/* Money-back guarantee for paid plans */}
-        {(form.reportType === '7day' || form.reportType === 'monthly' || form.reportType === 'annual') && (
-          <div className="flex items-center justify-center gap-2 pt-2">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-dust shrink-0">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        {paidPlan && (
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-dust shrink-0" aria-hidden>
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            <span className="font-mono text-xs text-dust text-center">
+            <span className="font-mono text-mono-sm text-dust text-center">
               48-hour money-back guarantee · No questions asked
             </span>
           </div>
@@ -485,13 +454,13 @@ function Step3({
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────────
 
 function OnboardPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
-  const [dir, setDir]   = useState<1 | -1>(1);
+  const [dir, setDir] = useState<1 | -1>(1);
   const [form, setForm] = useState<FormData>({
     name: '', email: '',
     birthDate: '', birthTime: '', birthCity: '',
@@ -500,23 +469,22 @@ function OnboardPageInner() {
     reportType: 'free',
     forecastStartDate: '',
   });
-  const [geo, setGeo]                       = useState<GeoResult | null>(null);
-  const [geoLoading, setGeoLoading]         = useState(false);
-  const [geoError, setGeoError]             = useState<string | null>(null);
-  const [currentGeo, setCurrentGeo]         = useState<GeoResult | null>(null);
+  const [geo, setGeo] = useState<GeoResult | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const [currentGeo, setCurrentGeo] = useState<GeoResult | null>(null);
   const [currentGeoLoading, setCurrentGeoLoading] = useState(false);
-  const [currentGeoError, setCurrentGeoError]     = useState<string | null>(null);
-  const [isLoading, setIsLoading]           = useState(false);
-  const [loadingStage, setLoadingStage]     = useState(0);
+  const [currentGeoError, setCurrentGeoError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState(0);
   const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [hasBypass, setHasBypass]           = useState(false);
-  const [bypassToken, setBypassToken]       = useState<string | null>(null);
-  const [isAdmin, setIsAdmin]               = useState(false);
-  const [promoCode, setPromoCode]           = useState('');
+  const [hasBypass, setHasBypass] = useState(false);
+  const [bypassToken, setBypassToken] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
 
   const promoDiscount = getPromoDiscount(promoCode);
 
-  /** Lazily injects the Razorpay checkout.js script into the page. */
   function loadRazorpayScript(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).Razorpay) {
@@ -531,7 +499,6 @@ function OnboardPageInner() {
     });
   }
 
-  // Redirect to login if not authenticated
   useEffect(() => {
     const supabase = createClient();
     void supabase.auth.getUser().then(({ data }) => {
@@ -541,7 +508,6 @@ function OnboardPageInner() {
     });
   }, [router]);
 
-  // Check for ?plan= URL param and pre-select report type
   useEffect(() => {
     const plan = searchParams.get('plan');
     if (plan === 'preview') {
@@ -553,11 +519,7 @@ function OnboardPageInner() {
 
   useEffect(() => {
     const b = searchParams.get('bypass');
-    if (!b) {
-      setHasBypass(false);
-      setBypassToken(null);
-      return;
-    }
+    if (!b) { setHasBypass(false); setBypassToken(null); return; }
     let cancelled = false;
     fetch('/api/onboard/bypass-check', {
       method: 'POST',
@@ -567,23 +529,11 @@ function OnboardPageInner() {
       .then((r) => r.json())
       .then((d: { ok?: boolean }) => {
         if (cancelled) return;
-        if (d?.ok) {
-          setHasBypass(true);
-          setBypassToken(b);
-        } else {
-          setHasBypass(false);
-          setBypassToken(null);
-        }
+        if (d?.ok) { setHasBypass(true); setBypassToken(b); }
+        else { setHasBypass(false); setBypassToken(null); }
       })
-      .catch(() => {
-        if (!cancelled) {
-          setHasBypass(false);
-          setBypassToken(null);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => { if (!cancelled) { setHasBypass(false); setBypassToken(null); } });
+    return () => { cancelled = true; };
   }, [searchParams]);
 
   useEffect(() => {
@@ -593,7 +543,6 @@ function OnboardPageInner() {
       .catch(() => setIsAdmin(false));
   }, []);
 
-  // E2E: allow orchestrator to sync step 2 form state (controlled inputs + Playwright)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handler = (e: Event) => {
@@ -606,13 +555,11 @@ function OnboardPageInner() {
     return () => window.removeEventListener('e2e-sync-step2', handler);
   }, []);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-
   function update(field: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function next() { setDir(1);  setStep((s) => s + 1); }
+  function next() { setDir(1); setStep((s) => s + 1); }
   function back() { setDir(-1); setStep((s) => s - 1); }
 
   function setReportType(id: ReportPlanId) {
@@ -621,34 +568,22 @@ function OnboardPageInner() {
 
   async function geocodeCity(city: string, isCurrent = false) {
     if (!city.trim()) return;
-
-    if (isCurrent) {
-      setCurrentGeoLoading(true);
-      setCurrentGeoError(null);
-      setCurrentGeo(null);
-    } else {
-      setGeoLoading(true);
-      setGeoError(null);
-      setGeo(null);
-    }
+    if (isCurrent) { setCurrentGeoLoading(true); setCurrentGeoError(null); setCurrentGeo(null); }
+    else { setGeoLoading(true); setGeoError(null); setGeo(null); }
 
     try {
       const res = await fetch(`/api/geocode?city=${encodeURIComponent(city)}`);
-
       if (!res.ok) {
         const err = 'Location lookup failed. You can continue without it.';
         if (isCurrent) setCurrentGeoError(err); else setGeoError(err);
         return;
       }
-
       const data = await res.json() as Array<{ lat: string; lon: string; display_name: string }>;
-
       if (data[0]) {
-        const lat  = parseFloat(data[0].lat);
-        const lng  = parseFloat(data[0].lon);
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
         const name = data[0].display_name.split(',').slice(0, 3).join(',').trim();
         const displayLower = (name + ' ' + city).toLowerCase();
-        // Known offsets for common cities (Dubai +04:00 GMT = 240 min)
         const knownTz: Record<string, number> = {
           'dubai': 240, 'uae': 240, 'abu dhabi': 240, 'sharjah': 240,
           'india': 330, 'mumbai': 330, 'delhi': 330, 'bangalore': 330,
@@ -659,189 +594,128 @@ function OnboardPageInner() {
           if (displayLower.includes(key)) { tzOffset = val; break; }
         }
         const geoResult: GeoResult = { display: name, lat, lng, tzOffset };
-
         if (isCurrent) {
           setCurrentGeo(geoResult);
           setForm((prev) => ({ ...prev, currentLat: lat, currentLng: lng, currentTzOffset: tzOffset }));
-          console.log('✅ Current city geocoded:', { city, lat, lng, tzOffset });
         } else {
           setGeo(geoResult);
           setForm((prev) => ({ ...prev, birthLat: lat, birthLng: lng }));
-          console.log('✅ Birth city geocoded:', { city, lat, lng });
         }
       } else {
         const err = 'City not found. Try a different spelling.';
         if (isCurrent) setCurrentGeoError(err); else setGeoError(err);
       }
-    } catch (err) {
+    } catch {
       const msg = 'Location lookup failed. You can continue without it.';
       if (isCurrent) setCurrentGeoError(msg); else setGeoError(msg);
-      console.error('❌ Geocoding error:', err);
     } finally {
       if (isCurrent) setCurrentGeoLoading(false); else setGeoLoading(false);
     }
   }
 
   async function goToReportGeneration(opts?: { forcePaidPlan?: boolean }) {
-    console.log('🚀 Submitting form:', form);
-    
     setIsLoading(true);
     setLoadingStage(0);
-
     stageTimer.current = setInterval(() => {
-      setLoadingStage((s) => {
-        if (s >= 2) { clearInterval(stageTimer.current!); return 2; }
-        return s + 1;
-      });
+      setLoadingStage((s) => { if (s >= 2) { clearInterval(stageTimer.current!); return 2; } return s + 1; });
     }, 1400);
 
     try {
       await fetch('/api/agents/ephemeris', {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type:       'natal-chart',
+          type: 'natal-chart',
           birth_date: form.birthDate,
           birth_time: `${form.birthTime}:00`,
           birth_city: form.birthCity,
-          birth_lat:  form.birthLat ?? 0,
-          birth_lng:  form.birthLng ?? 0,
+          birth_lat: form.birthLat ?? 0,
+          birth_lng: form.birthLng ?? 0,
         }),
       });
     } catch (err) {
-      console.error('⚠️ Ephemeris API call failed (non-blocking):', err);
+      console.error('Ephemeris API call failed (non-blocking):', err);
     } finally {
       clearInterval(stageTimer.current!);
     }
 
-    // Use current city if provided, else fall back to birth city
     const useCurrent = form.currentCity.trim() && form.currentLat != null && form.currentLng != null;
     const displayCity = useCurrent ? `${form.currentCity} (born: ${form.birthCity})` : form.birthCity;
 
     let effectiveType: ReportPlanId = form.reportType;
-    if (opts?.forcePaidPlan && form.reportType === 'free') {
-      effectiveType = '7day';
-    }
+    if (opts?.forcePaidPlan && form.reportType === 'free') effectiveType = '7day';
 
     const paramsObj: Record<string, string> = {
-      name: form.name,
-      date: form.birthDate,
-      time: form.birthTime,
-      city: displayCity,
-      lat:  String(form.birthLat ?? ''),
-      lng:  String(form.birthLng ?? ''),
-      type: effectiveType,
+      name: form.name, date: form.birthDate, time: form.birthTime, city: displayCity,
+      lat: String(form.birthLat ?? ''), lng: String(form.birthLng ?? ''), type: effectiveType,
       ...(form.forecastStartDate ? { forecastStart: form.forecastStartDate } : {}),
     };
 
     if (effectiveType !== 'free') {
       const row = REPORT_TYPES.find((r) => r.id === effectiveType);
-      if (row && 'plan_type' in row) {
-        paramsObj.plan_type = row.plan_type;
-      }
+      if (row && 'plan_type' in row) paramsObj.plan_type = row.plan_type;
     }
 
     if (hasBypass && bypassToken) {
       void fetch('/api/onboard/record-bypass-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify({
-          bypass: bypassToken,
-          plan_type: paramsObj.plan_type ?? effectiveType,
-          name: form.name,
-          birth_date: form.birthDate,
-          birth_time: form.birthTime,
-          birth_city: form.birthCity,
+          bypass: bypassToken, plan_type: paramsObj.plan_type ?? effectiveType,
+          name: form.name, birth_date: form.birthDate, birth_time: form.birthTime, birth_city: form.birthCity,
         }),
       }).catch(() => {});
     }
 
     if (useCurrent) {
       paramsObj.currentCity = form.currentCity;
-      paramsObj.currentLat  = String(form.currentLat);
-      paramsObj.currentLng  = String(form.currentLng);
-      if (form.currentTzOffset != null) {
-        paramsObj.currentTz = String(form.currentTzOffset);
-      }
+      paramsObj.currentLat = String(form.currentLat);
+      paramsObj.currentLng = String(form.currentLng);
+      if (form.currentTzOffset != null) paramsObj.currentTz = String(form.currentTzOffset);
     }
 
-    if (hasBypass && bypassToken) {
-      paramsObj.bypass = bypassToken;
-    }
+    if (hasBypass && bypassToken) paramsObj.bypass = bypassToken;
 
     const reportId = crypto.randomUUID();
     const isPaidPlan = effectiveType !== 'free';
     const needsPayment = isPaidPlan && !hasBypass && promoDiscount < 100;
-
     const params = new URLSearchParams(paramsObj);
     if (needsPayment) params.set('payment_status', 'paid');
     const finalUrl = `/report/${reportId}?${params.toString()}`;
 
-    console.log('📍 Redirecting to:', finalUrl);
-
     if (needsPayment) {
       try {
         await loadRazorpayScript();
-
         const orderRes = await fetch('/api/razorpay/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
           body: JSON.stringify({ planType: effectiveType, reportId }),
         });
         const order = await orderRes.json() as {
           orderId: string; amount: number; currency: string; keyId: string; testMode?: boolean;
         };
-
-        if (order.testMode || order.orderId?.startsWith('test_')) {
-          // Test mode — skip payment
-          router.push(finalUrl);
-          return;
-        }
-
-        setIsLoading(false); // Show Razorpay popup instead of loading overlay
-
+        if (order.testMode || order.orderId?.startsWith('test_')) { router.push(finalUrl); return; }
+        setIsLoading(false);
         const RazorpayConstructor = (window as unknown as { Razorpay: new (opts: unknown) => { open: () => void } }).Razorpay;
         const rzp = new RazorpayConstructor({
-          key: order.keyId,
-          amount: order.amount,
-          currency: order.currency,
-          order_id: order.orderId,
+          key: order.keyId, amount: order.amount, currency: order.currency, order_id: order.orderId,
           name: 'VedicHour',
           description: `${effectiveType === '7day' ? '7-Day Forecast' : effectiveType === 'monthly' ? 'Monthly Oracle' : 'Annual Oracle'}`,
           image: '/icons/icon-192.png',
           handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
             try {
               await fetch('/api/razorpay/verify-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
                 body: JSON.stringify({
-                  orderId: response.razorpay_order_id,
-                  paymentId: response.razorpay_payment_id,
-                  signature: response.razorpay_signature,
-                  planType: effectiveType,
-                  reportId,
-                  amount: order.amount,
-                  currency: order.currency,
+                  orderId: response.razorpay_order_id, paymentId: response.razorpay_payment_id,
+                  signature: response.razorpay_signature, planType: effectiveType, reportId,
+                  amount: order.amount, currency: order.currency,
                 }),
               });
-            } catch (e) {
-              console.error('Payment verification failed (non-blocking):', e);
-            }
+            } catch (e) { console.error('Payment verification failed:', e); }
             router.push(finalUrl);
           },
-          modal: {
-            ondismiss: () => {
-              setIsLoading(false);
-            },
-          },
-          prefill: {
-            name: form.name,
-            email: form.email,
-          },
-          theme: { color: '#d4af37' },
+          modal: { ondismiss: () => { setIsLoading(false); } },
+          prefill: { name: form.name, email: form.email },
+          theme: { color: '#D4A853' },
         });
         rzp.open();
         return;
@@ -851,66 +725,72 @@ function OnboardPageInner() {
         return;
       }
     }
-
     router.push(finalUrl);
   }
 
-  function handleSubmit() {
-    void goToReportGeneration();
-  }
-
-  function handleAdminFreeSubmit() {
-    void goToReportGeneration({ forcePaidPlan: true });
-  }
-
-  // ── Render ─────────────────────────────────────────────────────────────────
+  function handleSubmit() { void goToReportGeneration(); }
+  function handleAdminFreeSubmit() { void goToReportGeneration({ forcePaidPlan: true }); }
 
   const vars = slideVariants(dir);
 
   return (
-    <main className="relative min-h-screen bg-space flex flex-col items-center justify-center px-4 py-12 overflow-hidden">
+    <main className="relative min-h-screen bg-space flex flex-col items-center justify-center px-4 py-10 md:py-14 overflow-hidden">
       <StarField />
 
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.04]">
-        <MandalaRing className="w-[600px] h-[600px] text-amber" />
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.03]">
+        <MandalaRing className="w-[500px] h-[500px] text-amber" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
         {hasBypass && (
-          <div className="mb-4 px-4 py-3 rounded-sm border border-emerald/40 bg-emerald/10 text-emerald font-mono text-xs tracking-wide text-center">
+          <div className="mb-4 px-4 py-3 rounded-card border border-success/30 bg-success/10 text-success font-mono text-mono-sm tracking-wide text-center">
             ✓ Admin access — payment bypassed
           </div>
         )}
         {isAdmin && (
-          <div className="mb-4 px-4 py-3 rounded-sm border border-emerald/30 bg-emerald/5 text-dust font-mono text-xs tracking-wide text-center">
-            Admin account — use &quot;Generate Free Report (admin)&quot; on the last step for a full forecast without payment.
+          <div className="mb-4 px-4 py-3 rounded-card border border-success/20 bg-success/5 text-dust font-mono text-mono-sm tracking-wide text-center">
+            Admin account — use &quot;Generate Free Report (admin)&quot; on the last step.
           </div>
         )}
+
         {/* Logo */}
-        <div className="text-center mb-10">
-          <span className="font-display font-semibold text-xl tracking-[0.08em] text-star/70">
+        <div className="text-center mb-8">
+          <span className="font-display font-semibold text-xl tracking-wide text-star/60">
             VedicHour
           </span>
         </div>
 
-        {/* Progress dots */}
-        <div className="flex items-center justify-center gap-3 mb-10">
-          {[0, 1, 2].map((i) => (
+        {/* Progress bar */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2.5">
+            {STEP_META.map((meta, i) => (
+              <div key={i} className="flex items-center gap-1.5">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-label-sm font-mono transition-colors ${
+                  i === step ? 'bg-amber text-space' : i < step ? 'bg-amber/20 text-amber' : 'bg-horizon/50 text-dust/40'
+                }`}>
+                  {i < step ? '✓' : i + 1}
+                </div>
+                <span className={`font-body text-label-sm hidden sm:inline ${
+                  i === step ? 'text-star' : 'text-dust/50'
+                }`}>
+                  {meta.label}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="h-1 bg-horizon/30 rounded-pill overflow-hidden">
             <div
-              key={i}
-              className={`rounded-full transition-all duration-300 ${
-                i === step
-                  ? 'w-6 h-2 bg-amber'
-                  : i < step
-                  ? 'w-2 h-2 bg-amber/40'
-                  : 'w-2 h-2 bg-horizon'
-              }`}
+              className="h-full bg-amber rounded-pill transition-all duration-350 ease-out-expo"
+              style={{ width: `${((step + 1) / 3) * 100}%` }}
             />
-          ))}
+          </div>
+          <p className="font-mono text-mono-sm text-dust/40 mt-1.5 text-right">
+            ~{STEP_META[step]?.est}
+          </p>
         </div>
 
         {/* Card */}
-        <div className="bg-cosmos border border-horizon rounded-sm p-8 overflow-hidden">
+        <div className="card p-7 md:p-8 overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>
             {step === 0 && (
               <motion.div key="step1" initial={vars.initial} animate={vars.animate} exit={vars.exit}>
@@ -920,43 +800,25 @@ function OnboardPageInner() {
             {step === 1 && (
               <motion.div key="step2" initial={vars.initial} animate={vars.animate} exit={vars.exit}>
                 <Step2
-                  form={form}
-                  update={update}
-                  geo={geo}
-                  geoLoading={geoLoading}
-                  geoError={geoError}
-                  onGeocode={geocodeCity}
-                  currentGeo={currentGeo}
-                  currentGeoLoading={currentGeoLoading}
-                  currentGeoError={currentGeoError}
-                  onNext={next}
-                  onBack={back}
+                  form={form} update={update}
+                  geo={geo} geoLoading={geoLoading} geoError={geoError} onGeocode={geocodeCity}
+                  currentGeo={currentGeo} currentGeoLoading={currentGeoLoading} currentGeoError={currentGeoError}
+                  onNext={next} onBack={back}
                 />
               </motion.div>
             )}
             {step === 2 && (
               <motion.div key="step3" initial={vars.initial} animate={vars.animate} exit={vars.exit}>
                 <Step3
-                  form={form}
-                  setReportType={setReportType}
-                  onSubmit={handleSubmit}
-                  onAdminFreeSubmit={handleAdminFreeSubmit}
-                  onBack={back}
-                  promoCode={promoCode}
-                  setPromoCode={setPromoCode}
-                  promoDiscount={promoDiscount}
-                  hasBypass={hasBypass}
-                  isAdmin={isAdmin}
+                  form={form} setReportType={setReportType}
+                  onSubmit={handleSubmit} onAdminFreeSubmit={handleAdminFreeSubmit} onBack={back}
+                  promoCode={promoCode} setPromoCode={setPromoCode} promoDiscount={promoDiscount}
+                  hasBypass={hasBypass} isAdmin={isAdmin}
                 />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Step counter */}
-        <p className="text-center font-mono text-xs text-dust/40 mt-4 tracking-wider">
-          {step + 1} / 3
-        </p>
       </div>
 
       {/* Loading overlay */}
@@ -972,25 +834,25 @@ function OnboardPageInner() {
               transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
               className="mb-10"
             >
-              <MandalaRing className="w-36 h-36 text-amber opacity-70" />
+              <MandalaRing className="w-32 h-32 text-amber opacity-60" />
             </motion.div>
 
             <motion.p
               key={loadingStage}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="font-body text-star text-lg mb-2 text-center"
+              className="font-body text-body-lg text-star mb-2 text-center"
             >
               {STAGES[loadingStage]}
             </motion.p>
 
-            <p className="font-mono text-xs text-dust/60 tracking-wider mb-8">
+            <p className="font-mono text-mono-sm text-dust/50 tracking-wider mb-8">
               Stage {loadingStage + 1} of 3
             </p>
 
-            <div className="w-56 h-[2px] bg-horizon rounded-full overflow-hidden">
+            <div className="w-56 h-1 bg-horizon rounded-pill overflow-hidden">
               <motion.div
-                className="h-full bg-amber rounded-full"
+                className="h-full bg-amber rounded-pill"
                 animate={{ width: `${((loadingStage + 1) / 3) * 100}%` }}
                 transition={{ duration: 0.6, ease: 'easeOut' }}
               />
@@ -998,25 +860,6 @@ function OnboardPageInner() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <style jsx global>{`
-        .cosmic-input {
-          width: 100%;
-          background: #080C18;
-          border: 1px solid #1E2A4A;
-          border-radius: 2px;
-          padding: 10px 14px;
-          font-family: var(--font-body), sans-serif;
-          font-size: 14px;
-          color: #E8EAF0;
-          outline: none;
-          transition: border-color 0.2s;
-        }
-        .cosmic-input::placeholder { color: #8892A4; }
-        .cosmic-input:focus { border-color: rgba(245, 158, 11, 0.5); }
-        .cosmic-input[type="date"],
-        .cosmic-input[type="time"] { color-scheme: dark; }
-      `}</style>
     </main>
   );
 }
@@ -1026,7 +869,7 @@ export default function OnboardPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-space flex items-center justify-center">
-          <MandalaRing className="w-24 h-24 text-amber opacity-60" />
+          <MandalaRing className="w-20 h-20 text-amber opacity-50" />
         </div>
       }
     >
