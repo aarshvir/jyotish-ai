@@ -435,7 +435,10 @@ export async function generateReportPipeline(
       })
       .eq('id', reportId)
       .eq('user_id', userId);
-    if (error) console.error('[orchestrator] dbSaveFinal:', error.message);
+    if (error) {
+      console.error('[orchestrator] dbSaveFinal:', error.message, 'code:', error.code);
+      throw new Error(`dbSaveFinal failed: ${error.message}`);
+    }
   }
 
   try {
@@ -1193,6 +1196,8 @@ export async function generateReportPipeline(
     if (errors.length > 0) console.warn('[orchestrator] validation issues:', errors);
 
     // Save to DB
+    const payloadBytes = JSON.stringify(finalReport).length;
+    console.log(`[orchestrator] report payload size: ${(payloadBytes / 1024).toFixed(0)} KB for ${reportId}`);
     void dbSetProgress('Saving report', 97);
     await dbSaveFinal(finalReport as unknown as Record<string, unknown>);
     onStep({ type: 'step_completed', step: 10 });
