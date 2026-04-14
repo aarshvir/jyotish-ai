@@ -753,47 +753,60 @@ export async function generateReportPipeline(
         }
       })(),
 
-      // Step 6: Hourly commentary — ONE batched LLM call (Path A; avoids 7× serverless chains)
+      // Step 6: Hourly commentary — 3 parallel batches of ~10 days each (3× faster than 1 × 30-day call)
       (async () => {
-        onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: 'Single batched pass for all forecast days' });
+        onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: 'Three parallel batches for all forecast days' });
         try {
-          const batchBody = JSON.stringify({
-            lagnaSign: ephemerisData.lagna,
-            mahadasha,
-            antardasha,
-            days: forecastDays.map((day, i) => ({
-              dayIndex: i,
-              date: day.date,
-              planet_positions: day.planet_positions,
-              panchang: day.panchang,
-              rahu_kaal: day.rahu_kaal,
-              slots: day.slots.map((s) => ({
-                slot_index: s.slot_index,
-                display_label: s.display_label,
-                dominant_hora: s.dominant_hora,
-                dominant_choghadiya: s.dominant_choghadiya,
-                transit_lagna: s.transit_lagna,
-                transit_lagna_house: s.transit_lagna_house,
-                is_rahu_kaal: s.is_rahu_kaal,
-                score: s.score,
-              })),
-            })),
-          });
-
-          const res = await fetch(`${base}/api/commentary/hourly-batch`, {
-            method: 'POST',
-            headers: h,
-            signal: AbortSignal.any([AbortSignal.timeout(160_000), budgetSignal]),
-            body: batchBody,
-          });
-
           type BatchSlot = { slot_index: number; commentary?: string; commentary_short?: string };
           type BatchDay = { dayIndex: number; slots?: BatchSlot[] };
-          let hourlyResults: BatchDay[] = [];
-          if (res.ok || res.status === 206) {
-            const json = (await res.json()) as { days?: BatchDay[] };
-            hourlyResults = json.days ?? [];
+
+          const CHUNK_SIZE = 10;
+          const allDaysInput = forecastDays.map((day, i) => ({
+            dayIndex: i,
+            date: day.date,
+            planet_positions: day.planet_positions,
+            panchang: day.panchang,
+            rahu_kaal: day.rahu_kaal,
+            slots: day.slots.map((s) => ({
+              slot_index: s.slot_index,
+              display_label: s.display_label,
+              dominant_hora: s.dominant_hora,
+              dominant_choghadiya: s.dominant_choghadiya,
+              transit_lagna: s.transit_lagna,
+              transit_lagna_house: s.transit_lagna_house,
+              is_rahu_kaal: s.is_rahu_kaal,
+              score: s.score,
+            })),
+          }));
+
+          const chunks: typeof allDaysInput[] = [];
+          for (let i = 0; i < allDaysInput.length; i += CHUNK_SIZE) {
+            chunks.push(allDaysInput.slice(i, i + CHUNK_SIZE));
           }
+
+          const chunkResults = await Promise.all(
+            chunks.map(async (chunkDays) => {
+              const batchBody = JSON.stringify({
+                lagnaSign: ephemerisData.lagna,
+                mahadasha,
+                antardasha,
+                days: chunkDays,
+              });
+              const res = await fetch(`${base}/api/commentary/hourly-batch`, {
+                method: 'POST',
+                headers: h,
+                signal: AbortSignal.any([AbortSignal.timeout(160_000), budgetSignal]),
+                body: batchBody,
+              });
+              if (res.ok || res.status === 206) {
+                const json = (await res.json()) as { days?: BatchDay[] };
+                return json.days ?? [];
+              }
+              return [] as BatchDay[];
+            }),
+          );
+
+          const hourlyResults: BatchDay[] = chunkResults.flat();
 
           hourlyResults.forEach(({ dayIndex, slots }) => {
             const day = forecastDays[dayIndex];
