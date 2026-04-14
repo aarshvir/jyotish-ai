@@ -3,12 +3,25 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/api/requireAuth';
+import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 
 /** If a row is `generating` and younger than this, skip starting a duplicate pipeline. */
 const YOUNG_GENERATING_MS = 12 * 60 * 1000;
+
+/** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
+function birthTimeToPipelineTime(s: string): string {
+  const raw = (s || '12:00:00').trim();
+  const parts = raw.split(':').filter((p) => p.length > 0);
+  if (parts.length >= 2) {
+    const h = parts[0].padStart(2, '0');
+    const m = parts[1].padStart(2, '0');
+    return `${h}:${m}`;
+  }
+  return '12:00';
+}
 
 function isYoungGenerating(generationStartedAt: string | null | undefined): boolean {
   if (!generationStartedAt) return false;
@@ -18,10 +31,8 @@ function isYoungGenerating(generationStartedAt: string | null | undefined): bool
 }
 
 /**
- * Creates or updates a `reports` row in `generating` state. The client must then POST
- * `/api/reports/run` (same session) so the pipeline runs in a **separate** invocation —
- * on Next 14 App Router, `@vercel/functions` `waitUntil` can be a no-op when the platform
- * request context is missing, which would kill work as soon as this handler returns 202.
+ * Creates or updates a `reports` row, runs the full generation pipeline in this same
+ * invocation (await), then returns. Client keeps polling `/api/reports/[id]/status`.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -110,18 +121,56 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
-  const runUrl = `${process.env.NEXT_PUBLIC_URL || 'https://www.vedichour.com'}/api/reports/run`;
-  fetch(runUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Cookie: request.headers.get('cookie') || '',
-    },
-    body: JSON.stringify({ reportId }),
-  }).catch((err) => console.error('Failed to trigger /api/reports/run:', err));
+  const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
 
-  return NextResponse.json(
-    { reportId, ok: true, status: 'generating', runRequired: true },
-    { status: 202 },
-  );
+  const input: PipelineInput = {
+    name: body.name ?? 'Seeker',
+    date: body.birth_date ?? '',
+    time: pipelineTime,
+    city: body.birth_city ?? '',
+    lat: parseFloat(body.birth_lat ?? '0') || 0,
+    lng: parseFloat(body.birth_lng ?? '0') || 0,
+    currentLat: parseFloat(body.current_lat ?? body.birth_lat ?? '0') || 0,
+    currentLng: parseFloat(body.current_lng ?? body.birth_lng ?? '0') || 0,
+    currentCity: body.current_city ?? body.birth_city ?? '',
+    timezoneOffset,
+    type: body.plan_type ?? '7day',
+    forecastStart: body.forecast_start ?? undefined,
+    planType: body.plan_type ?? '7day',
+    paymentStatus: body.payment_status ?? 'bypass',
+  };
+
+  const base = request.nextUrl.origin;
+  const authHeaders: Record<string, string> = {};
+  if (BYPASS_SECRET) {
+    authHeaders['x-bypass-token'] = BYPASS_SECRET;
+  } else {
+    const cookie = request.headers.get('cookie');
+    if (cookie) authHeaders['cookie'] = cookie;
+  }
+
+  try {
+    await generateReportPipeline(
+      reportId,
+      auth.user.id,
+      auth.user.email ?? '',
+      input,
+      () => {},
+      base,
+      authHeaders,
+    );
+  } catch (err) {
+    console.error(`[reports/start] pipeline failed for ${reportId}:`, err);
+    await db
+      .from('reports')
+      .update({
+        status: 'error',
+        report_data: { error: String(err) },
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', reportId);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+
+  return NextResponse.json({ reportId, ok: true, status: 'complete' });
 }

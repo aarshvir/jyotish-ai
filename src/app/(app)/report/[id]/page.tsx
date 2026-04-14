@@ -402,17 +402,6 @@ function ReportContent() {
       }
     }
 
-    if (!started.skippedPipeline) {
-      void fetch('/api/reports/run', {
-        method: 'POST',
-        headers: authJsonHeaders(),
-        body: JSON.stringify({
-          reportId: reportIdFromRoute,
-          forecast_start: startBody.forecast_start,
-        }),
-      }).catch((e) => console.error('[report] /api/reports/run failed', e));
-    }
-
     startPollingForReport();
   }, [
     reportIdFromRoute,
