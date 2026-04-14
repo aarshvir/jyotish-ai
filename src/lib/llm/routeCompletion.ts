@@ -14,7 +14,7 @@ const anthropicClient = process.env.ANTHROPIC_API_KEY?.trim()
   : null;
 
 if (!anthropicClient) {
-  console.warn('[LLM] ANTHROPIC_API_KEY not set — Anthropic will not be used as primary model');
+  console.error('[LLM] ANTHROPIC_API_KEY not set — Anthropic will NOT be used. Add it to Vercel Environment Variables.');
 }
 
 function extractAnthropicText(response: Anthropic.Message): string {
@@ -242,7 +242,7 @@ export async function completeLlmChat(opts: {
     }
 
     if (hasAnyChatFallbackKey()) {
-      console.warn('[LLM] Anthropic client not initialised — no ANTHROPIC_API_KEY. Running fallback chain.');
+      console.error('[LLM] ANTHROPIC_API_KEY missing — falling back to OpenAI/Gemini/Grok. Set ANTHROPIC_API_KEY in Vercel to use Claude.');
       return runChatFallbackChain({
         systemPrompt: opts.systemPrompt,
         userPrompt: opts.userPrompt,
