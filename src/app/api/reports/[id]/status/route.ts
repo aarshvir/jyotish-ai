@@ -44,6 +44,12 @@ export async function GET(
       ? 0
       : (serverProgress ?? (status === 'generating' ? 5 : 0));
 
+  // Surface error detail from report_data when the pipeline stored it
+  const errorDetail =
+    status === 'error' && reportData && typeof reportData.error === 'string'
+      ? reportData.error
+      : null;
+
   return NextResponse.json({
     id: reportId,
     status,
@@ -51,6 +57,7 @@ export async function GET(
     progress,
     generation_step: data?.generation_step ?? null,
     report: isComplete ? reportData : null,
+    error: errorDetail,
     lagna_sign: data?.lagna_sign,
     dasha_mahadasha: data?.dasha_mahadasha,
     dasha_antardasha: data?.dasha_antardasha,

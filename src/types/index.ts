@@ -31,15 +31,35 @@ export interface BirthChart {
 export interface Report {
   id: string;
   user_id: string;
-  birth_chart_id?: string;
-  report_type: string;
-  date_from?: string;
-  date_to?: string;
+  user_email?: string;
+  native_name?: string;
+  birth_date?: string;
+  birth_time?: string;
+  birth_city?: string;
+  birth_lat?: number | null;
+  birth_lng?: number | null;
+  current_city?: string | null;
+  current_lat?: number | null;
+  current_lng?: number | null;
+  timezone_offset?: number | null;
+  plan_type: string;
   status: string;
-  output_json?: Record<string, unknown>;
-  file_url?: string;
-  agent_log?: Record<string, unknown>;
+  payment_status?: string;
+  report_data?: Record<string, unknown> | null;
+  day_scores?: Record<string, number> | null;
+  lagna_sign?: string | null;
+  moon_sign?: string | null;
+  moon_nakshatra?: string | null;
+  dasha_mahadasha?: string | null;
+  dasha_antardasha?: string | null;
+  report_start_date?: string | null;
+  report_end_date?: string | null;
+  generation_started_at?: string | null;
+  generation_completed_at?: string | null;
+  generation_step?: string | null;
+  generation_progress?: number | null;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface Transaction {
@@ -68,7 +88,7 @@ export interface Database {
       };
       reports: {
         Row: Report;
-        Insert: Omit<Report, 'id' | 'created_at'>;
+        Insert: Omit<Report, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<Report, 'id' | 'created_at'>>;
       };
       transactions: {

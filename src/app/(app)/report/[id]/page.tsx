@@ -29,11 +29,15 @@ function isRouteUuid(id: string) {
   return UUID_RE.test(id);
 }
 
-/** True when stored report looks like an all-default / failed generation (stale 50s). */
+/** True when stored report looks like an all-default / failed generation. */
 function isPlaceholderReportData(rd: Record<string, unknown> | null | undefined): boolean {
-  const days = rd?.days as Array<{ day_score?: number }> | undefined;
+  if (!rd) return true;
+  const days = rd.days as Array<{ day_score?: number; slots?: unknown[] }> | undefined;
   if (!Array.isArray(days) || days.length === 0) return true;
-  return days.every((d) => (d.day_score ?? 50) === 50);
+  if (!rd.nativity || !rd.synthesis) return true;
+  const allDefault = days.every((d) => (d.day_score ?? 50) === 50);
+  const noSlots = days.every((d) => !Array.isArray(d.slots) || d.slots.length === 0);
+  return allDefault && noSlots;
 }
 
 const GENERATION_MESSAGES = [
@@ -253,6 +257,7 @@ function ReportContent() {
 
     const pollIntervalMs = 3000;
     const pollLoopStartedAt = Date.now();
+    let consecutivePollErrors = 0;
 
     const tick = async () => {
       if (pollCancelRef.current) return;
@@ -285,6 +290,7 @@ function ReportContent() {
           generation_step?: string | null;
           report: ReportData | null;
           generation_started_at?: string | null;
+          error?: string | null;
         };
 
         setServerPoll({
@@ -333,11 +339,19 @@ function ReportContent() {
           }
         } else if (data.status === 'error') {
           stopReportPolling();
-          setError('Generation failed — please retry');
+          const detail = data.error ? `: ${data.error}` : '';
+          setError(`Generation failed${detail} — please retry`);
           setIsLoading(false);
         }
+        consecutivePollErrors = 0;
       } catch (err) {
         console.error('[Polling] error:', err);
+        consecutivePollErrors++;
+        if (consecutivePollErrors >= 5) {
+          stopReportPolling();
+          setError('Lost connection to server after multiple retries. Please check your network and try again.');
+          setIsLoading(false);
+        }
       }
     };
 

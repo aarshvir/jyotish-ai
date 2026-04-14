@@ -46,10 +46,8 @@ async function createFreeReport(
       birth_lng: p.birth_lng != null ? Number(p.birth_lng) : null,
       current_city: p.current_city != null ? String(p.current_city) : null,
       plan_type: planType || '7day',
-      status: 'complete',
+      status: 'generating',
       payment_status: 'bypass',
-      report_data: { ...p, payment_bypass: true, plan_type: planType },
-      generation_completed_at: new Date().toISOString(),
     })
     .select('id')
     .single();
@@ -113,7 +111,7 @@ export async function POST(request: NextRequest) {
     if (!key || key.startsWith('your_')) {
       return NextResponse.json(
         { error: 'Stripe not configured', testMode: true },
-        { status: 200 }
+        { status: 503 }
       );
     }
 

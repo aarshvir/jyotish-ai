@@ -123,5 +123,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 
+  const { data: finalRow } = await svc
+    .from('reports')
+    .select('status')
+    .eq('id', reportId)
+    .maybeSingle();
+
+  const finalStatus = finalRow?.status ?? 'unknown';
+  if (finalStatus !== 'complete') {
+    return NextResponse.json(
+      { reportId, ok: false, status: finalStatus, error: 'Report generation did not complete successfully' },
+      { status: 500 },
+    );
+  }
+
   return NextResponse.json({ reportId, ok: true, status: 'done' });
 }
