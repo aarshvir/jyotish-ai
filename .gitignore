@@ -1,3 +1,7 @@
+# E2E hook secret — fill in locally, never commit
+.cursor/hooks/e2e.env
+.cursor/hooks/e2e-last-result.log
+
 # Dependencies
 node_modules/
 .pnp
