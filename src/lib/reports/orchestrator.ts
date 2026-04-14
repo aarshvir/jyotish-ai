@@ -256,11 +256,14 @@ export async function generateReportPipeline(
 
   const db = createServiceClient();
   const pipelineT0 = Date.now();
-  /** Wall-clock budget — default < Vercel 300s so we mark `error` before FUNCTION_INVOCATION_TIMEOUT.
-   *  Set to 280s: leaves ~20s for assembly + DB write before the 300s hard kill.
+  /** Soft-budget for assertWithinBudget() checks. Set to 255s so the pipeline has ~25s
+   *  left to assemble and save before the 285s hard-kill fires (Vercel hard limit = 300s).
    *  Override with REPORT_PIPELINE_BUDGET_MS env var for plans with higher maxDuration. */
   const budgetMs =
-    Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 280_000;
+    Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 255_000;
+  /** Hard-kill fires at 285s: must be > budgetMs (so assertWithinBudget runs first)
+   *  and < Vercel's 300s FUNCTION_INVOCATION_TIMEOUT. */
+  const hardKillMs = Math.min(budgetMs + 30_000, 285_000);
 
   /**
    * Shared abort controller wired into every commentary fetch.
@@ -272,13 +275,13 @@ export async function generateReportPipeline(
   const budgetSignal = budgetAbortController.signal;
 
   /**
-   * Hard-kill backstop: fires after budgetMs even if a fetch is stuck and
+   * Hard-kill backstop: fires after hardKillMs even if a fetch is stuck and
    * assertWithinBudget() never gets called. Aborts all pending commentary
    * fetches so the pipeline can reach assertWithinBudget, then also does a
    * direct DB update as a safety net.
    */
   let hardKillTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-    console.error(`[orchestrator] hard-kill timeout (${budgetMs}ms) for ${reportId}`);
+    console.error(`[orchestrator] hard-kill timeout (${hardKillMs}ms) for ${reportId}`);
     onStep({ type: 'error', message: 'Report generation timed out — please try again.' });
     // Abort all in-flight commentary fetches so Promise.all unwinds immediately.
     budgetAbortController.abort(new Error('Pipeline budget exceeded'));
@@ -291,7 +294,7 @@ export async function generateReportPipeline(
         if (error) console.error('[orchestrator] hard-kill DB update failed:', error.message);
         else console.log('[orchestrator] hard-kill DB update succeeded for', reportId);
       });
-  }, budgetMs);
+  }, hardKillMs);
 
   function logStep(step: string, extra?: Record<string, unknown>) {
     console.log(
