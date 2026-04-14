@@ -110,6 +110,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
+  const runUrl = `${process.env.NEXT_PUBLIC_URL || 'https://www.vedichour.com'}/api/reports/run`;
+  fetch(runUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Cookie: request.headers.get('cookie') || '',
+    },
+    body: JSON.stringify({ reportId }),
+  }).catch((err) => console.error('Failed to trigger /api/reports/run:', err));
+
   return NextResponse.json(
     { reportId, ok: true, status: 'generating', runRequired: true },
     { status: 202 },
