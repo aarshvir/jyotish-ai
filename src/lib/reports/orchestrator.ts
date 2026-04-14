@@ -1089,7 +1089,7 @@ export async function generateReportPipeline(
     }
 
     // ── STEP 10: Assemble final report ────────────────────────────────────
-    await assertWithinBudget('pre_assemble');
+    // No budget check here — assembly is pure in-memory work (no LLM calls), always attempt it.
     onStep({ type: 'step_started', step: 10, message: 'Finalising your report...', detail: 'Assembling all sections' });
 
     const v2Enabled = isV2GuidanceEnabled();
