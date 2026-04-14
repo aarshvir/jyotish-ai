@@ -44,16 +44,16 @@ const PLANET_SYMBOLS: Record<string, string> = {
 
 function getScoreLabel(score: number, isRahuKaal: boolean): { label: string; color: string; icon: string } {
   const ratingLabel = getCanonicalScoreLabel(score, isRahuKaal);
-  if (isRahuKaal) return { label: 'RAHU KAAL', color: 'text-crimson', icon: '⚠' };
+  if (isRahuKaal) return { label: 'RAHU KAAL', color: 'text-caution', icon: '⚠' };
   const color = getLabelColor(ratingLabel);
   const icon = getLabelIcon(ratingLabel, isRahuKaal);
   return { label: `${icon} ${ratingLabel.toUpperCase()}`, color, icon };
 }
 
 function getChoghadiyaBg(choghadiya: string): string {
-  if (['Amrit', 'Labh', 'Shubh'].includes(choghadiya)) return 'bg-emerald/10 border-emerald/20 text-emerald';
+  if (['Amrit', 'Labh', 'Shubh'].includes(choghadiya)) return 'bg-success/10 border-success/20 text-success';
   if (['Chal', 'Char'].includes(choghadiya)) return 'bg-amber/10 border-amber/20 text-amber';
-  return 'bg-crimson/10 border-crimson/20 text-crimson';
+  return 'bg-caution/10 border-caution/20 text-caution';
 }
 
 export function HourlyTable({ hours }: HourlyTableProps) {
@@ -71,7 +71,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
       {/* Mobile card view — shown below md */}
       <div className="md:hidden space-y-2">
         {hasDataError && (
-          <div className="py-3 px-3 font-mono text-xs text-crimson bg-crimson/10 border border-crimson/30 rounded-sm">
+          <div className="py-3 px-3 font-mono text-mono-sm text-caution bg-caution/10 border border-caution/30 rounded-sm">
             ⚠ Data error: expected 18 slots, got {sortedHours.length}.
           </div>
         )}
@@ -86,7 +86,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
               key={`card-${hour.slot_index ?? i}`}
               className={`border rounded-sm transition-colors ${
                 hour.is_rahu_kaal
-                  ? 'border-crimson/30 bg-crimson/5'
+                  ? 'border-caution/30 bg-caution/5'
                   : 'border-horizon bg-cosmos'
               } ${isExpanded ? 'border-amber/40' : ''}`}
             >
@@ -110,13 +110,13 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                   <span className="text-amber text-sm shrink-0">
                     {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || ''}
                   </span>
-                  <span className="font-mono text-xs text-dust truncate">
+                  <span className="font-mono text-mono-sm text-dust truncate">
                     {hour.hora_planet}
                   </span>
                 </span>
 
                 {/* Choghadiya */}
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-xs shrink-0 ${getChoghadiyaBg(hour.choghadiya)}`}>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-mono-sm shrink-0 ${getChoghadiyaBg(hour.choghadiya)}`}>
                   {hour.choghadiya}
                 </span>
 
@@ -126,7 +126,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                 </span>
 
                 {/* Expand chevron */}
-                <span className={`font-mono text-xs text-dust/40 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                <span className={`font-mono text-mono-sm text-dust/40 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
                   ▾
                 </span>
               </button>
@@ -135,9 +135,9 @@ export function HourlyTable({ hours }: HourlyTableProps) {
               {isExpanded && (
                 <div className="px-4 pb-4 border-t border-horizon/30">
                   <div className="flex items-center gap-2 mt-3 mb-2 flex-wrap">
-                    <span className={`font-mono text-xs ${scoreInfo.color}`}>{scoreInfo.label}</span>
+                    <span className={`font-mono text-mono-sm ${scoreInfo.color}`}>{scoreInfo.label}</span>
                     {hour.transit_lagna && (
-                      <span className="font-mono text-xs text-dust/60">
+                      <span className="font-mono text-mono-sm text-dust/60">
                         {hour.transit_lagna}{hour.transit_lagna_house ? ` · H${hour.transit_lagna_house}` : ''}
                       </span>
                     )}
@@ -148,37 +148,37 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                     <div className="space-y-2 mb-3">
                       {hour.guidance_v2.best_for.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
-                          <span className="font-mono text-xs text-emerald/70 mr-1">Best for:</span>
+                          <span className="font-mono text-mono-sm text-success/70 mr-1">Best for:</span>
                           {hour.guidance_v2.best_for.map((b, bi) => (
-                            <span key={bi} className="px-2 py-0.5 rounded-sm bg-emerald/10 border border-emerald/20 font-mono text-xs text-emerald">{b}</span>
+                            <span key={bi} className="px-2 py-0.5 rounded-sm bg-success/10 border border-success/20 font-mono text-mono-sm text-success">{b}</span>
                           ))}
                         </div>
                       )}
                       {hour.guidance_v2.avoid_for.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
-                          <span className="font-mono text-xs text-crimson/70 mr-1">Avoid:</span>
+                          <span className="font-mono text-mono-sm text-caution/70 mr-1">Avoid:</span>
                           {hour.guidance_v2.avoid_for.map((a, ai) => (
-                            <span key={ai} className="px-2 py-0.5 rounded-sm bg-crimson/10 border border-crimson/20 font-mono text-xs text-crimson">{a}</span>
+                            <span key={ai} className="px-2 py-0.5 rounded-sm bg-caution/10 border border-caution/20 font-mono text-mono-sm text-caution">{a}</span>
                           ))}
                         </div>
                       )}
                       {hour.guidance_v2.still_ok_for.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
-                          <span className="font-mono text-xs text-amber/70 mr-1">Still OK:</span>
+                          <span className="font-mono text-mono-sm text-amber/70 mr-1">Still OK:</span>
                           {hour.guidance_v2.still_ok_for.map((s, si) => (
-                            <span key={si} className="px-2 py-0.5 rounded-sm bg-amber/10 border border-amber/20 font-mono text-xs text-amber">{s}</span>
+                            <span key={si} className="px-2 py-0.5 rounded-sm bg-amber/10 border border-amber/20 font-mono text-mono-sm text-amber">{s}</span>
                           ))}
                         </div>
                       )}
                       {hour.guidance_v2.if_unavoidable && (
-                        <p className="font-mono text-xs text-dust/80 italic">
+                        <p className="font-mono text-mono-sm text-dust/80 italic">
                           {hour.guidance_v2.if_unavoidable}
                         </p>
                       )}
                     </div>
                   )}
 
-                  <div className="font-display text-star text-sm leading-[1.8]">
+                  <div className="font-display text-star text-body-sm leading-[1.8]">
                     {hour.guidance_v2?.summary_plain || commentary}
                   </div>
                 </div>
@@ -193,30 +193,30 @@ export function HourlyTable({ hours }: HourlyTableProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-horizon">
-              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3 whitespace-nowrap">
+              <th className="font-mono text-mono-sm uppercase text-dust text-left py-3 px-3 whitespace-nowrap">
                 Time
               </th>
-              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3">
+              <th className="font-mono text-mono-sm uppercase text-dust text-left py-3 px-3">
                 Hora
               </th>
-              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3">
+              <th className="font-mono text-mono-sm uppercase text-dust text-left py-3 px-3">
                 Choghadiya
               </th>
-              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3 hidden lg:table-cell">
+              <th className="font-mono text-mono-sm uppercase text-dust text-left py-3 px-3 hidden lg:table-cell">
                 Transit Lagna
               </th>
-              <th className="font-mono text-xs uppercase text-dust text-center py-3 px-3">
+              <th className="font-mono text-mono-sm uppercase text-dust text-center py-3 px-3">
                 Score
               </th>
-              <th className="font-mono text-xs uppercase text-dust text-left py-3 px-3">
+              <th className="font-mono text-mono-sm uppercase text-dust text-left py-3 px-3">
                 Commentary
               </th>
             </tr>
           </thead>
           <tbody>
             {hasDataError && (
-              <tr className="bg-crimson/20 border-b border-crimson/40">
-                <td colSpan={6} className="py-3 px-3 font-mono text-xs text-crimson">
+              <tr className="bg-caution/20 border-b border-caution/40">
+                <td colSpan={6} className="py-3 px-3 font-mono text-mono-sm text-caution">
                   ⚠ Data error: expected 18 hourly slots (06:00–24:00), got {sortedHours.length}. Some rows may be missing.
                 </td>
               </tr>
@@ -232,7 +232,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                   <tr
                     key={`row-${hour.slot_index ?? i}`}
                     className={`hover:bg-nebula/40 transition-colors cursor-pointer ${
-                      hour.is_rahu_kaal ? 'bg-crimson/5' : ''
+                      hour.is_rahu_kaal ? 'bg-caution/5' : ''
                     } ${isExpanded ? 'bg-nebula/20' : ''}`}
                     onClick={() => setExpandedIndex(isExpanded ? null : i)}
                   >
@@ -250,7 +250,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                         <span className="text-amber text-sm">
                           {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || ''}
                         </span>
-                        <span className="font-mono text-xs text-dust">
+                        <span className="font-mono text-mono-sm text-dust">
                           {hour.hora_planet}
                         </span>
                       </div>
@@ -258,7 +258,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
 
                     {/* Choghadiya */}
                     <td className="py-3 px-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-xs ${getChoghadiyaBg(hour.choghadiya)}`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-mono-sm ${getChoghadiyaBg(hour.choghadiya)}`}>
                         {hour.choghadiya}
                       </span>
                     </td>
@@ -266,7 +266,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                     {/* Transit Lagna */}
                     <td className="py-3 px-3 hidden lg:table-cell">
                       {hour.transit_lagna ? (
-                        <span className="font-mono text-xs text-dust/80 whitespace-nowrap">
+                        <span className="font-mono text-mono-sm text-dust/80 whitespace-nowrap">
                           {hour.transit_lagna}
                           {hour.transit_lagna_house ? (
                             <span className="ml-1 text-amber/60">· H{hour.transit_lagna_house}</span>
@@ -286,7 +286,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
 
                     {/* Commentary preview */}
                     <td className="py-3 px-3">
-                      <span className={`pdf-exclude font-mono text-xs transition-colors ${isExpanded ? 'text-amber' : 'text-dust/60 hover:text-amber'}`}>
+                      <span className={`pdf-exclude font-mono text-mono-sm transition-colors ${isExpanded ? 'text-amber' : 'text-dust/60 hover:text-amber'}`}>
                         {isExpanded ? '↑ Close' : 'Read analysis →'}
                       </span>
                     </td>
@@ -301,19 +301,19 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                             <span className="text-amber text-base">
                               {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || ''}
                             </span>
-                            <span className="font-mono text-xs text-amber tracking-wider uppercase">
+                            <span className="font-mono text-mono-sm text-amber tracking-wider uppercase">
                               {hour.hora_planet} Hora · {timeLabel}
                             </span>
                             {hour.transit_lagna && (
-                              <span className="font-mono text-xs text-dust/60">
+                              <span className="font-mono text-mono-sm text-dust/60">
                                 {hour.transit_lagna} H{hour.transit_lagna_house}
                               </span>
                             )}
-                            <span className={`font-mono text-xs font-bold ${getScoreNumColor(hour.score, hour.is_rahu_kaal)}`}>
+                            <span className={`font-mono text-mono-sm font-bold ${getScoreNumColor(hour.score, hour.is_rahu_kaal)}`}>
                               {scoreInfo.icon} {hour.score}
                             </span>
                           </div>
-                          <div className="font-display text-star text-sm leading-[1.8] whitespace-pre-line">
+                          <div className="font-display text-star text-body-sm leading-[1.8] whitespace-pre-line">
                             {commentary}
                           </div>
                         </div>

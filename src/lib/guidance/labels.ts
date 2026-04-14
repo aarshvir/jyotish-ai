@@ -77,7 +77,7 @@ export function getLabelColor(label: RatingLabel): string {
   switch (label) {
     case 'Peak':
     case 'Excellent':
-      return 'text-emerald';
+      return 'text-success';
     case 'Good':
       return 'text-amber';
     case 'Neutral':
@@ -86,7 +86,7 @@ export function getLabelColor(label: RatingLabel): string {
       return 'text-orange-400';
     case 'Difficult':
     case 'Avoid':
-      return 'text-crimson';
+      return 'text-caution';
   }
 }
 
@@ -104,8 +104,8 @@ export function getLabelIcon(label: RatingLabel, isRahuKaal = false): string {
 }
 
 export function getScoreNumColor(score: number, isRahuKaal = false): string {
-  if (isRahuKaal || score < 45) return 'text-crimson';
-  if (score >= 65) return 'text-emerald';
+  if (isRahuKaal || score < 45) return 'text-caution';
+  if (score >= 65) return 'text-success';
   if (score >= 50) return 'text-amber';
   return 'text-orange-400';
 }

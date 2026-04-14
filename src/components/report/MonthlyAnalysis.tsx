@@ -58,15 +58,15 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
   });
   }, [months]);
   const getColor = (score: number) => {
-    if (score >= 70) return 'bg-emerald';
+    if (score >= 70) return 'bg-success';
     if (score >= 50) return 'bg-amber';
-    return 'bg-crimson';
+    return 'bg-caution';
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 70) return 'text-emerald';
+    if (score >= 70) return 'text-success';
     if (score >= 50) return 'text-amber';
-    return 'text-crimson';
+    return 'text-caution';
   };
 
   return (
@@ -94,7 +94,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
             return weeks;
           })();
 
-          const barColor = (s: number) => (s >= 70 ? 'bg-emerald' : s >= 50 ? 'bg-amber' : 'bg-crimson');
+          const barColor = (s: number) => (s >= 70 ? 'bg-success' : s >= 50 ? 'bg-amber' : 'bg-caution');
 
           return <motion.div
             key={i}
@@ -111,7 +111,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
                 <h3 className="font-display font-semibold text-star text-2xl mb-2">
                   {month.month}
                 </h3>
-                <p className="font-mono text-xs text-dust tracking-wider uppercase">
+                <p className="font-mono text-mono-sm text-dust tracking-wider uppercase">
                   Overall Quality
                 </p>
               </div>
@@ -119,7 +119,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
                 <div className={`font-display font-semibold text-5xl ${getScoreColor(month.overall_score)}`}>
                   {month.overall_score}
                 </div>
-                <p className={`font-mono text-xs tracking-[0.15em] uppercase mt-1 ${getScoreColor(month.overall_score)}`}>
+                <p className={`font-mono text-mono-sm tracking-[0.15em] uppercase mt-1 ${getScoreColor(month.overall_score)}`}>
                   {month.overall_score >= 70 ? 'EXCELLENT' : month.overall_score >= 50 ? 'GOOD' : 'CHALLENGING'}
                 </p>
               </div>
@@ -136,7 +136,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
                 {month.key_transits.map((transit, j) => (
                   <span
                     key={j}
-                    className="inline-flex items-center px-3 py-1 rounded-sm bg-cosmos border border-horizon text-xs font-mono text-dust"
+                    className="inline-flex items-center px-3 py-1 rounded-sm bg-cosmos border border-horizon text-mono-sm font-mono text-dust"
                   >
                     {transit}
                   </span>
@@ -205,7 +205,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
 
             {month.days && month.days.length > 0 && (
               <div className="mb-6">
-                <p className="font-mono text-xs text-dust tracking-wider uppercase mb-2">
+                <p className="font-mono text-mono-sm text-dust tracking-wider uppercase mb-2">
                   Daily scores (sparkline)
                 </p>
                 <div className="flex gap-px items-end h-16 rounded-sm border border-horizon/50 px-1 py-1 bg-nebula/10">
@@ -220,8 +220,8 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
                       const sc = d.day_score ?? d.score ?? 50;
                       const h = Math.max(8, Math.round((sc / 100) * 56));
                       let cls = barColor(sc);
-                      if (bestIdx.has(di)) cls = 'bg-emerald ring-1 ring-emerald/40';
-                      else if (worstIdx.has(di)) cls = 'bg-crimson ring-1 ring-crimson/40';
+                      if (bestIdx.has(di)) cls = 'bg-success ring-1 ring-success/40';
+                      else if (worstIdx.has(di)) cls = 'bg-caution ring-1 ring-caution/40';
                       return (
                         <div
                           key={di}
@@ -239,7 +239,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
             {/* Week score bar */}
             {weeklyAvgs.length > 0 && (
               <div className="pt-6 border-t border-horizon/40">
-                <p className="font-mono text-xs text-dust tracking-wider uppercase mb-3">
+                <p className="font-mono text-mono-sm text-dust tracking-wider uppercase mb-3">
                   Weekly Breakdown
                 </p>
                 <div className="flex gap-2 items-end h-20">
