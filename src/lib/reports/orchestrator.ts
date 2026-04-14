@@ -983,7 +983,8 @@ export async function generateReportPipeline(
     onStep({ type: 'step_completed', step: 3 });
     logStep('commentary_months_done');
     void dbSetProgress('Commentary, months & weekly synthesis complete', 88);
-    await assertWithinBudget('pre_validation');
+    // No assertWithinBudget here — parallel block may legitimately run close to the budget;
+    // we always proceed to assembly to save whatever was generated.
 
     const weekList = (weeksSynthData.weeks ?? []).map((w, i: number) => {
       const wl = w.week_label ?? `Week ${i + 1}`;

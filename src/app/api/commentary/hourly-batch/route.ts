@@ -199,8 +199,8 @@ Return ONLY valid JSON. No markdown. No preamble.`;
   const userPrompt = `NATIVE: ${lagnaSign} Lagna. Dasha: ${mahadasha} MD / ${antardasha} AD.
 
 For EACH day below, for EACH of the 18 slots (indices 0–17), produce commentary:
-- Line 1: ONE ALL-CAPS directive (max 15 words). Rahu Kaal slots: start with "RAHU KAAL —".
-- Then 1–2 short sentences (total body max ~40 words) naming hora, choghadiya, transit house; unique per slot.
+- Line 1: ONE ALL-CAPS directive (max 10 words). Rahu Kaal slots: start with "RAHU KAAL —".
+- Then ONE short sentence (max 20 words) naming hora, choghadiya, transit house. Be concise.
 
 ${dayBlocks.join('\n')}
 
@@ -222,7 +222,7 @@ Include every day from the input. Each day must have exactly 18 slots. Start wit
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: Math.min(32000, 4000 + daysIn.length * 18 * 120),
+      maxTokens: Math.min(16000, 2000 + daysIn.length * 18 * 70),
     });
 
     type BatchDay = { dayIndex?: number; date?: string; slots?: Array<{ slot_index?: number; commentary?: string }> };
