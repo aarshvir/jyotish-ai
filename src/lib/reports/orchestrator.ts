@@ -731,15 +731,16 @@ export async function generateReportPipeline(
             const natTextData = await natTextRes.json();
             if (natTextData.lagna_analysis) nativityData.lagna_analysis = natTextData.lagna_analysis;
             if (natTextData.dasha_interpretation) nativityData.current_dasha_interpretation = natTextData.dasha_interpretation;
-          } else if (!nativityHasText) {
-            // Inject a deterministic fallback so lagna_analysis is never blank
+          }
+          // Always inject deterministic fallback if text is still empty after any LLM attempt
+          {
             const lagna = ephemerisData.lagna ?? 'Unknown';
             const md = ephemerisData.current_dasha?.mahadasha ?? 'Unknown';
             const ad = ephemerisData.current_dasha?.antardasha ?? 'Unknown';
-            if (!nativityData.lagna_analysis) {
+            if (!nativityData.lagna_analysis?.trim()) {
               nativityData.lagna_analysis = `${lagna} lagna shapes the native's fundamental disposition. The ${md}-${ad} period is currently active. Refer to the daily and hourly scores for timing guidance.`;
             }
-            if (!nativityData.current_dasha_interpretation) {
+            if (!nativityData.current_dasha_interpretation?.trim()) {
               nativityData.current_dasha_interpretation = `${md} Mahadasha with ${ad} Antardasha is active. Use high-score days and benefic horas for important actions.`;
             }
           }

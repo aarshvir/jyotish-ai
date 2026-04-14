@@ -152,7 +152,7 @@ function validateReport(report) {
     report.weeks.forEach((w, i) => {
       if (!w.week_label?.trim())  err(`weeks[${i}]: week_label empty`);
       if (typeof w.score !== 'number') err(`weeks[${i}]: score missing`);
-      if (!w.synthesis?.trim())   warn(`weeks[${i}]: synthesis text empty`);
+      if (!w.commentary?.trim() && !w.synthesis?.trim()) warn(`weeks[${i}]: commentary/synthesis text empty`);
     });
   }
 
@@ -238,10 +238,10 @@ function validateReport(report) {
             rk ? 'Avoid' :
             s >= 85 ? 'Peak' :
             s >= 75 ? 'Excellent' :
-            s >= 60 ? 'Good' :
+            s >= 65 ? 'Good' :
             s >= 50 ? 'Neutral' :
-            s >= 40 ? 'Caution' :
-            s >= 25 ? 'Difficult' : 'Avoid';
+            s >= 45 ? 'Caution' :
+            s >= 35 ? 'Difficult' : 'Avoid';
           if (slot.label !== expected)
             warn(`${sp}: label "${slot.label}" doesn't match expected "${expected}" for score ${s}`);
         }
@@ -433,11 +433,11 @@ async function main() {
     ? ok(`All ${REQUIRED_MONTHS} months have non-fallback commentary`)
     : warning(`${fallbackMonths.length} months still show fallback placeholder`);
 
-  // weeks — synthesis text
-  const emptyWeeks = (report?.weeks || []).filter((w) => !w.synthesis?.trim());
+  // weeks — commentary/synthesis text
+  const emptyWeeks = (report?.weeks || []).filter((w) => !w.commentary?.trim() && !w.synthesis?.trim());
   emptyWeeks.length === 0
-    ? ok(`All ${REQUIRED_WEEKS} weeks have synthesis text`)
-    : warning(`${emptyWeeks.length} weeks have empty synthesis`);
+    ? ok(`All ${REQUIRED_WEEKS} weeks have commentary`)
+    : warning(`${emptyWeeks.length} weeks have empty commentary`);
 
   // slots
   ok(`Total slots: ${totalSlots} (expected ${REQUIRED_DAYS * REQUIRED_SLOTS})`);
