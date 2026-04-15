@@ -29,7 +29,13 @@ export async function PUT(request: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const raw = await request.json();
-    const ALLOWED_FIELDS = ['display_name', 'avatar_url'] as const;
+    const ALLOWED_FIELDS = [
+      'display_name',
+      'avatar_url',
+      'default_birth_date',
+      'default_birth_time',
+      'default_birth_city',
+    ] as const;
     const updates: Record<string, unknown> = {};
     for (const key of ALLOWED_FIELDS) {
       if (key in raw) updates[key] = raw[key];
