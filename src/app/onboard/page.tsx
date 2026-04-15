@@ -547,20 +547,6 @@ function OnboardPageInner() {
 
   const promoDiscount = getPromoDiscount(promoCode);
 
-  function loadRazorpayScript(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).Razorpay) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Razorpay'));
-      document.body.appendChild(script);
-    });
-  }
-
   useEffect(() => {
     const supabase = createClient();
     void supabase.auth.getUser().then(({ data }) => {
@@ -762,43 +748,10 @@ function OnboardPageInner() {
           body: JSON.stringify({ planType: effectiveType, reportId, promoCode: promoCode || undefined }),
         });
         if (!intentRes.ok) {
-          // Ziina not configured — fall back to Razorpay
-          // Note: Razorpay does not natively support partial discounts via API;
-          // for promo codes the discount is advisory only (report still generates).
-          const fallbackRes = await fetch('/api/razorpay/create-order', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-            body: JSON.stringify({ planType: effectiveType, reportId }),
-          });
-          const order = await fallbackRes.json() as {
-            orderId: string; amount: number; currency: string; keyId: string; testMode?: boolean;
-          };
-          if (order.testMode || order.orderId?.startsWith('test_')) { router.push(finalUrl); return; }
-          await loadRazorpayScript();
+          const errBody = await intentRes.json().catch(() => ({})) as { error?: string };
+          const errMsg = errBody.error ?? `Payment setup failed (${intentRes.status}). Please try again or contact support.`;
+          alert(errMsg);
           setIsLoading(false);
-          const RazorpayConstructor = (window as unknown as { Razorpay: new (opts: unknown) => { open: () => void } }).Razorpay;
-          const rzp = new RazorpayConstructor({
-            key: order.keyId, amount: order.amount, currency: order.currency, order_id: order.orderId,
-            name: 'VedicHour',
-            description: `${effectiveType === '7day' ? '7-Day Forecast' : effectiveType === 'monthly' ? 'Monthly Oracle' : 'Annual Oracle'}`,
-            image: '/icons/icon-192.png',
-            handler: async (response: { razorpay_payment_id: string; razorpay_order_id: string; razorpay_signature: string }) => {
-              try {
-                await fetch('/api/razorpay/verify-payment', {
-                  method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-                  body: JSON.stringify({
-                    orderId: response.razorpay_order_id, paymentId: response.razorpay_payment_id,
-                    signature: response.razorpay_signature, planType: effectiveType, reportId,
-                    amount: order.amount, currency: order.currency,
-                  }),
-                });
-              } catch (e) { console.error('Payment verification failed:', e); }
-              router.push(finalUrl);
-            },
-            modal: { ondismiss: () => { setIsLoading(false); } },
-            prefill: { name: form.name, email: form.email },
-            theme: { color: '#D4A853' },
-          });
-          rzp.open();
           return;
         }
 
@@ -816,6 +769,7 @@ function OnboardPageInner() {
         return;
       } catch (err) {
         console.error('Payment checkout failed:', err);
+        alert('Payment setup failed. Please try again or contact support@vedichour.com.');
         setIsLoading(false);
         return;
       }
