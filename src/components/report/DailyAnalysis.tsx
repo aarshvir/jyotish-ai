@@ -118,7 +118,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
   if (!currentDay) return null;
 
   const score = currentDay.day_score ?? 50;
-  const scoreColor = score >= 65 ? 'text-emerald' : score >= 45 ? 'text-amber' : 'text-crimson';
+  const scoreColor = score >= 65 ? 'text-success' : score >= 45 ? 'text-amber' : 'text-caution';
 
   const hourlyData: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
 
@@ -192,14 +192,14 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
               <span className="text-base sm:text-lg font-semibold ml-1 sm:ml-2 text-dust">
                 {formatDayOutcomeLabel(score)}
               </span>
-              <span className="ml-auto font-mono text-xs text-dust/70">
+              <span className="ml-auto font-mono text-mono-sm text-dust/70">
                 {peakCount > 0 && (
-                  <span className="text-emerald mr-2">
+                  <span className="text-success mr-2">
                     ★ {peakCount} peak{peakCount === 1 ? '' : 's'}
                   </span>
                 )}
                 {cautionCount > 0 && (
-                  <span className="text-crimson">
+                  <span className="text-caution">
                     ⚠ {cautionCount} caution
                   </span>
                 )}
@@ -209,7 +209,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
               </span>
             </div>
             {peakWindows && (
-              <p className="text-sm text-amber">
+              <p className="text-body-sm text-amber">
                 Peak windows: {peakWindows}
               </p>
             )}
@@ -217,13 +217,13 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
 
           {/* Today's Playbook — top slots + Rahu Kaal + theme */}
           <div className="mb-8 rounded-sm border border-amber/25 bg-nebula/20 p-5 max-w-3xl mx-auto">
-            <p className="font-mono text-xs text-amber tracking-[0.2em] uppercase mb-3">
+            <p className="font-mono text-mono-sm text-amber tracking-[0.2em] uppercase mb-3">
               Today&apos;s Playbook
             </p>
             <div className="space-y-3 font-mono text-sm text-star">
               {playbook.peak && (
                 <p>
-                  <span className="text-emerald">Peak</span> · {playbook.peak.display_label ?? '—'} (score{' '}
+                  <span className="text-success">Peak</span> · {playbook.peak.display_label ?? '—'} (score{' '}
                   {playbook.peak.score ?? '—'}) — {(playbook.peak as HourSlot).hora_planet || '—'} hora ·{' '}
                   {(playbook.peak as HourSlot).choghadiya || '—'}
                 </p>
@@ -236,7 +236,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                 </p>
               )}
               {playbook.rk && (playbook.rk.start || playbook.rk.end) && (
-                <p className="text-crimson">
+                <p className="text-caution">
                   Rahu Kaal · {playbook.rk.start ?? '—'}–{playbook.rk.end ?? '—'} — keep to routine tasks only.
                 </p>
               )}
@@ -250,27 +250,27 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
           {currentDay.panchang && (
             <div className="flex flex-wrap justify-center gap-3 mb-8">
               {currentDay.panchang.tithi && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-xs text-dust">
+                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
                   Tithi: {currentDay.panchang.tithi}
                 </span>
               )}
               {currentDay.panchang.nakshatra && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-xs text-dust">
+                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
                   Nakshatra: {currentDay.panchang.nakshatra}
                 </span>
               )}
               {currentDay.panchang.yoga && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-xs text-dust">
+                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
                   Yoga: {currentDay.panchang.yoga}
                 </span>
               )}
               {currentDay.panchang.karana && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-xs text-dust">
+                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
                   Karana: {currentDay.panchang.karana}
                 </span>
               )}
               {currentDay.panchang.moon_sign && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-xs text-dust">
+                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
                   Moon: {currentDay.panchang.moon_sign}
                 </span>
               )}
@@ -289,21 +289,21 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
             <div className="bg-nebula/20 border border-horizon rounded-sm p-5 mb-6 max-w-2xl mx-auto space-y-3">
               {currentDay.briefing_v2.best_overall_for.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-emerald tracking-wider uppercase">Best for:</span>
+                  <span className="font-mono text-mono-sm text-success tracking-wider uppercase">Best for:</span>
                   {currentDay.briefing_v2.best_overall_for.map((b, i) => (
-                    <span key={i} className="px-2 py-1 rounded-sm bg-emerald/10 border border-emerald/20 font-mono text-xs text-emerald">{b}</span>
+                    <span key={i} className="px-2 py-1 rounded-sm bg-success/10 border border-success/20 font-mono text-mono-sm text-success">{b}</span>
                   ))}
                 </div>
               )}
               {currentDay.briefing_v2.not_ideal_for.length > 0 && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-crimson/70 tracking-wider uppercase">Less ideal:</span>
+                  <span className="font-mono text-mono-sm text-caution/70 tracking-wider uppercase">Less ideal:</span>
                   {currentDay.briefing_v2.not_ideal_for.map((n, i) => (
-                    <span key={i} className="px-2 py-1 rounded-sm bg-crimson/10 border border-crimson/20 font-mono text-xs text-crimson">{n}</span>
+                    <span key={i} className="px-2 py-1 rounded-sm bg-caution/10 border border-caution/20 font-mono text-mono-sm text-caution">{n}</span>
                   ))}
                 </div>
               )}
-              <p className="font-mono text-xs text-dust leading-relaxed">
+              <p className="font-mono text-mono-sm text-dust leading-relaxed">
                 {currentDay.briefing_v2.why_today}
               </p>
             </div>
@@ -318,7 +318,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
           <div className="space-y-4">
             {currentDay.best_windows && currentDay.best_windows.length > 0 && (
               <div>
-                <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3 text-center">
+                <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3 text-center">
                   Optimal Windows
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -334,17 +334,17 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                     return (
                     <div
                       key={i}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-emerald/10 border border-emerald/20"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-success/10 border border-success/20"
                       title={w.reason}
                     >
-                      <span className="text-emerald text-sm">
+                      <span className="text-success text-sm">
                         {PLANET_SYMBOLS[w.hora] || ''}
                       </span>
-                      <span className="font-mono text-xs text-emerald">{timeStr}</span>
-                      <span className="text-emerald/50">·</span>
-                      <span className="font-mono text-xs text-emerald/70">{w.choghadiya}</span>
-                      <span className="text-emerald/50">·</span>
-                      <span className="font-mono text-xs text-emerald font-medium">{w.score}</span>
+                      <span className="font-mono text-mono-sm text-success">{timeStr}</span>
+                      <span className="text-success/50">·</span>
+                      <span className="font-mono text-mono-sm text-success/70">{w.choghadiya}</span>
+                      <span className="text-success/50">·</span>
+                      <span className="font-mono text-mono-sm text-success font-medium">{w.score}</span>
                     </div>
                   ); })}
                 </div>
@@ -353,13 +353,13 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
 
             {currentDay.rahu_kaal && (currentDay.rahu_kaal.start || currentDay.rahu_kaal.end) && (
               <div>
-                <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3 text-center">
+                <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3 text-center">
                   Rahu Kaal
                 </p>
                 <div className="flex justify-center">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-crimson/10 border border-crimson/20">
-                    <span className="text-crimson">⚠</span>
-                    <span className="font-mono text-xs text-crimson">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-caution/10 border border-caution/20">
+                    <span className="text-caution">⚠</span>
+                    <span className="font-mono text-mono-sm text-caution">
                       Rahu Kaal: {(() => {
                         const fmtTime = (t: string): string => {
                           if (!t) return '';
@@ -376,16 +376,16 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
 
             {currentDay.avoid_windows && currentDay.avoid_windows.length > 0 && (
               <div>
-                <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3 text-center">
+                <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3 text-center">
                   Avoid
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {currentDay.avoid_windows.map((w, i) => (
                     <div
                       key={i}
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-crimson/10 border border-crimson/20"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-caution/10 border border-caution/20"
                     >
-                      <span className="font-mono text-xs text-crimson">
+                      <span className="font-mono text-mono-sm text-caution">
                         {w.time} · {w.reason}
                       </span>
                     </div>

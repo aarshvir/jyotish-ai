@@ -176,7 +176,7 @@ function LoginInner() {
           {error && (
             <div
               role="alert"
-              className="px-4 py-2.5 mb-4 bg-crimson/10 border border-crimson/30 rounded-lg font-body text-sm text-crimson/90"
+              className="px-4 py-2.5 mb-4 bg-caution/10 border border-caution/30 rounded-card font-body text-body-sm text-caution/90"
             >
               {error}
             </div>

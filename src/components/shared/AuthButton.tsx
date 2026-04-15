@@ -42,7 +42,7 @@ export default function AuthButton() {
   if (isLoading) {
     return (
       <div
-        className="h-9 w-28 shrink-0 rounded-sm bg-nebula/60 animate-pulse"
+        className="h-9 w-28 shrink-0 rounded-button bg-nebula/60 skeleton"
         aria-busy="true"
         aria-label="Loading account"
       />
@@ -51,13 +51,13 @@ export default function AuthButton() {
 
   const menuPanel = (
     <div
-      className="absolute right-0 top-full z-[60] mt-2 min-w-[12.5rem] rounded-sm border border-horizon bg-cosmos py-1 shadow-lg"
+      className="absolute right-0 top-full z-[60] mt-2 min-w-[12.5rem] rounded-card border border-horizon bg-cosmos py-1 shadow-elevated"
       role="menu"
     >
-      <div className="border-b border-horizon/80 pb-1">
+      <div className="border-b border-horizon/60 pb-1">
         <Link
           href="/#how-it-works"
-          className="block px-4 py-2.5 text-sm text-dust hover:bg-nebula/80 hover:text-star"
+          className="block px-4 py-2.5 text-body-sm text-dust hover:bg-nebula/60 hover:text-star transition-colors"
           role="menuitem"
           onClick={() => setMenuOpen(false)}
         >
@@ -65,7 +65,7 @@ export default function AuthButton() {
         </Link>
         <Link
           href="/pricing"
-          className="block px-4 py-2.5 text-sm text-dust hover:bg-nebula/80 hover:text-star"
+          className="block px-4 py-2.5 text-body-sm text-dust hover:bg-nebula/60 hover:text-star transition-colors"
           role="menuitem"
           onClick={() => setMenuOpen(false)}
         >
@@ -76,7 +76,7 @@ export default function AuthButton() {
         <>
           <Link
             href="/dashboard"
-            className="block px-4 py-2.5 text-sm text-star hover:bg-nebula/80"
+            className="block px-4 py-2.5 text-body-sm text-star hover:bg-nebula/60 transition-colors"
             role="menuitem"
             onClick={() => setMenuOpen(false)}
           >
@@ -84,7 +84,7 @@ export default function AuthButton() {
           </Link>
           <Link
             href="/onboard"
-            className="block px-4 py-2.5 text-sm text-star hover:bg-nebula/80"
+            className="block px-4 py-2.5 text-body-sm text-star hover:bg-nebula/60 transition-colors"
             role="menuitem"
             onClick={() => setMenuOpen(false)}
           >
@@ -92,7 +92,7 @@ export default function AuthButton() {
           </Link>
           <button
             type="button"
-            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-sm text-dust hover:bg-nebula/80 hover:text-star"
+            className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-body-sm text-dust hover:bg-nebula/60 hover:text-star transition-colors"
             role="menuitem"
             onClick={() => void handleSignOut()}
           >
@@ -104,7 +104,7 @@ export default function AuthButton() {
         <>
           <Link
             href="/login"
-            className="block px-4 py-2.5 text-sm text-star hover:bg-nebula/80"
+            className="block px-4 py-2.5 text-body-sm text-star hover:bg-nebula/60 transition-colors"
             role="menuitem"
             onClick={() => setMenuOpen(false)}
           >
@@ -112,7 +112,7 @@ export default function AuthButton() {
           </Link>
           <Link
             href="/login?mode=signup"
-            className="block px-4 py-2.5 text-sm text-amber hover:bg-nebula/10"
+            className="block px-4 py-2.5 text-body-sm text-amber hover:bg-amber/5 transition-colors"
             role="menuitem"
             onClick={() => setMenuOpen(false)}
           >
@@ -120,7 +120,7 @@ export default function AuthButton() {
           </Link>
           <Link
             href="/onboard"
-            className="block px-4 py-2.5 text-sm text-star hover:bg-nebula/80"
+            className="block px-4 py-2.5 text-body-sm text-star hover:bg-nebula/60 transition-colors"
             role="menuitem"
             onClick={() => setMenuOpen(false)}
           >
@@ -137,19 +137,19 @@ export default function AuthButton() {
       <div className="hidden items-center gap-2 lg:flex">
         {user ? (
           <>
-            <Button variant="ghost" className="gap-2 text-dust hover:text-star" asChild>
+            <Button variant="ghost" className="gap-2 text-dust hover:text-star text-body-sm" asChild>
               <Link href="/dashboard">
                 <User className="h-4 w-4" />
                 Dashboard
               </Link>
             </Button>
-            <Button variant="ghost" className="gap-2 text-dust hover:text-star" asChild>
+            <Button variant="ghost" className="gap-2 text-dust hover:text-star text-body-sm" asChild>
               <Link href="/onboard">
                 <FileText className="h-4 w-4" />
                 New report
               </Link>
             </Button>
-            <Button variant="ghost" className="gap-2 text-dust hover:text-star" onClick={() => void handleSignOut()}>
+            <Button variant="ghost" className="gap-2 text-dust hover:text-star text-body-sm" onClick={() => void handleSignOut()}>
               <LogOut className="h-4 w-4" />
               Sign out
             </Button>
@@ -158,13 +158,13 @@ export default function AuthButton() {
           <>
             <Link
               href="/login"
-              className="inline-flex items-center gap-2 rounded-sm border border-amber/40 px-5 py-2 text-sm font-body font-medium tracking-wide text-amber transition-colors duration-200 hover:bg-amber/10"
+              className="btn-secondary text-body-sm px-5 py-2"
             >
               Sign in
             </Link>
             <Link
               href="/onboard"
-              className="inline-flex items-center gap-2 rounded-sm bg-amber px-5 py-2 text-sm font-body font-medium tracking-wide text-space transition-colors duration-200 hover:bg-amber-glow"
+              className="btn-primary text-body-sm px-5 py-2"
             >
               Get report
             </Link>
@@ -172,16 +172,16 @@ export default function AuthButton() {
         )}
       </div>
 
-      {/* Mobile / tablet compact */}
+      {/* Mobile */}
       <div className="lg:hidden">
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="border-horizon text-star hover:bg-nebula/60"
+          className="border-horizon text-star hover:bg-nebula/60 min-h-[44px] min-w-[44px]"
           aria-expanded={menuOpen}
           aria-haspopup="true"
-          aria-label={user ? 'Account menu' : 'Sign in menu'}
+          aria-label={user ? 'Account menu' : 'Navigation menu'}
           onClick={() => setMenuOpen((o) => !o)}
         >
           <Menu className="h-4 w-4" />

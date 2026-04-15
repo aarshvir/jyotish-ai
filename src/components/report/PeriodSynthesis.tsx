@@ -28,17 +28,17 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
   }
 
   const getColor = (score: number) => {
-    if (score >= 75) return 'bg-emerald/25';
-    if (score >= 65) return 'bg-emerald/10';
+    if (score >= 75) return 'bg-success/25';
+    if (score >= 65) return 'bg-success/10';
     if (score >= 55) return 'bg-amber/15';
     if (score >= 45) return 'bg-amber/10 border-amber/20';
-    return 'bg-crimson/20';
+    return 'bg-caution/20';
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 65) return 'text-emerald';
+    if (score >= 65) return 'text-success';
     if (score >= 45) return 'text-amber';
-    return 'text-crimson';
+    return 'text-caution';
   };
 
   const getScorePrefix = (score: number) => {
@@ -78,40 +78,40 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
             {(s?.opening_paragraph ?? '').trim() || OPENING_FALLBACK}
           </p>
           <div className="pt-6">
-            <p className="font-mono text-xs text-amber tracking-[0.15em] uppercase mb-3">
+            <p className="font-mono text-mono-sm text-amber tracking-[0.15em] uppercase mb-3">
               Strategic Windows
             </p>
             <ul className="space-y-2">
               {(s?.strategic_windows ?? []).length > 0 ? (s?.strategic_windows ?? []).map((w, i) => (
-                <li key={i} className="font-display text-star text-sm leading-[1.7]">
-                  <span className="font-mono text-xs text-emerald">{w.date}</span>
+                <li key={i} className="font-display text-star text-body-sm leading-[1.7]">
+                  <span className="font-mono text-mono-sm text-success">{w.date}</span>
                   {w.nakshatra != null && (
-                    <span className="font-mono text-xs text-dust ml-2">({w.nakshatra}, {w.score})</span>
+                    <span className="font-mono text-mono-sm text-dust ml-2">({w.nakshatra}, {w.score})</span>
                   )}
                   — {w.reason || 'Favourable timing.'}
                 </li>
               )) : (
-                <li className="font-display text-star text-sm leading-[1.7] text-dust/70">
+                <li className="font-display text-star text-body-sm leading-[1.7] text-dust/70">
                   Use the daily score calendar to identify high-score windows.
                 </li>
               )}
             </ul>
           </div>
           <div className="pt-4">
-            <p className="font-mono text-xs text-crimson/80 tracking-[0.15em] uppercase mb-3">
+            <p className="font-mono text-mono-sm text-caution/80 tracking-[0.15em] uppercase mb-3">
               Caution Dates
             </p>
             <ul className="space-y-2">
               {(s?.caution_dates ?? []).length > 0 ? (s?.caution_dates ?? []).map((c, i) => (
-                <li key={i} className="font-display text-star text-sm leading-[1.7]">
-                  <span className="font-mono text-xs text-crimson">{c.date}</span>
+                <li key={i} className="font-display text-star text-body-sm leading-[1.7]">
+                  <span className="font-mono text-mono-sm text-caution">{c.date}</span>
                   {c.nakshatra != null && (
-                    <span className="font-mono text-xs text-dust ml-2">({c.nakshatra}, {c.score})</span>
+                    <span className="font-mono text-mono-sm text-dust ml-2">({c.nakshatra}, {c.score})</span>
                   )}
                   — {c.reason || 'Exercise caution.'}
                 </li>
               )) : (
-                <li className="font-display text-star text-sm leading-[1.7] text-dust/70">
+                <li className="font-display text-star text-body-sm leading-[1.7] text-dust/70">
                   Check the daily score calendar for lower-scoring days.
                 </li>
               )}
@@ -120,8 +120,8 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
           <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             {(['career', 'money', 'health', 'relationships'] as const).map((key) => (
               <div key={key} className="py-2 px-3 rounded-sm bg-cosmos border border-horizon/60">
-                <p className="font-mono text-xs text-dust uppercase mb-1">{key}</p>
-                <p className="font-display text-star text-sm leading-[1.6]">
+                <p className="font-mono text-mono-sm text-dust uppercase mb-1">{key}</p>
+                <p className="font-display text-star text-body-sm leading-[1.6]">
                   {(s?.domain_priorities?.[key] ?? '').trim() || DOMAIN_FALLBACK[key]}
                 </p>
               </div>
@@ -139,7 +139,7 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
 
       {/* Score calendar */}
       <div className="pt-6 border-t border-horizon/40">
-        <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-4">
+        <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-4">
           Daily Score Calendar
         </p>
         <div className="flex flex-wrap gap-2">

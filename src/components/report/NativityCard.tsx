@@ -117,13 +117,13 @@ export function NativityCard({
             {name.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')}
           </h1>
 
-          <div className="font-mono text-xs text-dust mb-6">
+          <div className="font-mono text-mono-sm text-dust mb-6">
             {birthDate} · {birthTime} · {birthCity}
           </div>
 
           <div className="space-y-3 mb-6">
             <div>
-              <span className="font-mono text-xs text-dust tracking-[0.15em] uppercase">
+              <span className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase">
                 Lagna
               </span>
               <p className="font-mono text-base text-amber font-medium mt-1">
@@ -131,7 +131,7 @@ export function NativityCard({
               </p>
             </div>
             <div>
-              <span className="font-mono text-xs text-dust tracking-[0.15em] uppercase">
+              <span className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase">
                 Moon
               </span>
               <p className="font-mono text-sm text-star mt-1">
@@ -139,12 +139,12 @@ export function NativityCard({
               </p>
             </div>
             <div>
-              <span className="font-mono text-xs text-dust tracking-[0.15em] uppercase">
+              <span className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase">
                 Dasha
               </span>
               <div className="mt-1">
                 <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber/10 border border-amber/20">
-                  <span className="font-mono text-xs text-amber uppercase tracking-wider">
+                  <span className="font-mono text-mono-sm text-amber uppercase tracking-wider">
                     {currentDasha.mahadasha} MD · {currentDasha.antardasha} AD
                   </span>
                 </span>
@@ -162,10 +162,10 @@ export function NativityCard({
           </div>
 
           <div className="pt-6 border-t border-horizon/40">
-            <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+            <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
               Current Dasha Period
             </p>
-            <p className="font-display text-star text-sm leading-[1.8]">
+            <p className="font-display text-star text-body-sm leading-[1.8]">
               {safeText(
                 nativitySummary?.current_dasha_interpretation,
                 DASHA_FALLBACK(`${currentDasha.mahadasha}/${currentDasha.antardasha}`)
@@ -178,7 +178,7 @@ export function NativityCard({
         <div className="space-y-6">
           {(nativitySummary?.key_yogas?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
                 Key Yogas
               </p>
               <div className="flex flex-wrap gap-2">
@@ -188,7 +188,7 @@ export function NativityCard({
                     className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber/10 border border-amber/20"
                     title={typeof yoga === 'object' ? (yoga.description ?? '') : yoga}
                   >
-                    <span className="font-mono text-xs text-amber">
+                    <span className="font-mono text-mono-sm text-amber">
                       {(typeof yoga === 'object' ? (yoga.name || yoga.yoga_name || '') : yoga).split('(')[0].trim()}
                     </span>
                   </span>
@@ -199,16 +199,16 @@ export function NativityCard({
 
           {(nativitySummary?.functional_benefics?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
                 Functional Benefics
               </p>
               <div className="flex flex-wrap gap-2">
                 {(nativitySummary?.functional_benefics ?? []).map((planet, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald/10 border border-emerald/20"
+                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-success/10 border border-success/20"
                   >
-                    <span className="font-mono text-xs text-emerald">
+                    <span className="font-mono text-mono-sm text-success">
                       {planet}
                     </span>
                   </span>
@@ -219,16 +219,16 @@ export function NativityCard({
 
           {(nativitySummary?.functional_malefics?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
                 Functional Malefics
               </p>
               <div className="flex flex-wrap gap-2">
                 {(nativitySummary?.functional_malefics ?? []).map((planet, i) => (
                   <span
                     key={i}
-                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-crimson/10 border border-crimson/20"
+                    className="inline-flex items-center px-3 py-1.5 rounded-full bg-caution/10 border border-caution/20"
                   >
-                    <span className="font-mono text-xs text-crimson">
+                    <span className="font-mono text-mono-sm text-caution">
                       {planet}
                     </span>
                   </span>
@@ -239,7 +239,7 @@ export function NativityCard({
 
           {(nativitySummary?.badhaka_lines?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
                 Badhaka
               </p>
               <div className="flex flex-wrap gap-2">
@@ -248,7 +248,7 @@ export function NativityCard({
                     key={i}
                     className="inline-flex items-center px-3 py-1.5 rounded-full bg-amber/10 border border-amber/30"
                   >
-                    <span className="font-mono text-xs text-amber">{line}</span>
+                    <span className="font-mono text-mono-sm text-amber">{line}</span>
                   </span>
                 ))}
               </div>
@@ -257,7 +257,7 @@ export function NativityCard({
 
           {(nativitySummary?.functional_neutral?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
                 Neutral
               </p>
               <div className="flex flex-wrap gap-2">
@@ -266,7 +266,7 @@ export function NativityCard({
                     key={i}
                     className="inline-flex items-center px-3 py-1.5 rounded-full bg-horizon/40 border border-horizon"
                   >
-                    <span className="font-mono text-xs text-dust">{line}</span>
+                    <span className="font-mono text-mono-sm text-dust">{line}</span>
                   </span>
                 ))}
               </div>
@@ -275,7 +275,7 @@ export function NativityCard({
 
           {(nativity?.life_themes?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-3">
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
                 Life Themes
               </p>
               <div className="flex flex-wrap gap-2">
@@ -295,16 +295,16 @@ export function NativityCard({
 
           {nativity?.current_year_theme && (
             <div className="py-3 px-4 rounded-sm bg-amber/5 border border-amber/20">
-              <p className="font-mono text-xs text-amber tracking-[0.15em] uppercase mb-2">
+              <p className="font-mono text-mono-sm text-amber tracking-[0.15em] uppercase mb-2">
                 {new Date().getFullYear()} Theme
               </p>
-              <p className="font-display text-star text-sm leading-[1.7]">
+              <p className="font-display text-star text-body-sm leading-[1.7]">
                 {nativity.current_year_theme}
               </p>
             </div>
           )}
 
-          <p className="font-mono text-xs text-dust/50 tracking-wide">
+          <p className="font-mono text-mono-sm text-dust/50 tracking-wide">
             Assessed for {lagna} Lagna
           </p>
         </div>
@@ -312,11 +312,11 @@ export function NativityCard({
 
       {(nativity?.planetary_positions?.length ?? 0) > 0 && (
         <div className="mt-8 pt-8 border-t border-horizon/40">
-          <p className="font-mono text-xs text-dust tracking-[0.15em] uppercase mb-4">
+          <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-4">
             Planetary Positions
           </p>
           <div className="overflow-x-auto">
-            <table className="w-full font-mono text-xs">
+            <table className="w-full font-mono text-mono-sm">
               <thead>
                 <tr className="text-dust border-b border-horizon">
                   <th className="text-left py-2 pr-4">Planet</th>

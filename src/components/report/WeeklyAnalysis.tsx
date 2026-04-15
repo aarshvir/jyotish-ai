@@ -68,7 +68,7 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
         <h2 className="font-display font-semibold text-star text-3xl">
           Weekly Breakdown
         </h2>
-        <p className="font-mono text-xs text-dust">
+        <p className="font-mono text-mono-sm text-dust">
           Weekly data unavailable.
         </p>
       </motion.div>
@@ -110,14 +110,14 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
               {/* Week arc header */}
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="font-mono text-xs text-dust tracking-wider uppercase">
+                  <p className="font-mono text-mono-sm text-dust tracking-wider uppercase">
                     {week.week_label}
                   </p>
                   {(peakCount > 0 || cautionCount > 0) && (
                     <p className="font-mono text-[10px] text-dust/50 mt-0.5">
-                      {peakCount > 0 && <span className="text-emerald">★ {peakCount} peak</span>}
+                      {peakCount > 0 && <span className="text-success">★ {peakCount} peak</span>}
                       {peakCount > 0 && cautionCount > 0 && <span className="text-dust/30"> · </span>}
-                      {cautionCount > 0 && <span className="text-crimson">⚠ {cautionCount} caution</span>}
+                      {cautionCount > 0 && <span className="text-caution">⚠ {cautionCount} caution</span>}
                     </p>
                   )}
                 </div>
@@ -149,7 +149,7 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
               </p>
 
               {/* Commentary */}
-              <p className="font-display text-star text-sm leading-[1.8] mb-4">
+              <p className="font-display text-star text-body-sm leading-[1.8] mb-4">
                 {week.commentary}
               </p>
 

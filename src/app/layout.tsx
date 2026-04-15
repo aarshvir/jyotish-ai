@@ -57,7 +57,7 @@ export default function RootLayout({
       lang="en"
       className={`${cormorant.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body className="min-h-screen">{children}</body>
     </html>
   );
 }

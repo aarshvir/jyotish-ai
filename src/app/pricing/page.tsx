@@ -1,5 +1,7 @@
-'use client'
-import Link from 'next/link'
+'use client';
+import Link from 'next/link';
+import Navbar from '@/components/shared/Navbar';
+import Footer from '@/components/shared/Footer';
 
 export default function PricingPage() {
   const plans = [
@@ -8,7 +10,7 @@ export default function PricingPage() {
       price: 'Free',
       priceNote: 'No credit card required',
       description: 'Discover your cosmic blueprint',
-      features: ['Complete natal birth chart','Lagna (rising sign) analysis','Sample hora schedule for today','Dasha period overview','Planetary strength indicators'],
+      features: ['Complete natal birth chart', 'Lagna (rising sign) analysis', 'Sample hora schedule for today', 'Dasha period overview', 'Planetary strength indicators'],
       cta: 'Get Free Preview',
       href: '/onboard?plan=free',
       highlight: false,
@@ -17,9 +19,9 @@ export default function PricingPage() {
     {
       name: '7-Day Forecast',
       price: '₹799',
-      priceNote: 'One-time payment',
+      priceNote: 'One-time payment · ~$9.99',
       description: 'Hour-by-hour cosmic timing for a week',
-      features: ['Full natal chart analysis','7-day hour-by-hour forecast','18 hourly slots per day with scores','Choghadiya & hora timing','Daily STRATEGY section','Auspicious window identification','Rahu Kaal warnings','PDF download'],
+      features: ['Full natal chart analysis', '7-day hour-by-hour forecast', '18 hourly slots per day with scores', 'Choghadiya & hora timing', 'Daily strategy section', 'Auspicious window identification', 'Rahu Kaal warnings', 'PDF download'],
       cta: 'Get 7-Day Forecast',
       href: '/onboard?plan=7day',
       highlight: false,
@@ -28,9 +30,9 @@ export default function PricingPage() {
     {
       name: 'Monthly Oracle',
       price: '₹1,499',
-      priceNote: 'One-time payment',
+      priceNote: 'One-time payment · ~$19.99',
       description: '30 days of precision cosmic guidance',
-      features: ['Everything in 7-Day Forecast','30-day complete forecast','Monthly theme analysis','Weekly synthesis','Career, wealth, health windows','Best muhurta dates highlighted','Nativity deep analysis','High-resolution PDF report'],
+      features: ['Everything in 7-Day Forecast', '30-day complete forecast', 'Monthly theme analysis', 'Weekly synthesis', 'Career, wealth, health windows', 'Best muhurta dates highlighted', 'Nativity deep analysis', 'High-resolution PDF report'],
       cta: 'Get Monthly Oracle',
       href: '/onboard?plan=monthly',
       highlight: true,
@@ -39,93 +41,79 @@ export default function PricingPage() {
     {
       name: 'Annual Oracle',
       price: '₹3,999',
-      priceNote: 'One-time payment',
+      priceNote: 'One-time payment · ~$49.99',
       description: 'Your complete cosmic year ahead',
-      features: ['Everything in Monthly Oracle','Full 12-month forecast','Month-by-month breakdown','Annual theme & dasha analysis','Peak opportunity windows','Yearly muhurta calendar','Priority generation','Premium PDF + digital access'],
+      features: ['Everything in Monthly Oracle', 'Full 12-month forecast', 'Month-by-month breakdown', 'Annual theme & dasha analysis', 'Peak opportunity windows', 'Yearly muhurta calendar', 'Priority generation', 'Premium PDF + digital access'],
       cta: 'Get Annual Oracle',
       href: '/onboard?plan=annual',
       highlight: false,
       badge: 'Best Value',
     },
-  ]
+  ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-space via-dark to-space text-star font-display">
-      {/* Header */}
-      <header className="px-5 sm:px-8 lg:px-12 py-5 flex justify-between items-center border-b border-amber/15">
-        <Link href="/" className="no-underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 rounded-sm">
-          <span className="text-xl sm:text-2xl font-bold text-amber tracking-wider font-mono">VedicHour</span>
-        </Link>
-        <Link
-          href="/onboard"
-          className="px-5 py-2.5 min-h-[44px] flex items-center bg-gradient-to-r from-amber to-amber/80 text-space rounded-md text-sm font-semibold font-mono hover:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 focus-visible:ring-offset-space"
-        >
-          Get Started
-        </Link>
-      </header>
+    <div className="min-h-screen bg-space text-star">
+      <Navbar />
 
       {/* Hero */}
-      <section className="text-center px-5 sm:px-8 pt-14 sm:pt-20 pb-12 sm:pb-16">
-        <p className="text-xs tracking-[0.25em] text-amber uppercase mb-4 font-mono">Transparent Pricing</p>
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light mb-5 leading-tight">Choose Your Oracle</h1>
-        <p className="text-base sm:text-lg text-dust/70 max-w-lg mx-auto leading-relaxed font-sans">
+      <section className="text-center px-5 sm:px-8 pt-28 sm:pt-32 pb-10 sm:pb-14">
+        <p className="section-eyebrow mb-3">Transparent Pricing</p>
+        <h1 className="font-body font-semibold text-display-lg mb-4">Choose Your Oracle</h1>
+        <p className="font-body text-body-lg text-dust max-w-lg mx-auto leading-relaxed">
           AI-powered Vedic astrology reports with hour-by-hour precision. One-time payments. Instant delivery. No subscriptions.
         </p>
       </section>
 
-      {/* Plans grid */}
-      <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-16 sm:pb-20">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 sm:gap-6">
+      {/* Plans */}
+      <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-14 sm:pb-18">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
           {plans.map((plan) => (
             <div
               key={plan.name}
-              className={`relative flex flex-col rounded-2xl p-7 sm:p-8 ${
+              className={`relative flex flex-col rounded-card p-6 sm:p-7 ${
                 plan.highlight
-                  ? 'bg-gradient-to-br from-amber/12 to-amber/4 border border-amber/50'
-                  : 'bg-white/[0.03] border border-white/8'
+                  ? 'bg-amber/[0.06] border-2 border-amber shadow-glow-amber'
+                  : 'card'
               }`}
             >
               {plan.badge && (
-                <div className={`absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase font-mono whitespace-nowrap ${
+                <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-pill text-label-sm font-mono font-medium tracking-wider uppercase whitespace-nowrap ${
                   plan.highlight
-                    ? 'bg-gradient-to-r from-amber to-amber/80 text-space'
-                    : 'bg-amber/20 text-amber'
+                    ? 'bg-amber text-space'
+                    : 'bg-amber/15 text-amber'
                 }`}>
                   {plan.badge}
                 </div>
               )}
 
-              {/* Plan header */}
-              <div className="mb-6">
-                <h2 className={`text-lg sm:text-xl font-semibold mb-2 ${plan.highlight ? 'text-amber' : 'text-star'}`}>
+              <div className="mb-5">
+                <h2 className={`font-body text-headline-sm mb-1.5 ${plan.highlight ? 'text-amber' : 'text-star'}`}>
                   {plan.name}
                 </h2>
-                <p className="text-sm text-dust/60 font-sans mb-4 leading-relaxed">{plan.description}</p>
-                <span className={`text-4xl font-bold ${plan.price === 'Free' ? 'text-emerald' : 'text-star'}`}>
+                <p className="font-body text-body-sm text-dust mb-3 leading-relaxed">{plan.description}</p>
+                <span className={`text-3xl font-bold font-mono ${plan.price === 'Free' ? 'text-success' : 'text-star'}`}>
                   {plan.price}
                 </span>
-                <p className="text-xs text-dust/50 font-mono mt-1">{plan.priceNote}</p>
+                <p className="font-mono text-mono-sm text-dust/50 mt-1">{plan.priceNote}</p>
               </div>
 
-              {/* Features */}
-              <ul className="list-none p-0 mb-7 flex-1 space-y-0">
+              <ul className="list-none p-0 mb-6 flex-1 space-y-0" role="list">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5 py-2 border-b border-white/4 text-sm text-dust/70 font-sans leading-snug">
-                    <span className="text-amber flex-shrink-0 mt-0.5">✦</span>
+                  <li key={feature} className="flex items-start gap-2.5 py-2 border-b border-horizon/30 text-body-sm text-dust leading-snug">
+                    <span className="text-amber shrink-0 mt-0.5">✦</span>
                     {feature}
                   </li>
                 ))}
               </ul>
 
-              {/* CTA */}
               <Link
                 href={plan.href}
-                className={`flex items-center justify-center text-center px-4 py-3.5 min-h-[48px] rounded-lg text-sm font-semibold font-mono no-underline transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 ${
+                className={`text-center min-h-[48px] rounded-button text-body-sm font-medium tracking-wide transition-all ${
                   plan.highlight
-                    ? 'bg-gradient-to-r from-amber to-amber/80 text-space border-0'
+                    ? 'btn-primary w-full justify-center'
                     : plan.price === 'Free'
-                    ? 'bg-transparent text-emerald border border-emerald/40 hover:bg-emerald/5'
-                    : 'bg-amber/15 text-amber border border-amber/30 hover:bg-amber/20'
+                    ? 'btn-secondary w-full justify-center text-success border-success/30 hover:bg-success/5'
+                    : 'btn-secondary w-full justify-center'
                 }`}
               >
                 {plan.cta}
@@ -135,15 +123,56 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-white/6 px-5 sm:px-8 lg:px-12 py-7 flex flex-col sm:flex-row justify-between items-center gap-4 font-mono text-xs text-dust/50">
-        <span>© {new Date().getFullYear()} VedicHour. All rights reserved.</span>
-        <div className="flex gap-5 sm:gap-6">
-          <Link href="/terms" className="text-dust/50 hover:text-amber transition-colors no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">Terms</Link>
-          <Link href="/privacy" className="text-dust/50 hover:text-amber transition-colors no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">Privacy</Link>
-          <Link href="/refund" className="text-dust/50 hover:text-amber transition-colors no-underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 rounded-sm">Refunds</Link>
+      {/* Methodology / Trust */}
+      <section className="max-w-4xl mx-auto px-5 sm:px-8 pb-14">
+        <div className="card p-7 md:p-9">
+          <h2 className="font-body text-headline-md text-star mb-4">Our Methodology</h2>
+          <div className="prose-reading text-body-md text-dust space-y-3">
+            <p>
+              VedicHour uses the Swiss Ephemeris (pyswisseph) for planetary calculations — the same engine used by professional astrologers worldwide.
+              We apply the Lahiri ayanamsa for sidereal positions and Vimshottari dasha for timing predictions.
+            </p>
+            <p>
+              Each hourly window is scored by combining hora rulers, choghadiya quality, transit lagna, and your natal chart's functional benefic/malefic relationships.
+              AI interpretation layers narrative and recommendations on top of the mathematical framework.
+            </p>
+            <p>
+              This is not entertainment astrology. It is a structured analytical tool based on classical Vedic principles.
+              Results should inform — not replace — your own judgment.
+            </p>
+          </div>
         </div>
-      </footer>
+      </section>
+
+      {/* Support/Refund */}
+      <section className="max-w-4xl mx-auto px-5 sm:px-8 pb-14">
+        <div className="grid sm:grid-cols-3 gap-4">
+          <div className="card p-5 text-center">
+            <div className="text-2xl mb-2">🛡</div>
+            <h3 className="font-body text-title-md text-star mb-1">48-Hour Refund</h3>
+            <p className="text-body-sm text-dust">Full refund within 48 hours, no questions asked.</p>
+            <Link href="/refund" className="font-mono text-mono-sm text-amber mt-2 inline-block hover:underline">
+              Refund policy →
+            </Link>
+          </div>
+          <div className="card p-5 text-center">
+            <div className="text-2xl mb-2">🔒</div>
+            <h3 className="font-body text-title-md text-star mb-1">Privacy First</h3>
+            <p className="text-body-sm text-dust">Birth data encrypted. Never sold. Never shared.</p>
+            <Link href="/privacy" className="font-mono text-mono-sm text-amber mt-2 inline-block hover:underline">
+              Privacy policy →
+            </Link>
+          </div>
+          <div className="card p-5 text-center">
+            <div className="text-2xl mb-2">✉</div>
+            <h3 className="font-body text-title-md text-star mb-1">Support</h3>
+            <p className="text-body-sm text-dust">Questions? Reach us anytime.</p>
+            <span className="font-mono text-mono-sm text-amber mt-2 inline-block">support@vedichour.com</span>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
     </div>
-  )
+  );
 }
