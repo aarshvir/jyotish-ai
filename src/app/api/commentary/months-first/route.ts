@@ -166,7 +166,7 @@ Start with { and end with }.`;
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: 8000,
+      maxTokens: 4500,
     });
     const parsed = safeParseJson<{ months: unknown[] }>(text);
 

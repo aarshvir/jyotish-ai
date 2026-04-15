@@ -99,7 +99,7 @@ MANDATORY RULES (enforce strictly — these are absolute requirements, not sugge
 3. caution_dates: Provide 1-2 objects using synthesis_context.worst_date. reason = 50-60 words.
 4. domain_priorities.career: Write EXACTLY 55-65 words. Mention Mars hora windows by time (e.g. "14:00-15:00"), H10 deliverables, best day, best choghadiya. This field MUST contain the text "Mars" and "H10".
 5. All domain_priorities fields: Each must be 50-65 words with H-notation house numbers.
-6. weeks array: Return EXACTLY 6 week objects. Each week's analysis must be 100-120 words. End with "BEST: [specific date or event]." and "WORST: [specific date or event]." as separate lines within the analysis.
+6. weeks array: Return EXACTLY 6 week objects. Each week's analysis must be 60-80 words. End with "BEST: [specific date or event]." and "WORST: [specific date or event]." as separate lines within the analysis.
 7. Never use: generally, may, could, might, perhaps.
 
 Return JSON:
@@ -110,12 +110,12 @@ Return JSON:
       "week_label": "Mar 7–13",
       "overall_score": 65,
       "theme": "one short title sentence naming planets",
-      "analysis": "100-120 words ending with BEST: and WORST: lines",
+      "analysis": "60-80 words ending with BEST: and WORST: lines",
       "moon_signs": ["Libra", "Scorpio", "Sagittarius"]
     }
   ],
   "period_synthesis": {
-    "opening_paragraph": "200-250 words. FIRST SENTENCE ALL CAPS. Mentions H-notation houses. Closes with ALL-CAPS directive.",
+    "opening_paragraph": "120-150 words. FIRST SENTENCE ALL CAPS. Mentions H-notation houses. Closes with ALL-CAPS directive.",
     "strategic_windows": [
       { "date": "YYYY-MM-DD", "score": 70, "nakshatra": "name", "reason": "50-60 words naming hora, yoga, Moon house, activity" },
       { "date": "YYYY-MM-DD", "score": 68, "nakshatra": "name", "reason": "50-60 words naming hora, yoga, Moon house, activity" }
@@ -144,7 +144,7 @@ Start with { and end with }. No markdown.`;
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: 8000,
+      maxTokens: 3500,
     });
     const parsed = safeParseJson<{
       weeks: Array<{ week_label?: string; score?: number; theme?: string; commentary?: string; daily_scores?: number[]; moon_journey?: string[]; peak_days_count?: number; caution_days_count?: number }>;
@@ -158,7 +158,7 @@ Start with { and end with }. No markdown.`;
       const wc = op.split(/\s+/).filter(Boolean).length;
       const firstLine = op.split('\n')[0] ?? '';
       const hasCapLine = firstLine === firstLine.toUpperCase() && firstLine.split(/\s+/).length >= 6;
-      if (wc < 180 || !hasCapLine) {
+      if (wc < 100 || !hasCapLine) {
         synthesis.opening_paragraph = canonicalOpening;
       }
       // Ensure career domain has 40+ words

@@ -16,6 +16,7 @@ import { DailyAnalysis } from '@/components/report/DailyAnalysis';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
+import { reportDataToMarkdown } from '@/lib/pdf/reportDataToMarkdown';
 import { PrintAllDays } from '@/components/report/PrintAllDays';
 import type { NatalChartData, NativityProfile, ReportData } from '@/lib/agents/types';
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
@@ -510,6 +511,18 @@ function ReportContent() {
     }
   }, [displayName, reportData]);
 
+  const handleDownloadMarkdown = useCallback(() => {
+    if (!reportData) return;
+    const md = reportDataToMarkdown(reportData, displayName, displayDate, displayCity);
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vedichour-${displayName.replace(/\s+/g, '-').toLowerCase()}-${reportData.generated_at}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [reportData, displayName, displayDate, displayCity]);
+
   const handleDaySelectFromCalendar = useCallback((index: number) => {
     setActiveDayIndex(index);
     document.getElementById('daily')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -752,7 +765,16 @@ function ReportContent() {
               </>
             )}
           </button>
-          <div className="flex flex-col items-end pdf-exclude" data-print-hide>
+          <div className="flex flex-col items-end gap-2 pdf-exclude" data-print-hide>
+          <button
+            onClick={() => handleDownloadMarkdown()}
+            className="pdf-exclude font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2"
+          >
+            <span>Download MD</span>
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+            </svg>
+          </button>
           <button
             id="pdf-download-btn"
             onClick={() => void handleDownloadPDF()}

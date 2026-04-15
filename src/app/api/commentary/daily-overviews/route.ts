@@ -171,23 +171,22 @@ ${JSON.stringify(batchDays, null, 2)}
 
 MANDATORY RULES for day_overview (enforce all, no exceptions):
 1. First line: ALL-CAPS headline (minimum 6 words, ends with period). The headline MUST name the current Mahadasha lord (${mahadasha}) or a key planet in transit. Example: "${mahadasha.toUpperCase()} ${antardasha.toUpperCase()} DASHA CALLS FOR PRECISE AND MEASURED ACTION TODAY."
-2. Total word count: 280–320 words. Count carefully.
+2. Total word count: 90–110 words. Be concise — every word must earn its place.
 3. EVERY sentence must name at least one of: a planet (Sun/Moon/Mars/Mercury/Jupiter/Venus/Saturn/Rahu/Ketu), a house number (H1 through H12 or "1st house" etc.), or a nakshatra.
 4. Never use these words: generally, may, could, might, perhaps, various, often, sometimes.
 5. The current Mahadasha lord (${mahadasha}) must appear at least once in each day_overview, either by planet name or as a dasha reference.
-6. After the opening paragraphs, write a STRATEGY: section with exactly 4 directives:
-   - Directive 1 (Best timing): Name the BEST ACTION WINDOW exact time + hora planet + choghadiya from the anchor block above. Tie the action to a specific house number.
-   - Directive 2 (Avoid): Name what NOT to do. Use direct language ("Do not", "Avoid", "Stop"). Name the afflicting planet and house.
-   - Directive 3 (Rahu Kaal): State the exact Rahu Kaal HH:MM–HH:MM time from the data above and give one specific instruction about Rahu Kaal avoidance.
-   - Directive 4 (Wellness): Give one specific physical or mental practice named for ${lagnaSign} lagna.
+6. After the opening sentence, write a STRATEGY: section with exactly 3 directives (one sentence each):
+   - Directive 1 (Best timing): Name the BEST ACTION WINDOW exact time + hora planet from the anchor block above. Tie the action to a specific house number.
+   - Directive 2 (Avoid): Name what NOT to do. Use direct language ("Do not", "Avoid"). Name the afflicting planet.
+   - Directive 3 (Rahu Kaal): State the exact Rahu Kaal HH:MM–HH:MM time and give one specific avoidance instruction.
 
 Return this exact JSON structure (no extra fields):
 {
   "days": [
     {
       "date": "YYYY-MM-DD",
-      "day_theme": "<15-20 words naming at least 1 planet and 1 house>",
-      "day_overview": "<280-320 words>"
+      "day_theme": "<10-15 words naming at least 1 planet>",
+      "day_overview": "<90-110 words>"
     }
   ]
 }
@@ -228,7 +227,7 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
     let out: Array<{ date: string; day_theme: string; day_overview: string }> = [];
 
     if (days.length > 0 && days.length <= 8) {
-      const r = await callBatches(days, 14_000, modelOverride);
+      const r = await callBatches(days, 6_000, modelOverride);
       out = (r.length ? r : days.map((d) => buildFallbackDay(d, lagnaSign))).map((d) => ({
         ...d,
         day_overview: normalizeDayOverview(d.day_overview),
@@ -238,12 +237,12 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
       const batch2 = days.slice(4);
 
       if (batch1.length) {
-        const r1 = await callBatches(batch1, 8000, modelOverride);
+        const r1 = await callBatches(batch1, 4_000, modelOverride);
         out.push(...(r1.length ? r1 : batch1.map((d) => buildFallbackDay(d, lagnaSign))));
         out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
       }
       if (batch2.length) {
-        const r2 = await callBatches(batch2, 6000, modelOverride);
+        const r2 = await callBatches(batch2, 3_500, modelOverride);
         out.push(...(r2.length ? r2 : batch2.map((d) => buildFallbackDay(d, lagnaSign))));
         out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
       }
