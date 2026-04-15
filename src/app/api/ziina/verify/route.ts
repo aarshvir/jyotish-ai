@@ -82,13 +82,15 @@ export async function GET(request: NextRequest) {
     }
 
     // ── Mark report as paid ─────────────────────────────────────────────────
-    try {
-      await db
-        .from('reports')
-        .update({ payment_status: 'paid', payment_provider: 'ziina' })
-        .eq('id', reportId);
-    } catch (err) {
-      console.error('[ziina/verify] report update failed:', err);
+    // Uses .eq() without throwOnError — Supabase returns {data, error} not throw.
+    const { error: reportUpdateErr } = await db
+      .from('reports')
+      .update({ payment_status: 'paid', payment_provider: 'ziina' })
+      .eq('id', reportId);
+    if (reportUpdateErr) {
+      // Non-fatal: report may not have been inserted yet (created later on report page).
+      // The payment is verified — do not block redirect.
+      console.warn('[ziina/verify] report payment_status update failed (row may not exist yet):', reportUpdateErr.message);
     }
 
     return NextResponse.redirect(`${origin}/report/${reportId}?payment_status=paid`);

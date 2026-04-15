@@ -588,27 +588,26 @@ function OnboardPageInner() {
     return () => { cancelled = true; };
   }, [searchParams]);
 
-  // Handle return from Ziina payment (cancelled, failed, error)
+  // Handle return from Ziina payment (cancelled, failed, error, incomplete, pending)
   useEffect(() => {
     const payment = searchParams.get('payment');
     if (!payment) return;
 
     if (payment === 'cancelled') {
-      setPaymentReturnBanner({ type: 'cancelled', message: 'Payment cancelled — your details are saved. You can try again below.' });
+      setPaymentReturnBanner({ type: 'cancelled', message: 'Payment cancelled — select a plan below to try again.' });
     } else if (payment === 'failed') {
       setPaymentReturnBanner({ type: 'failed', message: 'Payment failed — please try again or use a different card.' });
     } else if (payment === 'error') {
       setPaymentReturnBanner({ type: 'error', message: 'Something went wrong with payment. Please try again.' });
-    } else if (payment === 'pending') {
-      setPaymentReturnBanner({ type: 'pending', message: 'Payment is still processing — please wait a moment and try again.' });
+    } else if (payment === 'pending' || payment === 'incomplete') {
+      setPaymentReturnBanner({ type: 'pending', message: 'Payment is still processing — please wait a moment before trying again.' });
     }
 
-    // If we have a stored report URL from before the redirect, jump to step 2 (plan selection)
-    // so user doesn't have to re-enter all their details
+    // Jump to plan selection step (step 2) if we have a prior session so user skips re-entry.
+    // Note: form fields are React state and reset on full page navigation — we only preserve the step.
     try {
       const storedReportId = typeof window !== 'undefined' ? sessionStorage.getItem('ziina_report_id') : null;
-      if (storedReportId) {
-        // Jump to the plan selection step so user can retry payment
+      if (storedReportId && payment !== 'pending' && payment !== 'incomplete') {
         setStep(2);
       }
     } catch { /* sessionStorage may be unavailable */ }

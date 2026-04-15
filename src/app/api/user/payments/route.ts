@@ -48,6 +48,13 @@ export async function GET(request: NextRequest) {
 
   const payments: PaymentRecord[] = [];
 
+  if (ziinaResult.error) {
+    console.warn('[/api/user/payments] ziina query failed:', ziinaResult.error.message);
+  }
+  if (razorpayResult.error) {
+    console.warn('[/api/user/payments] razorpay query failed:', razorpayResult.error.message);
+  }
+
   if (ziinaResult.data) {
     for (const z of ziinaResult.data) {
       payments.push({

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -259,7 +259,7 @@ function PaymentRow({ payment }: { payment: PaymentRecord }) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
-export default function DashboardPage() {
+function DashboardInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -268,6 +268,13 @@ export default function DashboardPage() {
     const t = searchParams.get('tab') as Tab | null;
     return t && ['overview', 'reports', 'payments', 'settings'].includes(t) ? t : 'overview';
   });
+
+  // Keep tab in sync with browser back/forward
+  useEffect(() => {
+    const t = searchParams.get('tab') as Tab | null;
+    const resolved = t && ['overview', 'reports', 'payments', 'settings'].includes(t) ? t : 'overview';
+    setActiveTab(resolved);
+  }, [searchParams]);
 
   const [reports, setReports] = useState<Report[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
@@ -291,7 +298,8 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/login'); return; }
 
-      const [{ data: profData }, { data: reps, error: repsError }] = await Promise.all([
+      // Fetch all data in parallel including payments (needed for Overview tab stats)
+      const [{ data: profData }, { data: reps, error: repsError }, paymentsRes] = await Promise.all([
         supabase
           .from('user_profiles')
           .select('display_name, email, avatar_url, default_birth_date, default_birth_time, default_birth_city, created_at')
@@ -303,6 +311,9 @@ export default function DashboardPage() {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(50),
+        fetch('/api/user/payments', { credentials: 'include' })
+          .then(r => r.ok ? r.json() : { payments: [] })
+          .catch(() => ({ payments: [] })),
       ]);
 
       if (repsError) {
@@ -310,35 +321,30 @@ export default function DashboardPage() {
       }
 
       const prof = profData as UserProfile | null;
-      setProfile(prof ?? { display_name: null, email: user.email ?? null, avatar_url: null, default_birth_date: null, default_birth_time: null, default_birth_city: null, created_at: null });
-      setReports((reps as Report[]) || []);
+      const resolvedProfile: UserProfile = prof ?? {
+        display_name: null,
+        email: user.email ?? null,
+        avatar_url: null,
+        default_birth_date: null,
+        default_birth_time: null,
+        default_birth_city: null,
+        created_at: null,
+      };
 
-      // Pre-fill settings form
-      if (prof) {
-        setSettingsName(prof.display_name ?? '');
-        setSettingsBirthDate(prof.default_birth_date ?? '');
-        setSettingsBirthTime(prof.default_birth_time ?? '');
-        setSettingsBirthCity(prof.default_birth_city ?? '');
-      }
+      setProfile(resolvedProfile);
+      setReports((reps as Report[]) || []);
+      setPayments((paymentsRes as { payments?: PaymentRecord[] }).payments ?? []);
+
+      // Pre-fill settings form from profile (or fallback)
+      setSettingsName(resolvedProfile.display_name ?? '');
+      setSettingsBirthDate(resolvedProfile.default_birth_date ?? '');
+      setSettingsBirthTime(resolvedProfile.default_birth_time ?? '');
+      setSettingsBirthCity(resolvedProfile.default_birth_city ?? '');
 
       setLoading(false);
     }
     void load();
   }, [router]);
-
-  // Lazy-load payments when tab is first opened
-  const [paymentsFetched, setPaymentsFetched] = useState(false);
-  useEffect(() => {
-    if (activeTab === 'payments' && !paymentsFetched) {
-      setPaymentsFetched(true);
-      fetch('/api/user/payments', { credentials: 'include' })
-        .then(r => r.json())
-        .then((d: { payments?: PaymentRecord[] }) => {
-          setPayments(d.payments ?? []);
-        })
-        .catch(() => {/* silently fail — empty state shown */});
-    }
-  }, [activeTab, paymentsFetched]);
 
   const saveSettings = useCallback(async () => {
     setSettingsSaving(true);
@@ -775,5 +781,13 @@ export default function DashboardPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardInner />
+    </Suspense>
   );
 }

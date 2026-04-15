@@ -174,16 +174,20 @@ function ReportContent() {
   const generationStartRef = useRef<number | null>(null);
   const [serverPoll, setServerPoll] = useState<{ status: string; progress: number; generation_step?: string | null } | null>(null);
 
-  // Show payment confirmation toast and clear sessionStorage after Ziina redirect
+  // Show payment confirmation toast only when arriving from a real Ziina checkout
+  // (ziina_report_id in sessionStorage proves the user went through the payment flow)
   useEffect(() => {
     if (paymentStatusParam === 'paid') {
-      setPaymentConfirmed(true);
       try {
+        const hadSession = sessionStorage.getItem('ziina_report_id');
         sessionStorage.removeItem('ziina_report_url');
         sessionStorage.removeItem('ziina_report_id');
+        if (hadSession) {
+          setPaymentConfirmed(true);
+          const t = setTimeout(() => setPaymentConfirmed(false), 6000);
+          return () => clearTimeout(t);
+        }
       } catch { /* sessionStorage may be unavailable */ }
-      const t = setTimeout(() => setPaymentConfirmed(false), 6000);
-      return () => clearTimeout(t);
     }
   }, [paymentStatusParam]);
 
