@@ -544,6 +544,10 @@ function OnboardPageInner() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [geoPrices, setGeoPrices] = useState<GeoPrices | null>(null);
+  const [paymentReturnBanner, setPaymentReturnBanner] = useState<{
+    type: 'cancelled' | 'error' | 'failed' | 'pending';
+    message: string;
+  } | null>(null);
 
   const promoDiscount = getPromoDiscount(promoCode);
 
@@ -582,6 +586,32 @@ function OnboardPageInner() {
       })
       .catch(() => { if (!cancelled) { setHasBypass(false); setBypassToken(null); } });
     return () => { cancelled = true; };
+  }, [searchParams]);
+
+  // Handle return from Ziina payment (cancelled, failed, error)
+  useEffect(() => {
+    const payment = searchParams.get('payment');
+    if (!payment) return;
+
+    if (payment === 'cancelled') {
+      setPaymentReturnBanner({ type: 'cancelled', message: 'Payment cancelled — your details are saved. You can try again below.' });
+    } else if (payment === 'failed') {
+      setPaymentReturnBanner({ type: 'failed', message: 'Payment failed — please try again or use a different card.' });
+    } else if (payment === 'error') {
+      setPaymentReturnBanner({ type: 'error', message: 'Something went wrong with payment. Please try again.' });
+    } else if (payment === 'pending') {
+      setPaymentReturnBanner({ type: 'pending', message: 'Payment is still processing — please wait a moment and try again.' });
+    }
+
+    // If we have a stored report URL from before the redirect, jump to step 2 (plan selection)
+    // so user doesn't have to re-enter all their details
+    try {
+      const storedReportId = typeof window !== 'undefined' ? sessionStorage.getItem('ziina_report_id') : null;
+      if (storedReportId) {
+        // Jump to the plan selection step so user can retry payment
+        setStep(2);
+      }
+    } catch { /* sessionStorage may be unavailable */ }
   }, [searchParams]);
 
   useEffect(() => {
@@ -765,6 +795,7 @@ function OnboardPageInner() {
         }
 
         // Redirect user to Ziina's hosted payment page
+        // (sessionStorage cleared on successful report page load — see report/[id]/page.tsx)
         window.location.href = intent.redirectUrl;
         return;
       } catch (err) {
@@ -791,6 +822,25 @@ function OnboardPageInner() {
       </div>
 
       <div className="relative z-10 w-full max-w-md">
+        {paymentReturnBanner && (
+          <div className={`mb-4 px-4 py-3 rounded-card border font-body text-sm flex items-start gap-3 ${
+            paymentReturnBanner.type === 'cancelled'
+              ? 'border-amber/30 bg-amber/10 text-amber'
+              : paymentReturnBanner.type === 'pending'
+              ? 'border-caution/30 bg-caution/10 text-caution'
+              : 'border-error/30 bg-error/10 text-error'
+          }`}>
+            <span className="shrink-0 mt-0.5">
+              {paymentReturnBanner.type === 'cancelled' ? '↩' : paymentReturnBanner.type === 'pending' ? '⏳' : '✕'}
+            </span>
+            <span className="flex-1">{paymentReturnBanner.message}</span>
+            <button
+              onClick={() => setPaymentReturnBanner(null)}
+              className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"
+              aria-label="Dismiss"
+            >✕</button>
+          </div>
+        )}
         {hasBypass && (
           <div className="mb-4 px-4 py-3 rounded-card border border-success/30 bg-success/10 text-success font-mono text-mono-sm tracking-wide text-center">
             ✓ Admin access — payment bypassed

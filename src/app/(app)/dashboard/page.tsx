@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -50,7 +51,7 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/login'); return; }
 
-      const [{ data: profData }, { data: reps }] = await Promise.all([
+      const [{ data: profData }, { data: reps, error: repsError }] = await Promise.all([
         supabase
           .from('user_profiles')
           .select('display_name, email')
@@ -63,6 +64,11 @@ export default function DashboardPage() {
           .order('created_at', { ascending: false })
           .limit(20),
       ]);
+
+      if (repsError) {
+        console.error('[Dashboard] failed to load reports:', repsError.message);
+        setLoadError('Could not load your reports. Please refresh the page.');
+      }
 
       setProfile(profData ?? { display_name: null, email: user.email ?? null });
       setReports((reps as Report[]) || []);
@@ -135,7 +141,13 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        {reports.length === 0 && (
+        {loadError && (
+          <div className="mb-6 px-4 py-3 rounded-card border border-error/30 bg-error/10 text-error font-body text-sm">
+            {loadError}
+          </div>
+        )}
+
+        {reports.length === 0 && !loadError && (
           <div className="card p-8 md:p-12 text-center">
             <div className="mb-4 text-4xl opacity-30">✦</div>
             <p className="font-body text-body-lg text-dust mb-5">Your cosmic timeline is empty</p>
@@ -224,6 +236,15 @@ export default function DashboardPage() {
                       className="btn-primary text-body-sm px-5 py-2 shrink-0"
                     >
                       View report →
+                    </Link>
+                  )}
+                  {isGenerating && (
+                    <Link
+                      href={`/report/${report.id}`}
+                      className="btn-secondary text-body-sm px-5 py-2 shrink-0 flex items-center gap-1.5"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse shrink-0" />
+                      View Progress →
                     </Link>
                   )}
                   {isFailed && (

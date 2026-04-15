@@ -148,10 +148,12 @@ function ReportContent() {
   const currentTzOffset = params.get('currentTz') ? parseInt(params.get('currentTz')!) : null;
   // Optional: custom forecast start date (YYYY-MM-DD). Defaults to today.
   const forecastStartParam = params.get('forecastStart') ?? '';
+  const paymentStatusParam = params.get('payment_status') ?? '';
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
   const [copyLinkFeedback, setCopyLinkFeedback] = useState(false);
   const [copyLinkError, setCopyLinkError] = useState<string | null>(null);
@@ -172,6 +174,19 @@ function ReportContent() {
   const generationStartRef = useRef<number | null>(null);
   const [serverPoll, setServerPoll] = useState<{ status: string; progress: number; generation_step?: string | null } | null>(null);
 
+  // Show payment confirmation toast and clear sessionStorage after Ziina redirect
+  useEffect(() => {
+    if (paymentStatusParam === 'paid') {
+      setPaymentConfirmed(true);
+      try {
+        sessionStorage.removeItem('ziina_report_url');
+        sessionStorage.removeItem('ziina_report_id');
+      } catch { /* sessionStorage may be unavailable */ }
+      const t = setTimeout(() => setPaymentConfirmed(false), 6000);
+      return () => clearTimeout(t);
+    }
+  }, [paymentStatusParam]);
+
   const authJsonHeaders = useCallback((): Record<string, string> => {
     const h: Record<string, string> = { 'Content-Type': 'application/json' };
     const b = params.get('bypass');
@@ -182,6 +197,7 @@ function ReportContent() {
   /** Clears status polling (safe to call from unmount). */
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCancelRef = useRef(false);
+  const pollConsecutiveErrorsRef = useRef(0);
 
   const stopReportPolling = useCallback(() => {
     pollCancelRef.current = true;
@@ -251,6 +267,7 @@ function ReportContent() {
     setServerPoll(null);
     generationStartRef.current = Date.now();
     setElapsedSeconds(0);
+    pollConsecutiveErrorsRef.current = 0;
 
     const pollIntervalMs = 3000;
     const pollLoopStartedAt = Date.now();
@@ -273,11 +290,28 @@ function ReportContent() {
         });
 
         if (!response.ok) {
-          stopReportPolling();
-          setError('Report not found');
-          setIsLoading(false);
+          if (response.status === 401) {
+            stopReportPolling();
+            setError('Session expired — please log in again');
+            setIsLoading(false);
+            return;
+          }
+          if (response.status === 404) {
+            stopReportPolling();
+            setError('Report not found');
+            setIsLoading(false);
+            return;
+          }
+          // For other errors (5xx, network hiccups), retry up to 5 times before giving up
+          pollConsecutiveErrorsRef.current += 1;
+          if (pollConsecutiveErrorsRef.current >= 5) {
+            stopReportPolling();
+            setError(`Status check failed (${response.status}) — please refresh or try again`);
+            setIsLoading(false);
+          }
           return;
         }
+        pollConsecutiveErrorsRef.current = 0;
 
         const data = (await response.json()) as {
           status: string;
@@ -338,7 +372,13 @@ function ReportContent() {
           setIsLoading(false);
         }
       } catch (err) {
-        console.error('[Polling] error:', err);
+        console.error('[Polling] network error:', err);
+        pollConsecutiveErrorsRef.current += 1;
+        if (pollConsecutiveErrorsRef.current >= 5) {
+          stopReportPolling();
+          setError('Connection lost — please check your internet and try again');
+          setIsLoading(false);
+        }
       }
     };
 
@@ -669,7 +709,17 @@ function ReportContent() {
     );
   }
 
-  if (!reportData) return null;
+  if (!reportData) {
+    return (
+      <div className="min-h-[calc(100vh-var(--nav-height))] bg-space flex flex-col items-center justify-center px-6 py-20">
+        <StarField />
+        <div className="max-w-md text-center relative z-10">
+          <p className="font-body text-dust text-base">Report data unavailable — please try refreshing.</p>
+          <Link href="/dashboard" className="mt-6 inline-block btn-secondary px-6 py-2">Back to Dashboard</Link>
+        </div>
+      </div>
+    );
+  }
 
   const natalChart = reportData.nativity?.natal_chart ?? (reportData as unknown as { natalChart?: NatalChartData }).natalChart;
   const safeMonthly = Array.isArray(reportData.months) ? reportData.months : [];
@@ -732,6 +782,14 @@ function ReportContent() {
       <ReportSidebar reportLoaded={!!reportData} />
 
       <main className="lg:ml-[200px] px-6 pb-12 pt-6 lg:pt-12 max-w-4xl mx-auto relative z-10">
+        {/* Payment confirmation toast */}
+        {paymentConfirmed && (
+          <div className="pdf-exclude mb-4 px-4 py-3 rounded-card border border-success/30 bg-success/10 text-success font-body text-sm flex items-center gap-3 animate-fade-in">
+            <span>✓</span>
+            <span>Payment confirmed — your report is being generated.</span>
+          </div>
+        )}
+
         {/* Report actions: dashboard + Copy Share Link + Print/PDF */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="pdf-exclude" data-print-hide>
