@@ -1,55 +1,85 @@
 'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 
+interface GeoPrice { amount: number; display: string; currency: string; }
+interface GeoPrices { currency: string; prices: Record<string, GeoPrice>; }
+
+const BASE_PLANS = [
+  {
+    id: 'free',
+    name: 'Preview Report',
+    defaultPrice: 'Free',
+    defaultNote: 'No credit card required',
+    description: 'Discover your cosmic blueprint',
+    features: ['Complete natal birth chart', 'Lagna (rising sign) analysis', 'Sample hora schedule for today', 'Dasha period overview', 'Planetary strength indicators'],
+    cta: 'Get Free Preview',
+    href: '/onboard?plan=free',
+    highlight: false,
+    badge: null,
+  },
+  {
+    id: '7day',
+    name: '7-Day Forecast',
+    defaultPrice: '$9.99',
+    defaultNote: 'One-time payment',
+    description: 'Hour-by-hour cosmic timing for a week',
+    features: ['Full natal chart analysis', '7-day hour-by-hour forecast', '18 hourly slots per day with scores', 'Choghadiya & hora timing', 'Daily strategy section', 'Auspicious window identification', 'Rahu Kaal warnings', 'PDF download'],
+    cta: 'Get 7-Day Forecast',
+    href: '/onboard?plan=7day',
+    highlight: false,
+    badge: null,
+  },
+  {
+    id: 'monthly',
+    name: 'Monthly Oracle',
+    defaultPrice: '$19.99',
+    defaultNote: 'One-time payment',
+    description: '30 days of precision cosmic guidance',
+    features: ['Everything in 7-Day Forecast', '30-day complete forecast', 'Monthly theme analysis', 'Weekly synthesis', 'Career, wealth, health windows', 'Best muhurta dates highlighted', 'Nativity deep analysis', 'High-resolution PDF report'],
+    cta: 'Get Monthly Oracle',
+    href: '/onboard?plan=monthly',
+    highlight: true,
+    badge: 'Most Popular',
+  },
+  {
+    id: 'annual',
+    name: 'Annual Oracle',
+    defaultPrice: '$49.99',
+    defaultNote: 'One-time payment',
+    description: 'Your complete cosmic year ahead',
+    features: ['Everything in Monthly Oracle', 'Full 12-month forecast', 'Month-by-month breakdown', 'Annual theme & dasha analysis', 'Peak opportunity windows', 'Yearly muhurta calendar', 'Priority generation', 'Premium PDF + digital access'],
+    cta: 'Get Annual Oracle',
+    href: '/onboard?plan=annual',
+    highlight: false,
+    badge: 'Best Value',
+  },
+];
+
 export default function PricingPage() {
-  const plans = [
-    {
-      name: 'Preview Report',
-      price: 'Free',
-      priceNote: 'No credit card required',
-      description: 'Discover your cosmic blueprint',
-      features: ['Complete natal birth chart', 'Lagna (rising sign) analysis', 'Sample hora schedule for today', 'Dasha period overview', 'Planetary strength indicators'],
-      cta: 'Get Free Preview',
-      href: '/onboard?plan=free',
-      highlight: false,
-      badge: null,
-    },
-    {
-      name: '7-Day Forecast',
-      price: '₹799',
-      priceNote: 'One-time payment · ~$9.99',
-      description: 'Hour-by-hour cosmic timing for a week',
-      features: ['Full natal chart analysis', '7-day hour-by-hour forecast', '18 hourly slots per day with scores', 'Choghadiya & hora timing', 'Daily strategy section', 'Auspicious window identification', 'Rahu Kaal warnings', 'PDF download'],
-      cta: 'Get 7-Day Forecast',
-      href: '/onboard?plan=7day',
-      highlight: false,
-      badge: null,
-    },
-    {
-      name: 'Monthly Oracle',
-      price: '₹1,499',
-      priceNote: 'One-time payment · ~$19.99',
-      description: '30 days of precision cosmic guidance',
-      features: ['Everything in 7-Day Forecast', '30-day complete forecast', 'Monthly theme analysis', 'Weekly synthesis', 'Career, wealth, health windows', 'Best muhurta dates highlighted', 'Nativity deep analysis', 'High-resolution PDF report'],
-      cta: 'Get Monthly Oracle',
-      href: '/onboard?plan=monthly',
-      highlight: true,
-      badge: 'Most Popular',
-    },
-    {
-      name: 'Annual Oracle',
-      price: '₹3,999',
-      priceNote: 'One-time payment · ~$49.99',
-      description: 'Your complete cosmic year ahead',
-      features: ['Everything in Monthly Oracle', 'Full 12-month forecast', 'Month-by-month breakdown', 'Annual theme & dasha analysis', 'Peak opportunity windows', 'Yearly muhurta calendar', 'Priority generation', 'Premium PDF + digital access'],
-      cta: 'Get Annual Oracle',
-      href: '/onboard?plan=annual',
-      highlight: false,
-      badge: 'Best Value',
-    },
-  ];
+  const [geoPrices, setGeoPrices] = useState<GeoPrices | null>(null);
+
+  useEffect(() => {
+    fetch('/api/geo')
+      .then((r) => r.json())
+      .then((d: { currency?: string; prices?: Record<string, GeoPrice> }) => {
+        if (d?.currency && d?.prices) setGeoPrices({ currency: d.currency, prices: d.prices });
+      })
+      .catch(() => {});
+  }, []);
+
+  const plans = BASE_PLANS.map((p) => {
+    const geoPrice = geoPrices?.prices[p.id];
+    return {
+      ...p,
+      price: geoPrice ? geoPrice.display : p.defaultPrice,
+      priceNote: geoPrice
+        ? `One-time payment · ${geoPrices!.currency}`
+        : p.defaultNote,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-space text-star">
@@ -133,7 +163,7 @@ export default function PricingPage() {
               We apply the Lahiri ayanamsa for sidereal positions and Vimshottari dasha for timing predictions.
             </p>
             <p>
-              Each hourly window is scored by combining hora rulers, choghadiya quality, transit lagna, and your natal chart's functional benefic/malefic relationships.
+              Each hourly window is scored by combining hora rulers, choghadiya quality, transit lagna, and your natal chart&apos;s functional benefic/malefic relationships.
               AI interpretation layers narrative and recommendations on top of the mathematical framework.
             </p>
             <p>
