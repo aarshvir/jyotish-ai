@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   const currency: SupportedCurrency = countryToCurrency(country);
 
   const prices: Record<string, { amount: number; display: string; currency: string }> = {};
-  for (const [planId, plan] of Object.entries(ZIINA_PLANS)) {
+  for (const [planId] of Object.entries(ZIINA_PLANS)) {
     const amount = getPlanAmount(planId, currency);
     prices[planId] = {
       amount,

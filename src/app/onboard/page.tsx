@@ -387,14 +387,6 @@ function Step3({
     return { original, discounted };
   }
 
-  function displayPrice(rt: typeof REPORT_TYPES[number]): string {
-    if (rt.id === 'free') return 'Free';
-    if ('plan_type' in rt && geoPrices?.prices[rt.plan_type]) {
-      return geoPrices.prices[rt.plan_type].display;
-    }
-    return rt.defaultPrice;
-  }
-
   return (
     <>
       <h1 className="font-body font-semibold text-star text-headline-lg mb-1.5">
