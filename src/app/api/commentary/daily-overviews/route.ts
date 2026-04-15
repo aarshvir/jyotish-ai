@@ -151,7 +151,7 @@ Return ONLY valid JSON. No markdown, no backticks.`;
       .map(
         (d: (typeof batchDays)[0]) =>
           `=== ${d.date} ===\n${formatDayCommentaryAnchorBlocks({
-            planet_positions: d.planet_positions as any,
+            planet_positions: d.planet_positions as import('@/lib/commentary/planetPositionsPrompt').PlanetPositionsPayload,
             dateLabel: d.date,
             yogaName: d.panchang?.yoga,
             panchang: d.panchang,

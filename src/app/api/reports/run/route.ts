@@ -1,3 +1,9 @@
+/**
+ * @legacy This route is superseded by /api/reports/start which performs the same
+ * pipeline inline. Retained for backwards-compatibility with any external callers.
+ * Do not add new features here — use /api/reports/start instead.
+ */
+
 /** Vercel cap for non-Enterprise plans is 300s; keep in sync with `vercel.json`. */
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
@@ -112,6 +118,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (err) {
     console.error(`[reports/run] pipeline failed for ${reportId}:`, err);
+    // Guard with neq('status','complete') — never downgrade a completed report.
     await svc
       .from('reports')
       .update({
@@ -119,7 +126,8 @@ export async function POST(request: NextRequest) {
         report_data: { error: String(err) },
         updated_at: new Date().toISOString(),
       })
-      .eq('id', reportId);
+      .eq('id', reportId)
+      .neq('status', 'complete');
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 

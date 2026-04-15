@@ -285,14 +285,16 @@ export async function generateReportPipeline(
     onStep({ type: 'error', message: 'Report generation timed out — please try again.' });
     // Abort all in-flight commentary fetches so Promise.all unwinds immediately.
     budgetAbortController.abort(new Error('Pipeline budget exceeded'));
-    // Direct DB update as safety net (pipeline may still reach assertWithinBudget faster).
+    // Direct DB update as safety net. Guard with neq('status','complete') so a
+    // report that reached dbSaveFinal just before the kill is NOT downgraded.
     db.from('reports')
       .update({ status: 'error', updated_at: new Date().toISOString() })
       .eq('id', reportId)
       .eq('user_id', userId)
+      .neq('status', 'complete')
       .then(({ error }) => {
         if (error) console.error('[orchestrator] hard-kill DB update failed:', error.message);
-        else console.log('[orchestrator] hard-kill DB update succeeded for', reportId);
+        else console.log('[orchestrator] hard-kill DB update (guard) done for', reportId);
       });
   }, hardKillMs);
 
@@ -313,11 +315,13 @@ export async function generateReportPipeline(
     if (elapsed > budgetMs) {
       logStep('budget_exceeded', { phase, budgetMs });
       try {
+        // Guard with neq('status','complete') — never downgrade a completed report.
         await db
           .from('reports')
           .update({ status: 'error', updated_at: new Date().toISOString() })
           .eq('id', reportId)
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .neq('status', 'complete');
       } catch (e) {
         console.error('[orchestrator] budget mark error failed:', e);
       }
@@ -414,31 +418,43 @@ export async function generateReportPipeline(
     const startD = days?.[0]?.date;
     const endD = days?.length ? days[days.length - 1]?.date : undefined;
     const moonPlanets = (nc?.planets as Record<string, { sign?: string }> | undefined)?.Moon;
+    const generationTimeSec = Math.round((Date.now() - pipelineT0) / 1000);
 
-    const { error } = await db
-      .from('reports')
-      .update({
-        native_name: input.name,
-        user_email: userEmail,
-        report_start_date: startD ?? null,
-        report_end_date: endD ?? null,
-        lagna_sign: (nc?.lagna as string) ?? null,
-        moon_sign: (moonPlanets?.sign as string) ?? null,
-        moon_nakshatra: (nc?.moon_nakshatra as string) ?? null,
-        dasha_mahadasha: cd?.mahadasha ?? null,
-        dasha_antardasha: cd?.antardasha ?? null,
-        day_scores: dayScores,
-        report_data: reportPayload,
-        status: 'complete',
-        generation_completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', reportId)
-      .eq('user_id', userId);
-    if (error) {
-      console.error('[orchestrator] dbSaveFinal:', error.message, 'code:', error.code);
-      throw new Error(`dbSaveFinal failed: ${error.message}`);
+    // Retry up to 2 extra times on transient Supabase errors (network blip, 503, etc.)
+    let lastError: Error | null = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, 1500 * attempt));
+        console.warn(`[orchestrator] dbSaveFinal retry ${attempt} for ${reportId}`);
+      }
+      const { error } = await db
+        .from('reports')
+        .update({
+          native_name: input.name,
+          user_email: userEmail,
+          report_start_date: startD ?? null,
+          report_end_date: endD ?? null,
+          lagna_sign: (nc?.lagna as string) ?? null,
+          moon_sign: (moonPlanets?.sign as string) ?? null,
+          moon_nakshatra: (nc?.moon_nakshatra as string) ?? null,
+          dasha_mahadasha: cd?.mahadasha ?? null,
+          dasha_antardasha: cd?.antardasha ?? null,
+          day_scores: dayScores,
+          report_data: reportPayload,
+          status: 'complete',
+          generation_completed_at: new Date().toISOString(),
+          generation_time_seconds: generationTimeSec,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reportId)
+        .eq('user_id', userId);
+      if (!error) return; // success
+      lastError = new Error(`dbSaveFinal failed: ${error.message}`);
+      console.error('[orchestrator] dbSaveFinal attempt', attempt, ':', error.message, 'code:', error.code);
+      // Don't retry on hard constraint violations (e.g. FK errors)
+      if (error.code && ['23502', '23503', '23505', '42501', '42703'].includes(error.code)) break;
     }
+    throw lastError ?? new Error('dbSaveFinal failed after retries');
   }
 
   try {
@@ -494,11 +510,14 @@ export async function generateReportPipeline(
           .from('reports')
           .update({ status: 'error', updated_at: new Date().toISOString() })
           .eq('id', reportId)
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .neq('status', 'complete');
       } catch (e) {
         console.error('[orchestrator] mark error after ephemeris fail:', e);
       }
-      return;
+      // Throw so the outer catch in start/route.ts receives the error, sets status 500,
+      // and the frontend polling sees the report row as 'error' rather than a false 'complete'.
+      throw err;
     }
 
     onStep({ type: 'step_completed', step: 0 });
@@ -1211,14 +1230,20 @@ export async function generateReportPipeline(
     console.error('[orchestrator] fatal error:', message);
     onStep({ type: 'error', message });
     try {
+      // Guard with neq('status','complete') — never downgrade a report that
+      // managed to call dbSaveFinal successfully before the exception propagated.
       await db
         .from('reports')
         .update({ status: 'error', updated_at: new Date().toISOString() })
         .eq('id', reportId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .neq('status', 'complete');
     } catch (markErr) {
       console.error('[orchestrator] failed to mark report as error:', markErr);
     }
+    // Re-throw so callers (start/route.ts) can return HTTP 500 and the frontend
+    // knows the pipeline failed rather than falsely receiving a 200 "complete".
+    throw err;
   } finally {
     // Always cancel the hard-kill timer so it doesn't fire after a clean finish.
     if (hardKillTimer !== null) {
