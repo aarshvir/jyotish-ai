@@ -5,7 +5,7 @@
  * Obtain from: https://app.ziina.com → Settings → API Keys
  *
  * Amount rules (Ziina uses base units, like cents):
- *   AED: 1 AED = 100 fils  → 36.99 AED = 3699
+ *   AED: 1 AED = 100 fils  → 37.99 AED = 3799
  *   USD: 1 USD = 100 cents → 9.99 USD  = 999
  *   INR: 1 INR = 100 paise → 799 INR   = 79900
  */
@@ -24,9 +24,9 @@ export interface ZiinaPlan {
 }
 
 export const ZIINA_PLANS: Record<string, ZiinaPlan> = {
-  '7day':    { name: 'VedicHour 7-Day Forecast',  amountAED: 3699,  amountUSD: 999,   amountINR: 79900  },
-  'monthly': { name: 'VedicHour Monthly Oracle',  amountAED: 7399,  amountUSD: 1999,  amountINR: 149900 },
-  'annual':  { name: 'VedicHour Annual Oracle',   amountAED: 18399, amountUSD: 4999,  amountINR: 399900 },
+  '7day':    { name: 'VedicHour 7-Day Forecast',  amountAED: 3799,  amountUSD: 999,   amountINR: 79900  },
+  'monthly': { name: 'VedicHour Monthly Oracle',  amountAED: 6999,  amountUSD: 1999,  amountINR: 149900 },
+  'annual':  { name: 'VedicHour Annual Oracle',   amountAED: 18499, amountUSD: 4999,  amountINR: 399900 },
 };
 
 export type SupportedCurrency = 'AED' | 'USD' | 'INR';
