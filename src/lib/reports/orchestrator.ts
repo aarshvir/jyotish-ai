@@ -773,6 +773,17 @@ export async function generateReportPipeline(
             day.day_overview = day.day_overview || fallback;
             if (!day.day_theme) day.day_theme = 'Use hourly scores and peak windows.';
           });
+        } finally {
+          // Guarantee nativity text is never blank regardless of LLM outcome or abort
+          const lagna = ephemerisData.lagna ?? 'Unknown';
+          const md = ephemerisData.current_dasha?.mahadasha ?? 'Unknown';
+          const ad = ephemerisData.current_dasha?.antardasha ?? 'Unknown';
+          if (!nativityData.lagna_analysis?.trim()) {
+            nativityData.lagna_analysis = `${lagna} lagna shapes the native's fundamental disposition. The ${md}-${ad} period is currently active. Refer to the daily and hourly scores for timing guidance.`;
+          }
+          if (!nativityData.current_dasha_interpretation?.trim()) {
+            nativityData.current_dasha_interpretation = `${md} Mahadasha with ${ad} Antardasha is active. Use high-score days and benefic horas for important actions.`;
+          }
         }
       })(),
 
