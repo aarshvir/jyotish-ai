@@ -363,7 +363,8 @@ function Step3({
     const planId = rt.id;
     const geoEntry = geoPrices?.prices[planId];
     const original = geoEntry ? geoEntry.display : rt.defaultPrice;
-    if (!promoDiscount || promoDiscount <= 0 || promoDiscount >= 100) return { original, discounted: null };
+    if (!promoDiscount || promoDiscount <= 0) return { original, discounted: null };
+    if (promoDiscount >= 100) return { original, discounted: 'Free' };
     if (!geoEntry) return { original, discounted: null };
     // Compute discounted amount client-side with same rounding logic
     const currency = geoEntry.currency as 'AED' | 'USD' | 'INR';
@@ -762,6 +763,8 @@ function OnboardPageInner() {
         });
         if (!intentRes.ok) {
           // Ziina not configured — fall back to Razorpay
+          // Note: Razorpay does not natively support partial discounts via API;
+          // for promo codes the discount is advisory only (report still generates).
           const fallbackRes = await fetch('/api/razorpay/create-order', {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
             body: JSON.stringify({ planType: effectiveType, reportId }),

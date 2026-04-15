@@ -518,7 +518,9 @@ function ReportContent() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vedichour-${displayName.replace(/\s+/g, '-').toLowerCase()}-${reportData.generated_at}.md`;
+    const safeName = displayName.replace(/\s+/g, '-').toLowerCase().replace(/[^a-z0-9-]/g, '');
+    const safeDate = (reportData.generated_at ?? '').slice(0, 10); // just YYYY-MM-DD, no colons
+    a.download = `vedichour-${safeName}-${safeDate}.md`;
     a.click();
     URL.revokeObjectURL(url);
   }, [reportData, displayName, displayDate, displayCity]);

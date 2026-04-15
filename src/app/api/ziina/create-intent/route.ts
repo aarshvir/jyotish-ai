@@ -9,6 +9,7 @@ import {
   type SupportedCurrency,
 } from '@/lib/ziina/server';
 import { getPromoDiscount } from '@/lib/bypass';
+import { createServiceClient } from '@/lib/supabase/admin';
 
 /**
  * POST /api/ziina/create-intent
@@ -38,6 +39,10 @@ export async function POST(request: NextRequest) {
   }
 
   const discountPct = promoCode ? getPromoDiscount(promoCode) : 0;
+  // 100% discount should never reach here (caller skips payment), but guard anyway.
+  if (discountPct >= 100) {
+    return NextResponse.json({ error: 'Use a valid promo code — this report is free' }, { status: 400 });
+  }
 
   const country = request.headers.get('x-vercel-ip-country') ?? null;
   const currency: SupportedCurrency = countryToCurrency(country);
@@ -59,6 +64,18 @@ export async function POST(request: NextRequest) {
       discountPct: discountPct > 0 ? discountPct : undefined,
       test: testMode ?? false,
     });
+
+    // Store intentId → reportId binding server-side so the verify route can
+    // confirm the reportId in the redirect URL hasn't been tampered with.
+    const db = createServiceClient();
+    await db.from('ziina_payments').insert({
+      ziina_intent_id: intent.id,
+      report_id: reportId,
+      amount: intent.amount,
+      currency: currency,
+      plan_type: planType,
+      status: 'pending',
+    }).throwOnError();
 
     return NextResponse.json({
       intentId: intent.id,

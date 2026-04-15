@@ -147,7 +147,7 @@ Start with { and end with }. No markdown.`;
       maxTokens: 3500,
     });
     const parsed = safeParseJson<{
-      weeks: Array<{ week_label?: string; score?: number; theme?: string; commentary?: string; daily_scores?: number[]; moon_journey?: string[]; peak_days_count?: number; caution_days_count?: number }>;
+      weeks: Array<{ week_label?: string; score?: number; overall_score?: number; theme?: string; analysis?: string; commentary?: string; daily_scores?: number[]; moon_journey?: string[]; peak_days_count?: number; caution_days_count?: number }>;
       period_synthesis: { opening_paragraph?: string; strategic_windows?: unknown[]; caution_dates?: unknown[]; domain_priorities?: Record<string, string>; closing_paragraph?: string };
     }>(text);
     const synthesis = parsed.period_synthesis ?? null;
