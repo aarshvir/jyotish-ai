@@ -1,12 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import AuthButton from '@/components/shared/AuthButton';
 import LaunchBanner from '@/components/shared/LaunchBanner';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -14,11 +15,22 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Keep --header-height in sync with actual rendered height (banner visible/dismissed)
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      document.documentElement.style.setProperty('--header-height', `${el.getBoundingClientRect().height}px`);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <>
+    <div ref={wrapperRef} className="sticky top-0 z-50">
     <LaunchBanner />
     <nav
-      className={`pdf-exclude fixed top-0 left-0 right-0 z-50 transition-all duration-250 ${
+      className={`pdf-exclude transition-all duration-250 ${
         scrolled
           ? 'bg-space/85 backdrop-blur-md border-b border-horizon/40'
           : 'bg-transparent'
@@ -60,6 +72,6 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
-    </>
+    </div>
   );
 }

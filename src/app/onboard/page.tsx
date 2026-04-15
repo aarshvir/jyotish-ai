@@ -553,9 +553,29 @@ function OnboardPageInner() {
 
   useEffect(() => {
     const supabase = createClient();
-    void supabase.auth.getUser().then(({ data }) => {
+    void supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
         router.replace(`/login?next=${encodeURIComponent('/onboard' + window.location.search)}`);
+        return;
+      }
+      // Pre-fill form from saved profile defaults
+      const { data: prof } = await supabase
+        .from('user_profiles')
+        .select('display_name, email, default_birth_date, default_birth_time, default_birth_city')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      if (prof) {
+        setForm(prev => ({
+          ...prev,
+          name: prev.name || prof.display_name || '',
+          email: prev.email || prof.email || data.user.email || '',
+          birthDate: prev.birthDate || prof.default_birth_date || '',
+          birthTime: prev.birthTime || prof.default_birth_time || '',
+          birthCity: prev.birthCity || prof.default_birth_city || '',
+        }));
+      } else {
+        // At minimum fill email from auth
+        setForm(prev => ({ ...prev, email: prev.email || data.user.email || '' }));
       }
     });
   }, [router]);

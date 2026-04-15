@@ -42,7 +42,7 @@ export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean
     <>
       {/* Desktop sidebar */}
       <nav
-        className="pdf-exclude hidden lg:block fixed left-0 top-[var(--nav-height)] w-48 h-[calc(100vh-var(--nav-height))] overflow-y-auto scrollbar-thin z-40"
+        className="pdf-exclude hidden lg:block fixed left-0 top-[var(--header-height,var(--nav-height))] w-48 h-[calc(100vh-var(--header-height,var(--nav-height)))] overflow-y-auto scrollbar-thin z-40"
         aria-label="Report sections"
       >
         <div className="space-y-0.5 px-4 pt-6">
@@ -64,7 +64,7 @@ export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean
       </nav>
 
       {/* Mobile/Tablet tabs */}
-      <div className="pdf-exclude lg:hidden sticky top-[var(--nav-height)] z-40 bg-space/95 backdrop-blur-sm border-b border-horizon/40">
+      <div className="pdf-exclude lg:hidden sticky top-[var(--header-height,var(--nav-height))] z-40 bg-space/95 backdrop-blur-sm border-b border-horizon/40">
         <div className="overflow-x-auto scrollbar-thin" role="tablist" aria-label="Report sections">
           <div className="flex gap-1.5 px-5 py-3 min-w-max">
             {NAV_ITEMS.map((item) => (

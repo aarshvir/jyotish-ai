@@ -238,7 +238,7 @@ function ReportContent() {
       timezone_offset: currentTzOffset,
       plan_type: planType,
       status: 'generating',
-      payment_status: 'bypass',
+      payment_status: paymentStatusParam === 'paid' ? 'paid' : 'bypass',
     });
 
     if (error && error.code !== '23505') {
@@ -421,7 +421,9 @@ function ReportContent() {
       timezone_offset: tz,
       plan_type: planType,
       forecast_start: forecastStartParam || undefined,
-      payment_status: 'bypass',
+      // Use the payment_status from the URL if it arrived from a real payment flow,
+      // otherwise default to 'bypass' (admin/free/promo flows).
+      payment_status: paymentStatusParam === 'paid' ? 'paid' : 'bypass',
       ...(opts?.forceRestart ? { forceRestart: true } : {}),
     };
 

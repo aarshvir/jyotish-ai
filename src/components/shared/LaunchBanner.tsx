@@ -15,7 +15,7 @@ export default function LaunchBanner() {
   if (dismissed) return null;
 
   return (
-    <div className="relative w-full bg-amber text-space" style={{ zIndex: 70 }}>
+    <div className="relative w-full bg-amber text-space">
       <div className="mx-auto flex max-w-6xl items-center justify-center gap-3 px-10 py-2.5 text-center">
         <span className="text-base select-none">🚀</span>
         <p className="font-mono text-xs sm:text-sm font-medium tracking-wide">

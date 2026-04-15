@@ -8,7 +8,7 @@ export default function AppLayout({
   return (
     <>
       <Navbar />
-      <main className="min-h-screen pt-[var(--nav-height)]">{children}</main>
+      <main className="min-h-screen">{children}</main>
     </>
   );
 }
