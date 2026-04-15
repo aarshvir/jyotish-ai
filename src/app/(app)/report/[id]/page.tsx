@@ -605,7 +605,6 @@ function ReportContent() {
       }
 
       hasFetched.current = true;
-      console.log('Report page params:', { name, date, time, city, lat, lng, type });
       void kickOffBackgroundGeneration();
     }
 

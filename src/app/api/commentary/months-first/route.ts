@@ -107,7 +107,7 @@ export async function POST(req: NextRequest) {
   const horaBlock = buildHoraReferenceBlock(ctx);
 
   const anchorBlocks = formatDayCommentaryAnchorBlocks({
-    planet_positions: reference_planet_positions as any,
+    planet_positions: reference_planet_positions as import('@/lib/commentary/planetPositionsPrompt').PlanetPositionsPayload,
     dateLabel: reference_planet_positions_date ?? 'forecast anchor date',
     yogaName: reference_panchang?.yoga,
     panchang: reference_panchang,

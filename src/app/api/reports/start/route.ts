@@ -165,6 +165,8 @@ export async function POST(request: NextRequest) {
     );
   } catch (err) {
     console.error(`[reports/start] pipeline failed for ${reportId}:`, err);
+    // Guard with neq('status','complete') — don't overwrite a report that
+    // succeeded in dbSaveFinal right before an exception propagated out.
     await db
       .from('reports')
       .update({
@@ -172,8 +174,29 @@ export async function POST(request: NextRequest) {
         report_data: { error: String(err) },
         updated_at: new Date().toISOString(),
       })
-      .eq('id', reportId);
+      .eq('id', reportId)
+      .neq('status', 'complete');
     return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+
+  // Verify the DB row is actually complete before telling the client.
+  // In rare cases the pipeline can swallow exceptions internally and return
+  // without saving (e.g. ephemeris fallback path returning early).
+  const { data: finalRow } = await db
+    .from('reports')
+    .select('status')
+    .eq('id', reportId)
+    .maybeSingle();
+
+  if (finalRow?.status !== 'complete') {
+    console.error(`[reports/start] pipeline returned but DB status is '${finalRow?.status}' for ${reportId}`);
+    // Mark as error so the frontend stops polling
+    await db
+      .from('reports')
+      .update({ status: 'error', updated_at: new Date().toISOString() })
+      .eq('id', reportId)
+      .neq('status', 'complete');
+    return NextResponse.json({ error: 'Report pipeline did not complete — please retry.' }, { status: 500 });
   }
 
   return NextResponse.json({ reportId, ok: true, status: 'complete' });
