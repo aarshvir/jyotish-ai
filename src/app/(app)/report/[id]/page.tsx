@@ -579,11 +579,14 @@ function ReportContent() {
             time: String(row?.birth_time ?? '').slice(0, 5),
             city: String(row?.birth_city ?? ''),
           });
-          // If we have birth params, re-kick generation — the server will either start the
-          // pipeline (if the previous invocation timed out) or return skippedPipeline if
-          // a live run is already within its 350s window.
           if (params.get('date')) {
-            void kickOffBackgroundGeneration();
+            // Check if the previous run is stale (older than 360s = past Vercel maxDuration+buffer).
+            // If so, force-restart so we don't immediately hit the timeout error UI.
+            const startedMs = row?.generation_started_at
+              ? new Date(row.generation_started_at as string).getTime()
+              : 0;
+            const isStale = !Number.isNaN(startedMs) && startedMs > 0 && Date.now() - startedMs > 360_000;
+            void kickOffBackgroundGeneration(isStale ? { forceRestart: true } : undefined);
           } else {
             startPollingForReport();
           }
