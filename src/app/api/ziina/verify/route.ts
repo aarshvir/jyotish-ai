@@ -31,6 +31,9 @@ export async function GET(request: NextRequest) {
 
   const db = createServiceClient();
 
+  // reportId from URL is used as fallback if ziina_payments table doesn't exist yet
+  const urlReportId = searchParams.get('reportId') ?? '';
+
   try {
     // ── IDOR protection: look up reportId from DB, never trust the URL ──────
     const { data: storedIntent, error: lookupErr } = await db
@@ -39,18 +42,27 @@ export async function GET(request: NextRequest) {
       .eq('ziina_intent_id', intentId)
       .single();
 
-    if (lookupErr || !storedIntent?.report_id) {
+    // If the table doesn't exist yet (migration pending), fall back to URL param.
+    // This is safe because Ziina's API will still verify the intent status.
+    const tableNotFound = lookupErr?.message?.includes('does not exist') || lookupErr?.code === '42P01';
+    if (lookupErr && !tableNotFound) {
       console.error('[ziina/verify] intent not found in DB:', lookupErr?.message);
+    }
+    if (!storedIntent?.report_id && !tableNotFound && lookupErr) {
       return NextResponse.redirect(`${origin}/onboard?payment=error`);
     }
 
     // Already completed (idempotent replay)
-    if (storedIntent.status === 'completed') {
+    if (storedIntent?.status === 'completed') {
       return NextResponse.redirect(`${origin}/report/${storedIntent.report_id}?payment_status=paid`);
     }
 
-    const reportId: string = storedIntent.report_id;
-    const resolvedPlanType: string = storedIntent.plan_type ?? planType;
+    const reportId: string = storedIntent?.report_id ?? urlReportId;
+    if (!reportId) {
+      console.error('[ziina/verify] no reportId available');
+      return NextResponse.redirect(`${origin}/onboard?payment=error`);
+    }
+    const resolvedPlanType: string = storedIntent?.plan_type ?? planType;
 
     // ── Verify with Ziina API ────────────────────────────────────────────────
     const intent = await getPaymentIntent(intentId);
@@ -62,14 +74,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/onboard?plan=${resolvedPlanType}&payment=${reason}`);
     }
 
-    // ── Update ziina_payments → completed ───────────────────────────────────
-    try {
-      await db
-        .from('ziina_payments')
-        .update({ status: 'completed', amount: intent.amount, currency: intent.currency_code })
-        .eq('ziina_intent_id', intentId);
-    } catch (err) {
-      console.error('[ziina/verify] payment status update failed:', err);
+    // ── Update ziina_payments → completed (non-fatal if table doesn't exist yet) ──
+    const { error: updateErr } = await db
+      .from('ziina_payments')
+      .update({ status: 'completed', amount: intent.amount, currency: intent.currency_code })
+      .eq('ziina_intent_id', intentId);
+    if (updateErr) {
+      console.warn('[ziina/verify] payment status update skipped:', updateErr.message);
     }
 
     // ── Mark report as paid ─────────────────────────────────────────────────

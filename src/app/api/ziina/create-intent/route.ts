@@ -67,15 +67,20 @@ export async function POST(request: NextRequest) {
 
     // Store intentId → reportId binding server-side so the verify route can
     // confirm the reportId in the redirect URL hasn't been tampered with.
+    // Non-fatal: if the ziina_payments table hasn't been migrated yet, the
+    // payment redirect still works — verify route falls back to URL param.
     const db = createServiceClient();
-    await db.from('ziina_payments').insert({
+    const { error: dbErr } = await db.from('ziina_payments').insert({
       ziina_intent_id: intent.id,
       report_id: reportId,
       amount: intent.amount,
       currency: currency,
       plan_type: planType,
       status: 'pending',
-    }).throwOnError();
+    });
+    if (dbErr) {
+      console.warn('[ziina/create-intent] ziina_payments insert failed (table may not exist yet):', dbErr.message);
+    }
 
     return NextResponse.json({
       intentId: intent.id,
