@@ -57,6 +57,35 @@ export function formatAmount(amountBaseUnits: number, currency: SupportedCurrenc
   return `$${major.toFixed(2)}`;
 }
 
+/**
+ * Apply a percentage discount to a base-unit amount and round to the
+ * nearest "pretty" price for the given currency:
+ *   INR → nearest 99 paise  (e.g. 559.30 → 49900 → ₹499)
+ *   AED → nearest .99 fils  (e.g. 2659 → 2699 AED fils → AED 26.99)
+ *   USD → nearest .99 cents (e.g. 699 → 699 → $6.99)
+ */
+export function applyDiscount(amountBaseUnits: number, discountPct: number, currency: SupportedCurrency): number {
+  if (discountPct <= 0) return amountBaseUnits;
+  if (discountPct >= 100) return 0;
+
+  const raw = amountBaseUnits * (1 - discountPct / 100);
+
+  if (currency === 'INR') {
+    // Round to nearest 100 (1 INR), then subtract 1 to get XX99
+    const rupees = raw / 100;
+    const rounded = Math.round(rupees / 100) * 100;
+    // Ensure minimum of 99 paise (₹1 minimum)
+    const pretty = Math.max(99, rounded - 1);
+    return pretty * 100;
+  }
+
+  // AED and USD: round to nearest 100 base units (1 major unit), then subtract 1 cent/fil
+  const major = raw / 100;
+  const rounded = Math.round(major);
+  const pretty = Math.max(0.99, rounded - 0.01);
+  return Math.round(pretty * 100);
+}
+
 // ── Ziina API client ──────────────────────────────────────────────────────────
 
 function getApiToken(): string {
@@ -78,6 +107,8 @@ export interface CreatePaymentIntentInput {
   cancelUrl: string;
   failureUrl: string;
   message?: string;
+  /** Percentage discount 0-99 (100 = free, handled by caller before reaching here) */
+  discountPct?: number;
   /** Set true to create a test payment (no real charge) */
   test?: boolean;
 }
@@ -92,7 +123,8 @@ export interface ZiinaPaymentIntent {
 
 export async function createPaymentIntent(input: CreatePaymentIntentInput): Promise<ZiinaPaymentIntent> {
   const token = getApiToken();
-  const amount = getPlanAmount(input.planType, input.currency);
+  const baseAmount = getPlanAmount(input.planType, input.currency);
+  const amount = input.discountPct ? applyDiscount(baseAmount, input.discountPct, input.currency) : baseAmount;
   const plan = ZIINA_PLANS[input.planType]!;
 
   const body = {

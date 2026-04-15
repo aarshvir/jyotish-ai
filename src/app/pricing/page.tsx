@@ -92,6 +92,15 @@ export default function PricingPage() {
         <p className="font-body text-body-lg text-dust max-w-lg mx-auto leading-relaxed">
           AI-powered Vedic astrology reports with hour-by-hour precision. One-time payments. Instant delivery. No subscriptions.
         </p>
+        {/* Launch offer banner */}
+        <div className="mt-6 inline-flex items-center gap-2.5 px-5 py-3 rounded-card bg-amber/10 border border-amber/30">
+          <span className="text-lg">🚀</span>
+          <p className="font-mono text-sm text-amber font-medium tracking-wide">
+            New Launch Offer — <span className="font-bold">30% off</span> all reports · Use code{' '}
+            <span className="px-2 py-0.5 bg-amber/20 rounded font-bold tracking-widest">NEWUSER30</span>
+            {' '}at checkout
+          </p>
+        </div>
       </section>
 
       {/* Plans */}

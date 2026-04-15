@@ -8,6 +8,7 @@ import {
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
+import { getPromoDiscount } from '@/lib/bypass';
 
 /**
  * POST /api/ziina/create-intent
@@ -27,13 +28,16 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({})) as {
     planType?: string;
     reportId?: string;
+    promoCode?: string;
     testMode?: boolean;
   };
 
-  const { planType, reportId, testMode } = body;
+  const { planType, reportId, promoCode, testMode } = body;
   if (!planType || !reportId) {
     return NextResponse.json({ error: 'planType and reportId required' }, { status: 400 });
   }
+
+  const discountPct = promoCode ? getPromoDiscount(promoCode) : 0;
 
   const country = request.headers.get('x-vercel-ip-country') ?? null;
   const currency: SupportedCurrency = countryToCurrency(country);
@@ -52,6 +56,7 @@ export async function POST(request: NextRequest) {
       successUrl,
       cancelUrl,
       failureUrl,
+      discountPct: discountPct > 0 ? discountPct : undefined,
       test: testMode ?? false,
     });
 
@@ -60,6 +65,7 @@ export async function POST(request: NextRequest) {
       redirectUrl: intent.redirect_url,
       currency,
       amount: intent.amount,
+      discountPct,
     });
   } catch (err) {
     console.error('[ziina/create-intent]', err);

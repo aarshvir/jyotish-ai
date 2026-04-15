@@ -358,6 +358,34 @@ function Step3({
   const paidPlan = form.reportType === '7day' || form.reportType === 'monthly' || form.reportType === 'annual';
   const fullPromo = paidPlan && promoDiscount >= 100;
 
+  function getDiscountedDisplay(rt: typeof REPORT_TYPES[number]): { original: string; discounted: string | null } {
+    if (rt.id === 'free') return { original: 'Free', discounted: null };
+    const planId = rt.id;
+    const geoEntry = geoPrices?.prices[planId];
+    const original = geoEntry ? geoEntry.display : rt.defaultPrice;
+    if (!promoDiscount || promoDiscount <= 0 || promoDiscount >= 100) return { original, discounted: null };
+    if (!geoEntry) return { original, discounted: null };
+    // Compute discounted amount client-side with same rounding logic
+    const currency = geoEntry.currency as 'AED' | 'USD' | 'INR';
+    const rawDiscounted = geoEntry.amount * (1 - promoDiscount / 100);
+    let pretty: number;
+    if (currency === 'INR') {
+      const rupees = rawDiscounted / 100;
+      const rounded = Math.round(rupees / 100) * 100;
+      pretty = (Math.max(99, rounded - 1)) * 100;
+    } else {
+      const major = rawDiscounted / 100;
+      const rounded = Math.round(major);
+      pretty = Math.round(Math.max(0.99, rounded - 0.01) * 100);
+    }
+    const majorPretty = pretty / 100;
+    let discounted: string;
+    if (currency === 'AED') discounted = `AED ${majorPretty.toFixed(2)}`;
+    else if (currency === 'INR') discounted = `₹${majorPretty.toFixed(0)}`;
+    else discounted = `$${majorPretty.toFixed(2)}`;
+    return { original, discounted };
+  }
+
   function displayPrice(rt: typeof REPORT_TYPES[number]): string {
     if (rt.id === 'free') return 'Free';
     if ('plan_type' in rt && geoPrices?.prices[rt.plan_type]) {
@@ -399,7 +427,17 @@ function Step3({
                     Best Value
                   </span>
                 )}
-                <span className="font-mono text-mono-lg text-amber">{displayPrice(rt)}</span>
+                {(() => {
+                  const { original, discounted } = getDiscountedDisplay(rt);
+                  return discounted ? (
+                    <span className="flex items-baseline gap-1.5">
+                      <span className="font-mono text-xs text-dust/40 line-through">{original}</span>
+                      <span className="font-mono text-mono-lg text-success">{discounted}</span>
+                    </span>
+                  ) : (
+                    <span className="font-mono text-mono-lg text-amber">{original}</span>
+                  );
+                })()}
               </div>
             </div>
             <p className="font-body text-body-sm text-dust">{rt.description}</p>
@@ -412,6 +450,16 @@ function Step3({
           </button>
         ))}
       </div>
+
+      {/* Launch offer nudge — shown only when no promo is active */}
+      {paidPlan && !promoDiscount && (
+        <div className="mb-4 px-3.5 py-2.5 rounded-button bg-amber/10 border border-amber/25 flex items-center gap-2.5">
+          <span className="text-amber text-base shrink-0">🚀</span>
+          <p className="font-mono text-mono-sm text-amber tracking-wide">
+            New launch offer — use code <span className="font-bold tracking-widest">NEWUSER30</span> for 30% off
+          </p>
+        </div>
+      )}
 
       <div className="mb-5">
         <label className="font-mono text-label-sm text-dust/60 tracking-[0.1em] uppercase block mb-1.5">
@@ -427,7 +475,7 @@ function Step3({
         />
         {promoDiscount > 0 && (
           <p className="font-mono text-mono-sm text-success mt-2 tracking-wide">
-            ✓ {promoDiscount}% discount{fullPromo ? ' — no payment required' : ' at checkout'}
+            ✓ {promoDiscount}% off applied{fullPromo ? ' — no payment required' : ' — prices updated above'}
           </p>
         )}
       </div>
@@ -710,7 +758,7 @@ function OnboardPageInner() {
       try {
         const intentRes = await fetch('/api/ziina/create-intent', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-          body: JSON.stringify({ planType: effectiveType, reportId }),
+          body: JSON.stringify({ planType: effectiveType, reportId, promoCode: promoCode || undefined }),
         });
         if (!intentRes.ok) {
           // Ziina not configured — fall back to Razorpay

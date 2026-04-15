@@ -23,6 +23,12 @@ export function isAdminEmail(email: string): boolean {
 }
 
 export const PROMO_CODES: Record<string, number> = {
+  // ── Advertised (new launch offer) ──────────────────────────────────────────
+  NEWUSER30: 30,
+  // ── Private (never advertised) ─────────────────────────────────────────────
+  ADMIN100: 100,
+  FRIENDTESTING: 80,
+  // ── Legacy ─────────────────────────────────────────────────────────────────
   LAUNCH50: 50,
   FREEREPORT: 100,
   VEDICHOUR: 20,
@@ -33,3 +39,6 @@ export function getPromoDiscount(code: string): number {
   if (!code) return 0;
   return PROMO_CODES[code.trim().toUpperCase()] ?? 0;
 }
+
+/** Codes that should never appear in public UI / banners */
+export const PRIVATE_PROMO_CODES = new Set(['ADMIN100', 'FRIENDTESTING']);

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import AuthButton from '@/components/shared/AuthButton';
+import LaunchBanner from '@/components/shared/LaunchBanner';
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -14,8 +15,10 @@ export default function Navbar() {
   }, []);
 
   return (
+    <>
+    <LaunchBanner />
     <nav
-      className={`pdf-exclude fixed top-0 left-0 right-0 z-50 h-[var(--nav-height)] transition-all duration-250 ${
+      className={`pdf-exclude fixed top-0 left-0 right-0 z-50 transition-all duration-250 ${
         scrolled
           ? 'bg-space/85 backdrop-blur-md border-b border-horizon/40'
           : 'bg-transparent'
@@ -57,5 +60,6 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
+    </>
   );
 }

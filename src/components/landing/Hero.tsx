@@ -99,6 +99,26 @@ export default function Hero() {
           </Link>
         </motion.div>
 
+        {/* Launch offer pill */}
+        <motion.div
+          {...fadeUp(1.0)}
+          className="flex justify-center mb-6"
+        >
+          <Link
+            href="/onboard"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-amber/10 border border-amber/30 hover:bg-amber/15 transition-colors group"
+          >
+            <span className="text-sm">🚀</span>
+            <span className="font-mono text-xs text-amber tracking-wide font-medium">
+              New launch offer — <span className="font-bold">30% off</span> · Code{' '}
+              <span className="font-bold tracking-widest">NEWUSER30</span>
+            </span>
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" className="text-amber/60 group-hover:translate-x-0.5 transition-transform">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </Link>
+        </motion.div>
+
         {/* Proof points */}
         <motion.div
           initial={{ opacity: 0 }}
