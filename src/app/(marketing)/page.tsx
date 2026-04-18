@@ -8,7 +8,7 @@ import FAQ from '@/components/landing/FAQ';
 import FinalCTA from '@/components/landing/FinalCTA';
 
 export const metadata: Metadata = {
-  title: 'Free Kundli & AI Jyotish Forecast | VedicHour',
+  title: { absolute: 'Free Kundli & AI Jyotish Forecast | VedicHour' },
   description:
     'Generate your free Kundli (Janam Kundali) and AI-powered Jyotish forecast online. 18 hourly Vedic astrology windows per day — Swiss Ephemeris, Lahiri Ayanamsa. Free preview, no card needed.',
   keywords: [
