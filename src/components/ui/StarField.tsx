@@ -32,7 +32,7 @@ function generateStars(count: number): Star[] {
   });
 }
 
-const STARS = generateStars(150);
+const STARS = generateStars(80);
 
 export function StarField() {
   return (
@@ -45,12 +45,13 @@ export function StarField() {
           key={s.id}
           className="absolute rounded-full bg-white"
           style={{
-            left:      `${s.x}%`,
-            top:       `${s.y}%`,
-            width:     `${s.size}px`,
-            height:    `${s.size}px`,
-            opacity:   0.1,
-            animation: `twinkle ${s.duration}s ${s.delay}s ease-in-out infinite`,
+            left:       `${s.x}%`,
+            top:        `${s.y}%`,
+            width:      `${s.size}px`,
+            height:     `${s.size}px`,
+            opacity:    0.1,
+            animation:  `twinkle ${s.duration}s ${s.delay}s ease-in-out infinite`,
+            willChange: 'opacity',
           }}
         />
       ))}

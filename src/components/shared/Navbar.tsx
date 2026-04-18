@@ -1,9 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
-import AuthButton from '@/components/shared/AuthButton';
 import LaunchBanner from '@/components/shared/LaunchBanner';
+
+/*
+ * AuthButton loads Supabase client + Lucide icons — defer to after
+ * initial hydration so they don't block FCP/LCP on marketing pages.
+ */
+const AuthButton = dynamic(() => import('@/components/shared/AuthButton'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-9 w-28 shrink-0 rounded-button bg-nebula/60 skeleton" aria-hidden />
+  ),
+});
 
 const NAV_LINKS = [
   { href: '/#how-it-works', label: 'How it works' },
