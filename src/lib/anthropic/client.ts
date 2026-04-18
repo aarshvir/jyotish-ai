@@ -4,7 +4,7 @@ import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackC
 const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
 
 export const anthropic = apiKey
-  ? new Anthropic({ apiKey })
+  ? new Anthropic({ apiKey, timeout: 55_000, maxRetries: 0 })
   : (null as unknown as Anthropic);
 
 const FALLBACK_SYSTEM =

@@ -10,7 +10,7 @@ import {
 } from '@/lib/llm/fallbackChain';
 
 const anthropicClient = process.env.ANTHROPIC_API_KEY?.trim()
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim() })
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim(), timeout: 55_000, maxRetries: 0 })
   : null;
 
 if (!anthropicClient) {

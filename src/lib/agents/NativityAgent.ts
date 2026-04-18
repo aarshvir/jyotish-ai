@@ -112,12 +112,19 @@ function anthropicKeyOk(): string | null {
   return apiKey;
 }
 
+// Hard per-attempt timeout for Anthropic calls. Default SDK timeout is 600s —
+// way too long for a synchronous agent. 55s gives Claude ample time while
+// staying within the orchestrator's 90s per-agent budget.
+const ANTHROPIC_TIMEOUT_MS = 55_000;
+
 export class NativityAgent {
   private client: Anthropic | null;
 
   constructor() {
     const key = anthropicKeyOk();
-    this.client = key ? new Anthropic({ apiKey: key }) : null;
+    this.client = key
+      ? new Anthropic({ apiKey: key, timeout: ANTHROPIC_TIMEOUT_MS, maxRetries: 0 })
+      : null;
     if (!this.client && !hasAnyChatFallbackKey()) {
       throw new Error(
         'No LLM configured: set ANTHROPIC_API_KEY and/or OPENAI_API_KEY / GEMINI_API_KEY (and optional DeepSeek fallback)'

@@ -145,7 +145,7 @@ export class ForecastAgent {
 
     const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
     if (apiKey && apiKey !== 'your_anthropic_api_key') {
-      this.claude = new Anthropic({ apiKey });
+      this.claude = new Anthropic({ apiKey, timeout: 55_000, maxRetries: 0 });
     } else {
       this.claude = null;
     }
