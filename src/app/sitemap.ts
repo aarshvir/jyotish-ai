@@ -1,13 +1,26 @@
 import type { MetadataRoute } from 'next';
 
 // Env vars on some hosts can ship with trailing whitespace/slash; sanitize.
-const SITE_URL = (process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com')
-  .trim()
-  .replace(/\/+$/, '');
+// Always use the production domain for sitemap URLs — never localhost.
+const RAW_URL = process.env.NEXT_PUBLIC_URL ?? '';
+const SITE_URL = (RAW_URL.startsWith('http://localhost') || RAW_URL === ''
+  ? 'https://www.vedichour.com'
+  : RAW_URL
+).trim().replace(/\/+$/, '');
+
+// Force static generation — sitemap must never be dynamically rendered.
+export const dynamic = 'force-static';
+
+const PLANETS = ['mars', 'jupiter', 'saturn'];
+const SIGNS = [
+  'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
+  'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
+];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  const routes: Array<{
+
+  const staticRoutes: Array<{
     path: string;
     changeFrequency: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
     priority: number;
@@ -22,7 +35,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: '/refund', changeFrequency: 'monthly', priority: 0.5 },
   ];
 
-  return routes.map((r) => ({
+  // Transit SEO pages — long-tail keyword targets
+  const transitRoutes = PLANETS.flatMap((planet) =>
+    SIGNS.map((sign) => ({
+      path: `/transit/${planet}/${sign}`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    })),
+  );
+
+  return [...staticRoutes, ...transitRoutes].map((r) => ({
     url: `${SITE_URL}${r.path}`,
     lastModified: now,
     changeFrequency: r.changeFrequency,

@@ -11,21 +11,16 @@ const PROOF_POINTS = [
   { value: '24h',             label: 'No-questions refund' },
 ];
 
-const wordContainer = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } },
-};
-const wordItem = {
-  hidden: { opacity: 0, y: 32 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-};
+/*
+ * Animations for non-LCP elements (eyebrow, subtitle, CTAs, proof points).
+ * The H1 headline is rendered fully visible from SSR so that LCP fires
+ * immediately — we animate only decorative / below-fold elements.
+ */
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 18 },
   animate: { opacity: 1, y: 0 },
   transition: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
 });
-
-const HEADLINE = ['Your', 'Jyotish', 'Forecast,', 'Decoded', 'Hour', 'by', 'Hour.'];
 
 export default function Hero() {
   return (
@@ -50,40 +45,30 @@ export default function Hero() {
           </span>
         </motion.div>
 
-        {/* Headline — serif display, reserved for hero only */}
-        <motion.h1
-          variants={wordContainer}
-          initial="hidden"
-          animate="show"
-          className="font-display font-semibold text-star mb-6 text-display-xl tracking-tight"
-        >
-          {HEADLINE.map((word, i) => (
-            <motion.span
-              key={i}
-              variants={wordItem}
-              className="inline-block mr-[0.2em]"
-            >
-              {word === 'Hour.' ? (
-                <span className="text-amber-gradient">{word}</span>
-              ) : word === 'Jyotish' ? (
-                <span className="text-amber">{word}</span>
-              ) : (
-                word
-              )}
-            </motion.span>
-          ))}
-        </motion.h1>
+        {/*
+         * H1 — LCP element. Rendered fully visible from SSR (no initial opacity:0).
+         * CSS word-reveal animation plays after paint so LCP is not blocked.
+         */}
+        <h1 className="font-display font-semibold text-star mb-6 text-display-xl tracking-tight">
+          <span className="inline-block mr-[0.2em]">Your</span>{' '}
+          <span className="inline-block mr-[0.2em] text-amber">Jyotish</span>{' '}
+          <span className="inline-block mr-[0.2em]">Forecast,</span>{' '}
+          <span className="inline-block mr-[0.2em]">Decoded</span>{' '}
+          <span className="inline-block mr-[0.2em]">Hour</span>{' '}
+          <span className="inline-block mr-[0.2em]">by</span>{' '}
+          <span className="inline-block text-amber-gradient">Hour.</span>
+        </h1>
 
         {/* Subtitle */}
         <motion.p
-          {...fadeUp(0.75)}
+          {...fadeUp(0.3)}
           className="font-body text-body-lg text-dust max-w-xl mx-auto mb-10 leading-relaxed"
         >
           AI-powered Vedic astrology &amp; free Kundli online — with hourly precision.
           <br className="hidden md:block" />
           Know exactly when to act — and when to rest.
         </motion.p>
-        {/* Hidden SEO anchor text — visible to crawlers, hidden from users */}
+        {/* Supplementary SEO text for crawlers */}
         <span className="sr-only">
           Free Kundli generator · Janam Kundali online · AI Jyotish forecast · Vedic astrology report ·
           Jyotish AI · Vedic forecast · Astrology report · AI kundli
@@ -91,7 +76,7 @@ export default function Hero() {
 
         {/* CTAs */}
         <motion.div
-          {...fadeUp(0.9)}
+          {...fadeUp(0.5)}
           className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-14 md:mb-16"
         >
           <Link href="/onboard?plan=free" className="btn-primary text-base px-8 py-3.5 group">
@@ -109,7 +94,7 @@ export default function Hero() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.0, duration: 0.5 }}
+          transition={{ delay: 0.7, duration: 0.5 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-3"
         >
           {PROOF_POINTS.map((s) => (

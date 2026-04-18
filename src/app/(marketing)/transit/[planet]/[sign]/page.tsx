@@ -1,5 +1,35 @@
 import { StarField } from '@/components/ui/StarField';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+interface Props {
+  params: { planet: string; sign: string };
+}
+
+export function generateMetadata({ params }: Props): Metadata {
+  const { planet, sign } = params;
+  const pName = planet.charAt(0).toUpperCase() + planet.slice(1);
+  const sName = sign.charAt(0).toUpperCase() + sign.slice(1);
+  const title = `${pName} Transit in ${sName} — Vedic Jyotish Meaning`;
+  const description = `What ${pName} transiting ${sName} means for your Jyotish birth chart. Get a personalised AI Vedic astrology forecast based on your exact Lagna and Dasha.`;
+
+  return {
+    title: { absolute: `${title} | VedicHour` },
+    description,
+    alternates: { canonical: `/transit/${planet}/${sign}` },
+    openGraph: {
+      title: `${title} | VedicHour`,
+      description,
+      url: `/transit/${planet}/${sign}`,
+      type: 'article',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} | VedicHour`,
+      description,
+    },
+  };
+}
 
 // In Next.js 14, this allows statically generating dynamic routes.
 export async function generateStaticParams() {
@@ -15,15 +45,30 @@ export async function generateStaticParams() {
   return params;
 }
 
-export default function TransitSEOPage({ params }: { params: { planet: string, sign: string } }) {
+export default function TransitSEOPage({ params }: Props) {
   const { planet, sign } = params;
   
   const pName = planet.charAt(0).toUpperCase() + planet.slice(1);
   const sName = sign.charAt(0).toUpperCase() + sign.slice(1);
   const title = `What ${pName} Transit in ${sName} Means for Your Birth Chart`;
+  const SITE_URL = 'https://www.vedichour.com';
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
+      { '@type': 'ListItem', position: 2, name: 'Transit Reports', item: `${SITE_URL}/transit` },
+      { '@type': 'ListItem', position: 3, name: `${pName} in ${sName}`, item: `${SITE_URL}/transit/${planet}/${sign}` },
+    ],
+  };
 
   return (
     <div className="min-h-[100svh] bg-space flex flex-col items-center py-24 px-6 relative overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <StarField />
       
       <div className="max-w-3xl w-full relative z-10 text-center">

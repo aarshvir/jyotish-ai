@@ -31,13 +31,17 @@ const jetbrainsMono = localFont({
 });
 
 // Some hosting envs can ship NEXT_PUBLIC_URL with trailing whitespace — sanitize.
-const SITE_URL = (process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com')
-  .trim()
-  .replace(/\/+$/, '');
+// Never allow localhost to leak into production metadata.
+const RAW_SITE_URL = process.env.NEXT_PUBLIC_URL ?? '';
+const SITE_URL = (RAW_SITE_URL.startsWith('http://localhost') || RAW_SITE_URL === ''
+  ? 'https://www.vedichour.com'
+  : RAW_SITE_URL
+).trim().replace(/\/+$/, '');
 const SITE_NAME = 'VedicHour';
 const SITE_TITLE = 'Free Kundli & AI Jyotish Forecast | VedicHour';
+// Keep ≤160 chars for Google snippet (no truncation).
 const SITE_DESCRIPTION =
-  'Generate your free Kundli and AI Jyotish forecast online. Vedic astrology with 18 hourly precision windows per day — Swiss Ephemeris, Lahiri Ayanamsa. Free preview, no card needed.';
+  'Free Kundli & AI Jyotish forecast online. 18 hourly Vedic windows/day — Swiss Ephemeris, Lahiri Ayanamsa, Vimshottari Dasha. No card needed.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

@@ -1,23 +1,10 @@
 import { headers } from 'next/headers';
 import Link from 'next/link';
-import type { Metadata } from 'next';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { currencyFromHeader, getPricesForCurrency, type SupportedCurrency } from '@/lib/pricing';
 import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 
-export const metadata: Metadata = {
-  title: 'Pricing — Free Kundli & AI Jyotish Forecast Plans | VedicHour',
-  description:
-    'Free Kundli with no card needed. Upgrade to a 7-Day, Monthly, or Annual AI Jyotish forecast. One-time payments. No subscriptions.',
-  alternates: { canonical: '/pricing' },
-  openGraph: {
-    title: 'Pricing — Free Kundli & AI Jyotish Forecast | VedicHour',
-    description: 'Free Kundli, then from $9.99 for a full AI Vedic forecast. One-time payments.',
-    url: '/pricing',
-    type: 'website',
-  },
-};
 
 const BASE_PLANS = [
   {
@@ -110,7 +97,11 @@ export default async function PricingPage() {
   // USD prices for og:price meta (standard)
   const usdPrices = getPricesForCurrency('USD');
 
-  const SITE_URL = (process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com').replace(/\/+$/, '');
+  const rawUrl = process.env.NEXT_PUBLIC_URL ?? '';
+  const SITE_URL = (rawUrl.startsWith('http://localhost') || rawUrl === ''
+    ? 'https://www.vedichour.com'
+    : rawUrl
+  ).replace(/\/+$/, '');
 
   const plans = BASE_PLANS.map((p) => ({
     ...p,
@@ -120,12 +111,6 @@ export default async function PricingPage() {
 
   return (
     <div className="min-h-screen bg-space text-star">
-      {/* og:price meta tags for SEO previews */}
-      <meta property="og:price:amount" content="9.99" />
-      <meta property="og:price:currency" content="USD" />
-      <meta property="product:price:amount" content="9.99" />
-      <meta property="product:price:currency" content="USD" />
-
       <Navbar />
 
       {/* Hero */}

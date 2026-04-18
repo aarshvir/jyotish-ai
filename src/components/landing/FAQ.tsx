@@ -7,7 +7,7 @@ interface QA {
   a: string;
 }
 
-const FAQS: QA[] = [
+export const FAQS: QA[] = [
   {
     q: 'What is Jyotish astrology?',
     a: 'Jyotish (Sanskrit: "science of light") is the classical Indian system of Vedic astrology. It uses sidereal planetary positions, the Lahiri Ayanamsa, and time-based systems like Vimshottari Dasha and hora rulers to interpret life events and optimal timing. VedicHour applies classical Jyotish rules computed via the Swiss Ephemeris to produce AI-written Jyotish forecasts for any date range.',
@@ -50,7 +50,7 @@ const FAQS: QA[] = [
   },
   {
     q: 'Which payment methods are supported?',
-    a: 'International cards (Visa, Mastercard, Amex) via Ziina. For customers in India, Razorpay handles UPI, cards, and net banking. Prices auto-adjust to INR, AED, or USD.',
+    a: 'International cards (Visa, Mastercard, Amex) via Ziina. Prices auto-adjust to INR, AED, or USD based on your location.',
   },
   {
     q: 'Can I gift a Jyotish report to someone else?',
@@ -82,23 +82,8 @@ function ChevronIcon({ open }: { open: boolean }) {
 export default function FAQ() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
-  // FAQPage JSON-LD for SEO
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: FAQS.map(({ q, a }) => ({
-      '@type': 'Question',
-      name: q,
-      acceptedAnswer: { '@type': 'Answer', text: a },
-    })),
-  };
-
   return (
     <section id="faq" className="py-24 md:py-28 bg-space relative">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
-      />
       <div className="section-divider absolute top-0 left-0 right-0" />
 
       <div className="max-w-3xl mx-auto px-6">

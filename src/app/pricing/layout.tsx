@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Kundli & Jyotish Forecast Pricing | VedicHour' },
+  title: { absolute: 'Pricing — Free Kundli & AI Jyotish Forecast | VedicHour' },
   description:
-    'Free Kundli (no card needed) plus one-time AI Jyotish forecast plans: 7-day, monthly, and annual Vedic astrology reports. Swiss Ephemeris. 24-hour refund.',
+    'Free Kundli — no card needed. Upgrade to 7-day, monthly, or annual AI Jyotish forecast. One-time payments, no subscriptions. 24-hour refund.',
   keywords: [
     'free Kundli',
     'AI Kundli price',
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Free Kundli & AI Jyotish Forecast Pricing | VedicHour',
+    title: 'Pricing — Free Kundli & AI Jyotish Forecast | VedicHour',
     description:
       'Free Kundli, plus one-time Jyotish forecast plans. 7-day, monthly, annual Vedic astrology reports. No subscriptions.',
     url: '/pricing',
@@ -22,9 +22,15 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Free Kundli & AI Jyotish Forecast Pricing | VedicHour',
+    title: 'Pricing — Free Kundli & AI Jyotish Forecast | VedicHour',
     description:
       'Free Kundli, plus one-time Jyotish forecast plans. 7-day, monthly, annual Vedic astrology reports. No subscriptions.',
+  },
+  other: {
+    'og:price:amount': '9.99',
+    'og:price:currency': 'USD',
+    'product:price:amount': '9.99',
+    'product:price:currency': 'USD',
   },
 };
 
