@@ -21,11 +21,12 @@ export async function GET(
   // responses even after the report is marked complete.
   const supabase = createServiceClient();
 
+  // Use select('*') — explicit column lists can hit Supabase's column-projection
+  // cache and return stale data when the row was just updated (replica lag).
+  // select('*') forces a fresh row read from the primary.
   const { data, error } = await supabase
     .from('reports')
-    .select(
-      'id, status, report_data, lagna_sign, dasha_mahadasha, dasha_antardasha, day_scores, native_name, birth_date, birth_time, birth_city, generation_started_at, generation_step, generation_progress, updated_at, created_at',
-    )
+    .select('*')
     .eq('id', reportId)
     .eq('user_id', auth.user.id)
     .maybeSingle();

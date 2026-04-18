@@ -845,10 +845,14 @@ export async function generateReportPipeline(
             (np?.lagna_analysis?.trim().length ?? 0) >= 80 &&
             (np?.current_dasha_interpretation?.trim().length ?? 0) >= 80;
 
+          // Node 22+ rejects `new Response('', { status: 204 })` (null-body status).
+          // Use a sentinel 200 response instead to avoid the constructor error.
+          const SKIP_NATIVITY_RES = new Response(JSON.stringify({ skipped: true }), { status: 200 });
+
           const [overviewRes, natTextRes] = await Promise.all([
             fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody, signal: AbortSignal.any([AbortSignal.timeout(140_000), budgetSignal]) }),
             nativityHasText
-              ? Promise.resolve(new Response('', { status: 204 }))
+              ? Promise.resolve(SKIP_NATIVITY_RES)
               : fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.any([AbortSignal.timeout(80_000), budgetSignal]) }),
           ]);
 
@@ -863,13 +867,15 @@ export async function generateReportPipeline(
             });
           }
           forecastDays.forEach((day) => {
-            if (!day.day_overview || day.day_overview.length < 80 || !day.day_overview.includes('STRATEGY')) {
+            // Only use fallback if the overview is truly missing/blank.
+            // Removing the 'STRATEGY' check — real Claude responses don't contain that word.
+            if (!day.day_overview || day.day_overview.trim().length < 40) {
               day.day_overview = fallbackOverview;
               if (!day.day_theme) day.day_theme = 'Use hourly scores and peak windows.';
             }
           });
 
-          if (natTextRes.ok && natTextRes.status !== 204) {
+          if (natTextRes.ok) {
             const natTextData = await natTextRes.json();
             if (natTextData.lagna_analysis) nativityData.lagna_analysis = natTextData.lagna_analysis;
             if (natTextData.dasha_interpretation) nativityData.current_dasha_interpretation = natTextData.dasha_interpretation;
