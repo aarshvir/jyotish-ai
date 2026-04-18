@@ -1,17 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
-    return [
-      {
-        source: '/.well-known/assetlinks.json',
-        destination: '/api/well-known/assetlinks',
-      },
-      // Route sitemap through an explicit API handler.
-      {
-        source: '/sitemap.xml',
-        destination: '/api/sitemap',
-      },
-    ];
+    return {
+      // beforeFiles rewrites run BEFORE Next.js file-system route matching,
+      // so they override any built-in /sitemap.xml route from the App Router.
+      beforeFiles: [
+        {
+          source: '/sitemap.xml',
+          destination: '/api/sitemap',
+        },
+      ],
+      afterFiles: [
+        {
+          source: '/.well-known/assetlinks.json',
+          destination: '/api/well-known/assetlinks',
+        },
+      ],
+      fallback: [],
+    };
   },
 
 
