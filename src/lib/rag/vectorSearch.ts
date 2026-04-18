@@ -18,13 +18,20 @@ import { searchScriptures, type ScriptureEntry } from './scriptures';
 const EMBED_MODEL = 'text-embedding-3-small';
 const EMBED_DIMS = 1536;
 
+// Hard 8s timeout on the OpenAI embed call — must never block the nativity agent.
+const EMBED_TIMEOUT_MS = 8_000;
+
 export async function embedText(input: string): Promise<number[] | null> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return null;
 
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), EMBED_TIMEOUT_MS);
+
   try {
     const res = await fetch('https://api.openai.com/v1/embeddings', {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
@@ -45,8 +52,14 @@ export async function embedText(input: string): Promise<number[] | null> {
     const vec = json.data?.[0]?.embedding;
     return vec && vec.length === EMBED_DIMS ? vec : null;
   } catch (err) {
-    console.error('[rag/embed] failed:', err);
+    if ((err as Error)?.name === 'AbortError') {
+      console.warn('[rag/embed] timed out after', EMBED_TIMEOUT_MS, 'ms — falling back to keyword search');
+    } else {
+      console.error('[rag/embed] failed:', err);
+    }
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -64,11 +77,15 @@ export async function searchScripturesVector(
 
   try {
     const db = createServiceClient();
-    const { data, error } = await db.rpc('match_jyotish_scriptures', {
+    const rpcPromise = db.rpc('match_jyotish_scriptures', {
       query_embedding: queryEmbedding,
       match_count: topN,
       min_similarity: minSimilarity,
     });
+    const timeoutPromise = new Promise<{ data: null; error: Error }>((resolve) =>
+      setTimeout(() => resolve({ data: null, error: new Error('RPC timeout') }), 5000),
+    );
+    const { data, error } = await Promise.race([rpcPromise, timeoutPromise]);
     if (error) {
       console.error('[rag/vectorSearch] rpc error:', error.message);
       return [];
@@ -118,7 +135,11 @@ export async function searchScripturesHybrid(
  * using hybrid retrieval. Async counterpart to buildScriptureContext in scriptures.ts.
  * Inject the return value into the LLM prompt as grounding.
  */
-export async function buildScriptureContextHybrid(
+// Total budget for the whole hybrid RAG lookup (embed + DB RPC + keyword fallback).
+// Must be well under the nativity agent's 90s orchestrator timeout.
+const RAG_TOTAL_TIMEOUT_MS = 15_000;
+
+async function buildScriptureContextHybridInner(
   yogaNames: string[],
   lagnaSign?: string,
 ): Promise<string> {
@@ -157,4 +178,24 @@ export async function buildScriptureContextHybrid(
     .join('\n\n');
 
   return `\n\nCLASSICAL SCRIPTURE REFERENCES (use these to ground your analysis in authoritative texts):\n\n${blocks}\n`;
+}
+
+export async function buildScriptureContextHybrid(
+  yogaNames: string[],
+  lagnaSign?: string,
+): Promise<string> {
+  try {
+    return await Promise.race([
+      buildScriptureContextHybridInner(yogaNames, lagnaSign),
+      new Promise<string>((resolve) =>
+        setTimeout(() => {
+          console.warn('[rag] buildScriptureContextHybrid total timeout — using empty context');
+          resolve('');
+        }, RAG_TOTAL_TIMEOUT_MS),
+      ),
+    ]);
+  } catch (err) {
+    console.error('[rag] buildScriptureContextHybrid threw:', err);
+    return '';
+  }
 }
