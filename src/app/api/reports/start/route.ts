@@ -1,11 +1,12 @@
 /**
  * Report generation start route.
- * Runs the pipeline synchronously within Vercel's maxDuration window.
- * The orchestrator has its own internal budget (255s soft / 285s hard-kill)
- * so it saves progress and marks the report as 'error' cleanly if time runs out.
  *
- * The client polls /api/reports/[id]/status every 3s and shows a live
- * progress bar while waiting.
+ * If INNGEST_EVENT_KEY is set (production), the pipeline is dispatched to
+ * Inngest for background execution with no timeout constraints.
+ *
+ * If not set (local dev / fallback), the pipeline runs synchronously within
+ * Vercel's maxDuration window (300s). The orchestrator's internal budget
+ * (255s soft / 285s hard-kill) handles graceful timeouts either way.
  */
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
@@ -15,12 +16,13 @@ import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
+import { inngest } from '@/lib/inngest/client';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
- * 5 minutes — gives the active pipeline time to finish before allowing a retry.
+ * 10 minutes — Inngest jobs can take that long.
  */
-const YOUNG_GENERATING_MS = 5 * 60 * 1000;
+const YOUNG_GENERATING_MS = 10 * 60 * 1000;
 
 /** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
 function birthTimeToPipelineTime(s: string): string {
@@ -44,14 +46,10 @@ function isYoungGenerating(generationStartedAt: string | null | undefined): bool
 /**
  * POST /api/reports/start
  *
- * Creates or updates a `reports` row, then runs the pipeline synchronously
- * within Vercel's 300s window. The orchestrator's internal checkpoints mean
- * a retry picks up from the last completed phase rather than restarting.
- *
- * Returns:
- *   202 { status: 'generating' }  — pipeline is still running (client should poll)
- *   200 { status: 'complete' }    — pipeline completed within this request
- *   500 { error }                 — pipeline failed; report row marked 'error'
+ * 1. Creates/updates the `reports` row with status='generating'
+ * 2. If INNGEST_EVENT_KEY is configured → sends event to Inngest, returns 202 immediately
+ *    Client then polls /api/reports/[id]/status until complete.
+ * 3. If not configured → runs pipeline synchronously (dev/fallback)
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -168,6 +166,36 @@ export async function POST(request: NextRequest) {
     if (cookie) authHeaders['cookie'] = cookie;
   }
 
+  // ── Inngest background execution (production) ─────────────────────────────
+  // If INNGEST_EVENT_KEY is set, hand off to Inngest and return 202 immediately.
+  // The client polls /api/reports/[id]/status every 3s.
+  const useInngest = !!process.env.INNGEST_EVENT_KEY;
+
+  if (useInngest) {
+    try {
+      await inngest.send({
+        name: 'report/generate',
+        data: {
+          reportId,
+          userId: auth.user.id,
+          userEmail: auth.user.email ?? '',
+          input,
+          base,
+          authHeaders,
+        },
+      });
+      console.log(`[reports/start] dispatched to Inngest: ${reportId}`);
+      return NextResponse.json(
+        { reportId, ok: true, status: 'generating', engine: 'inngest' },
+        { status: 202 },
+      );
+    } catch (err) {
+      // Inngest dispatch failed — fall through to inline execution
+      console.error(`[reports/start] Inngest dispatch failed, falling back to inline:`, err);
+    }
+  }
+
+  // ── Inline synchronous fallback (dev / no Inngest key) ───────────────────
   try {
     await generateReportPipeline(
       reportId,
@@ -199,8 +227,13 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (finalRow?.status !== 'complete') {
-    console.error(`[reports/start] pipeline returned but DB status is '${finalRow?.status}' for ${reportId}`);
-    return NextResponse.json({ error: 'Report pipeline did not complete — please retry.' }, { status: 500 });
+    console.error(
+      `[reports/start] pipeline returned but DB status is '${finalRow?.status}' for ${reportId}`,
+    );
+    return NextResponse.json(
+      { error: 'Report pipeline did not complete — please retry.' },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ reportId, ok: true, status: 'complete' });
