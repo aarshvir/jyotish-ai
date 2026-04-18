@@ -1,0 +1,37 @@
+export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from 'next/server';
+
+/**
+ * GET /api/debug — Returns env var presence (not values) for prod diagnostics.
+ * Gated by BYPASS_SECRET so it's never public.
+ */
+export async function GET(request: NextRequest) {
+  const bypass = request.headers.get('x-bypass-token');
+  const secret = process.env.BYPASS_SECRET;
+  if (!secret || bypass !== secret) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const check = (key: string) => {
+    const v = process.env[key];
+    if (!v) return 'MISSING';
+    if (v.startsWith('your_') || v === 'undefined') return 'PLACEHOLDER';
+    return `SET (${v.length} chars)`;
+  };
+
+  return NextResponse.json({
+    ANTHROPIC_API_KEY: check('ANTHROPIC_API_KEY'),
+    OPENAI_API_KEY: check('OPENAI_API_KEY'),
+    SUPABASE_SERVICE_ROLE_KEY: check('SUPABASE_SERVICE_ROLE_KEY'),
+    NEXT_PUBLIC_SUPABASE_URL: check('NEXT_PUBLIC_SUPABASE_URL'),
+    EPHEMERIS_SERVICE_URL: check('EPHEMERIS_SERVICE_URL'),
+    EPHEMERIS_API_URL: check('EPHEMERIS_API_URL'),
+    INNGEST_EVENT_KEY: check('INNGEST_EVENT_KEY'),
+    INNGEST_SIGNING_KEY: check('INNGEST_SIGNING_KEY'),
+    BYPASS_SECRET: check('BYPASS_SECRET'),
+    ZIINA_API_TOKEN: check('ZIINA_API_TOKEN'),
+    NODE_ENV: process.env.NODE_ENV,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+  });
+}
