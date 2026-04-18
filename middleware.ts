@@ -1,12 +1,20 @@
 import { type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
+import { countryToCurrency } from '@/lib/ziina/server';
 
 /**
- * Session refresh + auth checks. Protected routes (e.g. /dashboard, /auth/consent)
- * are defined in src/lib/supabase/middleware.ts (PROTECTED_PREFIXES).
+ * Session refresh + auth checks + currency header injection.
+ * Protected routes are defined in src/lib/supabase/middleware.ts (PROTECTED_PREFIXES).
+ *
+ * Reads Vercel's x-vercel-ip-country header and forwards x-currency to all
+ * Server Components so pricing pages can render geo-correct prices without
+ * client-side skeleton loaders.
  */
 export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+  const country = request.headers.get('x-vercel-ip-country') ?? '';
+  const currency = countryToCurrency(country || null);
+
+  return await updateSession(request, { 'x-currency': currency });
 }
 
 export const config = {

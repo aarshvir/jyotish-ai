@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import Hero from '@/components/landing/Hero';
 import HowItWorks from '@/components/landing/HowItWorks';
@@ -6,6 +7,7 @@ import HourlyPreview from '@/components/landing/HourlyPreview';
 import Pricing from '@/components/landing/Pricing';
 import FAQ from '@/components/landing/FAQ';
 import FinalCTA from '@/components/landing/FinalCTA';
+import { currencyFromHeader, getPricesForCurrency } from '@/lib/pricing';
 
 export const metadata: Metadata = {
   title: { absolute: 'Free Kundli & AI Jyotish Forecast | VedicHour' },
@@ -68,7 +70,11 @@ const homeJsonLd = {
   inLanguage: 'en',
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const h = await headers();
+  const currency = currencyFromHeader(h.get('x-currency'));
+  const prices = getPricesForCurrency(currency);
+
   return (
     <div className="min-h-screen bg-space">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd) }} />
@@ -76,7 +82,7 @@ export default function LandingPage() {
       <HowItWorks />
       <FreeKundli />
       <HourlyPreview />
-      <Pricing />
+      <Pricing currency={currency} prices={prices} />
       <FAQ />
       <FinalCTA />
     </div>

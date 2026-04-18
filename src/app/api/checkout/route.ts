@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createCheckoutSession } from '@/lib/stripe/server';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { getPromoDiscount, isBypassToken } from '@/lib/bypass';
+import { isBypassToken } from '@/lib/bypass';
+import { getPromoDiscount, redeemPromoCode } from '@/lib/promo/server';
 
 async function logPromoUsage(
   code: string,
@@ -96,17 +97,20 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (promo_code) {
-      const discount = getPromoDiscount(promo_code);
-      if (discount === 100) {
-        const reportId = await createFreeReport(user.id, user.email, plan, reportParams);
-        await logPromoUsage(promo_code, user.email, reportId);
-        return NextResponse.json({
-          bypass: true,
-          report_id: reportId,
-          redirect: `/report/${reportId}`,
-        });
+    const promoResult = promo_code
+      ? await getPromoDiscount(promo_code, user.email)
+      : null;
+
+    if (promoResult?.valid && promoResult.discountPct === 100) {
+      const reportId = await createFreeReport(user.id, user.email, plan, reportParams);
+      if (promoResult.codeId) {
+        await redeemPromoCode(promoResult.codeId, user.id, reportId);
       }
+      return NextResponse.json({
+        bypass: true,
+        report_id: reportId,
+        redirect: `/report/${reportId}`,
+      });
     }
 
     const key = process.env.STRIPE_SECRET_KEY;
@@ -124,8 +128,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const discount =
-      typeof promo_code === 'string' ? getPromoDiscount(promo_code) : 0;
+    const discount = promoResult?.valid ? promoResult.discountPct : 0;
 
     const session = await createCheckoutSession({
       priceId,

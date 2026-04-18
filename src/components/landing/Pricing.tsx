@@ -1,20 +1,16 @@
-'use client';
-
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import type { SupportedCurrency } from '@/lib/pricing';
+import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 
-type GeoPrices = {
-  country: string | null;
-  currency: string;
-  prices: Record<string, { amount: number; display: string; currency: string }>;
-};
+interface Props {
+  currency: SupportedCurrency;
+  prices: Record<string, string>;
+}
 
 const PLANS = [
   {
     id: 'free',
     name: 'Free Kundli',
-    defaultPrice: 'Free',
-    defaultNote: 'No card required',
     description: 'Free Janam Kundali & birth chart',
     features: [
       'Free Kundli (Janam Kundali)',
@@ -31,8 +27,6 @@ const PLANS = [
   {
     id: '7day',
     name: '7-Day Forecast',
-    defaultPrice: '$9.99',
-    defaultNote: 'one-time',
     description: 'Full week of hourly precision',
     features: [
       '126 hourly ratings (0–100)',
@@ -49,8 +43,6 @@ const PLANS = [
   {
     id: 'monthly',
     name: 'Monthly Oracle',
-    defaultPrice: '$19.99',
-    defaultNote: 'one-time',
     description: '30 days of precision guidance',
     features: [
       'Everything in 7-Day',
@@ -66,6 +58,18 @@ const PLANS = [
   },
 ] as const;
 
+const USD_FALLBACKS: Record<string, string> = {
+  '7day': '$9.99',
+  monthly: '$19.99',
+  annual: '$49.99',
+};
+
+const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
+  USD: 'USD',
+  INR: 'INR',
+  AED: 'AED',
+};
+
 function CheckIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-amber mt-0.5 shrink-0" aria-hidden>
@@ -75,44 +79,15 @@ function CheckIcon() {
   );
 }
 
-function ShieldIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-success shrink-0" aria-hidden>
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-export default function Pricing() {
-  const [geo, setGeo] = useState<GeoPrices | null>(null);
-  const [geoLoading, setGeoLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/geo')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (!cancelled && data) setGeo(data);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setGeoLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  function priceFor(planId: string, fallback: string): string {
+export default function Pricing({ currency, prices }: Props) {
+  function priceFor(planId: string): string {
     if (planId === 'free') return 'Free';
-    if (geo?.prices[planId]) return geo.prices[planId].display;
-    return fallback;
+    return prices[planId] ?? USD_FALLBACKS[planId] ?? '';
   }
 
-  function priceNoteFor(planId: string, fallback: string): string {
+  function priceNoteFor(planId: string): string {
     if (planId === 'free') return 'No card required';
-    if (geo?.currency) return `one-time · ${geo.currency}`;
-    return fallback;
+    return `one-time · ${CURRENCY_LABELS[currency]}`;
   }
 
   return (
@@ -158,18 +133,12 @@ export default function Pricing() {
                     {plan.name}
                   </p>
                   <div className="flex items-baseline gap-2 min-h-[2.25rem]">
-                    {geoLoading && plan.id !== 'free' ? (
-                      <span className="inline-block h-8 w-20 rounded bg-horizon/40 animate-pulse" />
-                    ) : (
-                      <>
-                        <span className="font-body font-semibold text-3xl text-star">
-                          {priceFor(plan.id, plan.defaultPrice)}
-                        </span>
-                        <span className="font-mono text-mono-sm text-dust">
-                          {priceNoteFor(plan.id, plan.defaultNote)}
-                        </span>
-                      </>
-                    )}
+                    <span className="font-body font-semibold text-3xl text-star tabular-nums">
+                      {priceFor(plan.id)}
+                    </span>
+                    <span className="font-mono text-mono-sm text-dust">
+                      {priceNoteFor(plan.id)}
+                    </span>
                   </div>
                   <p className="font-body text-body-sm text-dust mt-1.5">{plan.description}</p>
                 </div>
@@ -197,10 +166,10 @@ export default function Pricing() {
 
                   {plan.isPaid && (
                     <div className="flex items-center justify-center gap-2">
-                      <ShieldIcon />
-                      <span className="font-mono text-mono-sm text-success/80">
+                      <ShieldCheckIcon className="w-3.5 h-3.5 text-success shrink-0" />
+                      <Link href="/refund" className="font-mono text-mono-sm text-success/80 hover:underline">
                         24-hour money-back guarantee
-                      </span>
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -213,7 +182,7 @@ export default function Pricing() {
         <div className="mt-12 md:mt-14 text-center">
           <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-dust/60">
             <div className="flex items-center gap-2">
-              <ShieldIcon />
+              <ShieldCheckIcon className="w-3.5 h-3.5 text-success" />
               <span className="font-mono text-mono-sm">Encrypted & secure</span>
             </div>
             <div className="flex items-center gap-2">
@@ -254,7 +223,6 @@ export default function Pricing() {
             <ul className="space-y-2">
               {[
                 'Those seeking medical or legal advice',
-                'Entertainment-only horoscope readers',
                 'Anyone expecting 100% certainty from any system',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5">

@@ -8,7 +8,7 @@ import {
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
-import { getPromoDiscount } from '@/lib/bypass';
+import { getPromoDiscount } from '@/lib/promo/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 
 /**
@@ -38,8 +38,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'planType and reportId required' }, { status: 400 });
   }
 
-  const discountPct = promoCode ? getPromoDiscount(promoCode) : 0;
-  // 100% discount should never reach here (caller skips payment), but guard anyway.
+  const promoResult = promoCode
+    ? await getPromoDiscount(promoCode, auth.user.email ?? undefined)
+    : { valid: false, discountPct: 0 };
+
+  const discountPct = promoResult.valid ? promoResult.discountPct : 0;
+
   if (discountPct >= 100) {
     return NextResponse.json({ error: 'Use a valid promo code — this report is free' }, { status: 400 });
   }

@@ -25,7 +25,7 @@ const sections = [
   { title: '1. Our Guarantee', content: 'We stand behind every VedicHour report. All paid reports are covered by our 24-hour satisfaction guarantee. If your report does not meet your expectations for any reason, we will refund your purchase in full. No questions asked.' },
   { title: '2. Eligibility', content: 'You are eligible for a full refund if:\n• You request it within 24 hours of your purchase time\n• Your report has been successfully generated and delivered\n• You contact us at support@vedichour.com with your order details\n\nYou are not required to provide a reason, though feedback is appreciated.' },
   { title: '3. How to Request', content: 'Email support@vedichour.com with:\n• Subject: "Refund Request — [your order ID or email]"\n• Your registered email address\n• Date of purchase\n• (Optional) Brief reason\n\nWe confirm receipt within 24 hours and process within 3-5 business days.' },
-  { title: '4. Processing', content: 'Refunds are processed through the original payment partner (Ziina or, where applicable, Razorpay). Credit/debit card refunds take 5-10 business days to appear on your statement. Refunds are credited to the original payment method only.' },
+  { title: '4. Processing', content: 'Refunds are processed through the original payment partner (Ziina). Credit/debit card refunds take 5-10 business days to appear on your statement. Refunds are credited to the original payment method only.' },
   { title: '5. Free Reports', content: 'Free Preview Reports are provided at no cost and are not eligible for refunds. If you experience a technical issue with your free report, contact support@vedichour.com for assistance.' },
   { title: '6. Technical Issues', content: 'If your paid report was not delivered due to a technical error on our part, you are entitled to either a complete re-generation at no cost, or a full refund. Contact support@vedichour.com within 24 hours of your expected delivery time.' },
   { title: '7. Chargebacks', content: 'We encourage you to contact us before initiating a bank chargeback — we resolve all legitimate disputes promptly and direct resolution is faster. Unwarranted chargebacks may result in account suspension.' },
@@ -53,14 +53,16 @@ export default function RefundPage() {
       <main id="main-content" className="max-w-[780px] mx-auto px-5 sm:px-8 pt-14 sm:pt-20 pb-20 sm:pb-28">
         <p className="text-xs tracking-[0.2em] text-amber uppercase mb-3 font-mono">Legal</p>
         <h1 className="text-4xl sm:text-5xl font-light mb-4 leading-tight">Refund Policy</h1>
-        <p className="text-sm text-dust/50 font-sans mb-12">Last updated: 22 March 2026</p>
+        <p className="text-sm text-dust/50 font-sans mb-12">Last updated: 18 April 2026</p>
 
         {/* Guarantee callout */}
         <div className="bg-emerald/[0.06] border border-emerald/25 rounded-xl px-7 py-7 mb-12">
           <div className="text-2xl mb-3 text-emerald/60">✦</div>
-          <h2 className="text-lg font-semibold mb-2.5 text-emerald font-display">48-Hour Satisfaction Guarantee</h2>
+          <h2 className="text-lg font-semibold mb-2.5 text-emerald font-display">24-Hour Satisfaction Guarantee</h2>
           <p className="text-sm text-dust/70 leading-relaxed font-sans">
-            If you are not completely satisfied with your report, contact us within 24 hours of purchase and we will issue a full refund — no questions asked.
+            Not satisfied within 24 hours of receiving your report? Email{' '}
+            <a href="mailto:hello@vedichour.com" className="text-amber hover:underline">hello@vedichour.com</a>.
+            Full refund. No forms, no questions.
           </p>
         </div>
 

@@ -1046,15 +1046,9 @@ function OnboardPageInner() {
   );
 }
 
-export default function OnboardPage() {
+export default function OnboardForm() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-space flex items-center justify-center">
-          <MandalaRing className="w-20 h-20 text-amber opacity-50" />
-        </div>
-      }
-    >
+    <Suspense fallback={null}>
       <OnboardPageInner />
     </Suspense>
   );

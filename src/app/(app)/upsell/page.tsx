@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { StarField } from '@/components/ui/StarField';
+import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 
 export default function UpsellPage() {
   return (
@@ -43,6 +44,12 @@ export default function UpsellPage() {
         </div>
 
         <div className="flex flex-col gap-4 relative z-10">
+          <div className="flex items-center justify-center gap-2 text-sm text-success/80">
+            <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+            <Link href="/refund" className="hover:underline font-mono text-mono-sm">
+              24-hour money-back guarantee — full refund, no questions.
+            </Link>
+          </div>
           <button className="btn-primary w-full py-4 text-base font-semibold shadow-elevated">
             Upgrade to Monthly Oracle (+$9.00)
           </button>

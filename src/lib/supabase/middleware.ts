@@ -19,9 +19,21 @@ function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 }
 
-export async function updateSession(request: NextRequest) {
+export async function updateSession(
+  request: NextRequest,
+  extraRequestHeaders?: Record<string, string>,
+) {
+  // Merge any extra headers (e.g. x-currency from geo detection) into the
+  // forwarded request so Server Components can read them via headers().
+  const forwardHeaders = new Headers(request.headers);
+  if (extraRequestHeaders) {
+    for (const [k, v] of Object.entries(extraRequestHeaders)) {
+      forwardHeaders.set(k, v);
+    }
+  }
+
   let supabaseResponse = NextResponse.next({
-    request,
+    request: { headers: forwardHeaders },
   });
 
   const supabase = createServerClient(
@@ -35,7 +47,7 @@ export async function updateSession(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({
-            request,
+            request: { headers: forwardHeaders },
           });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)

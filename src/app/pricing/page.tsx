@@ -1,20 +1,37 @@
-'use client';
-import { useState, useEffect } from 'react';
+import { headers } from 'next/headers';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
+import { currencyFromHeader, getPricesForCurrency, type SupportedCurrency } from '@/lib/pricing';
+import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 
-interface GeoPrice { amount: number; display: string; currency: string; }
-interface GeoPrices { currency: string; prices: Record<string, GeoPrice>; }
+export const metadata: Metadata = {
+  title: 'Pricing — Free Kundli & AI Jyotish Forecast Plans | VedicHour',
+  description:
+    'Free Kundli with no card needed. Upgrade to a 7-Day, Monthly, or Annual AI Jyotish forecast. One-time payments. No subscriptions.',
+  alternates: { canonical: '/pricing' },
+  openGraph: {
+    title: 'Pricing — Free Kundli & AI Jyotish Forecast | VedicHour',
+    description: 'Free Kundli, then from $9.99 for a full AI Vedic forecast. One-time payments.',
+    url: '/pricing',
+    type: 'website',
+  },
+};
 
 const BASE_PLANS = [
   {
     id: 'free',
     name: 'Preview Report',
-    defaultPrice: 'Free',
-    defaultNote: 'No credit card required',
     description: 'Discover your cosmic blueprint',
-    features: ['Free Kundli (Janam Kundali)', 'Complete natal birth chart', 'Lagna (rising sign) analysis', 'Sample Jyotish hora schedule for today', 'Vimshottari Dasha period', 'Planetary strength indicators'],
+    features: [
+      'Free Kundli (Janam Kundali)',
+      'Complete natal birth chart',
+      'Lagna (rising sign) analysis',
+      'Sample Jyotish hora schedule for today',
+      'Vimshottari Dasha period',
+      'Planetary strength indicators',
+    ],
     cta: 'Get Free Kundli',
     href: '/onboard?plan=free',
     highlight: false,
@@ -23,11 +40,18 @@ const BASE_PLANS = [
   {
     id: '7day',
     name: '7-Day Forecast',
-    defaultPrice: '$9.99',
-    defaultNote: 'One-time payment',
     description: 'Hour-by-hour cosmic timing for a week',
-    features: ['Full natal chart & Kundli analysis', '7-day Jyotish hourly forecast', '126 hourly slots (18/day) with scores', 'Choghadiya & hora timing', 'Daily strategy section', 'Auspicious window identification', 'Rahu Kaal warnings', 'PDF download'],
-    cta: 'Get 7-Day Jyotish Forecast',
+    features: [
+      'Full natal chart & Kundli analysis',
+      '7-day Jyotish hourly forecast',
+      '126 hourly slots (18/day) with scores',
+      'Choghadiya & hora timing',
+      'Daily strategy section',
+      'Auspicious window identification',
+      'Rahu Kaal warnings',
+      'PDF download',
+    ],
+    cta: 'Get 7-Day Forecast',
     href: '/onboard?plan=7day',
     highlight: false,
     badge: null,
@@ -35,10 +59,17 @@ const BASE_PLANS = [
   {
     id: 'monthly',
     name: 'Monthly Oracle',
-    defaultPrice: '$19.99',
-    defaultNote: 'One-time payment',
     description: '30 days of precision cosmic guidance',
-    features: ['Everything in 7-Day Forecast', '30-day complete forecast', 'Monthly theme analysis', 'Weekly synthesis', 'Career, wealth, health windows', 'Best muhurta dates highlighted', 'Nativity deep analysis', 'High-resolution PDF report'],
+    features: [
+      'Everything in 7-Day Forecast',
+      '30-day complete forecast',
+      'Monthly theme analysis',
+      'Weekly synthesis',
+      'Career, wealth, health windows',
+      'Best muhurta dates highlighted',
+      'Nativity deep analysis',
+      'High-resolution PDF report',
+    ],
     cta: 'Get Monthly Oracle',
     href: '/onboard?plan=monthly',
     highlight: true,
@@ -47,10 +78,17 @@ const BASE_PLANS = [
   {
     id: 'annual',
     name: 'Annual Oracle',
-    defaultPrice: '$49.99',
-    defaultNote: 'One-time payment',
     description: 'Your complete cosmic year ahead',
-    features: ['Everything in Monthly Oracle', 'Full 12-month forecast', 'Month-by-month breakdown', 'Annual theme & dasha analysis', 'Peak opportunity windows', 'Yearly muhurta calendar', 'Priority generation', 'Premium PDF + digital access'],
+    features: [
+      'Everything in Monthly Oracle',
+      'Full 12-month forecast',
+      'Month-by-month breakdown',
+      'Annual theme & dasha analysis',
+      'Peak opportunity windows',
+      'Yearly muhurta calendar',
+      'Priority generation',
+      'Premium PDF + digital access',
+    ],
     cta: 'Get Annual Oracle',
     href: '/onboard?plan=annual',
     highlight: false,
@@ -58,40 +96,36 @@ const BASE_PLANS = [
   },
 ];
 
-export default function PricingPage() {
-  const [geoPrices, setGeoPrices] = useState<GeoPrices | null>(null);
-  const [geoLoading, setGeoLoading] = useState(true);
+const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
+  USD: 'USD',
+  INR: 'INR',
+  AED: 'AED',
+};
 
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/geo')
-      .then((r) => r.json())
-      .then((d: { currency?: string; prices?: Record<string, GeoPrice> }) => {
-        if (cancelled) return;
-        if (d?.currency && d?.prices) setGeoPrices({ currency: d.currency, prices: d.prices });
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setGeoLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+export default async function PricingPage() {
+  const h = await headers();
+  const currency = currencyFromHeader(h.get('x-currency'));
+  const prices = getPricesForCurrency(currency);
 
-  const plans = BASE_PLANS.map((p) => {
-    const geoPrice = geoPrices?.prices[p.id];
-    // Free plan keeps "Free" label regardless of geo response
-    if (p.id === 'free') {
-      return { ...p, price: p.defaultPrice, priceNote: p.defaultNote };
-    }
-    return {
-      ...p,
-      price: geoPrice ? geoPrice.display : p.defaultPrice,
-      priceNote: geoPrice
-        ? `One-time payment · ${geoPrices!.currency}`
-        : p.defaultNote,
-    };
-  });
+  // USD prices for og:price meta (standard)
+  const usdPrices = getPricesForCurrency('USD');
+
+  const SITE_URL = (process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com').replace(/\/+$/, '');
+
+  const plans = BASE_PLANS.map((p) => ({
+    ...p,
+    price: p.id === 'free' ? 'Free' : (prices[p.id] ?? usdPrices[p.id] ?? ''),
+    priceNote: p.id === 'free' ? 'No credit card required' : `One-time · ${CURRENCY_LABELS[currency]}`,
+  }));
 
   return (
     <div className="min-h-screen bg-space text-star">
+      {/* og:price meta tags for SEO previews */}
+      <meta property="og:price:amount" content="9.99" />
+      <meta property="og:price:currency" content="USD" />
+      <meta property="product:price:amount" content="9.99" />
+      <meta property="product:price:currency" content="USD" />
+
       <Navbar />
 
       {/* Hero */}
@@ -104,15 +138,6 @@ export default function PricingPage() {
           Generate your free Kundli (Janam Kundali) instantly — no card needed. Upgrade for a full
           AI Jyotish forecast with 18 hourly Vedic windows per day. One-time payments. No subscriptions.
         </p>
-        {/* Launch offer banner */}
-        <div className="mt-6 inline-flex items-center gap-2.5 px-5 py-3 rounded-card bg-amber/10 border border-amber/30">
-          <span className="text-lg">🚀</span>
-          <p className="font-mono text-sm text-amber font-medium tracking-wide">
-            New Launch Offer — <span className="font-bold">30% off</span> all reports · Use code{' '}
-            <span className="px-2 py-0.5 bg-amber/20 rounded font-bold tracking-widest">NEWUSER30</span>
-            {' '}at checkout
-          </p>
-        </div>
       </section>
 
       {/* Plans */}
@@ -142,22 +167,10 @@ export default function PricingPage() {
                   {plan.name}
                 </h2>
                 <p className="font-body text-body-sm text-dust mb-3 leading-relaxed">{plan.description}</p>
-                {geoLoading && plan.id !== 'free' ? (
-                  <>
-                    <span
-                      className="inline-block h-8 w-24 rounded-md bg-white/[0.06] animate-pulse align-middle"
-                      aria-label="Loading localized price"
-                    />
-                    <p className="font-mono text-mono-sm text-dust/50 mt-1">Detecting your region…</p>
-                  </>
-                ) : (
-                  <>
-                    <span className={`text-3xl font-bold font-mono ${plan.price === 'Free' ? 'text-success' : 'text-star'}`}>
-                      {plan.price}
-                    </span>
-                    <p className="font-mono text-mono-sm text-dust/50 mt-1">{plan.priceNote}</p>
-                  </>
-                )}
+                <span className={`text-3xl font-bold font-mono tabular-nums ${plan.price === 'Free' ? 'text-success' : 'text-star'}`}>
+                  {plan.price}
+                </span>
+                <p className="font-mono text-mono-sm text-dust/50 mt-1">{plan.priceNote}</p>
               </div>
 
               <ul className="list-none p-0 mb-6 flex-1 space-y-0" role="list">
@@ -168,6 +181,15 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
+
+              {plan.id !== 'free' && (
+                <div className="flex items-center gap-2 mb-3 text-sm text-success/80">
+                  <ShieldCheckIcon className="h-4 w-4 shrink-0" />
+                  <Link href="/refund" className="hover:underline font-mono text-mono-sm">
+                    24-hour money-back guarantee
+                  </Link>
+                </div>
+              )}
 
               <Link
                 href={plan.href}
@@ -200,7 +222,7 @@ export default function PricingPage() {
               AI interpretation layers narrative and recommendations on top of the mathematical framework.
             </p>
             <p>
-              This is not entertainment astrology. It is a structured analytical tool based on classical Vedic principles.
+              This is a structured analytical tool based on classical Vedic principles.
               Results should inform — not replace — your own judgment.
             </p>
           </div>
@@ -212,8 +234,8 @@ export default function PricingPage() {
         <div className="grid sm:grid-cols-3 gap-4">
           <div className="card p-5 text-center">
             <div className="text-2xl mb-2">🛡</div>
-            <h3 className="font-body text-title-md text-star mb-1">48-Hour Refund</h3>
-            <p className="text-body-sm text-dust">Full refund within 24 hours, no questions asked.</p>
+            <h3 className="font-body text-title-md text-star mb-1">24-Hour Refund</h3>
+            <p className="text-body-sm text-dust">Full refund within 24 hours. No questions asked.</p>
             <Link href="/refund" className="font-mono text-mono-sm text-amber mt-2 inline-block hover:underline">
               Refund policy →
             </Link>
@@ -234,6 +256,24 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: 'VedicHour 7-Day Jyotish Forecast',
+            url: `${SITE_URL}/pricing`,
+            offers: {
+              '@type': 'Offer',
+              price: '9.99',
+              priceCurrency: 'USD',
+              availability: 'https://schema.org/InStock',
+            },
+          }),
+        }}
+      />
 
       <Footer />
     </div>
