@@ -17,7 +17,10 @@ export async function GET(
   if (auth instanceof NextResponse) return auth;
 
   const { id: reportId } = context.params;
-  const supabase = auth.isAdmin ? createServiceClient() : await createClient();
+  // Always use service client for status polling — it reads from primary,
+  // bypasses RLS, and avoids the read-replica lag that causes stale "generating"
+  // responses even after the report is marked complete.
+  const supabase = createServiceClient();
 
   const { data, error } = await supabase
     .from('reports')
