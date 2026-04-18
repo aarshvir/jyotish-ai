@@ -6,6 +6,12 @@ const nextConfig = {
         source: '/.well-known/assetlinks.json',
         destination: '/api/well-known/assetlinks',
       },
+      // Route the sitemap through an explicit API handler so it is never
+      // intercepted by Vercel edge middleware or Next.js special-file conflicts.
+      {
+        source: '/sitemap.xml',
+        destination: '/api/sitemap',
+      },
     ];
   },
 
