@@ -5,7 +5,8 @@ import HowItWorks from '@/components/landing/HowItWorks';
 import FreeKundli from '@/components/landing/FreeKundli';
 import HourlyPreview from '@/components/landing/HourlyPreview';
 import Pricing from '@/components/landing/Pricing';
-import FAQ, { FAQS } from '@/components/landing/FAQ';
+import FAQ from '@/components/landing/FAQ';
+import { FAQS } from '@/lib/faq-data';
 import FinalCTA from '@/components/landing/FinalCTA';
 import { currencyFromHeader, getPricesForCurrency } from '@/lib/pricing';
 
