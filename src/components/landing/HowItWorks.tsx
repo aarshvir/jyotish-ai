@@ -1,8 +1,8 @@
 const STEPS = [
   {
     number: '01',
-    title: 'Enter Birth Data',
-    description: 'Date, time, and place of birth. We auto-geocode your city and lock in coordinates for sub-degree precision.',
+    title: 'Enter Birth Data (Kundli Input)',
+    description: 'Provide your date, time, and place of birth — the foundation of your Janam Kundali. We auto-geocode your city for sub-degree precision.',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="1" opacity="0.4" />
@@ -17,8 +17,8 @@ const STEPS = [
   },
   {
     number: '02',
-    title: 'Swiss Ephemeris Calculates',
-    description: 'Real planetary positions via pyswisseph. Lahiri ayanamsa, Vimshottari dasha, true sidereal lagna. No approximations.',
+    title: 'Jyotish Engine Calculates',
+    description: 'Real planetary positions via Swiss Ephemeris (pyswisseph). Lahiri Ayanamsa, Vimshottari Dasha, true sidereal Lagna. Classical Jyotish — no approximations.',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="5" fill="currentColor" opacity="0.9" />
@@ -31,8 +31,8 @@ const STEPS = [
   },
   {
     number: '03',
-    title: 'AI Interprets & Guides',
-    description: 'Cross-references your chart with every hora and choghadiya window, producing hourly scores and actionable narrative.',
+    title: 'AI Interprets Your Jyotish Chart',
+    description: 'Cross-references your Kundli with every hora and choghadiya window, producing 18 hourly scores and actionable Vedic forecast narrative.',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
         <rect x="6" y="30" width="8" height="12" rx="1" fill="currentColor" opacity="0.35" />
@@ -56,10 +56,10 @@ export default function HowItWorks() {
         <div className="section-header text-center">
           <p className="section-eyebrow">The Process</p>
           <h2 className="section-title text-display-md">
-            How It Works
+            How Your Jyotish Forecast Is Built
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Ancient precision, delivered in seconds.
+            Classical Jyotish precision, computed in seconds.
           </p>
         </div>
 

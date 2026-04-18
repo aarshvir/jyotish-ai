@@ -84,46 +84,109 @@ function GeneratingScreen({
       ? serverPoll.generation_step
       : serverPoll?.status === 'generating'
         ? GENERATION_MESSAGES[Math.min(Math.floor(elapsedSeconds / 22), GENERATION_MESSAGES.length - 1)]
-        : 'Connecting to server…';
+        : 'Aligning with the cosmos...';
+
+  // Terminal-style history of steps to show the "work" being done
+  const [telemetryHistory, setTelemetryHistory] = useState<string[]>([]);
+  useEffect(() => {
+    if (phaseLabel && !telemetryHistory.includes(phaseLabel)) {
+      setTelemetryHistory(prev => [...prev.slice(-3), phaseLabel]);
+    }
+  }, [phaseLabel]);
 
   return (
-    <div className="min-h-[calc(100vh-var(--nav-height))] bg-dark flex flex-col items-center justify-center gap-8 px-6">
+    <div className="min-h-[calc(100vh-var(--nav-height))] bg-space flex flex-col items-center justify-center gap-8 px-6 overflow-hidden relative">
       <StarField />
+      
+      {/* Background ambient glow matching the progress */}
+      <div 
+        className="absolute w-[600px] h-[600px] rounded-full bg-amber opacity-[0.03] blur-3xl transition-transform duration-1000 ease-out" 
+        style={{ transform: `scale(${0.8 + (displayProgress / 100) * 0.4})` }} 
+      />
 
-      <div className="text-amber text-5xl animate-spin" style={{ animationDuration: '8s' }}>🪐</div>
+      <div className="relative z-10 flex flex-col items-center text-center max-w-lg w-full">
+        
+        {/* Orbital Loading Animation */}
+        <div className="relative w-32 h-32 mb-10 flex flex-col items-center justify-center">
+          <MandalaRing className="absolute inset-0 w-full h-full text-amber opacity-30 animate-spin-slow" />
+          <motion.div 
+            className="w-16 h-16 rounded-full border border-amber/50 flex items-center justify-center bg-space/80 shadow-glow-amber backdrop-blur-sm"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 1, ease: 'easeOut' }}
+          >
+            <span className="text-xl font-mono text-amber">{displayProgress}%</span>
+          </motion.div>
+          {/* Orbital path and "planet" */}
+          <motion.div 
+            className="absolute origin-center w-28 h-28 border border-horizon/60 rounded-full"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+          >
+            <div className="absolute top-0 left-1/2 -ml-1 -mt-1 w-2 h-2 bg-amber rounded-full shadow-[0_0_8px_2px_rgba(212,168,83,0.8)]" />
+          </motion.div>
+        </div>
 
-      <div className="text-center max-w-md">
-        <h1 className="text-star text-2xl font-bold mb-1">Generating your report</h1>
-        <p className="text-dust text-sm">
-          Running on our servers — safe to close this tab and return later.
+        <h1 className="text-star text-3xl font-display font-semibold mb-3 tracking-tight">Focusing the Heavens</h1>
+        <p className="text-dust text-sm mb-12">
+          Your blueprint is generating securely in the background. You may close this tab.
         </p>
-      </div>
 
-      {/* Real progress bar tied to server milestones */}
-      <div className="w-full max-w-md">
-        <div className="flex justify-between items-center mb-1.5">
-          <span className="font-mono text-xs text-amber">{displayProgress}% complete</span>
-          <span className="font-mono text-xs text-dust">{elapsed}</span>
+        {/* Real progress bar tied to server milestones */}
+        <div className="w-full mb-8 relative">
+          <div className="h-1.5 w-full bg-horizon/50 rounded-full overflow-hidden">
+            {displayProgress > 0 ? (
+              <motion.div
+                className="h-full bg-gradient-to-r from-amber/40 via-amber to-amber-light rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${displayProgress}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+              />
+            ) : (
+              <div className="h-full w-full bg-gradient-to-r from-amber/20 via-amber/70 to-amber/20 animate-pulse" />
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center mt-3">
+            <span className="font-mono text-xs text-dust/60 uppercase tracking-widest">{elapsed} ELAPSED</span>
+            {displayProgress > 80 ? (
+              <span className="font-mono text-xs text-success tracking-widest uppercase">Finalizing</span>
+            ) : (
+              <span className="font-mono text-xs text-amber/60 tracking-widest uppercase animate-pulse">Calculating...</span>
+            )}
+          </div>
         </div>
-        <div className="h-2 w-full bg-nebula rounded-full overflow-hidden">
-          {displayProgress > 0 ? (
-            <div
-              className="h-full bg-gradient-to-r from-amber/60 to-amber transition-all duration-1000 ease-out rounded-full"
-              style={{ width: `${displayProgress}%` }}
-            />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-r from-amber/20 via-amber/70 to-amber/20 animate-pulse" />
-          )}
+
+        {/* Telemetry Readout */}
+        <div className="w-full bg-[#0D1426]/80 backdrop-blur-md border border-horizon/60 rounded-card p-5 text-left h-36 flex flex-col justify-end overflow-hidden relative shadow-inner-light">
+          <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-[#0D1426] to-transparent z-10" />
+          <ul className="space-y-3 font-mono text-xs z-0">
+            {telemetryHistory.map((msg, i) => {
+              const isLast = i === telemetryHistory.length - 1;
+              return (
+                <motion.li 
+                  key={msg + i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: isLast ? 1 : 0.4, x: 0 }}
+                  className={`flex items-start gap-3 ${isLast ? 'text-amber' : 'text-dust'}`}
+                >
+                  <span className="shrink-0 opacity-50">&gt;</span>
+                  <span className={isLast ? '' : 'truncate'}>{msg}</span>
+                  {isLast && (
+                     <motion.span 
+                       initial={{ opacity: 0 }}
+                       animate={{ opacity: 1 }}
+                       transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
+                       className="inline-block w-1.5 h-3.5 bg-amber ml-1 relative top-0.5"
+                     />
+                  )}
+                </motion.li>
+              );
+            })}
+          </ul>
         </div>
-      </div>
 
-      <div className="w-full max-w-md bg-nebula/30 border border-amber/10 rounded-lg p-4 text-center min-h-[3.5rem] flex items-center justify-center">
-        <p className="font-mono text-xs text-amber leading-relaxed">{phaseLabel}</p>
       </div>
-
-      <p className="text-dust/60 text-xs text-center max-w-sm">
-        Typical time: about 3–8 minutes. This page stops waiting automatically after about 15 minutes and offers a retry.
-      </p>
     </div>
   );
 }

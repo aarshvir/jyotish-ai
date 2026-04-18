@@ -6,8 +6,8 @@ import { StarField } from '@/components/ui/StarField';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 
 const PROOF_POINTS = [
-  { value: 'Swiss Ephemeris', label: 'Industry-standard engine' },
-  { value: '18',              label: 'Hourly windows per day' },
+  { value: 'Free Kundli',     label: 'No card needed' },
+  { value: '18',              label: 'Hourly Vedic windows / day' },
   { value: '48h',             label: 'No-questions refund' },
 ];
 
@@ -25,7 +25,7 @@ const fadeUp = (delay: number) => ({
   transition: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
 });
 
-const HEADLINE = ['Your', 'Life,', 'Decoded', 'Hour', 'by', 'Hour.'];
+const HEADLINE = ['Your', 'Jyotish', 'Forecast,', 'Decoded', 'Hour', 'by', 'Hour.'];
 
 export default function Hero() {
   return (
@@ -65,6 +65,8 @@ export default function Hero() {
             >
               {word === 'Hour.' ? (
                 <span className="text-amber-gradient">{word}</span>
+              ) : word === 'Jyotish' ? (
+                <span className="text-amber">{word}</span>
               ) : (
                 word
               )}
@@ -75,12 +77,17 @@ export default function Hero() {
         {/* Subtitle */}
         <motion.p
           {...fadeUp(0.75)}
-          className="font-body text-body-lg text-dust max-w-lg mx-auto mb-10 leading-relaxed"
+          className="font-body text-body-lg text-dust max-w-xl mx-auto mb-10 leading-relaxed"
         >
-          AI-powered Vedic astrology forecasts with hourly precision.
+          AI-powered Vedic astrology &amp; free Kundli online — with hourly precision.
           <br className="hidden md:block" />
           Know exactly when to act — and when to rest.
         </motion.p>
+        {/* Hidden SEO anchor text — visible to crawlers, hidden from users */}
+        <span className="sr-only">
+          Free Kundli generator · Janam Kundali online · AI Jyotish forecast · Vedic astrology report ·
+          Jyotish AI · Vedic forecast · Astrology report · AI kundli
+        </span>
 
         {/* CTAs */}
         <motion.div

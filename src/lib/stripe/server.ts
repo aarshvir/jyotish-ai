@@ -27,8 +27,10 @@ export function getStripeClient(): Stripe {
   return stripeSingleton;
 }
 
-const baseCheckoutUrls = () => ({
-  success_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?success=true`,
+const baseCheckoutUrls = (planType?: string) => ({
+  success_url: planType === '7day' 
+    ? `${process.env.NEXT_PUBLIC_URL}/upsell?success=true` 
+    : `${process.env.NEXT_PUBLIC_URL}/dashboard?success=true`,
   cancel_url: `${process.env.NEXT_PUBLIC_URL}/dashboard?canceled=true`,
 });
 
@@ -53,7 +55,7 @@ export async function createCheckoutSession({
     return { id: 'test_skip', url: null } as unknown as Stripe.Checkout.Session;
   }
   const stripe = getStripeClient();
-  const urls = baseCheckoutUrls();
+  const urls = baseCheckoutUrls(planType);
   const meta: Record<string, string> = {
     userId,
     ...(planType ? { plan_type: planType } : {}),

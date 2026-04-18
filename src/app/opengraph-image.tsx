@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og';
 
-export const alt = 'VedicHour — Vedic Astrology, Hour by Hour';
+export const alt = 'VedicHour — Free Kundli & AI Jyotish Forecast';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 export const runtime = 'edge';
@@ -58,7 +58,7 @@ export default function OpengraphImage() {
               maxWidth: 1000,
             }}
           >
-            Your life, decoded hour by hour.
+            Free Kundli &amp; AI Jyotish Forecast
           </div>
           <div
             style={{
@@ -69,7 +69,7 @@ export default function OpengraphImage() {
               display: 'flex',
             }}
           >
-            AI-powered Vedic astrology forecasts with hourly precision.
+            Free Kundli · AI Vedic forecast · 18 hourly Jyotish windows per day
           </div>
         </div>
 
@@ -83,11 +83,11 @@ export default function OpengraphImage() {
             color: 'rgba(245,239,224,0.6)',
           }}
         >
+          <span>Free Kundli</span>
+          <span>·</span>
+          <span>Jyotish AI</span>
+          <span>·</span>
           <span>Swiss Ephemeris</span>
-          <span>·</span>
-          <span>Lahiri Ayanamsa</span>
-          <span>·</span>
-          <span>Vimshottari Dasha</span>
         </div>
       </div>
     ),

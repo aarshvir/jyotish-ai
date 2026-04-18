@@ -12,17 +12,18 @@ type GeoPrices = {
 const PLANS = [
   {
     id: 'free',
-    name: 'Preview',
+    name: 'Free Kundli',
     defaultPrice: 'Free',
     defaultNote: 'No card required',
-    description: 'See your cosmic blueprint',
+    description: 'Free Janam Kundali & birth chart',
     features: [
+      'Free Kundli (Janam Kundali)',
       'Complete natal birth chart',
       'Lagna + Moon sign analysis',
-      'Current dasha period',
-      'Sample hora schedule',
+      'Current Dasha period',
+      'Sample Jyotish hora schedule',
     ],
-    cta: 'Start Free',
+    cta: 'Get Free Kundli',
     href: '/onboard?plan=free',
     featured: false,
     isPaid: false,
@@ -122,10 +123,10 @@ export default function Pricing() {
         <div className="section-header text-center">
           <p className="section-eyebrow">Pricing</p>
           <h2 className="section-title text-display-md">
-            Choose Your Plan
+            Free Kundli &amp; Jyotish Forecast Plans
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            One-time payments. Instant delivery. No subscriptions.
+            Free Kundli included. One-time payments for deeper Jyotish forecasts. No subscriptions.
           </p>
         </div>
 

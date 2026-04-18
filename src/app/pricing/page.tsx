@@ -14,8 +14,8 @@ const BASE_PLANS = [
     defaultPrice: 'Free',
     defaultNote: 'No credit card required',
     description: 'Discover your cosmic blueprint',
-    features: ['Complete natal birth chart', 'Lagna (rising sign) analysis', 'Sample hora schedule for today', 'Dasha period overview', 'Planetary strength indicators'],
-    cta: 'Get Free Preview',
+    features: ['Free Kundli (Janam Kundali)', 'Complete natal birth chart', 'Lagna (rising sign) analysis', 'Sample Jyotish hora schedule for today', 'Vimshottari Dasha period', 'Planetary strength indicators'],
+    cta: 'Get Free Kundli',
     href: '/onboard?plan=free',
     highlight: false,
     badge: null,
@@ -26,8 +26,8 @@ const BASE_PLANS = [
     defaultPrice: '$9.99',
     defaultNote: 'One-time payment',
     description: 'Hour-by-hour cosmic timing for a week',
-    features: ['Full natal chart analysis', '7-day hour-by-hour forecast', '18 hourly slots per day with scores', 'Choghadiya & hora timing', 'Daily strategy section', 'Auspicious window identification', 'Rahu Kaal warnings', 'PDF download'],
-    cta: 'Get 7-Day Forecast',
+    features: ['Full natal chart & Kundli analysis', '7-day Jyotish hourly forecast', '126 hourly slots (18/day) with scores', 'Choghadiya & hora timing', 'Daily strategy section', 'Auspicious window identification', 'Rahu Kaal warnings', 'PDF download'],
+    cta: 'Get 7-Day Jyotish Forecast',
     href: '/onboard?plan=7day',
     highlight: false,
     badge: null,
@@ -96,10 +96,13 @@ export default function PricingPage() {
 
       {/* Hero */}
       <section className="text-center px-5 sm:px-8 pt-28 sm:pt-32 pb-10 sm:pb-14">
-        <p className="section-eyebrow mb-3">Transparent Pricing</p>
-        <h1 className="font-body font-semibold text-display-lg mb-4">Choose Your Oracle</h1>
+        <p className="section-eyebrow mb-3">Free Kundli · AI Jyotish Forecast</p>
+        <h1 className="font-body font-semibold text-display-lg mb-4">
+          Free Kundli &amp; Jyotish Forecast Plans
+        </h1>
         <p className="font-body text-body-lg text-dust max-w-lg mx-auto leading-relaxed">
-          AI-powered Vedic astrology reports with hour-by-hour precision. One-time payments. Instant delivery. No subscriptions.
+          Generate your free Kundli (Janam Kundali) instantly — no card needed. Upgrade for a full
+          AI Jyotish forecast with 18 hourly Vedic windows per day. One-time payments. No subscriptions.
         </p>
         {/* Launch offer banner */}
         <div className="mt-6 inline-flex items-center gap-2.5 px-5 py-3 rounded-card bg-amber/10 border border-amber/30">

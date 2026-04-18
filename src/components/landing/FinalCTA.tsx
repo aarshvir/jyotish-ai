@@ -11,13 +11,13 @@ export default function FinalCTA() {
       </div>
 
       <div className="relative max-w-3xl mx-auto px-6 text-center">
-        <p className="section-eyebrow">Ready?</p>
+        <p className="section-eyebrow">Free Kundli · AI Jyotish Forecast</p>
         <h2 className="section-title text-display-md mb-5">
-          Find your next peak window.
+          Your Vedic Forecast Starts Free.
         </h2>
         <p className="font-body text-body-lg text-dust max-w-xl mx-auto mb-10">
-          Know exactly when to act — and when to rest. Your first report takes 3–8 minutes
-          and is backed by our 48-hour refund guarantee.
+          Get your free Kundli (Janam Kundali) instantly — no card needed. Upgrade anytime
+          for a full AI Jyotish forecast across 7, 30, or 365 days.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
@@ -25,7 +25,7 @@ export default function FinalCTA() {
             href="/onboard?promo=NEWUSER30"
             className="btn-primary text-base px-8 py-3.5 group"
           >
-            <span>Generate My Report — 30% Off</span>
+            <span>Get Free Kundli — 30% Off Paid Plans</span>
             <svg
               width="16"
               height="16"

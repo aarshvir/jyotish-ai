@@ -58,10 +58,10 @@ export default function HourlyPreview() {
         <div className="section-header text-center">
           <p className="section-eyebrow">Sample Output</p>
           <h2 className="section-title text-display-md">
-            Hour-by-Hour Intelligence
+            Your Jyotish Forecast — Hour by Hour
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Every hour rated. Every window labelled. No ambiguity.
+            18 Vedic astrology windows per day. Every hora rated. Every choghadiya labelled. No ambiguity.
           </p>
         </div>
 

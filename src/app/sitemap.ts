@@ -12,11 +12,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never';
     priority: number;
   }> = [
-    { path: '/', changeFrequency: 'weekly', priority: 1.0 },
-    { path: '/pricing', changeFrequency: 'weekly', priority: 0.9 },
+    // Landing page: primary keyword target (free kundli, AI jyotish, vedic forecast)
+    { path: '/', changeFrequency: 'daily', priority: 1.0 },
+    // Pricing: secondary commercial intent target
+    { path: '/pricing', changeFrequency: 'weekly', priority: 0.95 },
+    // Legal — lower crawl priority
     { path: '/privacy', changeFrequency: 'monthly', priority: 0.4 },
     { path: '/terms', changeFrequency: 'monthly', priority: 0.4 },
-    { path: '/refund', changeFrequency: 'monthly', priority: 0.4 },
+    { path: '/refund', changeFrequency: 'monthly', priority: 0.5 },
   ];
 
   return routes.map((r) => ({
