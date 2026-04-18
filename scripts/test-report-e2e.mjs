@@ -304,8 +304,12 @@ async function main() {
   log(`  Response: HTTP ${startRes.status} in ${elapsed}s`);
 
   if (startRes.status === 202) {
-    // skippedPipeline — row was too young
-    warning(`Got 202 (skippedPipeline). Report row already generating — will poll status instead.`);
+    if (startRes.body?.engine === 'inngest') {
+      log(`  Dispatched to Inngest — will poll status.`);
+    } else {
+      // skippedPipeline — row was too young / already generating
+      warning(`Got 202 (skippedPipeline). Report row already generating — will poll status instead.`);
+    }
   } else if (startRes.status === 200) {
     const s = startRes.body?.status;
     if (s === 'complete') {

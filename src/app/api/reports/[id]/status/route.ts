@@ -29,9 +29,9 @@ export async function GET(
     )
     .eq('id', reportId)
     .eq('user_id', auth.user.id)
-    .single();
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
     return NextResponse.json({ error: 'Report not found' }, { status: 404 });
   }
 
