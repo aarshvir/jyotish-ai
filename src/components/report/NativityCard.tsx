@@ -1,6 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { RasiChartNorthIndian } from '@/components/chart/RasiChartNorthIndian';
+import { RasiChartSouthIndian } from '@/components/chart/RasiChartSouthIndian';
+import type { ChartPlanet } from '@/components/chart/RasiChartNorthIndian';
 
 interface NativitySummary {
   lagna_analysis?: string;
@@ -60,6 +64,9 @@ function safeText(text: string | undefined, fallback: string): string {
   return t;
 }
 
+type ChartStyle = 'north' | 'south';
+const CHART_STORAGE_KEY = 'jyotish_chart_style';
+
 export function NativityCard({
   name: nameProp,
   birthDate: birthDateProp,
@@ -82,6 +89,31 @@ export function NativityCard({
   const moonSign = moonSignProp ?? 'Cancer';
   const moonNakshatra = moonNakshatraProp ?? '';
   const currentDasha = currentDashaProp ?? { mahadasha: 'Unknown', antardasha: 'Unknown' };
+
+  // Chart style toggle — default North Indian, persisted in localStorage
+  const [chartStyle, setChartStyle] = useState<ChartStyle>('north');
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(CHART_STORAGE_KEY) as ChartStyle | null;
+      if (stored === 'north' || stored === 'south') setChartStyle(stored);
+    } catch { /* ignore */ }
+  }, []);
+
+  function toggleChart(style: ChartStyle) {
+    setChartStyle(style);
+    try { localStorage.setItem(CHART_STORAGE_KEY, style); } catch { /* ignore */ }
+  }
+
+  // Build ChartPlanet array from planetary_positions
+  const chartPlanets: ChartPlanet[] = (nativity?.planetary_positions ?? []).map((p) => ({
+    name: p.planet,
+    sign: p.sign,
+    house: p.house,
+    retrograde: false,
+    combust: p.dignity?.toLowerCase().includes('combust') || false,
+    exalted: p.dignity?.toLowerCase().includes('exalt') || false,
+    debilitated: p.dignity?.toLowerCase().includes('debil') || false,
+  }));
   // Debug trace to ensure nativity never silently crashes
   try {
     // eslint-disable-next-line no-console
@@ -341,6 +373,61 @@ export function NativityCard({
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* Rasi Chart with North / South toggle */}
+      {chartPlanets.length > 0 && (
+        <div className="mt-8 pt-8 border-t border-horizon/40">
+          <div className="flex items-center justify-between mb-4">
+            <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase">
+              Rasi Chart
+            </p>
+            {/* Toggle */}
+            <div className="flex items-center gap-1 bg-horizon/20 rounded-full p-0.5 border border-horizon/40">
+              {(['north', 'south'] as const).map((style) => (
+                <button
+                  key={style}
+                  onClick={() => toggleChart(style)}
+                  className={`px-3 py-1 rounded-full font-mono text-xs uppercase tracking-wider transition-colors duration-200 ${
+                    chartStyle === style
+                      ? 'bg-amber/20 text-amber border border-amber/40'
+                      : 'text-dust hover:text-star'
+                  }`}
+                >
+                  {style === 'north' ? 'North' : 'South'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <motion.div
+            key={chartStyle}
+            initial={{ opacity: 0, scale: 0.97 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="flex justify-center"
+          >
+            {chartStyle === 'north' ? (
+              <RasiChartNorthIndian
+                lagna={lagna}
+                planets={chartPlanets}
+                size={340}
+                className="rounded-sm border border-horizon/30"
+              />
+            ) : (
+              <RasiChartSouthIndian
+                lagna={lagna}
+                planets={chartPlanets}
+                size={340}
+                className="rounded-sm border border-horizon/30"
+              />
+            )}
+          </motion.div>
+
+          <p className="mt-3 font-mono text-xs text-dust/40 text-center">
+            {chartStyle === 'north' ? 'North Indian Diamond' : 'South Indian Fixed'} · {lagna} Lagna
+          </p>
         </div>
       )}
     </motion.div>

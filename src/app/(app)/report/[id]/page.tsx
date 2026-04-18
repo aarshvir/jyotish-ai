@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, Suspense, type MutableRefObject } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -19,6 +19,7 @@ import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
 import { reportDataToMarkdown } from '@/lib/pdf/reportDataToMarkdown';
 import { PrintAllDays } from '@/components/report/PrintAllDays';
+import { GeneratingScreen } from '@/components/report/GeneratingScreen';
 import type { NatalChartData, NativityProfile, ReportData } from '@/lib/agents/types';
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
 import { buildFunctionalLordGroups } from '@/lib/engine/functionalNature';
@@ -38,161 +39,8 @@ function isPlaceholderReportData(rd: Record<string, unknown> | null | undefined)
   return days.every((d) => (d.day_score ?? 50) === 50);
 }
 
-const GENERATION_MESSAGES = [
-  'Computing ephemeris and natal positions…',
-  'Scoring hourly windows for each forecast day…',
-  'Running nativity and commentary models (this is the slowest part)…',
-  'Writing daily overviews and slot-by-slot text…',
-  'Building the 12-month layer and weekly synthesis…',
-  'Validating and assembling the final report…',
-];
-
 /** Stop polling after this if status is still `generating` (server likely dead or orphaned row). */
 const CLIENT_GENERATING_TIMEOUT_MS = 15 * 60 * 1000;
-
-function GeneratingScreen({
-  elapsedSeconds,
-  onElapsed,
-  generationStartRef,
-  serverPoll,
-}: {
-  elapsedSeconds: number;
-  onElapsed: (s: number) => void;
-  generationStartRef: MutableRefObject<number | null>;
-  serverPoll: { status: string; progress: number; generation_step?: string | null } | null;
-}) {
-  useEffect(() => {
-    const t = setInterval(() => {
-      const start = generationStartRef.current ?? Date.now();
-      onElapsed(Math.floor((Date.now() - start) / 1000));
-    }, 1000);
-    return () => clearInterval(t);
-  }, [generationStartRef, onElapsed]);
-
-  const mins = Math.floor(elapsedSeconds / 60);
-  const secs = elapsedSeconds % 60;
-  const elapsed = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-
-  // Real progress from server; fall back to a slow crawl so the bar always moves
-  const realProgress = serverPoll?.progress ?? 0;
-  // If server hasn't responded yet, animate from 0→4% based on elapsed time (max 4%)
-  const fallbackProgress = serverPoll ? 0 : Math.min(4, Math.floor(elapsedSeconds / 5));
-  const displayProgress = Math.max(realProgress, fallbackProgress);
-
-  // Real phase label from server; fall back to elapsed-time-based message
-  const phaseLabel =
-    serverPoll?.generation_step
-      ? serverPoll.generation_step
-      : serverPoll?.status === 'generating'
-        ? GENERATION_MESSAGES[Math.min(Math.floor(elapsedSeconds / 22), GENERATION_MESSAGES.length - 1)]
-        : 'Aligning with the cosmos...';
-
-  // Terminal-style history of steps to show the "work" being done
-  const [telemetryHistory, setTelemetryHistory] = useState<string[]>([]);
-  useEffect(() => {
-    if (phaseLabel) {
-      setTelemetryHistory(prev =>
-        prev.includes(phaseLabel) ? prev : [...prev.slice(-3), phaseLabel]
-      );
-    }
-  }, [phaseLabel]);
-
-  return (
-    <div className="min-h-[calc(100vh-var(--nav-height))] bg-space flex flex-col items-center justify-center gap-8 px-6 overflow-hidden relative">
-      <StarField />
-      
-      {/* Background ambient glow matching the progress */}
-      <div 
-        className="absolute w-[600px] h-[600px] rounded-full bg-amber opacity-[0.03] blur-3xl transition-transform duration-1000 ease-out" 
-        style={{ transform: `scale(${0.8 + (displayProgress / 100) * 0.4})` }} 
-      />
-
-      <div className="relative z-10 flex flex-col items-center text-center max-w-lg w-full">
-        
-        {/* Orbital Loading Animation */}
-        <div className="relative w-32 h-32 mb-10 flex flex-col items-center justify-center">
-          <MandalaRing className="absolute inset-0 w-full h-full text-amber opacity-30 animate-spin-slow" />
-          <motion.div 
-            className="w-16 h-16 rounded-full border border-amber/50 flex items-center justify-center bg-space/80 shadow-glow-amber backdrop-blur-sm"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-          >
-            <span className="text-xl font-mono text-amber">{displayProgress}%</span>
-          </motion.div>
-          {/* Orbital path and "planet" */}
-          <motion.div 
-            className="absolute origin-center w-28 h-28 border border-horizon/60 rounded-full"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-          >
-            <div className="absolute top-0 left-1/2 -ml-1 -mt-1 w-2 h-2 bg-amber rounded-full shadow-[0_0_8px_2px_rgba(212,168,83,0.8)]" />
-          </motion.div>
-        </div>
-
-        <h1 className="text-star text-3xl font-display font-semibold mb-3 tracking-tight">Focusing the Heavens</h1>
-        <p className="text-dust text-sm mb-12">
-          Your blueprint is generating securely in the background. You may close this tab.
-        </p>
-
-        {/* Real progress bar tied to server milestones */}
-        <div className="w-full mb-8 relative">
-          <div className="h-1.5 w-full bg-horizon/50 rounded-full overflow-hidden">
-            {displayProgress > 0 ? (
-              <motion.div
-                className="h-full bg-gradient-to-r from-amber/40 via-amber to-amber-light rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: `${displayProgress}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-              />
-            ) : (
-              <div className="h-full w-full bg-gradient-to-r from-amber/20 via-amber/70 to-amber/20 animate-pulse" />
-            )}
-          </div>
-          
-          <div className="flex justify-between items-center mt-3">
-            <span className="font-mono text-xs text-dust/60 uppercase tracking-widest">{elapsed} ELAPSED</span>
-            {displayProgress > 80 ? (
-              <span className="font-mono text-xs text-success tracking-widest uppercase">Finalizing</span>
-            ) : (
-              <span className="font-mono text-xs text-amber/60 tracking-widest uppercase animate-pulse">Calculating...</span>
-            )}
-          </div>
-        </div>
-
-        {/* Telemetry Readout */}
-        <div className="w-full bg-[#0D1426]/80 backdrop-blur-md border border-horizon/60 rounded-card p-5 text-left h-36 flex flex-col justify-end overflow-hidden relative shadow-inner-light">
-          <div className="absolute top-0 left-0 w-full h-8 bg-gradient-to-b from-[#0D1426] to-transparent z-10" />
-          <ul className="space-y-3 font-mono text-xs z-0">
-            {telemetryHistory.map((msg, i) => {
-              const isLast = i === telemetryHistory.length - 1;
-              return (
-                <motion.li 
-                  key={msg + i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: isLast ? 1 : 0.4, x: 0 }}
-                  className={`flex items-start gap-3 ${isLast ? 'text-amber' : 'text-dust'}`}
-                >
-                  <span className="shrink-0 opacity-50">&gt;</span>
-                  <span className={isLast ? '' : 'truncate'}>{msg}</span>
-                  {isLast && (
-                     <motion.span 
-                       initial={{ opacity: 0 }}
-                       animate={{ opacity: 1 }}
-                       transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
-                       className="inline-block w-1.5 h-3.5 bg-amber ml-1 relative top-0.5"
-                     />
-                  )}
-                </motion.li>
-              );
-            })}
-          </ul>
-        </div>
-
-      </div>
-    </div>
-  );
-}
 
 function ReportContent() {
   const routeParams = useParams();
@@ -871,10 +719,12 @@ function ReportContent() {
   if (isGenerating) {
     return (
       <GeneratingScreen
+        reportId={reportIdFromRoute}
         elapsedSeconds={elapsedSeconds}
         onElapsed={setElapsedSeconds}
         generationStartRef={generationStartRef}
         serverPoll={serverPoll}
+        extraHeaders={authJsonHeaders()}
       />
     );
   }

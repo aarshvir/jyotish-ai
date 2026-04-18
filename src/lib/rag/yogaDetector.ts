@@ -13,7 +13,6 @@
 import type { NatalChartData } from '@/lib/agents/types';
 
 const KENDRA_HOUSES = new Set([1, 4, 7, 10]);
-const TRIKONA_HOUSES = new Set([1, 5, 9]);
 const DUSTHANA_HOUSES = new Set([6, 8, 12]);
 
 // Exaltation signs per planet
@@ -79,10 +78,6 @@ function isInKendra(planets: Planets, name: string): boolean {
   return h !== undefined && KENDRA_HOUSES.has(h);
 }
 
-function isInTrikona(planets: Planets, name: string): boolean {
-  const h = house(planets, name);
-  return h !== undefined && TRIKONA_HOUSES.has(h);
-}
 
 function isExalted(planets: Planets, name: string): boolean {
   return sign(planets, name) === EXALT[name];

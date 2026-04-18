@@ -6,6 +6,7 @@
 
 import { createServiceClient } from '@/lib/supabase/admin';
 import { validateReportData } from '@/lib/validation/reportValidation';
+import { PHASE } from '@/lib/reports/phases/slugs';
 import {
   loadPipelineState,
   savePipelineCheckpoint,
@@ -508,7 +509,7 @@ export async function generateReportPipeline(
   try {
     await dbInsertGenerating();
     logStep('db_insert_generating');
-    void dbSetProgress('Starting pipeline', 0);
+    void dbSetProgress(PHASE.EPHEMERIS_FETCHING, 0);
 
     // ── Resume checkpoint (Pillar 1) ─────────────────────────────────────
     // Load any state persisted by a previous (failed) invocation so we can
@@ -593,7 +594,7 @@ export async function generateReportPipeline(
 
     onStep({ type: 'step_completed', step: 0 });
     logStep('ephemeris_done');
-    void dbSetProgress('Birth chart computed', 8);
+    void dbSetProgress(PHASE.EPHEMERIS_PARSING, 8);
 
     // Save ephemeris data immediately
     const _dasha = ephemerisData?.current_dasha ?? {};
@@ -625,7 +626,7 @@ export async function generateReportPipeline(
       onStep({ type: 'step_completed', step: 1 });
       onStep({ type: 'step_completed', step: 2 });
       logStep('nativity_grids_resumed');
-      void dbSetProgress('Nativity & hourly grids complete', 22);
+      void dbSetProgress(PHASE.NATIVITY_SYNTHESIS, 22);
     } else {
     await assertWithinBudget('pre_nativity_grids');
     onStep({ type: 'step_started', step: 1, message: 'Analysing birth chart & calculating hourly scores...', detail: 'Nativity analysis and daily grid calculation in parallel' });
@@ -634,9 +635,12 @@ export async function generateReportPipeline(
 
     let dailyGridResults: (DayGridApiResult | null)[] = [];
 
+    void dbSetProgress(PHASE.NATIVITY_LAGNA, 12);
+
     await Promise.all([
       // Step 2: Nativity
       (async () => {
+        void dbSetProgress(PHASE.NATIVITY_YOGA, 14);
         try {
           const natRes = await resilientFetch(`${base}/api/agents/nativity`, {
             method: 'POST',
@@ -685,7 +689,7 @@ export async function generateReportPipeline(
 
     onStep({ type: 'step_completed', step: 1 });
     logStep('nativity_grids_done');
-    void dbSetProgress('Nativity & hourly grids complete', 22);
+    void dbSetProgress(PHASE.NATIVITY_SYNTHESIS, 22);
 
     forecastDays = dailyGridResults.map((r, i) => {
       if (!r) {
@@ -731,7 +735,7 @@ export async function generateReportPipeline(
 
     // Save day scores after grids
     void dbSaveDayScores(forecastDays);
-    void dbSetProgress('Day scores saved', 25);
+    void dbSetProgress(PHASE.DAILY_SCORES, 25);
     onStep({ type: 'partial_report_updated', field: 'day_scores' });
 
     // Checkpoint: nativity + grids phase complete
@@ -797,7 +801,7 @@ export async function generateReportPipeline(
       onStep({ type: 'step_completed', step: 5 });
       onStep({ type: 'step_completed', step: 6 });
       logStep('commentary_resumed');
-      void dbSetProgress('Commentary, months & weekly synthesis complete', 88);
+      void dbSetProgress(PHASE.WEEKS_SYNTHESIS, 88);
     } else {
     onStep({ type: 'step_started', step: 3, message: 'Writing daily commentary...', detail: 'Analyzing each day with your birth chart' });
 
@@ -892,7 +896,7 @@ export async function generateReportPipeline(
               nativityData.current_dasha_interpretation = `${md} Mahadasha with ${ad} Antardasha is active. Use high-score days and benefic horas for important actions.`;
             }
           }
-          void dbSetProgress('Daily overviews & nativity text written', 50);
+          void dbSetProgress(PHASE.DAILY_BATCH_3, 50);
           onStep({ type: 'partial_report_updated', field: 'daily_overviews' });
         } catch (e) {
           console.error('[orchestrator][STEP-4+5] failed:', e instanceof Error ? e.message : String(e));
@@ -919,6 +923,7 @@ export async function generateReportPipeline(
       // Step 6: Hourly commentary — 3 parallel batches of ~10 days each (3× faster than 1 × 30-day call)
       (async () => {
         onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: 'Three parallel batches for all forecast days' });
+        void dbSetProgress(PHASE.HOURLY_GRID, 53);
         try {
           type BatchSlot = { slot_index: number; commentary?: string; commentary_short?: string };
           type BatchDay = { dayIndex: number; slots?: BatchSlot[] };
@@ -947,8 +952,17 @@ export async function generateReportPipeline(
             chunks.push(allDaysInput.slice(i, i + CHUNK_SIZE));
           }
 
+          const HOURLY_BATCH_SLUGS = [
+            PHASE.HOURLY_BATCH_1, PHASE.HOURLY_BATCH_2, PHASE.HOURLY_BATCH_3,
+            PHASE.HOURLY_BATCH_4, PHASE.HOURLY_BATCH_5, PHASE.HOURLY_BATCH_6,
+          ] as const;
+          const HOURLY_BATCH_PCTS = [55, 58, 61, 63, 65, 65] as const;
+
           const chunkResults = await Promise.all(
-            chunks.map(async (chunkDays) => {
+            chunks.map(async (chunkDays, chunkIdx) => {
+              const batchSlug = HOURLY_BATCH_SLUGS[Math.min(chunkIdx, HOURLY_BATCH_SLUGS.length - 1)];
+              const batchPct = HOURLY_BATCH_PCTS[Math.min(chunkIdx, HOURLY_BATCH_PCTS.length - 1)];
+              void dbSetProgress(batchSlug, batchPct);
               const batchBody = JSON.stringify({
                 lagnaSign: ephemerisData.lagna,
                 mahadasha,
@@ -995,7 +1009,7 @@ export async function generateReportPipeline(
               }
             });
           });
-          void dbSetProgress('Hourly commentary written', 65);
+          void dbSetProgress(PHASE.HOURLY_BATCH_6, 65);
           onStep({ type: 'partial_report_updated', field: 'hourly_commentary' });
         } catch (err) {
           console.error('[orchestrator][STEP-6] failed:', err instanceof Error ? err.message : String(err));
@@ -1079,7 +1093,7 @@ export async function generateReportPipeline(
               domain_scores: { career: 65, money: 65, health: 65, relationships: 65 },
             });
           }
-          void dbSetProgress('12-month forecast written', 75);
+          void dbSetProgress(PHASE.MONTHS_SYNTHESIS, 75);
           onStep({ type: 'partial_report_updated', field: 'months' });
         } catch (e) {
           console.error('[orchestrator][STEP-7] failed:', e instanceof Error ? e.message : String(e));
@@ -1145,7 +1159,7 @@ export async function generateReportPipeline(
 
     onStep({ type: 'step_completed', step: 3 });
     logStep('commentary_months_done');
-    void dbSetProgress('Commentary, months & weekly synthesis complete', 88);
+    void dbSetProgress(PHASE.WEEKS_SYNTHESIS, 88);
     // No assertWithinBudget here — parallel block may legitimately run close to the budget;
     // we always proceed to assembly to save whatever was generated.
 
@@ -1259,7 +1273,7 @@ export async function generateReportPipeline(
             });
           }
         }
-        void dbSetProgress('Validation complete', 93);
+        void dbSetProgress(PHASE.FINALIZE_PERSIST, 93);
         onStep({ type: 'step_completed', step: 9 });
       } catch (err) {
         console.error('[orchestrator][STEP-9] validation error:', err);
@@ -1376,7 +1390,7 @@ export async function generateReportPipeline(
     // Save to DB
     const payloadBytes = JSON.stringify(finalReport).length;
     console.log(`[orchestrator] report payload size: ${(payloadBytes / 1024).toFixed(0)} KB for ${reportId}`);
-    void dbSetProgress('Saving report', 97);
+    void dbSetProgress(PHASE.FINALIZE_PERSIST, 97);
     await dbSaveFinal(finalReport as unknown as Record<string, unknown>);
     onStep({ type: 'step_completed', step: 10 });
     logStep('report_saved_complete');
