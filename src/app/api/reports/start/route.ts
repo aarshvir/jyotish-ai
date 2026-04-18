@@ -1,6 +1,13 @@
-/** Vercel cap for non-Enterprise plans is 300s; but with Inngest the pipeline
- *  runs in the background — this route just fires the event and returns. */
-export const maxDuration = 30;
+/**
+ * Report generation start route.
+ * Runs the pipeline synchronously within Vercel's maxDuration window.
+ * The orchestrator has its own internal budget (255s soft / 285s hard-kill)
+ * so it saves progress and marks the report as 'error' cleanly if time runs out.
+ *
+ * The client polls /api/reports/[id]/status every 3s and shows a live
+ * progress bar while waiting.
+ */
+export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,13 +15,12 @@ import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
-import { inngest } from '@/lib/inngest/client';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
- * With Inngest the pipeline runs in the background — give it 10 minutes.
+ * 5 minutes — gives the active pipeline time to finish before allowing a retry.
  */
-const YOUNG_GENERATING_MS = 600 * 1000;
+const YOUNG_GENERATING_MS = 5 * 60 * 1000;
 
 /** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
 function birthTimeToPipelineTime(s: string): string {
@@ -36,10 +42,16 @@ function isYoungGenerating(generationStartedAt: string | null | undefined): bool
 }
 
 /**
- * Creates or updates a `reports` row, then dispatches the pipeline to Inngest
- * for background execution. Returns immediately — client polls `/api/reports/[id]/status`.
+ * POST /api/reports/start
  *
- * Falls back to synchronous execution if INNGEST_EVENT_KEY is not configured.
+ * Creates or updates a `reports` row, then runs the pipeline synchronously
+ * within Vercel's 300s window. The orchestrator's internal checkpoints mean
+ * a retry picks up from the last completed phase rather than restarting.
+ *
+ * Returns:
+ *   202 { status: 'generating' }  — pipeline is still running (client should poll)
+ *   200 { status: 'complete' }    — pipeline completed within this request
+ *   500 { error }                 — pipeline failed; report row marked 'error'
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -156,23 +168,6 @@ export async function POST(request: NextRequest) {
     if (cookie) authHeaders['cookie'] = cookie;
   }
 
-  // Dispatch to Inngest (background) or fall back to inline execution
-  const useInngest = !!process.env.INNGEST_EVENT_KEY;
-
-  if (useInngest) {
-    try {
-      await inngest.send({
-        name: 'report/generate',
-        data: { reportId, userId: auth.user.id, userEmail: auth.user.email ?? '', input, base, authHeaders },
-      });
-      console.log(`[reports/start] dispatched to Inngest: ${reportId}`);
-      return NextResponse.json({ reportId, ok: true, status: 'generating', engine: 'inngest' }, { status: 202 });
-    } catch (err) {
-      console.error(`[reports/start] Inngest dispatch failed, falling back to inline:`, err);
-    }
-  }
-
-  // Inline fallback (original synchronous execution for dev/no-Inngest)
   try {
     await generateReportPipeline(
       reportId,
