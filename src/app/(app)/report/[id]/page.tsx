@@ -1183,10 +1183,10 @@ function ReportContent() {
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <Link
-                  href="/onboard?plan=7day&promo=NEWUSER30"
+                  href="/onboard?plan=7day"
                   className="btn-primary px-5 py-2.5 text-sm"
                 >
-                  Upgrade with NEWUSER30 →
+                  Generate my full report →
                 </Link>
                 <Link
                   href="/pricing"

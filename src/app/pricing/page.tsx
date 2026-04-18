@@ -138,6 +138,9 @@ export default async function PricingPage() {
           Generate your free Kundli (Janam Kundali) instantly — no card needed. Upgrade for a full
           AI Jyotish forecast with 18 hourly Vedic windows per day. One-time payments. No subscriptions.
         </p>
+        <p className="mt-4 font-mono text-mono-sm text-dust/50">
+          Prices shown in {currency}. All plans are one-time — no subscription.
+        </p>
       </section>
 
       {/* Plans */}

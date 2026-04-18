@@ -5,22 +5,6 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { isBypassToken } from '@/lib/bypass';
 import { getPromoDiscount, redeemPromoCode } from '@/lib/promo/server';
 
-async function logPromoUsage(
-  code: string,
-  userEmail: string,
-  reportId: string | null
-) {
-  try {
-    const supabase = createServiceClient();
-    await supabase.from('promo_usage').insert({
-      code: code.trim().toUpperCase(),
-      user_email: userEmail,
-      report_id: reportId,
-    });
-  } catch (e) {
-    console.error('promo_usage insert failed (table missing or RLS):', e);
-  }
-}
 
 async function createFreeReport(
   userId: string,

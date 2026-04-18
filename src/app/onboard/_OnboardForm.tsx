@@ -472,7 +472,7 @@ function Step3({
         <div className="mb-4 px-3.5 py-2.5 rounded-button bg-amber/10 border border-amber/25 flex items-center gap-2.5">
           <span className="text-amber text-base shrink-0">🚀</span>
           <p className="font-mono text-mono-sm text-amber tracking-wide">
-            New launch offer — use code <span className="font-bold tracking-widest">NEWUSER30</span> for 30% off
+            Launch offer active — enter your promo code above for 30% off
           </p>
         </div>
       )}
@@ -629,7 +629,7 @@ function OnboardPageInner() {
     return () => clearTimeout(timer);
   }, [promoCode]);
 
-  // Auto-apply promo code from URL (?promo=NEWUSER30)
+  // Auto-apply promo code from URL (?promo=CODE)
   useEffect(() => {
     const urlPromo = searchParams.get('promo');
     if (!urlPromo) return;

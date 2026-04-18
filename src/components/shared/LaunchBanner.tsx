@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 const STORAGE_KEY = 'vedichour:launch-banner-dismissed-v1';
 
 /**
- * Top-of-page announcement banner for the NEWUSER30 launch offer.
+ * Top-of-page announcement banner for the launch promo offer.
  * Renders as a sticky amber strip above the navbar.
  * Dismissal is persisted to localStorage so users don't see it again after
  * explicitly closing it.
@@ -38,17 +38,16 @@ export default function LaunchBanner() {
   return (
     <div className="relative w-full bg-amber text-space">
       <div className="mx-auto flex max-w-6xl items-center justify-center gap-3 px-10 py-2.5 text-center">
-        <span className="font-mono text-xs sm:text-sm font-medium tracking-wide">
-          <span className="font-bold">Launch offer — 30% off your first report.</span>
-          {' '}Use code{' '}
-          <Link
-            href="/onboard?promo=NEWUSER30"
-            className="inline-block px-2 py-0.5 mx-0.5 rounded bg-space/15 font-bold tracking-widest hover:bg-space/25 transition-colors"
-          >
-            NEWUSER30
-          </Link>
-          {' '}— applied automatically at checkout.
-        </span>
+          <span className="font-mono text-xs sm:text-sm font-medium tracking-wide">
+            <span className="font-bold">Launch offer — 30% off your first report.</span>
+            {' '}Apply the code at checkout.{' '}
+            <Link
+              href="/onboard?plan=free"
+              className="underline hover:no-underline transition-all"
+            >
+              Start free →
+            </Link>
+          </span>
       </div>
       <button
         onClick={handleDismiss}

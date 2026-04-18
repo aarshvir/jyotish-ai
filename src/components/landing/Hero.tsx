@@ -94,14 +94,14 @@ export default function Hero() {
           {...fadeUp(0.9)}
           className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-14 md:mb-16"
         >
-          <Link href="/onboard" className="btn-primary text-base px-8 py-3.5 group">
-            <span>Generate My Report</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="group-hover:translate-x-0.5 transition-transform">
+          <Link href="/onboard?plan=free" className="btn-primary text-base px-8 py-3.5 group">
+            <span>See today&#39;s windows — free</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="group-hover:translate-x-0.5 transition-transform" aria-hidden>
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </Link>
           <Link href="#hourly-preview" className="btn-secondary text-base px-8 py-3.5">
-            See Sample Report
+            See sample report
           </Link>
         </motion.div>
 

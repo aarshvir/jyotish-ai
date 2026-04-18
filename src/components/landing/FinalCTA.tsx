@@ -22,10 +22,10 @@ export default function FinalCTA() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           <Link
-            href="/onboard?promo=NEWUSER30"
+            href="/onboard?plan=free"
             className="btn-primary text-base px-8 py-3.5 group"
           >
-            <span>Get Free Kundli — 30% Off Paid Plans</span>
+            <span>See today&#39;s windows — free</span>
             <svg
               width="16"
               height="16"
