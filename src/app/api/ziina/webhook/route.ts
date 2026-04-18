@@ -205,7 +205,23 @@ export async function POST(request: NextRequest) {
 
     // 6. Dispatch Inngest report generation if we have enough context.
     // Fetch the report row's birth data to build the pipeline input.
-    const { data: reportRow } = await db
+    type ReportRow = {
+      user_id: string | null;
+      user_email: string | null;
+      native_name: string | null;
+      birth_date: string | null;
+      birth_time: string | null;
+      birth_city: string | null;
+      birth_lat: number | null;
+      birth_lng: number | null;
+      current_city: string | null;
+      current_lat: number | null;
+      current_lng: number | null;
+      timezone_offset: number | null;
+      plan_type: string | null;
+      status: string | null;
+    };
+    const { data: reportRow } = (await db
       .from('reports')
       .select(
         'user_id, user_email, native_name, birth_date, birth_time, birth_city, ' +
@@ -213,7 +229,7 @@ export async function POST(request: NextRequest) {
           'timezone_offset, plan_type, status',
       )
       .eq('id', payment.report_id)
-      .maybeSingle();
+      .maybeSingle()) as { data: ReportRow | null };
 
     if (reportRow && reportRow.status !== 'complete' && process.env.INNGEST_EVENT_KEY) {
       const rawTime = String(reportRow.birth_time ?? '12:00:00').trim();

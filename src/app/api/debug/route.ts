@@ -25,13 +25,16 @@ export async function GET(request: NextRequest) {
     return `SET (${v.length} chars)`;
   };
 
-  // Quick Anthropic connectivity test — 10s timeout
-  let anthropicPing = 'not_tested';
+  // Anthropic connectivity tests
+  let anthropicPingHaiku = 'not_tested';
+  let anthropicPingSonnet = 'not_tested';
   const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (anthropicKey && !anthropicKey.startsWith('your_')) {
+    // Test 1: haiku with tiny prompt
     try {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 10_000);
+      const t0 = Date.now();
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         signal: ctrl.signal,
@@ -47,9 +50,34 @@ export async function GET(request: NextRequest) {
         }),
       });
       clearTimeout(timer);
-      anthropicPing = `HTTP_${res.status}`;
+      anthropicPingHaiku = `HTTP_${res.status}_${Date.now() - t0}ms`;
     } catch (e) {
-      anthropicPing = `ERROR:${(e as Error).name}:${(e as Error).message?.slice(0, 80)}`;
+      anthropicPingHaiku = `ERROR:${(e as Error).name}`;
+    }
+    // Test 2: sonnet with small astrology prompt (30s timeout)
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 30_000);
+      const t0 = Date.now();
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: ctrl.signal,
+        headers: {
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 100,
+          messages: [{ role: 'user', content: 'Describe Cancer lagna in 3 sentences.' }],
+        }),
+      });
+      clearTimeout(timer);
+      const elapsed = Date.now() - t0;
+      anthropicPingSonnet = `HTTP_${res.status}_${elapsed}ms`;
+    } catch (e) {
+      anthropicPingSonnet = `ERROR:${(e as Error).name}`;
     }
   }
 
@@ -66,6 +94,7 @@ export async function GET(request: NextRequest) {
     ZIINA_API_TOKEN: check('ZIINA_API_TOKEN'),
     NODE_ENV: process.env.NODE_ENV,
     VERCEL_ENV: process.env.VERCEL_ENV,
-    anthropic_ping: anthropicPing,
+    anthropic_haiku_ping: anthropicPingHaiku,
+    anthropic_sonnet_ping: anthropicPingSonnet,
   });
 }

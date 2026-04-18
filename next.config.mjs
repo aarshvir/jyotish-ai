@@ -24,14 +24,6 @@ const nextConfig = {
   // Compress all responses
   compress: true,
 
-  // Serve local fonts — no Google Fonts network dependency at build time
-  serverExternalPackages: [
-    '@anthropic-ai/sdk',
-    '@react-pdf/renderer',
-    'openai',
-    '@google/generative-ai',
-  ],
-
   // Security & caching headers
   async headers() {
     return [
@@ -81,6 +73,12 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: '10mb',
     },
+    serverComponentsExternalPackages: [
+      '@anthropic-ai/sdk',
+      '@react-pdf/renderer',
+      'openai',
+      '@google/generative-ai',
+    ],
   },
 };
 

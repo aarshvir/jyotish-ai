@@ -1,53 +1,66 @@
+/**
+ * GET /api/reports/[id]/stream
+ *
+ * Pillar 1 refactor: pure read-side SSE projection.
+ *
+ * Previously this route invoked `generateReportPipeline` as fire-and-forget,
+ * which duplicated the Inngest background run and caused double-executions.
+ * Now the pipeline is owned exclusively by Inngest (via /api/reports/start or
+ * the Ziina webhook). This route only tails the `reports` row every 1s and
+ * emits SSE `phase` frames so alternative clients (e.g. CLI tools) can watch
+ * generation progress without hitting the status endpoint 300 times.
+ *
+ * The main web UI uses Supabase Realtime + /api/reports/[id]/status polling
+ * and does NOT rely on this route. It is kept as a public observability API.
+ */
+
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
-import { generateReportPipeline, type StepEvent, type PipelineInput } from '@/lib/reports/orchestrator';
+import { createServiceClient } from '@/lib/supabase/admin';
+
+const POLL_INTERVAL_MS = 1000;
+const MAX_STREAM_MS = 15 * 60 * 1000; // 15 min hard cap on the connection
 
 export async function GET(
   request: NextRequest,
   context: { params: { id: string } },
 ) {
-  const auth = await requireAuth(request);
-  if (auth instanceof NextResponse) return auth;
+  const authResult = await requireAuth(request);
+  if (authResult instanceof NextResponse) return authResult;
+  const authedUserId = authResult.user.id;
 
   const { id: reportId } = context.params;
-  const sp = request.nextUrl.searchParams;
-
-  const input: PipelineInput = {
-    name: sp.get('name') ?? 'Seeker',
-    date: sp.get('date') ?? '',
-    time: sp.get('time') ?? '',
-    city: sp.get('city') ?? '',
-    lat: parseFloat(sp.get('lat') ?? '0') || 0,
-    lng: parseFloat(sp.get('lng') ?? '0') || 0,
-    currentLat: parseFloat(sp.get('currentLat') ?? sp.get('lat') ?? '0') || 0,
-    currentLng: parseFloat(sp.get('currentLng') ?? sp.get('lng') ?? '0') || 0,
-    currentCity: sp.get('currentCity') ?? sp.get('city') ?? '',
-    timezoneOffset: sp.get('currentTz') ? parseInt(sp.get('currentTz')!) : -new Date().getTimezoneOffset(),
-    type: sp.get('type') ?? '7day',
-    forecastStart: sp.get('forecastStart') ?? undefined,
-    planType: sp.get('plan_type') ?? sp.get('type') ?? '7day',
-    paymentStatus: 'bypass',
-  };
-
-  const base = request.nextUrl.origin;
-  const authHeaders: Record<string, string> = {};
-  const cookie = request.headers.get('cookie');
-  if (cookie) authHeaders['cookie'] = cookie;
-  const bypass = sp.get('bypass') ?? request.headers.get('x-bypass-token');
-  if (bypass) authHeaders['x-bypass-token'] = bypass;
 
   const encoder = new TextEncoder();
-  let streamController: ReadableStreamDefaultController<Uint8Array> | null = null;
   let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  let pollTimer: ReturnType<typeof setInterval> | null = null;
+  let lastStep: string | null = null;
+  let lastProgress: number | null = null;
+  let lastStatus: string | null = null;
+  const startedAt = Date.now();
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
-      streamController = controller;
+      function send(event: string, payload: Record<string, unknown>) {
+        try {
+          controller.enqueue(
+            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`),
+          );
+        } catch {
+          // stream already closed
+        }
+      }
 
-      // Heartbeat every 15s — keeps the SSE connection alive through long LLM calls
+      function closeStream() {
+        if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        try { controller.close(); } catch { /* already closed */ }
+      }
+
+      // Heartbeat: SSE comment every 15s keeps intermediaries from buffering.
       heartbeatTimer = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': ping\n\n'));
@@ -55,45 +68,71 @@ export async function GET(
           if (heartbeatTimer) clearInterval(heartbeatTimer);
         }
       }, 15_000);
+
+      const db = createServiceClient();
+
+      // Initial hello so the client knows the connection is live.
+      send('hello', { reportId, t: Date.now() });
+
+      async function pollOnce() {
+        if (Date.now() - startedAt > MAX_STREAM_MS) {
+          send('timeout', { reason: 'stream_max_duration' });
+          closeStream();
+          return;
+        }
+        try {
+          const { data, error } = await db
+            .from('reports')
+            .select('status, generation_step, generation_progress')
+            .eq('id', reportId)
+            .eq('user_id', authedUserId)
+            .maybeSingle();
+          if (error) {
+            send('error', { message: error.message });
+            return;
+          }
+          if (!data) {
+            send('error', { message: 'not_found' });
+            closeStream();
+            return;
+          }
+          const step = (data.generation_step as string | null) ?? null;
+          const pct = typeof data.generation_progress === 'number' ? data.generation_progress : null;
+          const status = (data.status as string | null) ?? null;
+
+          if (step !== lastStep || pct !== lastProgress || status !== lastStatus) {
+            send('phase', {
+              slug: step,
+              pct: pct ?? 0,
+              status,
+              t: Date.now(),
+            });
+            lastStep = step;
+            lastProgress = pct;
+            lastStatus = status;
+          }
+
+          if (status === 'complete') {
+            send('complete', { reportId });
+            closeStream();
+          } else if (status === 'error') {
+            send('error', { reportId, message: 'pipeline_error' });
+            closeStream();
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          send('error', { message: msg });
+        }
+      }
+
+      void pollOnce();
+      pollTimer = setInterval(() => void pollOnce(), POLL_INTERVAL_MS);
     },
     cancel() {
       if (heartbeatTimer) clearInterval(heartbeatTimer);
-      streamController = null;
+      if (pollTimer) clearInterval(pollTimer);
     },
   });
-
-  function send(data: StepEvent | { type: 'ping' }) {
-    if (!streamController) return;
-    try {
-      streamController.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
-    } catch {
-      // Stream already closed
-    }
-  }
-
-  function closeStream() {
-    if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
-    try { streamController?.close(); } catch { /* already closed */ }
-    streamController = null;
-  }
-
-  // Send initial ping to confirm connection
-  send({ type: 'ping' });
-
-  void generateReportPipeline(
-    reportId,
-    auth.user.id,
-    auth.user.email ?? '',
-    input,
-    (event) => {
-      send(event);
-      if (event.type === 'report_completed' || event.type === 'error') {
-        closeStream();
-      }
-    },
-    base,
-    authHeaders,
-  );
 
   return new Response(stream, {
     headers: {

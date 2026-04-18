@@ -85,9 +85,9 @@ export const generateReportJob = inngest.createFunction(
       key: 'event.data.reportId',
       limit: 1,
     },
+    triggers: [{ event: 'report/generate' }],
   },
-  { event: 'report/generate' },
-  async ({ event, step, attempt }) => {
+  async ({ event, step, attempt }: { event: unknown; step: { run: <T>(id: string, fn: () => Promise<T>) => Promise<T> }; attempt: number }) => {
     const data = (event as unknown as ReportGenerateEvent).data;
     const { reportId } = data;
 

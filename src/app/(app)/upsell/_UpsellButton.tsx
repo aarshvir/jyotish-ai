@@ -1,11 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 export function UpsellButton() {
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleUpgrade = async () => {
     setLoading(true);

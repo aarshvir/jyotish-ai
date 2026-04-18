@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback, Suspense, type MutableRefObje
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { subscribeToReport, type ReportRealtimeSnapshot } from '@/lib/supabase/realtime';
 import { motion } from 'framer-motion';
 import './print.css';
 import { MandalaRing } from '@/components/ui/MandalaRing';
@@ -282,16 +283,25 @@ function ReportContent() {
   }, [params]);
 
   /** Clears status polling (safe to call from unmount). */
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollCancelRef = useRef(false);
   const pollConsecutiveErrorsRef = useRef(0);
+  /** Pillar 1: Supabase Realtime subscription cleanup fn. */
+  const realtimeCleanupRef = useRef<(() => void) | null>(null);
+  /** True when the Realtime channel has joined — polling can downshift to a 15s keepalive. */
+  const realtimeJoinedRef = useRef(false);
 
   const stopReportPolling = useCallback(() => {
     pollCancelRef.current = true;
     if (pollIntervalRef.current !== null) {
-      clearInterval(pollIntervalRef.current);
+      clearTimeout(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
+    if (realtimeCleanupRef.current) {
+      realtimeCleanupRef.current();
+      realtimeCleanupRef.current = null;
+    }
+    realtimeJoinedRef.current = false;
   }, []);
 
   const createReportRecord = useCallback(async () => {
@@ -361,6 +371,35 @@ function ReportContent() {
     setElapsedSeconds(0);
     pollConsecutiveErrorsRef.current = 0;
 
+    // Pillar 1: subscribe to Supabase Realtime so the UI reflects phase changes
+    // within ~100ms instead of up to 3s. Polling stays as a safety-net fallback.
+    realtimeCleanupRef.current = subscribeToReport(
+      reportIdFromRoute,
+      (row: ReportRealtimeSnapshot) => {
+        setServerPoll({
+          status: String(row.status ?? 'generating'),
+          progress: typeof row.generation_progress === 'number' ? row.generation_progress : 0,
+          generation_step: row.generation_step ?? null,
+        });
+        const rd = row.report_data as { days?: unknown[] } | null | undefined;
+        const hasData = Array.isArray(rd?.days) && (rd!.days as unknown[]).length > 0;
+        if (row.status === 'complete' && hasData) {
+          stopReportPolling();
+          setReportData(rd as unknown as ReportData);
+          setIsGenerating(false);
+        } else if (row.status === 'error') {
+          stopReportPolling();
+          setError('Generation failed — please retry');
+          setIsGenerating(false);
+        }
+      },
+      (state) => {
+        realtimeJoinedRef.current = state === 'joined';
+      },
+    );
+
+    // Poll at 3s normally; once realtime has joined, we slow to a 15s keepalive
+    // that only acts as a safety net if the channel drops silently.
     const pollIntervalMs = 3000;
     const pollLoopStartedAt = Date.now();
 
@@ -475,7 +514,18 @@ function ReportContent() {
     };
 
     void tick();
-    pollIntervalRef.current = setInterval(() => void tick(), pollIntervalMs);
+    // Pillar 1: adaptive polling. If Realtime channel is joined, poll every 15s
+    // as a keepalive; otherwise every 3s. Self-rescheduling setTimeout supports
+    // dynamic interval adjustment without re-creating a setInterval.
+    const scheduleNext = () => {
+      if (pollCancelRef.current) return;
+      const nextDelay = realtimeJoinedRef.current ? 15_000 : pollIntervalMs;
+      pollIntervalRef.current = setTimeout(async () => {
+        await tick();
+        scheduleNext();
+      }, nextDelay);
+    };
+    scheduleNext();
   }, [reportIdFromRoute, authJsonHeaders, stopReportPolling]);
 
   /** Inserts row (if needed), POSTs /api/reports/start, then polls until complete. */
