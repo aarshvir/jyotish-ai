@@ -8,8 +8,13 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(request: NextRequest) {
   const bypass = request.headers.get('x-bypass-token');
+  const internalKey = request.headers.get('x-service-key');
   const secret = process.env.BYPASS_SECRET;
-  if (!secret || bypass !== secret) {
+  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+  const authorized =
+    (secret && bypass === secret) ||
+    (serviceKey && internalKey === serviceKey);
+  if (!authorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
