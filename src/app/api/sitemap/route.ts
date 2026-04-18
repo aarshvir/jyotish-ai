@@ -1,11 +1,4 @@
-import { NextResponse } from 'next/server';
-
-// Never allow localhost to appear in production sitemap URLs.
-const RAW_URL = process.env.NEXT_PUBLIC_URL ?? '';
-const SITE_URL = (RAW_URL.startsWith('http://localhost') || RAW_URL === ''
-  ? 'https://www.vedichour.com'
-  : RAW_URL
-).trim().replace(/\/+$/, '');
+const SITE_URL = 'https://www.vedichour.com';
 
 const PLANETS = ['mars', 'jupiter', 'saturn'];
 const SIGNS = [
@@ -13,13 +6,7 @@ const SIGNS = [
   'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
 ];
 
-interface SitemapEntry {
-  path: string;
-  changefreq: string;
-  priority: string;
-}
-
-const STATIC_ROUTES: SitemapEntry[] = [
+const STATIC_ROUTES = [
   { path: '/',         changefreq: 'daily',   priority: '1.0'  },
   { path: '/pricing',  changefreq: 'weekly',  priority: '0.95' },
   { path: '/refund',   changefreq: 'monthly', priority: '0.5'  },
@@ -27,7 +14,7 @@ const STATIC_ROUTES: SitemapEntry[] = [
   { path: '/terms',    changefreq: 'monthly', priority: '0.4'  },
 ];
 
-const TRANSIT_ROUTES: SitemapEntry[] = PLANETS.flatMap((planet) =>
+const TRANSIT_ROUTES = PLANETS.flatMap((planet) =>
   SIGNS.map((sign) => ({
     path: `/transit/${planet}/${sign}`,
     changefreq: 'monthly',
@@ -35,34 +22,22 @@ const TRANSIT_ROUTES: SitemapEntry[] = PLANETS.flatMap((planet) =>
   })),
 );
 
-function urlEntry(entry: SitemapEntry, lastmod: string): string {
-  return `  <url>
-    <loc>${SITE_URL}${entry.path}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>${entry.changefreq}</changefreq>
-    <priority>${entry.priority}</priority>
-  </url>`;
-}
-
-// Revalidate every 24 hours via ISR — sitemap content rarely changes.
-export const revalidate = 86400;
+const ALL_ROUTES = [...STATIC_ROUTES, ...TRANSIT_ROUTES];
 
 export function GET() {
   const lastmod = new Date().toISOString();
-  const entries = [...STATIC_ROUTES, ...TRANSIT_ROUTES]
-    .map((e) => urlEntry(e, lastmod))
-    .join('\n');
+  const urls = ALL_ROUTES.map(
+    (r) =>
+      `  <url>\n    <loc>${SITE_URL}${r.path}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${r.changefreq}</changefreq>\n    <priority>${r.priority}</priority>\n  </url>`,
+  ).join('\n');
 
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${entries}
-</urlset>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 
-  return new NextResponse(xml, {
+  return new Response(xml, {
     status: 200,
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400, stale-while-revalidate=3600',
+      'Cache-Control': 'public, max-age=86400, s-maxage=86400',
     },
   });
 }
