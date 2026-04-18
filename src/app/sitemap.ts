@@ -1,6 +1,9 @@
 import type { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com';
+// Env vars on some hosts can ship with trailing whitespace/slash; sanitize.
+const SITE_URL = (process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com')
+  .trim()
+  .replace(/\/+$/, '');
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

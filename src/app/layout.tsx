@@ -30,7 +30,10 @@ const jetbrainsMono = localFont({
   display: 'swap',
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com';
+// Some hosting envs can ship NEXT_PUBLIC_URL with trailing whitespace — sanitize.
+const SITE_URL = (process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com')
+  .trim()
+  .replace(/\/+$/, '');
 const SITE_NAME = 'VedicHour';
 const SITE_TITLE = 'VedicHour — Vedic Astrology, Hour by Hour';
 const SITE_DESCRIPTION =
