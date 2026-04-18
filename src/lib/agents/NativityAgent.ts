@@ -24,7 +24,7 @@ CRITICAL RULES:
 - lagna_analysis: 150-200 words with specific house/nakshatra references.
 - All string values must be complete sentences, never cut off.`;
 
-function buildUserPrompt(chart: NatalChartData, ragContext: string): string {
+function buildUserPrompt(chart: NatalChartData, ragContext: string, detectedYogas?: string[]): string {
   const planets = Object.entries(chart.planets ?? {})
     .map(([name, p]) =>
       `  ${name}: ${p?.sign ?? '?'} ${(p?.degree ?? 0).toFixed(2)}° | house ${p?.house ?? '?'} | ${p?.nakshatra ?? '?'} pada ${p?.nakshatra_pada ?? '?'}${p?.is_retrograde ? ' (R)' : ''}`
@@ -35,6 +35,10 @@ function buildUserPrompt(chart: NatalChartData, ragContext: string): string {
     chart.functional_lord_groups &&
     `\nAUTHORITATIVE ENGINE GROUPS (whole-sign; do not contradict in functional lists or prose):\n${JSON.stringify(chart.functional_lord_groups)}\n`;
 
+  const yogaHint = detectedYogas && detectedYogas.length > 0
+    ? `\nPRE-DETECTED YOGAS (you MUST include ALL of these in the yogas array with descriptions): ${detectedYogas.join(', ')}\n`
+    : '';
+
   return `Analyze this natal chart and return a JSON NativityProfile.
 ${ragContext}
 NATAL CHART
@@ -44,12 +48,12 @@ ${planets}
 Moon nakshatra: ${chart.moon_nakshatra ?? 'Unknown'}
 Current dasha: ${chart.current_dasha?.mahadasha ?? 'unknown'} MD / ${chart.current_dasha?.antardasha ?? 'unknown'} AD
   (${chart.current_dasha?.start_date ?? '?'} → ${chart.current_dasha?.end_date ?? '?'})
-${engineFn ?? ''}
+${engineFn ?? ''}${yogaHint}
 INSTRUCTIONS — analyze for ${chart.lagna ?? 'Unknown'} Lagna:
 1. Functional benefics: planets ruling kendras (1,4,7,10) and trikonas (1,5,9).
 2. Functional malefics: planets ruling dusthanas (3,6,8,12) without trikona lordship.
 3. Yogakaraka(s): planet(s) ruling both a kendra and a trikona.
-4. Top 3-5 yogas (Gajakesari, Budha-Aditya, Raja Yoga, Dhana Yoga, Viparita Raja, etc.).
+4. Top 3-5 yogas — MUST include all pre-detected yogas listed above (Gajakesari, Budha-Aditya, Raja Yoga, Dhana Yoga, Viparita Raja, etc.).
 5. 3-5 chart strengths and 2-3 challenges.
 6. Interpret the current mahadasha-antardasha activation.
 
@@ -163,7 +167,7 @@ export class NativityAgent {
               messages: [
                 {
                   role: 'user',
-                  content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart, ragContext)}`,
+                  content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart, ragContext, detectedYogas)}`,
                 },
               ],
             },
@@ -207,7 +211,7 @@ export class NativityAgent {
         console.warn('NativityAgent: using backup LLM chain (no extended thinking) + RAG');
         const text = await runChatFallbackChain({
           systemPrompt: SYSTEM_PROMPT,
-          userPrompt: buildUserPrompt(natalChart, ragContext),
+          userPrompt: buildUserPrompt(natalChart, ragContext, detectedYogas),
           maxTokens: 16000,
         });
         return safeParseJson<NativityProfile>(text);

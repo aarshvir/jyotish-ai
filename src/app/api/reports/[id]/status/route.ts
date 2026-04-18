@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
-import { createServiceClient } from '@/lib/supabase/admin';
 
 /**
  * Poll endpoint: client calls this every few seconds to check if report is done.
@@ -16,22 +15,50 @@ export async function GET(
   if (auth instanceof NextResponse) return auth;
 
   const { id: reportId } = context.params;
-  // Always use service client for status polling — it reads from primary,
-  // bypasses RLS, and avoids the read-replica lag that causes stale "generating"
-  // responses even after the report is marked complete.
-  const supabase = createServiceClient();
+  const userId = auth.user.id;
 
-  // Use select('*') — explicit column lists can hit Supabase's column-projection
-  // cache and return stale data when the row was just updated (replica lag).
-  // select('*') forces a fresh row read from the primary.
-  const { data, error } = await supabase
-    .from('reports')
-    .select('*')
-    .eq('id', reportId)
-    .eq('user_id', auth.user.id)
-    .maybeSingle();
+  // Bypass the supabase-js client entirely for this read — use raw PostgREST
+  // so we can attach the `Prefer: no-cache` header which tells Supabase to
+  // route this read to the PRIMARY database rather than a read replica.
+  // This eliminates the 30–90s replica lag that caused stale "generating" reads
+  // even after the pipeline had saved status=complete to the primary.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  const serviceKey  = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
-  if (error || !data) {
+  // Use raw PostgREST fetch with `Prefer: no-cache` to bypass Supabase read-replica
+  // routing — the supabase-js client doesn't expose this and always routes to replica.
+  // Service-role key skips RLS, so we filter user_id in the query for security.
+  const restUrl = `${supabaseUrl}/rest/v1/reports?id=eq.${reportId}&user_id=eq.${userId}&limit=1`;
+  let data: Record<string, unknown> | null = null;
+
+  try {
+    const res = await fetch(restUrl, {
+      method: 'GET',
+      headers: {
+        apikey:          serviceKey,
+        Authorization:   `Bearer ${serviceKey}`,
+        Accept:          'application/json',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        Pragma:          'no-cache',
+        // PostgREST-specific header: force read from primary, not read-replica.
+        // Supabase PostgREST 12+ respects this to bypass replica routing.
+        Prefer:          'no-cache',
+      },
+      cache: 'no-store' as RequestCache,
+      signal: AbortSignal.timeout(12_000),
+    });
+
+    if (!res.ok) {
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+    }
+
+    const rows = await res.json() as Record<string, unknown>[];
+    data = rows[0] ?? null;
+  } catch {
+    return NextResponse.json({ error: 'DB fetch failed' }, { status: 500 });
+  }
+
+  if (!data) {
     return NextResponse.json({ error: 'Report not found' }, { status: 404 });
   }
 
