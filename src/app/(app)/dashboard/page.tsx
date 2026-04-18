@@ -218,7 +218,7 @@ function PaymentRow({ payment }: { payment: PaymentRecord }) {
   const planLabel = payment.plan_type ? getPlanLabel(payment.plan_type) : 'Report';
   const isCompleted = payment.status === 'completed';
   const statusColor = isCompleted ? 'text-success' : payment.status === 'pending' ? 'text-amber' : 'text-caution';
-  const providerLabel = payment.provider === 'ziina' ? 'Ziina' : 'Razorpay';
+  const providerLabel = 'Ziina';
   const providerColor = payment.provider === 'ziina' ? 'text-sky-400' : 'text-blue-400';
 
   return (
@@ -594,7 +594,7 @@ function DashboardInner() {
                     <div className="flex items-center justify-between p-3 rounded-lg bg-horizon/15 border border-horizon/20">
                       <div>
                         <p className="text-star text-body-sm font-medium">Last payment</p>
-                        <p className="text-dust/60 text-mono-sm font-mono mt-0.5">{formatDate(latestPayment.created_at)} · {latestPayment.provider === 'ziina' ? 'Ziina' : 'Razorpay'}</p>
+                        <p className="text-dust/60 text-mono-sm font-mono mt-0.5">{formatDate(latestPayment.created_at)} · Ziina</p>
                       </div>
                       <p className="text-amber font-mono font-semibold text-base">{formatPaymentAmount(latestPayment.amount, latestPayment.currency)}</p>
                     </div>

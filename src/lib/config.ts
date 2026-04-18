@@ -12,7 +12,6 @@ const optional = {
   NEXT_PUBLIC_APP_URL: trim(process.env.NEXT_PUBLIC_APP_URL) || trim(process.env.NEXT_PUBLIC_URL),
   BYPASS_SECRET: trim(process.env.BYPASS_SECRET),
   SUPABASE_SERVICE_ROLE_KEY: trim(process.env.SUPABASE_SERVICE_ROLE_KEY),
-  STRIPE_SECRET_KEY: trim(process.env.STRIPE_SECRET_KEY),
 } as const;
 
 function validateEnv() {

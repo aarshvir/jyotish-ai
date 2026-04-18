@@ -3,7 +3,6 @@ export interface User {
   name?: string;
   email: string;
   plan: string;
-  stripe_customer_id?: string;
   reports_used_this_month: number;
   created_at: string;
 }
@@ -47,7 +46,7 @@ export interface Transaction {
   user_id?: string;
   amount: number;
   currency: string;
-  stripe_payment_id?: string;
+  ziina_intent_id?: string;
   report_id?: string;
   status: string;
   created_at: string;

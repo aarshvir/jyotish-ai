@@ -10,7 +10,7 @@ AI-powered Vedic astrology analysis platform providing personalized birth chart 
 - **Animation**: Framer Motion
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
-- **Payments**: Stripe
+- **Payments**: Ziina
 - **AI**: Anthropic Claude (Sonnet 4)
 - **Deployment**: Vercel
 
@@ -21,7 +21,7 @@ AI-powered Vedic astrology analysis platform providing personalized birth chart 
 - Node.js 18+ 
 - npm or yarn
 - Supabase account
-- Stripe account
+- Ziina account
 - Anthropic API key
 
 ### Installation
@@ -40,7 +40,7 @@ cp .env.example .env.local
 
 Fill in your API keys in `.env.local`:
 - Supabase URL and Anon Key
-- Stripe keys
+- Ziina API key
 - Anthropic API key
 
 3. Set up Supabase database:
@@ -74,7 +74,7 @@ src/
 │   ├── api/
 │   │   ├── agents/           # AI agent endpoints
 │   │   ├── reports/          # Report generation
-│   │   └── webhooks/         # Stripe webhooks
+│   │   └── webhooks/         # Ziina webhooks
 │   ├── layout.tsx            # Root layout
 │   └── globals.css
 ├── components/
@@ -84,7 +84,7 @@ src/
 │   └── shared/               # Shared components
 └── lib/
     ├── supabase/             # Supabase clients
-    ├── stripe/               # Stripe utilities
+    ├── ziina/                # Ziina utilities
     ├── anthropic/            # Anthropic client
     └── utils/                # Helper utilities
 ```
@@ -96,7 +96,7 @@ src/
 - AI-powered nativity analysis
 - Daily and hourly forecasts
 - Pay-per-report and subscription options
-- Secure payment processing with Stripe
+- Secure payment processing with Ziina
 - Responsive, modern UI
 
 ## Development
@@ -138,7 +138,7 @@ Required Supabase tables:
 ### payments
 - id (uuid, primary key)
 - user_id (uuid)
-- stripe_session_id (text)
+- ziina_intent_id (text)
 - amount (integer)
 - currency (text)
 - status (text)
@@ -147,8 +147,7 @@ Required Supabase tables:
 ### subscriptions
 - id (uuid, primary key)
 - user_id (uuid)
-- stripe_subscription_id (text)
-- stripe_customer_id (text)
+- ziina_subscription_id (text)
 - status (text)
 - current_period_start (timestamp)
 - current_period_end (timestamp)

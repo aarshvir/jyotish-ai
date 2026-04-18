@@ -7,7 +7,7 @@ This is a Vedic astrology SaaS platform that generates personalized birth chart 
 - Next.js 14 App Router
 - TypeScript (strict mode)
 - Supabase (auth + database)
-- Stripe (payments)
+- Ziina (payments)
 - Anthropic Claude API
 - Tailwind CSS + Shadcn/ui
 

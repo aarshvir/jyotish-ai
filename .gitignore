@@ -82,3 +82,5 @@ nul
 .vercel
 
 supabase/.temp/
+
+lighthouse-report*.json
