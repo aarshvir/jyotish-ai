@@ -27,7 +27,7 @@ const sections = [
   { title: '3. Eligibility', content: 'You must be at least 18 years of age to use the Service. By using the Service, you represent that you meet this requirement and have the legal capacity to enter a binding agreement.' },
   { title: '4. Digital Products and Delivery', content: 'Upon successful payment, your report will be available within 15 minutes. Reports are delivered via downloadable PDF and online viewing. Delivery is deemed complete upon making the report available in your account or sending a download link to your registered email.' },
   { title: '5. Payment and Pricing', content: 'Prices are displayed in your local currency where supported (INR, AED, USD). The final charge currency is shown at checkout. Payments are processed by our authorized payment partners — primarily Ziina, and where applicable Razorpay. By providing payment information, you authorize the applicable processor to charge the fees shown at checkout. We reserve the right to change pricing at any time; changes will not affect completed purchases.' },
-  { title: '6. Refund Policy', content: 'We offer a 48-hour satisfaction guarantee on all paid reports. Request a refund within 48 hours of purchase by emailing support@vedichour.com. Refunds are processed within 5-10 business days. See our full Refund Policy at vedichour.com/refund.' },
+  { title: '6. Refund Policy', content: 'We offer a 24-hour satisfaction guarantee on all paid reports. Request a refund within 24 hours of purchase by emailing support@vedichour.com. Refunds are processed within 5-10 business days. See our full Refund Policy at vedichour.com/refund.' },
   { title: '7. Astrological Disclaimer', content: 'IMPORTANT: VedicHour reports are for entertainment, self-reflection, and informational purposes only. Astrology is not a science. Our reports are not a substitute for professional legal, financial, medical, or psychological advice. We do not guarantee the accuracy of any astrological interpretation. Do not make important life decisions based solely on our reports. We expressly disclaim liability for decisions made in reliance on our content.' },
   { title: '8. Intellectual Property', content: 'All VedicHour content is our intellectual property. Upon purchase, you receive a personal, non-exclusive, non-transferable license for personal, non-commercial use. You may not reproduce, distribute, sell, or create derivative works without written permission.' },
   { title: '9. User Data and Privacy', content: 'We collect birth data and contact information to generate and deliver your report. Data is handled per our Privacy Policy at vedichour.com/privacy, incorporated herein by reference. We do not sell your personal data.' },
@@ -63,7 +63,7 @@ export default function TermsPage() {
 
         {/* Summary callout */}
         <div className="bg-amber/[0.05] border border-amber/20 rounded-xl px-7 py-6 mb-12 text-sm text-dust/70 font-sans leading-relaxed">
-          <strong className="text-amber">Summary:</strong> VedicHour provides AI-powered Vedic astrology reports for reflection and planning. We offer a 48-hour refund guarantee. Reports are not a substitute for professional advice. Your data is used only to generate your report.
+          <strong className="text-amber">Summary:</strong> VedicHour provides AI-powered Vedic astrology reports for reflection and planning. We offer a 24-hour refund guarantee. Reports are not a substitute for professional advice. Your data is used only to generate your report.
         </div>
 
         {/* Sections */}

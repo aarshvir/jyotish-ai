@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 export const metadata: Metadata = {
   title: { absolute: 'Kundli & Jyotish Forecast Pricing | VedicHour' },
   description:
-    'Free Kundli (no card needed) plus one-time AI Jyotish forecast plans: 7-day, monthly, and annual Vedic astrology reports. Swiss Ephemeris. 48-hour refund.',
+    'Free Kundli (no card needed) plus one-time AI Jyotish forecast plans: 7-day, monthly, and annual Vedic astrology reports. Swiss Ephemeris. 24-hour refund.',
   keywords: [
     'free Kundli',
     'AI Kundli price',

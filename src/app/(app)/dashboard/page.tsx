@@ -693,7 +693,7 @@ function DashboardInner() {
                 </ul>
                 <div className="px-5 py-3 border-t border-horizon/20 bg-horizon/10">
                   <p className="text-dust/40 text-mono-sm font-mono">
-                    All payments are final. For refunds, contact support within 48 hours of purchase.
+                    All payments are final. For refunds, contact support within 24 hours of purchase.
                   </p>
                 </div>
               </div>

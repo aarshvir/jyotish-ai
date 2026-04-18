@@ -213,7 +213,7 @@ export default function PricingPage() {
           <div className="card p-5 text-center">
             <div className="text-2xl mb-2">🛡</div>
             <h3 className="font-body text-title-md text-star mb-1">48-Hour Refund</h3>
-            <p className="text-body-sm text-dust">Full refund within 48 hours, no questions asked.</p>
+            <p className="text-body-sm text-dust">Full refund within 24 hours, no questions asked.</p>
             <Link href="/refund" className="font-mono text-mono-sm text-amber mt-2 inline-block hover:underline">
               Refund policy →
             </Link>

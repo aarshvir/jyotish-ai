@@ -199,7 +199,7 @@ export default function Pricing() {
                     <div className="flex items-center justify-center gap-2">
                       <ShieldIcon />
                       <span className="font-mono text-mono-sm text-success/80">
-                        48-hour money-back guarantee
+                        24-hour money-back guarantee
                       </span>
                     </div>
                   )}

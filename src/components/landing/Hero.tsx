@@ -8,7 +8,7 @@ import { MandalaRing } from '@/components/ui/MandalaRing';
 const PROOF_POINTS = [
   { value: 'Free Kundli',     label: 'No card needed' },
   { value: '18',              label: 'Hourly Vedic windows / day' },
-  { value: '48h',             label: 'No-questions refund' },
+  { value: '24h',             label: 'No-questions refund' },
 ];
 
 const wordContainer = {

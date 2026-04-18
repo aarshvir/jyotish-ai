@@ -1193,7 +1193,7 @@ function ReportContent() {
                   Compare plans
                 </Link>
                 <span className="font-mono text-mono-sm text-dust/60">
-                  30% off all plans · 48-hour refund
+                  30% off all plans · 24-hour refund
                 </span>
               </div>
             </div>

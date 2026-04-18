@@ -42,7 +42,7 @@ const FAQS: QA[] = [
   },
   {
     q: 'What happens if I\'m not satisfied?',
-    a: 'We offer a 48-hour no-questions-asked refund. Email support@vedichour.com and we\'ll process it. See our refund policy for details.',
+    a: 'We offer a 24-hour no-questions-asked refund. Email support@vedichour.com and we\'ll process it. See our refund policy for details.',
   },
   {
     q: 'Is my data safe?',
