@@ -10,22 +10,24 @@ export function UpsellButton() {
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/checkout', {
+      // Pull reportId from URL params if passed from onboard success,
+      // fallback to a dummy ID or server resolves later
+      const params = new URLSearchParams(window.location.search);
+      const reportId = params.get('reportId') || 'upsell_checkout';
+
+      const res = await fetch('/api/ziina/create-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          planType: 'monthly_upsell',
-          // Assuming the environment will provide the correct price ID for the $9 upsell
-          priceId: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_UPSELL_PRICE_ID || 'price_upsell_placeholder',
+          planType: 'monthly',
+          reportId: reportId,
         }),
       });
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else if (data.redirect) {
-        router.push(data.redirect);
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
       } else {
-        throw new Error('No checkout URL');
+        throw new Error(data.error || 'No checkout URL');
       }
     } catch (e) {
       console.error(e);
