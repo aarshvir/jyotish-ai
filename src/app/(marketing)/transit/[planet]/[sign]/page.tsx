@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 // In Next.js 14, this allows statically generating dynamic routes.
 export async function generateStaticParams() {
-  const planets = ['sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn', 'rahu', 'ketu'];
+  // Slow-moving outer planets generate the most search volume for transits
   const signs = ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces'];
   
   const params = [];

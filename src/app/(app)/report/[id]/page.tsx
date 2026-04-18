@@ -89,8 +89,10 @@ function GeneratingScreen({
   // Terminal-style history of steps to show the "work" being done
   const [telemetryHistory, setTelemetryHistory] = useState<string[]>([]);
   useEffect(() => {
-    if (phaseLabel && !telemetryHistory.includes(phaseLabel)) {
-      setTelemetryHistory(prev => [...prev.slice(-3), phaseLabel]);
+    if (phaseLabel) {
+      setTelemetryHistory(prev =>
+        prev.includes(phaseLabel) ? prev : [...prev.slice(-3), phaseLabel]
+      );
     }
   }, [phaseLabel]);
 

@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
     }
 
     const anchorBlocks = formatDayCommentaryAnchorBlocks({
-      planet_positions: planetPositions as any,
+      planet_positions: planetPositions as Record<string, unknown> | undefined,
       dateLabel: date,
       yogaName: panchang?.yoga,
       panchang: panchang,
