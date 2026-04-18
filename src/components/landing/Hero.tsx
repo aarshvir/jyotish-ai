@@ -1,6 +1,3 @@
-'use client';
-
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { StarField } from '@/components/ui/StarField';
 import { MandalaRing } from '@/components/ui/MandalaRing';
@@ -12,16 +9,11 @@ const PROOF_POINTS = [
 ];
 
 /*
- * Animations for non-LCP elements (eyebrow, subtitle, CTAs, proof points).
- * The H1 headline is rendered fully visible from SSR so that LCP fires
- * immediately — we animate only decorative / below-fold elements.
+ * Server Component — no 'use client'.
+ * All animations are pure CSS (globals.css animate-* classes) so no
+ * Framer Motion ships in the critical above-fold JS bundle.
+ * The H1 is fully visible from SSR for optimal LCP.
  */
-const fadeUp = (delay: number) => ({
-  initial: { opacity: 0, y: 18 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, delay, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
-});
-
 export default function Hero() {
   return (
     <section className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden bg-space">
@@ -32,22 +24,17 @@ export default function Hero() {
       </div>
 
       <div className="relative z-10 text-center max-w-4xl mx-auto px-6 pt-24 pb-16 md:pt-32 md:pb-20">
-        {/* Eyebrow */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="inline-flex items-center gap-2 mb-8 md:mb-10 px-4 py-1.5 rounded-pill border border-amber/20 bg-amber/[0.04]"
-        >
+        {/* Eyebrow — CSS fade-down */}
+        <div className="animate-fade-down inline-flex items-center gap-2 mb-8 md:mb-10 px-4 py-1.5 rounded-pill border border-amber/20 bg-amber/[0.04]">
           <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse-amber" />
           <span className="font-mono text-mono-sm text-amber tracking-[0.15em] uppercase">
             Swiss Ephemeris · Lahiri Ayanamsa · Vimshottari Dasha
           </span>
-        </motion.div>
+        </div>
 
         {/*
-         * H1 — LCP element. Rendered fully visible from SSR (no initial opacity:0).
-         * CSS word-reveal animation plays after paint so LCP is not blocked.
+         * H1 — LCP element. Rendered fully visible from SSR (no animation, no opacity:0).
+         * LCP fires immediately on first paint.
          */}
         <h1 className="font-display font-semibold text-star mb-6 text-display-xl tracking-tight">
           <span className="inline-block mr-[0.2em]">Your</span>{' '}
@@ -59,26 +46,20 @@ export default function Hero() {
           <span className="inline-block text-amber-gradient">Hour.</span>
         </h1>
 
-        {/* Subtitle */}
-        <motion.p
-          {...fadeUp(0.3)}
-          className="font-body text-body-lg text-dust max-w-xl mx-auto mb-10 leading-relaxed"
-        >
+        {/* Subtitle — CSS fade-up */}
+        <p className="animate-fade-up-1 font-body text-body-lg text-dust max-w-xl mx-auto mb-10 leading-relaxed">
           AI-powered Vedic astrology &amp; free Kundli online — with hourly precision.
           <br className="hidden md:block" />
           Know exactly when to act — and when to rest.
-        </motion.p>
+        </p>
         {/* Supplementary SEO text for crawlers */}
         <span className="sr-only">
           Free Kundli generator · Janam Kundali online · AI Jyotish forecast · Vedic astrology report ·
           Jyotish AI · Vedic forecast · Astrology report · AI kundli
         </span>
 
-        {/* CTAs */}
-        <motion.div
-          {...fadeUp(0.5)}
-          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-14 md:mb-16"
-        >
+        {/* CTAs — CSS fade-up (staggered) */}
+        <div className="animate-fade-up-2 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-14 md:mb-16">
           <Link href="/onboard?plan=free" className="btn-primary text-base px-8 py-3.5 group">
             <span>See today&#39;s windows — free</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="group-hover:translate-x-0.5 transition-transform" aria-hidden>
@@ -88,15 +69,10 @@ export default function Hero() {
           <Link href="#hourly-preview" className="btn-secondary text-base px-8 py-3.5">
             See sample report
           </Link>
-        </motion.div>
+        </div>
 
-        {/* Proof points */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.5 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-3"
-        >
+        {/* Proof points — CSS fade-in */}
+        <div className="animate-fade-in-1 flex flex-col sm:flex-row items-center justify-center gap-3">
           {PROOF_POINTS.map((s) => (
             <div
               key={s.value}
@@ -108,7 +84,7 @@ export default function Hero() {
               <span className="font-body text-body-sm text-dust">{s.label}</span>
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
 
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-space to-transparent" />

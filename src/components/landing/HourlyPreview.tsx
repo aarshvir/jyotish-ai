@@ -1,7 +1,3 @@
-'use client';
-
-import { motion } from 'framer-motion';
-
 interface HourBar {
   time: string;
   score: number;
@@ -103,20 +99,16 @@ export default function HourlyPreview() {
                   )}
 
                   <div className="w-full relative" style={{ height: '128px' }}>
-                    <motion.div
-                      className="absolute bottom-0 left-0 right-0 rounded-t-[2px] origin-bottom"
-                      style={{ background: color, opacity: h.peak ? 1 : 0.55 }}
-                      initial={{ scaleY: 0 }}
-                      whileInView={{ scaleY: 1 }}
-                      viewport={{ once: true }}
-                      transition={{
-                        duration: 0.4,
-                        delay: i * 0.025,
-                        ease: [0.22, 1, 0.36, 1],
+                    <div
+                      className="absolute bottom-0 left-0 right-0 rounded-t-[2px] animate-bar-reveal"
+                      style={{
+                        background: color,
+                        opacity: h.peak ? 1 : 0.55,
+                        height: `${heightPct}%`,
+                        minHeight: '4px',
+                        animationDelay: `${0.3 + i * 0.025}s`,
                       }}
-                    >
-                      <div style={{ height: `${heightPct}%`, minHeight: '4px' }} />
-                    </motion.div>
+                    />
 
                     <div
                       className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-mono text-[10px] px-1.5 py-0.5 rounded-badge whitespace-nowrap"

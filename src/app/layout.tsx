@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
-import MotionProvider from '@/components/shared/MotionProvider';
 
 const cormorant = localFont({
   src: [
@@ -34,7 +33,7 @@ const jetbrainsMono = localFont({
 // Never allow localhost to leak into production metadata.
 const RAW_SITE_URL = process.env.NEXT_PUBLIC_URL ?? '';
 const SITE_URL = (RAW_SITE_URL.startsWith('http://localhost') || RAW_SITE_URL === ''
-  ? 'https://vedichour.com'
+  ? 'https://www.vedichour.com'
   : RAW_SITE_URL
 ).trim().replace(/\/+$/, '');
 const SITE_NAME = 'VedicHour';
@@ -132,7 +131,7 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <MotionProvider>{children}</MotionProvider>
+        {children}
         {/* Global JSON-LD: Organization + WebSite + SoftwareApplication */}
         <script
           type="application/ld+json"
