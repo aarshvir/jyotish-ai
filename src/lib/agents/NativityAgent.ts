@@ -144,16 +144,24 @@ export class NativityAgent {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
           console.log(`NativityAgent attempt ${attempt + 1}/3 with extended thinking + RAG`);
-          const response = await this.client.messages.create({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 2000,
-            messages: [
-              {
-                role: 'user',
-                content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart, ragContext)}`,
-              },
-            ],
-          });
+          // Use AbortSignal with 50s timeout so the request is hard-killed
+          // even if the SDK's own timeout option doesn't abort the stream.
+          const ctrl = new AbortController();
+          const abortTimer = setTimeout(() => ctrl.abort(), 50_000);
+          const response = await this.client.messages.create(
+            {
+              model: 'claude-sonnet-4-6',
+              max_tokens: 2000,
+              messages: [
+                {
+                  role: 'user',
+                  content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart, ragContext)}`,
+                },
+              ],
+            },
+            { signal: ctrl.signal },
+          );
+          clearTimeout(abortTimer);
 
           const text = extractTextContent(response);
           console.log(`NativityAgent response: ${text.length} chars`);
