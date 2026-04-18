@@ -1,4 +1,3 @@
-import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import Hero from '@/components/landing/Hero';
 import HowItWorks from '@/components/landing/HowItWorks';
@@ -8,7 +7,6 @@ import Pricing from '@/components/landing/Pricing';
 import FAQ from '@/components/landing/FAQ';
 import { FAQS } from '@/lib/faq-data';
 import FinalCTA from '@/components/landing/FinalCTA';
-import { currencyFromHeader, getPricesForCurrency } from '@/lib/pricing';
 
 const PAGE_DESCRIPTION =
   'Get your free Kundli (Janam Kundali) and AI Jyotish forecast online. 18 hourly Vedic windows/day — Swiss Ephemeris, Lahiri Ayanamsa. No card needed.';
@@ -55,9 +53,6 @@ function getSiteUrl() {
 }
 
 export default async function LandingPage() {
-  const h = await headers();
-  const currency = currencyFromHeader(h.get('x-currency'));
-  const prices = getPricesForCurrency(currency);
   const SITE_URL = getSiteUrl();
 
   const homeJsonLd = {
@@ -100,7 +95,7 @@ export default async function LandingPage() {
       <HowItWorks />
       <FreeKundli />
       <HourlyPreview />
-      <Pricing currency={currency} prices={prices} />
+      <Pricing />
       <FAQ />
       <FinalCTA />
     </div>

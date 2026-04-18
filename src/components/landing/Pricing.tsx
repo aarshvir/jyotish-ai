@@ -1,11 +1,15 @@
+'use client';
+
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import type { SupportedCurrency } from '@/lib/pricing';
 import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 
-interface Props {
-  currency: SupportedCurrency;
-  prices: Record<string, string>;
-}
+const USD_PRICES: Record<string, string> = {
+  '7day': '$9.99',
+  monthly: '$19.99',
+  annual: '$49.99',
+};
 
 const PLANS = [
   {
@@ -58,11 +62,6 @@ const PLANS = [
   },
 ] as const;
 
-const USD_FALLBACKS: Record<string, string> = {
-  '7day': '$9.99',
-  monthly: '$19.99',
-  annual: '$49.99',
-};
 
 const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
   USD: 'USD',
@@ -79,10 +78,29 @@ function CheckIcon() {
   );
 }
 
-export default function Pricing({ currency, prices }: Props) {
+export default function Pricing() {
+  const [currency, setCurrency] = useState<SupportedCurrency>('USD');
+  const [prices, setPrices] = useState<Record<string, string>>(USD_PRICES);
+
+  useEffect(() => {
+    fetch('/api/geo')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.currency && data.prices) {
+          setCurrency(data.currency as SupportedCurrency);
+          const displayPrices: Record<string, string> = {};
+          for (const [planId, info] of Object.entries(data.prices as Record<string, { display: string }>)) {
+            displayPrices[planId] = info.display;
+          }
+          setPrices(displayPrices);
+        }
+      })
+      .catch(() => { /* keep USD defaults */ });
+  }, []);
+
   function priceFor(planId: string): string {
     if (planId === 'free') return 'Free';
-    return prices[planId] ?? USD_FALLBACKS[planId] ?? '';
+    return prices[planId] ?? USD_PRICES[planId] ?? '';
   }
 
   function priceNoteFor(planId: string): string {
