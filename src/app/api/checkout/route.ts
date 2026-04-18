@@ -5,7 +5,6 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { isBypassToken } from '@/lib/bypass';
 import { getPromoDiscount, redeemPromoCode } from '@/lib/promo/server';
 
-
 async function createFreeReport(
   userId: string,
   userEmail: string,

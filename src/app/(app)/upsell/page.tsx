@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { StarField } from '@/components/ui/StarField';
 import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
+import { UpsellButton } from './_UpsellButton';
 
 export default function UpsellPage() {
   return (
@@ -50,9 +51,7 @@ export default function UpsellPage() {
               24-hour money-back guarantee — full refund, no questions.
             </Link>
           </div>
-          <button className="btn-primary w-full py-4 text-base font-semibold shadow-elevated">
-            Upgrade to Monthly Oracle (+$9.00)
-          </button>
+          <UpsellButton />
           <Link href="/dashboard?success=true" className="text-center text-dust/60 hover:text-dust text-sm transition-colors py-2 uppercase tracking-wide font-mono">
             No thanks, just take me to my 7-Day report
           </Link>

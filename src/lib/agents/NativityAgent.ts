@@ -9,6 +9,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { NatalChartData, NativityProfile } from './types';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
+import { buildScriptureContext } from '@/lib/rag/scriptures';
 
 const SYSTEM_PROMPT = `You are a grandmaster Vedic astrologer with 30 years of classical training. Analyze the natal chart with depth matching Parashara and Jaimini traditions.
 
@@ -20,10 +21,9 @@ CRITICAL RULES:
 - planetary_positions: include all 9 grahas (Sun through Ketu).
 - life_themes: maximum 4 items, each under 15 words.
 - lagna_analysis: 150-200 words with specific house/nakshatra references.
-- current_dasha_interpretation: 100-150 words with lordship analysis.
 - All string values must be complete sentences, never cut off.`;
 
-function buildUserPrompt(chart: NatalChartData): string {
+function buildUserPrompt(chart: NatalChartData, ragContext: string): string {
   const planets = Object.entries(chart.planets ?? {})
     .map(([name, p]) =>
       `  ${name}: ${p?.sign ?? '?'} ${(p?.degree ?? 0).toFixed(2)}° | house ${p?.house ?? '?'} | ${p?.nakshatra ?? '?'} pada ${p?.nakshatra_pada ?? '?'}${p?.is_retrograde ? ' (R)' : ''}`
@@ -35,7 +35,7 @@ function buildUserPrompt(chart: NatalChartData): string {
     `\nAUTHORITATIVE ENGINE GROUPS (whole-sign; do not contradict in functional lists or prose):\n${JSON.stringify(chart.functional_lord_groups)}\n`;
 
   return `Analyze this natal chart and return a JSON NativityProfile.
-
+${ragContext}
 NATAL CHART
 Lagna: ${chart.lagna ?? 'Unknown'} ${(chart.lagna_degree ?? 0).toFixed(2)}°
 Planets:
@@ -129,17 +129,19 @@ export class NativityAgent {
     const delays = [3000, 6000, 12000];
     let lastError: unknown;
 
+    const ragContext = buildScriptureContext([], natalChart.lagna);
+
     if (this.client) {
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          console.log(`NativityAgent attempt ${attempt + 1}/3 with extended thinking`);
+          console.log(`NativityAgent attempt ${attempt + 1}/3 with extended thinking + RAG`);
           const response = await this.client.messages.create({
             model: 'claude-sonnet-4-6',
             max_tokens: 2000,
             messages: [
               {
                 role: 'user',
-                content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart)}`,
+                content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart, ragContext)}`,
               },
             ],
           });
@@ -177,10 +179,10 @@ export class NativityAgent {
 
     if (hasAnyChatFallbackKey()) {
       try {
-        console.warn('NativityAgent: using backup LLM chain (no extended thinking)');
+        console.warn('NativityAgent: using backup LLM chain (no extended thinking) + RAG');
         const text = await runChatFallbackChain({
           systemPrompt: SYSTEM_PROMPT,
-          userPrompt: buildUserPrompt(natalChart),
+          userPrompt: buildUserPrompt(natalChart, ragContext),
           maxTokens: 16000,
         });
         return safeParseJson<NativityProfile>(text);

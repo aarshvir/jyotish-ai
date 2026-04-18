@@ -1,5 +1,6 @@
-/** Vercel cap for non-Enterprise plans is 300s; keep in sync with `vercel.json`. */
-export const maxDuration = 300;
+/** Vercel cap for non-Enterprise plans is 300s; but with Inngest the pipeline
+ *  runs in the background — this route just fires the event and returns. */
+export const maxDuration = 30;
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -7,13 +8,13 @@ import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
+import { inngest } from '@/lib/inngest/client';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
- * Must be longer than `maxDuration` (300s) so a still-running inline pipeline isn't
- * restarted. Set to 350s — safely above 300s but fast enough to recover from crashes.
+ * With Inngest the pipeline runs in the background — give it 10 minutes.
  */
-const YOUNG_GENERATING_MS = 350 * 1000;
+const YOUNG_GENERATING_MS = 600 * 1000;
 
 /** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
 function birthTimeToPipelineTime(s: string): string {
@@ -35,8 +36,10 @@ function isYoungGenerating(generationStartedAt: string | null | undefined): bool
 }
 
 /**
- * Creates or updates a `reports` row, runs the full generation pipeline in this same
- * invocation (await), then returns. Client keeps polling `/api/reports/[id]/status`.
+ * Creates or updates a `reports` row, then dispatches the pipeline to Inngest
+ * for background execution. Returns immediately — client polls `/api/reports/[id]/status`.
+ *
+ * Falls back to synchronous execution if INNGEST_EVENT_KEY is not configured.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -153,6 +156,23 @@ export async function POST(request: NextRequest) {
     if (cookie) authHeaders['cookie'] = cookie;
   }
 
+  // Dispatch to Inngest (background) or fall back to inline execution
+  const useInngest = !!process.env.INNGEST_EVENT_KEY;
+
+  if (useInngest) {
+    try {
+      await inngest.send({
+        name: 'report/generate',
+        data: { reportId, userId: auth.user.id, userEmail: auth.user.email ?? '', input, base, authHeaders },
+      });
+      console.log(`[reports/start] dispatched to Inngest: ${reportId}`);
+      return NextResponse.json({ reportId, ok: true, status: 'generating', engine: 'inngest' }, { status: 202 });
+    } catch (err) {
+      console.error(`[reports/start] Inngest dispatch failed, falling back to inline:`, err);
+    }
+  }
+
+  // Inline fallback (original synchronous execution for dev/no-Inngest)
   try {
     await generateReportPipeline(
       reportId,
@@ -165,8 +185,6 @@ export async function POST(request: NextRequest) {
     );
   } catch (err) {
     console.error(`[reports/start] pipeline failed for ${reportId}:`, err);
-    // Guard with neq('status','complete') — don't overwrite a report that
-    // succeeded in dbSaveFinal right before an exception propagated out.
     await db
       .from('reports')
       .update({
@@ -179,9 +197,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 
-  // Verify the DB row is actually complete before telling the client.
-  // In rare cases the pipeline can swallow exceptions internally and return
-  // without saving (e.g. ephemeris fallback path returning early).
   const { data: finalRow } = await db
     .from('reports')
     .select('status')
@@ -190,12 +205,6 @@ export async function POST(request: NextRequest) {
 
   if (finalRow?.status !== 'complete') {
     console.error(`[reports/start] pipeline returned but DB status is '${finalRow?.status}' for ${reportId}`);
-    // Mark as error so the frontend stops polling
-    await db
-      .from('reports')
-      .update({ status: 'error', updated_at: new Date().toISOString() })
-      .eq('id', reportId)
-      .neq('status', 'complete');
     return NextResponse.json({ error: 'Report pipeline did not complete — please retry.' }, { status: 500 });
   }
 
