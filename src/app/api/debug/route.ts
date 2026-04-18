@@ -20,6 +20,34 @@ export async function GET(request: NextRequest) {
     return `SET (${v.length} chars)`;
   };
 
+  // Quick Anthropic connectivity test — 10s timeout
+  let anthropicPing = 'not_tested';
+  const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (anthropicKey && !anthropicKey.startsWith('your_')) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 10_000);
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        signal: ctrl.signal,
+        headers: {
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5',
+          max_tokens: 10,
+          messages: [{ role: 'user', content: 'hi' }],
+        }),
+      });
+      clearTimeout(timer);
+      anthropicPing = `HTTP_${res.status}`;
+    } catch (e) {
+      anthropicPing = `ERROR:${(e as Error).name}:${(e as Error).message?.slice(0, 80)}`;
+    }
+  }
+
   return NextResponse.json({
     ANTHROPIC_API_KEY: check('ANTHROPIC_API_KEY'),
     OPENAI_API_KEY: check('OPENAI_API_KEY'),
@@ -33,5 +61,6 @@ export async function GET(request: NextRequest) {
     ZIINA_API_TOKEN: check('ZIINA_API_TOKEN'),
     NODE_ENV: process.env.NODE_ENV,
     VERCEL_ENV: process.env.VERCEL_ENV,
+    anthropic_ping: anthropicPing,
   });
 }

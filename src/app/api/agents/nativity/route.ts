@@ -12,6 +12,12 @@ try {
   console.error('NativityAgent init failed:', initError);
 }
 
+// Hard wall-clock budget for the entire nativity route.
+// The Anthropic SDK has timeout:55s, but belt-and-suspenders: if the SDK
+// hangs anyway (e.g. TLS stall before the connection is established), the
+// route returns the deterministic fallback profile rather than hanging forever.
+const ROUTE_BUDGET_MS = 80_000;
+
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
@@ -37,7 +43,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const profile = await agent.analyze(natalChart);
+    const profile = await Promise.race([
+      agent.analyze(natalChart),
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`NativityAgent route timed out after ${ROUTE_BUDGET_MS}ms`)),
+          ROUTE_BUDGET_MS,
+        ),
+      ),
+    ]);
+
     return NextResponse.json({ success: true, data: profile });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
