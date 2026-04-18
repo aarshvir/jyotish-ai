@@ -155,6 +155,40 @@ export interface PipelineInput {
   paymentStatus?: string;
 }
 
+/**
+ * Pillar 1: Sentinel error thrown by the orchestrator when it has intentionally
+ * stopped after the requested `stopAfterPhase` checkpoint. Inngest treats this
+ * as a successful step completion (the step body returns normally via try/catch
+ * at call sites), so the next `step.run` can continue the DAG.
+ */
+export class PipelinePhaseStopSignal extends Error {
+  constructor(public readonly phase: string) {
+    super(`pipeline_stop_after_${phase}`);
+    this.name = 'PipelinePhaseStopSignal';
+  }
+}
+
+/**
+ * Pillar 1: Options for the per-phase Inngest DAG.
+ * When `stopAfterPhase` is provided, the orchestrator runs only up to and
+ * including that phase and throws a PipelinePhaseStopSignal so the caller
+ * (Inngest step.run) can return cleanly and invoke the next step.
+ *
+ * Inngest semantics: each step.run call wraps one phase. Because the orchestrator
+ * is already idempotent via pipeline_checkpoint, any step that re-runs short-circuits
+ * through the completed checkpoints, ensuring at-most-once-effective execution per phase.
+ */
+export type PipelinePhaseName =
+  | 'ephemeris'
+  | 'nativity_grids'
+  | 'commentary'
+  | 'finalize';
+
+export interface PipelineOptions {
+  /** If set, stop after this phase's checkpoint is saved and throw PipelinePhaseStopSignal. */
+  stopAfterPhase?: PipelinePhaseName;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const SIGNS_FOR_LAGNA = [
@@ -257,7 +291,14 @@ export async function generateReportPipeline(
   onStep: (event: StepEvent) => void,
   base: string,
   authHeaders: Record<string, string>,
+  options: PipelineOptions = {},
 ): Promise<void> {
+  const stopAfter = options.stopAfterPhase;
+  function maybeStopAfter(phase: PipelinePhaseName): void {
+    if (stopAfter === phase) {
+      throw new PipelinePhaseStopSignal(phase);
+    }
+  }
   const h = { ...authHeaders, 'Content-Type': 'application/json' };
   const skipValidation = process.env.NEXT_PUBLIC_SKIP_VALIDATION === 'true';
 
@@ -567,6 +608,9 @@ export async function generateReportPipeline(
     pipelineState = { ...pipelineState, ephemeris: { data: ephemerisData, mahadasha, antardasha } };
     } // end ephemeris phase guard
 
+    // Pillar 1 DAG: stop after ephemeris checkpoint if Inngest requested.
+    maybeStopAfter('ephemeris');
+
     // `dasha` is used later for md/ad end dates in commentary payloads.
     // Derive from ephemerisData (works whether freshly computed or restored from state).
     const dasha = ephemerisData?.current_dasha ?? ({} as NatalChartData['current_dasha']);
@@ -696,6 +740,9 @@ export async function generateReportPipeline(
     }, pipelineState);
     pipelineState = { ...pipelineState, nativity_grids: { nativityProfile, forecastDays } };
     } // end nativity_grids phase guard
+
+    // Pillar 1 DAG: stop after nativity_grids checkpoint if Inngest requested.
+    maybeStopAfter('nativity_grids');
 
     await assertWithinBudget('pre_commentary');
 
@@ -1111,6 +1158,9 @@ export async function generateReportPipeline(
     };
     } // end commentary phase guard
 
+    // Pillar 1 DAG: stop after commentary checkpoint if Inngest requested.
+    maybeStopAfter('commentary');
+
     const weekList = (weeksSynthData.weeks ?? []).map((w, i: number) => {
       const wl = w.week_label ?? `Week ${i + 1}`;
       const sc = w.overall_score ?? w.score ?? 65;
@@ -1331,6 +1381,11 @@ export async function generateReportPipeline(
     // Emit completion
     onStep({ type: 'report_completed', reportData: finalReportTyped });
   } catch (err) {
+    // Pillar 1 DAG: intentional phase stop — surface to caller, don't mark error.
+    if (err instanceof PipelinePhaseStopSignal) {
+      logStep('phase_stop_signal', { phase: err.phase });
+      throw err;
+    }
     const message = err instanceof Error ? err.message : 'Failed to generate report';
     console.error('[orchestrator] fatal error:', message);
     onStep({ type: 'error', message });

@@ -78,7 +78,7 @@ async function completeOpenAiFallback(opts: {
   const key = trimEnv(process.env.OPENAI_API_KEY);
   if (!key) throw new Error('OPENAI_API_KEY missing for fallback');
   const model = trimEnv(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-4o';
-  const client = new OpenAI({ apiKey: key });
+  const client = new OpenAI({ apiKey: key, timeout: 35_000, maxRetries: 0 });
   const r = await client.chat.completions.create({
     model,
     max_tokens: Math.min(opts.maxTokens, 16000),

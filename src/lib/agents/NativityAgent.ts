@@ -141,13 +141,16 @@ export class NativityAgent {
     const ragContext = await buildScriptureContextHybrid([], natalChart.lagna);
 
     if (this.client) {
-      for (let attempt = 0; attempt < 3; attempt++) {
+      // Only 1 attempt on Anthropic. If it fails/times out fall immediately to the
+      // OpenAI/Gemini fallback chain. Retrying claude in-process wastes ~50s per
+      // attempt and blows the 80s route budget before fallback can be tried.
+      for (let attempt = 0; attempt < 1; attempt++) {
         try {
-          console.log(`NativityAgent attempt ${attempt + 1}/3 with extended thinking + RAG`);
-          // Use AbortSignal with 50s timeout so the request is hard-killed
-          // even if the SDK's own timeout option doesn't abort the stream.
+          console.log(`NativityAgent attempt ${attempt + 1}/1 with RAG`);
+          // 45s AbortSignal leaves 35s margin for the fallback chain within the
+          // 80s route budget.
           const ctrl = new AbortController();
-          const abortTimer = setTimeout(() => ctrl.abort(), 50_000);
+          const abortTimer = setTimeout(() => ctrl.abort(), 45_000);
           const response = await this.client.messages.create(
             {
               model: 'claude-sonnet-4-6',

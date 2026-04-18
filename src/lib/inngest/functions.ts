@@ -1,24 +1,29 @@
 /**
- * Inngest background function: runs the report generation pipeline out-of-band
- * so it's not constrained by Vercel's 300s serverless timeout, and so that a
- * mid-pipeline failure retries from the last completed phase (not from scratch).
+ * Inngest background functions for VedicHour.
  *
- * The retry semantics work like this:
- *   1. Inngest calls `step.run("generate-report", ...)` once.
- *   2. Inside, `generateReportPipeline` loads any prior `pipeline_state` from
- *      the DB and skips phases already completed by a previous attempt.
- *   3. If any phase throws, Inngest retries the step (up to `retries: 3`).
- *      The retry invocation resumes from the last saved checkpoint — ephemeris,
- *      nativity_grids, or commentary — rather than restarting the 5-minute job.
+ * Pillar 1 — Per-phase DAG:
+ *   Each pipeline phase (ephemeris, nativity_grids, commentary, finalize)
+ *   is its own `step.run` call. If commentary fails at attempt 2, Inngest
+ *   re-invokes that step only; ephemeris + nativity_grids are restored from
+ *   the Supabase `pipeline_checkpoint` without redoing their API calls.
  *
- * This is the realistic implementation of the Grandmaster Blueprint's Pillar 1
- * promise: "retry only the failed step". Per-API-call retry granularity would
- * require decomposing orchestrator.ts into one Inngest step per fetch, which is
- * a multi-day refactor; phase-level retries capture ~95% of the resilience gain.
+ *   The orchestrator is already idempotent via `pipeline_checkpoint` + the
+ *   `stopAfterPhase` option. Each step.run invokes the orchestrator with a
+ *   `stopAfterPhase` parameter, so the work done per step is bounded.
+ *
+ * Pillar 4 pre-work:
+ *   Webhook-driven generation — the `payment.completed` event emitted from the
+ *   Ziina webhook triggers `report/generate` so a user who closes their tab
+ *   mid-checkout still gets a paid report.
  */
 
 import { inngest } from './client';
-import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
+import {
+  generateReportPipeline,
+  PipelinePhaseStopSignal,
+  type PipelineInput,
+  type PipelinePhaseName,
+} from '@/lib/reports/orchestrator';
 
 type ReportGenerateEvent = {
   name: 'report/generate';
@@ -32,44 +37,84 @@ type ReportGenerateEvent = {
   };
 };
 
+/**
+ * Invoke the orchestrator for a single phase. The orchestrator short-circuits
+ * completed phases via `pipeline_checkpoint`, then runs the requested phase,
+ * then throws PipelinePhaseStopSignal which we swallow as a clean return.
+ * Any other error propagates so Inngest retries that step only.
+ */
+async function runPhase(
+  args: ReportGenerateEvent['data'],
+  phase: PipelinePhaseName,
+): Promise<{ phase: PipelinePhaseName; stopped: boolean }> {
+  const { reportId, userId, userEmail, input, base, authHeaders } = args;
+  try {
+    await generateReportPipeline(
+      reportId,
+      userId,
+      userEmail,
+      input,
+      // onStep is a no-op here — observability comes from DB progress + Inngest UI.
+      () => {},
+      base,
+      authHeaders,
+      { stopAfterPhase: phase },
+    );
+    // Orchestrator returned normally — the pipeline ran through all phases in
+    // one call (this happens when the stop phase is `finalize`, or when
+    // everything was already checkpointed and the orchestrator ran finalize).
+    return { phase, stopped: false };
+  } catch (err) {
+    if (err instanceof PipelinePhaseStopSignal) {
+      return { phase, stopped: true };
+    }
+    throw err;
+  }
+}
+
 export const generateReportJob = inngest.createFunction(
   {
     id: 'generate-report-pipeline',
-    // 3 retries — each retry resumes from the last DB checkpoint, so the net
-    // work on retry is bounded to (failed phase + any subsequent phases).
+    // Each step retries up to 3 times independently before the whole run fails.
+    // Per-step retry is the entire point of decomposing the DAG here.
     retries: 3,
-    // Prevent two workers from racing on the same report if an event is
-    // accidentally fired twice (payment webhook retry, user double-click, etc).
-    // Checkpoints provide belt-and-suspenders safety here.
+    // Prevent duplicate concurrent runs for the same report (double-clicks,
+    // webhook retries, etc). Checkpoints guard against re-doing work, but
+    // concurrency:1 prevents wasted invocations.
     concurrency: {
       key: 'event.data.reportId',
       limit: 1,
     },
-    triggers: [{ event: 'report/generate' }],
   },
+  { event: 'report/generate' },
   async ({ event, step, attempt }) => {
-    const { reportId, userId, userEmail, input, base, authHeaders } =
-      (event as unknown as ReportGenerateEvent).data;
+    const data = (event as unknown as ReportGenerateEvent).data;
+    const { reportId } = data;
 
     console.log(
       `[inngest] pipeline start reportId=${reportId} attempt=${attempt}`,
     );
 
-    // Single step.run wraps the orchestrator call. Inngest memoizes successful
-    // step completions, so on a retry of the whole function run this will re-execute
-    // but the orchestrator's checkpoint logic skips already-done phases.
-    await step.run('generate-report', async () => {
-      await generateReportPipeline(
-        reportId,
-        userId,
-        userEmail,
-        input,
-        // onStep — Inngest logs + DB progress are our observability channels
-        () => {},
-        base,
-        authHeaders,
-      );
-      return { ok: true };
+    // Phase 1: Ephemeris (Swiss Ephemeris / Railway service)
+    await step.run('phase:ephemeris', async () => {
+      return runPhase(data, 'ephemeris');
+    });
+
+    // Phase 2: Nativity analysis + hourly grids (parallel inside orchestrator)
+    await step.run('phase:nativity_grids', async () => {
+      return runPhase(data, 'nativity_grids');
+    });
+
+    // Phase 3: Commentary — the expensive LLM work. Retried independently.
+    await step.run('phase:commentary', async () => {
+      return runPhase(data, 'commentary');
+    });
+
+    // Phase 4: Finalize — validation + assembly + dbSaveFinal. The
+    // orchestrator will not throw PipelinePhaseStopSignal here; it saves
+    // the report and returns.
+    await step.run('phase:finalize', async () => {
+      return runPhase(data, 'finalize');
     });
 
     console.log(`[inngest] pipeline complete reportId=${reportId}`);
