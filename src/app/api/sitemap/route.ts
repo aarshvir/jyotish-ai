@@ -44,8 +44,8 @@ function urlEntry(entry: SitemapEntry, lastmod: string): string {
   </url>`;
 }
 
-export const dynamic = 'force-static';
-export const revalidate = 86400; // Revalidate daily
+// Revalidate every 24 hours via ISR — sitemap content rarely changes.
+export const revalidate = 86400;
 
 export function GET() {
   const lastmod = new Date().toISOString();
