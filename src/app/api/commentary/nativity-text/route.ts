@@ -6,6 +6,9 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
+import { detectYogas, buildTransitQueryTerms } from '@/lib/rag/yogaDetector';
+import type { NatalChartData } from '@/lib/agents/types';
 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -54,6 +57,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Pillar 2: RAG — build a minimal NatalChartData proxy so yogaDetector can run
+  const chartProxy = { lagna: lagnaSign, planets: planets as NatalChartData['planets'], current_dasha: { mahadasha, antardasha, start_date: '', end_date: md_end ?? '' } } as NatalChartData;
+  const detectedYogas = detectYogas(chartProxy);
+  const transitTerms = buildTransitQueryTerms(chartProxy, mahadasha, antardasha);
+  const allQueryTerms = Array.from(new Set([...detectedYogas, ...transitTerms]));
+  const ragContext = await buildScriptureContextHybrid(allQueryTerms, lagnaSign);
+
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a specific planet, house, or nakshatra.
 
 Return ONLY valid JSON with two keys: lagna_analysis, dasha_interpretation. No markdown, no backticks.`;
@@ -76,7 +86,7 @@ Return ONLY valid JSON with two keys: lagna_analysis, dasha_interpretation. No m
   ].join('\n');
 
   const userPrompt = `Generate lagna analysis and dasha interpretation for this native.
-
+${ragContext}
 ${planetBlock}
 
 Lagna: ${lagnaSign} ${(lagnaDegreee ?? 0).toFixed(2)}°

@@ -23,9 +23,22 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { config as loadEnv } from 'dotenv';
 
-loadEnv({ path: '.env.local' });
+// Load .env.local manually (dotenv may not be installed standalone)
+try {
+  const envContent = readFileSync(resolve('.env.local'), 'utf8');
+  for (const line of envContent.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const eqIdx = trimmed.indexOf('=');
+    if (eqIdx < 0) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    const val = trimmed.slice(eqIdx + 1).trim();
+    if (key && !process.env[key]) process.env[key] = val;
+  }
+} catch {
+  // .env.local may not exist in CI — rely on existing env vars
+}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

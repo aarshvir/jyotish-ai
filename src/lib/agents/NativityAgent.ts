@@ -10,6 +10,7 @@ import type { NatalChartData, NativityProfile } from './types';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
+import { detectYogas } from '@/lib/rag/yogaDetector';
 
 const SYSTEM_PROMPT = `You are a grandmaster Vedic astrologer with 30 years of classical training. Analyze the natal chart with depth matching Parashara and Jaimini traditions.
 
@@ -136,9 +137,13 @@ export class NativityAgent {
     const delays = [3000, 6000, 12000];
     let lastError: unknown;
 
+    // Detect yogas present in the chart so the RAG retriever pulls yoga-specific texts.
+    const detectedYogas = detectYogas(natalChart);
+    console.log(`NativityAgent detected yogas for RAG: ${detectedYogas.join(', ') || '(none)'}`);
+
     // Hybrid RAG: pgvector semantic search (if embeddings are populated + OPENAI_API_KEY present),
     // falling back to keyword search. Both code paths return classical Jyotish grounding text.
-    const ragContext = await buildScriptureContextHybrid([], natalChart.lagna);
+    const ragContext = await buildScriptureContextHybrid(detectedYogas, natalChart.lagna);
 
     if (this.client) {
       // Only 1 attempt on Anthropic. If it fails/times out fall immediately to the

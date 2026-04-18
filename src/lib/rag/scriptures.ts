@@ -208,6 +208,73 @@ export const SCRIPTURE_CORPUS: ScriptureEntry[] = [
     text: 'Rahu and Ketu are shadow planets (chhaaya grahas) representing the lunar nodes. Rahu amplifies worldly desires, obsessions, and unconventional paths — it acts like Saturn at its core but with the amplification quality of Jupiter. Ketu represents spiritual liberation, detachment, past-life skills, and sudden losses. Rahu in a Kendra gives material success through unconventional means; Ketu in a Kendra gives spiritual insights but material instability. Their dasha periods (Rahu 18 years, Ketu 7 years) are transformative — bringing sudden, unexpected changes aligned with their house placement.',
     keywords: ['rahu', 'ketu', 'nodes', 'shadow', 'obsession', 'liberation', 'spiritual', 'sudden'],
   },
+
+  // ── Additional Yogas ────────────────────────────────────────────────────────
+  {
+    id: 'bphs-chandra-mangal',
+    topic: 'Chandra-Mangal Yoga',
+    source: 'Brihat Parashara Hora Shastra',
+    chapter: 'Ch. 36',
+    text: 'When Moon and Mars are in mutual conjunction or aspect, Chandra-Mangal Yoga forms. This yoga gives a sharp, emotionally driven ambition and strong earning capacity, particularly through property, real estate, or professions requiring courage. When well-placed, this yoga produces wealth and initiative; when afflicted, it can cause rashness and strained maternal relations.',
+    keywords: ['chandra-mangal', 'moon', 'mars', 'conjunction', 'wealth', 'property', 'ambition'],
+  },
+  {
+    id: 'bphs-neecha-bhanga',
+    topic: 'Neecha Bhanga Raja Yoga',
+    source: 'Brihat Parashara Hora Shastra',
+    chapter: 'Ch. 3',
+    text: 'Neecha Bhanga (cancellation of debilitation) converts a weakened debilitated planet into a source of great strength. Cancellation occurs when: (1) the lord of the debilitation sign is in a Kendra from Lagna or Moon; (2) the planet that gets exalted in the sign of debilitation is in a Kendra from Lagna or Moon; (3) the debilitation sign lord and the debilitated planet aspect each other. When Neecha Bhanga is complete, the native often rises dramatically — the initial struggle becomes the foundation for exceptional achievement.',
+    keywords: ['neecha bhanga', 'debilitation', 'cancellation', 'exaltation', 'rise', 'achievement'],
+  },
+  {
+    id: 'bphs-pancha-mahapurusha',
+    topic: 'Pancha Mahapurusha Yogas Overview',
+    source: 'Brihat Parashara Hora Shastra',
+    chapter: 'Ch. 75',
+    text: 'The five Mahapurusha Yogas arise when Mars (Ruchaka), Mercury (Bhadra), Jupiter (Hamsa), Venus (Malavya), or Saturn (Shasha) occupies a Kendra in its own sign or exaltation sign. Each yoga elevates the native to a distinguished position: Mars — military prowess; Mercury — commerce and intellect; Jupiter — spirituality; Venus — arts and luxury; Saturn — discipline and longevity. Their results peak during that planet\'s own dasha.',
+    keywords: ['mahapurusha', 'ruchaka', 'bhadra', 'hamsa', 'malavya', 'shasha', 'saturn', 'mercury'],
+  },
+  {
+    id: 'bphs-amala',
+    topic: 'Amala Yoga',
+    source: 'Phaladeepika',
+    chapter: 'Ch. 6',
+    text: 'Amala Yoga is formed when the 10th house from the Lagna or the Moon is occupied exclusively by natural benefics (Jupiter, Venus, Mercury, or strong Moon). The native acquires lasting fame, a pure character, and prosperity throughout life. They are respected for their ethical conduct and leave behind a positive legacy.',
+    keywords: ['amala', '10th house', 'benefic', 'fame', 'purity', 'character', 'legacy'],
+  },
+
+  // ── Ashtakavarga ────────────────────────────────────────────────────────────
+  {
+    id: 'bphs-ashtakavarga',
+    topic: 'Ashtakavarga System',
+    source: 'Brihat Parashara Hora Shastra',
+    chapter: 'Ch. 66',
+    text: 'Ashtakavarga assigns benefic points (rekhas) to each sign based on the positions of the seven planets plus the Lagna and Moon. A sign with 4+ rekhas from any planet\'s Ashtakavarga is strong for that planet\'s transit. Sarvashtakavarga (total of all benefic points) indicates overall sign strength — signs with 25+ total rekhas are highly favorable. Saturn\'s Ashtakavarga is especially critical for predicting Sade Sati intensity.',
+    keywords: ['ashtakavarga', 'rekha', 'benefic point', 'transit', 'sarvashtakavarga', 'saturn'],
+  },
+  {
+    id: 'bphs-rahu-kaal-timing',
+    topic: 'Rahu Kaal and Inauspicious Timing',
+    source: 'Muhurta Chintamani',
+    text: 'Rahu Kaal is a daily period of approximately 90 minutes associated with Rahu, inauspicious for beginning new ventures, travel, signing contracts, or important initiations. Existing work and spiritual practice may continue during Rahu Kaal without ill effect — it is specifically the commencement of new activities that should be avoided. The Rahu Kaal timing varies daily: Monday 7:30, Tuesday 15:00, Wednesday 12:00, Thursday 13:30, Friday 10:30, Saturday 9:00, Sunday 16:30 (for a standard 6am–6pm day).',
+    keywords: ['rahu kaal', 'inauspicious', 'timing', 'avoid', 'muhurta', 'new ventures'],
+  },
+  {
+    id: 'jaimini-karakas',
+    topic: 'Jaimini Chara Karakas',
+    source: 'Jaimini Sutras',
+    chapter: 'Adhyaya 1',
+    text: 'In the Jaimini system, planets are assigned Karaka roles by degree: highest degree = Atmakaraka (soul); second = Amatyakaraka (career); others govern siblings, mother, children, relatives, and spouse. The Atmakaraka represents the soul\'s deepest desires and life purpose. The sign occupied by the AK in the Navamsha (D9) defines the Karakamsha — a critical lens for reading soul-level karma and life calling.',
+    keywords: ['jaimini', 'karaka', 'atmakaraka', 'amatyakaraka', 'navamsha', 'karakamsha', 'soul'],
+  },
+  {
+    id: 'bphs-shadbala',
+    topic: 'Shadbala — Six-Fold Planetary Strength',
+    source: 'Brihat Parashara Hora Shastra',
+    chapter: 'Ch. 27',
+    text: 'Shadbala measures total planetary strength through six dimensions: Sthana Bala (positional — exaltation, own sign, directional strength), Dig Bala (directional — Jupiter/Mercury strong in Lagna/East; Moon/Venus in 4th/North; Saturn in 7th/West; Sun/Mars in 10th/South), Kala Bala (temporal — day/night preferences), Chesta Bala (retrograde adds strength), Naisargika Bala (natural hierarchy: Sun highest), and Drik Bala (aspectual). A planet with high Shadbala delivers its results powerfully; a low Shadbala planet struggles regardless of its placement.',
+    keywords: ['shadbala', 'strength', 'dig bala', 'sthana bala', 'kala bala', 'chesta', 'naisargika'],
+  },
 ];
 
 /**

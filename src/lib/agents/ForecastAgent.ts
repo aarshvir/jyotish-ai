@@ -9,6 +9,8 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 import { EphemerisAgent } from './EphemerisAgent';
 import { RatingAgent } from './RatingAgent';
+import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
+import { buildTransitQueryTerms } from '@/lib/rag/yogaDetector';
 import type {
   ForecastInput,
   ForecastOutput,
@@ -34,7 +36,8 @@ function buildForecastPrompt(
   input: ForecastInput,
   dates: string[],
   dayData: FullDayData[],
-  ratings: DayRating[]
+  ratings: DayRating[],
+  ragContext = '',
 ): string {
   const { natalChart } = input;
 
@@ -59,7 +62,7 @@ function buildForecastPrompt(
   }).join('\n\n');
 
   return `You are a Vedic astrologer writing a personalised daily forecast.
-
+${ragContext}
 NATIVE
   Lagna: ${natalChart?.lagna ?? '?'}
   Moon nakshatra: ${natalChart?.moon_nakshatra ?? '?'}
@@ -262,7 +265,15 @@ export class ForecastAgent {
       weekly_summary: 'Forecast period overview. Prioritise high-score windows for important activities.',
     };
 
-    const prompt = buildForecastPrompt(input, dates, dayData, ratings);
+    // Pillar 2: inject transit-based RAG context so narratives reference classical texts
+    const md = input.natalChart?.current_dasha?.mahadasha ?? '';
+    const ad = input.natalChart?.current_dasha?.antardasha ?? '';
+    const transitTerms = input.natalChart
+      ? buildTransitQueryTerms(input.natalChart, md, ad)
+      : ['Hora System', 'Choghadiya System', 'Rahu Kaal and Inauspicious Timing'];
+    const ragContext = await buildScriptureContextHybrid(transitTerms, input.natalChart?.lagna);
+
+    const prompt = buildForecastPrompt(input, dates, dayData, ratings, ragContext);
     let rawText: string | null = null;
 
     try {
