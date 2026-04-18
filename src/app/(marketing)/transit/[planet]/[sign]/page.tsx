@@ -51,7 +51,7 @@ export default function TransitSEOPage({ params }: Props) {
   const pName = planet.charAt(0).toUpperCase() + planet.slice(1);
   const sName = sign.charAt(0).toUpperCase() + sign.slice(1);
   const title = `What ${pName} Transit in ${sName} Means for Your Birth Chart`;
-  const SITE_URL = 'https://www.vedichour.com';
+  const SITE_URL = 'https://vedichour.com';
 
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',

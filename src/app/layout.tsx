@@ -34,7 +34,7 @@ const jetbrainsMono = localFont({
 // Never allow localhost to leak into production metadata.
 const RAW_SITE_URL = process.env.NEXT_PUBLIC_URL ?? '';
 const SITE_URL = (RAW_SITE_URL.startsWith('http://localhost') || RAW_SITE_URL === ''
-  ? 'https://www.vedichour.com'
+  ? 'https://vedichour.com'
   : RAW_SITE_URL
 ).trim().replace(/\/+$/, '');
 const SITE_NAME = 'VedicHour';

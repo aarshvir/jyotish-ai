@@ -1,8 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const SITE_URL = (process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com')
-  .trim()
-  .replace(/\/+$/, '');
+const SITE_URL = 'https://vedichour.com';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -22,6 +20,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
+    // /sitemap.xml rewrites to /api/sitemap — both URLs return valid XML.
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
   };

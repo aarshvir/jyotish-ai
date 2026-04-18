@@ -1,4 +1,4 @@
-const SITE_URL = 'https://www.vedichour.com';
+const SITE_URL = 'https://vedichour.com';
 
 const PLANETS = ['mars', 'jupiter', 'saturn'];
 const SIGNS = [
