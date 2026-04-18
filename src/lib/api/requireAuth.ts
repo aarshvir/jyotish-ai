@@ -47,6 +47,22 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
     };
   }
 
+  // Internal pipeline calls (Inngest worker → Next.js agent routes) authenticate
+  // with the Supabase service-role key instead of a user session.
+  // This avoids dependency on BYPASS_SECRET for server-to-server calls.
+  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+  const internalKey = request.headers.get('x-service-key');
+  if (serviceKey && internalKey && internalKey === serviceKey) {
+    return {
+      user: {
+        id: BYPASS_USER_ID,
+        email: 'pipeline@vedichour.com',
+        role: 'service',
+      },
+      isAdmin: false,
+    };
+  }
+
   try {
     const supabase = await createClient();
     const {

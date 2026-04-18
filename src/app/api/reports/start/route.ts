@@ -159,9 +159,15 @@ export async function POST(request: NextRequest) {
 
   const base = request.nextUrl.origin;
   const authHeaders: Record<string, string> = {};
+  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
+  if (serviceKey) {
+    // Prefer service-key auth for internal pipeline → agent route calls.
+    // This works even when BYPASS_SECRET is not set in the deployment environment.
+    authHeaders['x-service-key'] = serviceKey;
+  }
   if (BYPASS_SECRET) {
     authHeaders['x-bypass-token'] = BYPASS_SECRET;
-  } else {
+  } else if (!serviceKey) {
     const cookie = request.headers.get('cookie');
     if (cookie) authHeaders['cookie'] = cookie;
   }
