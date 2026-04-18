@@ -1,6 +1,9 @@
 const SITE_URL = 'https://vedichour.com';
 
-const PLANETS = ['mars', 'jupiter', 'saturn'];
+const PLANETS = [
+  'sun', 'moon', 'mars', 'mercury', 'jupiter',
+  'venus', 'saturn', 'rahu', 'ketu',
+];
 const SIGNS = [
   'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
   'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',

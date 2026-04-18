@@ -6,6 +6,13 @@
 
 import { createServiceClient } from '@/lib/supabase/admin';
 import { validateReportData } from '@/lib/validation/reportValidation';
+import {
+  loadPipelineState,
+  savePipelineCheckpoint,
+  clearPipelineCheckpoint,
+  phaseAtOrAfter,
+  type PipelineState,
+} from './checkpoint';
 import type {
   NatalChartData,
   NativityProfile,
@@ -462,6 +469,19 @@ export async function generateReportPipeline(
     logStep('db_insert_generating');
     void dbSetProgress('Starting pipeline', 0);
 
+    // ── Resume checkpoint (Pillar 1) ─────────────────────────────────────
+    // Load any state persisted by a previous (failed) invocation so we can
+    // skip already-completed phases on retry.
+    const { checkpoint: existingCheckpoint, state: loadedState } =
+      await loadPipelineState(db, reportId);
+    let pipelineState: PipelineState = loadedState;
+    if (existingCheckpoint) {
+      console.log(
+        `[orchestrator] resuming ${reportId} from checkpoint=${existingCheckpoint}`,
+      );
+      logStep('resume_from_checkpoint', { checkpoint: existingCheckpoint });
+    }
+
     const dayCount = input.type === 'monthly' || input.type === 'annual' ? 30 : 7;
     const cLat = input.currentLat || input.lat;
     const cLng = input.currentLng || input.lng;
@@ -481,7 +501,17 @@ export async function generateReportPipeline(
     onStep({ type: 'step_started', step: 0, message: 'Reading the stars...', detail: 'Calculating planetary positions' });
 
     let ephemerisData: NatalChartData;
+    let mahadasha = 'Unknown';
+    let antardasha = 'Unknown';
 
+    // Skip phase if already checkpointed.
+    if (phaseAtOrAfter(existingCheckpoint, 'ephemeris') && pipelineState.ephemeris) {
+      ephemerisData = pipelineState.ephemeris.data as NatalChartData;
+      mahadasha = pipelineState.ephemeris.mahadasha;
+      antardasha = pipelineState.ephemeris.antardasha;
+      onStep({ type: 'step_completed', step: 0 });
+      logStep('ephemeris_resumed');
+    } else {
     try {
       const ephRes = await resilientFetch(`${base}/api/agents/ephemeris`, {
         method: 'POST',
@@ -525,18 +555,39 @@ export async function generateReportPipeline(
     void dbSetProgress('Birth chart computed', 8);
 
     // Save ephemeris data immediately
-    const dasha = ephemerisData?.current_dasha ?? {};
-    const mahadasha = dasha.mahadasha || 'Unknown';
-    const antardasha = dasha.antardasha || 'Unknown';
+    const _dasha = ephemerisData?.current_dasha ?? {};
+    mahadasha = _dasha.mahadasha || 'Unknown';
+    antardasha = _dasha.antardasha || 'Unknown';
     void dbSaveEphemeris(ephemerisData.lagna, mahadasha, antardasha);
 
+    // Checkpoint: ephemeris phase complete
+    await savePipelineCheckpoint(db, reportId, userId, 'ephemeris', {
+      ephemeris: { data: ephemerisData, mahadasha, antardasha },
+    }, pipelineState);
+    pipelineState = { ...pipelineState, ephemeris: { data: ephemerisData, mahadasha, antardasha } };
+    } // end ephemeris phase guard
+
+    // `dasha` is used later for md/ad end dates in commentary payloads.
+    // Derive from ephemerisData (works whether freshly computed or restored from state).
+    const dasha = ephemerisData?.current_dasha ?? ({} as NatalChartData['current_dasha']);
+
     // ── STEP 2+3: Nativity + Daily grids (parallel) ──────────────────────
+    let nativityProfile: NativityProfile | null = null;
+    let forecastDays: ForecastDayIntermediate[];
+
+    if (phaseAtOrAfter(existingCheckpoint, 'nativity_grids') && pipelineState.nativity_grids) {
+      nativityProfile = pipelineState.nativity_grids.nativityProfile as NativityProfile | null;
+      forecastDays = pipelineState.nativity_grids.forecastDays as ForecastDayIntermediate[];
+      onStep({ type: 'step_completed', step: 1 });
+      onStep({ type: 'step_completed', step: 2 });
+      logStep('nativity_grids_resumed');
+      void dbSetProgress('Nativity & hourly grids complete', 22);
+    } else {
     await assertWithinBudget('pre_nativity_grids');
     onStep({ type: 'step_started', step: 1, message: 'Analysing birth chart & calculating hourly scores...', detail: 'Nativity analysis and daily grid calculation in parallel' });
 
     const natal_lagna_sign_index = Math.max(0, SIGNS_FOR_LAGNA.indexOf(ephemerisData?.lagna ?? ''));
 
-    let nativityProfile: NativityProfile | null = null;
     let dailyGridResults: (DayGridApiResult | null)[] = [];
 
     await Promise.all([
@@ -592,7 +643,7 @@ export async function generateReportPipeline(
     logStep('nativity_grids_done');
     void dbSetProgress('Nativity & hourly grids complete', 22);
 
-    const forecastDays: ForecastDayIntermediate[] = dailyGridResults.map((r, i) => {
+    forecastDays = dailyGridResults.map((r, i) => {
       if (!r) {
         return {
           date: dateRange[i],
@@ -638,6 +689,14 @@ export async function generateReportPipeline(
     void dbSaveDayScores(forecastDays);
     void dbSetProgress('Day scores saved', 25);
     onStep({ type: 'partial_report_updated', field: 'day_scores' });
+
+    // Checkpoint: nativity + grids phase complete
+    await savePipelineCheckpoint(db, reportId, userId, 'nativity_grids', {
+      nativity_grids: { nativityProfile, forecastDays },
+    }, pipelineState);
+    pipelineState = { ...pipelineState, nativity_grids: { nativityProfile, forecastDays } };
+    } // end nativity_grids phase guard
+
     await assertWithinBudget('pre_commentary');
 
     const np = nativityProfile as NativityProfile | null;
@@ -652,8 +711,6 @@ export async function generateReportPipeline(
     };
 
     // ── STEP 4+5+6+7+8: Commentary + weeks-synthesis (parallel) ─────────
-    onStep({ type: 'step_started', step: 3, message: 'Writing daily commentary...', detail: 'Analyzing each day with your birth chart' });
-
     let allMonthsData: MonthSummary[] = [];
     let weeksSynthData: WeeksSynthApiResult = { weeks: [], period_synthesis: null };
 
@@ -677,6 +734,25 @@ export async function generateReportPipeline(
     const allScores = forecastDays.map((d) => d.day_score ?? 55);
     const bestDay = forecastDays.reduce((a, b) => ((a.day_score ?? 0) > (b.day_score ?? 0) ? a : b));
     const worstDay = forecastDays.reduce((a, b) => ((a.day_score ?? 100) < (b.day_score ?? 100) ? a : b));
+
+    if (phaseAtOrAfter(existingCheckpoint, 'commentary') && pipelineState.commentary) {
+      // Restore commentary results from a previous successful run.
+      forecastDays = pipelineState.commentary.forecastDays as ForecastDayIntermediate[];
+      allMonthsData = pipelineState.commentary.allMonthsData as MonthSummary[];
+      weeksSynthData = pipelineState.commentary.weeksSynthData as WeeksSynthApiResult;
+      const savedNd = pipelineState.commentary.nativityData as NativityData;
+      if (savedNd?.lagna_analysis) nativityData.lagna_analysis = savedNd.lagna_analysis;
+      if (savedNd?.current_dasha_interpretation) {
+        nativityData.current_dasha_interpretation = savedNd.current_dasha_interpretation;
+      }
+      onStep({ type: 'step_completed', step: 3 });
+      onStep({ type: 'step_completed', step: 4 });
+      onStep({ type: 'step_completed', step: 5 });
+      onStep({ type: 'step_completed', step: 6 });
+      logStep('commentary_resumed');
+      void dbSetProgress('Commentary, months & weekly synthesis complete', 88);
+    } else {
+    onStep({ type: 'step_started', step: 3, message: 'Writing daily commentary...', detail: 'Analyzing each day with your birth chart' });
 
     await Promise.all([
       // Steps 4+5: Daily overviews + Nativity text
@@ -1020,6 +1096,21 @@ export async function generateReportPipeline(
     // No assertWithinBudget here — parallel block may legitimately run close to the budget;
     // we always proceed to assembly to save whatever was generated.
 
+    // Checkpoint: commentary phase complete (expensive LLM work — never redo this)
+    await savePipelineCheckpoint(db, reportId, userId, 'commentary', {
+      commentary: {
+        forecastDays,
+        allMonthsData,
+        weeksSynthData,
+        nativityData,
+      },
+    }, pipelineState);
+    pipelineState = {
+      ...pipelineState,
+      commentary: { forecastDays, allMonthsData, weeksSynthData, nativityData },
+    };
+    } // end commentary phase guard
+
     const weekList = (weeksSynthData.weeks ?? []).map((w, i: number) => {
       const wl = w.week_label ?? `Week ${i + 1}`;
       const sc = w.overall_score ?? w.score ?? 65;
@@ -1233,6 +1324,9 @@ export async function generateReportPipeline(
     await dbSaveFinal(finalReport as unknown as Record<string, unknown>);
     onStep({ type: 'step_completed', step: 10 });
     logStep('report_saved_complete');
+
+    // Clear checkpoint state now that the report is fully saved.
+    void clearPipelineCheckpoint(db, reportId, userId);
 
     // Emit completion
     onStep({ type: 'report_completed', reportData: finalReportTyped });

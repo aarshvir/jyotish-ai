@@ -9,7 +9,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { NatalChartData, NativityProfile } from './types';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
-import { buildScriptureContext } from '@/lib/rag/scriptures';
+import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 
 const SYSTEM_PROMPT = `You are a grandmaster Vedic astrologer with 30 years of classical training. Analyze the natal chart with depth matching Parashara and Jaimini traditions.
 
@@ -129,7 +129,9 @@ export class NativityAgent {
     const delays = [3000, 6000, 12000];
     let lastError: unknown;
 
-    const ragContext = buildScriptureContext([], natalChart.lagna);
+    // Hybrid RAG: pgvector semantic search (if embeddings are populated + OPENAI_API_KEY present),
+    // falling back to keyword search. Both code paths return classical Jyotish grounding text.
+    const ragContext = await buildScriptureContextHybrid([], natalChart.lagna);
 
     if (this.client) {
       for (let attempt = 0; attempt < 3; attempt++) {
