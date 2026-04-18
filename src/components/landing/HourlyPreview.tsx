@@ -9,13 +9,8 @@ interface HourBar {
   peak?: boolean;
 }
 
+// 18 fixed hourly buckets: 06:00–24:00 in your current city's local time
 const HOURS: HourBar[] = [
-  { time: '00', score: 62, hora: 'Saturn' },
-  { time: '01', score: 55, hora: 'Jupiter' },
-  { time: '02', score: 70, hora: 'Mars' },
-  { time: '03', score: 84, hora: 'Moon', peak: true },
-  { time: '04', score: 91, hora: 'Venus', peak: true },
-  { time: '05', score: 76, hora: 'Moon' },
   { time: '06', score: 96, hora: 'Jupiter', peak: true },
   { time: '07', score: 88, hora: 'Mars' },
   { time: '08', score: 68, hora: 'Sun' },
@@ -71,7 +66,7 @@ export default function HourlyPreview() {
         </div>
 
         {/* Chart container */}
-        <div className="card p-5 sm:p-7 md:p-9 overflow-x-auto" role="img" aria-label="Sample hourly score chart showing 24 hours of ratings from 47 to 96">
+        <div className="card p-5 sm:p-7 md:p-9 overflow-x-auto" role="img" aria-label="Sample hourly score chart showing 18 hourly windows from 06:00 to 24:00">
           {/* Legend */}
           <div className="flex items-center gap-5 mb-7 flex-wrap">
             {[
@@ -141,9 +136,9 @@ export default function HourlyPreview() {
 
           {/* Footer */}
           <div className="flex items-center justify-between mt-5 pt-4 border-t border-[var(--color-border)]/40">
-            <span className="font-mono text-mono-sm text-dust/40">Local time (IST +05:30)</span>
+            <span className="font-mono text-mono-sm text-dust/40">18 hourly windows · your city&apos;s local time</span>
             <span className="font-mono text-mono-sm text-dust/40">
-              Peak windows: 03–05 · 06:00 · 14–17
+              Peak windows: 06:00 · 14–17
             </span>
           </div>
         </div>

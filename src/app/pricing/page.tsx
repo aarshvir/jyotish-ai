@@ -60,18 +60,27 @@ const BASE_PLANS = [
 
 export default function PricingPage() {
   const [geoPrices, setGeoPrices] = useState<GeoPrices | null>(null);
+  const [geoLoading, setGeoLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     fetch('/api/geo')
       .then((r) => r.json())
       .then((d: { currency?: string; prices?: Record<string, GeoPrice> }) => {
+        if (cancelled) return;
         if (d?.currency && d?.prices) setGeoPrices({ currency: d.currency, prices: d.prices });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setGeoLoading(false); });
+    return () => { cancelled = true; };
   }, []);
 
   const plans = BASE_PLANS.map((p) => {
     const geoPrice = geoPrices?.prices[p.id];
+    // Free plan keeps "Free" label regardless of geo response
+    if (p.id === 'free') {
+      return { ...p, price: p.defaultPrice, priceNote: p.defaultNote };
+    }
     return {
       ...p,
       price: geoPrice ? geoPrice.display : p.defaultPrice,
@@ -130,10 +139,22 @@ export default function PricingPage() {
                   {plan.name}
                 </h2>
                 <p className="font-body text-body-sm text-dust mb-3 leading-relaxed">{plan.description}</p>
-                <span className={`text-3xl font-bold font-mono ${plan.price === 'Free' ? 'text-success' : 'text-star'}`}>
-                  {plan.price}
-                </span>
-                <p className="font-mono text-mono-sm text-dust/50 mt-1">{plan.priceNote}</p>
+                {geoLoading && plan.id !== 'free' ? (
+                  <>
+                    <span
+                      className="inline-block h-8 w-24 rounded-md bg-white/[0.06] animate-pulse align-middle"
+                      aria-label="Loading localized price"
+                    />
+                    <p className="font-mono text-mono-sm text-dust/50 mt-1">Detecting your region…</p>
+                  </>
+                ) : (
+                  <>
+                    <span className={`text-3xl font-bold font-mono ${plan.price === 'Free' ? 'text-success' : 'text-star'}`}>
+                      {plan.price}
+                    </span>
+                    <p className="font-mono text-mono-sm text-dust/50 mt-1">{plan.priceNote}</p>
+                  </>
+                )}
               </div>
 
               <ul className="list-none p-0 mb-6 flex-1 space-y-0" role="list">

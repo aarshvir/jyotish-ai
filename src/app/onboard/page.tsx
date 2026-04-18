@@ -47,9 +47,9 @@ const STAGES = [
 ];
 
 const STEP_META = [
-  { label: 'About You', est: '30 sec' },
-  { label: 'Birth Details', est: '1 min' },
-  { label: 'Choose Plan', est: '30 sec' },
+  { label: 'About You', short: 'About', est: '30 sec' },
+  { label: 'Birth Details', short: 'Birth', est: '1 min' },
+  { label: 'Choose Plan', short: 'Plan', est: '30 sec' },
 ];
 
 const REPORT_TYPES = [
@@ -122,8 +122,14 @@ interface Step1Props {
 }
 
 function Step1({ form, update, onNext }: Step1Props) {
-  const isValidEmail = (email: string) => email.includes('@') && email.includes('.');
-  const canProceed = form.name.trim().length > 0 && form.email.trim().length > 0 && isValidEmail(form.email);
+  // RFC-5322 simplified: local@domain.tld, no spaces, at least one dot in domain
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const isValidEmail = (email: string) => EMAIL_RE.test(email.trim());
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [nameTouched, setNameTouched] = useState(false);
+  const emailInvalid = emailTouched && form.email.length > 0 && !isValidEmail(form.email);
+  const nameInvalid = nameTouched && form.name.trim().length === 0;
+  const canProceed = form.name.trim().length > 0 && isValidEmail(form.email);
 
   return (
     <>
@@ -143,20 +149,38 @@ function Step1({ form, update, onNext }: Step1Props) {
             placeholder="Arjuna Sharma"
             value={form.name}
             onChange={(e) => update('name', e.target.value)}
+            onBlur={() => setNameTouched(true)}
+            aria-invalid={nameInvalid || undefined}
+            aria-describedby={nameInvalid ? 'onboard-name-err' : undefined}
             autoFocus
             required
           />
+          {nameInvalid && (
+            <p id="onboard-name-err" role="alert" className="text-caution text-xs mt-1.5">
+              Please enter your name.
+            </p>
+          )}
         </Field>
         <Field label="Email Address" htmlFor="onboard-email" why="We send your report here. Never shared.">
           <input
             id="onboard-email"
             type="email"
+            autoComplete="email"
+            inputMode="email"
             className="cosmic-input"
             placeholder="you@example.com"
             value={form.email}
             onChange={(e) => update('email', e.target.value)}
+            onBlur={() => setEmailTouched(true)}
+            aria-invalid={emailInvalid || undefined}
+            aria-describedby={emailInvalid ? 'onboard-email-err' : undefined}
             required
           />
+          {emailInvalid && (
+            <p id="onboard-email-err" role="alert" className="text-caution text-xs mt-1.5">
+              That doesn&apos;t look like a valid email — check for typos.
+            </p>
+          )}
         </Field>
       </div>
 
@@ -479,7 +503,9 @@ function Step3({
             Back
           </button>
           <button className="btn-primary flex-[2] py-3" onClick={onSubmit}>
-            {hasBypass || fullPromo ? 'Generate Report Free' : 'Generate Report'}
+            {hasBypass || fullPromo || !paidPlan
+              ? 'Generate Report Free'
+              : 'Continue to Payment →'}
           </button>
         </div>
         {isAdmin && (
@@ -578,6 +604,18 @@ function OnboardPageInner() {
       setForm((prev) => ({ ...prev, reportType: 'free' }));
     } else if (plan === '7day' || plan === 'monthly' || plan === 'annual' || plan === 'free') {
       setForm((prev) => ({ ...prev, reportType: plan }));
+    }
+  }, [searchParams]);
+
+  // Auto-apply promo code from URL (?promo=NEWUSER30) — only if it's a valid code
+  useEffect(() => {
+    const urlPromo = searchParams.get('promo');
+    if (!urlPromo) return;
+    const normalized = urlPromo.trim().toUpperCase();
+    if (!normalized) return;
+    const discount = getPromoDiscount(normalized);
+    if (discount > 0) {
+      setPromoCode((prev) => prev || normalized);
     }
   }, [searchParams]);
 
@@ -790,9 +828,11 @@ function OnboardPageInner() {
         });
         if (!intentRes.ok) {
           const errBody = await intentRes.json().catch(() => ({})) as { error?: string };
-          const errMsg = errBody.error ?? `Payment setup failed (${intentRes.status}). Please try again or contact support.`;
-          alert(errMsg);
+          const errMsg = errBody.error ?? `Payment setup failed (${intentRes.status}). Please try again or contact support@vedichour.com.`;
+          setPaymentReturnBanner({ type: 'error', message: errMsg });
           setIsLoading(false);
+          // Scroll the user back to the top so they see the banner
+          if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
           return;
         }
 
@@ -811,8 +851,12 @@ function OnboardPageInner() {
         return;
       } catch (err) {
         console.error('Payment checkout failed:', err);
-        alert('Payment setup failed. Please try again or contact support@vedichour.com.');
+        setPaymentReturnBanner({
+          type: 'error',
+          message: 'Payment setup failed. Please try again or contact support@vedichour.com.',
+        });
         setIsLoading(false);
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
     }
@@ -825,7 +869,7 @@ function OnboardPageInner() {
   const vars = slideVariants(dir);
 
   return (
-    <main className="relative min-h-screen bg-space flex flex-col items-center justify-center px-4 py-10 md:py-14 overflow-hidden">
+    <main id="main-content" className="relative min-h-screen bg-space flex flex-col items-center justify-center px-4 py-10 md:py-14 overflow-hidden">
       <StarField />
 
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.03]">
@@ -834,7 +878,10 @@ function OnboardPageInner() {
 
       <div className="relative z-10 w-full max-w-md">
         {paymentReturnBanner && (
-          <div className={`mb-4 px-4 py-3 rounded-card border font-body text-sm flex items-start gap-3 ${
+          <div
+            role="alert"
+            aria-live="assertive"
+            className={`mb-4 px-4 py-3 rounded-card border font-body text-sm flex items-start gap-3 ${
             paymentReturnBanner.type === 'cancelled'
               ? 'border-amber/30 bg-amber/10 text-amber'
               : paymentReturnBanner.type === 'pending'
@@ -884,6 +931,11 @@ function OnboardPageInner() {
                   i === step ? 'text-star' : 'text-dust/50'
                 }`}>
                   {meta.label}
+                </span>
+                <span className={`font-body text-[11px] sm:hidden ${
+                  i === step ? 'text-star font-medium' : 'text-dust/50'
+                }`}>
+                  {meta.short}
                 </span>
               </div>
             ))}

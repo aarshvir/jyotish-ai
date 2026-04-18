@@ -276,6 +276,19 @@ function DashboardInner() {
     setActiveTab(resolved);
   }, [searchParams]);
 
+  // popstate listener — pushState above doesn't trigger Next's searchParams update,
+  // so we manually read the URL on back/forward nav.
+  useEffect(() => {
+    const onPop = () => {
+      const sp = new URLSearchParams(window.location.search);
+      const t = sp.get('tab') as Tab | null;
+      const resolved = t && ['overview', 'reports', 'payments', 'settings'].includes(t) ? t : 'overview';
+      setActiveTab(resolved);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   const [reports, setReports] = useState<Report[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -419,7 +432,9 @@ function DashboardInner() {
 
   function switchTab(t: Tab) {
     setActiveTab(t);
-    window.history.replaceState({}, '', t === 'overview' ? '/dashboard' : `/dashboard?tab=${t}`);
+    const url = t === 'overview' ? '/dashboard' : `/dashboard?tab=${t}`;
+    // pushState so browser back/forward navigates between tabs
+    window.history.pushState({}, '', url);
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -442,7 +457,6 @@ function DashboardInner() {
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber/80 to-amber/30 border border-amber/40 flex items-center justify-center shadow-glow-amber">
                   <span className="text-xl font-bold text-space font-display">{initials}</span>
                 </div>
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-success border-2 border-space" title="Online" />
               </div>
               <div>
                 <h1 className="font-body text-xl font-semibold text-star">{displayName}</h1>
@@ -662,7 +676,7 @@ function DashboardInner() {
           <div>
             {payments.length === 0 ? (
               <div className="card p-10 text-center">
-                <div className="mb-4 text-3xl opacity-20">₿</div>
+                <div className="mb-4 text-3xl text-amber/40">✦</div>
                 <p className="font-body text-body-lg text-dust mb-2">No payment history yet.</p>
                 <p className="text-dust/50 text-body-sm mb-6">Free (preview) reports are not billed. Paid reports appear here once payment is verified.</p>
                 <Link href="/onboard" className="btn-primary px-8 py-3">Generate a paid report →</Link>
@@ -784,9 +798,30 @@ function DashboardInner() {
   );
 }
 
+function DashboardSuspenseFallback() {
+  return (
+    <div className="min-h-[calc(100vh-var(--nav-height))] bg-space">
+      <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8 md:py-10">
+        <div className="card mb-8 p-6 sm:p-8">
+          <div className="flex flex-wrap items-start justify-between gap-6">
+            <div className="flex items-center gap-5">
+              <div className="h-16 w-16 rounded-full bg-horizon/30 animate-pulse" />
+              <div className="space-y-2.5">
+                <div className="h-5 w-40 bg-horizon/40 animate-pulse rounded" />
+                <div className="h-3 w-52 bg-horizon/30 animate-pulse rounded" />
+              </div>
+            </div>
+            <div className="h-10 w-32 bg-horizon/30 animate-pulse rounded-button" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<DashboardSuspenseFallback />}>
       <DashboardInner />
     </Suspense>
   );

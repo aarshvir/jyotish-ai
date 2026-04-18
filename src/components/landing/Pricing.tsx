@@ -1,10 +1,20 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+type GeoPrices = {
+  country: string | null;
+  currency: string;
+  prices: Record<string, { amount: number; display: string; currency: string }>;
+};
 
 const PLANS = [
   {
+    id: 'free',
     name: 'Preview',
-    price: 'Free',
-    priceNote: 'No card required',
+    defaultPrice: 'Free',
+    defaultNote: 'No card required',
     description: 'See your cosmic blueprint',
     features: [
       'Complete natal birth chart',
@@ -18,12 +28,13 @@ const PLANS = [
     isPaid: false,
   },
   {
+    id: '7day',
     name: '7-Day Forecast',
-    price: '₹799',
-    priceNote: 'one-time · ~$9.99',
+    defaultPrice: '$9.99',
+    defaultNote: 'one-time',
     description: 'Full week of hourly precision',
     features: [
-      '168 hourly ratings (0–100)',
+      '126 hourly ratings (0–100)',
       'Hora + choghadiya overlay',
       'Rahu Kaal warnings',
       'AI narrative per day',
@@ -35,9 +46,10 @@ const PLANS = [
     isPaid: true,
   },
   {
+    id: 'monthly',
     name: 'Monthly Oracle',
-    price: '₹1,499',
-    priceNote: 'one-time · ~$19.99',
+    defaultPrice: '$19.99',
+    defaultNote: 'one-time',
     description: '30 days of precision guidance',
     features: [
       'Everything in 7-Day',
@@ -51,7 +63,7 @@ const PLANS = [
     featured: false,
     isPaid: true,
   },
-];
+] as const;
 
 function CheckIcon() {
   return (
@@ -71,6 +83,37 @@ function ShieldIcon() {
 }
 
 export default function Pricing() {
+  const [geo, setGeo] = useState<GeoPrices | null>(null);
+  const [geoLoading, setGeoLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/geo')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data) setGeo(data);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setGeoLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function priceFor(planId: string, fallback: string): string {
+    if (planId === 'free') return 'Free';
+    if (geo?.prices[planId]) return geo.prices[planId].display;
+    return fallback;
+  }
+
+  function priceNoteFor(planId: string, fallback: string): string {
+    if (planId === 'free') return 'No card required';
+    if (geo?.currency) return `one-time · ${geo.currency}`;
+    return fallback;
+  }
+
   return (
     <section id="pricing" className="py-24 md:py-28 bg-cosmos relative">
       <div className="section-divider absolute top-0 left-0 right-0" />
@@ -79,7 +122,7 @@ export default function Pricing() {
         <div className="section-header text-center">
           <p className="section-eyebrow">Pricing</p>
           <h2 className="section-title text-display-md">
-            Choose Your Oracle
+            Choose Your Plan
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
             One-time payments. Instant delivery. No subscriptions.
@@ -113,11 +156,19 @@ export default function Pricing() {
                   <p className="font-mono text-label-sm text-dust tracking-[0.12em] uppercase mb-2">
                     {plan.name}
                   </p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-body font-semibold text-3xl text-star">
-                      {plan.price}
-                    </span>
-                    <span className="font-mono text-mono-sm text-dust">{plan.priceNote}</span>
+                  <div className="flex items-baseline gap-2 min-h-[2.25rem]">
+                    {geoLoading && plan.id !== 'free' ? (
+                      <span className="inline-block h-8 w-20 rounded bg-horizon/40 animate-pulse" />
+                    ) : (
+                      <>
+                        <span className="font-body font-semibold text-3xl text-star">
+                          {priceFor(plan.id, plan.defaultPrice)}
+                        </span>
+                        <span className="font-mono text-mono-sm text-dust">
+                          {priceNoteFor(plan.id, plan.defaultNote)}
+                        </span>
+                      </>
+                    )}
                   </div>
                   <p className="font-body text-body-sm text-dust mt-1.5">{plan.description}</p>
                 </div>

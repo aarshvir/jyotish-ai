@@ -150,7 +150,8 @@ function ReportContent() {
   const forecastStartParam = params.get('forecastStart') ?? '';
   const paymentStatusParam = params.get('payment_status') ?? '';
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
@@ -160,9 +161,26 @@ function ReportContent() {
   const [pdfLoading, setPdfLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pdfStatus, setPdfStatus] = useState('Download PDF');
+  /** True when the current user does not own this report (RLS denied the DB fetch). */
+  const [notOwnerOrNotFound, setNotOwnerOrNotFound] = useState(false);
   const hasFetched = useRef(false);
   /** Cached Supabase user — set once in init(), reused to avoid repeated getUser() roundtrips. */
   const userRef = useRef<{ id: string; email?: string } | null>(null);
+  /** Cached birth data from the DB row so retries don't fall back to URL/placeholder values. */
+  const dbBirthRef = useRef<{
+    name: string;
+    birth_date: string;
+    birth_time: string;
+    birth_city: string;
+    birth_lat: number | null;
+    birth_lng: number | null;
+    current_city: string | null;
+    current_lat: number | null;
+    current_lng: number | null;
+    timezone_offset: number | null;
+    plan_type: string | null;
+    payment_status: string | null;
+  } | null>(null);
   const [birthDisplay, setBirthDisplay] = useState<{
     name: string;
     date: string;
@@ -217,28 +235,31 @@ function ReportContent() {
     if (!user) return;
     const supabase = createClient();
 
-    const planRaw = params.get('plan_type') || type;
+    // Prefer DB-cached values over URL params so retries never fall back to placeholders
+    const cached = dbBirthRef.current;
+    const planRaw = cached?.plan_type || params.get('plan_type') || type;
     const planType = planRaw === 'free' ? 'preview' : planRaw;
+    const rawTime = cached?.birth_time || params.get('time') || time;
     const birthTimeNorm =
-      time && time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time || '12:00:00';
+      rawTime && rawTime.includes(':') && rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime || '12:00:00';
 
     const { error } = await supabase.from('reports').insert({
       id: reportIdFromRoute,
       user_id: user.id,
       user_email: user.email ?? '',
-      native_name: params.get('name') || name || 'Unknown',
-      birth_date: params.get('date') || date || '2000-01-01',
+      native_name: cached?.name || params.get('name') || name || 'Unknown',
+      birth_date: cached?.birth_date || params.get('date') || date || '2000-01-01',
       birth_time: birthTimeNorm,
-      birth_city: params.get('city') || city || 'Unknown',
-      birth_lat: parseFloat(params.get('lat') || lat || '0') || null,
-      birth_lng: parseFloat(params.get('lng') || lng || '0') || null,
-      current_city: params.get('currentCity') || currentCity || null,
-      current_lat: parseFloat(params.get('currentLat') || currentLat || '0') || null,
-      current_lng: parseFloat(params.get('currentLng') || currentLng || '0') || null,
-      timezone_offset: currentTzOffset,
+      birth_city: cached?.birth_city || params.get('city') || city || 'Unknown',
+      birth_lat: (cached?.birth_lat ?? parseFloat(params.get('lat') || lat || '0')) || null,
+      birth_lng: (cached?.birth_lng ?? parseFloat(params.get('lng') || lng || '0')) || null,
+      current_city: (cached?.current_city ?? params.get('currentCity')) || currentCity || null,
+      current_lat: (cached?.current_lat ?? parseFloat(params.get('currentLat') || currentLat || '0')) || null,
+      current_lng: (cached?.current_lng ?? parseFloat(params.get('currentLng') || currentLng || '0')) || null,
+      timezone_offset: cached?.timezone_offset ?? currentTzOffset,
       plan_type: planType,
       status: 'generating',
-      payment_status: paymentStatusParam === 'paid' ? 'paid' : 'bypass',
+      payment_status: cached?.payment_status ?? (paymentStatusParam === 'paid' ? 'paid' : 'bypass'),
     });
 
     if (error && error.code !== '23505') {
@@ -267,7 +288,8 @@ function ReportContent() {
     stopReportPolling();
     pollCancelRef.current = false;
 
-    setIsLoading(true);
+    setIsInitializing(false);
+    setIsGenerating(true);
     setError(null);
     setServerPoll(null);
     generationStartRef.current = Date.now();
@@ -285,7 +307,7 @@ function ReportContent() {
           setError(
             'Generation is taking unusually long or was interrupted on the server. Try again. If it keeps happening, check Vercel logs for timeouts or contact support.',
           );
-          setIsLoading(false);
+          setIsGenerating(false);
           return;
         }
 
@@ -298,13 +320,13 @@ function ReportContent() {
           if (response.status === 401) {
             stopReportPolling();
             setError('Session expired — please log in again');
-            setIsLoading(false);
+            setIsGenerating(false);
             return;
           }
           if (response.status === 404) {
             stopReportPolling();
             setError('Report not found');
-            setIsLoading(false);
+            setIsGenerating(false);
             return;
           }
           // For other errors (5xx, network hiccups), retry up to 5 times before giving up
@@ -312,7 +334,7 @@ function ReportContent() {
           if (pollConsecutiveErrorsRef.current >= 5) {
             stopReportPolling();
             setError(`Status check failed (${response.status}) — please refresh or try again`);
-            setIsLoading(false);
+            setIsGenerating(false);
           }
           return;
         }
@@ -343,7 +365,7 @@ function ReportContent() {
             setError(
               'The server did not finish in time (likely a timeout). Use Try again to restart.',
             );
-            setIsLoading(false);
+            setIsGenerating(false);
             return;
           }
         }
@@ -351,7 +373,7 @@ function ReportContent() {
         if (data.isComplete && data.report) {
           stopReportPolling();
           setReportData(data.report);
-          setIsLoading(false);
+          setIsGenerating(false);
 
           const uid = userRef.current?.id;
           if (uid) {
@@ -374,7 +396,7 @@ function ReportContent() {
         } else if (data.status === 'error') {
           stopReportPolling();
           setError('Generation failed — please retry');
-          setIsLoading(false);
+          setIsGenerating(false);
         }
       } catch (err) {
         console.error('[Polling] network error:', err);
@@ -382,7 +404,7 @@ function ReportContent() {
         if (pollConsecutiveErrorsRef.current >= 5) {
           stopReportPolling();
           setError('Connection lost — please check your internet and try again');
-          setIsLoading(false);
+          setIsGenerating(false);
         }
       }
     };
@@ -394,37 +416,43 @@ function ReportContent() {
   /** Inserts row (if needed), POSTs /api/reports/start, then polls until complete. */
   const kickOffBackgroundGeneration = useCallback(async (opts?: { forceRestart?: boolean }) => {
     if (!isRouteUuid(reportIdFromRoute)) return;
-    setIsLoading(true);
+    setIsInitializing(false);
+    setIsGenerating(true);
     setError(null);
     generationStartRef.current = Date.now();
     setElapsedSeconds(0);
 
     await createReportRecord();
 
-    const planRaw = params.get('plan_type') || type;
+    // Prefer DB-cached birth data (populated during init()) over URL params.
+    // This is what fixes "Try Again" sending placeholder "Seeker / 2000-01-01" data.
+    const cached = dbBirthRef.current;
+    const planRaw = cached?.plan_type || params.get('plan_type') || type;
     const planType = planRaw === 'free' ? 'preview' : planRaw;
+    const rawTime = cached?.birth_time || params.get('time') || time;
     const birthTimeNorm =
-      time && time.includes(':') && time.split(':').length === 2 ? `${time}:00` : time || '12:00:00';
+      rawTime && rawTime.includes(':') && rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime || '12:00:00';
     const tz =
-      currentTzOffset ?? (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
+      cached?.timezone_offset ??
+      currentTzOffset ??
+      (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
 
     const startBody = {
       reportId: reportIdFromRoute,
-      name: params.get('name') || name || 'Seeker',
-      birth_date: params.get('date') || date || '2000-01-01',
+      name: cached?.name || params.get('name') || name || 'Seeker',
+      birth_date: cached?.birth_date || params.get('date') || date || '2000-01-01',
       birth_time: birthTimeNorm,
-      birth_city: params.get('city') || city || 'Unknown',
-      birth_lat: parseFloat(params.get('lat') || lat || '0') || 0,
-      birth_lng: parseFloat(params.get('lng') || lng || '0') || 0,
-      current_city: params.get('currentCity') || currentCity || null,
-      current_lat: parseFloat(params.get('currentLat') || currentLat || '0') || 0,
-      current_lng: parseFloat(params.get('currentLng') || currentLng || '0') || 0,
+      birth_city: cached?.birth_city || params.get('city') || city || 'Unknown',
+      birth_lat: cached?.birth_lat ?? (parseFloat(params.get('lat') || lat || '0') || 0),
+      birth_lng: cached?.birth_lng ?? (parseFloat(params.get('lng') || lng || '0') || 0),
+      current_city: cached?.current_city ?? params.get('currentCity') ?? currentCity ?? null,
+      current_lat: cached?.current_lat ?? (parseFloat(params.get('currentLat') || currentLat || '0') || 0),
+      current_lng: cached?.current_lng ?? (parseFloat(params.get('currentLng') || currentLng || '0') || 0),
       timezone_offset: tz,
       plan_type: planType,
       forecast_start: forecastStartParam || undefined,
-      // Use the payment_status from the URL if it arrived from a real payment flow,
-      // otherwise default to 'bypass' (admin/free/promo flows).
-      payment_status: paymentStatusParam === 'paid' ? 'paid' : 'bypass',
+      // Use DB-cached payment_status if present, otherwise fall back to URL param.
+      payment_status: cached?.payment_status ?? (paymentStatusParam === 'paid' ? 'paid' : 'bypass'),
       ...(opts?.forceRestart ? { forceRestart: true } : {}),
     };
 
@@ -438,7 +466,7 @@ function ReportContent() {
       const errJson = await res.json().catch(() => ({}));
       const msg = (errJson as { error?: string }).error ?? res.statusText;
       setError(`Could not start generation: ${msg}`);
-      setIsLoading(false);
+      setIsGenerating(false);
       return;
     }
 
@@ -466,7 +494,7 @@ function ReportContent() {
             time: String(row?.birth_time ?? '').slice(0, 5),
             city: String(row?.birth_city ?? ''),
           });
-          setIsLoading(false);
+          setIsGenerating(false);
           return;
         }
       }
@@ -611,6 +639,25 @@ function ReportContent() {
           .eq('user_id', user.id)
           .maybeSingle();
 
+        // Cache the authoritative birth data from the DB so retries can use it
+        // (rather than relying on potentially missing/stale URL params).
+        if (row) {
+          dbBirthRef.current = {
+            name: String(row.native_name ?? ''),
+            birth_date: String(row.birth_date ?? '').slice(0, 10),
+            birth_time: String(row.birth_time ?? '').slice(0, 8),
+            birth_city: String(row.birth_city ?? ''),
+            birth_lat: typeof row.birth_lat === 'number' ? row.birth_lat : null,
+            birth_lng: typeof row.birth_lng === 'number' ? row.birth_lng : null,
+            current_city: (row.current_city as string | null) ?? null,
+            current_lat: typeof row.current_lat === 'number' ? row.current_lat : null,
+            current_lng: typeof row.current_lng === 'number' ? row.current_lng : null,
+            timezone_offset: typeof row.timezone_offset === 'number' ? row.timezone_offset : null,
+            plan_type: (row.plan_type as string | null) ?? null,
+            payment_status: (row.payment_status as string | null) ?? null,
+          };
+        }
+
         const rd = row?.report_data as Record<string, unknown> | null | undefined;
         const days = rd?.days;
         if (
@@ -629,12 +676,13 @@ function ReportContent() {
             city: String(row.birth_city ?? ''),
           });
           setReportData(rd as unknown as ReportData);
-          setIsLoading(false);
+          setIsGenerating(false);
+          setIsInitializing(false);
           return;
         }
 
-        const isGenerating = row?.status === 'generating';
-        if (!cancelled && isGenerating) {
+        const isRowGenerating = row?.status === 'generating';
+        if (!cancelled && isRowGenerating) {
           hasFetched.current = true;
           setBirthDisplay({
             name: String(row?.native_name ?? 'Seeker'),
@@ -642,28 +690,38 @@ function ReportContent() {
             time: String(row?.birth_time ?? '').slice(0, 5),
             city: String(row?.birth_city ?? ''),
           });
-          if (params.get('date')) {
-            // Check if the previous run is stale (older than 360s = past Vercel maxDuration+buffer).
-            // If so, force-restart so we don't immediately hit the timeout error UI.
-            const startedMs = row?.generation_started_at
-              ? new Date(row.generation_started_at as string).getTime()
-              : 0;
-            const isStale = !Number.isNaN(startedMs) && startedMs > 0 && Date.now() - startedMs > 360_000;
-            void kickOffBackgroundGeneration(isStale ? { forceRestart: true } : undefined);
+          // Check if the previous run is stale (older than 360s = past Vercel maxDuration+buffer).
+          // If so, force-restart so we don't immediately hit the timeout error UI.
+          const startedMs = row?.generation_started_at
+            ? new Date(row.generation_started_at as string).getTime()
+            : 0;
+          const isStale = !Number.isNaN(startedMs) && startedMs > 0 && Date.now() - startedMs > 360_000;
+          if (isStale) {
+            void kickOffBackgroundGeneration({ forceRestart: true });
           } else {
             startPollingForReport();
           }
           return;
         }
 
-        if (!params.get('date')) {
+        // No row at all — or row exists with status=error.
+        // If we have URL params we can still kick off a fresh generation.
+        // Otherwise show a "not found / not owner" state.
+        if (!row && !params.get('date')) {
           if (!cancelled) {
-            setError(
-              row?.status === 'error'
-                ? 'Report generation failed. Use Try again or start a new report from the dashboard.'
-                : 'Report not found or incomplete. Open a new report from the dashboard.',
-            );
-            setIsLoading(false);
+            setNotOwnerOrNotFound(true);
+            setIsGenerating(false);
+            setIsInitializing(false);
+          }
+          hasFetched.current = true;
+          return;
+        }
+
+        if (row?.status === 'error' && !params.get('date')) {
+          if (!cancelled) {
+            setError('Report generation failed previously. Click Try again to restart.');
+            setIsGenerating(false);
+            setIsInitializing(false);
           }
           hasFetched.current = true;
           return;
@@ -682,7 +740,20 @@ function ReportContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per route/query
   }, [reportIdFromRoute, queryKey, kickOffBackgroundGeneration, startPollingForReport, stopReportPolling]);
 
-  if (isLoading) {
+  // Initializing: quick look-up against the DB (no "generating" flash for completed reports)
+  if (isInitializing) {
+    return (
+      <div className="min-h-[calc(100vh-var(--nav-height))] bg-space flex flex-col items-center justify-center gap-4 px-6">
+        <StarField />
+        <div className="w-12 h-12 text-amber animate-spin-slow relative z-10">
+          <MandalaRing className="w-full h-full" />
+        </div>
+        <p className="font-mono text-xs text-dust/60 relative z-10">Loading your report…</p>
+      </div>
+    );
+  }
+
+  if (isGenerating) {
     return (
       <GeneratingScreen
         elapsedSeconds={elapsedSeconds}
@@ -690,6 +761,30 @@ function ReportContent() {
         generationStartRef={generationStartRef}
         serverPoll={serverPoll}
       />
+    );
+  }
+
+  if (notOwnerOrNotFound) {
+    return (
+      <div className="min-h-[calc(100vh-var(--nav-height))] bg-space flex flex-col items-center justify-center px-6 py-20">
+        <StarField />
+        <div className="max-w-md text-center relative z-10">
+          <div className="text-amber/70 text-6xl mb-6">✦</div>
+          <h1 className="font-body font-semibold text-star text-headline-lg mb-4">
+            This report isn&apos;t available to you
+          </h1>
+          <p className="font-body text-dust text-base mb-2">
+            Reports are private to the account that generated them.
+          </p>
+          <p className="font-body text-dust/70 text-sm mb-8">
+            If you created this report, sign in with the same account. Otherwise, generate your own.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Link href="/dashboard" className="btn-secondary px-6 py-2">My Reports</Link>
+            <Link href="/onboard" className="btn-primary px-6 py-2">Generate a Report</Link>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -792,11 +887,21 @@ function ReportContent() {
       <main className="lg:ml-[200px] px-6 pb-12 pt-6 lg:pt-12 max-w-4xl mx-auto relative z-10">
         {/* Payment confirmation toast */}
         {paymentConfirmed && (
-          <div className="pdf-exclude mb-4 px-4 py-3 rounded-card border border-success/30 bg-success/10 text-success font-body text-sm flex items-center gap-3 animate-fade-in">
+          <div
+            role="status"
+            aria-live="polite"
+            className="pdf-exclude mb-4 px-4 py-3 rounded-card border border-success/30 bg-success/10 text-success font-body text-sm flex items-center gap-3 animate-fade-in"
+          >
             <span>✓</span>
             <span>Payment confirmed — your report is being generated.</span>
           </div>
         )}
+
+        {/* Semantic h1 — visually hidden but present for screen readers and SEO */}
+        <h1 className="sr-only">
+          VedicHour report for {displayName}
+          {dbBirthRef.current?.plan_type ? ` · ${dbBirthRef.current.plan_type} plan` : ''}
+        </h1>
 
         {/* Report actions: dashboard + Copy Share Link + Print/PDF */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
@@ -834,41 +939,45 @@ function ReportContent() {
             )}
           </button>
           <div className="flex flex-col items-end gap-2 pdf-exclude" data-print-hide>
-          <button
-            onClick={() => handleDownloadMarkdown()}
-            className="pdf-exclude font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2"
-          >
-            <span>Download MD</span>
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
-            </svg>
-          </button>
-          <button
-            id="pdf-download-btn"
-            onClick={() => void handleDownloadPDF()}
-            disabled={pdfLoading}
-            className="pdf-exclude font-mono text-xs text-dust hover:text-amber transition-colors flex items-center gap-2 disabled:opacity-50"
-          >
-            {pdfLoading ? (
-              <>
-                <span>{pdfStatus}</span>
-                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
-                  <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleDownloadMarkdown()}
+                className="pdf-exclude btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5"
+                aria-label="Download as Markdown"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
                 </svg>
-              </>
-            ) : (
-              <>
-                <span>{pdfStatus}</span>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </>
-            )}
-          </button>
-          <p className="font-mono text-[10px] text-dust/40 mt-1 pdf-exclude">
-            Select &quot;Save as PDF&quot; in print dialog
-          </p>
+                <span>Markdown</span>
+              </button>
+              <button
+                id="pdf-download-btn"
+                onClick={() => void handleDownloadPDF()}
+                disabled={pdfLoading}
+                className="pdf-exclude btn-primary px-3 py-1.5 text-xs flex items-center gap-1.5 disabled:opacity-50"
+                aria-label="Download as PDF"
+              >
+                {pdfLoading ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" opacity="0.3" />
+                      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span>{pdfStatus}</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span>PDF</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="font-mono text-[10px] text-dust/40 pdf-exclude">
+              PDF uses your browser&apos;s print dialog — choose &quot;Save as PDF&quot;.
+            </p>
           </div>
           </div>
         </div>
@@ -977,6 +1086,56 @@ function ReportContent() {
               Hidden on screen, rendered during @media print to bypass tab-based DailyAnalysis. */}
           <PrintAllDays days={mergedDays} weeks={safeWeekly} />
         </div>
+
+        {/* Methodology & AI disclosure — shown in PDF as well, so users and recipients understand how the report was produced */}
+        <section className="mt-10 rounded-card border border-white/5 bg-white/[0.02] p-5 sm:p-6">
+          <h2 className="font-body text-title-md text-star mb-2">How this report was made</h2>
+          <p className="font-body text-body-sm text-dust leading-relaxed">
+            Planetary positions are computed using the Swiss Ephemeris with the Lahiri Ayanamsa and
+            Vimshottari Dasha. Hourly scores combine hora rulership, choghadiya, Rahu Kaal, transit
+            lagna, and your natal chart&apos;s functional benefics and malefics — all derived from
+            math, not opinion.
+          </p>
+          <p className="font-body text-body-sm text-dust leading-relaxed mt-3">
+            Written commentary is generated by AI (Anthropic Claude and OpenAI) from that
+            astrological data. It is designed to inform — not replace — your own judgment. For
+            medical, legal, or financial decisions, consult a qualified professional.
+          </p>
+        </section>
+
+        {/* In-report upsell — preview plan only; excluded from PDF */}
+        {dbBirthRef.current?.plan_type === 'free' && (
+          <div className="pdf-exclude mt-10" data-print-hide>
+            <div className="rounded-card border border-amber/30 bg-gradient-to-br from-amber/[0.07] via-amber/[0.03] to-transparent p-6 sm:p-8">
+              <p className="section-eyebrow mb-2">Ready for more precision?</p>
+              <h2 className="font-body text-headline-md text-star mb-2">
+                Unlock hour-by-hour forecasts
+              </h2>
+              <p className="font-body text-body-md text-dust mb-5 max-w-2xl leading-relaxed">
+                This preview shows your natal chart and sample timing. Upgrade to the 7-Day, Monthly, or
+                Annual Oracle for 18 hourly windows per day with full commentary, weekly synthesis, and
+                priority dates for career, health, and wealth.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <Link
+                  href="/onboard?plan=7day&promo=NEWUSER30"
+                  className="btn-primary px-5 py-2.5 text-sm"
+                >
+                  Upgrade with NEWUSER30 →
+                </Link>
+                <Link
+                  href="/pricing"
+                  className="btn-secondary px-5 py-2.5 text-sm"
+                >
+                  Compare plans
+                </Link>
+                <span className="font-mono text-mono-sm text-dust/60">
+                  30% off all plans · 48-hour refund
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </motion.div>
   );
