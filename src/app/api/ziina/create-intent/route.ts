@@ -34,17 +34,22 @@ export async function POST(request: NextRequest) {
   };
 
   const { planType, reportId, promoCode, testMode } = body;
-  if (!planType || !reportId) {
-    return NextResponse.json({ error: 'planType and reportId required' }, { status: 400 });
+  if (!planType) {
+    return NextResponse.json({ error: 'planType required' }, { status: 400 });
+  }
+  const isSynastryStandalone = planType === 'synastry' && !reportId;
+  if (!reportId && !isSynastryStandalone) {
+    return NextResponse.json({ error: 'reportId required for this plan' }, { status: 400 });
   }
 
-  const promoResult = promoCode
-    ? await getPromoDiscount(promoCode, auth.user.email ?? undefined)
-    : { valid: false, discountPct: 0 };
+  const promoResult =
+    !isSynastryStandalone && promoCode
+      ? await getPromoDiscount(promoCode, auth.user.email ?? undefined)
+      : { valid: false, discountPct: 0 };
 
   const discountPct = promoResult.valid ? promoResult.discountPct : 0;
 
-  if (discountPct >= 100) {
+  if (!isSynastryStandalone && discountPct >= 100) {
     return NextResponse.json({ error: 'Use a valid promo code — this report is free' }, { status: 400 });
   }
 
@@ -52,16 +57,22 @@ export async function POST(request: NextRequest) {
   const currency: SupportedCurrency = countryToCurrency(country);
 
   const origin = request.nextUrl.origin;
-  // Encode reportId in the success URL so verify route knows which report was paid.
-  const successUrl = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&reportId=${reportId}&planType=${planType}&status=success`;
-  const cancelUrl = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&reportId=${reportId}&planType=${planType}&status=cancel`;
-  const failureUrl = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&reportId=${reportId}&planType=${planType}&status=failure`;
+  const verifyBase = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&planType=${planType}&status=`;
+  const successUrl = isSynastryStandalone
+    ? `${verifyBase}success`
+    : `${verifyBase}success&reportId=${reportId}`;
+  const cancelUrl = isSynastryStandalone
+    ? `${verifyBase}cancel`
+    : `${verifyBase}cancel&reportId=${reportId}`;
+  const failureUrl = isSynastryStandalone
+    ? `${verifyBase}failure`
+    : `${verifyBase}failure&reportId=${reportId}`;
 
   try {
     const intent = await createPaymentIntent({
       planType,
       currency,
-      reportId,
+      reportId: reportId ?? 'synastry-standalone',
       successUrl,
       cancelUrl,
       failureUrl,
@@ -76,7 +87,8 @@ export async function POST(request: NextRequest) {
     const db = createServiceClient();
     const { error: dbErr } = await db.from('ziina_payments').insert({
       ziina_intent_id: intent.id,
-      report_id: reportId,
+      report_id: isSynastryStandalone ? null : reportId,
+      user_id: auth.user.id,
       amount: intent.amount,
       currency: currency,
       plan_type: planType,

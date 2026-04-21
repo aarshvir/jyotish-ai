@@ -19,8 +19,13 @@ export default function Hero() {
     <section className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden bg-space">
       <StarField />
 
+      {/* Premium Glow & Aurora */}
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+        <div className="aura-glow animate-aurora" />
+      </div>
+
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
-        <MandalaRing className="w-[600px] h-[600px] md:w-[700px] md:h-[700px] text-amber opacity-[0.05]" />
+        <MandalaRing className="w-[600px] h-[600px] md:w-[800px] md:h-[800px] text-amber opacity-[0.08] animate-slow-spin" />
       </div>
 
       <div className="relative z-10 text-center max-w-4xl mx-auto px-6 pt-24 pb-16 md:pt-32 md:pb-20">

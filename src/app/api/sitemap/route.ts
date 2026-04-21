@@ -25,7 +25,26 @@ const TRANSIT_ROUTES = PLANETS.flatMap((planet) =>
   })),
 );
 
-const ALL_ROUTES = [...STATIC_ROUTES, ...TRANSIT_ROUTES];
+/** Rolling year window: today + next 364 days × 12 signs (Pillar 4 SEO coverage). */
+function horoscopeRoutes(): { path: string; changefreq: string; priority: string }[] {
+  const out: { path: string; changefreq: string; priority: string }[] = [];
+  const today = new Date();
+  for (let d = 0; d < 365; d++) {
+    const dt = new Date(today);
+    dt.setUTCDate(dt.getUTCDate() + d);
+    const iso = dt.toISOString().split('T')[0];
+    for (const sign of SIGNS) {
+      out.push({
+        path: `/horoscope/${sign}/${iso}`,
+        changefreq: 'daily',
+        priority: '0.65',
+      });
+    }
+  }
+  return out;
+}
+
+const ALL_ROUTES = [...STATIC_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
 
 export function GET() {
   const lastmod = new Date().toISOString();

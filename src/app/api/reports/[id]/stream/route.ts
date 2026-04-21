@@ -6,7 +6,7 @@
  * Previously this route invoked `generateReportPipeline` as fire-and-forget,
  * which duplicated the Inngest background run and caused double-executions.
  * Now the pipeline is owned exclusively by Inngest (via /api/reports/start or
- * the Ziina webhook). This route only tails the `reports` row every 1s and
+ * an optional Ziina Business webhook). This route only tails the `reports` row every 1s and
  * emits SSE `phase` frames so alternative clients (e.g. CLI tools) can watch
  * generation progress without hitting the status endpoint 300 times.
  *

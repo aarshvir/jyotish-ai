@@ -12,9 +12,9 @@
  *   `stopAfterPhase` parameter, so the work done per step is bounded.
  *
  * Pillar 4 pre-work:
- *   Webhook-driven generation — the `payment.completed` event emitted from the
- *   Ziina webhook triggers `report/generate` so a user who closes their tab
- *   mid-checkout still gets a paid report.
+ *   Optional Ziina **Business** webhook can emit `report/generate` if the user
+ *   closes the tab before the redirect. **Individual / API-only Ziina** has no
+ *   webhook — generation still starts when `/api/ziina/verify` runs (same finalizer).
  */
 
 import { inngest } from './client';
@@ -24,6 +24,13 @@ import {
   type PipelineInput,
   type PipelinePhaseName,
 } from '@/lib/reports/orchestrator';
+import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
+import { runScriptureEmbedRefresh } from '@/lib/rag/embedChunksJob';
+
+type ReportExtendEvent = {
+  name: 'report/extend';
+  data: { reportId: string; baseUrl: string };
+};
 
 type ReportGenerateEvent = {
   name: 'report/generate';
@@ -119,5 +126,40 @@ export const generateReportJob = inngest.createFunction(
 
     console.log(`[inngest] pipeline complete reportId=${reportId}`);
     return { success: true, reportId };
+  },
+);
+
+/** After a successful Monthly upgrade payment, append days 8–30 to the stored report. */
+export const extendReportToMonthlyJob = inngest.createFunction(
+  {
+    id: 'extend-report-to-monthly',
+    retries: 2,
+    concurrency: {
+      key: 'event.data.reportId',
+      limit: 1,
+    },
+    triggers: [{ event: 'report/extend' }],
+  },
+  async ({ event }) => {
+    const { reportId, baseUrl } = (event as unknown as { data: ReportExtendEvent['data'] }).data;
+    const result = await extendReportToMonthly(baseUrl, reportId);
+    console.log(`[inngest] extend monthly reportId=${reportId}`, result);
+    return result;
+  },
+);
+
+/** Pillar 2: nightly re-embed of `data/scriptures/_chunks.json` when present (no-op if file missing). */
+export const refreshEmbeddingsCron = inngest.createFunction(
+  {
+    id: 'refresh-scripture-embeddings',
+    retries: 1,
+    triggers: [{ cron: '0 3 * * *' }],
+  },
+  async ({ step }) => {
+    const result = await step.run('embed-chunk-batch', async () => {
+      return runScriptureEmbedRefresh(400);
+    });
+    console.log('[inngest] scripture embed refresh', result);
+    return result;
   },
 );

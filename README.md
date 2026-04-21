@@ -61,32 +61,22 @@ Open [http://localhost:3000](http://localhost:3000) to see the app.
 ## Project Structure
 
 ```
+data/scriptures/     # Optional markdown corpus (see data/scriptures/README.md)
 src/
 ├── app/
-│   ├── (marketing)/          # Public landing pages
-│   │   ├── page.tsx          # Landing page
-│   │   └── layout.tsx
-│   ├── (app)/                # Protected app pages
-│   │   ├── dashboard/        # User dashboard
-│   │   ├── onboarding/       # Birth data entry
-│   │   ├── report/[id]/      # Report display
-│   │   └── layout.tsx
-│   ├── api/
-│   │   ├── agents/           # AI agent endpoints
-│   │   ├── reports/          # Report generation
-│   │   └── webhooks/         # Ziina webhooks
-│   ├── layout.tsx            # Root layout
-│   └── globals.css
+│   ├── (marketing)/   # Public landing pages
+│   ├── (app)/         # Authenticated app (dashboard, report, onboarding)
+│   └── api/
+│       ├── agents/    # AI + ephemeris helpers
+│       ├── reports/   # Report generation; ingress POST /api/reports/start
+│       ├── ziina/     # create-intent, verify redirect, upgrade; optional webhook (Business)
+│       ├── inngest/   # Inngest executor (report DAG + scripture embed cron)
+│       └── cron/      # Secured cron-style routes (e.g. refresh-embeddings)
 ├── components/
-│   ├── ui/                   # Shadcn components
-│   ├── landing/              # Landing page components
-│   ├── report/               # Report components
-│   └── shared/               # Shared components
 └── lib/
-    ├── supabase/             # Supabase clients
-    ├── ziina/                # Ziina utilities
-    ├── anthropic/            # Anthropic client
-    └── utils/                # Helper utilities
+    ├── supabase/
+    ├── ziina/         # Ziina API client, optional webhook verify, shared payment finalization
+    └── …
 ```
 
 ## Features

@@ -5,6 +5,9 @@ import { useState, useEffect } from 'react';
 import { RasiChartNorthIndian } from '@/components/chart/RasiChartNorthIndian';
 import { RasiChartSouthIndian } from '@/components/chart/RasiChartSouthIndian';
 import type { ChartPlanet } from '@/components/chart/RasiChartNorthIndian';
+import { replaceCitationsWithFootnotes } from '@/lib/reports/postProcess/extractCitations';
+import { ScriptureFootnotes } from '@/components/report/ScriptureFootnotes';
+import type { Citation } from '@/lib/reports/postProcess/extractCitations';
 
 interface NativitySummary {
   lagna_analysis?: string;
@@ -114,24 +117,28 @@ export function NativityCard({
     exalted: p.dignity?.toLowerCase().includes('exalt') || false,
     debilitated: p.dignity?.toLowerCase().includes('debil') || false,
   }));
-  // Debug trace to ensure nativity never silently crashes
-  try {
-    // eslint-disable-next-line no-console
-    console.log(
-      '[NATIVITY-CARD] data:',
-      JSON.stringify(
-        {
-          lagna,
-          moonSign,
-          currentDasha,
-          hasSummary: !!nativitySummary,
-          hasNativity: !!nativity,
-        }
-      )?.slice(0, 200)
-    );
-  } catch {
-    // ignore logging failures
-  }
+  // Citation processing
+  const allCitations: Citation[] = [];
+  const processedLagna = replaceCitationsWithFootnotes(
+    safeText(
+      nativitySummary?.lagna_analysis,
+      LAGNA_FALLBACK(lagna, moonSign, `${currentDasha.mahadasha}/${currentDasha.antardasha}`)
+    )
+  );
+  allCitations.push(...processedLagna.citations);
+
+  const processedDasha = replaceCitationsWithFootnotes(
+    safeText(
+      nativitySummary?.current_dasha_interpretation,
+      DASHA_FALLBACK(`${currentDasha.mahadasha}/${currentDasha.antardasha}`)
+    )
+  );
+  // De-dupe citations by marker
+  processedDasha.citations.forEach(c => {
+    if (!allCitations.find(ac => ac.marker === c.marker)) {
+      allCitations.push(c);
+    }
+  });
 
   return (
     <motion.div
@@ -186,10 +193,7 @@ export function NativityCard({
 
           <div className="pt-6 border-t border-horizon/40 mb-6">
             <p className="font-display text-star text-base leading-[1.8]">
-              {safeText(
-                nativitySummary?.lagna_analysis,
-                LAGNA_FALLBACK(lagna, moonSign, `${currentDasha.mahadasha}/${currentDasha.antardasha}`)
-              )}
+              {processedLagna.text}
             </p>
           </div>
 
@@ -198,12 +202,11 @@ export function NativityCard({
               Current Dasha Period
             </p>
             <p className="font-display text-star text-body-sm leading-[1.8]">
-              {safeText(
-                nativitySummary?.current_dasha_interpretation,
-                DASHA_FALLBACK(`${currentDasha.mahadasha}/${currentDasha.antardasha}`)
-              )}
+              {processedDasha.text}
             </p>
           </div>
+
+          <ScriptureFootnotes citations={allCitations} />
         </div>
 
         {/* Right: Yogas and functional lords */}

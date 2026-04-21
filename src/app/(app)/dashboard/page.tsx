@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { RightNowCard } from '@/components/dashboard/RightNowCard';
+import { SynastryTeaser } from '@/components/marketing/SynastryTeaser';
 import type { PaymentRecord } from '@/app/api/user/payments/route';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -541,6 +542,8 @@ function DashboardInner() {
           <div className="space-y-6">
             {/* Live score card */}
             <RightNowCard />
+
+            <SynastryTeaser />
 
             {/* Two-column grid for recent reports + last payment */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

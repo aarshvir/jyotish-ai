@@ -9,7 +9,7 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 import { EphemerisAgent } from './EphemerisAgent';
 import { RatingAgent } from './RatingAgent';
-import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
+import { buildForecastRAGContext } from '@/lib/rag/vectorSearch';
 import { buildTransitQueryTerms } from '@/lib/rag/yogaDetector';
 import type {
   ForecastInput,
@@ -73,7 +73,11 @@ ${dayBlocks}
 
 TASK
 Return ONLY valid JSON (no prose, no code fences) with this exact structure.
-CRITICAL: Dense paragraphs only. No bullet points. Mention actual planets, houses, nakshatra. Never invent scores — all scores in text must match the provided numeric inputs exactly. Do not truncate strings.
+CRITICAL: Dense paragraphs only. No bullet points. 
+- Mention actual planets, houses, nakshatra. 
+- Whenever you base an interpretation on the provided classical gochara references, include an inline citation in the format [[SOURCE:CHAPTER:VERSE]], e.g., [[PH:6:12]].
+- Never invent scores — all scores in text must match the provided numeric inputs exactly. 
+- Do not truncate strings.
 {
   "days": [
     {
@@ -101,7 +105,7 @@ async function callClaudeWithBackoff(
       const response = await claude.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: maxTokens,
-        system: 'You are a Vedic astrologer. Return only valid JSON. No prose, no markdown. Dense paragraphs only. Never invent scores — match provided numeric inputs exactly.',
+        system: 'You are a Vedic astrologer. Return only valid JSON. No prose, no markdown. Dense paragraphs only. Whenever you use provided scripture, include inline citations like [[SOURCE:CH:V]]. Never invent scores — match provided numeric inputs exactly.',
         messages: [{ role: 'user', content: prompt }],
       });
 
@@ -135,7 +139,7 @@ async function callClaudeWithBackoff(
 }
 
 const FORECAST_SYSTEM =
-  'You are a Vedic astrologer. Return only valid JSON. No prose, no markdown. Dense paragraphs only. Never invent scores — match provided numeric inputs exactly.';
+  'You are a Vedic astrologer. Return only valid JSON. No prose, no markdown. Dense paragraphs only. Whenever you use provided scripture, include inline citations like [[SOURCE:CH:V]]. Never invent scores — match provided numeric inputs exactly.';
 
 export class ForecastAgent {
   private ephemeris: EphemerisAgent;
@@ -271,7 +275,7 @@ export class ForecastAgent {
     const transitTerms = input.natalChart
       ? buildTransitQueryTerms(input.natalChart, md, ad)
       : ['Hora System', 'Choghadiya System', 'Rahu Kaal and Inauspicious Timing'];
-    const ragContext = await buildScriptureContextHybrid(transitTerms, input.natalChart?.lagna);
+    const ragContext = await buildForecastRAGContext(transitTerms);
 
     const prompt = buildForecastPrompt(input, dates, dayData, ratings, ragContext);
     let rawText: string | null = null;

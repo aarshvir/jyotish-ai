@@ -2,30 +2,22 @@
 
 import { useState } from 'react';
 
-export function UpsellButton() {
+export function UpsellButton({ reportId }: { reportId: string }) {
   const [loading, setLoading] = useState(false);
 
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      // Pull reportId from URL params if passed from onboard success,
-      // fallback to a dummy ID or server resolves later
-      const params = new URLSearchParams(window.location.search);
-      const reportId = params.get('reportId') || 'upsell_checkout';
-
-      const res = await fetch('/api/ziina/create-intent', {
+      const res = await fetch('/api/ziina/upgrade', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          planType: 'monthly',
-          reportId: reportId,
-        }),
+        body: JSON.stringify({ reportId }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
+        window.location.href = data.redirectUrl as string;
       } else {
-        throw new Error(data.error || 'No checkout URL');
+        throw new Error((data as { error?: string }).error ?? 'No checkout URL');
       }
     } catch (e) {
       console.error(e);
@@ -34,12 +26,13 @@ export function UpsellButton() {
   };
 
   return (
-    <button 
+    <button
+      type="button"
       onClick={handleUpgrade}
       disabled={loading}
       className="btn-primary w-full py-4 text-base font-semibold shadow-elevated disabled:opacity-50"
     >
-      {loading ? 'Securing Upgrade...' : 'Upgrade to Monthly Oracle (+$9.00)'}
+      {loading ? 'Opening secure checkout…' : 'Upgrade to Monthly Oracle'}
     </button>
   );
 }

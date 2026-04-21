@@ -1,5 +1,6 @@
 interface MandalaRingProps {
   className?: string;
+  size?: number;
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -19,13 +20,16 @@ const PETALS_8 = Array.from({ length: 8 }, (_, i) => {
   return { cx: r2(200 + 105 * Math.cos(a)), cy: r2(200 + 105 * Math.sin(a)) };
 });
 
-export function MandalaRing({ className }: MandalaRingProps) {
+export function MandalaRing({ className, size = 400 }: MandalaRingProps) {
   return (
     <svg
       viewBox="0 0 400 400"
+      width={size}
+      height={size}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={className}
+      className={`${className} animate-spin-slow`}
+      style={{ animationDuration: '60s' }}
       aria-hidden
       suppressHydrationWarning
     >

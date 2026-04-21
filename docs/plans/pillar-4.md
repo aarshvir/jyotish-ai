@@ -1,6 +1,6 @@
 # Pillar 4 — Revenue Engine (1-Click Upsell + Programmatic SEO + Synastry)
 
-**Status:** blocked on Pillar 1 (needs webhook-driven payment truth; otherwise upsell funnel is unreliable).
+**Status:** implemented in repo (`finalizeCompletedZiinaIntent` on verify redirect; optional Ziina **Business** webhook). **Individual Ziina (API only):** leave `ZIINA_WEBHOOK_SECRET` unset and do not register a webhook — use redirect + `ZIINA_API_TOKEN` only. Apply Supabase migrations you need (webhook events table is optional if you never use webhooks).
 
 ---
 
@@ -11,8 +11,8 @@ Lift Average Order Value from 1 report × $9.99 to 1.4–1.7 reports × blended 
 **Acceptance:**
 
 1. After a successful 7-day Ziina payment, the user lands on `/upsell` (not `/report/[id]`), sees a time-limited 1-click upgrade to Monthly Oracle at a clear discount (e.g., $9 add-on instead of $10 diff = 10% off the delta). Clicking "Upgrade" creates a second Ziina intent pre-filled with their saved details — user confirms OTP / card only (no re-entry).
-2. `/horoscope/[sign]/[date]` returns a daily horoscope page, ISR-revalidated hourly, with 12×365 = 4,380 URLs listed in the sitemap.
-3. `/synastry` is a functional MVP: two birth forms → Ashtakoot 36-point score + short commentary, gated to paid users (7-day or higher). Deterministic scoring + AI commentary.
+2. `/horoscope/[sign]/[date]` returns a daily horoscope page, ISR-revalidated hourly, with a rolling sitemap window of 365 days × 12 signs (deterministic copy; optional LLM layer deferred for cost control).
+3. `/synastry` MVP: two birth forms → Ashtakoot 36-point score + commentary (hybrid RAG + deterministic fallback), gated by **any paid forecast** or **standalone Synastry** Ziina checkout (`user_synastry_unlock`).
 4. Google Search Console shows `/transit/*` and `/horoscope/*` impressions within 14 days of deploy.
 
 ---
@@ -69,7 +69,7 @@ Lift Average Order Value from 1 report × $9.99 to 1.4–1.7 reports × blended 
 6. Build Ashtakoot scorer with exhaustive unit tests.
 7. Build synastry UI + result page + Ziina plan.
 8. Add analytics events.
-9. `npx tsc --noEmit`, lint, test.
+9. `npx tsc --noEmit`, lint, `npm test` (Vitest: `src/lib/**/*.test.ts`).
 
 ---
 
@@ -94,9 +94,11 @@ If you want different pricing, reply in chat with your chosen USD price; Cursor 
 
 ### 3. Supabase — run migrations
 
-1. SQL Editor → run `20260419_upsell_tracking.sql`.
-2. SQL Editor → run `20260419_synastry.sql`.
-3. Sidebar: **Database → Replication** → add `synastry_charts` to `supabase_realtime` publication (optional, for future live updates on shared charts).
+1. SQL Editor → run `20260420_pillar4_revenue_synastry.sql` (upsell columns, `synastry_charts`, `analytics_events`).
+2. SQL Editor → run `20260421_ziina_webhook_events.sql` only if you use Ziina **Business** webhooks (optional on Individual / API-only).
+3. SQL Editor → run `20260422_synastry_unlock_ziina_user.sql` (`ziina_payments.user_id`, `user_synastry_unlock`).
+4. SQL Editor → run `20260423_jyotish_scriptures_content_hash.sql` (embedding refresh skips).
+5. Sidebar: **Database → Replication** → add `synastry_charts` to `supabase_realtime` publication (optional).
 
 ### 4. Vercel — nothing new
 
@@ -119,14 +121,13 @@ All env vars exist. Just deploy.
 1. Open https://www.vedichour.com/horoscope/leo/2026-04-20 directly → page renders with unique content and meta description.
 2. Refresh — response header `x-vercel-cache: HIT` (ISR working).
 3. Edit `src/lib/seo/horoscopeContent.ts` template, push — within 1 hour the page auto-revalidates.
-4. Open https://www.vedichour.com/sitemap.xml → search for `horoscope` → see ~360 URLs.
+4. Open https://www.vedichour.com/sitemap.xml → search for `horoscope` → see up to 365×12 rolling URLs.
 
 **Funnel C — Synastry:**
 
-1. /synastry → fill two birth forms → submit.
-2. If not paid: redirected to Ziina checkout for synastry plan.
-3. After pay: Ashtakoot breakdown table (8 kootas, each with points and 1-line reason), total score out of 36, 500-word AI commentary with scripture citations (from Pillar 2).
-4. Supabase → `synastry_charts` row created.
+1. /synastry → optional **Standalone Synastry checkout** (Ziina) if you have no paid forecast; or submit when you already have a paid report.
+2. After access: fill two birth forms → submit → Ashtakoot breakdown + hybrid scripture commentary (RAG with deterministic fallback).
+3. Supabase → `synastry_charts` row created; standalone pay → `user_synastry_unlock`.
 
 ### 6. Rollback
 

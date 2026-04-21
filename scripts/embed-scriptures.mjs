@@ -16,8 +16,10 @@
  *   3. Upserts into the `jyotish_scriptures` table
  *
  * Re-running is safe — it's an idempotent upsert keyed by `id`. Add new rows to
- * SCRIPTURE_CORPUS and re-run to backfill. For loading full books later, extend
- * this script to read from markdown/PDF chunks rather than the in-code array.
+ * SCRIPTURE_CORPUS and re-run to backfill.
+ *
+ * For markdown books: run `node scripts/chunk-scriptures.mjs` then `npm run embed:chunks`
+ * (see `data/scriptures/README.md` and Inngest `refresh-scripture-embeddings`).
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -78,56 +80,121 @@ async function embed(text) {
 }
 
 async function loadCorpus() {
-  // Parse the TS module as text and eval the exported array. Cheap & cheerful —
-  // avoids a TS build step for a one-shot seed script.
+  const chunksPath = resolve('data/scriptures/_chunks.json');
+  try {
+    const chunksData = readFileSync(chunksPath, 'utf8');
+    const chunks = JSON.parse(chunksData);
+    if (Array.isArray(chunks) && chunks.length > 0) {
+      console.log(`[embed-scriptures] Loaded ${chunks.length} chunks from _chunks.json`);
+      return chunks;
+    }
+  } catch {
+    console.log('[embed-scriptures] Could not load _chunks.json, falling back to scriptures.ts...');
+  }
+
+  // Parse the TS module as text and eval the exported array.
   const file = readFileSync(resolve('src/lib/rag/scriptures.ts'), 'utf8');
   const m = file.match(/export const SCRIPTURE_CORPUS:[^=]*=\s*(\[[\s\S]*?\n\]);/);
   if (!m) throw new Error('Could not locate SCRIPTURE_CORPUS in scriptures.ts');
-  // Strip type annotations from the literal — the array is plain JSON-ish with string/keywords arrays.
   const literal = m[1];
-  // Use Function() to evaluate the array literal in a sandbox-lite.
-  // Safe because this is our own source file that we vendored.
   const corpus = Function(`"use strict"; return (${literal});`)();
   if (!Array.isArray(corpus)) throw new Error('Parsed corpus is not an array');
-  return corpus;
+  
+  // Add fallback content_hash for static corpus
+  return corpus.map((c) => ({
+    ...c,
+    content_hash: c.content_hash || `${c.id}-legacy`,
+  }));
 }
 
 async function main() {
+  const isDryRun = process.argv.includes('--dry-run');
+
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
     auth: { persistSession: false },
   });
 
   const corpus = await loadCorpus();
-  console.log(`[embed-scriptures] ${corpus.length} entries to embed`);
+  console.log(`[embed-scriptures] ${corpus.length} entries to process`);
+
+  // Fetch existing hashes
+  const { data: existingRows, error: fetchErr } = await supabase
+    .from('jyotish_scriptures')
+    .select('*')
+    .limit(1);
+
+  if (fetchErr) {
+    console.error('[embed-scriptures] Failed to connect to jyotish_scriptures:', fetchErr.message);
+    process.exit(1);
+  }
+
+  const columns = existingRows && existingRows[0] ? Object.keys(existingRows[0]) : [];
+  const hasHashCol = columns.includes('content_hash');
+  const hasVerseCol = columns.includes('verse_range');
+
+  console.log(`[embed-scriptures] schema detect: content_hash=${hasHashCol}, verse_range=${hasVerseCol}`);
+
+  const existingHashMap = new Map();
+  if (hasHashCol) {
+    const { data: hashRows } = await supabase.from('jyotish_scriptures').select('id, content_hash');
+    for (const row of hashRows || []) {
+      existingHashMap.set(row.id, row.content_hash);
+    }
+  }
 
   let okCount = 0;
+  let skipCount = 0;
   let failCount = 0;
 
+  if (isDryRun) {
+    for (const entry of corpus) {
+      const existingHash = existingHashMap.get(entry.id);
+      const isUnchanged = existingHash && existingHash === entry.content_hash;
+      if (isUnchanged) {
+        skipCount++;
+      } else {
+        okCount++;
+      }
+    }
+    console.log(`[embed-scriptures] Would embed ${okCount} chunks. Skipped ${skipCount} (unchanged).`);
+    process.exit(0);
+  }
+
   for (const entry of corpus) {
-    const textForEmbedding = `${entry.topic}\n\n${entry.text}`;
+    const existingHash = existingHashMap.get(entry.id);
+    const isUnchanged = existingHash && existingHash === entry.content_hash;
+
+    if (isUnchanged) {
+      skipCount++;
+      continue;
+    }
+
+    const textForEmbedding = `${entry.topic || ''}\n\n${entry.text || ''}`;
     try {
       const vector = await embed(textForEmbedding);
+      const payload = {
+        id: entry.id,
+        topic: entry.topic || null,
+        source: entry.source || null,
+        chapter: entry.chapter || null,
+        text: entry.text || null,
+        keywords: entry.keywords || [],
+        embedding: vector,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (hasHashCol) payload.content_hash = entry.content_hash || null;
+      if (hasVerseCol) payload.verse_range = entry.verse_range || null;
+
       const { error } = await supabase
         .from('jyotish_scriptures')
-        .upsert(
-          {
-            id: entry.id,
-            topic: entry.topic,
-            source: entry.source,
-            chapter: entry.chapter ?? null,
-            text: entry.text,
-            keywords: entry.keywords ?? [],
-            embedding: vector,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'id' },
-        );
+        .upsert(payload, { onConflict: 'id' });
       if (error) {
         console.error(`[embed-scriptures] upsert failed for ${entry.id}:`, error.message);
         failCount++;
       } else {
         okCount++;
-        console.log(`[embed-scriptures] ok: ${entry.id} (${entry.topic})`);
+        console.log(`[embed-scriptures] embedded: ${entry.id}`);
       }
     } catch (err) {
       console.error(`[embed-scriptures] embedding failed for ${entry.id}:`, err.message);
@@ -135,7 +202,7 @@ async function main() {
     }
   }
 
-  console.log(`\n[embed-scriptures] done: ${okCount} succeeded, ${failCount} failed`);
+  console.log(`\n[embed-scriptures] done: Embedded ${okCount} chunks. Skipped ${skipCount} (unchanged). ${failCount} failed.`);
   process.exit(failCount > 0 ? 1 : 0);
 }
 

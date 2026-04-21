@@ -27,7 +27,24 @@ export const ZIINA_PLANS: Record<string, ZiinaPlan> = {
   '7day':    { name: 'VedicHour 7-Day Forecast',  amountAED: 3799,  amountUSD: 999,   amountINR: 79900  },
   'monthly': { name: 'VedicHour Monthly Oracle',  amountAED: 6999,  amountUSD: 1999,  amountINR: 149900 },
   'annual':  { name: 'VedicHour Annual Oracle',   amountAED: 18499, amountUSD: 4999,  amountINR: 399900 },
+  /** Delta only: Monthly − 7-day (used for post-checkout upsell) */
+  'monthly_upgrade': {
+    name: 'VedicHour Monthly Oracle (upgrade from 7-day)',
+    amountAED: 3200,
+    amountUSD: 1000,
+    amountINR: 70000,
+  },
+  /** Ashtakoot compatibility — standalone product */
+  synastry: {
+    name: 'VedicHour Synastry (Ashtakoot)',
+    amountAED: 5699,
+    amountUSD: 1499,
+    amountINR: 119900,
+  },
 };
+
+/** 10% off the upgrade delta vs paying full monthly after already owning 7-day */
+export const UPGRADE_DELTA_DISCOUNT_PCT = 10;
 
 export type SupportedCurrency = 'AED' | 'USD' | 'INR';
 
@@ -47,6 +64,12 @@ export function getPlanAmount(planType: string, currency: SupportedCurrency): nu
   if (currency === 'AED') return plan.amountAED;
   if (currency === 'INR') return plan.amountINR;
   return plan.amountUSD;
+}
+
+/** Upgrade delta (Monthly − 7-day) after UPGRADE_DELTA_DISCOUNT_PCT, in base units. */
+export function getMonthlyUpgradeAmount(currency: SupportedCurrency): number {
+  const raw = getPlanAmount('monthly_upgrade', currency);
+  return applyDiscount(raw, UPGRADE_DELTA_DISCOUNT_PCT, currency);
 }
 
 /** Format amount as display string for the given currency. */
@@ -124,7 +147,14 @@ export interface ZiinaPaymentIntent {
 export async function createPaymentIntent(input: CreatePaymentIntentInput): Promise<ZiinaPaymentIntent> {
   const token = getApiToken();
   const baseAmount = getPlanAmount(input.planType, input.currency);
-  const amount = input.discountPct ? applyDiscount(baseAmount, input.discountPct, input.currency) : baseAmount;
+  let amount: number;
+  if (input.planType === 'monthly_upgrade') {
+    amount = applyDiscount(baseAmount, UPGRADE_DELTA_DISCOUNT_PCT, input.currency);
+  } else if (input.discountPct && input.discountPct > 0) {
+    amount = applyDiscount(baseAmount, input.discountPct, input.currency);
+  } else {
+    amount = baseAmount;
+  }
   const plan = ZIINA_PLANS[input.planType]!;
 
   const body = {

@@ -1,6 +1,10 @@
 import { serve } from 'inngest/next';
 import { inngest } from '@/lib/inngest/client';
-import { generateReportJob } from '@/lib/inngest/functions';
+import {
+  generateReportJob,
+  extendReportToMonthlyJob,
+  refreshEmbeddingsCron,
+} from '@/lib/inngest/functions';
 
 /**
  * Inngest webhook endpoint.
@@ -11,5 +15,5 @@ import { generateReportJob } from '@/lib/inngest/functions';
  */
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [generateReportJob],
+  functions: [generateReportJob, extendReportToMonthlyJob, refreshEmbeddingsCron],
 });

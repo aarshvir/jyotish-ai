@@ -3,7 +3,8 @@
  *
  * This route used to run `generateReportPipeline` inline. It is replaced by
  * /api/reports/start which dispatches to Inngest for durable background
- * execution, and by the Ziina webhook which auto-triggers generation on
+ * execution, and optionally by the Ziina Business webhook (API-only plans use
+ * /api/ziina/verify only) which can auto-trigger generation on
  * payment completion.
  *
  * Any call to this endpoint now returns 410 Gone with a pointer to the

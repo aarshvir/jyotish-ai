@@ -84,3 +84,12 @@ nul
 supabase/.temp/
 
 lighthouse-report*.json
+
+# Data
+bhps/
+BHPS/
+data/scriptures/bphs/
+scripts/*.log
+scripts/*.txt
+scripts/*.png
+scripts/*.webp

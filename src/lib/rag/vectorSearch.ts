@@ -199,3 +199,39 @@ export async function buildScriptureContextHybrid(
     return '';
   }
 }
+
+/**
+ * Specifically search for Gochara (transit) results from Phaladeepika and BPHS.
+ */
+export async function searchByTransits(
+  planets: string[],
+  topN = 4
+): Promise<ScriptureEntry[]> {
+  if (!planets.length) return [];
+  
+  // Search for "Gochara" and specific planetary transits
+  const query = `Gochara transits of ${planets.join(', ')}`;
+  return searchScripturesHybrid(query, topN);
+}
+
+/**
+ * Builds context for the ForecastAgent grounded in transit scriptures.
+ */
+export async function buildForecastRAGContext(
+  activeTransits: string[]
+): Promise<string> {
+  if (!activeTransits.length) return '';
+
+  const entries = await searchByTransits(activeTransits, 4);
+  if (!entries.length) return '';
+
+  const blocks = entries
+    .map(
+      (e) =>
+        `[${e.source}${e.chapter ? `, ${e.chapter}` : ''} — ${e.topic}]\n${e.text}`
+    )
+    .join('\n\n');
+
+  return `\n\nCLASSICAL GOCHARA (TRANSIT) REFERENCES:\n\n${blocks}\n`;
+}
+
