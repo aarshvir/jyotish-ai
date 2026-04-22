@@ -1638,8 +1638,8 @@ def generate_daily_grid(data: DailyGridInput):
             dom_hora = _pick_dominant(slot_start_local, slot_end_local, horas)
             dom_chog = _pick_dominant(slot_start_local, slot_end_local, chogs)
 
-            is_rk = (_overlap_secs(slot_start_local, slot_end_local, rk_start, rk_end)
-                     >= _RAHU_KAAL_OVERLAP_THRESHOLD_SECS)
+            midpoint_local = slot_start_local + timedelta(minutes=30)
+            is_rk = (rk_start <= midpoint_local < rk_end)
 
             mid_jd = get_julian_day(midpoint_utc)
             t_lagna_long = get_sidereal_ascendant_longitude(mid_jd, data.current_lat, data.current_lng)

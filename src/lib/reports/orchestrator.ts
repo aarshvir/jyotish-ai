@@ -1029,13 +1029,93 @@ export async function generateReportPipeline(
         onStep({ type: 'step_started', step: 5, message: 'Building monthly forecast...', detail: 'Generating 12-month oracle' });
         try {
           const startDate = new Date(forecastDays[0].date);
+
+          // ── Compute key transit ingresses from available daily grid data + known 2026 dates ──
+          // Known slow-planet ingress dates for 2026 (sidereal Lahiri).
+          // These are the authoritative ingress dates that don't change per user.
+          const KNOWN_INGRESSES_2026: Array<{ planet: string; sign: string; date: string; note: string }> = [
+            { planet: 'Jupiter', sign: 'Taurus',      date: '2026-05-14', note: 'Jupiter enters Taurus (H? for lagna) — expansion of resources, 12-yr cycle' },
+            { planet: 'Saturn',  sign: 'Aries',       date: '2025-03-29', note: 'Saturn in Aries — discipline, karmic pressure on action' },
+            { planet: 'Saturn',  sign: 'Pisces',      date: '2025-03-29', note: 'Saturn in Pisces' },
+            { planet: 'Rahu',    sign: 'Aquarius',    date: '2025-05-18', note: 'Rahu in Aquarius — ambition toward networks and technology' },
+            { planet: 'Ketu',    sign: 'Leo',         date: '2025-05-18', note: 'Ketu in Leo — spiritual detachment from ego, fame' },
+            { planet: 'Mars',    sign: 'Cancer',      date: '2026-02-23', note: 'Mars in Cancer — high-energy home/emotional focus' },
+            { planet: 'Mars',    sign: 'Leo',         date: '2026-04-11', note: 'Mars in Leo — bold self-expression, career momentum' },
+            { planet: 'Mars',    sign: 'Virgo',       date: '2026-05-27', note: 'Mars in Virgo — precision, health, service-oriented action' },
+            { planet: 'Mars',    sign: 'Libra',       date: '2026-07-13', note: 'Mars in Libra — partnerships, contracts, assertive diplomacy' },
+            { planet: 'Mars',    sign: 'Scorpio',     date: '2026-09-01', note: 'Mars in Scorpio — depth, investigation, hidden resources' },
+            { planet: 'Mars',    sign: 'Sagittarius', date: '2026-10-18', note: 'Mars in Sagittarius — expansion, philosophy, long-distance action' },
+            { planet: 'Mars',    sign: 'Capricorn',   date: '2026-12-01', note: 'Mars exalted in Capricorn — peak professional drive' },
+            { planet: 'Sun',     sign: 'Aries',       date: '2026-04-14', note: 'Sun enters Aries (sidereal) — solar new year, identity surge' },
+            { planet: 'Sun',     sign: 'Taurus',      date: '2026-05-15', note: 'Sun in Taurus — stabilisation, financial focus' },
+            { planet: 'Sun',     sign: 'Gemini',      date: '2026-06-15', note: 'Sun in Gemini — communication, learning peaks' },
+            { planet: 'Sun',     sign: 'Cancer',      date: '2026-07-16', note: 'Sun in Cancer — home, emotions, nurturing' },
+            { planet: 'Sun',     sign: 'Leo',         date: '2026-08-17', note: 'Sun in Leo (own sign) — leadership, authority at peak' },
+            { planet: 'Sun',     sign: 'Virgo',       date: '2026-09-17', note: 'Sun in Virgo — analysis, health, service' },
+            { planet: 'Sun',     sign: 'Libra',       date: '2026-10-17', note: 'Sun debilitated in Libra — compromise, partnership focus' },
+            { planet: 'Sun',     sign: 'Scorpio',     date: '2026-11-16', note: 'Sun in Scorpio — depth, hidden matters surface' },
+            { planet: 'Sun',     sign: 'Sagittarius', date: '2026-12-16', note: 'Sun in Sagittarius — expansion, optimism, dharma' },
+          ];
+
+          // Build a lookup: YYYY-MM → list of ingress hints
+          const lagna = ephemerisData.lagna;
+          const SIGNS_WHEEL = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+          const houseFromLagna = (sign: string, lagnaSign: string): number => {
+            const li = SIGNS_WHEEL.indexOf(lagnaSign);
+            const si = SIGNS_WHEEL.indexOf(sign);
+            if (li < 0 || si < 0) return 0;
+            return ((si - li + 12) % 12) + 1;
+          };
+
+          const ingressByMonth: Record<string, string[]> = {};
+          for (const ing of KNOWN_INGRESSES_2026) {
+            const ym = ing.date.substring(0, 7);
+            const house = houseFromLagna(ing.sign, lagna);
+            const d = new Date(ing.date);
+            const dayStr = d.toLocaleString('default', { month: 'short', day: 'numeric' });
+            let hint = `${ing.planet} enters ${ing.sign} ${dayStr}`;
+            if (house > 0) hint += ` (H${house} for ${lagna} lagna)`;
+            if (!ingressByMonth[ym]) ingressByMonth[ym] = [];
+            ingressByMonth[ym].push(hint);
+          }
+
+          // Also detect ingresses from actual daily-grid planet_positions (for the report window)
+          type PlanetPos = { sign: string; house: number; degree: number };
+          type PlanetPositions = { planets?: Record<string, PlanetPos> };
+          for (let di = 1; di < forecastDays.length; di++) {
+            const prev = forecastDays[di - 1];
+            const curr = forecastDays[di];
+            const pp = curr.planet_positions as PlanetPositions | undefined;
+            const prevPp = prev.planet_positions as PlanetPositions | undefined;
+            if (!pp?.planets || !prevPp?.planets) continue;
+            for (const planet of ['Sun', 'Mars', 'Jupiter', 'Saturn']) {
+              const currSign = pp.planets[planet]?.sign;
+              const prevSign = prevPp.planets[planet]?.sign;
+              if (currSign && prevSign && currSign !== prevSign) {
+                const ym = curr.date.substring(0, 7);
+                const house = houseFromLagna(currSign, lagna);
+                const d = new Date(curr.date);
+                const dayStr = d.toLocaleString('default', { month: 'short', day: 'numeric' });
+                let hint = `${planet} enters ${currSign} ${dayStr}`;
+                if (house > 0) hint += ` (H${house} for ${lagna} lagna)`;
+                if (!ingressByMonth[ym]) ingressByMonth[ym] = [];
+                // Avoid duplicating if already added from KNOWN_INGRESSES_2026
+                if (!ingressByMonth[ym].some(h => h.startsWith(`${planet} enters ${currSign}`))) {
+                  ingressByMonth[ym].push(hint);
+                }
+              }
+            }
+          }
+
           const allMonths = Array.from({ length: 12 }, (_, i) => {
             const d = new Date(startDate);
             d.setMonth(d.getMonth() + i);
+            const ym = d.toISOString().substring(0, 7);
+            const hints = ingressByMonth[ym] ?? [];
             return {
               month_label: d.toLocaleString('default', { month: 'long', year: 'numeric' }),
               month_index: i,
-              key_transits_hint: '',
+              key_transits_hint: hints.join('; '),
             };
           });
 

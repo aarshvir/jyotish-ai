@@ -334,8 +334,17 @@ function findChoghadiya(time: string, choghadiyas: ChoghadiyaEntry[]): Choghadiy
   return candidates[candidates.length - 1] ?? choghadiyas[choghadiyas.length - 1];
 }
 
-function inRahuKaal(time: string, rk: RahuKaalData): boolean {
-  return !timeLt(time, rk.start_time) && timeLt(time, rk.end_time);
+function addMinutesToTime(time: string, minutes: number): string {
+  const parts = time.split(':').map(Number);
+  const totalMins = (parts[0] || 0) * 60 + (parts[1] || 0) + minutes;
+  const h = Math.floor(totalMins / 60) % 24;
+  const m = totalMins % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${parts[2] !== undefined ? String(parts[2]).padStart(2, '0') : '00'}`;
+}
+
+function inRahuKaal(slotStartTime: string, rk: RahuKaalData): boolean {
+  const midpoint = addMinutesToTime(slotStartTime, 30);
+  return !timeLt(midpoint, rk.start_time) && timeLt(midpoint, rk.end_time);
 }
 
 // Guess sun's sidereal sign index from the date (approximate)

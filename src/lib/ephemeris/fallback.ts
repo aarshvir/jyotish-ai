@@ -340,11 +340,8 @@ export function computeFallbackDayData(
     const hora = horaRulerAt(midMs, prevSunset, sunrise, sunset, nextSunrise, jsDay);
     const chog = choghadiyaAt(midMs, prevSunset, sunrise, sunset, nextSunrise, jsDay);
 
-    // Rahu Kaal: overlap ≥ 30 min (1800 s) triggers the flag
-    const rkOverlapMs = Math.max(0,
-      Math.min(slotEndMs, rkEndMs) - Math.max(slotStartMs, rkStartMs)
-    );
-    const isRahuKaal = rkOverlapMs >= 1_800_000;
+    // Rahu Kaal: midpoint must fall within the window (not just overlap)
+    const isRahuKaal = midMs >= rkStartMs && midMs < rkEndMs;
 
     const { sign: transitSign, house: transitHouse } = approximateTransitLagna(
       midMs, sunrise.getTime(), natalLagnaSignIndex, dateStr
