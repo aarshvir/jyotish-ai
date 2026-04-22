@@ -33,11 +33,6 @@ interface SlotShape {
   score?: number;
 }
 
-function clipWords(text: string, max: number): string {
-  const w = text.trim().split(/\s+/).filter(Boolean);
-  return w.slice(0, max).join(' ');
-}
-
 function deriveDirective(slot: SlotShape): string {
   const score = typeof slot?.score === 'number' ? slot.score : 50;
   if (slot?.is_rahu_kaal) return 'RAHU KAAL — ROUTINE TASKS ONLY; AVOID NEW STARTS.';
