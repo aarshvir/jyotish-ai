@@ -9,8 +9,10 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { NatalChartData, NativityProfile } from './types';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
+import { logLlmAudit } from '@/lib/llm/audit';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { detectYogas } from '@/lib/rag/yogaDetector';
+import { parseJyotishRagMode, resolveJyotishRagMode, type JyotishRagMode } from '@/lib/rag/ragMode';
 
 const SYSTEM_PROMPT = `You are a grandmaster Vedic astrologer with 30 years of classical training. Analyze the natal chart with depth matching Parashara and Jaimini traditions.
 
@@ -138,17 +140,30 @@ export class NativityAgent {
     }
   }
 
-  async analyze(natalChart: NatalChartData): Promise<NativityProfile> {
+  /**
+   * @param rag - `disableRag` forces off unless `jyotishRagMode` is set explicitly.
+   */
+  async analyze(
+    natalChart: NatalChartData,
+    rag: boolean | { disableRag?: boolean; jyotishRagMode?: string | null } = false,
+  ): Promise<NativityProfile> {
     const delays = [3000, 6000, 12000];
     let lastError: unknown;
 
+    const opts = typeof rag === 'object' && rag !== null ? rag : { disableRag: !!rag };
+    const explicit = parseJyotishRagMode(
+      opts.jyotishRagMode != null && opts.jyotishRagMode !== ''
+        ? String(opts.jyotishRagMode)
+        : null,
+    );
+    const mode: JyotishRagMode =
+      explicit ?? (opts.disableRag ? 'off' : resolveJyotishRagMode());
+
     // Detect yogas present in the chart so the RAG retriever pulls yoga-specific texts.
     const detectedYogas = detectYogas(natalChart);
-    console.log(`NativityAgent detected yogas for RAG: ${detectedYogas.join(', ') || '(none)'}`);
+    console.log(`NativityAgent detected yogas for RAG: ${detectedYogas.join(', ') || '(none)'} (mode=${mode})`);
 
-    // Hybrid RAG: pgvector semantic search (if embeddings are populated + OPENAI_API_KEY present),
-    // falling back to keyword search. Both code paths return classical Jyotish grounding text.
-    const ragContext = await buildScriptureContextHybrid(detectedYogas, natalChart.lagna);
+    const ragContext = mode === 'off' ? '' : await buildScriptureContextHybrid(detectedYogas, natalChart.lagna, mode);
 
     if (this.client) {
       // Only 1 attempt on Anthropic. If it fails/times out fall immediately to the
@@ -156,7 +171,7 @@ export class NativityAgent {
       // attempt and blows the 80s route budget before fallback can be tried.
       for (let attempt = 0; attempt < 1; attempt++) {
         try {
-          console.log(`NativityAgent attempt ${attempt + 1}/1 with RAG`);
+          console.log(`NativityAgent attempt ${attempt + 1}/1 (RAG mode=${mode})`);
           // 45s AbortSignal leaves 35s margin for the fallback chain within the
           // 80s route budget.
           const ctrl = new AbortController();
@@ -178,7 +193,13 @@ export class NativityAgent {
 
           const text = extractTextContent(response);
           console.log(`NativityAgent response: ${text.length} chars`);
-          return safeParseJson<NativityProfile>(text);
+          
+          // Robust JSON extraction: look for the first '{' and last '}'
+          const jsonMatch = text.match(/\{[\s\S]*\}/);
+          const cleanJson = jsonMatch ? jsonMatch[0] : text;
+          
+          logLlmAudit('nativity', 'anthropic', 'claude-sonnet-4-6');
+          return safeParseJson<NativityProfile>(cleanJson);
         } catch (error: unknown) {
           lastError = error;
           const status = (error as { status?: number })?.status;
@@ -214,6 +235,7 @@ export class NativityAgent {
           systemPrompt: SYSTEM_PROMPT,
           userPrompt: buildUserPrompt(natalChart, ragContext, detectedYogas),
           maxTokens: 16000,
+          auditStage: 'nativity',
         });
         return safeParseJson<NativityProfile>(text);
       } catch (fallbackErr) {

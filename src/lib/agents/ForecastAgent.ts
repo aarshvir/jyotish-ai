@@ -7,10 +7,12 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
+import { logLlmAudit } from '@/lib/llm/audit';
 import { EphemerisAgent } from './EphemerisAgent';
 import { RatingAgent } from './RatingAgent';
 import { buildForecastRAGContext } from '@/lib/rag/vectorSearch';
 import { buildTransitQueryTerms } from '@/lib/rag/yogaDetector';
+import { parseJyotishRagMode, resolveJyotishRagMode, type JyotishRagMode } from '@/lib/rag/ragMode';
 import type {
   ForecastInput,
   ForecastOutput,
@@ -163,11 +165,18 @@ export class ForecastAgent {
     }
   }
 
-  async generateForecast(input: ForecastInput): Promise<ForecastOutput> {
+  async generateForecast(
+    input: ForecastInput,
+    opts?: { jyotishRagMode?: string | null },
+  ): Promise<ForecastOutput> {
     const dates = getDateRange(input.dateFrom, input.dateTo);
     if (dates.length === 0) throw new Error('ForecastAgent: empty date range');
 
-    console.log(`ForecastAgent - Generating forecast for ${dates.length} days`);
+    const ragMode: JyotishRagMode =
+      parseJyotishRagMode(opts?.jyotishRagMode != null ? String(opts.jyotishRagMode) : null) ??
+      resolveJyotishRagMode();
+
+    console.log(`ForecastAgent - Generating forecast for ${dates.length} days (RAG mode=${ragMode})`);
 
     // Step 1: Fetch ephemeris data — skip failed days instead of failing all
     console.log('ForecastAgent - Step 1: Fetching ephemeris data...');
@@ -216,7 +225,13 @@ export class ForecastAgent {
     const validDayData = validIndices.map((i) => dayData[i]!);
     const validRatings = validIndices.map((i) => ratings[i]!);
 
-    const narratives = await this.generateNarratives(input, validDates, validDayData, validRatings);
+    const narratives = await this.generateNarratives(
+      input,
+      validDates,
+      validDayData,
+      validRatings,
+      ragMode,
+    );
     console.log('ForecastAgent - Step 3 complete');
 
     // Step 4: Assemble (with deterministic narrative fallback)
@@ -262,7 +277,8 @@ export class ForecastAgent {
     input: ForecastInput,
     dates: string[],
     dayData: FullDayData[],
-    ratings: DayRating[]
+    ratings: DayRating[],
+    ragMode: JyotishRagMode,
   ): Promise<{ days: DayNarrative[]; weekly_summary: string }> {
     const emptyResult = {
       days: dates.map((date) => ({ date, narrative: `Day forecast for ${date}. Use hora and choghadiya for timing.`, best_times: [] as string[], avoid_times: [] as string[] })),
@@ -275,7 +291,7 @@ export class ForecastAgent {
     const transitTerms = input.natalChart
       ? buildTransitQueryTerms(input.natalChart, md, ad)
       : ['Hora System', 'Choghadiya System', 'Rahu Kaal and Inauspicious Timing'];
-    const ragContext = await buildForecastRAGContext(transitTerms);
+    const ragContext = await buildForecastRAGContext(transitTerms, ragMode);
 
     const prompt = buildForecastPrompt(input, dates, dayData, ratings, ragContext);
     let rawText: string | null = null;
@@ -284,6 +300,7 @@ export class ForecastAgent {
       if (this.claude) {
         try {
           rawText = await callClaudeWithBackoff(this.claude, prompt, 16000);
+          if (rawText?.trim()) logLlmAudit('forecast_narrative', 'anthropic', 'claude-sonnet-4-6');
         } catch (claudeErr: unknown) {
           console.warn('ForecastAgent - Claude failed, trying fallback chain:', (claudeErr as Error)?.message);
         }
@@ -293,6 +310,7 @@ export class ForecastAgent {
           systemPrompt: FORECAST_SYSTEM,
           userPrompt: prompt,
           maxTokens: 16000,
+          auditStage: 'forecast_narrative',
         });
       }
       if (rawText == null || rawText === '') {

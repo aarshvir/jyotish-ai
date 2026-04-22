@@ -140,6 +140,13 @@ export async function POST(request: NextRequest) {
 
   const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
 
+  const ragRaw =
+    typeof body.jyotishRagMode === 'string'
+      ? body.jyotishRagMode
+      : typeof body.jyotish_rag_mode === 'string'
+        ? body.jyotish_rag_mode
+        : undefined;
+
   const input: PipelineInput = {
     name: body.name ?? 'Seeker',
     date: body.birth_date ?? '',
@@ -155,6 +162,9 @@ export async function POST(request: NextRequest) {
     forecastStart: body.forecast_start ?? undefined,
     planType: body.plan_type ?? '7day',
     paymentStatus: body.payment_status ?? 'bypass',
+    ...(ragRaw != null && String(ragRaw).trim() !== ''
+      ? { jyotishRagMode: String(ragRaw).trim() }
+      : {}),
   };
 
   const base = request.nextUrl.origin;

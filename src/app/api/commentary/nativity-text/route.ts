@@ -7,6 +7,7 @@ import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
+import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { detectYogas, buildTransitQueryTerms } from '@/lib/rag/yogaDetector';
 import type { NatalChartData } from '@/lib/agents/types';
 
@@ -24,6 +25,8 @@ export async function POST(req: NextRequest) {
     ad_end?: string;
     planets: Record<string, unknown>;
     model_override?: string;
+    jyotishRagMode?: string;
+    jyotish_rag_mode?: string;
   };
 
   try {
@@ -62,7 +65,8 @@ export async function POST(req: NextRequest) {
   const detectedYogas = detectYogas(chartProxy);
   const transitTerms = buildTransitQueryTerms(chartProxy, mahadasha, antardasha);
   const allQueryTerms = Array.from(new Set([...detectedYogas, ...transitTerms]));
-  const ragContext = await buildScriptureContextHybrid(allQueryTerms, lagnaSign);
+  const ragMode = resolveJyotishRagMode(body.jyotishRagMode ?? body.jyotish_rag_mode);
+  const ragContext = await buildScriptureContextHybrid(allQueryTerms, lagnaSign, ragMode);
 
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a specific planet, house, or nakshatra.
 

@@ -85,6 +85,10 @@ supabase/.temp/
 
 lighthouse-report*.json
 
+# Playwright / quality-wave artifacts (screenshots, HTML report)
+artifacts/
+test-results/
+
 # Data
 bhps/
 BHPS/

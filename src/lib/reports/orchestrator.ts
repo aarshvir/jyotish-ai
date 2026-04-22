@@ -6,6 +6,7 @@
 
 import { createServiceClient } from '@/lib/supabase/admin';
 import { validateReportData } from '@/lib/validation/reportValidation';
+import type { JyotishRagMode } from '@/lib/rag/ragMode';
 import { PHASE } from '@/lib/reports/phases/slugs';
 import {
   loadPipelineState,
@@ -154,6 +155,8 @@ export interface PipelineInput {
   forecastStart?: string;
   planType?: string;
   paymentStatus?: string;
+  /** BPHS / scripture RAG: propagates to nativity + nativity-text routes. */
+  jyotishRagMode?: JyotishRagMode | string;
 }
 
 /**
@@ -302,6 +305,10 @@ export async function generateReportPipeline(
   }
   const h = { ...authHeaders, 'Content-Type': 'application/json' };
   const skipValidation = process.env.NEXT_PUBLIC_SKIP_VALIDATION === 'true';
+  const ragModePayload =
+    input.jyotishRagMode != null && String(input.jyotishRagMode).trim() !== ''
+      ? { jyotishRagMode: String(input.jyotishRagMode).trim() }
+      : ({} as Record<string, string>);
 
   const db = createServiceClient();
   const pipelineT0 = Date.now();
@@ -645,7 +652,7 @@ export async function generateReportPipeline(
           const natRes = await resilientFetch(`${base}/api/agents/nativity`, {
             method: 'POST',
             headers: h,
-            body: JSON.stringify({ natalChart: ephemerisData }),
+            body: JSON.stringify({ natalChart: ephemerisData, ...ragModePayload }),
           }, 2, 3000, 90_000);
           if (natRes.ok) {
             const raw = await natRes.json();
@@ -843,6 +850,7 @@ export async function generateReportPipeline(
             md_end: dasha.end_date,
             ad_end: dasha.end_date,
             planets: ephemerisData.planets ?? {},
+            ...ragModePayload,
           });
 
           const nativityHasText =

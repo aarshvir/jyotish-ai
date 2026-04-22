@@ -8,6 +8,7 @@ import type { ChartPlanet } from '@/components/chart/RasiChartNorthIndian';
 import { replaceCitationsWithFootnotes } from '@/lib/reports/postProcess/extractCitations';
 import { ScriptureFootnotes } from '@/components/report/ScriptureFootnotes';
 import type { Citation } from '@/lib/reports/postProcess/extractCitations';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 
 interface NativitySummary {
   lagna_analysis?: string;
@@ -141,7 +142,8 @@ export function NativityCard({
   });
 
   return (
-    <motion.div
+    <ErrorBoundary name="NativityCard">
+      <motion.div
       id="nativity"
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
@@ -434,5 +436,6 @@ export function NativityCard({
         </div>
       )}
     </motion.div>
+    </ErrorBoundary>
   );
 }

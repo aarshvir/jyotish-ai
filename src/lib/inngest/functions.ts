@@ -11,6 +11,11 @@
  *   `stopAfterPhase` option. Each step.run invokes the orchestrator with a
  *   `stopAfterPhase` parameter, so the work done per step is bounded.
  *
+ * Pillar 5 — Resilience:
+ *   A nightly/hourly cleanup sweeps for reports stuck in 'generating'
+ *   due to rare platform timeouts/crashes, marking them as 'error'
+ *   to preserve UX flow and prevent user deadlocks.
+ *
  * Pillar 4 pre-work:
  *   Optional Ziina **Business** webhook can emit `report/generate` if the user
  *   closes the tab before the redirect. **Individual / API-only Ziina** has no
@@ -160,6 +165,42 @@ export const refreshEmbeddingsCron = inngest.createFunction(
       return runScriptureEmbedRefresh(400);
     });
     console.log('[inngest] scripture embed refresh', result);
+    return result;
+  },
+);
+
+/**
+ * Pillar 1/5: Self-Healing Heartbeat.
+ * Detects reports stuck in 'generating' for > 15 minutes and marks them as 'error'.
+ * This prevents users from seeing a permanent "Generating..." spinner if a
+ * process was killed or a network deadlock occurred.
+ */
+export const cleanupOrphanedReports = inngest.createFunction(
+  {
+    id: 'cleanup-orphaned-reports',
+    triggers: [{ cron: '*/30 * * * *' }], // Run every 30 minutes
+  },
+  async ({ step }) => {
+    const result = await step.run('sweep-deadlocks', async () => {
+      const { createServiceClient } = await import('@/lib/supabase/admin');
+      const db = createServiceClient();
+      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+
+      const { data, error } = await db
+        .from('reports')
+        .update({
+          status: 'error',
+          updated_at: new Date().toISOString(),
+          generation_step: 'cleanup_auto_fail',
+        })
+        .eq('status', 'generating')
+        .lt('updated_at', fifteenMinsAgo)
+        .select('id');
+
+      if (error) throw error;
+      return { count: data?.length ?? 0, ids: data?.map((r) => r.id) ?? [] };
+    });
+
     return result;
   },
 );

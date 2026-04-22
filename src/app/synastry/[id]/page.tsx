@@ -5,6 +5,7 @@ import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
 import { motion } from 'framer-motion';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 
 // Quick nature mappings for premium feel
@@ -106,6 +107,7 @@ export default async function SynastryResultPage({ params }: Props) {
       <StarField />
       <Navbar />
       
+      <ErrorBoundary name="SynastryDashboard">
       <main className="flex-1 max-w-6xl mx-auto px-5 py-24 relative z-10 w-full">
         {/* Hero Section: The Score */}
         <div className="flex flex-col items-center text-center mb-24">
@@ -237,6 +239,7 @@ export default async function SynastryResultPage({ params }: Props) {
           Ashtakoot Guna Milan computed with Parashari standards · {row.created_at ? new Date(row.created_at).toLocaleDateString() : 'Recent'}
         </p>
       </main>
+      </ErrorBoundary>
       <Footer />
     </div>
   );

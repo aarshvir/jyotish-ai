@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
+import { logLlmAudit } from '@/lib/llm/audit';
 
 function getHttpStatus(err: unknown): number | undefined {
   if (err && typeof err === 'object' && 'status' in err) {
@@ -68,6 +69,8 @@ export type FallbackChainOpts = {
   skipOpenAI?: boolean;
   /** When true, skip Gemini (e.g. explicit gemini-* call already failed). */
   skipGemini?: boolean;
+  /** Label for structured llm_audit logs (e.g. nativity, forecast_narrative). */
+  auditStage?: string;
 };
 
 async function completeOpenAiFallback(opts: {
@@ -161,6 +164,7 @@ async function completeGrokFallback(opts: {
  * OpenAI → Gemini → Grok → optional DeepSeek. Never calls Anthropic.
  */
 export async function runChatFallbackChain(opts: FallbackChainOpts): Promise<string> {
+  const auditStage = opts.auditStage ?? 'fallback_chain';
   const base = {
     systemPrompt: opts.systemPrompt,
     userPrompt: opts.userPrompt,
@@ -171,7 +175,9 @@ export async function runChatFallbackChain(opts: FallbackChainOpts): Promise<str
   if (!opts.skipOpenAI && trimEnv(process.env.OPENAI_API_KEY)) {
     try {
       const text = await completeOpenAiFallback(base);
-      console.warn('[LLM fallback] success: OpenAI', trimEnv(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-4o');
+      const om = trimEnv(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-4o';
+      console.warn('[LLM fallback] success: OpenAI', om);
+      logLlmAudit(auditStage, 'openai', om);
       return text;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
@@ -184,7 +190,9 @@ export async function runChatFallbackChain(opts: FallbackChainOpts): Promise<str
   if (!opts.skipGemini && trimEnv(process.env.GEMINI_API_KEY)) {
     try {
       const text = await completeGeminiFallback(base);
-      console.warn('[LLM fallback] success: Gemini', trimEnv(process.env.LLM_FALLBACK_GEMINI_MODEL) || 'gemini-2.0-flash');
+      const gm = trimEnv(process.env.LLM_FALLBACK_GEMINI_MODEL) || 'gemini-2.0-flash';
+      console.warn('[LLM fallback] success: Gemini', gm);
+      logLlmAudit(auditStage, 'gemini', gm);
       return text;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
@@ -198,6 +206,7 @@ export async function runChatFallbackChain(opts: FallbackChainOpts): Promise<str
     try {
       const text = await completeGrokFallback(base);
       console.warn('[LLM fallback] success: Grok');
+      logLlmAudit(auditStage, 'grok', 'grok-3-fast');
       return text;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
@@ -210,7 +219,9 @@ export async function runChatFallbackChain(opts: FallbackChainOpts): Promise<str
   if (deepseekEnabled && trimEnv(process.env.DEEPSEEK_API_KEY)) {
     try {
       const text = await completeDeepSeekFallback(base);
+      const dm = trimEnv(process.env.LLM_FALLBACK_DEEPSEEK_MODEL) || 'deepseek-chat';
       console.warn('[LLM fallback] success: DeepSeek');
+      logLlmAudit(auditStage, 'deepseek', dm);
       return text;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));

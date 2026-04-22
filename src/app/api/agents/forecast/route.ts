@@ -16,7 +16,11 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
   try {
-    const body = await request.json() as ForecastInput;
+    const body = (await request.json()) as ForecastInput & {
+      jyotishRagMode?: string;
+      jyotish_rag_mode?: string;
+    };
+    const jyotishRagMode = body.jyotishRagMode ?? body.jyotish_rag_mode;
 
     console.log('[forecast] called, lagna:', body.natalChart?.lagna, 'range:', body.dateFrom, '-', body.dateTo);
 
@@ -44,7 +48,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const forecast = await agent.generateForecast(body);
+    const forecast = await agent.generateForecast(body, { jyotishRagMode });
     return NextResponse.json({ success: true, data: forecast });
 
   } catch (error: unknown) {

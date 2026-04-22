@@ -8,10 +8,15 @@
  *
  * This guarantees Jyotish RAG keeps working on dev boxes and in degraded prod
  * while still giving us true semantic retrieval when the infra is in place.
+ *
+ * Modes (see ragMode.ts): JYOTISH_RAG_MODE=hybrid|keyword|off, or per-request
+ * jyotishRagMode on the report pipeline / agent routes for A/B tests.
  */
 
 import { createServiceClient } from '@/lib/supabase/admin';
-import { searchScriptures, type ScriptureEntry } from './scriptures';
+import { buildScriptureContext, searchScriptures, type ScriptureEntry } from './scriptures';
+import type { JyotishRagMode } from './ragMode';
+import { resolveJyotishRagMode } from './ragMode';
 
 // text-embedding-3-small: 1536 dims, ~5x cheaper than -large, good enough for
 // topical Jyotish retrieval. Switch to -large if you see recall issues on obscure yogas.
@@ -180,10 +185,20 @@ async function buildScriptureContextHybridInner(
   return `\n\nCLASSICAL SCRIPTURE REFERENCES (use these to ground your analysis in authoritative texts):\n\n${blocks}\n`;
 }
 
+/**
+ * @param modeOverride - per-request override (e.g. from report pipeline); falls back to env.
+ */
 export async function buildScriptureContextHybrid(
   yogaNames: string[],
   lagnaSign?: string,
+  modeOverride?: JyotishRagMode | null,
 ): Promise<string> {
+  const mode = modeOverride ?? resolveJyotishRagMode();
+  if (mode === 'off') return '';
+  if (mode === 'keyword') {
+    return buildScriptureContext(yogaNames, lagnaSign);
+  }
+
   try {
     return await Promise.race([
       buildScriptureContextHybridInner(yogaNames, lagnaSign),
@@ -205,12 +220,16 @@ export async function buildScriptureContextHybrid(
  */
 export async function searchByTransits(
   planets: string[],
-  topN = 4
+  topN = 4,
+  mode: JyotishRagMode = 'hybrid',
 ): Promise<ScriptureEntry[]> {
   if (!planets.length) return [];
-  
-  // Search for "Gochara" and specific planetary transits
+
   const query = `Gochara transits of ${planets.join(', ')}`;
+  if (mode === 'off') return [];
+  if (mode === 'keyword') {
+    return searchScriptures(query, topN);
+  }
   return searchScripturesHybrid(query, topN);
 }
 
@@ -218,11 +237,13 @@ export async function searchByTransits(
  * Builds context for the ForecastAgent grounded in transit scriptures.
  */
 export async function buildForecastRAGContext(
-  activeTransits: string[]
+  activeTransits: string[],
+  modeOverride?: JyotishRagMode | null,
 ): Promise<string> {
-  if (!activeTransits.length) return '';
+  const mode = modeOverride ?? resolveJyotishRagMode();
+  if (mode === 'off' || !activeTransits.length) return '';
 
-  const entries = await searchByTransits(activeTransits, 4);
+  const entries = await searchByTransits(activeTransits, 4, mode);
   if (!entries.length) return '';
 
   const blocks = entries

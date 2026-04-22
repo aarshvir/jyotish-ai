@@ -34,7 +34,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await request.json() as {
+      natalChart?: NatalChartData;
+      chartData?: NatalChartData;
+      disableRag?: boolean;
+      jyotishRagMode?: string;
+      jyotish_rag_mode?: string;
+    };
     const natalChart = (body.natalChart ?? body.chartData) as NatalChartData;
 
     if (!natalChart?.lagna) {
@@ -45,7 +51,10 @@ export async function POST(request: NextRequest) {
     }
 
     const profile = await Promise.race([
-      agent.analyze(natalChart),
+      agent.analyze(natalChart, {
+        disableRag: body.disableRag === true,
+        jyotishRagMode: body.jyotishRagMode ?? body.jyotish_rag_mode,
+      }),
       new Promise<never>((_, reject) =>
         setTimeout(
           () => reject(new Error(`NativityAgent route timed out after ${ROUTE_BUDGET_MS}ms`)),

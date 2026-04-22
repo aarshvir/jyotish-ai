@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
+import { logLlmAudit } from '@/lib/llm/audit';
 
 const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
 
@@ -24,7 +25,9 @@ export async function generateAstrologyAnalysis(prompt: string): Promise<string>
         });
 
         const textContent = message.content.find((block) => block.type === 'text');
-        return textContent && 'text' in textContent ? textContent.text : '';
+        const out = textContent && 'text' in textContent ? textContent.text : '';
+        if (out.trim()) logLlmAudit('generateAstrologyAnalysis', 'anthropic', 'claude-sonnet-4-6');
+        return out;
       } catch (error: unknown) {
         lastError = error;
         const status = (error as { status?: number })?.status;
@@ -55,6 +58,7 @@ export async function generateAstrologyAnalysis(prompt: string): Promise<string>
         systemPrompt: FALLBACK_SYSTEM,
         userPrompt: prompt,
         maxTokens: 16000,
+        auditStage: 'generateAstrologyAnalysis',
       });
     } catch (fallbackErr) {
       lastError = fallbackErr;
