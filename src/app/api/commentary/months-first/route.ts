@@ -131,15 +131,18 @@ Return ONLY valid JSON. No markdown, no backticks.`;
 Months to analyse:
 ${JSON.stringify(months, null, 2)}
 
-MANDATORY RULES FOR analysis FIELD (enforce all):
-1. Write exactly 150-180 words. Count carefully.
-2. EVERY sentence must name at least one: planet (Sun/Moon/Mars/Mercury/Jupiter/Venus/Saturn/Rahu/Ketu), house number written as "H1" through "H12" or "1st house" through "12th house", or nakshatra name. Do NOT omit house numbers.
-3. End the analysis with EXACTLY this format on its own line: "BEST: [specific 2-3 day window or event]. WORST: [specific 2-3 day window or event]."
-4. Include a rating line: "Rating: [number]/100."
-5. Use "H" notation for houses (e.g. H3, H6, H10, H12). Do not write "the third house" without also writing "H3".
-6. Never use: generally, may, could, might, perhaps.
+MANDATORY RULES FOR analysis FIELD (a user is paying $100 — write with depth and specificity):
+1. Write 300-350 words. This is a full monthly briefing, not a summary.
+2. STRUCTURE — write in this order:
+   OPENING (60-80 words): Set the overarching monthly theme. Name the Moon's journey through which key houses this month. Name which planets are most active for ${lagnaSign} lagna and why.
+   KEY TRANSIT DETAILS (100-120 words): Expand on each transit in key_transits_hint (if provided) — name the planet, the exact date range, which house it activates for this lagna, and what it means practically (career impact, relationship impact, financial impact). If no hint provided, describe the 2-3 most important planetary movements for this month based on the dasha.
+   WEEK-BY-WEEK RHYTHM (80-100 words): Describe the energy arc across 4 weeks. Name which week is most favorable (and why — hora quality, Moon house position) and which is most challenging. Reference the Moon's nakshatra journey.
+   CLOSING (30-40 words): One mantra recommendation OR one protective ritual aligned with the month's challenges. Name the specific planet being addressed.
+3. EVERY sentence names at least one: planet, H-notation house, or nakshatra.
+4. End with EXACTLY: "BEST: [specific week or date window and why]. WORST: [specific week or date window and why]. Rating: [number]/100."
+5. Never use: generally, may, could, might, perhaps, various.
 
-overall_score RULE (enforce strictly): The first month MUST score 42-48. Later months can be 50-75. Jupiter enters Cancer mid-2026: June=70, July=73, August=75. The spread between max and min MUST be at least 30. Do NOT start at 55 — start at 42-48.
+overall_score RULE (enforce strictly): The first month MUST score 42-48. Later months can be 50-75. Jupiter enters Cancer mid-2026: June=70, July=73, August=75. The spread between max and min MUST be at least 30. Do NOT start at 55.
 
 Return exactly 6 month objects:
 {
@@ -152,9 +155,9 @@ Return exactly 6 month objects:
       "money_score": 55,
       "health_score": 55,
       "love_score": 55,
-      "theme": "one sentence naming a planet and house",
-      "key_transits": ["4-5 strings naming planet/date range/house (H-notation)/effect"],
-      "analysis": "150-180 words including BEST:/WORST: and Rating:/100"
+      "theme": "one sentence naming a planet, house, and the key theme",
+      "key_transits": ["Planet transit date-range → H-notation house → specific effect for this lagna"],
+      "analysis": "300-350 words structured as above, ending with BEST: WORST: Rating: lines"
     }
   ]
 }
@@ -166,7 +169,7 @@ Start with { and end with }.`;
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: 4500,
+      maxTokens: 9000,
     });
     const parsed = safeParseJson<{ months: unknown[] }>(text);
 

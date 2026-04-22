@@ -23,8 +23,8 @@ import { resolveJyotishRagMode } from './ragMode';
 const EMBED_MODEL = 'text-embedding-3-small';
 const EMBED_DIMS = 1536;
 
-// Hard 8s timeout on the OpenAI embed call — must never block the nativity agent.
-const EMBED_TIMEOUT_MS = 8_000;
+// Hard 15s timeout on the OpenAI embed call
+const EMBED_TIMEOUT_MS = 15_000;
 
 export async function embedText(input: string): Promise<number[] | null> {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -116,9 +116,11 @@ export async function searchScripturesVector(
  */
 export async function searchScripturesHybrid(
   query: string,
-  topN = 3,
+  topN = 6,
 ): Promise<ScriptureEntry[]> {
-  const vectorHits = await searchScripturesVector(query, topN);
+  // Lower similarity threshold for real BPHS chunks (OCR-cleaned text embeds at slightly
+  // lower cosine similarity than tightly curated summaries)
+  const vectorHits = await searchScripturesVector(query, topN, 0.25);
   if (vectorHits.length >= Math.min(topN, 2)) {
     return vectorHits;
   }
@@ -142,13 +144,15 @@ export async function searchScripturesHybrid(
  */
 // Total budget for the whole hybrid RAG lookup (embed + DB RPC + keyword fallback).
 // Must be well under the nativity agent's 90s orchestrator timeout.
-const RAG_TOTAL_TIMEOUT_MS = 15_000;
 
 async function buildScriptureContextHybridInner(
   yogaNames: string[],
   lagnaSign?: string,
 ): Promise<string> {
-  if (!yogaNames.length && !lagnaSign) return '';
+  // 1. Collect all terms
+  const allTerms = [...yogaNames];
+  if (lagnaSign) allTerms.push(`${lagnaSign} lagna ascendant`);
+  if (!allTerms.length) return '';
 
   const entries: ScriptureEntry[] = [];
   const seen = new Set<string>();
@@ -162,16 +166,12 @@ async function buildScriptureContextHybridInner(
     }
   };
 
-  // Per-yoga semantic search in parallel.
-  const perYoga = await Promise.all(
-    yogaNames.map((y) => searchScripturesHybrid(y, 2)),
+  // 2. Search all in parallel
+  const results = await Promise.all(
+    allTerms.map((t) => searchScripturesHybrid(t, 3))
   );
-  perYoga.forEach(pushUnique);
 
-  if (lagnaSign) {
-    const lagnaHits = await searchScripturesHybrid(`${lagnaSign} lagna ascendant`, 2);
-    pushUnique(lagnaHits);
-  }
+  results.forEach(pushUnique);
 
   if (!entries.length) return '';
 
@@ -199,14 +199,17 @@ export async function buildScriptureContextHybrid(
     return buildScriptureContext(yogaNames, lagnaSign);
   }
 
+  // Use a longer base timeout for the whole hybrid phase
+  const timeoutMs = Number(process.env.RAG_TOTAL_TIMEOUT_MS) || 120_000;
+
   try {
     return await Promise.race([
       buildScriptureContextHybridInner(yogaNames, lagnaSign),
       new Promise<string>((resolve) =>
         setTimeout(() => {
-          console.warn('[rag] buildScriptureContextHybrid total timeout — using empty context');
-          resolve('');
-        }, RAG_TOTAL_TIMEOUT_MS),
+          console.warn(`[rag] buildScriptureContextHybrid total timeout (${timeoutMs}ms) — falling back to keyword search`);
+          resolve(buildScriptureContext(yogaNames, lagnaSign));
+        }, timeoutMs),
       ),
     ]);
   } catch (err) {

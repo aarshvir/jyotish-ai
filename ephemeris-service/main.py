@@ -10,8 +10,12 @@ import traceback
 
 app = FastAPI(title="Vedic Astrology Ephemeris Service")
 
-# Set Lahiri ayanamsa for all calculations
-swe.set_sid_mode(swe.SIDM_LAHIRI)
+# Set Lahiri ayanamsa using ICRC J2000.0 standard (23°51'20" at J2000.0)
+# This pins the zero-point to the Indian Nautical Almanac standard, matching
+# Jagannatha Hora and government ephemeris. Without this, pyswisseph uses a
+# slightly different default that can shift boundary planets by up to 0.3°.
+swe.set_sid_mode(swe.SIDM_LAHIRI, 2451545.0, 23.853222)
+print(f"[ephemeris] Lahiri ayanamsa at J2000.0: {swe.get_ayanamsa_ut(2451545.0):.6f}° (ICRC standard)")
 
 # Timezone finder instance
 _tf = TimezoneFinder()

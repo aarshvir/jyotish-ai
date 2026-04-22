@@ -1191,7 +1191,8 @@ export async function generateReportPipeline(
 
     const weekList = (weeksSynthData.weeks ?? []).map((w, i: number) => {
       const wl = w.week_label ?? `Week ${i + 1}`;
-      const sc = w.overall_score ?? w.score ?? 65;
+      // Floor at 35 so weeks never show 0/100 for empty or short plans
+      const sc = Math.max(35, w.overall_score ?? w.score ?? 65);
       const wc = (w.analysis ?? w.commentary ?? '').trim();
       return {
         week_label: wl,

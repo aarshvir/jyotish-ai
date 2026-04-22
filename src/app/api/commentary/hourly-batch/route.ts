@@ -49,15 +49,13 @@ function deriveDirective(slot: SlotShape): string {
 
 function finalizeHourlyCommentary(raw: string | undefined, slot: SlotShape): string {
   const directive = deriveDirective(slot);
-  let body = (raw ?? '').trim().replace(/\s+/g, ' ');
-  body = body.replace(/\s+[A-Z][A-Z0-9,\s'’\-—]{10,}\.?\s*$/, '').trim();
-  body = clipWords(body, 35);
-  const hora = String(slot?.dominant_hora ?? 'Sun');
-  const chog = String(slot?.dominant_choghadiya ?? 'Shubh');
-  const th = typeof slot?.transit_lagna_house === 'number' ? slot.transit_lagna_house : 1;
+  let body = (raw ?? '').trim();
+  // Only fall back to minimal text if LLM returned nothing meaningful
   if (body.length < 25) {
-    body = `${hora} hora with ${chog} choghadiya; transit emphasis H${th}.`;
-    body = clipWords(body, 30);
+    const hora = String(slot?.dominant_hora ?? 'Sun');
+    const chog = String(slot?.dominant_choghadiya ?? 'Shubh');
+    const th = typeof slot?.transit_lagna_house === 'number' ? slot.transit_lagna_house : 1;
+    body = `${hora} hora activates H${th} matters for this lagna. ${chog} choghadiya sets the temporal quality.`;
   }
   return `${directive}\n\n${body}`;
 }
@@ -190,27 +188,34 @@ export async function POST(req: NextRequest) {
     return `=== DAY_INDEX ${d.dayIndex} DATE ${d.date} ===\n${anchors}\nSLOTS:\n${slotLines}\n`;
   });
 
-  const systemPrompt = `You are Jyotish AI. Output compressed hourly commentary for multiple days in one JSON object.
+  const systemPrompt = `You are a grandmaster Vedic astrologer. Write hourly slot commentary with the depth and authority of a paid expert — each slot analysis must feel personal, specific, and actionable for THIS lagna.
 
+HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA (use these — do not invent):
 ${horaBlock}
+
+COMMENTARY STRUCTURE — each slot commentary must have THREE paragraphs separated by blank lines:
+
+PARAGRAPH 1 — HORA (50-70 words): Name the hora planet. State which houses it RULES for ${lagnaSign} lagna (not where it sits — which houses it governs). Explain whether it is yogakaraka, badhaka, maraka, dusthana lord, or functional benefic. Give 3-4 specific activities best suited to this hora based on its house rulerships. If functionally malefic, name the specific risk.
+
+PARAGRAPH 2 — TRANSIT LAGNA (35-50 words): State "Transit Lagna in [SIGN] = [ordinal number] house activation." Explain what that house governs for this lagna. Give 2-3 practical implications. For the native's own lagna sign: add "PERSONAL POWER PEAK — actions carry full astrological weight."
+
+PARAGRAPH 3 — CHOGHADIYA (20-30 words): Name the choghadiya type in ALL CAPS with its quality in parentheses. Give one specific directive (what to do or avoid). For KAAL: use double warning symbol.
+
+Rahu Kaal slots: open Paragraph 1 with "RAHU KAAL ACTIVE —" and state what to absolutely avoid.
 
 Return ONLY valid JSON. No markdown. No preamble.`;
 
   const userPrompt = `NATIVE: ${lagnaSign} Lagna. Dasha: ${mahadasha} MD / ${antardasha} AD.
 
-For EACH day below, for EACH of the 18 slots (indices 0–17), produce commentary:
-- Line 1: ONE ALL-CAPS directive (max 10 words). Rahu Kaal slots: start with "RAHU KAAL —".
-- Then ONE short sentence (max 20 words) naming hora, choghadiya, transit house. Be concise.
-
 ${dayBlocks.join('\n')}
 
-OUTPUT — return ONLY this JSON shape:
+OUTPUT — return ONLY this JSON shape. commentary field = the full 3-paragraph text:
 {
   "days": [
     {
       "dayIndex": <number matching DAY_INDEX above>,
       "date": "YYYY-MM-DD",
-      "slots": [ { "slot_index": 0, "commentary": "ALL CAPS...\\n\\nbody..." }, ... 18 entries ... ]
+      "slots": [ { "slot_index": 0, "commentary": "Paragraph1\\n\\nParagraph2\\n\\nParagraph3" }, ... 18 entries ... ]
     }
   ]
 }
@@ -222,7 +227,7 @@ Include every day from the input. Each day must have exactly 18 slots. Start wit
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: Math.min(16000, 2000 + daysIn.length * 18 * 70),
+      maxTokens: Math.min(16000, 2000 + daysIn.length * 18 * 200),
     });
 
     type BatchDay = { dayIndex?: number; date?: string; slots?: Array<{ slot_index?: number; commentary?: string }> };

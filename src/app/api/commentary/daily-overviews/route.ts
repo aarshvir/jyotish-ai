@@ -136,11 +136,11 @@ export async function POST(req: NextRequest) {
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
 
-  const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a planet, house, or nakshatra.
+  const systemPrompt = `You are a grandmaster Vedic astrologer. Write with the authority and specificity of a paid expert consultation — every sentence must feel personally relevant to this native's chart, not generic astrology.
 
-Each day includes fixed blocks in the user message: graha positions, verified yoga meaning, best scoring choghadiya window, and Rahu Kaal status. Obey every STRICT RULE in those blocks.
+Each day's user message contains ACTUAL PLANETARY POSITIONS, verified yoga meaning, best choghadiya window, and Rahu Kaal times. Treat these as authoritative facts — do not contradict them.
 
-HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
+HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA (use these exactly):
 ${horaBlock}
 
 Return ONLY valid JSON. No markdown, no backticks.`;
@@ -169,24 +169,27 @@ For each day, graha signs and whole-sign houses MUST match the ACTUAL PLANETARY 
 Days data:
 ${JSON.stringify(batchDays, null, 2)}
 
-MANDATORY RULES for day_overview (enforce all, no exceptions):
-1. First line: ALL-CAPS headline (minimum 6 words, ends with period). The headline MUST name the current Mahadasha lord (${mahadasha}) or a key planet in transit. Example: "${mahadasha.toUpperCase()} ${antardasha.toUpperCase()} DASHA CALLS FOR PRECISE AND MEASURED ACTION TODAY."
-2. Total word count: 90–110 words. Be concise — every word must earn its place.
-3. EVERY sentence must name at least one of: a planet (Sun/Moon/Mars/Mercury/Jupiter/Venus/Saturn/Rahu/Ketu), a house number (H1 through H12 or "1st house" etc.), or a nakshatra.
-4. Never use these words: generally, may, could, might, perhaps, various, often, sometimes.
-5. The current Mahadasha lord (${mahadasha}) must appear at least once in each day_overview, either by planet name or as a dasha reference.
-6. After the opening sentence, write a STRATEGY: section with exactly 3 directives (one sentence each):
-   - Directive 1 (Best timing): Name the BEST ACTION WINDOW exact time + hora planet from the anchor block above. Tie the action to a specific house number.
-   - Directive 2 (Avoid): Name what NOT to do. Use direct language ("Do not", "Avoid"). Name the afflicting planet.
-   - Directive 3 (Rahu Kaal): State the exact Rahu Kaal HH:MM–HH:MM time and give one specific avoidance instruction.
+MANDATORY RULES for day_overview (enforce all — a user is paying $100 for this analysis):
+1. First line: ALL-CAPS headline (8-12 words, ends with period). Must name the tithi, nakshatra yoga, OR the Mahadasha lord. Example: "AMAVASYA ECLIPSE DAY — PARIGHA YOGA DEMANDS MAXIMUM CAUTION TODAY."
+2. Total word count: 200-250 words. This is a substantive daily briefing, not a summary.
+3. STRUCTURE — write in this exact order:
+   PART A (60-80 words): Set the astrological context for the day. Name the Moon's house position and what it activates emotionally and practically for ${lagnaSign} lagna. Reference the tithi and nakshatra yoga from the panchang data. Explain whether the day ruler (weekday) aligns with the active dasha lord (gives 15-20% energy boost when aligned).
+   PART B — STRATEGY: section with 3 named directives:
+     Directive 1 — Best timing: Name the exact hora time window from the BEST ACTION WINDOW in the anchor block. Name the hora planet and which H-notation house it rules for this lagna. State the specific activity.
+     Directive 2 — Avoid: Name the afflicting planet or period. Use direct language: "Do not" or "Avoid." State why (which house it damages).
+     Directive 3 — Rahu Kaal: State exact HH:MM–HH:MM time. Give one specific thing to absolutely avoid during this window.
+   PART C (30-40 words): If day score < 50, recommend one ritual, mantra, or protective practice. If day score >= 65, name the single best opportunity and which house it activates.
+4. EVERY sentence names at least one: planet, H-notation house, or nakshatra.
+5. The Mahadasha lord (${mahadasha}) must appear at least once.
+6. Never use: generally, may, could, might, perhaps, various, often, sometimes.
 
 Return this exact JSON structure (no extra fields):
 {
   "days": [
     {
       "date": "YYYY-MM-DD",
-      "day_theme": "<10-15 words naming at least 1 planet>",
-      "day_overview": "<90-110 words>"
+      "day_theme": "<10-15 words naming at least 1 planet and 1 house>",
+      "day_overview": "<200-250 words as specified above>"
     }
   ]
 }
@@ -227,7 +230,7 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
     let out: Array<{ date: string; day_theme: string; day_overview: string }> = [];
 
     if (days.length > 0 && days.length <= 8) {
-      const r = await callBatches(days, 6_000, modelOverride);
+      const r = await callBatches(days, 10_000, modelOverride);
       out = (r.length ? r : days.map((d) => buildFallbackDay(d, lagnaSign))).map((d) => ({
         ...d,
         day_overview: normalizeDayOverview(d.day_overview),
@@ -237,12 +240,12 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
       const batch2 = days.slice(4);
 
       if (batch1.length) {
-        const r1 = await callBatches(batch1, 4_000, modelOverride);
+        const r1 = await callBatches(batch1, 6_000, modelOverride);
         out.push(...(r1.length ? r1 : batch1.map((d) => buildFallbackDay(d, lagnaSign))));
         out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
       }
       if (batch2.length) {
-        const r2 = await callBatches(batch2, 3_500, modelOverride);
+        const r2 = await callBatches(batch2, 6_000, modelOverride);
         out.push(...(r2.length ? r2 : batch2.map((d) => buildFallbackDay(d, lagnaSign))));
         out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
       }
