@@ -33,26 +33,15 @@ interface SlotShape {
   score?: number;
 }
 
-function deriveDirective(slot: SlotShape): string {
-  const score = typeof slot?.score === 'number' ? slot.score : 50;
-  if (slot?.is_rahu_kaal) return 'RAHU KAAL — ROUTINE TASKS ONLY; AVOID NEW STARTS.';
-  if (score >= 80) return 'ACT ON YOUR TOP PRIORITY IN THIS WINDOW.';
-  if (score >= 65) return 'PUSH IMPORTANT WORK WHILE CONDITIONS HOLD.';
-  if (score >= 50) return 'KEEP MOMENTUM; DELAY IRREVERSIBLE COMMITS IF UNSURE.';
-  return 'STAY CONSERVATIVE — PREPARE, REVIEW, WAIT FOR CLEARER AIR.';
-}
-
 function finalizeHourlyCommentary(raw: string | undefined, slot: SlotShape): string {
-  const directive = deriveDirective(slot);
-  let body = (raw ?? '').trim();
-  // Only fall back to minimal text if LLM returned nothing meaningful
-  if (body.length < 25) {
-    const hora = String(slot?.dominant_hora ?? 'Sun');
-    const chog = String(slot?.dominant_choghadiya ?? 'Shubh');
-    const th = typeof slot?.transit_lagna_house === 'number' ? slot.transit_lagna_house : 1;
-    body = `${hora} hora activates H${th} matters for this lagna. ${chog} choghadiya sets the temporal quality.`;
-  }
-  return `${directive}\n\n${body}`;
+  const body = (raw ?? '').trim();
+  if (body.length >= 25) return body;
+  // Fallback: produce a minimal 3-paragraph stub when LLM returned nothing meaningful
+  const hora = String(slot?.dominant_hora ?? 'Sun');
+  const chog = String(slot?.dominant_choghadiya ?? 'Shubh');
+  const th = typeof slot?.transit_lagna_house === 'number' ? slot.transit_lagna_house : 1;
+  const rkPrefix = slot?.is_rahu_kaal ? 'RAHU KAAL ACTIVE — ' : '';
+  return `${rkPrefix}${hora} hora governs this window for this lagna. Check its functional role — whether yogakaraka, maraka, or badhaka — and direct activity accordingly.\n\nTransit Lagna = H${th} house activation. Focus energy on the matters this house governs for your lagna sign.\n\n${chog.toUpperCase()} — ${slot?.is_rahu_kaal ? 'Avoid new initiations entirely during this Rahu Kaal window.' : 'Match your activity type to this choghadiya quality.'}`;
 }
 
 function buildFallbackSlot(slot: SlotShape): { slot_index: number; commentary: string } {
