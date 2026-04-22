@@ -50,13 +50,13 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
 
   const isStructured = typeof synthesis === 'object' && synthesis !== null && synthesis !== undefined;
   const s = synthesis as SynthesisStructured;
-  const OPENING_FALLBACK = 'This forecast period combines transits, dasha activations, and hora patterns. Prioritise high-score windows for important work and avoid Rahu Kaal for new beginnings.';
-  const CLOSING_FALLBACK = 'This forecast period offers opportunities and challenges. Use hora and choghadiya to align actions with cosmic rhythms.';
+  const OPENING_FALLBACK = 'This forecast period holds clear patterns for your career, relationships, finances, and wellbeing. Use the highest-scoring daily windows for important decisions and actions — and avoid starting anything new during Rahu Kaal.';
+  const CLOSING_FALLBACK = 'Align your key moves with your highest-scoring days and best hourly windows. Small timing adjustments compound into meaningful results over the forecast period.';
   const DOMAIN_FALLBACK: Record<string, string> = {
-    career: 'Focus on Yogakaraka and 10th house activations for career moves.',
-    money: '2nd and 11th house transits influence gains.',
-    health: 'Lagna lord and 6th house themes affect wellbeing.',
-    relationships: '7th house and Badhaka themes require care.',
+    career: 'Use your highest-scoring days and Mars hora windows for bold career moves, proposals, and important conversations. Avoid low-score days for irreversible decisions.',
+    money: 'Best financial timing falls on high-score days — align larger decisions with your peak windows. Avoid new financial commitments during Rahu Kaal or low-score periods.',
+    health: 'Rest and recovery are most effective on low-score days. Protect your energy during the most demanding stretches and prioritise consistent routines over bursts of effort.',
+    relationships: 'Important conversations land best on high-score days with favourable hourly windows. Avoid pressing sensitive topics during low-score periods or Rahu Kaal.',
   };
 
   return (

@@ -14,20 +14,22 @@ import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { detectYogas } from '@/lib/rag/yogaDetector';
 import { parseJyotishRagMode, resolveJyotishRagMode, type JyotishRagMode } from '@/lib/rag/ragMode';
 
-const SYSTEM_PROMPT = `You are a grandmaster Vedic astrologer with 30 years of classical training in Parashara and Jaimini traditions. You write with the authority, depth, and specificity of a paid expert consultation — every sentence earns its place.
+const SYSTEM_PROMPT = `You are a Vedic astrologer writing a premium personal report. Your job is to translate astrological data into practical, output-focused guidance a busy professional can act on today. You write like a trusted advisor — warm, specific, direct — not like a textbook.
 
 ABSOLUTE RULES:
 - Return ONLY valid JSON. No markdown, no backticks, no prose outside JSON.
 - Dense paragraphs only. No bullet points. No generic filler.
-- When CLASSICAL SCRIPTURE REFERENCES are provided, cite them inline as [[SOURCE:CHAPTER]] — e.g. "Per BPHS Ch.36, Gajakesari Yoga bestows lasting fame [[BPHS:36]]." Never paraphrase without citation.
-- Name actual planets, houses, and nakshatras in every sentence. Never write vague generalities.
-- Never truncate mid-sentence. If length is a concern, reduce detail on minor points — never cut the string.
-- planetary_positions: include ALL 9 grahas (Sun through Ketu). Each significance field: 3-4 sentences covering (1) functional role for this lagna, (2) house occupied and what it activates, (3) nakshatra and what the nakshatra lord adds, (4) one specific life-domain prediction for the current dasha period.
-- lagna_analysis: 250-300 words. Cover: lagna lord placement and dignity, the single most important planet in the chart and why, the primary yoga operating, dasha period meaning for this lagna, and a 2-line life direction statement.
-- yogas[].description: 2-3 sentences naming the specific houses involved, strength qualifier, and a real-life manifestation prediction.
-- current_dasha_interpretation: 150-200 words. Name specific life themes activated, what to prioritize in the next 6 months, one caution, and one opportunity unique to this dasha.
-- current_year_theme: 60-80 words naming the key 2026 planetary event relevant to this chart (e.g. Jupiter's sign change) and its specific house activation.
-- life_themes: maximum 4 items, each under 15 words, each referencing a specific planet or house.
+- LANGUAGE: Write for someone who does NOT know astrology. Translate every technical term into plain English on first use. Instead of "yogakaraka activates H10 kendra", write "your strongest planet this period is energising your career zone — this is your best window in years to make a bold professional move." Instead of "badhaka lord in dusthana", write "one planet in your chart is quietly draining energy — here's how to work around it."
+- When CLASSICAL SCRIPTURE REFERENCES are provided, weave them in as supporting evidence, not jargon: "Ancient Vedic texts single this combination out as a mark of lasting professional recognition."
+- Cite scriptures inline as [[SOURCE:CHAPTER]] only within quotations or supporting clauses — never lead with the citation.
+- Every sentence must give the reader something they can feel, decide, or do — not just a planetary fact.
+- Never truncate mid-sentence. Reduce detail on minor points rather than cutting a string.
+- planetary_positions: include ALL 9 grahas (Sun through Ketu). Each significance field: 3-4 sentences — start with the plain-English life impact, then explain the astrological reason behind it.
+- lagna_analysis: 250-300 words. Lead with what this chart says about WHO this person is and what they're here to do. Weave in the key yoga and dasha theme as supporting evidence, not as the headline.
+- yogas[].description: 2-3 sentences. Open with the real-world outcome ("This combination historically brings…"), then briefly name the houses behind it.
+- current_dasha_interpretation: 150-200 words. Answer: what is being unlocked in your life right now, what should you prioritise, what should you guard against?
+- current_year_theme: 60-80 words answering: what is the single biggest planetary shift of 2026 for this person, and what does it mean for their day-to-day life?
+- life_themes: maximum 4 items, each under 15 words, written as outcomes not astrological facts.
 - All string values must be grammatically complete sentences.`;
 
 function buildUserPrompt(chart: NatalChartData, ragContext: string, detectedYogas?: string[]): string {
@@ -57,32 +59,32 @@ Current dasha: ${chart.current_dasha?.mahadasha ?? 'unknown'} MD / ${chart.curre
 ${engineFn ?? ''}${yogaHint}
 ${ragContext ? `CLASSICAL SCRIPTURE REFERENCES (cite these inline using [[SOURCE:CHAPTER]] format when relevant):\n${ragContext}\n` : ''}
 INSTRUCTIONS — analyze for ${chart.lagna ?? 'Unknown'} Lagna:
-1. Functional benefics: planets ruling kendras (1,4,7,10) and trikonas (1,5,9) for this specific lagna — name each and explain why.
-2. Functional malefics: planets ruling dusthanas (3,6,8,12) without trikona lordship — name each and explain the specific challenge they create.
-3. Yogakaraka(s): planet(s) ruling both a kendra and a trikona simultaneously — the single most important functional planet.
-4. Top 3-5 yogas — MUST include all pre-detected yogas listed above. For each yoga: name the houses involved, assess strength (strong/moderate/weak), and give a specific life manifestation prediction.
-5. 3-5 chart strengths (specific, not generic) and 2-3 challenges (honest, not sugar-coated).
-6. Interpret the current mahadasha-antardasha: what house does the MD lord occupy? What does it rule? What specific life domains are being activated now? What opportunity should the native seize in the next 6 months?
+1. Supportive planets: which planets in this chart act as allies — name them and explain what areas of life they open up (career, money, relationships, health, creativity).
+2. Challenging planets: which planets create friction or delays — name them and explain the specific life domain affected and how to navigate it.
+3. Power planet: the single most important functional planet for this lagna — explain what it empowers.
+4. Top 3-5 yogas — MUST include all pre-detected yogas listed above. For each: open with the real-world outcome, then briefly note the astrological basis. Cite BPHS if scripture provided.
+5. 3-5 genuine chart strengths and 2-3 honest challenges — written as life outcomes, not astrological labels.
+6. Current dasha period: what chapter of life has begun? What is opening up? What is being tested? What is the single most important thing to do in the next 6 months?
 
 Return ONLY this JSON (no extra fields, no markdown):
 {
   "lagna_sign": "${chart.lagna ?? 'Unknown'}",
-  "lagna_analysis": "250-300 words. Open with the lagna lord placement and dignity. Identify the single most powerful planet in this chart and explain exactly why. Name the primary operating yoga. Describe the current dasha period's meaning for this specific lagna. Close with a 2-sentence life direction statement that names houses and planets.",
+  "lagna_analysis": "250-300 words. Open with: who is this person at their best — what drives them, what they're here to build. Then explain the current planetary period's theme in plain terms. Name the single most powerful combination in this chart and what it promises. Close with two sentences of direct life direction the person can act on.",
   "yogas": [
-    { "name": "Yoga Name", "description": "2-3 sentences: houses involved, strength qualifier, specific life manifestation prediction. Cite BPHS chapter if scripture provided.", "strength": "strong|moderate|weak" }
+    { "name": "Yoga Name", "description": "2-3 sentences: open with the real-world outcome this combination delivers, then briefly name the astrological basis. Cite BPHS chapter as supporting evidence if scripture provided.", "strength": "strong|moderate|weak" }
   ],
-  "functional_benefics": ["Planet — ruler of Hx and Hy, explains why benefic for this lagna"],
-  "functional_malefics": ["Planet — ruler of Hx (dusthana), explains specific challenge"],
-  "yogakarakas": ["Planet — yogakaraka because it rules kendra Hx AND trikona Hy"],
-  "strengths": ["Specific strength naming planet, house, and life domain"],
-  "challenges": ["Specific challenge naming planet, house, and life domain"],
-  "current_dasha_interpretation": "150-200 words. MD lord: which house it occupies, which houses it rules, what life themes it activates. AD lord: same analysis. What specific opportunity should the native seize in the next 6 months? What is the one thing to be cautious about? What is unique about this MD-AD combination for this lagna?",
-  "summary": "3-4 sentences. Name the chart's defining feature, the key yoga, the dasha theme, and one 2026 prediction.",
+  "functional_benefics": ["PlanetName — supports [specific life area] for this ascendant because [plain-English reason]"],
+  "functional_malefics": ["PlanetName — creates friction in [specific life area] — navigate by [plain-English tip]"],
+  "yogakarakas": ["PlanetName — your single most powerful planet: it governs both [life area 1] and [life area 2]"],
+  "strengths": ["Plain-English strength — specific outcome the person can count on"],
+  "challenges": ["Plain-English challenge — specific area of life that needs conscious navigation"],
+  "current_dasha_interpretation": "150-200 words. Answer these questions in flowing paragraphs: What chapter of life has the current planetary period opened? What is specifically being activated — career, relationships, inner work, money? What is the one opportunity the person must not miss in the next 6 months? What is the one risk to guard against? End with a direct instruction.",
+  "summary": "3-4 sentences written as a personal letter opening: 'Your chart shows…' Name the defining strength, the current life theme, and one concrete prediction for 2026.",
   "planetary_positions": [
-    { "planet": "PlanetName", "sign": "SignName", "house": 1, "nakshatra": "NakshatraName", "dignity": "exalted|own|friendly|neutral|enemy|debilitated", "significance": "3-4 sentences: (1) functional role for this lagna — benefic/malefic/yogakaraka/badhaka/maraka and why; (2) the house it occupies and what that activates in this native's life; (3) the nakshatra and what the nakshatra lord adds to interpretation; (4) one specific life-domain prediction for the current dasha period." }
+    { "planet": "PlanetName", "sign": "SignName", "house": 1, "nakshatra": "NakshatraName", "dignity": "exalted|own|friendly|neutral|enemy|debilitated", "significance": "3-4 sentences: (1) what this planet does for this person in plain terms — which life domain it governs; (2) where it sits in the chart and what that means practically; (3) the nakshatra's flavor and how it colours this planet's expression; (4) one specific thing this planet is activating right now in the current dasha period." }
   ],
-  "life_themes": ["Theme naming a specific planet and house — under 15 words"],
-  "current_year_theme": "60-80 words. Name the key 2026 planetary event for this chart (Jupiter's sign change, Saturn transit, etc.), which house it activates, and what the native should specifically do or expect."
+  "life_themes": ["Plain-English life theme — written as an outcome, not an astrological label, under 15 words"],
+  "current_year_theme": "60-80 words answering: what is the most important planetary shift of 2026 for this person specifically, what area of life does it affect, and what should they do about it — written as a direct personal message."
 }`;
 }
 

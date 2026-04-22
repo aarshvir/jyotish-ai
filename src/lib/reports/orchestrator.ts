@@ -1459,16 +1459,16 @@ export async function generateReportPipeline(
       days: daysForReport,
       synthesis: weeksSynthData.period_synthesis ?? {
         opening_paragraph:
-          'This forecast period combines transits, dasha activations, and hora patterns. Use high-score windows for important work and avoid Rahu Kaal for new beginnings.',
+          'This forecast period holds clear patterns for your career, relationships, finances, and wellbeing. Use the highest-scoring daily windows for important decisions and avoid starting anything new during Rahu Kaal.',
         strategic_windows: [],
         caution_dates: [],
         domain_priorities: {
-          career: 'Focus on career themes.',
-          money: 'Money themes.',
-          health: 'Health.',
-          relationships: 'Relationships.',
+          career: 'Use your highest-scoring days and Mars hora windows for bold career moves and proposals. Avoid low-score days for irreversible decisions.',
+          money: 'Best financial timing falls on high-score days. Avoid new financial commitments during Rahu Kaal or low-score periods.',
+          health: 'Rest and recovery are most effective on low-score days. Protect your energy during the most demanding stretches.',
+          relationships: 'Important conversations land best on high-score days. Avoid pressing sensitive topics during low-score periods or Rahu Kaal.',
         },
-        closing_paragraph: 'Use hora and choghadiya to align actions with cosmic rhythms.',
+        closing_paragraph: 'Align your key moves with your highest-scoring days and best hourly windows. Small timing adjustments compound into meaningful results over the forecast period.',
       },
     };
 
