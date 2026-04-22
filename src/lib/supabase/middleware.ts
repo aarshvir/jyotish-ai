@@ -5,6 +5,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 const _supaUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
 const _supaKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
 
+// Exact paths or prefix segments — must match full path segment to avoid
+// false positives like '/report' matching '/reports/start' (an API route).
 const PROTECTED_PREFIXES = [
   '/dashboard',
   '/auth/consent',
@@ -16,7 +18,10 @@ const PROTECTED_PREFIXES = [
 ];
 
 function isProtectedRoute(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  return PROTECTED_PREFIXES.some((prefix) => {
+    // Exact match OR prefix followed by '/' (segment boundary)
+    return pathname === prefix || pathname.startsWith(prefix + '/');
+  });
 }
 
 export async function updateSession(
