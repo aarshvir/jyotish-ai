@@ -44,53 +44,78 @@ try {
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
-if (!OPENAI_API_KEY) {
-  console.error('Missing OPENAI_API_KEY');
+
+if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_AI_API_KEY) {
+  console.error('Missing GEMINI_API_KEY (or GOOGLE_AI_API_KEY) — required for Google text-embedding-004');
   process.exit(1);
 }
 
-const EMBED_MODEL = 'text-embedding-3-small';
+// gemini-embedding-2: 1536-dim output (matches pgvector schema), free tier via GEMINI_API_KEY.
+const GOOGLE_EMBED_MODEL = 'gemini-embedding-2';
 const EMBED_DIMS = 1536;
 
-async function embed(text) {
-  const res = await fetch('https://api.openai.com/v1/embeddings', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: EMBED_MODEL,
-      input: text,
-      dimensions: EMBED_DIMS,
-    }),
-  });
-  if (!res.ok) {
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_AI_API_KEY;
+
+async function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function embed(text, retries = 5) {
+  if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GOOGLE_EMBED_MODEL}:embedContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: `models/${GOOGLE_EMBED_MODEL}`,
+          content: { parts: [{ text }] },
+          taskType: 'RETRIEVAL_DOCUMENT',
+          outputDimensionality: EMBED_DIMS,
+        }),
+      },
+    );
+    if (res.ok) {
+      const json = await res.json();
+      const vec = json.embedding?.values;
+      if (!vec || vec.length !== EMBED_DIMS) throw new Error(`Unexpected dims: ${vec?.length}`);
+      return vec;
+    }
     const body = await res.text();
-    throw new Error(`OpenAI ${res.status}: ${body}`);
+    if ((res.status === 429 || res.status === 503) && attempt < retries) {
+      const waitMs = Math.min(2000 * Math.pow(2, attempt), 30000);
+      console.log(`[embed-scriptures] ${res.status} — waiting ${Math.round(waitMs / 1000)}s (attempt ${attempt + 1}/${retries})...`);
+      await sleep(waitMs);
+      continue;
+    }
+    throw new Error(`Google embedding API ${res.status}: ${body.slice(0, 200)}`);
   }
-  const json = await res.json();
-  return json.data[0].embedding;
+  throw new Error('Max retries exceeded for embedding');
 }
 
 async function loadCorpus() {
+  // Prefer _chunks_clean.json (OCR-filtered) over _chunks.json
+  const cleanPath = resolve('data/scriptures/_chunks_clean.json');
   const chunksPath = resolve('data/scriptures/_chunks.json');
-  try {
-    const chunksData = readFileSync(chunksPath, 'utf8');
-    const chunks = JSON.parse(chunksData);
-    if (Array.isArray(chunks) && chunks.length > 0) {
-      console.log(`[embed-scriptures] Loaded ${chunks.length} chunks from _chunks.json`);
-      return chunks;
+  for (const [label, p] of [[`_chunks_clean.json`, cleanPath], [`_chunks.json`, chunksPath]]) {
+    try {
+      const chunksData = readFileSync(p, 'utf8');
+      const chunks = JSON.parse(chunksData);
+      if (Array.isArray(chunks) && chunks.length > 0) {
+        console.log(`[embed-scriptures] Loaded ${chunks.length} chunks from ${label}`);
+        return chunks;
+      }
+    } catch {
+      // continue to next candidate
     }
-  } catch {
-    console.log('[embed-scriptures] Could not load _chunks.json, falling back to scriptures.ts...');
   }
+  console.log('[embed-scriptures] Could not load chunks files, falling back to scriptures.ts...');
 
   // Parse the TS module as text and eval the exported array.
   const file = readFileSync(resolve('src/lib/rag/scriptures.ts'), 'utf8');
@@ -160,7 +185,11 @@ async function main() {
     process.exit(0);
   }
 
-  for (const entry of corpus) {
+  // Small inter-request delay to stay under OpenAI RPM limit (500 RPM on tier 1)
+  const INTER_REQUEST_DELAY_MS = 150;
+
+  for (let i = 0; i < corpus.length; i++) {
+    const entry = corpus[i];
     const existingHash = existingHashMap.get(entry.id);
     const isUnchanged = existingHash && existingHash === entry.content_hash;
 
@@ -194,8 +223,12 @@ async function main() {
         failCount++;
       } else {
         okCount++;
-        console.log(`[embed-scriptures] embedded: ${entry.id}`);
+        if (okCount % 50 === 0 || okCount === 1) {
+          console.log(`[embed-scriptures] progress: ${okCount} embedded, ${skipCount} skipped, ${failCount} failed (${i + 1}/${corpus.length})`);
+        }
       }
+      // Rate-limit safety: ~7 req/s stays well under 500 RPM limit
+      await sleep(INTER_REQUEST_DELAY_MS);
     } catch (err) {
       console.error(`[embed-scriptures] embedding failed for ${entry.id}:`, err.message);
       failCount++;

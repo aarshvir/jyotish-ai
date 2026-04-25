@@ -18,43 +18,49 @@ import { buildScriptureContext, searchScriptures, type ScriptureEntry } from './
 import type { JyotishRagMode } from './ragMode';
 import { resolveJyotishRagMode } from './ragMode';
 
-// text-embedding-3-small: 1536 dims, ~5x cheaper than -large, good enough for
-// topical Jyotish retrieval. Switch to -large if you see recall issues on obscure yogas.
-const EMBED_MODEL = 'text-embedding-3-small';
+// gemini-embedding-2: supports outputDimensionality=1536, matching our pgvector schema
+// exactly — no DDL migration needed. Free tier available via GEMINI_API_KEY.
+const GOOGLE_EMBED_MODEL = 'gemini-embedding-2';
 const EMBED_DIMS = 1536;
 
-// Hard 15s timeout on the OpenAI embed call
+// Hard 15s timeout on the embed call
 const EMBED_TIMEOUT_MS = 15_000;
 
+/**
+ * Embed text using Google's gemini-embedding-2 model with outputDimensionality=1536.
+ * This matches the existing pgvector(1536) column schema exactly.
+ * Falls back gracefully to null (triggering keyword search) on any failure.
+ */
 export async function embedText(input: string): Promise<number[] | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) return null;
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), EMBED_TIMEOUT_MS);
 
   try {
-    const res = await fetch('https://api.openai.com/v1/embeddings', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GOOGLE_EMBED_MODEL}:embedContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: `models/${GOOGLE_EMBED_MODEL}`,
+          content: { parts: [{ text: input }] },
+          taskType: 'RETRIEVAL_DOCUMENT',
+          outputDimensionality: EMBED_DIMS,
+        }),
       },
-      body: JSON.stringify({
-        model: EMBED_MODEL,
-        input,
-        dimensions: EMBED_DIMS,
-      }),
-    });
+    );
     if (!res.ok) {
-      console.error('[rag/embed] openai non-200:', res.status);
+      console.error('[rag/embed] google non-200:', res.status);
       return null;
     }
     const json = (await res.json()) as {
-      data?: Array<{ embedding: number[] }>;
+      embedding?: { values?: number[] };
     };
-    const vec = json.data?.[0]?.embedding;
+    const vec = json.embedding?.values;
     return vec && vec.length === EMBED_DIMS ? vec : null;
   } catch (err) {
     if ((err as Error)?.name === 'AbortError') {
