@@ -11,7 +11,7 @@ import { getPromoDiscount } from '@/lib/promo/server';
  */
 export async function GET(request: NextRequest) {
   const ip = getRateLimitKey(request);
-  const { allowed, remaining } = checkRateLimit(`promo:${ip}`, 10, 60_000);
+  const { allowed, remaining } = await checkRateLimit(`promo:${ip}`, 10, 60_000);
 
   if (!allowed) {
     return NextResponse.json(

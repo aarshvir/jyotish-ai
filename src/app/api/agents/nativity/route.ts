@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
 
-  const { allowed } = checkRateLimit(`nativity:${getRateLimitKey(request)}`, 10, 60_000);
+  const { allowed } = await checkRateLimit(`nativity:${getRateLimitKey(request)}`, 10, 60_000);
   if (!allowed) {
     return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
   }
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
       disableRag?: boolean;
       jyotishRagMode?: string;
       jyotish_rag_mode?: string;
+      ragTimeoutMs?: number;
     };
     const natalChart = (body.natalChart ?? body.chartData) as NatalChartData;
 
@@ -61,6 +62,7 @@ export async function POST(request: NextRequest) {
       agent.analyze(natalChart, {
         disableRag: body.disableRag === true,
         jyotishRagMode: body.jyotishRagMode ?? body.jyotish_rag_mode,
+        ragTimeoutMs: typeof body.ragTimeoutMs === 'number' ? body.ragTimeoutMs : undefined,
       }),
       new Promise<never>((_, reject) =>
         setTimeout(

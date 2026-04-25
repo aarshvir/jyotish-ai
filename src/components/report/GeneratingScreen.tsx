@@ -20,7 +20,7 @@ interface GeneratingScreenProps {
   onElapsed: (s: number) => void;
   generationStartRef: MutableRefObject<number | null>;
   serverPoll: ServerPollState | null;
-  /** Auth headers (bypass token etc.) for SSE connection */
+  /** Kept for compatibility; main UI progress now uses Realtime + polling only. */
   extraHeaders?: Record<string, string>;
 }
 
@@ -34,18 +34,13 @@ function makeLineId(): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function GeneratingScreen({
-  reportId,
   elapsedSeconds,
   onElapsed,
   generationStartRef,
   serverPoll,
-  extraHeaders = {},
 }: GeneratingScreenProps) {
   const [telemetryLines, setTelemetryLines] = useState<TelemetryLine[]>([]);
   const lastSlugRef = useRef<string | null>(null);
-  const sseRef = useRef<EventSource | null>(null);
-  const watchdogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const WATCHDOG_MS = 15_000; // 15s without any SSE event → fall back to poll data
 
   // Elapsed timer
   useEffect(() => {
@@ -55,81 +50,6 @@ export function GeneratingScreen({
     }, 1000);
     return () => clearInterval(t);
   }, [generationStartRef, onElapsed]);
-
-  // SSE connection to /api/reports/[id]/stream
-  // Only open if the report is still generating.
-  useEffect(() => {
-    if (!reportId || serverPoll?.status === 'complete') return;
-
-    // EventSource doesn't support custom headers — we use a URL param for bypass.
-    // The auth cookie is sent automatically by the browser.
-    const bypassToken = extraHeaders['x-bypass-token'];
-    const url = bypassToken
-      ? `/api/reports/${reportId}/stream?bypass=${encodeURIComponent(bypassToken)}`
-      : `/api/reports/${reportId}/stream`;
-
-    const es = new EventSource(url, { withCredentials: true });
-    sseRef.current = es;
-
-    function resetWatchdog() {
-      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
-      watchdogTimerRef.current = setTimeout(() => {
-        // Watchdog fired — SSE connection may be stale; add an info line
-        setTelemetryLines((prev) => [
-          ...prev,
-          {
-            id: makeLineId(),
-            type: 'info',
-            slug: 'Verifying connection…',
-            pct: serverPoll?.progress ?? 0,
-            ts: Date.now(),
-          },
-        ]);
-      }, WATCHDOG_MS);
-    }
-
-    resetWatchdog();
-
-    es.addEventListener('phase', (e: MessageEvent) => {
-      resetWatchdog();
-      try {
-        const payload = JSON.parse(e.data) as {
-          slug?: string | null;
-          pct?: number;
-          status?: string;
-        };
-        const slug = payload.slug ?? '';
-        const pct = payload.pct ?? 0;
-        if (slug && slug !== lastSlugRef.current) {
-          lastSlugRef.current = slug;
-          setTelemetryLines((prev) => [
-            ...prev,
-            { id: makeLineId(), type: 'phase', slug, pct, ts: Date.now() },
-          ]);
-        }
-      } catch { /* ignore parse errors */ }
-    });
-
-    es.addEventListener('complete', () => {
-      resetWatchdog();
-      setTelemetryLines((prev) => [
-        ...prev,
-        { id: makeLineId(), type: 'done', slug: 'finalize:persist', pct: 100, ts: Date.now() },
-      ]);
-      es.close();
-    });
-
-    es.addEventListener('error', () => {
-      // SSE errors are normal (connection drops) — don't show to user, watchdog handles it
-    });
-
-    return () => {
-      es.close();
-      sseRef.current = null;
-      if (watchdogTimerRef.current) clearTimeout(watchdogTimerRef.current);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- open once per reportId
-  }, [reportId]);
 
   // Also push phase updates from Supabase Realtime (serverPoll) into telemetry
   useEffect(() => {

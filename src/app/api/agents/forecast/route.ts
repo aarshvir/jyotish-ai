@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
 
-  const { allowed } = checkRateLimit(`forecast:${getRateLimitKey(request)}`, 5, 60_000);
+  const { allowed } = await checkRateLimit(`forecast:${getRateLimitKey(request)}`, 5, 60_000);
   if (!allowed) {
     return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
   }

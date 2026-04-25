@@ -248,7 +248,7 @@ export async function POST(req: NextRequest) {
   if (auth instanceof NextResponse) return auth;
 
   const rlKey = getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined);
-  const rl = checkRateLimit(rlKey, RATE_LIMITS.validation.limit, RATE_LIMITS.validation.windowMs);
+  const rl = await checkRateLimit(rlKey, RATE_LIMITS.validation.limit, RATE_LIMITS.validation.windowMs);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: 'Too many requests.', passes: [], corrections: [], total_issues: 0, total_corrections: 0, clean: true },

@@ -198,6 +198,7 @@ export async function buildScriptureContextHybrid(
   yogaNames: string[],
   lagnaSign?: string,
   modeOverride?: JyotishRagMode | null,
+  options: { timeoutMs?: number } = {},
 ): Promise<string> {
   const mode = modeOverride ?? resolveJyotishRagMode();
   if (mode === 'off') return '';
@@ -206,7 +207,7 @@ export async function buildScriptureContextHybrid(
   }
 
   // Use a longer base timeout for the whole hybrid phase
-  const timeoutMs = Number(process.env.RAG_TOTAL_TIMEOUT_MS) || 120_000;
+  const timeoutMs = options.timeoutMs ?? (Number(process.env.RAG_TOTAL_TIMEOUT_MS) || 120_000);
 
   try {
     return await Promise.race([

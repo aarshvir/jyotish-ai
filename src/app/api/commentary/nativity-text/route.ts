@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
 
-  const { allowed } = checkRateLimit(`nativity-text:${getRateLimitKey(req)}`, 10, 60_000);
+  const { allowed } = await checkRateLimit(`nativity-text:${getRateLimitKey(req)}`, 10, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }

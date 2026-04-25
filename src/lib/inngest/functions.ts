@@ -31,6 +31,8 @@ import {
 } from '@/lib/reports/orchestrator';
 import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
 import { runScriptureEmbedRefresh } from '@/lib/rag/embedChunksJob';
+import { createReportRun, updateReportRun } from '@/lib/observability/reportRuns';
+import { withReportRunContext } from '@/lib/observability/context';
 
 type ReportExtendEvent = {
   name: 'report/extend';
@@ -46,6 +48,7 @@ type ReportGenerateEvent = {
     input: PipelineInput;
     base: string;
     authHeaders: Record<string, string>;
+    correlationId?: string;
   };
 };
 
@@ -60,17 +63,22 @@ async function runPhase(
   phase: PipelinePhaseName,
 ): Promise<{ phase: PipelinePhaseName; stopped: boolean }> {
   const { reportId, userId, userEmail, input, base, authHeaders } = args;
+  const reportRunId = authHeaders['x-report-run-id'];
+  const correlationId = authHeaders['x-correlation-id'];
   try {
-    await generateReportPipeline(
-      reportId,
-      userId,
-      userEmail,
-      input,
-      // onStep is a no-op here — observability comes from DB progress + Inngest UI.
-      () => {},
-      base,
-      authHeaders,
-      { stopAfterPhase: phase },
+    await withReportRunContext(
+      { reportId, reportRunId, correlationId },
+      () => generateReportPipeline(
+        reportId,
+        userId,
+        userEmail,
+        input,
+        // onStep is a no-op here — observability comes from DB progress + Inngest UI.
+        () => {},
+        base,
+        authHeaders,
+        { stopAfterPhase: phase, reportRunId, correlationId },
+      ),
     );
     // Orchestrator returned normally — the pipeline ran through all phases in
     // one call (this happens when the stop phase is `finalize`, or when
@@ -101,36 +109,69 @@ export const generateReportJob = inngest.createFunction(
   },
   async ({ event, step, attempt }: { event: unknown; step: { run: <T>(id: string, fn: () => Promise<T>) => Promise<T> }; attempt: number }) => {
     const data = (event as unknown as ReportGenerateEvent).data;
-    const { reportId } = data;
+    const { reportId, userId } = data;
+    const startedAt = new Date().toISOString();
+    const correlationId = data.correlationId ?? data.authHeaders['x-correlation-id'] ?? `${reportId}-${Date.now()}`;
+    const reportRunId = await createReportRun({
+      reportId,
+      userId,
+      correlationId,
+      attempt,
+      phase: 'queued',
+    });
+    data.authHeaders = {
+      ...data.authHeaders,
+      'x-report-run-id': reportRunId ?? '',
+      'x-correlation-id': correlationId,
+    };
 
     console.log(
       `[inngest] pipeline start reportId=${reportId} attempt=${attempt}`,
     );
 
-    // Phase 1: Ephemeris (Swiss Ephemeris / Railway service)
-    await step.run('phase:ephemeris', async () => {
-      return runPhase(data, 'ephemeris');
-    });
+    try {
+      // Phase 1: Ephemeris (Swiss Ephemeris / Railway service)
+      await step.run('phase:ephemeris', async () => {
+        await updateReportRun(reportRunId, { phase: 'ephemeris' });
+        return runPhase(data, 'ephemeris');
+      });
 
-    // Phase 2: Nativity analysis + hourly grids (parallel inside orchestrator)
-    await step.run('phase:nativity_grids', async () => {
-      return runPhase(data, 'nativity_grids');
-    });
+      // Phase 2: Nativity analysis + hourly grids (parallel inside orchestrator)
+      await step.run('phase:nativity_grids', async () => {
+        await updateReportRun(reportRunId, { phase: 'nativity_grids' });
+        return runPhase(data, 'nativity_grids');
+      });
 
-    // Phase 3: Commentary — the expensive LLM work. Retried independently.
-    await step.run('phase:commentary', async () => {
-      return runPhase(data, 'commentary');
-    });
+      // Phase 3: Commentary — the expensive LLM work. Retried independently.
+      await step.run('phase:commentary', async () => {
+        await updateReportRun(reportRunId, { phase: 'commentary' });
+        return runPhase(data, 'commentary');
+      });
 
-    // Phase 4: Finalize — validation + assembly + dbSaveFinal. The
-    // orchestrator will not throw PipelinePhaseStopSignal here; it saves
-    // the report and returns.
-    await step.run('phase:finalize', async () => {
-      return runPhase(data, 'finalize');
-    });
+      // Phase 4: Finalize — validation + assembly + dbSaveFinal. The
+      // orchestrator will not throw PipelinePhaseStopSignal here; it saves
+      // the report and returns.
+      await step.run('phase:finalize', async () => {
+        await updateReportRun(reportRunId, { phase: 'finalize' });
+        return runPhase(data, 'finalize');
+      });
 
-    console.log(`[inngest] pipeline complete reportId=${reportId}`);
-    return { success: true, reportId };
+      await updateReportRun(reportRunId, {
+        status: 'complete',
+        phase: 'complete',
+        startedAt,
+      });
+      console.log(`[inngest] pipeline complete reportId=${reportId}`);
+      return { success: true, reportId, reportRunId };
+    } catch (err) {
+      await updateReportRun(reportRunId, {
+        status: 'error',
+        errorClass: err instanceof Error ? err.name : 'Error',
+        errorMessage: err instanceof Error ? err.message : String(err),
+        startedAt,
+      });
+      throw err;
+    }
   },
 );
 

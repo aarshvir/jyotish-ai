@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
 
-  const { allowed } = checkRateLimit(`weeks-synthesis:${getRateLimitKey(req)}`, 5, 60_000);
+  const { allowed } = await checkRateLimit(`weeks-synthesis:${getRateLimitKey(req)}`, 5, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }

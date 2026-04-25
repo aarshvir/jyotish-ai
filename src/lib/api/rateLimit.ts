@@ -1,14 +1,11 @@
 /**
- * Simple in-memory rate limiter for API routes.
+ * Global rate limiter for API routes.
  *
- * Uses a sliding window counter per key (IP or user ID).
- * Suitable for serverless environments where each instance gets
- * its own in-process store — this limits per-instance, not globally,
- * but still provides meaningful protection against burst abuse.
- *
- * For production multi-instance rate limiting, replace the store
- * with a Redis/Upstash adapter.
+ * Uses Upstash Redis when UPSTASH_REDIS_REST_URL/TOKEN are configured, with a
+ * local in-memory fallback for dev/test environments.
  */
+
+import { getRedis } from '@/lib/redis/client';
 
 interface WindowEntry {
   count: number;
@@ -29,11 +26,31 @@ function pruneStore(windowMs: number) {
  * Check and increment the rate limit for a given key.
  * @returns `{ allowed: boolean; remaining: number; resetAt: number }`
  */
-export function checkRateLimit(
+export async function checkRateLimit(
   key: string,
   limit: number,
   windowMs: number,
-): { allowed: boolean; remaining: number; resetAt: number } {
+): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+  const redis = getRedis();
+  if (redis) {
+    const now = Date.now();
+    const windowStart = now - windowMs;
+    const redisKey = `rl:${key}`;
+    const member = `${now}:${Math.random().toString(36).slice(2)}`;
+
+    await redis.zremrangebyscore(redisKey, 0, windowStart);
+    await redis.zadd(redisKey, { score: now, member });
+    await redis.expire(redisKey, Math.ceil(windowMs / 1000) * 2);
+
+    const count = await redis.zcount(redisKey, windowStart, now);
+    const remaining = Math.max(0, limit - count);
+    return {
+      allowed: count <= limit,
+      remaining,
+      resetAt: now + windowMs,
+    };
+  }
+
   const now = Date.now();
   const entry = store.get(key);
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { verifyJobToken } from '@/lib/api/jobToken';
 
 // Trim to guard against env var stored with trailing \r\n (common in CI/Windows pipes)
 const _rawBypass = (process.env.BYPASS_SECRET ?? '').trim();
@@ -19,7 +20,11 @@ export const BYPASS_USER_ID =
   (process.env.BYPASS_USER_ID ?? '').trim() || '00000000-0000-4000-8000-000000000001';
 
 export type AuthResult =
-  | { user: { id: string; email?: string; role?: string }; isAdmin?: boolean }
+  | {
+      user: { id: string; email?: string; role?: string };
+      isAdmin?: boolean;
+      job?: { reportId: string; purpose: string; correlationId?: string };
+    }
   | NextResponse;
 
 /**
@@ -44,6 +49,23 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
         role: 'admin',
       },
       isAdmin: true,
+    };
+  }
+
+  const jobToken = verifyJobToken(request.headers.get('x-job-token'));
+  if (jobToken) {
+    return {
+      user: {
+        id: jobToken.userId,
+        email: 'pipeline@vedichour.com',
+        role: 'service',
+      },
+      isAdmin: false,
+      job: {
+        reportId: jobToken.reportId,
+        purpose: jobToken.purpose,
+        correlationId: jobToken.correlationId,
+      },
     };
   }
 

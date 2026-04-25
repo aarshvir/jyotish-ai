@@ -151,7 +151,7 @@ export class NativityAgent {
    */
   async analyze(
     natalChart: NatalChartData,
-    rag: boolean | { disableRag?: boolean; jyotishRagMode?: string | null } = false,
+    rag: boolean | { disableRag?: boolean; jyotishRagMode?: string | null; ragTimeoutMs?: number } = false,
   ): Promise<NativityProfile> {
     let lastError: unknown;
 
@@ -168,7 +168,11 @@ export class NativityAgent {
     const detectedYogas = detectYogas(natalChart);
     console.log(`NativityAgent detected yogas for RAG: ${detectedYogas.join(', ') || '(none)'} (mode=${mode})`);
 
-    const ragContext = mode === 'off' ? '' : await buildScriptureContextHybrid(detectedYogas, natalChart.lagna, mode);
+    const ragContext = mode === 'off'
+      ? ''
+      : await buildScriptureContextHybrid(detectedYogas, natalChart.lagna, mode, {
+          timeoutMs: opts.ragTimeoutMs,
+        });
 
     if (this.client) {
       // Only 1 attempt on Anthropic. If it fails/times out fall immediately to the

@@ -1,17 +1,26 @@
-
 # BPHS RAG Impact Analysis
 
-| Metric | Baseline (No RAG) | Augmented (BPHS RAG) | Improvement Delta |
+| Metric | Baseline (RAG off) | Augmented (BPHS hybrid RAG) | Delta |
 | :--- | :--- | :--- | :--- |
-| **Classical Citations** | 0 | 0 | +0 authoritative links |
-| **Technical Vocabulary** | 1 terms | 1 terms | +0% depth |
-| **Contextual Grounding** | Generic interpretative prose | Specific Parashari verses | High synthesis quality |
-| **Nativity Words** | 166 chars | 166 chars | Condensed detail |
+| **Citations [[SOURCE:CH:V]]** | 0 | 0 | +0 |
+| **Scripture richness score** | 0 | 0 | +0 |
+| **Lagna analysis length (chars)** | 162 | 162 | +0 |
+| **Dasha interpretation (chars)** | 113 | 113 | +0 |
+| **Yogas returned** | 0 | 0 | +0 |
+| **Is fallback text** | YES ⚠ | YES ⚠ | — |
 
 ## Output Demonstration
 
-### [AUGMENTED] Nativity Snippet
-> "Sagittarius lagna shapes the native's fundamental disposition. The Mercury-Venus period is currently active. Refer to the daily and hourly scores for timing guidance...."
+### [BASELINE] Lagna Analysis (RAG off)
+> "Virgo lagna shapes the native's fundamental disposition. The Jupiter-Mercury period is currently active. Refer to the daily and hourly scores for timing guidance."
 
-### [BASELINE] Nativity Snippet
-> "Sagittarius lagna shapes the native's fundamental disposition. The Mercury-Venus period is currently active. Refer to the daily and hourly scores for timing guidance...."
+### [AUGMENTED] Lagna Analysis (hybrid RAG)
+> "Virgo lagna shapes the native's fundamental disposition. The Jupiter-Mercury period is currently active. Refer to the daily and hourly scores for timing guidance."
+
+---
+
+### [BASELINE] Yoga Descriptions
+(none)
+
+### [AUGMENTED] Yoga Descriptions
+(none)

@@ -26,6 +26,7 @@ import type {
 import { getCanonicalScoreLabel, getDayOutcomeTier } from '@/lib/guidance/labels';
 import { buildSlotGuidance, buildDayBriefing } from '@/lib/guidance/builder';
 import { isV2GuidanceEnabled } from '@/lib/guidance/featureFlag';
+import { insertAgentRun } from '@/lib/observability/reportRuns';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
 
@@ -191,6 +192,10 @@ export type PipelinePhaseName =
 export interface PipelineOptions {
   /** If set, stop after this phase's checkpoint is saved and throw PipelinePhaseStopSignal. */
   stopAfterPhase?: PipelinePhaseName;
+  /** Durable report_runs.id for observability. */
+  reportRunId?: string | null;
+  /** Correlation id passed through internal route calls and logs. */
+  correlationId?: string | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -326,7 +331,15 @@ export async function generateReportPipeline(
       throw new PipelinePhaseStopSignal(phase);
     }
   }
-  const h = { ...authHeaders, 'Content-Type': 'application/json' };
+  const correlationId =
+    options.correlationId ?? authHeaders['x-correlation-id'] ?? `${reportId}-${Date.now()}`;
+  const reportRunId = options.reportRunId ?? authHeaders['x-report-run-id'] ?? null;
+  const h = {
+    ...authHeaders,
+    'Content-Type': 'application/json',
+    'x-correlation-id': correlationId,
+    ...(reportRunId ? { 'x-report-run-id': reportRunId } : {}),
+  };
   const dailyGridLimit = createConcurrencyLimiter(5);
   const commentaryLimit = createConcurrencyLimiter(3);
   // Use SKIP_REPORT_VALIDATION (server-only). NEXT_PUBLIC_SKIP_VALIDATION kept as legacy alias.
@@ -420,6 +433,44 @@ export async function generateReportPipeline(
       .update({ generation_step: step, generation_progress: progress, updated_at: new Date().toISOString() })
       .eq('id', reportId)
       .eq('user_id', userId);
+  }
+
+  async function traceAgentRun<T>(
+    agentName: string,
+    provider: string,
+    task: () => Promise<T>,
+    model?: string,
+  ): Promise<T> {
+    const startedAt = new Date().toISOString();
+    const t0 = Date.now();
+    try {
+      const result = await task();
+      void insertAgentRun({
+        reportRunId,
+        reportId,
+        agentName,
+        provider,
+        model,
+        status: 'success',
+        latencyMs: Date.now() - t0,
+        startedAt,
+      });
+      return result;
+    } catch (err) {
+      void insertAgentRun({
+        reportRunId,
+        reportId,
+        agentName,
+        provider,
+        model,
+        status: err instanceof DOMException && err.name === 'TimeoutError' ? 'timeout' : 'error',
+        latencyMs: Date.now() - t0,
+        errorClass: err instanceof Error ? err.name : 'Error',
+        errorMessage: err instanceof Error ? err.message : String(err),
+        startedAt,
+      });
+      throw err;
+    }
   }
 
   // Helper: upsert report row
@@ -590,18 +641,20 @@ export async function generateReportPipeline(
       logStep('ephemeris_resumed');
     } else {
     try {
-      const ephRes = await resilientFetch(`${base}/api/agents/ephemeris`, {
-        method: 'POST',
-        headers: h,
-        body: JSON.stringify({
-          type: 'natal-chart',
-          birth_date: input.date,
-          birth_time: formatEphemerisBirthTime(input.time),
-          birth_city: input.city,
-          birth_lat: input.lat,
-          birth_lng: input.lng,
+      const ephRes = await traceAgentRun('ephemeris:natal-chart', 'ephemeris', () =>
+        resilientFetch(`${base}/api/agents/ephemeris`, {
+          method: 'POST',
+          headers: h,
+          body: JSON.stringify({
+            type: 'natal-chart',
+            birth_date: input.date,
+            birth_time: formatEphemerisBirthTime(input.time),
+            birth_city: input.city,
+            birth_lat: input.lat,
+            birth_lng: input.lng,
+          }),
         }),
-      });
+      );
       if (!ephRes.ok) {
         const e = await ephRes.json().catch(() => ({}));
         throw new Error((e as { error?: string }).error ?? 'Ephemeris failed');
@@ -677,11 +730,13 @@ export async function generateReportPipeline(
       (async () => {
         void dbSetProgress(PHASE.NATIVITY_YOGA, 14);
         try {
-          const natRes = await resilientFetch(`${base}/api/agents/nativity`, {
-            method: 'POST',
-            headers: h,
-            body: JSON.stringify({ natalChart: ephemerisData, ...ragModePayload }),
-          }, 2, 3000, 90_000);
+          const natRes = await traceAgentRun('nativity', 'llm', () =>
+            resilientFetch(`${base}/api/agents/nativity`, {
+              method: 'POST',
+              headers: h,
+              body: JSON.stringify({ natalChart: ephemerisData, ragTimeoutMs: 35_000, ...ragModePayload }),
+            }, 2, 3000, 90_000),
+          );
           if (natRes.ok) {
             const raw = await natRes.json();
             nativityProfile = raw.data ?? raw;
@@ -697,17 +752,19 @@ export async function generateReportPipeline(
           dailyGridResults = await Promise.all(
             dateRange.map((d) => dailyGridLimit(async () => {
               try {
-                const res = await resilientFetch(`${base}/api/agents/daily-grid`, {
-                  method: 'POST',
-                  headers: h,
-                  body: JSON.stringify({
-                    date: d,
-                    currentLat: cLat,
-                    currentLng: cLng,
-                    timezoneOffset: input.timezoneOffset,
-                    natal_lagna_sign_index,
-                  }),
-                }, 2, 2000);
+                const res = await traceAgentRun('daily-grid', 'ephemeris', () =>
+                  resilientFetch(`${base}/api/agents/daily-grid`, {
+                    method: 'POST',
+                    headers: h,
+                    body: JSON.stringify({
+                      date: d,
+                      currentLat: cLat,
+                      currentLng: cLng,
+                      timezoneOffset: input.timezoneOffset,
+                      natal_lagna_sign_index,
+                    }),
+                  }, 2, 2000),
+                );
                 if (!res.ok) return null;
                 return await res.json();
               } catch {
@@ -890,10 +947,10 @@ export async function generateReportPipeline(
           const SKIP_NATIVITY_RES = new Response(JSON.stringify({ skipped: true }), { status: 200 });
 
           const [overviewRes, natTextRes] = await Promise.all([
-            commentaryLimit(() => fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody, signal: AbortSignal.any([AbortSignal.timeout(140_000), budgetSignal]) })),
+            commentaryLimit(() => traceAgentRun('daily-overviews', 'llm', () => fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody, signal: AbortSignal.any([AbortSignal.timeout(140_000), budgetSignal]) }))),
             nativityHasText
               ? Promise.resolve(SKIP_NATIVITY_RES)
-              : commentaryLimit(() => fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.any([AbortSignal.timeout(80_000), budgetSignal]) })),
+              : commentaryLimit(() => traceAgentRun('nativity-text', 'llm', () => fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.any([AbortSignal.timeout(80_000), budgetSignal]) }))),
           ]);
 
           const fallbackOverview =
@@ -1005,12 +1062,12 @@ export async function generateReportPipeline(
                 antardasha,
                 days: chunkDays,
               });
-              const res = await fetch(`${base}/api/commentary/hourly-batch`, {
+              const res = await traceAgentRun('hourly-batch', 'llm', () => fetch(`${base}/api/commentary/hourly-batch`, {
                 method: 'POST',
                 headers: h,
                 signal: AbortSignal.any([AbortSignal.timeout(160_000), budgetSignal]),
                 body: batchBody,
-              });
+              }));
               if (res.ok || res.status === 206) {
                 const json = (await res.json()) as { days?: BatchDay[] };
                 return json.days ?? [];
@@ -1164,14 +1221,14 @@ export async function generateReportPipeline(
           };
 
           const [m1Res, m2Res] = await Promise.all([
-            commentaryLimit(() => fetch(`${base}/api/commentary/months-first`, {
+            commentaryLimit(() => traceAgentRun('months-first', 'llm', () => fetch(`${base}/api/commentary/months-first`, {
               method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(130_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(0, 6) }),
-            })),
-            commentaryLimit(() => fetch(`${base}/api/commentary/months-second`, {
+            }))),
+            commentaryLimit(() => traceAgentRun('months-second', 'llm', () => fetch(`${base}/api/commentary/months-second`, {
               method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(130_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(6, 12) }),
-            })),
+            }))),
           ]);
 
           const months1: MonthApiResult[] = m1Res.ok ? ((await m1Res.json()).months ?? []) : [];
@@ -1231,7 +1288,7 @@ export async function generateReportPipeline(
       (async () => {
         onStep({ type: 'step_started', step: 6, message: 'Writing period synthesis...', detail: '6 weekly summaries + strategic windows' });
         try {
-          const synthRes = await commentaryLimit(() => fetch(`${base}/api/commentary/weeks-synthesis`, {
+          const synthRes = await commentaryLimit(() => traceAgentRun('weeks-synthesis', 'llm', () => fetch(`${base}/api/commentary/weeks-synthesis`, {
             method: 'POST',
             headers: h,
             signal: AbortSignal.any([AbortSignal.timeout(120_000), budgetSignal]),
@@ -1261,7 +1318,7 @@ export async function generateReportPipeline(
                 avg_score: Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / (allScores.length || 1)),
               },
             }),
-          }));
+          })));
           if (synthRes.ok) {
             weeksSynthData = await synthRes.json();
           } else {
@@ -1362,12 +1419,12 @@ export async function generateReportPipeline(
           synthesis_opening: weeksSynthData?.period_synthesis?.opening_paragraph ?? '',
         };
 
-        const valRes = await fetch(`${base}/api/validation/report`, {
+        const valRes = await traceAgentRun('report-validation', 'llm', () => fetch(`${base}/api/validation/report`, {
           method: 'POST',
           headers: h,
           signal: AbortSignal.any([AbortSignal.timeout(90_000), budgetSignal]),
           body: JSON.stringify(validationBody),
-        });
+        }));
 
         if (valRes.ok) {
           const valData = await valRes.json();

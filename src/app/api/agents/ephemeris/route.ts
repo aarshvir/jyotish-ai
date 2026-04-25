@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
 
-  const rl = checkRateLimit(
+  const rl = await checkRateLimit(
     `ephemeris:${getRateLimitKey(request, auth.user.id)}`,
     RATE_LIMITS.ephemeris.limit,
     RATE_LIMITS.ephemeris.windowMs,

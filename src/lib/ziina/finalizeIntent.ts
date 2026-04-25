@@ -9,6 +9,7 @@ import type { PipelineInput } from '@/lib/reports/orchestrator';
 import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
 import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { BYPASS_SECRET } from '@/lib/api/requireAuth';
+import { createJobToken } from '@/lib/api/jobToken';
 
 const YOUNG_GENERATING_MS = 10 * 60 * 1000;
 
@@ -57,10 +58,17 @@ type ReportRow = {
   report_data: unknown;
 };
 
-function buildAuthHeaders(): Record<string, string> {
+function buildAuthHeaders(reportId: string, userId: string, correlationId: string): Record<string, string> {
   const authHeaders: Record<string, string> = {};
-  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
-  if (serviceKey) authHeaders['x-service-key'] = serviceKey;
+  authHeaders['x-job-token'] = createJobToken({
+    reportId,
+    userId,
+    purpose: 'pipeline',
+    correlationId,
+    ttlSeconds: 60 * 60,
+  });
+  authHeaders['x-report-id'] = reportId;
+  authHeaders['x-correlation-id'] = correlationId;
   if (BYPASS_SECRET) authHeaders['x-bypass-token'] = BYPASS_SECRET;
   return authHeaders;
 }
@@ -127,7 +135,9 @@ async function maybeDispatchReportGenerate(
   }
 
   try {
+    const correlationId = `${reportId}-ziina-${Date.now()}`;
     await inngest.send({
+      id: `report-generate:${reportId}`,
       name: 'report/generate',
       data: {
         reportId,
@@ -135,7 +145,8 @@ async function maybeDispatchReportGenerate(
         userEmail: r.user_email ?? '',
         input,
         base: baseUrl,
-        authHeaders: buildAuthHeaders(),
+        authHeaders: buildAuthHeaders(reportId, r.user_id, correlationId),
+        correlationId,
       },
     });
     console.log(`[ziina/finalize] dispatched report/generate for ${reportId}`);

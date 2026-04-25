@@ -8,6 +8,7 @@ import { getCanonicalScoreLabel, getDayOutcomeTier } from '@/lib/guidance/labels
 import { buildSlotGuidance, buildDayBriefing } from '@/lib/guidance/builder';
 import { isV2GuidanceEnabled } from '@/lib/guidance/featureFlag';
 import type { ReportData } from '@/lib/agents/types';
+import { createJobToken } from '@/lib/api/jobToken';
 
 const SIGNS_FOR_LAGNA = [
   'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -57,11 +58,19 @@ type DayInt = {
   slots: SlotInt[];
 };
 
-function serviceHeaders(): Record<string, string> {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
+function serviceHeaders(reportId: string, userId: string): Record<string, string> {
+  const correlationId = `${reportId}-extend-${Date.now()}`;
   return {
     'Content-Type': 'application/json',
-    'x-service-key': key,
+    'x-job-token': createJobToken({
+      reportId,
+      userId,
+      purpose: 'extend',
+      correlationId,
+      ttlSeconds: 60 * 60,
+    }),
+    'x-report-id': reportId,
+    'x-correlation-id': correlationId,
   };
 }
 
@@ -90,6 +99,9 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
   if (error || !row) {
     return { ok: false, message: 'Report not found' };
   }
+  if (!row.user_id) {
+    return { ok: false, message: 'Report owner missing — cannot extend' };
+  }
 
   const reportData = row.report_data as ReportData | null;
   const existingDays = Array.isArray(reportData?.days) ? reportData!.days : [];
@@ -116,7 +128,7 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
   const md = String(row.dasha_mahadasha ?? 'Sun');
   const ad = String(row.dasha_antardasha ?? 'Moon');
 
-  const h = serviceHeaders();
+  const h = serviceHeaders(reportId, String(row.user_id));
   const gridResults: unknown[] = [];
 
   for (let off = 0; off < dateRange.length; off += 8) {

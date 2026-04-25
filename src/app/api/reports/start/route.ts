@@ -17,6 +17,8 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 import { inngest } from '@/lib/inngest/client';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
+import { createJobToken } from '@/lib/api/jobToken';
+import { acquireLock, releaseLock } from '@/lib/redis/locks';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
 
-  const rl = checkRateLimit(
+  const rl = await checkRateLimit(
     `report-start:${getRateLimitKey(request, auth.user.id)}`,
     REPORT_START_LIMIT,
     REPORT_START_WINDOW_MS,
@@ -118,6 +120,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const lockKey = `report:${reportId}:generation`;
+  const gotLock = forceRestart || await acquireLock(lockKey, 10 * 60);
+  if (!gotLock) {
+    return NextResponse.json(
+      {
+        reportId,
+        ok: true,
+        status: 'generating',
+        skippedPipeline: true,
+        message: 'Generation already claimed — keep polling status.',
+      },
+      { status: 202 },
+    );
+  }
+
   const tzBody = body.timezone_offset;
   const timezoneOffset =
     typeof tzBody === 'number' && Number.isFinite(tzBody)
@@ -153,6 +170,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (upsertError) {
+    await releaseLock(lockKey);
     return NextResponse.json({ error: upsertError.message }, { status: 500 });
   }
 
@@ -191,16 +209,20 @@ export async function POST(request: NextRequest) {
   };
 
   const base = request.nextUrl.origin;
+  const correlationId = `${reportId}-${Date.now()}`;
   const authHeaders: Record<string, string> = {};
-  const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? '').trim();
-  if (serviceKey) {
-    // Prefer service-key auth for internal pipeline → agent route calls.
-    // This works even when BYPASS_SECRET is not set in the deployment environment.
-    authHeaders['x-service-key'] = serviceKey;
-  }
+  authHeaders['x-job-token'] = createJobToken({
+    reportId,
+    userId: auth.user.id,
+    purpose: 'pipeline',
+    correlationId,
+    ttlSeconds: 60 * 60,
+  });
+  authHeaders['x-report-id'] = reportId;
+  authHeaders['x-correlation-id'] = correlationId;
   if (BYPASS_SECRET) {
     authHeaders['x-bypass-token'] = BYPASS_SECRET;
-  } else if (!serviceKey) {
+  } else {
     const cookie = request.headers.get('cookie');
     if (cookie) authHeaders['cookie'] = cookie;
   }
@@ -214,6 +236,7 @@ export async function POST(request: NextRequest) {
   if (useInngest) {
     try {
       await inngest.send({
+        id: `report-generate:${reportId}`,
         name: 'report/generate',
         data: {
           reportId,
@@ -222,6 +245,7 @@ export async function POST(request: NextRequest) {
           input,
           base,
           authHeaders,
+          correlationId,
         },
       });
       console.log(`[reports/start] dispatched to Inngest: ${reportId}`);
@@ -232,6 +256,7 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       console.error(`[reports/start] Inngest dispatch failed:`, err);
       if (!allowInlineFallback) {
+        await releaseLock(lockKey);
         return NextResponse.json(
           { error: 'Background job queue is temporarily unavailable. Please retry shortly.' },
           { status: 503 },
@@ -240,6 +265,7 @@ export async function POST(request: NextRequest) {
       console.warn(`[reports/start] local/dev fallback running inline for ${reportId}`);
     }
   } else if (!allowInlineFallback) {
+    await releaseLock(lockKey);
     return NextResponse.json(
       { error: 'Background job queue is not configured. Set INNGEST_EVENT_KEY for production.' },
       { status: 503 },
@@ -268,6 +294,7 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', reportId)
       .neq('status', 'complete');
+    await releaseLock(lockKey);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 
@@ -281,11 +308,13 @@ export async function POST(request: NextRequest) {
     console.error(
       `[reports/start] pipeline returned but DB status is '${finalRow?.status}' for ${reportId}`,
     );
+    await releaseLock(lockKey);
     return NextResponse.json(
       { error: 'Report pipeline did not complete — please retry.' },
       { status: 500 },
     );
   }
 
+  await releaseLock(lockKey);
   return NextResponse.json({ reportId, ok: true, status: 'complete' });
 }

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
+import { cacheGet, cacheSet, stableCacheKey } from '@/lib/redis/cache';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const { allowed } = checkRateLimit(`geocode:${getRateLimitKey(req)}`, 30, 60_000);
+  const { allowed } = await checkRateLimit(`geocode:${getRateLimitKey(req)}`, 30, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
@@ -17,6 +18,16 @@ export async function GET(req: NextRequest) {
         { error: 'City parameter is required' },
         { status: 400 }
       );
+    }
+
+    const cacheKey = stableCacheKey('geo', city.trim().toLowerCase());
+    const cached = await cacheGet<unknown>(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, {
+        headers: {
+          'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400',
+        },
+      });
     }
 
     const response = await fetch(
@@ -37,6 +48,7 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await response.json();
+    await cacheSet(cacheKey, data, 604_800);
 
     // Cache geocoding results for 7 days — city coordinates don't change
     return NextResponse.json(data, {
