@@ -14,11 +14,8 @@ try {
 }
 
 // Hard wall-clock budget for the entire nativity route.
-// The Anthropic SDK has timeout:55s, but belt-and-suspenders: if the SDK
-// hangs anyway (e.g. TLS stall before the connection is established), the
-// route returns the deterministic fallback profile rather than hanging forever.
-// 120s: 45s for Anthropic attempt + ~40s for OpenAI fallback + margin.
-const ROUTE_BUDGET_MS = 120_000;
+// Anthropic attempt: up to 95s (AbortSignal in NativityAgent) + fallback chain margin.
+const ROUTE_BUDGET_MS = 150_000;
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);

@@ -39,6 +39,44 @@ function isPlaceholderReportData(rd: Record<string, unknown> | null | undefined)
   return days.every((d) => (d.day_score ?? 50) === 50);
 }
 
+type BirthRow = {
+  native_name?: string | null;
+  birth_date?: string | null;
+  birth_time?: string | null;
+  birth_city?: string | null;
+};
+
+/**
+ * If the DB row still has /api/reports/start defaults (2000-01-01, Unknown) but
+ * the URL has real birth data, prefer URL for PDF/print so the document matches
+ * what the user entered.
+ */
+function birthDisplayForUi(
+  row: BirthRow | null | undefined,
+  url: { name: string; date: string; time: string; city: string },
+) {
+  const bd = String(row?.birth_date ?? '').slice(0, 10);
+  const city = String(row?.birth_city ?? '').trim();
+  const dbIsPlaceholder =
+    !bd || bd === '2000-01-01' || !city || city === 'Unknown';
+  if (dbIsPlaceholder && (url.date || url.city)) {
+    const t = url.time?.trim() || '12:00';
+    return {
+      name: (url.name || String(row?.native_name ?? 'Seeker')).trim() || 'Seeker',
+      date: (url.date || bd).slice(0, 10),
+      time: t.length >= 4 ? t.slice(0, 5) : '12:00',
+      city: url.city || city || 'Unknown',
+    };
+  }
+  const rt = String(row?.birth_time ?? '');
+  return {
+    name: String(row?.native_name ?? url.name ?? 'Seeker'),
+    date: (bd || url.date).slice(0, 10),
+    time: rt.length >= 4 ? rt.slice(0, 5) : (url.time || '12:00').slice(0, 5),
+    city: city || url.city || 'Unknown',
+  };
+}
+
 /** Stop polling after this if status is still `generating` (server likely dead or orphaned row). */
 const CLIENT_GENERATING_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -337,12 +375,7 @@ function ReportContent() {
               .eq('user_id', uid)
               .maybeSingle();
             if (row) {
-              setBirthDisplay({
-                name: String(row.native_name ?? 'Seeker'),
-                date: String(row.birth_date ?? '').slice(0, 10),
-                time: String(row.birth_time ?? '').slice(0, 5),
-                city: String(row.birth_city ?? ''),
-              });
+              setBirthDisplay(birthDisplayForUi(row, { name, date, time, city }));
             }
           }
         } else if (data.status === 'error') {
@@ -374,7 +407,7 @@ function ReportContent() {
       }, nextDelay);
     };
     scheduleNext();
-  }, [reportIdFromRoute, authJsonHeaders, stopReportPolling]);
+  }, [reportIdFromRoute, authJsonHeaders, stopReportPolling, name, date, time, city]);
 
   /** Inserts row (if needed), POSTs /api/reports/start, then polls until complete. */
   const kickOffBackgroundGeneration = useCallback(async (opts?: { forceRestart?: boolean }) => {
@@ -451,12 +484,7 @@ function ReportContent() {
         const rd = row?.report_data as ReportData | undefined;
         if (rd && Array.isArray(rd.days) && rd.days.length > 0) {
           setReportData(rd);
-          setBirthDisplay({
-            name: String(row?.native_name ?? 'Seeker'),
-            date: String(row?.birth_date ?? '').slice(0, 10),
-            time: String(row?.birth_time ?? '').slice(0, 5),
-            city: String(row?.birth_city ?? ''),
-          });
+          setBirthDisplay(birthDisplayForUi(row ?? undefined, { name, date, time, city }));
           setIsGenerating(false);
           return;
         }
@@ -632,12 +660,7 @@ function ReportContent() {
           !isPlaceholderReportData(rd)
         ) {
           hasFetched.current = true;
-          setBirthDisplay({
-            name: String(row.native_name ?? 'Seeker'),
-            date: String(row.birth_date ?? '').slice(0, 10),
-            time: String(row.birth_time ?? '').slice(0, 5),
-            city: String(row.birth_city ?? ''),
-          });
+          setBirthDisplay(birthDisplayForUi(row, { name, date, time, city }));
           setReportData(rd as unknown as ReportData);
           setIsGenerating(false);
           setIsInitializing(false);
@@ -647,12 +670,7 @@ function ReportContent() {
         const isRowGenerating = row?.status === 'generating';
         if (!cancelled && isRowGenerating) {
           hasFetched.current = true;
-          setBirthDisplay({
-            name: String(row?.native_name ?? 'Seeker'),
-            date: String(row?.birth_date ?? '').slice(0, 10),
-            time: String(row?.birth_time ?? '').slice(0, 5),
-            city: String(row?.birth_city ?? ''),
-          });
+          setBirthDisplay(birthDisplayForUi(row ?? undefined, { name, date, time, city }));
           // Check if the previous run is stale (older than 360s = past Vercel maxDuration+buffer).
           // If so, force-restart so we don't immediately hit the timeout error UI.
           const startedMs = row?.generation_started_at

@@ -126,10 +126,10 @@ function anthropicKeyOk(): string | null {
   return apiKey;
 }
 
-// Hard per-attempt timeout for Anthropic calls. Default SDK timeout is 600s —
-// way too long for a synchronous agent. 55s gives Claude ample time while
-// staying within the orchestrator's 90s per-agent budget.
-const ANTHROPIC_TIMEOUT_MS = 55_000;
+// Hard per-attempt timeout for Anthropic calls. The nativity prompt generates
+// long JSON output; set SDK timeout high enough to complete. API route wall
+// budget is 150s (see /api/agents/nativity).
+const ANTHROPIC_TIMEOUT_MS = 110_000;
 
 export class NativityAgent {
   private client: Anthropic | null;
@@ -175,20 +175,17 @@ export class NativityAgent {
         });
 
     if (this.client) {
-      // Only 1 attempt on Anthropic. If it fails/times out fall immediately to the
-      // OpenAI/Gemini fallback chain. Retrying claude in-process wastes ~50s per
-      // attempt and blows the 80s route budget before fallback can be tried.
+      // Single Anthropic attempt — if it fails fall to the OpenAI/Gemini chain.
+      // AbortSignal at 95s: leaves headroom for the fallback chain under the 150s route budget.
       {
         const ctrl = new AbortController();
-        const abortTimer = setTimeout(() => ctrl.abort(), 45_000);
+        const abortTimer = setTimeout(() => ctrl.abort(), 95_000);
         try {
           console.log(`NativityAgent attempt 1/1 (RAG mode=${mode})`);
-          // 45s AbortSignal leaves 35s margin for the fallback chain within the
-          // 80s route budget.
           const response = await this.client.messages.create(
             {
               model: 'claude-sonnet-4-6',
-              max_tokens: 4000,
+              max_tokens: 8000,
               messages: [
                 {
                   role: 'user',

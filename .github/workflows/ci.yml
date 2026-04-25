@@ -20,4 +20,6 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test
+      - run: npx tsx src/__tests__/guidance.test.ts
+      - run: npx tsx src/__tests__/horaBase.test.ts
       - run: npm run build

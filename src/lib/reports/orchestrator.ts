@@ -313,6 +313,26 @@ function createConcurrencyLimiter(limit: number) {
   };
 }
 
+/** free/preview may use 206 + template from LLM routes. Paid: refuse placeholder reports. */
+function allowPartialLlmFallbackForPlan(input: PipelineInput): boolean {
+  const p = String(input.planType ?? input.type ?? '7day').toLowerCase();
+  return p === 'free' || p === 'preview';
+}
+
+function assertNoPartialLlmForPaid(
+  res: Response,
+  routeLabel: string,
+  input: PipelineInput,
+): void {
+  if (allowPartialLlmFallbackForPlan(input)) return;
+  if (res.status === 206) {
+    throw new Error(
+      `${routeLabel}: HTTP 206 (LLM unavailable, key missing, or model error). ` +
+        'Check ANTHROPIC_API_KEY and Vercel logs. Paid reports cannot be completed with template text.',
+    );
+  }
+}
+
 // ── Main orchestrator ────────────────────────────────────────────────────────
 
 export async function generateReportPipeline(
@@ -968,6 +988,11 @@ export async function generateReportPipeline(
               : commentaryLimit(() => traceAgentRun('nativity-text', 'llm', () => fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.any([AbortSignal.timeout(80_000), budgetSignal]) }))),
           ]);
 
+          assertNoPartialLlmForPaid(overviewRes, 'daily-overviews', input);
+          if (!nativityHasText) {
+            assertNoPartialLlmForPaid(natTextRes, 'nativity-text', input);
+          }
+
           const fallbackOverview =
             'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
 
@@ -1083,6 +1108,7 @@ export async function generateReportPipeline(
                 signal: AbortSignal.any([AbortSignal.timeout(160_000), budgetSignal]),
                 body: batchBody,
               }));
+              assertNoPartialLlmForPaid(res, `hourly-batch#${chunkIdx + 1}`, input);
               if (res.ok || res.status === 206) {
                 const json = (await res.json()) as { days?: BatchDay[] };
                 return json.days ?? [];
@@ -1246,6 +1272,9 @@ export async function generateReportPipeline(
             }))),
           ]);
 
+          assertNoPartialLlmForPaid(m1Res, 'months-first', input);
+          assertNoPartialLlmForPaid(m2Res, 'months-second', input);
+
           const months1: MonthApiResult[] = m1Res.ok ? ((await m1Res.json()).months ?? []) : [];
           const months2: MonthApiResult[] = m2Res.ok ? ((await m2Res.json()).months ?? []) : [];
 
@@ -1334,8 +1363,13 @@ export async function generateReportPipeline(
               },
             }),
           })));
+          assertNoPartialLlmForPaid(synthRes, 'weeks-synthesis', input);
           if (synthRes.ok) {
-            weeksSynthData = await synthRes.json();
+            const w = (await synthRes.json()) as { partial?: boolean } & WeeksSynthApiResult;
+            if (!allowPartialLlmFallbackForPlan(input) && w.partial) {
+              throw new Error('weeks-synthesis: `partial: true` in body — model did not return full synthesis.');
+            }
+            weeksSynthData = w;
           } else {
             console.error('[orchestrator][STEP-8] weeks-synthesis failed:', synthRes.status);
           }
