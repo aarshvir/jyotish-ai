@@ -883,25 +883,34 @@ function OnboardPageInner() {
 
     // Free plan or 100% promo (e.g. ADMIN100) — payment skipped.
     // We must call /api/reports/start to create the DB row and trigger the Inngest pipeline.
-    // Without this, the report page receives URL params but no pipeline ever runs.
+    // Field names MUST match /api/reports/start (same as report/[id] kickOffBackgroundGeneration).
     try {
+      const rawTime = form.birthTime;
+      const birthTimeNorm =
+        rawTime && rawTime.includes(':') && rawTime.split(':').length === 2
+          ? `${rawTime}:00`
+          : rawTime || '12:00:00';
+      const tzFallback =
+        form.currentTzOffset ??
+        (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
+
       const startPayload: Record<string, unknown> = {
         reportId,
         name: form.name,
-        date: form.birthDate,
-        time: form.birthTime,
-        city: paramsObj.city,
-        lat: form.birthLat ?? 0,
-        lng: form.birthLng ?? 0,
+        birth_date: form.birthDate,
+        birth_time: birthTimeNorm,
+        birth_city: paramsObj.city,
+        birth_lat: form.birthLat ?? 0,
+        birth_lng: form.birthLng ?? 0,
         type: effectiveType,
         plan_type: paramsObj.plan_type ?? effectiveType,
         payment_status: isPaidPlan ? 'promo' : 'free',
-        ...(form.forecastStartDate ? { forecastStart: form.forecastStartDate } : {}),
+        timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
+        ...(form.forecastStartDate ? { forecast_start: form.forecastStartDate } : {}),
         ...(useCurrent ? {
-          currentCity: form.currentCity,
-          currentLat: form.currentLat,
-          currentLng: form.currentLng,
-          currentTz: form.currentTzOffset,
+          current_city: form.currentCity,
+          current_lat: form.currentLat ?? 0,
+          current_lng: form.currentLng ?? 0,
         } : {}),
         ...(promoCode ? { promoCode } : {}),
       };

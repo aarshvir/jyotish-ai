@@ -47,6 +47,55 @@ function isYoungGenerating(generationStartedAt: string | null | undefined): bool
   return Date.now() - t < YOUNG_GENERATING_MS;
 }
 
+/** POST JSON shape (optional fields) — same names as report/[id] client kickoff. */
+interface StartRequestBody {
+  reportId?: string;
+  name?: string;
+  birth_date?: string;
+  birth_time?: string;
+  birth_city?: string;
+  birth_lat?: string | number | null;
+  birth_lng?: string | number | null;
+  current_city?: string | null;
+  current_lat?: string | number | null;
+  current_lng?: string | number | null;
+  timezone_offset?: string | number | null;
+  plan_type?: string;
+  payment_status?: string;
+  forecast_start?: string;
+  forceRestart?: boolean;
+  testOptions?: { disableRag?: boolean };
+  jyotishRagMode?: string;
+  jyotish_rag_mode?: string;
+  /** legacy aliases */
+  date?: string;
+  time?: string;
+  city?: string;
+  lat?: string | number | null;
+  lng?: string | number | null;
+  forecastStart?: string;
+  currentTz?: string | number | null;
+  currentCity?: string | null;
+  currentLat?: string | number | null;
+  currentLng?: string | number | null;
+}
+
+/** Merge legacy field names from the onboard client (date/time/city/lat/forecastStart/currentTz). */
+function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
+  const b = { ...raw } as StartRequestBody;
+  if (b.birth_date == null || b.birth_date === '') b.birth_date = b.date;
+  if (b.birth_time == null || b.birth_time === '') b.birth_time = b.time;
+  if (b.birth_city == null || b.birth_city === '') b.birth_city = b.city;
+  if (b.birth_lat == null) b.birth_lat = b.lat;
+  if (b.birth_lng == null) b.birth_lng = b.lng;
+  if (b.forecast_start == null && b.forecastStart != null) b.forecast_start = b.forecastStart;
+  if (b.timezone_offset == null && b.currentTz != null) b.timezone_offset = b.currentTz;
+  if (b.current_city == null && b.currentCity != null) b.current_city = b.currentCity;
+  if (b.current_lat == null && b.currentLat != null) b.current_lat = b.currentLat;
+  if (b.current_lng == null && b.currentLng != null) b.current_lng = b.currentLng;
+  return b;
+}
+
 /**
  * POST /api/reports/start
  *
@@ -75,7 +124,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json().catch(() => ({}));
+  const body = normalizeStartBody(
+    (await request.json().catch(() => ({}))) as Record<string, unknown>,
+  );
   const reportId = typeof body.reportId === 'string' ? body.reportId : null;
   if (!reportId) {
     return NextResponse.json({ error: 'reportId required' }, { status: 400 });
@@ -188,15 +239,16 @@ export async function POST(request: NextRequest) {
             ? body.jyotish_rag_mode
             : undefined;
 
+  const toNum = (v: string | number | null | undefined) => parseFloat(String(v ?? 0)) || 0;
   const input: PipelineInput = {
     name: body.name ?? 'Seeker',
     date: body.birth_date ?? '',
     time: pipelineTime,
     city: body.birth_city ?? '',
-    lat: parseFloat(body.birth_lat ?? '0') || 0,
-    lng: parseFloat(body.birth_lng ?? '0') || 0,
-    currentLat: parseFloat(body.current_lat ?? body.birth_lat ?? '0') || 0,
-    currentLng: parseFloat(body.current_lng ?? body.birth_lng ?? '0') || 0,
+    lat: toNum(body.birth_lat),
+    lng: toNum(body.birth_lng),
+    currentLat: toNum(body.current_lat ?? body.birth_lat),
+    currentLng: toNum(body.current_lng ?? body.birth_lng),
     currentCity: body.current_city ?? body.birth_city ?? '',
     timezoneOffset,
     type: body.plan_type ?? '7day',
