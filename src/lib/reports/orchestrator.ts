@@ -333,6 +333,65 @@ function assertNoPartialLlmForPaid(
   }
 }
 
+/** Stubs from monthlyFallback() — if most months still say this, the LLM never wrote real copy. */
+const MONTHLY_GENERATING_STUB = 'Commentary is generating — refresh in 30 seconds';
+
+/**
+ * True when a row is the all-65 padding shape (orchestrator uses 65 as neutral when fields are missing).
+ * Many such rows in one report usually means the months API returned sparse/empty data.
+ */
+function isUniform65PlaceholderRow(m: MonthSummary): boolean {
+  const ws = m.weekly_scores;
+  return (
+    m.score === 65 &&
+    m.overall_score === 65 &&
+    !String(m.theme ?? '').trim() &&
+    Array.isArray(ws) &&
+    ws.length === 4 &&
+    ws.every((x) => x === 65) &&
+    m.domain_scores.career === 65 &&
+    m.domain_scores.money === 65 &&
+    m.domain_scores.health === 65 &&
+    m.domain_scores.relationships === 65
+  );
+}
+
+/** Paid: refuse to complete if monthly block is still stubbed (uniform 65s, padding, or "generating" text). */
+function assertPaidMonthlySectionNotPlaceholder(months: MonthSummary[], input: PipelineInput): void {
+  if (allowPartialLlmFallbackForPlan(input)) return;
+  if (months.length < 12) {
+    throw new Error('Monthly section: expected 12 months; got incomplete data. Check months-first/second API responses.');
+  }
+  const stubText = months.filter((m) => (m.commentary ?? '').includes(MONTHLY_GENERATING_STUB));
+  if (stubText.length >= 6) {
+    throw new Error(
+      'Monthly section still contains "generating" placeholder copy. Paid report cannot be marked complete. Regenerate the report.',
+    );
+  }
+  const uniform = months.filter(isUniform65PlaceholderRow);
+  if (uniform.length >= 10) {
+    throw new Error(
+      'Monthly scores look like padding (repeated 65/65 with no themes). Paid report cannot be completed — check months-first/second LLM output.',
+    );
+  }
+}
+
+/** Paid: weeks-synthesis must return at least one week; empty means we would pad with 65-only rows. */
+function assertPaidWeeksSynthesisPresent(data: WeeksSynthApiResult, input: PipelineInput): void {
+  if (allowPartialLlmFallbackForPlan(input)) return;
+  const n = data.weeks?.length ?? 0;
+  if (n < 1) {
+    throw new Error(
+      'weeks-synthesis returned no week rows. Paid report cannot be completed with synthetic weekly scores.',
+    );
+  }
+  if (n < 6) {
+    throw new Error(
+      `weeks-synthesis returned ${n} week(s) but 6 are required for the 7-day product. Check /api/commentary/weeks-synthesis output.`,
+    );
+  }
+}
+
 // ── Main orchestrator ────────────────────────────────────────────────────────
 
 export async function generateReportPipeline(
@@ -770,7 +829,7 @@ export async function generateReportPipeline(
               method: 'POST',
               headers: h,
               body: JSON.stringify({ natalChart: ephemerisData, ragTimeoutMs: 35_000, ...ragModePayload }),
-            }, 2, 3000, 90_000),
+            }, 2, 3000, 160_000),
           );
           if (natRes.ok) {
             const raw = await natRes.json();
@@ -1314,6 +1373,9 @@ export async function generateReportPipeline(
           onStep({ type: 'partial_report_updated', field: 'months' });
         } catch (e) {
           console.error('[orchestrator][STEP-7] failed:', e instanceof Error ? e.message : String(e));
+          if (!allowPartialLlmFallbackForPlan(input)) {
+            throw e instanceof Error ? e : new Error(String(e));
+          }
           const startDate = new Date(forecastDays?.[0]?.date ?? Date.now());
           allMonthsData = Array.from({ length: 12 }, (_, i) => {
             const m = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
@@ -1371,13 +1433,24 @@ export async function generateReportPipeline(
             }
             weeksSynthData = w;
           } else {
+            if (!allowPartialLlmFallbackForPlan(input)) {
+              throw new Error(
+                `weeks-synthesis: HTTP ${synthRes.status} — paid report cannot continue without week narratives.`,
+              );
+            }
             console.error('[orchestrator][STEP-8] weeks-synthesis failed:', synthRes.status);
           }
         } catch (err) {
+          if (!allowPartialLlmFallbackForPlan(input)) {
+            throw err instanceof Error ? err : new Error(String(err));
+          }
           console.error('[orchestrator][STEP-8] failed:', err instanceof Error ? err.message : String(err));
         }
       })(),
     ]);
+
+    assertPaidMonthlySectionNotPlaceholder(allMonthsData, input);
+    assertPaidWeeksSynthesisPresent(weeksSynthData, input);
 
     onStep({ type: 'step_completed', step: 3 });
     logStep('commentary_months_done');
