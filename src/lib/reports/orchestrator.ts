@@ -285,6 +285,29 @@ async function resilientFetch(
   throw new Error(`Failed to fetch ${url} after ${retries} retries`);
 }
 
+function createConcurrencyLimiter(limit: number) {
+  let active = 0;
+  const queue: Array<() => void> = [];
+
+  const runNext = () => {
+    active -= 1;
+    const next = queue.shift();
+    if (next) next();
+  };
+
+  return async function limitTask<T>(task: () => Promise<T>): Promise<T> {
+    if (active >= limit) {
+      await new Promise<void>((resolve) => queue.push(resolve));
+    }
+    active += 1;
+    try {
+      return await task();
+    } finally {
+      runNext();
+    }
+  };
+}
+
 // ── Main orchestrator ────────────────────────────────────────────────────────
 
 export async function generateReportPipeline(
@@ -304,6 +327,8 @@ export async function generateReportPipeline(
     }
   }
   const h = { ...authHeaders, 'Content-Type': 'application/json' };
+  const dailyGridLimit = createConcurrencyLimiter(5);
+  const commentaryLimit = createConcurrencyLimiter(3);
   // Use SKIP_REPORT_VALIDATION (server-only). NEXT_PUBLIC_SKIP_VALIDATION kept as legacy alias.
   const skipValidation =
     process.env.SKIP_REPORT_VALIDATION === 'true' ||
@@ -670,7 +695,7 @@ export async function generateReportPipeline(
         try {
           onStep({ type: 'step_started', step: 2, message: 'Scoring hourly windows...', detail: `Computing ${dayCount * 18} hourly slots` });
           dailyGridResults = await Promise.all(
-            dateRange.map(async (d) => {
+            dateRange.map((d) => dailyGridLimit(async () => {
               try {
                 const res = await resilientFetch(`${base}/api/agents/daily-grid`, {
                   method: 'POST',
@@ -688,7 +713,7 @@ export async function generateReportPipeline(
               } catch {
                 return null;
               }
-            }),
+            })),
           );
           onStep({ type: 'step_completed', step: 2 });
         } catch (err) {
@@ -865,10 +890,10 @@ export async function generateReportPipeline(
           const SKIP_NATIVITY_RES = new Response(JSON.stringify({ skipped: true }), { status: 200 });
 
           const [overviewRes, natTextRes] = await Promise.all([
-            fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody, signal: AbortSignal.any([AbortSignal.timeout(140_000), budgetSignal]) }),
+            commentaryLimit(() => fetch(`${base}/api/commentary/daily-overviews`, { method: 'POST', headers: h, body: overviewBody, signal: AbortSignal.any([AbortSignal.timeout(140_000), budgetSignal]) })),
             nativityHasText
               ? Promise.resolve(SKIP_NATIVITY_RES)
-              : fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.any([AbortSignal.timeout(80_000), budgetSignal]) }),
+              : commentaryLimit(() => fetch(`${base}/api/commentary/nativity-text`, { method: 'POST', headers: h, body: natTextBody, signal: AbortSignal.any([AbortSignal.timeout(80_000), budgetSignal]) })),
           ]);
 
           const fallbackOverview =
@@ -970,7 +995,7 @@ export async function generateReportPipeline(
           const HOURLY_BATCH_PCTS = [55, 58, 61, 63, 65, 65] as const;
 
           const chunkResults = await Promise.all(
-            chunks.map(async (chunkDays, chunkIdx) => {
+            chunks.map((chunkDays, chunkIdx) => commentaryLimit(async () => {
               const batchSlug = HOURLY_BATCH_SLUGS[Math.min(chunkIdx, HOURLY_BATCH_SLUGS.length - 1)];
               const batchPct = HOURLY_BATCH_PCTS[Math.min(chunkIdx, HOURLY_BATCH_PCTS.length - 1)];
               void dbSetProgress(batchSlug, batchPct);
@@ -991,7 +1016,7 @@ export async function generateReportPipeline(
                 return json.days ?? [];
               }
               return [] as BatchDay[];
-            }),
+            })),
           );
 
           const hourlyResults: BatchDay[] = chunkResults.flat();
@@ -1139,14 +1164,14 @@ export async function generateReportPipeline(
           };
 
           const [m1Res, m2Res] = await Promise.all([
-            fetch(`${base}/api/commentary/months-first`, {
+            commentaryLimit(() => fetch(`${base}/api/commentary/months-first`, {
               method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(130_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(0, 6) }),
-            }),
-            fetch(`${base}/api/commentary/months-second`, {
+            })),
+            commentaryLimit(() => fetch(`${base}/api/commentary/months-second`, {
               method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(130_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(6, 12) }),
-            }),
+            })),
           ]);
 
           const months1: MonthApiResult[] = m1Res.ok ? ((await m1Res.json()).months ?? []) : [];
@@ -1206,7 +1231,7 @@ export async function generateReportPipeline(
       (async () => {
         onStep({ type: 'step_started', step: 6, message: 'Writing period synthesis...', detail: '6 weekly summaries + strategic windows' });
         try {
-          const synthRes = await fetch(`${base}/api/commentary/weeks-synthesis`, {
+          const synthRes = await commentaryLimit(() => fetch(`${base}/api/commentary/weeks-synthesis`, {
             method: 'POST',
             headers: h,
             signal: AbortSignal.any([AbortSignal.timeout(120_000), budgetSignal]),
@@ -1236,7 +1261,7 @@ export async function generateReportPipeline(
                 avg_score: Math.round(allScores.reduce((a: number, b: number) => a + b, 0) / (allScores.length || 1)),
               },
             }),
-          });
+          }));
           if (synthRes.ok) {
             weeksSynthData = await synthRes.json();
           } else {

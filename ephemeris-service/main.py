@@ -339,6 +339,11 @@ def read_root():
     return {"message": "Vedic Astrology Ephemeris Service", "version": "1.0"}
 
 
+@app.get("/health")
+def health_check():
+    return {"ok": True, "service": "ephemeris"}
+
+
 @app.post("/natal-chart")
 def natal_chart(data: NatalChartInput):
     try:

@@ -153,7 +153,6 @@ export class NativityAgent {
     natalChart: NatalChartData,
     rag: boolean | { disableRag?: boolean; jyotishRagMode?: string | null } = false,
   ): Promise<NativityProfile> {
-    const delays = [3000, 6000, 12000];
     let lastError: unknown;
 
     const opts = typeof rag === 'object' && rag !== null ? rag : { disableRag: !!rag };
@@ -175,13 +174,13 @@ export class NativityAgent {
       // Only 1 attempt on Anthropic. If it fails/times out fall immediately to the
       // OpenAI/Gemini fallback chain. Retrying claude in-process wastes ~50s per
       // attempt and blows the 80s route budget before fallback can be tried.
-      for (let attempt = 0; attempt < 1; attempt++) {
+      {
+        const ctrl = new AbortController();
+        const abortTimer = setTimeout(() => ctrl.abort(), 45_000);
         try {
-          console.log(`NativityAgent attempt ${attempt + 1}/1 (RAG mode=${mode})`);
+          console.log(`NativityAgent attempt 1/1 (RAG mode=${mode})`);
           // 45s AbortSignal leaves 35s margin for the fallback chain within the
           // 80s route budget.
-          const ctrl = new AbortController();
-          const abortTimer = setTimeout(() => ctrl.abort(), 45_000);
           const response = await this.client.messages.create(
             {
               model: 'claude-sonnet-4-6',
@@ -195,7 +194,6 @@ export class NativityAgent {
             },
             { signal: ctrl.signal },
           );
-          clearTimeout(abortTimer);
 
           const text = extractTextContent(response);
           console.log(`NativityAgent response: ${text.length} chars`);
@@ -210,26 +208,14 @@ export class NativityAgent {
           lastError = error;
           const status = (error as { status?: number })?.status;
 
-          if (status === 401) {
-            console.warn('NativityAgent: Anthropic 401 — will try fallback chain');
-            break;
-          }
           if (status === 400) {
             console.error('NativityAgent 400:', (error as Error)?.message);
             throw error;
           }
 
-          if ((status === 429 || status === 529) && attempt < 2) {
-            const delay = delays[attempt];
-            console.warn(`NativityAgent: Anthropic ${status}, retrying in ${delay}ms...`);
-            await new Promise((r) => setTimeout(r, delay));
-            continue;
-          }
-          if (attempt < 2) {
-            console.error(`NativityAgent attempt ${attempt + 1} failed:`, (error as Error)?.message);
-            await new Promise((r) => setTimeout(r, delays[attempt]));
-            continue;
-          }
+          console.warn('NativityAgent: Anthropic failed — will try fallback chain:', (error as Error)?.message);
+        } finally {
+          clearTimeout(abortTimer);
         }
       }
     }

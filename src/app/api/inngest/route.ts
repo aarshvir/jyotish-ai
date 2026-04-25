@@ -4,6 +4,7 @@ import {
   generateReportJob,
   extendReportToMonthlyJob,
   refreshEmbeddingsCron,
+  cleanupOrphanedReports,
 } from '@/lib/inngest/functions';
 
 /**
@@ -15,5 +16,10 @@ import {
  */
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [generateReportJob, extendReportToMonthlyJob, refreshEmbeddingsCron],
+  functions: [
+    generateReportJob,
+    extendReportToMonthlyJob,
+    refreshEmbeddingsCron,
+    cleanupOrphanedReports,
+  ],
 });

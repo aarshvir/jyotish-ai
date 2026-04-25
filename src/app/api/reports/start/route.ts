@@ -1,12 +1,11 @@
 /**
  * Report generation start route.
  *
- * If INNGEST_EVENT_KEY is set (production), the pipeline is dispatched to
+ * If INNGEST_EVENT_KEY is set, the pipeline is dispatched to
  * Inngest for background execution with no timeout constraints.
  *
- * If not set (local dev / fallback), the pipeline runs synchronously within
- * Vercel's maxDuration window (300s). The orchestrator's internal budget
- * (255s soft / 285s hard-kill) handles graceful timeouts either way.
+ * If not set, production returns 503 instead of silently running a long
+ * synchronous fallback. Local development may still run inline for convenience.
  */
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
@@ -17,12 +16,15 @@ import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 import { inngest } from '@/lib/inngest/client';
+import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
  * 10 minutes — Inngest jobs can take that long.
  */
 const YOUNG_GENERATING_MS = 10 * 60 * 1000;
+const REPORT_START_LIMIT = 3;
+const REPORT_START_WINDOW_MS = 60_000;
 
 /** Pipeline `input.time` must be HH:MM (db rows may store HH:MM:SS). */
 function birthTimeToPipelineTime(s: string): string {
@@ -49,11 +51,27 @@ function isYoungGenerating(generationStartedAt: string | null | undefined): bool
  * 1. Creates/updates the `reports` row with status='generating'
  * 2. If INNGEST_EVENT_KEY is configured → sends event to Inngest, returns 202 immediately
  *    Client then polls /api/reports/[id]/status until complete.
- * 3. If not configured → runs pipeline synchronously (dev/fallback)
+ * 3. If not configured in production → returns 503 rather than tying up a
+ *    serverless request for the full pipeline duration.
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
+
+  const rl = checkRateLimit(
+    `report-start:${getRateLimitKey(request, auth.user.id)}`,
+    REPORT_START_LIMIT,
+    REPORT_START_WINDOW_MS,
+  );
+  if (!rl.allowed) {
+    return NextResponse.json(
+      {
+        error: 'Too many report generation requests. Please wait before starting another report.',
+        resetAt: rl.resetAt,
+      },
+      { status: 429 },
+    );
+  }
 
   const body = await request.json().catch(() => ({}));
   const reportId = typeof body.reportId === 'string' ? body.reportId : null;
@@ -191,6 +209,7 @@ export async function POST(request: NextRequest) {
   // If INNGEST_EVENT_KEY is set, hand off to Inngest and return 202 immediately.
   // The client polls /api/reports/[id]/status every 3s.
   const useInngest = !!process.env.INNGEST_EVENT_KEY;
+  const allowInlineFallback = process.env.NODE_ENV !== 'production';
 
   if (useInngest) {
     try {
@@ -211,9 +230,20 @@ export async function POST(request: NextRequest) {
         { status: 202 },
       );
     } catch (err) {
-      // Inngest dispatch failed — fall through to inline execution
-      console.error(`[reports/start] Inngest dispatch failed, falling back to inline:`, err);
+      console.error(`[reports/start] Inngest dispatch failed:`, err);
+      if (!allowInlineFallback) {
+        return NextResponse.json(
+          { error: 'Background job queue is temporarily unavailable. Please retry shortly.' },
+          { status: 503 },
+        );
+      }
+      console.warn(`[reports/start] local/dev fallback running inline for ${reportId}`);
     }
+  } else if (!allowInlineFallback) {
+    return NextResponse.json(
+      { error: 'Background job queue is not configured. Set INNGEST_EVENT_KEY for production.' },
+      { status: 503 },
+    );
   }
 
   // ── Inline synchronous fallback (dev / no Inngest key) ───────────────────
