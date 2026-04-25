@@ -69,8 +69,8 @@ function extractGrokResponsesText(data: unknown): string {
   return extractResponsesApiText(data);
 }
 
-/** GPT-5.4 + reasoning effort high (alias id: gpt-5.4-high-reasoning). */
-async function completeOpenAiGpt54HighReasoning(opts: {
+/** GPT-5.5 + reasoning effort high (alias ids: gpt-5.5-high-reasoning, gpt-5.4-high-reasoning). */
+async function completeOpenAiGpt55HighReasoning(opts: {
   apiKey: string;
   systemPrompt: string;
   userPrompt: string;
@@ -91,7 +91,7 @@ async function completeOpenAiGpt54HighReasoning(opts: {
     ).responses;
     if (responsesApi?.create) {
       const r = await responsesApi.create({
-        model: 'gpt-5.4',
+        model: 'gpt-5.5',
         reasoning: { effort: 'high' },
         input,
         max_output_tokens: maxOut,
@@ -100,7 +100,7 @@ async function completeOpenAiGpt54HighReasoning(opts: {
       if (text) return text;
     }
   } catch (e) {
-    console.error('OpenAI responses (gpt-5.4 high reasoning) SDK error:', e);
+    console.error('OpenAI responses (gpt-5.5 high reasoning) SDK error:', e);
   }
 
   const resp = await fetch('https://api.openai.com/v1/responses', {
@@ -110,7 +110,7 @@ async function completeOpenAiGpt54HighReasoning(opts: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5.4',
+      model: 'gpt-5.5',
       reasoning: { effort: 'high' },
       input,
       max_output_tokens: maxOut,
@@ -252,11 +252,11 @@ export async function completeLlmChat(opts: {
     throw new Error('ANTHROPIC_API_KEY is not configured and no fallback providers available');
   }
 
-  if (modelId === 'gpt-5.4-high-reasoning') {
+  if (modelId === 'gpt-5.5-high-reasoning' || modelId === 'gpt-5.4-high-reasoning') {
     const key = process.env.OPENAI_API_KEY;
     if (!key) throw new Error('OPENAI_API_KEY is not configured');
     try {
-      return await completeOpenAiGpt54HighReasoning({
+      return await completeOpenAiGpt55HighReasoning({
         apiKey: key,
         systemPrompt: opts.systemPrompt,
         userPrompt: opts.userPrompt,
@@ -264,7 +264,7 @@ export async function completeLlmChat(opts: {
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      throw new Error(`OpenAI GPT-5.4 high-reasoning error: ${msg}`);
+      throw new Error(`OpenAI GPT-5.5 high-reasoning error: ${msg}`);
     }
   }
 

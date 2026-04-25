@@ -80,7 +80,7 @@ async function completeOpenAiFallback(opts: {
 }): Promise<string> {
   const key = trimEnv(process.env.OPENAI_API_KEY);
   if (!key) throw new Error('OPENAI_API_KEY missing for fallback');
-  const model = trimEnv(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-4o';
+  const model = trimEnv(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-5.5';
   const client = new OpenAI({ apiKey: key, timeout: 35_000, maxRetries: 0 });
   const r = await client.chat.completions.create({
     model,
@@ -175,7 +175,7 @@ export async function runChatFallbackChain(opts: FallbackChainOpts): Promise<str
   if (!opts.skipOpenAI && trimEnv(process.env.OPENAI_API_KEY)) {
     try {
       const text = await completeOpenAiFallback(base);
-      const om = trimEnv(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-4o';
+      const om = trimEnv(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-5.5';
       console.warn('[LLM fallback] success: OpenAI', om);
       logLlmAudit(auditStage, 'openai', om);
       return text;
