@@ -102,8 +102,8 @@ function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
  * 1. Creates/updates the `reports` row with status='generating'
  * 2. If INNGEST_EVENT_KEY is configured → sends event to Inngest, returns 202 immediately
  *    Client then polls /api/reports/[id]/status until complete.
- * 3. If not configured in production → returns 503 rather than tying up a
- *    serverless request for the full pipeline duration.
+ * 3. If not configured in production → returns 503 unless REPORT_PIPELINE_INLINE=1
+ *    (local `next start` + E2E / quality-wave only).
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -283,7 +283,11 @@ export async function POST(request: NextRequest) {
   // If INNGEST_EVENT_KEY is set, hand off to Inngest and return 202 immediately.
   // The client polls /api/reports/[id]/status every 3s.
   const useInngest = !!process.env.INNGEST_EVENT_KEY;
-  const allowInlineFallback = process.env.NODE_ENV !== 'production';
+  /** Dev server always allows inline. Prod requires Inngest unless explicitly opted in (E2E / local `next start`). */
+  const allowInlineOverride =
+    process.env.REPORT_PIPELINE_INLINE === '1' ||
+    process.env.REPORT_PIPELINE_INLINE === 'true';
+  const allowInlineFallback = process.env.NODE_ENV !== 'production' || allowInlineOverride;
 
   if (useInngest) {
     try {
