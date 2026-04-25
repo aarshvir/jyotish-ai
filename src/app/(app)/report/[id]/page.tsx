@@ -32,6 +32,14 @@ function isRouteUuid(id: string) {
   return UUID_RE.test(id);
 }
 
+/** Surfaces `report_data.error` from the server so users see a hint (not only “please retry”). */
+function formatGenerationErrorMessage(detail: string | null | undefined): string {
+  if (!detail?.trim()) return 'Generation failed — please retry';
+  const t = detail.trim();
+  const short = t.length > 600 ? `${t.slice(0, 600)}…` : t;
+  return `Generation failed — ${short}`;
+}
+
 /** True when stored report looks like an all-default / failed generation (stale 50s). */
 function isPlaceholderReportData(rd: Record<string, unknown> | null | undefined): boolean {
   const days = rd?.days as Array<{ day_score?: number }> | undefined;
@@ -275,7 +283,12 @@ function ReportContent() {
           setIsGenerating(false);
         } else if (row.status === 'error') {
           stopReportPolling();
-          setError('Generation failed — please retry');
+          const rd = row.report_data;
+          const err =
+            rd && typeof rd === 'object' && rd != null && 'error' in rd
+              ? String((rd as { error: unknown }).error)
+              : '';
+          setError(formatGenerationErrorMessage(err || null));
           setIsGenerating(false);
         }
       },
@@ -337,6 +350,7 @@ function ReportContent() {
           generation_step?: string | null;
           report: ReportData | null;
           generation_started_at?: string | null;
+          generation_error?: string | null;
         };
 
         setServerPoll({
@@ -380,7 +394,7 @@ function ReportContent() {
           }
         } else if (data.status === 'error') {
           stopReportPolling();
-          setError('Generation failed — please retry');
+          setError(formatGenerationErrorMessage(data.generation_error));
           setIsGenerating(false);
         }
       } catch (err) {

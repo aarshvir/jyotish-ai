@@ -74,12 +74,20 @@ export async function GET(
       ? 0
       : (serverProgress ?? (status === 'generating' ? 5 : 0));
 
+  const errRaw = reportData?.error;
+  const generationError =
+    status === 'error' && (typeof errRaw === 'string' || typeof errRaw === 'number')
+      ? String(errRaw)
+      : null;
+
   return NextResponse.json({
     id: reportId,
     status,
     isComplete,
     progress,
     generation_step: data?.generation_step ?? null,
+    /** First pipeline error (when status=error); helps support without Vercel access. */
+    generation_error: generationError,
     report: isComplete ? reportData : null,
     lagna_sign: data?.lagna_sign,
     dasha_mahadasha: data?.dasha_mahadasha,

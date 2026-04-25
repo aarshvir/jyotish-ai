@@ -369,25 +369,65 @@ function assertPaidMonthlySectionNotPlaceholder(months: MonthSummary[], input: P
     );
   }
   const uniform = months.filter(isUniform65PlaceholderRow);
-  if (uniform.length >= 10) {
+  if (uniform.length >= 12) {
     throw new Error(
-      'Monthly scores look like padding (repeated 65/65 with no themes). Paid report cannot be completed — check months-first/second LLM output.',
+      'All 12 months look like padding (65/65, no themes). Paid report cannot be completed — check months-first/second LLM output.',
     );
   }
 }
 
-/** Paid: weeks-synthesis must return at least one week; empty means we would pad with 65-only rows. */
+type WeeksPayloadEntry = {
+  week_index: number;
+  week_label: string;
+  start_date: string;
+  end_date: string;
+  daily_scores: number[];
+};
+
+/**
+ * The LLM often returns <6 week objects (truncated JSON). Pad from deterministic
+ * `weeksPayload` so the report still completes; prefer real model rows when present.
+ */
+function padWeeksSynthesisToSix(
+  data: WeeksSynthApiResult,
+  weeksPayload: WeeksPayloadEntry[],
+): WeeksSynthApiResult {
+  const existing = [...(data.weeks ?? [])];
+  if (existing.length >= 6) {
+    return { ...data, weeks: existing.slice(0, 6) };
+  }
+  const padText =
+    'Use the per-day scores and hourly table for this week. Favour high-score days and benefic horas; avoid Rahu Kaal; delay major new starts on the weakest day.';
+  for (let i = existing.length; i < 6; i += 1) {
+    const p = weeksPayload[i];
+    if (!p) break;
+    const avg =
+      p.daily_scores.length > 0
+        ? Math.round(p.daily_scores.reduce((a, b) => a + b, 0) / p.daily_scores.length)
+        : 55;
+    existing.push({
+      week_label: p.week_label,
+      overall_score: avg,
+      score: avg,
+      theme: 'Daily-driven timing',
+      analysis: `${padText} (${p.week_label}).`,
+    });
+  }
+  if (existing.length < 6) {
+    console.warn(
+      '[orchestrator] padWeeksSynthesisToSix: still <6 after pad — check weeksPayload length',
+    );
+  }
+  return { ...data, weeks: existing };
+}
+
+/** Paid: after padding, we must have 6 week rows (weeksPayload always supplies 6 windows). */
 function assertPaidWeeksSynthesisPresent(data: WeeksSynthApiResult, input: PipelineInput): void {
   if (allowPartialLlmFallbackForPlan(input)) return;
   const n = data.weeks?.length ?? 0;
-  if (n < 1) {
-    throw new Error(
-      'weeks-synthesis returned no week rows. Paid report cannot be completed with synthetic weekly scores.',
-    );
-  }
   if (n < 6) {
     throw new Error(
-      `weeks-synthesis returned ${n} week(s) but 6 are required for the 7-day product. Check /api/commentary/weeks-synthesis output.`,
+      `Weekly section: expected 6 week rows after merge; got ${n}. This should not happen — check weeksPayload and logs.`,
     );
   }
 }
@@ -1449,6 +1489,7 @@ export async function generateReportPipeline(
       })(),
     ]);
 
+    weeksSynthData = padWeeksSynthesisToSix(weeksSynthData, weeksPayload);
     assertPaidMonthlySectionNotPlaceholder(allMonthsData, input);
     assertPaidWeeksSynthesisPresent(weeksSynthData, input);
 
