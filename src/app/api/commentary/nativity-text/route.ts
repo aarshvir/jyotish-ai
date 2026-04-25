@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
-import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
+import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
@@ -16,9 +16,15 @@ export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
 
-  const { allowed } = await checkRateLimit(`nativity-text:${getRateLimitKey(req)}`, 10, 60_000);
-  if (!allowed) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  if (shouldRateLimitLlmForUser(auth)) {
+    const { allowed } = await checkRateLimit(
+      `nativity-text:${getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined)}`,
+      10,
+      60_000,
+    );
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+    }
   }
 
   let body: {

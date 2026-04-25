@@ -85,6 +85,20 @@ export function getRateLimitKey(req: Request, userId?: string): string {
 }
 
 /**
+ * Inngest report pipeline issues many internal LLM calls in one run with
+ * `x-job-token` auth. Per-user throttling would 429 the pipeline after ~10 calls.
+ * Only rate-limit real browser / API users.
+ */
+export function shouldRateLimitLlmForUser(auth: unknown): boolean {
+  if (auth == null) return true;
+  if (typeof auth === 'object' && auth !== null && 'job' in auth) {
+    const j = (auth as { job?: unknown }).job;
+    if (j) return false;
+  }
+  return true;
+}
+
+/**
  * Standard rate limit configs for different route tiers.
  */
 export const RATE_LIMITS = {

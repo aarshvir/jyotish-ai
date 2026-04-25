@@ -426,13 +426,28 @@ export async function generateReportPipeline(
     }
   }
 
+  /** Parallel commentary tracks call dbSetProgress out of order; keep UI monotonic. */
+  let lastProgressPct = -1;
+
   // Helper: write real-time progress so the poll endpoint can expose it
   async function dbSetProgress(step: string, progress: number) {
-    await db
-      .from('reports')
-      .update({ generation_step: step, generation_progress: progress, updated_at: new Date().toISOString() })
-      .eq('id', reportId)
-      .eq('user_id', userId);
+    if (progress < lastProgressPct) {
+      return;
+    }
+    lastProgressPct = progress;
+    try {
+      await db
+        .from('reports')
+        .update({
+          generation_step: step,
+          generation_progress: progress,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reportId)
+        .eq('user_id', userId);
+    } catch (e) {
+      console.warn('[orchestrator] dbSetProgress failed:', e instanceof Error ? e.message : String(e));
+    }
   }
 
   async function traceAgentRun<T>(
@@ -1222,11 +1237,11 @@ export async function generateReportPipeline(
 
           const [m1Res, m2Res] = await Promise.all([
             commentaryLimit(() => traceAgentRun('months-first', 'llm', () => fetch(`${base}/api/commentary/months-first`, {
-              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(130_000), budgetSignal]),
+              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(200_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(0, 6) }),
             }))),
             commentaryLimit(() => traceAgentRun('months-second', 'llm', () => fetch(`${base}/api/commentary/months-second`, {
-              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(130_000), budgetSignal]),
+              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(200_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(6, 12) }),
             }))),
           ]);
@@ -1291,7 +1306,7 @@ export async function generateReportPipeline(
           const synthRes = await commentaryLimit(() => traceAgentRun('weeks-synthesis', 'llm', () => fetch(`${base}/api/commentary/weeks-synthesis`, {
             method: 'POST',
             headers: h,
-            signal: AbortSignal.any([AbortSignal.timeout(120_000), budgetSignal]),
+            signal: AbortSignal.any([AbortSignal.timeout(240_000), budgetSignal]),
             body: JSON.stringify({
               lagnaSign: ephemerisData.lagna ?? 'Cancer',
               mahadasha: mahadasha ?? 'Rahu',

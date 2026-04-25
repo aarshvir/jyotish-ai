@@ -8,7 +8,7 @@ import type { HoraRole, LagnaContext } from '@/lib/agents/lagnaContext';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
-import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/api/rateLimit';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 import { buildSlotGuidance } from '@/lib/guidance/builder';
 
@@ -84,13 +84,15 @@ export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
 
-  const rlKey = getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined);
-  const rl = await checkRateLimit(rlKey, RATE_LIMITS.commentary.limit, RATE_LIMITS.commentary.windowMs);
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Too many requests.', slots: [] },
-      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
-    );
+  if (shouldRateLimitLlmForUser(auth)) {
+    const rlKey = getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined);
+    const rl = await checkRateLimit(rlKey, RATE_LIMITS.commentary.limit, RATE_LIMITS.commentary.windowMs);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Too many requests.', slots: [] },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+      );
+    }
   }
 
   try {

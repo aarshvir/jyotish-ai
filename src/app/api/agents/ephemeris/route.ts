@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { EphemerisAgent } from '@/lib/agents/EphemerisAgent';
 import type { NatalChartInput } from '@/lib/agents/types';
 import { requireAuth } from '@/lib/api/requireAuth';
-import { checkRateLimit, getRateLimitKey, RATE_LIMITS } from '@/lib/api/rateLimit';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 
 const agent = new EphemerisAgent();
 export const maxDuration = 90;
@@ -11,16 +11,18 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
 
-  const rl = await checkRateLimit(
-    `ephemeris:${getRateLimitKey(request, auth.user.id)}`,
-    RATE_LIMITS.ephemeris.limit,
-    RATE_LIMITS.ephemeris.windowMs,
-  );
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { success: false, error: 'Too many ephemeris requests', resetAt: rl.resetAt },
-      { status: 429 },
+  if (shouldRateLimitLlmForUser(auth)) {
+    const rl = await checkRateLimit(
+      `ephemeris:${getRateLimitKey(request, auth.user.id)}`,
+      RATE_LIMITS.ephemeris.limit,
+      RATE_LIMITS.ephemeris.windowMs,
     );
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Too many ephemeris requests', resetAt: rl.resetAt },
+        { status: 429 },
+      );
+    }
   }
 
   try {

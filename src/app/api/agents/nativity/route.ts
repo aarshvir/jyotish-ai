@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { NativityAgent } from '@/lib/agents/NativityAgent';
 import type { NatalChartData } from '@/lib/agents/types';
 import { requireAuth } from '@/lib/api/requireAuth';
-import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
+import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 
 export const maxDuration = 300;
 
@@ -24,9 +24,15 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
 
-  const { allowed } = await checkRateLimit(`nativity:${getRateLimitKey(request)}`, 10, 60_000);
-  if (!allowed) {
-    return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
+  if (shouldRateLimitLlmForUser(auth)) {
+    const { allowed } = await checkRateLimit(
+      `nativity:${getRateLimitKey(request, auth.user.id)}`,
+      10,
+      60_000,
+    );
+    if (!allowed) {
+      return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
+    }
   }
 
   try {
