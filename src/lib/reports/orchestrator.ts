@@ -5,6 +5,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/admin';
+import { appendReportGenerationLog } from '@/lib/observability/generationLog';
 import { validateReportData } from '@/lib/validation/reportValidation';
 import type { JyotishRagMode } from '@/lib/rag/ragMode';
 import { PHASE } from '@/lib/reports/phases/slugs';
@@ -444,6 +445,7 @@ export async function generateReportPipeline(
   authHeaders: Record<string, string>,
   options: PipelineOptions = {},
 ): Promise<void> {
+  const pipelineRunLabel = options.stopAfterPhase != null ? String(options.stopAfterPhase) : 'full_inline';
   const stopAfter = options.stopAfterPhase;
   function maybeStopAfter(phase: PipelinePhaseName): void {
     if (stopAfter === phase) {
@@ -498,6 +500,18 @@ export async function generateReportPipeline(
    */
   let hardKillTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
     console.error(`[orchestrator] hard-kill timeout (${hardKillMs}ms) for ${reportId}`);
+    void appendReportGenerationLog({
+      reportId,
+      userId,
+      entry: {
+        ts: new Date().toISOString(),
+        elapsed_ms: Date.now() - pipelineT0,
+        level: 'error',
+        step: 'hard_kill_timeout',
+        message: `Pipeline exceeded ${hardKillMs}ms wall clock`,
+        detail: { pipeline_run: pipelineRunLabel, hardKillMs },
+      },
+    });
     onStep({ type: 'error', message: 'Report generation timed out — please try again.' });
     // Abort all in-flight commentary fetches so Promise.all unwinds immediately.
     budgetAbortController.abort(new Error('Pipeline budget exceeded'));
@@ -515,15 +529,28 @@ export async function generateReportPipeline(
   }, hardKillMs);
 
   function logStep(step: string, extra?: Record<string, unknown>) {
+    const elapsed_ms = Date.now() - pipelineT0;
     console.log(
       JSON.stringify({
         event: 'orchestrator_step',
         reportId,
         step,
-        ms: Date.now() - pipelineT0,
+        ms: elapsed_ms,
         ...extra,
       }),
     );
+    void appendReportGenerationLog({
+      reportId,
+      userId,
+      entry: {
+        ts: new Date().toISOString(),
+        elapsed_ms,
+        level: 'info',
+        step,
+        message: typeof extra?.label === 'string' ? extra.label : step,
+        detail: { ...extra, pipeline_run: pipelineRunLabel },
+      },
+    });
   }
 
   async function assertWithinBudget(phase: string): Promise<void> {
@@ -1489,7 +1516,22 @@ export async function generateReportPipeline(
       })(),
     ]);
 
+    const weekCountBeforePad = (weeksSynthData.weeks ?? []).length;
     weeksSynthData = padWeeksSynthesisToSix(weeksSynthData, weeksPayload);
+    if ((weeksSynthData.weeks ?? []).length > weekCountBeforePad) {
+      void appendReportGenerationLog({
+        reportId,
+        userId,
+        entry: {
+          ts: new Date().toISOString(),
+          elapsed_ms: Date.now() - pipelineT0,
+          level: 'warn',
+          step: 'weeks_synthesis_padded',
+          message: `Extended weeks from ${weekCountBeforePad} to 6 using daily score payload`,
+          detail: { pipeline_run: pipelineRunLabel, had: weekCountBeforePad, now: (weeksSynthData.weeks ?? []).length },
+        },
+      });
+    }
     assertPaidMonthlySectionNotPlaceholder(allMonthsData, input);
     assertPaidWeeksSynthesisPresent(weeksSynthData, input);
 
@@ -1745,6 +1787,22 @@ export async function generateReportPipeline(
     }
     const message = err instanceof Error ? err.message : 'Failed to generate report';
     console.error('[orchestrator] fatal error:', message);
+    void appendReportGenerationLog({
+      reportId,
+      userId,
+      entry: {
+        ts: new Date().toISOString(),
+        elapsed_ms: Date.now() - pipelineT0,
+        level: 'error',
+        step: 'pipeline_fatal',
+        message,
+        detail: {
+          pipeline_run: pipelineRunLabel,
+          name: err instanceof Error ? err.name : 'Error',
+          stack: err instanceof Error ? err.stack?.slice(0, 4000) : undefined,
+        },
+      },
+    });
     onStep({ type: 'error', message });
     try {
       // Guard with neq('status','complete') — never downgrade a report that

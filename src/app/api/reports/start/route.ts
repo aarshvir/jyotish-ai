@@ -19,6 +19,7 @@ import { inngest } from '@/lib/inngest/client';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 import { createJobToken } from '@/lib/api/jobToken';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
+import { appendReportGenerationLog } from '@/lib/observability/generationLog';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -216,6 +217,8 @@ export async function POST(request: NextRequest) {
       payment_status: body.payment_status ?? 'free',
       generation_started_at: nowIso,
       updated_at: nowIso,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      generation_log: [] as any,
     },
     { onConflict: 'id' },
   );
@@ -341,6 +344,19 @@ export async function POST(request: NextRequest) {
     );
   } catch (err) {
     console.error(`[reports/start] pipeline failed for ${reportId}:`, err);
+    const errMsg = err instanceof Error ? err.message : String(err);
+    await appendReportGenerationLog({
+      reportId,
+      userId: auth.user.id,
+      entry: {
+        ts: new Date().toISOString(),
+        elapsed_ms: 0,
+        level: 'error',
+        step: 'start_route_inline_pipeline',
+        message: errMsg,
+        detail: { route: 'POST /api/reports/start' },
+      },
+    });
     await db
       .from('reports')
       .update({

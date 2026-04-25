@@ -24,6 +24,7 @@ import type { NatalChartData, NativityProfile, ReportData } from '@/lib/agents/t
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
 import { buildFunctionalLordGroups } from '@/lib/engine/functionalNature';
 import { lagnaSignToIndex } from '@/lib/engine/horaBase';
+import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -113,6 +114,7 @@ function ReportContent() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [generationLogEntries, setGenerationLogEntries] = useState<ReportGenerationLogEntry[] | null>(null);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
@@ -175,6 +177,32 @@ function ReportContent() {
     if (b) h['x-bypass-token'] = b;
     return h;
   }, [params]);
+
+  /** When generation fails, load the durable pipeline log (where each step is recorded on the report row). */
+  useEffect(() => {
+    if (!error) {
+      setGenerationLogEntries(null);
+      return;
+    }
+    if (!isRouteUuid(reportIdFromRoute)) return;
+
+    let cancelled = false;
+    void fetch(`/api/reports/${encodeURIComponent(reportIdFromRoute)}/generation-log`, {
+      credentials: 'include',
+      headers: authJsonHeaders(),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { entries?: ReportGenerationLogEntry[] } | null) => {
+        if (cancelled || !d) return;
+        setGenerationLogEntries(Array.isArray(d.entries) ? d.entries : []);
+      })
+      .catch(() => {
+        if (!cancelled) setGenerationLogEntries([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [error, reportIdFromRoute, authJsonHeaders]);
 
   /** Clears status polling (safe to call from unmount). */
   const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -795,6 +823,24 @@ function ReportContent() {
             Generation Failed
           </h1>
           <p className="font-body text-dust text-base mb-8">{error}</p>
+          {generationLogEntries && generationLogEntries.length > 0 && (
+            <details className="mt-2 mb-6 text-left max-w-2xl mx-auto w-full">
+              <summary className="font-body text-dust/80 text-sm cursor-pointer select-none">
+                Pipeline log ({generationLogEntries.length} steps) — for support
+              </summary>
+              <pre
+                className="mt-3 text-left text-[10px] leading-relaxed text-dust/80 overflow-auto max-h-72 p-3 bg-cosmos rounded border border-horizon/30 font-mono whitespace-pre-wrap"
+                tabIndex={0}
+              >
+                {generationLogEntries
+                  .map(
+                    (e, i) =>
+                      `${i + 1}. [+${e.elapsed_ms}ms] [${e.level}] ${e.step} — ${e.message}${e.detail && Object.keys(e.detail).length ? ` ${JSON.stringify(e.detail)}` : ''}`,
+                  )
+                  .join('\n')}
+              </pre>
+            </details>
+          )}
           <button
             onClick={() => {
               hasFetched.current = false;

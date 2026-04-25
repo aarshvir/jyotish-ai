@@ -175,49 +175,41 @@ export class NativityAgent {
         });
 
     if (this.client) {
-      // Single Anthropic attempt — if it fails fall to the OpenAI/Gemini chain.
-      // AbortSignal at 95s: leaves headroom for the fallback chain under the 150s route budget.
-      {
-        const ctrl = new AbortController();
-        const abortTimer = setTimeout(() => ctrl.abort(), 95_000);
-        try {
-          console.log(`NativityAgent attempt 1/1 (RAG mode=${mode})`);
-          const response = await this.client.messages.create(
+      // Single Anthropic attempt — SDK timeout handles the wall-clock limit.
+      // No AbortSignal: it fires unreliably for non-streaming calls (fires mid-response
+      // for longer prompts like RAG-augmented ones but not shorter ones, causing asymmetric
+      // failure that defeats the comparison). The SDK timeout:110s is the hard stop.
+      try {
+        console.log(`NativityAgent attempt 1/1 (RAG mode=${mode})`);
+        const response = await this.client.messages.create({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 8000,
+          messages: [
             {
-              model: 'claude-sonnet-4-6',
-              max_tokens: 8000,
-              messages: [
-                {
-                  role: 'user',
-                  content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart, ragContext, detectedYogas)}`,
-                },
-              ],
+              role: 'user',
+              content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart, ragContext, detectedYogas)}`,
             },
-            { signal: ctrl.signal },
-          );
+          ],
+        });
 
-          const text = extractTextContent(response);
-          console.log(`NativityAgent response: ${text.length} chars`);
-          
-          // Robust JSON extraction: look for the first '{' and last '}'
-          const jsonMatch = text.match(/\{[\s\S]*\}/);
-          const cleanJson = jsonMatch ? jsonMatch[0] : text;
-          
-          logLlmAudit('nativity', 'anthropic', 'claude-sonnet-4-6');
-          return safeParseJson<NativityProfile>(cleanJson);
-        } catch (error: unknown) {
-          lastError = error;
-          const status = (error as { status?: number })?.status;
+        const text = extractTextContent(response);
+        console.log(`NativityAgent response: ${text.length} chars`);
 
-          if (status === 400) {
-            console.error('NativityAgent 400:', (error as Error)?.message);
-            throw error;
-          }
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const cleanJson = jsonMatch ? jsonMatch[0] : text;
 
-          console.warn('NativityAgent: Anthropic failed — will try fallback chain:', (error as Error)?.message);
-        } finally {
-          clearTimeout(abortTimer);
+        logLlmAudit('nativity', 'anthropic', 'claude-sonnet-4-6');
+        return safeParseJson<NativityProfile>(cleanJson);
+      } catch (error: unknown) {
+        lastError = error;
+        const status = (error as { status?: number })?.status;
+
+        if (status === 400) {
+          console.error('NativityAgent 400:', (error as Error)?.message);
+          throw error;
         }
+
+        console.warn('NativityAgent: Anthropic failed — will try fallback chain:', (error as Error)?.message);
       }
     }
 
