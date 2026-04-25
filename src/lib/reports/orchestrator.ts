@@ -304,7 +304,10 @@ export async function generateReportPipeline(
     }
   }
   const h = { ...authHeaders, 'Content-Type': 'application/json' };
-  const skipValidation = process.env.NEXT_PUBLIC_SKIP_VALIDATION === 'true';
+  // Use SKIP_REPORT_VALIDATION (server-only). NEXT_PUBLIC_SKIP_VALIDATION kept as legacy alias.
+  const skipValidation =
+    process.env.SKIP_REPORT_VALIDATION === 'true' ||
+    process.env.NEXT_PUBLIC_SKIP_VALIDATION === 'true';
   const ragModePayload =
     input.jyotishRagMode != null && String(input.jyotishRagMode).trim() !== ''
       ? { jyotishRagMode: String(input.jyotishRagMode).trim() }

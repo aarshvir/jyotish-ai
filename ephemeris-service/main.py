@@ -7,6 +7,18 @@ from timezonefinder import TimezoneFinder
 import swisseph as swe
 import math
 import traceback
+import os
+
+# In production, suppress full Python tracebacks from HTTP error responses to
+# prevent information disclosure. Set DEBUG_TRACEBACKS=1 locally to restore them.
+_SHOW_TRACEBACKS = os.getenv("DEBUG_TRACEBACKS", "0").strip() == "1"
+
+def _err_detail(e: Exception) -> str:
+    """Return a safe error detail string — traceback only when DEBUG_TRACEBACKS=1."""
+    if _SHOW_TRACEBACKS:
+        return f"{str(e)}\n{traceback.format_exc()}"
+    traceback.print_exc()  # Still logs to stderr/Railway logs for debugging
+    return str(e)
 
 app = FastAPI(title="Vedic Astrology Ephemeris Service")
 
@@ -412,7 +424,7 @@ def natal_chart(data: NatalChartInput):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=_err_detail(e))
 
 
 @app.post("/panchang")
@@ -447,7 +459,7 @@ def panchang(data: PanchangInput):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=_err_detail(e))
 
 
 @app.post("/hora-schedule")
@@ -501,7 +513,7 @@ def hora_schedule(data: HoraScheduleInput):
         return schedule
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=_err_detail(e))
 
 
 @app.post("/choghadiya")
@@ -556,7 +568,7 @@ def choghadiya(data: ChoghadiyaInput):
         return schedule
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=_err_detail(e))
 
 
 @app.post("/rahu-kaal")
@@ -582,7 +594,7 @@ def rahu_kaal(data: RahuKaalInput):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=_err_detail(e))
 
 
 @app.post("/full-day-data")
@@ -628,7 +640,7 @@ def full_day_data(data: FullDayDataInput):
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=_err_detail(e))
 
 
 # ---------------------------------------------------------------------------
@@ -1704,7 +1716,7 @@ def generate_daily_grid(data: DailyGridInput):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=_err_detail(e))
 
 
 @app.post("/get-planet-positions")
@@ -1724,7 +1736,7 @@ def get_planet_positions(data: PlanetPositionsInput):
             "ascendant": {"sign": lagna_name, "degree": None},
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{str(e)}\n{traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=_err_detail(e))
 
 
 @app.get("/test/hora-base")

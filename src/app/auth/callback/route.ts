@@ -17,7 +17,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(origin + '/login?error=auth');
   }
 
-  const dest = origin + (next.startsWith('/') ? next : '/' + next);
+  // Guard against open redirect via //evil.com — allow only paths starting with a single slash
+  // followed by a non-slash character (no protocol-relative URLs).
+  const safePath = /^\/[^/]/.test(next) ? next : '/dashboard';
+  const dest = origin + safePath;
   let response = NextResponse.redirect(dest);
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {

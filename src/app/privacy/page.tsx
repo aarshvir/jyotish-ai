@@ -39,7 +39,7 @@ const sections = [
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-space via-dark to-space text-star font-display">
+    <div className="min-h-screen bg-gradient-to-br from-space via-cosmos to-space text-star font-display">
       <header className="px-5 sm:px-8 lg:px-12 py-5 flex justify-between items-center border-b border-amber/15">
         <Link
           href="/"

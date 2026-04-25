@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  const { allowed } = checkRateLimit(`geocode:${getRateLimitKey(req)}`, 30, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     const city = req.nextUrl.searchParams.get('city');
 

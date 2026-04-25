@@ -135,7 +135,7 @@ function LoginInner() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-space via-dark to-space flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-space via-cosmos to-space flex items-center justify-center p-6">
       <div className="w-full max-w-[420px] bg-white/[0.03] border border-amber/15 rounded-2xl p-8 sm:p-10">
         <div className="text-center mb-8">
           <Link

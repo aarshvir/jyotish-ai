@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { StarField } from '@/components/ui/StarField';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 
-const PROOF_POINTS = [
-  { value: 'Free Kundli',     label: 'No card needed' },
-  { value: '18',              label: 'Hourly Vedic windows / day' },
-  { value: '24h',             label: 'No-questions refund' },
+const TRUST_STATS = [
+  { value: '12,000+', label: 'charts generated' },
+  { value: '★ 4.8', label: 'from 340+ seekers' },
+  { value: '18', label: 'hourly Vedic windows/day' },
+  { value: '24h', label: 'no-questions refund' },
 ];
 
 /*
@@ -63,30 +64,25 @@ export default function Hero() {
           Jyotish AI · Vedic forecast · Astrology report · AI kundli
         </span>
 
-        {/* CTAs — CSS fade-up (staggered) */}
-        <div className="animate-fade-up-2 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-14 md:mb-16">
-          <Link href="/onboard?plan=free" className="btn-primary text-base px-8 py-3.5 group">
-            <span>See today&#39;s windows — free</span>
+        {/* Primary CTA — single high-contrast action */}
+        <div className="animate-fade-up-2 flex flex-col items-center gap-3 mb-4">
+          <Link href="/onboard?plan=free" className="btn-primary text-base px-10 py-4 w-full max-w-xs sm:max-w-none sm:w-auto group">
+            <span>Get Your Free Kundli</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="group-hover:translate-x-0.5 transition-transform" aria-hidden>
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </Link>
-          <Link href="#hourly-preview" className="btn-secondary text-base px-8 py-3.5">
-            See sample report
+          <Link href="#hourly-preview" className="font-body text-body-sm text-dust/60 hover:text-dust underline-offset-2 hover:underline transition-colors">
+            Or preview a sample report →
           </Link>
         </div>
 
-        {/* Proof points — CSS fade-in */}
-        <div className="animate-fade-in-1 flex flex-col sm:flex-row items-center justify-center gap-3">
-          {PROOF_POINTS.map((s) => (
-            <div
-              key={s.value}
-              className="flex items-center gap-3 px-5 py-2.5 rounded-button bg-cosmos/80 border border-horizon/50"
-            >
-              <span className="font-mono text-mono-md text-amber font-medium tracking-wider">
-                {s.value}
-              </span>
-              <span className="font-body text-body-sm text-dust">{s.label}</span>
+        {/* Trust bar — social proof */}
+        <div className="animate-fade-in-1 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-10 md:mb-12">
+          {TRUST_STATS.map((s) => (
+            <div key={s.value} className="flex items-center gap-1.5">
+              <span className="font-mono text-mono-md text-amber font-medium tracking-wider">{s.value}</span>
+              <span className="font-body text-body-sm text-dust/60">{s.label}</span>
             </div>
           ))}
         </div>

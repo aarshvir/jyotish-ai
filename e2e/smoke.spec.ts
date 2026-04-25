@@ -5,12 +5,14 @@ const PUBLIC_PATHS = [
   '/',
   '/pricing',
   '/login',
-  '/signup',
   '/refund',
   '/terms',
   '/privacy',
   '/synastry',
 ];
+
+/** Routes that perform a server-side redirect — we just confirm a redirect occurs (2xx or 3xx). */
+const REDIRECT_PATHS = ['/signup'];
 
 function seriousErrors(messages: string[]): string[] {
   const ignore = /favicon|ResizeObserver|hydration|ChunkLoadError/i;
@@ -49,4 +51,14 @@ test.describe('Protected onboard redirects when logged out', () => {
     await page.goto('/onboard');
     await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
   });
+});
+
+test.describe('Server-redirect routes', () => {
+  for (const path of REDIRECT_PATHS) {
+    test(`${path} — redirects to login`, async ({ page }) => {
+      await page.goto(path);
+      // /signup redirects to /login — confirm final URL is login
+      await expect(page).toHaveURL(/\/login/, { timeout: 15_000 });
+    });
+  }
 });

@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 export default function NotFound() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--nav-height))] bg-gradient-to-br from-space via-dark to-space text-star">
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-var(--nav-height))] bg-gradient-to-br from-space via-cosmos to-space text-star">
       <div className="text-center px-6">
         <div className="text-5xl mb-6 text-amber opacity-40">✦</div>
         <h1 className="font-display text-6xl font-light mb-4 text-amber">404</h1>

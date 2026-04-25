@@ -219,6 +219,29 @@ export function GeneratingScreen({
         {/* Live telemetry terminal */}
         <LiveTelemetry lines={telemetryLines} maxVisible={6} className="w-full" />
 
+        {/* 60s escape hatch — shown only after a minute of waiting */}
+        {elapsedSeconds >= 60 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="mt-6 w-full rounded-card border border-horizon/30 bg-horizon/10 px-5 py-4 text-center"
+          >
+            <p className="text-dust/70 text-body-sm mb-2">
+              Taking longer than expected?
+            </p>
+            <p className="text-dust/50 text-mono-sm font-mono mb-3">
+              Your report will complete in the background. You can safely close this tab — we&apos;ll have it ready in your dashboard.
+            </p>
+            <a
+              href="/dashboard"
+              className="inline-block text-amber/80 hover:text-amber text-body-sm transition-colors underline underline-offset-4"
+            >
+              Go to Dashboard →
+            </a>
+          </motion.div>
+        )}
+
       </div>
     </div>
   );

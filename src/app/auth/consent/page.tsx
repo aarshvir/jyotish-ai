@@ -86,7 +86,7 @@ export default function ConsentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-space via-dark to-space flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-space via-cosmos to-space flex items-center justify-center p-6">
       <div className="w-full max-w-[480px] bg-white/[0.03] border border-amber/20 rounded-2xl px-8 sm:px-10 py-10">
         {/* Header */}
         <div className="text-center mb-7">

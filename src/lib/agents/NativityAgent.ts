@@ -21,7 +21,7 @@ ABSOLUTE RULES:
 - Dense paragraphs only. No bullet points. No generic filler.
 - LANGUAGE: Write for someone who does NOT know astrology. Translate every technical term into plain English on first use. Instead of "yogakaraka activates H10 kendra", write "your strongest planet this period is energising your career zone — this is your best window in years to make a bold professional move." Instead of "badhaka lord in dusthana", write "one planet in your chart is quietly draining energy — here's how to work around it."
 - When CLASSICAL SCRIPTURE REFERENCES are provided, weave them in as supporting evidence, not jargon: "Ancient Vedic texts single this combination out as a mark of lasting professional recognition."
-- Cite scriptures inline as [[SOURCE:CHAPTER]] only within quotations or supporting clauses — never lead with the citation.
+- Cite scriptures inline as [[SOURCE:CHAPTER:VERSE]] only within quotations or supporting clauses — never lead with the citation. Valid SOURCE codes: BPHS, PHAL, JAIMINI, UPADESHA. Example: [[BPHS:34:12]]. Never use abbreviated codes like PH or BH.
 - Every sentence must give the reader something they can feel, decide, or do — not just a planetary fact.
 - Never truncate mid-sentence. Reduce detail on minor points rather than cutting a string.
 - planetary_positions: include ALL 9 grahas (Sun through Ketu). Each significance field: 3-4 sentences — start with the plain-English life impact, then explain the astrological reason behind it.
@@ -57,7 +57,7 @@ Moon nakshatra: ${chart.moon_nakshatra ?? 'Unknown'}
 Current dasha: ${chart.current_dasha?.mahadasha ?? 'unknown'} MD / ${chart.current_dasha?.antardasha ?? 'unknown'} AD
   (${chart.current_dasha?.start_date ?? '?'} → ${chart.current_dasha?.end_date ?? '?'})
 ${engineFn ?? ''}${yogaHint}
-${ragContext ? `CLASSICAL SCRIPTURE REFERENCES (cite these inline using [[SOURCE:CHAPTER]] format when relevant):\n${ragContext}\n` : ''}
+${ragContext ? `CLASSICAL SCRIPTURE REFERENCES (cite these inline using [[SOURCE:CHAPTER:VERSE]] format when relevant, e.g. [[BPHS:34:12]]):\n${ragContext}\n` : ''}
 INSTRUCTIONS — analyze for ${chart.lagna ?? 'Unknown'} Lagna:
 1. Supportive planets: which planets in this chart act as allies — name them and explain what areas of life they open up (career, money, relationships, health, creativity).
 2. Challenging planets: which planets create friction or delays — name them and explain the specific life domain affected and how to navigate it.
@@ -71,7 +71,7 @@ Return ONLY this JSON (no extra fields, no markdown):
   "lagna_sign": "${chart.lagna ?? 'Unknown'}",
   "lagna_analysis": "250-300 words. Open with: who is this person at their best — what drives them, what they're here to build. Then explain the current planetary period's theme in plain terms. Name the single most powerful combination in this chart and what it promises. Close with two sentences of direct life direction the person can act on.",
   "yogas": [
-    { "name": "Yoga Name", "description": "2-3 sentences: open with the real-world outcome this combination delivers, then briefly name the astrological basis. Cite BPHS chapter as supporting evidence if scripture provided.", "strength": "strong|moderate|weak" }
+    { "name": "Yoga Name", "description": "2-3 sentences: open with the real-world outcome this combination delivers, then briefly name the astrological basis. Cite BPHS verse as supporting evidence if scripture provided, e.g. [[BPHS:34:12]].", "strength": "strong|moderate|weak" }
   ],
   "functional_benefics": ["PlanetName — supports [specific life area] for this ascendant because [plain-English reason]"],
   "functional_malefics": ["PlanetName — creates friction in [specific life area] — navigate by [plain-English tip]"],

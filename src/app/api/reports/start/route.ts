@@ -140,12 +140,17 @@ export async function POST(request: NextRequest) {
 
   const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
 
+  const testDisableRag = body.testOptions?.disableRag;
   const ragRaw =
-    typeof body.jyotishRagMode === 'string'
-      ? body.jyotishRagMode
-      : typeof body.jyotish_rag_mode === 'string'
-        ? body.jyotish_rag_mode
-        : undefined;
+    testDisableRag === true
+      ? 'off'
+      : testDisableRag === false
+        ? 'hybrid'
+        : typeof body.jyotishRagMode === 'string'
+          ? body.jyotishRagMode
+          : typeof body.jyotish_rag_mode === 'string'
+            ? body.jyotish_rag_mode
+            : undefined;
 
   const input: PipelineInput = {
     name: body.name ?? 'Seeker',

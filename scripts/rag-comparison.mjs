@@ -63,15 +63,18 @@ async function runReport(tag, disableRag) {
 async function main() {
   console.log('--- BPHS RAG Impact Study Starting ---\n');
   
-  // Note: For this to work with env vars, we might need to toggle the env var 
-  // on the server if it supports dynamic envs, but since we are local, 
-  // we'll assume the server is running and we can't easily flip its env var 
-  // mid-run without a restart. 
-  
-  // INSTEAD: I will modify the /api/reports/start endpoint to accept a `disableRag` override
-  // for testing purposes.
-  
-  console.log('ERROR: I need to add the override to the start endpoint first.');
+  try {
+    const reportNoRag = await runReport('NO-RAG', true);
+    console.log('\n--- NO RAG NATIVITY ---');
+    console.log(JSON.stringify(reportNoRag.nativity?.yogas, null, 2));
+    
+    const reportRag = await runReport('WITH-RAG', false);
+    console.log('\n--- WITH RAG NATIVITY ---');
+    console.log(JSON.stringify(reportRag.nativity?.yogas, null, 2));
+    
+  } catch (err) {
+    console.error('Error during study:', err);
+  }
 }
 
 main();

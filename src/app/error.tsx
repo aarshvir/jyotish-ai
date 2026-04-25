@@ -14,7 +14,7 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-space via-dark to-space">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-space via-cosmos to-space">
       <div className="text-center px-6">
         <div className="text-5xl mb-6 text-amber opacity-30">⚠</div>
         <h1 className="font-display text-3xl font-normal mb-4 text-star">

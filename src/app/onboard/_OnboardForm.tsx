@@ -880,6 +880,53 @@ function OnboardPageInner() {
         return;
       }
     }
+
+    // Free plan or 100% promo (e.g. ADMIN100) — payment skipped.
+    // We must call /api/reports/start to create the DB row and trigger the Inngest pipeline.
+    // Without this, the report page receives URL params but no pipeline ever runs.
+    try {
+      const startPayload: Record<string, unknown> = {
+        reportId,
+        name: form.name,
+        date: form.birthDate,
+        time: form.birthTime,
+        city: paramsObj.city,
+        lat: form.birthLat ?? 0,
+        lng: form.birthLng ?? 0,
+        type: effectiveType,
+        plan_type: paramsObj.plan_type ?? effectiveType,
+        payment_status: isPaidPlan ? 'promo' : 'free',
+        ...(form.forecastStartDate ? { forecastStart: form.forecastStartDate } : {}),
+        ...(useCurrent ? {
+          currentCity: form.currentCity,
+          currentLat: form.currentLat,
+          currentLng: form.currentLng,
+          currentTz: form.currentTzOffset,
+        } : {}),
+        ...(promoCode ? { promoCode } : {}),
+      };
+      const startRes = await fetch('/api/reports/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(startPayload),
+      });
+      if (!startRes.ok) {
+        const errBody = await startRes.json().catch(() => ({})) as { error?: string };
+        console.error('Report start failed:', errBody.error);
+        setPaymentReturnBanner({
+          type: 'error',
+          message: errBody.error ?? 'Failed to start report generation. Please try again.',
+        });
+        setIsLoading(false);
+        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    } catch (err) {
+      console.error('Report start network error:', err);
+      // Non-fatal: navigate anyway; the report page will detect missing state and retry
+    }
+
     router.push(finalUrl);
   }
 

@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/lib/**/*.test.ts'],
-    passWithNoTests: true,
+    passWithNoTests: false,
   },
   resolve: {
     alias: {

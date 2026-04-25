@@ -65,6 +65,7 @@ Thumbs.db
 
 # Script outputs / artifacts (do not commit)
 scripts/last-report.html
+scripts/last-report.json
 scripts/report-full.png
 scripts/before-submit.png
 scripts/eph-server.log

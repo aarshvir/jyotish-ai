@@ -10,11 +10,18 @@ import {
   type DayAnchorInput,
 } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+
+  const { allowed } = checkRateLimit(`weeks-synthesis:${getRateLimitKey(req)}`, 5, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   let body: {
     model_override?: string;
     lagnaSign: string;

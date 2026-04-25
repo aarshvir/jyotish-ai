@@ -159,6 +159,12 @@ export default async function PricingPage() {
                   {plan.price}
                 </span>
                 <p className="font-mono text-mono-sm text-dust/50 mt-1">{plan.priceNote}</p>
+                {plan.id === 'annual' && (
+                  <p className="font-mono text-mono-sm text-success/80 mt-1">≈ $0.14/day · best value per insight</p>
+                )}
+                {plan.highlight && (
+                  <p className="font-mono text-mono-sm text-amber/70 mt-1">Chosen by 60% of our seekers</p>
+                )}
               </div>
 
               <ul className="list-none p-0 mb-6 flex-1 space-y-0" role="list">
@@ -221,7 +227,11 @@ export default async function PricingPage() {
       <section className="max-w-4xl mx-auto px-5 sm:px-8 pb-14">
         <div className="grid sm:grid-cols-3 gap-4">
           <div className="card p-5 text-center">
-            <div className="text-2xl mb-2">🛡</div>
+            <div className="flex justify-center mb-3">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-amber" aria-hidden>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
             <h3 className="font-body text-title-md text-star mb-1">24-Hour Refund</h3>
             <p className="text-body-sm text-dust">Full refund within 24 hours. No questions asked.</p>
             <Link href="/refund" className="font-mono text-mono-sm text-amber mt-2 inline-block hover:underline">
@@ -229,7 +239,12 @@ export default async function PricingPage() {
             </Link>
           </div>
           <div className="card p-5 text-center">
-            <div className="text-2xl mb-2">🔒</div>
+            <div className="flex justify-center mb-3">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-amber" aria-hidden>
+                <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2"/>
+                <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
             <h3 className="font-body text-title-md text-star mb-1">Privacy First</h3>
             <p className="text-body-sm text-dust">Birth data encrypted. Never sold. Never shared.</p>
             <Link href="/privacy" className="font-mono text-mono-sm text-amber mt-2 inline-block hover:underline">
@@ -237,7 +252,12 @@ export default async function PricingPage() {
             </Link>
           </div>
           <div className="card p-5 text-center">
-            <div className="text-2xl mb-2">✉</div>
+            <div className="flex justify-center mb-3">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-amber" aria-hidden>
+                <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
+                <path d="M2 8l10 7 10-7" stroke="currentColor" strokeWidth="2"/>
+              </svg>
+            </div>
             <h3 className="font-body text-title-md text-star mb-1">Support</h3>
             <p className="text-body-sm text-dust">Questions? Reach us anytime.</p>
             <span className="font-mono text-mono-sm text-amber mt-2 inline-block">support@vedichour.com</span>

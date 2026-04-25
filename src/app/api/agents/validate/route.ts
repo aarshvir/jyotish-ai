@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireAuth } from '@/lib/api/requireAuth';
+import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth(request);
+  if (auth instanceof NextResponse) return auth;
+
+  const { allowed } = checkRateLimit(`validate:${getRateLimitKey(request)}`, 20, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     const birthData = await request.json();
 

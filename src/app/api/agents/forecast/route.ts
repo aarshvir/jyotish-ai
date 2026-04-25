@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ForecastAgent } from '@/lib/agents/ForecastAgent';
 import type { ForecastInput } from '@/lib/agents/types';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 
 export const maxDuration = 300;
 
@@ -15,6 +16,12 @@ try {
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
+
+  const { allowed } = checkRateLimit(`forecast:${getRateLimitKey(request)}`, 5, 60_000);
+  if (!allowed) {
+    return NextResponse.json({ success: false, error: 'Too many requests' }, { status: 429 });
+  }
+
   try {
     const body = (await request.json()) as ForecastInput & {
       jyotishRagMode?: string;

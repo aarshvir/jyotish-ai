@@ -5,7 +5,10 @@ import { BYPASS_SECRET } from '@/lib/api/requireAuth';
 
 export async function GET(request: NextRequest) {
   const bypass = new URL(request.url).searchParams.get('bypass');
-  if (bypass !== BYPASS_SECRET) {
+  // Reject if secret is unset/empty, or if bypass param is absent/empty, or if they don't match.
+  // This mirrors the safe isBypassToken() pattern in src/lib/bypass.ts.
+  const secretOk = !!BYPASS_SECRET && !!bypass && bypass === BYPASS_SECRET;
+  if (!secretOk) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -36,7 +39,7 @@ export async function GET(request: NextRequest) {
     url_preview: url.substring(0, 60),
     key_raw_len: rawKey.length,
     key_trimmed_len: key.length,
-    key_prefix: key.substring(0, 20),
+    key_configured: key.length > 0,  // boolean only — never expose key prefix
   };
 
   try {
