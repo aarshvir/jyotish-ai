@@ -23,8 +23,11 @@ export type PipelinePhase =
   | 'ephemeris'
   | 'nativity_grids'
   | 'commentary_daily'
-  | 'commentary_hourly'
-  | 'commentary_synthesis'
+  | 'commentary_hourly_1'
+  | 'commentary_hourly_2'
+  | 'commentary_hourly_3'
+  | 'commentary_months'
+  | 'commentary_weeks'
   | 'commentary'
   | 'assembled';
 
@@ -32,8 +35,11 @@ export const PHASE_ORDER: PipelinePhase[] = [
   'ephemeris',
   'nativity_grids',
   'commentary_daily',
-  'commentary_hourly',
-  'commentary_synthesis',
+  'commentary_hourly_1',
+  'commentary_hourly_2',
+  'commentary_hourly_3',
+  'commentary_months',
+  'commentary_weeks',
   'commentary',
   'assembled',
 ];
@@ -54,13 +60,11 @@ export interface PipelineState {
     forecastDays: unknown; // ForecastDayIntermediate[] populated with daily overviews
     nativityData: unknown; // NativityData populated with text
   };
-  commentary_hourly?: {
-    forecastDays: unknown; // ForecastDayIntermediate[] populated with hourly commentary
-  };
-  commentary_synthesis?: {
-    allMonthsData: unknown; // MonthSummary[]
-    weeksSynthData: unknown; // WeeksSynthApiResult
-  };
+  commentary_hourly_1?: { forecastDays: unknown; };
+  commentary_hourly_2?: { forecastDays: unknown; };
+  commentary_hourly_3?: { forecastDays: unknown; };
+  commentary_months?: { allMonthsData: unknown; };
+  commentary_weeks?: { weeksSynthData: unknown; };
   commentary?: {
     forecastDays: unknown; // ForecastDayIntermediate[] with commentary populated
     allMonthsData: unknown; // MonthSummary[]

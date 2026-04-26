@@ -185,9 +185,21 @@ export class PipelinePhaseStopSignal extends Error {
  * is already idempotent via pipeline_checkpoint, any step that re-runs short-circuits
  * through the completed checkpoints, ensuring at-most-once-effective execution per phase.
  */
+/**
+ * Inngest `step.run` stop points — must match `src/lib/inngest/functions.ts` `runPhase(..., phase)`.
+ * Sub-commentary phases were added so each serverless invocation stays within time budget; the
+ * orchestrator must call `maybeStopAfter` after each or every Inngest step re-runs the entire
+ * parallel commentary block and hits `budgetSignal` → aborted fetches → HTTP 206 fallbacks.
+ */
 export type PipelinePhaseName =
   | 'ephemeris'
   | 'nativity_grids'
+  | 'commentary_daily'
+  | 'commentary_hourly_1'
+  | 'commentary_hourly_2'
+  | 'commentary_hourly_3'
+  | 'commentary_months'
+  | 'commentary_weeks'
   | 'commentary'
   | 'finalize';
 
@@ -506,8 +518,10 @@ export async function generateReportPipeline(
     // Use per-step budget that fits within the function timeout
     if (isRunningInInngestStep) {
       if (vercelMaxDuration > 0) return Math.max((vercelMaxDuration - 5) * 1000, 10_000);
-      // Hobby default: 55s per step (60s max - 5s buffer)
-      if (isVercel && process.env.VERCEL_ENV === 'production') return 55_000;
+      // Vercel does not always inject VERCEL_FUNCTION_MAX_DURATION; vercel.json sets 300s for
+      // `src/app/api/**`. Using 55s here caused every commentary sub-step to abort parallel LLM
+      // fetches mid-flight → HTTP 206 → paid report failures.
+      if (isVercel && process.env.VERCEL_ENV === 'production') return 290_000;
       return 255_000;
     }
     // Inline execution: entire pipeline in one function call
@@ -1077,25 +1091,33 @@ export async function generateReportPipeline(
     let weeksSynthData: WeeksSynthApiResult = { weeks: [], period_synthesis: null };
 
     // Pre-compute weeks payload before the parallel block (depends only on forecastDays)
-    const reportStart = new Date(forecastDays[0].date);
-    const weeksPayload = Array.from({ length: 6 }, (_, i) => {
-      const wStart = new Date(reportStart);
-      wStart.setDate(wStart.getDate() + i * 7);
-      const wEnd = new Date(wStart);
-      wEnd.setDate(wEnd.getDate() + 6);
-      const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      const weekDays = forecastDays.slice(i * 7, (i + 1) * 7);
-      return {
-        week_index: i,
-        week_label: `${fmt(wStart)} – ${fmt(wEnd)}`,
-        start_date: wStart.toISOString().split('T')[0],
-        end_date: wEnd.toISOString().split('T')[0],
-        daily_scores: weekDays.map((d) => d.day_score ?? 55),
-      };
-    });
-    const allScores = forecastDays.map((d) => d.day_score ?? 55);
-    const bestDay = forecastDays.reduce((a, b) => ((a.day_score ?? 0) > (b.day_score ?? 0) ? a : b));
-    const worstDay = forecastDays.reduce((a, b) => ((a.day_score ?? 100) < (b.day_score ?? 100) ? a : b));
+    const recomputeWeekAnchors = () => {
+      const reportStart = new Date(forecastDays[0].date);
+      weeksPayload = Array.from({ length: 6 }, (_, i) => {
+        const wStart = new Date(reportStart);
+        wStart.setDate(wStart.getDate() + i * 7);
+        const wEnd = new Date(wStart);
+        wEnd.setDate(wEnd.getDate() + 6);
+        const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+        const weekDays = forecastDays.slice(i * 7, (i + 1) * 7);
+        return {
+          week_index: i,
+          week_label: `${fmt(wStart)} – ${fmt(wEnd)}`,
+          start_date: wStart.toISOString().split('T')[0],
+          end_date: wEnd.toISOString().split('T')[0],
+          daily_scores: weekDays.map((d) => d.day_score ?? 55),
+        };
+      });
+      allScores = forecastDays.map((d) => d.day_score ?? 55);
+      bestDay = forecastDays.reduce((a, b) => ((a.day_score ?? 0) > (b.day_score ?? 0) ? a : b));
+      worstDay = forecastDays.reduce((a, b) => ((a.day_score ?? 100) < (b.day_score ?? 100) ? a : b));
+    };
+
+    let weeksPayload: WeeksPayloadEntry[] = [];
+    let allScores: number[] = [];
+    let bestDay = forecastDays[0];
+    let worstDay = forecastDays[0];
+    recomputeWeekAnchors();
 
     if (phaseAtOrAfter(existingCheckpoint, 'commentary') && pipelineState.commentary) {
       // Restore commentary results from a previous successful run.
@@ -1107,6 +1129,7 @@ export async function generateReportPipeline(
       if (savedNd?.current_dasha_interpretation) {
         nativityData.current_dasha_interpretation = savedNd.current_dasha_interpretation;
       }
+      recomputeWeekAnchors();
       onStep({ type: 'step_completed', step: 3 });
       onStep({ type: 'step_completed', step: 4 });
       onStep({ type: 'step_completed', step: 5 });
@@ -1114,11 +1137,69 @@ export async function generateReportPipeline(
       logStep('commentary_resumed');
       void dbSetProgress(PHASE.WEEKS_SYNTHESIS, 88);
     } else {
-    onStep({ type: 'step_started', step: 3, message: 'Writing daily commentary...', detail: 'Analyzing each day with your birth chart' });
+      const cp = existingCheckpoint;
 
-    await Promise.all([
-      // Steps 4+5: Daily overviews + Nativity text
-      (async () => {
+      // Inngest `phase:commentary`: merge sub-checkpoints into unified `commentary` blob (no LLM).
+      if (
+        !pipelineState.commentary &&
+        pipelineState.commentary_weeks?.weeksSynthData &&
+        pipelineState.commentary_months?.allMonthsData &&
+        pipelineState.commentary_daily?.forecastDays &&
+        (pipelineState.commentary_hourly_3?.forecastDays ||
+          pipelineState.commentary_hourly_2?.forecastDays ||
+          pipelineState.commentary_hourly_1?.forecastDays)
+      ) {
+        const fd =
+          (pipelineState.commentary_hourly_3?.forecastDays as ForecastDayIntermediate[] | undefined) ??
+          (pipelineState.commentary_hourly_2?.forecastDays as ForecastDayIntermediate[] | undefined) ??
+          (pipelineState.commentary_hourly_1?.forecastDays as ForecastDayIntermediate[] | undefined) ??
+          (pipelineState.commentary_daily.forecastDays as ForecastDayIntermediate[]);
+        forecastDays = fd;
+        allMonthsData = pipelineState.commentary_months.allMonthsData as MonthSummary[];
+        weeksSynthData = pipelineState.commentary_weeks.weeksSynthData as WeeksSynthApiResult;
+        const mergeNd = pipelineState.commentary_daily.nativityData as NativityData | undefined;
+        if (mergeNd?.lagna_analysis) nativityData.lagna_analysis = mergeNd.lagna_analysis;
+        if (mergeNd?.current_dasha_interpretation) {
+          nativityData.current_dasha_interpretation = mergeNd.current_dasha_interpretation;
+        }
+        recomputeWeekAnchors();
+        await savePipelineCheckpoint(db, reportId, userId, 'commentary', {
+          commentary: { forecastDays, allMonthsData, weeksSynthData, nativityData },
+        }, pipelineState);
+        pipelineState = {
+          ...pipelineState,
+          commentary: { forecastDays, allMonthsData, weeksSynthData, nativityData },
+        };
+        maybeStopAfter('commentary');
+      }
+
+      // Restore working `forecastDays` / nativity / months / weeks from the latest saved sub-phase.
+      if (pipelineState.commentary_hourly_3?.forecastDays) {
+        forecastDays = pipelineState.commentary_hourly_3.forecastDays as ForecastDayIntermediate[];
+      } else if (pipelineState.commentary_hourly_2?.forecastDays) {
+        forecastDays = pipelineState.commentary_hourly_2.forecastDays as ForecastDayIntermediate[];
+      } else if (pipelineState.commentary_hourly_1?.forecastDays) {
+        forecastDays = pipelineState.commentary_hourly_1.forecastDays as ForecastDayIntermediate[];
+      } else if (pipelineState.commentary_daily?.forecastDays) {
+        forecastDays = pipelineState.commentary_daily.forecastDays as ForecastDayIntermediate[];
+      }
+      const dailyNdRestore = pipelineState.commentary_daily?.nativityData as NativityData | undefined;
+      if (dailyNdRestore?.lagna_analysis) nativityData.lagna_analysis = dailyNdRestore.lagna_analysis;
+      if (dailyNdRestore?.current_dasha_interpretation) {
+        nativityData.current_dasha_interpretation = dailyNdRestore.current_dasha_interpretation;
+      }
+      if (phaseAtOrAfter(cp, 'commentary_months') && pipelineState.commentary_months?.allMonthsData) {
+        allMonthsData = pipelineState.commentary_months.allMonthsData as MonthSummary[];
+      }
+      if (phaseAtOrAfter(cp, 'commentary_weeks') && pipelineState.commentary_weeks?.weeksSynthData) {
+        weeksSynthData = pipelineState.commentary_weeks.weeksSynthData as WeeksSynthApiResult;
+      }
+      recomputeWeekAnchors();
+
+      // ── commentary_daily: daily overviews + nativity text ───────────────────
+      if (!(phaseAtOrAfter(cp, 'commentary_daily') && pipelineState.commentary_daily)) {
+        onStep({ type: 'step_started', step: 3, message: 'Writing daily commentary...', detail: 'Analyzing each day with your birth chart' });
+        await (async () => {
         try {
           const overviewBody = JSON.stringify({
             lagnaSign: ephemerisData.lagna,
@@ -1235,48 +1316,85 @@ export async function generateReportPipeline(
             nativityData.current_dasha_interpretation = `${md} Mahadasha with ${ad} Antardasha is active. Use high-score days and benefic horas for important actions.`;
           }
         }
-      })(),
+        })();
+        await savePipelineCheckpoint(db, reportId, userId, 'commentary_daily', {
+          commentary_daily: { forecastDays, nativityData },
+        }, pipelineState);
+        pipelineState = { ...pipelineState, commentary_daily: { forecastDays, nativityData } };
+      }
+      maybeStopAfter('commentary_daily');
 
-      // Step 6: Hourly commentary — 3 parallel batches of ~10 days each (3× faster than 1 × 30-day call)
-      (async () => {
-        onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: 'Three parallel batches for all forecast days' });
-        void dbSetProgress(PHASE.HOURLY_GRID, 53);
-        try {
-          type BatchSlot = { slot_index: number; commentary?: string; commentary_short?: string };
-          type BatchDay = { dayIndex: number; slots?: BatchSlot[] };
+      // ── commentary_hourly_1/2/3: one batch per Inngest step (was all parallel → budget abort) ──
+      type BatchSlot = { slot_index: number; commentary?: string; commentary_short?: string };
+      type BatchDay = { dayIndex: number; slots?: BatchSlot[] };
+      const CHUNK_SIZE = 10;
+      const allDaysInput = forecastDays.map((day, i) => ({
+        dayIndex: i,
+        date: day.date,
+        planet_positions: day.planet_positions,
+        panchang: day.panchang,
+        rahu_kaal: day.rahu_kaal,
+        slots: day.slots.map((s) => ({
+          slot_index: s.slot_index,
+          display_label: s.display_label,
+          dominant_hora: s.dominant_hora,
+          dominant_choghadiya: s.dominant_choghadiya,
+          transit_lagna: s.transit_lagna,
+          transit_lagna_house: s.transit_lagna_house,
+          is_rahu_kaal: s.is_rahu_kaal,
+          score: s.score,
+        })),
+      }));
+      const chunks: typeof allDaysInput[] = [];
+      for (let i = 0; i < allDaysInput.length; i += CHUNK_SIZE) {
+        chunks.push(allDaysInput.slice(i, i + CHUNK_SIZE));
+      }
+      const HOURLY_BATCH_SLUGS = [
+        PHASE.HOURLY_BATCH_1, PHASE.HOURLY_BATCH_2, PHASE.HOURLY_BATCH_3,
+        PHASE.HOURLY_BATCH_4, PHASE.HOURLY_BATCH_5, PHASE.HOURLY_BATCH_6,
+      ] as const;
+      const HOURLY_BATCH_PCTS = [55, 58, 61, 63, 65, 65] as const;
 
-          const CHUNK_SIZE = 10;
-          const allDaysInput = forecastDays.map((day, i) => ({
-            dayIndex: i,
-            date: day.date,
-            planet_positions: day.planet_positions,
-            panchang: day.panchang,
-            rahu_kaal: day.rahu_kaal,
-            slots: day.slots.map((s) => ({
-              slot_index: s.slot_index,
-              display_label: s.display_label,
-              dominant_hora: s.dominant_hora,
-              dominant_choghadiya: s.dominant_choghadiya,
-              transit_lagna: s.transit_lagna,
-              transit_lagna_house: s.transit_lagna_house,
-              is_rahu_kaal: s.is_rahu_kaal,
-              score: s.score,
-            })),
-          }));
+      const applyHourlyBatchToDays = (hourlyResults: BatchDay[]) => {
+        hourlyResults.forEach(({ dayIndex, slots }) => {
+          const day = forecastDays[dayIndex];
+          if (!day) return;
+          (slots ?? []).forEach((hs) => {
+            const slot = day.slots.find((s) => s.slot_index === hs.slot_index);
+            if (slot) {
+              slot.commentary = hs.commentary ?? '';
+              const firstSent = hs.commentary?.split('.')[0]?.trim();
+              slot.commentary_short = hs.commentary_short?.trim()
+                ? hs.commentary_short
+                : firstSent
+                ? firstSent + '.'
+                : '';
+            }
+          });
+          day.slots.forEach((slot) => {
+            if (!slot.commentary) {
+              slot.commentary =
+                `${slot.dominant_hora} hora, ${slot.dominant_choghadiya} choghadiya. Score: ${slot.score}/100.` +
+                (slot.is_rahu_kaal ? ' Rahu Kaal — avoid new initiations.' : '');
+              slot.commentary_short = slot.commentary.split('.')[0] + '.';
+            }
+          });
+        });
+      };
 
-          const chunks: typeof allDaysInput[] = [];
-          for (let i = 0; i < allDaysInput.length; i += CHUNK_SIZE) {
-            chunks.push(allDaysInput.slice(i, i + CHUNK_SIZE));
-          }
-
-          const HOURLY_BATCH_SLUGS = [
-            PHASE.HOURLY_BATCH_1, PHASE.HOURLY_BATCH_2, PHASE.HOURLY_BATCH_3,
-            PHASE.HOURLY_BATCH_4, PHASE.HOURLY_BATCH_5, PHASE.HOURLY_BATCH_6,
-          ] as const;
-          const HOURLY_BATCH_PCTS = [55, 58, 61, 63, 65, 65] as const;
-
-          const chunkResults = await Promise.all(
-            chunks.map((chunkDays, chunkIdx) => commentaryLimit(async () => {
+      const hourlyStopPhases = ['commentary_hourly_1', 'commentary_hourly_2', 'commentary_hourly_3'] as const;
+      for (let hi = 0; hi < hourlyStopPhases.length; hi += 1) {
+        const stopPh = hourlyStopPhases[hi];
+        const chunkIdx = hi;
+        const already =
+          phaseAtOrAfter(cp, stopPh) &&
+          Boolean((pipelineState as Record<string, unknown>)[stopPh]);
+        if (!already) {
+          onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: `Batch ${hi + 1} of ${hourlyStopPhases.length}` });
+          void dbSetProgress(PHASE.HOURLY_GRID, 53);
+          try {
+            if (chunkIdx < chunks.length) {
+              const chunkDays = chunks[chunkIdx];
               const batchSlug = HOURLY_BATCH_SLUGS[Math.min(chunkIdx, HOURLY_BATCH_SLUGS.length - 1)];
               const batchPct = HOURLY_BATCH_PCTS[Math.min(chunkIdx, HOURLY_BATCH_PCTS.length - 1)];
               void dbSetProgress(batchSlug, batchPct);
@@ -1286,56 +1404,38 @@ export async function generateReportPipeline(
                 antardasha,
                 days: chunkDays,
               });
-              const res = await traceAgentRun('hourly-batch', 'llm', () => fetch(`${base}/api/commentary/hourly-batch`, {
-                method: 'POST',
-                headers: h,
-                signal: AbortSignal.any([AbortSignal.timeout(160_000), budgetSignal]),
-                body: batchBody,
-              }));
+              const res = await commentaryLimit(() =>
+                traceAgentRun('hourly-batch', 'llm', () =>
+                  fetch(`${base}/api/commentary/hourly-batch`, {
+                    method: 'POST',
+                    headers: h,
+                    signal: AbortSignal.any([AbortSignal.timeout(160_000), budgetSignal]),
+                    body: batchBody,
+                  }),
+                ),
+              );
               assertNoPartialLlmForPaid(res, `hourly-batch#${chunkIdx + 1}`, input);
               if (res.ok || res.status === 206) {
                 const json = (await res.json()) as { days?: BatchDay[] };
-                return json.days ?? [];
+                applyHourlyBatchToDays(json.days ?? []);
               }
-              return [] as BatchDay[];
-            })),
-          );
-
-          const hourlyResults: BatchDay[] = chunkResults.flat();
-
-          hourlyResults.forEach(({ dayIndex, slots }) => {
-            const day = forecastDays[dayIndex];
-            if (!day) return;
-            (slots ?? []).forEach((hs) => {
-              const slot = day.slots.find((s) => s.slot_index === hs.slot_index);
-              if (slot) {
-                slot.commentary = hs.commentary ?? '';
-                const firstSent = hs.commentary?.split('.')[0]?.trim();
-                slot.commentary_short = hs.commentary_short?.trim()
-                  ? hs.commentary_short
-                  : firstSent
-                  ? firstSent + '.'
-                  : '';
-              }
-            });
-            day.slots.forEach((slot) => {
-              if (!slot.commentary) {
-                slot.commentary =
-                  `${slot.dominant_hora} hora, ${slot.dominant_choghadiya} choghadiya. Score: ${slot.score}/100.` +
-                  (slot.is_rahu_kaal ? ' Rahu Kaal — avoid new initiations.' : '');
-                slot.commentary_short = slot.commentary.split('.')[0] + '.';
-              }
-            });
-          });
-          void dbSetProgress(PHASE.HOURLY_BATCH_6, 65);
-          onStep({ type: 'partial_report_updated', field: 'hourly_commentary' });
-        } catch (err) {
-          terr('[orchestrator][STEP-6] failed:', err instanceof Error ? err.message : String(err));
+            }
+            void dbSetProgress(PHASE.HOURLY_BATCH_6, 65);
+            onStep({ type: 'partial_report_updated', field: 'hourly_commentary' });
+          } catch (err) {
+            terr('[orchestrator][STEP-6] failed:', err instanceof Error ? err.message : String(err));
+          }
         }
-      })(),
+        await savePipelineCheckpoint(db, reportId, userId, stopPh, {
+          [stopPh]: { forecastDays },
+        } as Partial<PipelineState>, pipelineState);
+        pipelineState = { ...pipelineState, [stopPh]: { forecastDays } } as PipelineState;
+        maybeStopAfter(stopPh);
+      }
 
-      // Step 7: Monthly
-      (async () => {
+      // ── commentary_months ─────────────────────────────────────────────────────
+      if (!(phaseAtOrAfter(cp, 'commentary_months') && pipelineState.commentary_months)) {
+      await (async () => {
         onStep({ type: 'step_started', step: 5, message: 'Building monthly forecast...', detail: 'Generating 12-month oracle' });
         try {
           const startDate = new Date(forecastDays[0].date);
@@ -1513,10 +1613,18 @@ export async function generateReportPipeline(
             };
           });
         }
-      })(),
+      })();
+      await savePipelineCheckpoint(db, reportId, userId, 'commentary_months', {
+        commentary_months: { allMonthsData },
+      }, pipelineState);
+      pipelineState = { ...pipelineState, commentary_months: { allMonthsData } };
+      }
+      maybeStopAfter('commentary_months');
+      recomputeWeekAnchors();
 
-      // Step 8: Weeks + Synthesis (now parallel with months/commentary)
-      (async () => {
+      // ── commentary_weeks ────────────────────────────────────────────────────────
+      if (!(phaseAtOrAfter(cp, 'commentary_weeks') && pipelineState.commentary_weeks)) {
+        await (async () => {
         onStep({ type: 'step_started', step: 6, message: 'Writing period synthesis...', detail: '6 weekly summaries + strategic windows' });
         try {
           const synthRes = await commentaryLimit(() => traceAgentRun('weeks-synthesis', 'llm', () => fetch(`${base}/api/commentary/weeks-synthesis`, {
@@ -1571,8 +1679,14 @@ export async function generateReportPipeline(
           }
           terr('[orchestrator][STEP-8] failed:', err instanceof Error ? err.message : String(err));
         }
-      })(),
-    ]);
+        })();
+        await savePipelineCheckpoint(db, reportId, userId, 'commentary_weeks', {
+          commentary_weeks: { weeksSynthData },
+        }, pipelineState);
+        pipelineState = { ...pipelineState, commentary_weeks: { weeksSynthData } };
+      }
+      maybeStopAfter('commentary_weeks');
+      recomputeWeekAnchors();
 
     const weekCountBeforePad = (weeksSynthData.weeks ?? []).length;
     weeksSynthData = padWeeksSynthesisToSix(weeksSynthData, weeksPayload, twarn);
@@ -1612,7 +1726,7 @@ export async function generateReportPipeline(
       ...pipelineState,
       commentary: { forecastDays, allMonthsData, weeksSynthData, nativityData },
     };
-    } // end commentary phase guard
+    } // else: full commentary (not restored from checkpoint)
 
     // Pillar 1 DAG: stop after commentary checkpoint if Inngest requested.
     maybeStopAfter('commentary');

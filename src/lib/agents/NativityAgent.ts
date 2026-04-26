@@ -8,7 +8,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { NatalChartData, NativityProfile } from './types';
 import { safeParseJson } from '@/lib/utils/safeJson';
-import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
+import { anthropicErrorWarrantsProviderFallback, hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 import { logLlmAudit } from '@/lib/llm/audit';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { detectYogas } from '@/lib/rag/yogaDetector';
@@ -204,12 +204,19 @@ export class NativityAgent {
         lastError = error;
         const status = (error as { status?: number })?.status;
 
-        if (status === 400) {
+        if (status === 400 && !anthropicErrorWarrantsProviderFallback(error)) {
           console.error('NativityAgent 400:', (error as Error)?.message);
           throw error;
         }
 
-        console.warn('NativityAgent: Anthropic failed — will try fallback chain:', (error as Error)?.message);
+        if (anthropicErrorWarrantsProviderFallback(error)) {
+          console.warn(
+            'NativityAgent: Anthropic credits/billing or overload — will try OpenAI/Gemini fallback:',
+            (error as Error)?.message,
+          );
+        } else {
+          console.warn('NativityAgent: Anthropic failed — will try fallback chain:', (error as Error)?.message);
+        }
       }
     }
 

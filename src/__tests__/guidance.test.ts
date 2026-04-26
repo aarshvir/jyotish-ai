@@ -1,10 +1,10 @@
 /**
  * Tests for the V2 guidance layer, label logic, validation, and backward compatibility.
  *
- * Run with: npx tsx src/__tests__/guidance.test.ts
- * (No Jest/Vitest in this project — uses simple assertion-based test runner.)
+ * Run with: `npm test` (Vitest) or `npx tsx src/__tests__/guidance.test.ts` (standalone).
  */
 
+import { describe, expect, it } from 'vitest';
 import { getCanonicalScoreLabel, getGuidanceLabel, getDayOutcomeTier } from '../lib/guidance/labels';
 import { buildSlotGuidance, buildDayBriefing } from '../lib/guidance/builder';
 import { validateReportData, validateReportSemantics } from '../lib/validation/reportValidation';
@@ -545,9 +545,18 @@ test('End-to-end: guidance enriched report assembles correctly', () => {
 // ── Results ──────────────────────────────────────────────────────────────────
 
 console.log(`\n=== Results: ${passed} passed, ${failed} failed ===`);
-if (failures.length > 0) {
-  console.log('\nFailures:');
-  for (const f of failures) console.log(`  - ${f}`);
-  process.exit(1);
+if (process.env.VITEST) {
+  describe('guidance script tally', () => {
+    it('no failed assertions', () => {
+      expect(failures, failures.join('\n')).toEqual([]);
+      expect(failed).toBe(0);
+    });
+  });
+} else {
+  if (failures.length > 0) {
+    console.log('\nFailures:');
+    for (const f of failures) console.log(`  - ${f}`);
+    process.exit(1);
+  }
+  process.exit(0);
 }
-process.exit(0);

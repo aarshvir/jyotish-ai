@@ -6,7 +6,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
-import { hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
+import { anthropicErrorWarrantsProviderFallback, hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 import { logLlmAudit } from '@/lib/llm/audit';
 import { EphemerisAgent } from './EphemerisAgent';
 import { RatingAgent } from './RatingAgent';
@@ -117,10 +117,16 @@ async function callClaudeWithBackoff(
       lastError = error;
       const status = (error as { status?: number })?.status;
 
-      if (status === 401 || status === 402) throw new Error(status === 402 ? 'Anthropic credits exhausted — will use fallback LLM' : 'Invalid Anthropic API key. Check .env.local ANTHROPIC_API_KEY');
-      if (status === 400) {
+      if (status === 400 && !anthropicErrorWarrantsProviderFallback(error)) {
         console.error('Anthropic 400 bad request:', (error as Error)?.message);
         throw error;
+      }
+
+      if (anthropicErrorWarrantsProviderFallback(error)) {
+        console.warn(
+          'ForecastAgent: Claude credits/billing/auth or overload — using OpenAI/Gemini fallback if configured',
+        );
+        return '';
       }
 
       // 429 rate limit or 529 overloaded — retry with backoff
@@ -136,6 +142,10 @@ async function callClaudeWithBackoff(
         continue;
       }
     }
+  }
+  if (lastError && anthropicErrorWarrantsProviderFallback(lastError)) {
+    console.warn('ForecastAgent: Claude still failing after retries — using OpenAI/Gemini fallback if configured');
+    return '';
   }
   throw lastError ?? new Error('Claude call failed after retries');
 }

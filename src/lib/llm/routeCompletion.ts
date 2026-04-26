@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import {
+  anthropicErrorWarrantsProviderFallback,
   anthropicFailureIsRetriableWithFallback,
   geminiFailureIsRetriable,
   hasAnyChatFallbackKey,
@@ -10,7 +11,12 @@ import {
 } from '@/lib/llm/fallbackChain';
 
 const anthropicClient = process.env.ANTHROPIC_API_KEY?.trim()
-  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY.trim(), timeout: 55_000, maxRetries: 0 })
+  ? new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY.trim(),
+      /** Commentary routes use maxDuration 300s and large max_tokens; 55s caused premature SDK timeouts. */
+      timeout: 180_000,
+      maxRetries: 0,
+    })
   : null;
 
 if (!anthropicClient) {
@@ -229,7 +235,11 @@ export async function completeLlmChat(opts: {
           throw anthropicErr;
         }
         const msg = errMsg;
-        console.warn('[LLM] Anthropic failed, running fallback chain:', msg.slice(0, 120));
+        if (anthropicErrorWarrantsProviderFallback(anthropicErr)) {
+          console.warn('[LLM] Claude unavailable or credits/billing — falling back to OpenAI / chain:', msg.slice(0, 160));
+        } else {
+          console.warn('[LLM] Anthropic failed, running fallback chain:', msg.slice(0, 120));
+        }
         if (!hasAnyChatFallbackKey()) {
           throw anthropicErr;
         }

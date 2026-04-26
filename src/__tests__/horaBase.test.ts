@@ -4,6 +4,7 @@
  * Run: npx tsx src/__tests__/horaBase.test.ts
  */
 
+import { describe, expect, it } from 'vitest';
 import { computeHoraBaseForLagna, getBadhakaLord } from '../lib/engine/horaBase';
 
 /** Snapshot from Python `compute_hora_base_for_lagna(i)` (2026-04). */
@@ -102,8 +103,17 @@ test('All lagnas: scores in [28, 62]', () => {
 
 console.log('\n────────────────────────────────────────');
 console.log(`horaBase tests: ${passed} passed, ${failed} failed`);
-if (failures.length) {
-  console.error(failures.join('\n'));
-  process.exit(1);
+if (process.env.VITEST) {
+  describe('horaBase script tally', () => {
+    it('no failed assertions', () => {
+      expect(failures, failures.join('\n')).toEqual([]);
+      expect(failed).toBe(0);
+    });
+  });
+} else {
+  if (failures.length) {
+    console.error(failures.join('\n'));
+    process.exit(1);
+  }
+  process.exit(0);
 }
-process.exit(0);

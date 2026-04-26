@@ -177,7 +177,30 @@ export const generateReportJob = inngest.createFunction(
         return runPhase(data, 'nativity_grids');
       });
 
-      // Phase 3: Commentary (parallel LLM tracks inside one step; idempotent via pipeline_checkpoint)
+      // Phase 3: Commentary — Split into Hobby-safe steps (~20-40s each)
+      await step.run('phase:commentary_daily', async () => {
+        await updateReportRun(reportRunId, { phase: 'commentary_daily' });
+        return runPhase(data, 'commentary_daily');
+      });
+
+      await step.run('phase:commentary_hourly_1', async () => {
+        await updateReportRun(reportRunId, { phase: 'commentary_hourly_1' }); return runPhase(data, 'commentary_hourly_1');
+      });
+      await step.run('phase:commentary_hourly_2', async () => {
+        await updateReportRun(reportRunId, { phase: 'commentary_hourly_2' }); return runPhase(data, 'commentary_hourly_2');
+      });
+      await step.run('phase:commentary_hourly_3', async () => {
+        await updateReportRun(reportRunId, { phase: 'commentary_hourly_3' }); return runPhase(data, 'commentary_hourly_3');
+      });
+
+      await step.run('phase:commentary_months', async () => {
+        await updateReportRun(reportRunId, { phase: 'commentary_months' }); return runPhase(data, 'commentary_months');
+      });
+      await step.run('phase:commentary_weeks', async () => {
+        await updateReportRun(reportRunId, { phase: 'commentary_weeks' }); return runPhase(data, 'commentary_weeks');
+      });
+
+      // Phase 3 Final: Group and save the full commentary blob
       await step.run('phase:commentary', async () => {
         await updateReportRun(reportRunId, { phase: 'commentary' });
         return runPhase(data, 'commentary');
