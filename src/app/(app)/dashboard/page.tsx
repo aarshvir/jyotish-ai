@@ -145,6 +145,79 @@ function StatusBadge({ status, isGenerating, isFailed }: { status: string; isGen
   return <span className="rounded-badge px-2 py-0.5 text-label-sm bg-horizon/40 text-dust border border-horizon/20">{status}</span>;
 }
 
+/** Expandable append-only pipeline log from `reports.generation_log` (same API as report page). */
+function ReportPipelineLogDetails({ reportId, isGenerating }: { reportId: string; isGenerating: boolean }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [entries, setEntries] = useState<ReportGenerationLogEntry[] | null>(null);
+
+  const load = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await fetch(`/api/reports/${encodeURIComponent(reportId)}/generation-log`, { credentials: 'include' });
+      if (!r.ok) {
+        setError(r.status === 404 ? 'Log not found' : `Could not load (HTTP ${r.status})`);
+        setEntries([]);
+        return;
+      }
+      const d = (await r.json()) as { entries?: ReportGenerationLogEntry[] };
+      setEntries(Array.isArray(d.entries) ? d.entries : []);
+    } catch {
+      setError('Network error');
+      setEntries([]);
+    } finally {
+      setBusy(false);
+    }
+  }, [reportId]);
+
+  return (
+    <details
+      className="group border-t border-horizon/25 pt-3"
+      onToggle={(e) => {
+        const el = e.currentTarget as HTMLDetailsElement;
+        if (el.open) void load();
+      }}
+    >
+      <summary className="cursor-pointer select-none list-none flex items-center justify-between gap-2 text-mono-sm text-dust/65 hover:text-amber/85 font-mono [&::-webkit-details-marker]:hidden">
+        <span>
+          Pipeline log
+          {entries != null && !busy ? <span className="text-dust/45"> · {entries.length} entries</span> : null}
+          {isGenerating ? <span className="text-amber/70"> · open to refresh while generating</span> : null}
+        </span>
+        <span className="text-dust/40 text-[10px] shrink-0 group-open:rotate-180 transition-transform">▼</span>
+      </summary>
+      <div className="mt-2 flex flex-col gap-2">
+        {busy ? <p className="text-mono-sm text-dust/50 font-mono">Loading…</p> : null}
+        {error ? <p className="text-body-sm text-caution/90">{error}</p> : null}
+        {entries && entries.length === 0 && !busy && !error ? (
+          <p className="text-mono-sm text-dust/50 font-mono">No log lines yet (older reports or pre-log deploy).</p>
+        ) : null}
+        {entries && entries.length > 0 ? (
+          <pre className="text-left text-[10px] leading-relaxed text-dust/80 overflow-auto max-h-64 p-3 bg-cosmos/80 rounded-lg border border-horizon/30 font-mono whitespace-pre-wrap">
+            {entries.map(
+              (e, i) =>
+                `${i + 1}. [+${e.elapsed_ms}ms] [${e.level}] ${e.step} — ${e.message}${
+                  e.detail && Object.keys(e.detail).length ? ` ${JSON.stringify(e.detail)}` : ''
+                }`,
+            ).join('\n')}
+          </pre>
+        ) : null}
+        <button
+          type="button"
+          onClick={(ev) => {
+            ev.preventDefault();
+            void load();
+          }}
+          className="self-start text-mono-sm text-amber/70 hover:text-amber font-mono underline-offset-2 hover:underline"
+        >
+          Refresh log
+        </button>
+      </div>
+    </details>
+  );
+}
+
 function ReportCard({ report, compact = false }: { report: Report; compact?: boolean }) {
   const avgScore = getAvgScore(report.day_scores);
   const tone = scoreTone(avgScore);
@@ -153,65 +226,69 @@ function ReportCard({ report, compact = false }: { report: Report; compact?: boo
   const isComplete = report.status === 'complete';
 
   return (
-    <li className={`card-interactive flex flex-wrap items-center gap-4 ${compact ? 'p-4' : 'p-4 sm:p-5'}`}>
-      {/* Score circle */}
-      <div className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full border-2 ${isFailed ? 'border-caution/30 bg-caution/5' : tone.border + ' ' + tone.bg}`}>
-        {avgScore != null ? (
-          <>
-            <span className={`text-lg font-bold leading-none tabular-nums ${tone.text}`}>{avgScore}</span>
-            <span className={`text-[9px] font-mono opacity-60 ${tone.text}`}>avg</span>
-          </>
-        ) : (
-          <span className={`text-lg opacity-30 ${isFailed ? 'text-caution' : 'text-dust'}`}>
-            {isFailed ? '✕' : isGenerating ? '…' : '?'}
-          </span>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <span className="font-body text-title-lg text-star truncate">{report.native_name}</span>
-          <PlanBadge plan={report.plan_type} />
-          <StatusBadge status={report.status} isGenerating={isGenerating} isFailed={isFailed} />
-        </div>
-        <div className="flex flex-wrap gap-2.5 text-body-sm text-dust/80">
-          <span>{report.birth_city || 'Unknown'}</span>
-          {report.lagna_sign && <span>· {report.lagna_sign} Lagna</span>}
-          {report.moon_sign && <span>· {report.moon_sign} Moon</span>}
-          {report.dasha_mahadasha && (
-            <span>· {report.dasha_mahadasha}{report.dasha_antardasha ? `/${report.dasha_antardasha}` : ''}</span>
+    <li className={`card-interactive flex flex-col gap-3 ${compact ? 'p-4' : 'p-4 sm:p-5'}`}>
+      <div className="flex flex-wrap items-center gap-4">
+        {/* Score circle */}
+        <div className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-full border-2 ${isFailed ? 'border-caution/30 bg-caution/5' : tone.border + ' ' + tone.bg}`}>
+          {avgScore != null ? (
+            <>
+              <span className={`text-lg font-bold leading-none tabular-nums ${tone.text}`}>{avgScore}</span>
+              <span className={`text-[9px] font-mono opacity-60 ${tone.text}`}>avg</span>
+            </>
+          ) : (
+            <span className={`text-lg opacity-30 ${isFailed ? 'text-caution' : 'text-dust'}`}>
+              {isFailed ? '✕' : isGenerating ? '…' : '?'}
+            </span>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap gap-2 text-mono-sm text-dust/50 font-mono">
-          {isToday(report.created_at) && <span className="text-success font-medium">Today ·</span>}
-          <span>Generated {formatDate(report.created_at)}</span>
-          {report.birth_date && <span>· Born {formatDateShort(report.birth_date)}</span>}
+
+        {/* Info */}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="font-body text-title-lg text-star truncate">{report.native_name}</span>
+            <PlanBadge plan={report.plan_type} />
+            <StatusBadge status={report.status} isGenerating={isGenerating} isFailed={isFailed} />
+          </div>
+          <div className="flex flex-wrap gap-2.5 text-body-sm text-dust/80">
+            <span>{report.birth_city || 'Unknown'}</span>
+            {report.lagna_sign && <span>· {report.lagna_sign} Lagna</span>}
+            {report.moon_sign && <span>· {report.moon_sign} Moon</span>}
+            {report.dasha_mahadasha && (
+              <span>· {report.dasha_mahadasha}{report.dasha_antardasha ? `/${report.dasha_antardasha}` : ''}</span>
+            )}
+          </div>
+          <div className="mt-1 flex flex-wrap gap-2 text-mono-sm text-dust/50 font-mono">
+            {isToday(report.created_at) && <span className="text-success font-medium">Today ·</span>}
+            <span>Generated {formatDate(report.created_at)}</span>
+            {report.birth_date && <span>· Born {formatDateShort(report.birth_date)}</span>}
+          </div>
+        </div>
+
+        {/* Sparkline */}
+        {!compact && <Sparkline dayScores={report.day_scores} />}
+
+        {/* Action */}
+        <div className="shrink-0">
+          {isComplete && (
+            <Link href={`/report/${report.id}`} className="btn-primary text-body-sm px-4 py-2">
+              View →
+            </Link>
+          )}
+          {isGenerating && (
+            <Link href={`/report/${report.id}`} className="btn-secondary text-body-sm px-4 py-2 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse" />
+              Progress →
+            </Link>
+          )}
+          {isFailed && (
+            <Link href="/onboard" className="btn-secondary text-body-sm px-4 py-2">
+              Retry →
+            </Link>
+          )}
         </div>
       </div>
 
-      {/* Sparkline */}
-      {!compact && <Sparkline dayScores={report.day_scores} />}
-
-      {/* Action */}
-      <div className="shrink-0">
-        {isComplete && (
-          <Link href={`/report/${report.id}`} className="btn-primary text-body-sm px-4 py-2">
-            View →
-          </Link>
-        )}
-        {isGenerating && (
-          <Link href={`/report/${report.id}`} className="btn-secondary text-body-sm px-4 py-2 flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse" />
-            Progress →
-          </Link>
-        )}
-        {isFailed && (
-          <Link href="/onboard" className="btn-secondary text-body-sm px-4 py-2">
-            Retry →
-          </Link>
-        )}
-      </div>
+      <ReportPipelineLogDetails reportId={report.id} isGenerating={isGenerating} />
     </li>
   );
 }

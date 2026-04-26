@@ -24,7 +24,7 @@ import { inngest } from '@/lib/inngest/client';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 import { createJobToken } from '@/lib/api/jobToken';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
-import { appendReportGenerationLog } from '@/lib/observability/generationLog';
+import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 
 /**
@@ -302,8 +302,6 @@ export async function POST(request: NextRequest) {
       generation_started_at: nowIso,
       updated_at: nowIso,
       generation_trace_id: generationTraceId,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      generation_log: [] as any,
     },
     { onConflict: 'id' },
   );
@@ -320,6 +318,10 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+
+  // Reset append-only log when the column exists (migration). Omitted from upsert so older
+  // DBs without `reports.generation_log` still accept the row; clears stale log on restart.
+  await clearReportGenerationLog(reportId, auth.user.id);
 
   const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
 

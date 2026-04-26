@@ -180,7 +180,15 @@ async function main() {
       continue;
     }
 
-    log('start HTTP', startRes.status, JSON.stringify(startRes.body || {}).slice(0, 400));
+    const startBody = startRes.body;
+    const startSnippet =
+      typeof startBody === 'string'
+        ? startBody.slice(0, 120)
+        : JSON.stringify(startBody || {}).slice(0, 400);
+    log('start HTTP', startRes.status, startSnippet);
+    if (typeof startBody === 'string' && startBody.includes('<!DOCTYPE')) {
+      log('  (response is HTML — route crashed or wrong URL; check `npm run dev` terminal for stack trace)');
+    }
 
     if (startRes.status === 429 || startRes.status === 503) {
       await sleep(SLEEP_BETWEEN_MS * 2);

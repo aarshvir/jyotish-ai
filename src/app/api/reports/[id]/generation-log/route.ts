@@ -31,18 +31,29 @@ export async function GET(
     .maybeSingle();
 
   if (error) {
+    const msg = error.message ?? '';
+    // Older deployments / DBs before `20260426_report_generation_log.sql` — avoid 500 on dashboard.
+    if (msg.includes('generation_log') || msg.includes('schema cache')) {
+      return NextResponse.json({
+        reportId,
+        count: 0,
+        entries: [] as ReportGenerationLogEntry[],
+        logAvailable: false,
+      });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   if (!data) {
     return NextResponse.json({ error: 'Report not found' }, { status: 404 });
   }
 
-  const raw = data.generation_log;
+  const raw = (data as { generation_log?: unknown }).generation_log;
   const entries: ReportGenerationLogEntry[] = Array.isArray(raw) ? (raw as ReportGenerationLogEntry[]) : [];
 
   return NextResponse.json({
     reportId: data.id,
     count: entries.length,
     entries,
+    logAvailable: true,
   });
 }

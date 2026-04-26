@@ -16,6 +16,7 @@
     "chunk:scriptures": "node scripts/chunk-scriptures.mjs",
     "embed:chunks": "tsx scripts/run-embed-chunks.ts",
     "test:e2e": "node scripts/test-report-e2e.mjs",
+    "test:e2e:retry-aarsh": "node scripts/retry-aarsh-admin100-loop.mjs",
     "test:e2e:prod": "node scripts/test-report-e2e.mjs https://www.vedichour.com",
     "test:playwright": "playwright test",
     "test:playwright:ui": "playwright test --ui",
