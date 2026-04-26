@@ -14,12 +14,14 @@
  * Env (optional):
  *   E2E_BASE_URL, E2E_BYPASS, POLL_TIMEOUT_MS (default 120m), SLEEP_BETWEEN_MS (default 12s),
  *   MAX_ATTEMPTS (default 0 = unlimited; cap with e.g. 25)
+ *   MAX_WALL_TIME_MS (default 0 = no wall-clock limit; e.g. 10800000 for 3h)
  */
 
 import { randomUUID } from 'crypto';
 import { readFileSync, existsSync } from 'fs';
 import { resolve } from 'path';
 import { fetchJson, sleep } from './lib/e2e-http.mjs';
+import { validateReport } from './lib/validate-report-brd.mjs';
 
 const envPath = resolve('.env.local');
 if (existsSync(envPath)) {
@@ -41,6 +43,7 @@ const POLL_TIMEOUT_MS = Number(process.env.POLL_TIMEOUT_MS) || 120 * 60 * 1000;
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS) || 5000;
 const SLEEP_BETWEEN_MS = Number(process.env.SLEEP_BETWEEN_MS) || 12_000;
 const MAX_ATTEMPTS = Number(process.env.MAX_ATTEMPTS) || 0;
+const MAX_WALL_TIME_MS = Number(process.env.MAX_WALL_TIME_MS) || 0;
 
 /** Aarsh — 5 Jan 1991, 19:45 Lucknow; living Dubai (same shape as onboard → /api/reports/start). */
 function buildPayload(reportId) {
@@ -71,6 +74,11 @@ const HEADERS = {
 
 function log(...a) {
   console.log(new Date().toISOString(), ...a);
+}
+
+function sleepWithJitter(baseMs) {
+  const j = baseMs + Math.floor(Math.random() * 2000);
+  return sleep(j);
 }
 
 async function fetchGenerationLog(reportId) {
@@ -148,8 +156,13 @@ async function main() {
     process.exit(1);
   }
 
+  const wallStart = Date.now();
+
   log('Base URL:', BASE_URL);
   log('ADMIN100-style payload (promo payment_status). Ctrl+C to stop.');
+  if (MAX_WALL_TIME_MS > 0) {
+    log(`MAX_WALL_TIME_MS=${MAX_WALL_TIME_MS} (will exit 1 if exceeded)`);
+  }
   if (process.env.BYPASS_USER_ID) {
     log('BYPASS_USER_ID is set — reports should attach to that user for dashboard.');
   } else {
@@ -158,6 +171,10 @@ async function main() {
 
   let attempt = 0;
   while (true) {
+    if (MAX_WALL_TIME_MS > 0 && Date.now() - wallStart > MAX_WALL_TIME_MS) {
+      log('Stopped: MAX_WALL_TIME_MS exceeded');
+      process.exit(1);
+    }
     attempt += 1;
     if (MAX_ATTEMPTS > 0 && attempt > MAX_ATTEMPTS) {
       log(`Stopped after ${MAX_ATTEMPTS} attempts (MAX_ATTEMPTS).`);
@@ -177,7 +194,7 @@ async function main() {
       });
     } catch (e) {
       log('POST /api/reports/start failed:', e.message);
-      await sleep(SLEEP_BETWEEN_MS);
+      await sleepWithJitter(SLEEP_BETWEEN_MS);
       continue;
     }
 
@@ -222,7 +239,21 @@ async function main() {
     const settled = await pollUntilSettled(reportId);
 
     if (settled.outcome === 'complete') {
-      log('\nSUCCESS — report complete with day data.');
+      const finalReport = settled.detail?.report ?? null;
+      const { errors, warnings } = validateReport(finalReport);
+      for (const w of warnings) {
+        log('  BRD warn:', w);
+      }
+      if (errors.length > 0) {
+        log('\nBRD validation FAILED:');
+        for (const e of errors) {
+          log(' ', e);
+        }
+        log('Will retry with a new report…\n');
+        await sleepWithJitter(SLEEP_BETWEEN_MS);
+        continue;
+      }
+      log('\nSUCCESS — report complete; BRD validation passed.');
       log('Open:', `${BASE_URL}/report/${reportId}`);
       process.exit(0);
     }
@@ -238,8 +269,8 @@ async function main() {
       log('generation_error:', settled.detail.generation_error || settled.detail.report?.error || '');
     }
 
-    log(`Sleeping ${SLEEP_BETWEEN_MS}ms before next attempt…`);
-    await sleep(SLEEP_BETWEEN_MS);
+    log(`Sleeping ${SLEEP_BETWEEN_MS}ms (+ jitter) before next attempt…`);
+    await sleepWithJitter(SLEEP_BETWEEN_MS);
   }
 }
 

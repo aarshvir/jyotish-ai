@@ -32,8 +32,8 @@ export async function generateAstrologyAnalysis(prompt: string): Promise<string>
         lastError = error;
         const status = (error as { status?: number })?.status;
 
-        if (status === 401) {
-          console.warn('generateAstrologyAnalysis: Anthropic 401 — trying fallback chain');
+        if (status === 401 || status === 402) {
+          console.warn(`generateAstrologyAnalysis: Anthropic ${status} (${status === 402 ? 'credit exhausted' : 'auth error'}) — trying fallback chain`);
           break;
         }
 

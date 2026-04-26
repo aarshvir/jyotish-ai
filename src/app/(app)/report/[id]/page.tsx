@@ -565,7 +565,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         // Stop waiting and show the retry button immediately rather than after 15 min.
         if (data.status === 'generating' && data.generation_started_at) {
           const startedMs = new Date(data.generation_started_at).getTime();
-          if (!Number.isNaN(startedMs) && Date.now() - startedMs > 360_000) {
+          if (!Number.isNaN(startedMs) && Date.now() - startedMs > 900_000) {
             stopReportPolling();
             setError(
               'The server did not finish in time (likely a timeout). Use Try again to restart.',

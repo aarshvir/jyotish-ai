@@ -117,7 +117,7 @@ async function callClaudeWithBackoff(
       lastError = error;
       const status = (error as { status?: number })?.status;
 
-      if (status === 401) throw new Error('Invalid Anthropic API key. Check .env.local ANTHROPIC_API_KEY');
+      if (status === 401 || status === 402) throw new Error(status === 402 ? 'Anthropic credits exhausted — will use fallback LLM' : 'Invalid Anthropic API key. Check .env.local ANTHROPIC_API_KEY');
       if (status === 400) {
         console.error('Anthropic 400 bad request:', (error as Error)?.message);
         throw error;

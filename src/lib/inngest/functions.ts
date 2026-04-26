@@ -35,6 +35,7 @@ import { createReportRun, updateReportRun } from '@/lib/observability/reportRuns
 import { withReportRunContext } from '@/lib/observability/context';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
+import { getStaleOrphanUpdatedAtMs } from '@/lib/reports/staleGeneratingConstants';
 
 type ReportExtendEvent = {
   name: 'report/extend';
@@ -176,7 +177,7 @@ export const generateReportJob = inngest.createFunction(
         return runPhase(data, 'nativity_grids');
       });
 
-      // Phase 3: Commentary — the expensive LLM work. Retried independently.
+      // Phase 3: Commentary (parallel LLM tracks inside one step; idempotent via pipeline_checkpoint)
       await step.run('phase:commentary', async () => {
         await updateReportRun(reportRunId, { phase: 'commentary' });
         return runPhase(data, 'commentary');
@@ -247,9 +248,9 @@ export const refreshEmbeddingsCron = inngest.createFunction(
 
 /**
  * Pillar 1/5: Self-Healing Heartbeat.
- * Detects reports stuck in 'generating' for > 15 minutes and marks them as 'error'.
- * This prevents users from seeing a permanent "Generating..." spinner if a
- * process was killed or a network deadlock occurred.
+ * Fails `generating` rows whose `updated_at` has not moved for longer than
+ * `getStaleOrphanUpdatedAtMs()` (default 120m — real pipelines can run 60m+).
+ * Progress steps bump `updated_at`; a truly stuck row has a stale timestamp.
  */
 export const cleanupOrphanedReports = inngest.createFunction(
   {
@@ -260,7 +261,7 @@ export const cleanupOrphanedReports = inngest.createFunction(
     const result = await step.run('sweep-deadlocks', async () => {
       const { createServiceClient } = await import('@/lib/supabase/admin');
       const db = createServiceClient();
-      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      const cutoff = new Date(Date.now() - getStaleOrphanUpdatedAtMs()).toISOString();
 
       const { data, error } = await db
         .from('reports')
@@ -270,7 +271,7 @@ export const cleanupOrphanedReports = inngest.createFunction(
           generation_step: 'cleanup_auto_fail',
         })
         .eq('status', 'generating')
-        .lt('updated_at', fifteenMinsAgo)
+        .lt('updated_at', cutoff)
         .select('id');
 
       if (error) throw error;

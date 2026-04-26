@@ -22,12 +22,18 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export type PipelinePhase =
   | 'ephemeris'
   | 'nativity_grids'
+  | 'commentary_daily'
+  | 'commentary_hourly'
+  | 'commentary_synthesis'
   | 'commentary'
   | 'assembled';
 
 export const PHASE_ORDER: PipelinePhase[] = [
   'ephemeris',
   'nativity_grids',
+  'commentary_daily',
+  'commentary_hourly',
+  'commentary_synthesis',
   'commentary',
   'assembled',
 ];
@@ -43,6 +49,17 @@ export interface PipelineState {
   nativity_grids?: {
     nativityProfile: unknown; // NativityProfile | null
     forecastDays: unknown; // ForecastDayIntermediate[]
+  };
+  commentary_daily?: {
+    forecastDays: unknown; // ForecastDayIntermediate[] populated with daily overviews
+    nativityData: unknown; // NativityData populated with text
+  };
+  commentary_hourly?: {
+    forecastDays: unknown; // ForecastDayIntermediate[] populated with hourly commentary
+  };
+  commentary_synthesis?: {
+    allMonthsData: unknown; // MonthSummary[]
+    weeksSynthData: unknown; // WeeksSynthApiResult
   };
   commentary?: {
     forecastDays: unknown; // ForecastDayIntermediate[] with commentary populated
