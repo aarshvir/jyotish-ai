@@ -33,6 +33,8 @@ import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
 import { runScriptureEmbedRefresh } from '@/lib/rag/embedChunksJob';
 import { createReportRun, updateReportRun } from '@/lib/observability/reportRuns';
 import { withReportRunContext } from '@/lib/observability/context';
+import { createServiceClient } from '@/lib/supabase/admin';
+import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 
 type ReportExtendEvent = {
   name: 'report/extend';
@@ -48,7 +50,9 @@ type ReportGenerateEvent = {
     input: PipelineInput;
     base: string;
     authHeaders: Record<string, string>;
+    /** Same value as `generation_trace_id` on the reports row — log / Inngest correlation. */
     correlationId?: string;
+    generation_trace_id?: string;
   };
 };
 
@@ -106,12 +110,44 @@ export const generateReportJob = inngest.createFunction(
       limit: 1,
     },
     triggers: [{ event: 'report/generate' }],
+    onFailure: async ({ error, event }: { error: Error; event: { data: { event?: { data: ReportGenerateEvent['data'] } } } }) => {
+      const original = event.data?.event?.data;
+      if (!original?.reportId || !original.userId) {
+        console.error('[inngest] onFailure: missing reportId/userId', event);
+        return;
+      }
+      const failTrace =
+        original.generation_trace_id ?? original.correlationId ?? original.authHeaders?.['x-correlation-id'];
+      const tracePrefix = failTrace ? `[trace:${failTrace}] ` : '';
+      console.error(`${tracePrefix}[inngest] onFailure reportId=${original.reportId}`, error);
+      const db = createServiceClient();
+      const { data: row } = await db
+        .from('reports')
+        .select('status')
+        .eq('id', original.reportId)
+        .eq('user_id', original.userId)
+        .maybeSingle();
+      if (!row) return;
+      if (row.status === 'complete') return;
+      if (row.status !== 'generating') return;
+      const errMsg = error instanceof Error ? error.message : String(error);
+      await markReportAsFailed(db, original.reportId, original.userId, {
+        message: `Background job failed after retries: ${errMsg}`.slice(0, 4000),
+        errorStep: 'inngest_on_failure',
+        errorCode: 'INNGEST_FAILURE',
+        generationErrorCode: inferReportGenerationErrorCode(errMsg, 'inngest_on_failure'),
+      });
+    },
   },
   async ({ event, step, attempt }: { event: unknown; step: { run: <T>(id: string, fn: () => Promise<T>) => Promise<T> }; attempt: number }) => {
     const data = (event as unknown as ReportGenerateEvent).data;
     const { reportId, userId } = data;
     const startedAt = new Date().toISOString();
-    const correlationId = data.correlationId ?? data.authHeaders['x-correlation-id'] ?? `${reportId}-${Date.now()}`;
+    const correlationId =
+      data.generation_trace_id ??
+      data.correlationId ??
+      data.authHeaders['x-correlation-id'] ??
+      `${reportId}-${Date.now()}`;
     const reportRunId = await createReportRun({
       reportId,
       userId,
@@ -125,9 +161,7 @@ export const generateReportJob = inngest.createFunction(
       'x-correlation-id': correlationId,
     };
 
-    console.log(
-      `[inngest] pipeline start reportId=${reportId} attempt=${attempt}`,
-    );
+    console.log(`[trace:${correlationId}] [inngest] pipeline start reportId=${reportId} attempt=${attempt}`);
 
     try {
       // Phase 1: Ephemeris (Swiss Ephemeris / Railway service)
@@ -161,9 +195,10 @@ export const generateReportJob = inngest.createFunction(
         phase: 'complete',
         startedAt,
       });
-      console.log(`[inngest] pipeline complete reportId=${reportId}`);
+      console.log(`[trace:${correlationId}] [inngest] pipeline complete reportId=${reportId}`);
       return { success: true, reportId, reportRunId };
     } catch (err) {
+      console.error(`[trace:${correlationId}] [inngest] pipeline step error reportId=${reportId}`, err);
       await updateReportRun(reportRunId, {
         status: 'error',
         errorClass: err instanceof Error ? err.name : 'Error',

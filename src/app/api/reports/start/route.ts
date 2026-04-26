@@ -6,10 +6,15 @@
  *
  * If not set, production returns 503 instead of silently running a long
  * synchronous fallback. Local development may still run inline for convenience.
+ *
+ * `REPORT_START_REQUIRE_INNGEST=true` enforces the Inngest path: missing key
+ * or failed dispatch never falls back to inline; dispatch failure returns
+ * 503 with `code: INNGEST_DISPATCH_FAILED`.
  */
 export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
+import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
@@ -20,6 +25,7 @@ import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 import { createJobToken } from '@/lib/api/jobToken';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog } from '@/lib/observability/generationLog';
+import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -46,6 +52,53 @@ function isYoungGenerating(generationStartedAt: string | null | undefined): bool
   const t = new Date(generationStartedAt).getTime();
   if (Number.isNaN(t)) return false;
   return Date.now() - t < YOUNG_GENERATING_MS;
+}
+
+type ReportStartEngine = 'inngest' | 'node' | 'none';
+type ReportStartDispatchMode = 'inngest' | 'inline_fallback' | 'blocked';
+
+function parseReportStartEnv() {
+  const inngestConfigured = !!process.env.INNGEST_EVENT_KEY;
+  const allowInlineOverride =
+    process.env.REPORT_PIPELINE_INLINE === '1' || process.env.REPORT_PIPELINE_INLINE === 'true';
+  // ALWAYS allow inline fallback — on Hobby plan, Inngest may not be configured,
+  // and returning 503 means 100% failure rate. The pipeline's own budget management
+  // handles timeouts gracefully. Only block inline if EXPLICITLY required via env var.
+  const requireStrictInngest =
+    process.env.REPORT_START_REQUIRE_INNGEST === '1' ||
+    process.env.REPORT_START_REQUIRE_INNGEST === 'true';
+  const allowInlineFallback = !requireStrictInngest || allowInlineOverride;
+  return {
+    useInngest: inngestConfigured,
+    allowInlineOverride,
+    allowInlineFallback,
+    requireStrictInngest,
+  };
+}
+
+/** When actual dispatch path differs from what config implies, log once per request. */
+function warnReportStartDispatchModeMismatch(
+  reportId: string,
+  generationTraceId: string,
+  context: {
+    expected: ReportStartDispatchMode;
+    actual: ReportStartDispatchMode;
+    reason: string;
+    detail?: Record<string, unknown>;
+  },
+) {
+  console.warn(
+    `[trace:${generationTraceId}]`,
+    JSON.stringify({
+      event: 'report_start_dispatch_mode_mismatch',
+      reportId,
+      generation_trace_id: generationTraceId,
+      expected: context.expected,
+      actual: context.actual,
+      reason: context.reason,
+      ...context.detail,
+    }),
+  );
 }
 
 /** POST JSON shape (optional fields) — same names as report/[id] client kickoff. */
@@ -105,6 +158,9 @@ function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
  *    Client then polls /api/reports/[id]/status until complete.
  * 3. If not configured in production → returns 503 unless REPORT_PIPELINE_INLINE=1
  *    (local `next start` + E2E / quality-wave only).
+ * 4. `REPORT_START_REQUIRE_INNGEST=true` — no Inngest key or failed `inngest.send` must not
+ *    fall back to inline; failed send returns 503 with `code: INNGEST_DISPATCH_FAILED`.
+ *    Responses include `engine` and `dispatch_mode` (`inngest` | `inline_fallback` | `blocked`).
  */
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
@@ -120,6 +176,8 @@ export async function POST(request: NextRequest) {
       {
         error: 'Too many report generation requests. Please wait before starting another report.',
         resetAt: rl.resetAt,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
       },
       { status: 429 },
     );
@@ -130,15 +188,25 @@ export async function POST(request: NextRequest) {
   );
   const reportId = typeof body.reportId === 'string' ? body.reportId : null;
   if (!reportId) {
-    return NextResponse.json({ error: 'reportId required' }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: 'reportId required',
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 400 },
+    );
   }
+
+  const { useInngest, allowInlineFallback, requireStrictInngest, allowInlineOverride } =
+    parseReportStartEnv();
 
   const db = createServiceClient();
   const readDb = auth.isAdmin ? db : await createClient();
 
   const { data: existing } = await readDb
     .from('reports')
-    .select('status, report_data, generation_started_at')
+    .select('status, report_data, generation_started_at, generation_trace_id')
     .eq('id', reportId)
     .eq('user_id', auth.user.id)
     .maybeSingle();
@@ -150,7 +218,15 @@ export async function POST(request: NextRequest) {
     (rd!.days as unknown[]).length > 0;
 
   if (alreadyDone) {
-    return NextResponse.json({ reportId, ok: true, status: 'complete', skipped: true });
+    return NextResponse.json({
+      reportId,
+      ok: true,
+      status: 'complete',
+      skipped: true,
+      generation_trace_id: (existing?.generation_trace_id as string | null) ?? null,
+      engine: (useInngest ? 'inngest' : 'node') as ReportStartEngine,
+      dispatch_mode: (useInngest ? 'inngest' : 'inline_fallback') as ReportStartDispatchMode,
+    });
   }
 
   const forceRestart = body.forceRestart === true;
@@ -167,6 +243,9 @@ export async function POST(request: NextRequest) {
         status: 'generating',
         skippedPipeline: true,
         message: 'Generation already in progress — keep polling status.',
+        generation_trace_id: (existing?.generation_trace_id as string | null) ?? null,
+        engine: (useInngest ? 'inngest' : 'node') as ReportStartEngine,
+        dispatch_mode: (useInngest ? 'inngest' : 'inline_fallback') as ReportStartDispatchMode,
       },
       { status: 202 },
     );
@@ -182,10 +261,15 @@ export async function POST(request: NextRequest) {
         status: 'generating',
         skippedPipeline: true,
         message: 'Generation already claimed — keep polling status.',
+        generation_trace_id: (existing?.generation_trace_id as string | null) ?? null,
+        engine: (useInngest ? 'inngest' : 'node') as ReportStartEngine,
+        dispatch_mode: (useInngest ? 'inngest' : 'inline_fallback') as ReportStartDispatchMode,
       },
       { status: 202 },
     );
   }
+
+  const generationTraceId = randomUUID();
 
   const tzBody = body.timezone_offset;
   const timezoneOffset =
@@ -217,6 +301,7 @@ export async function POST(request: NextRequest) {
       payment_status: body.payment_status ?? 'free',
       generation_started_at: nowIso,
       updated_at: nowIso,
+      generation_trace_id: generationTraceId,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       generation_log: [] as any,
     },
@@ -225,7 +310,15 @@ export async function POST(request: NextRequest) {
 
   if (upsertError) {
     await releaseLock(lockKey);
-    return NextResponse.json({ error: upsertError.message }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: upsertError.message,
+        generation_trace_id: generationTraceId,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 500 },
+    );
   }
 
   const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
@@ -264,17 +357,16 @@ export async function POST(request: NextRequest) {
   };
 
   const base = request.nextUrl.origin;
-  const correlationId = `${reportId}-${Date.now()}`;
   const authHeaders: Record<string, string> = {};
   authHeaders['x-job-token'] = createJobToken({
     reportId,
     userId: auth.user.id,
     purpose: 'pipeline',
-    correlationId,
+    correlationId: generationTraceId,
     ttlSeconds: 60 * 60,
   });
   authHeaders['x-report-id'] = reportId;
-  authHeaders['x-correlation-id'] = correlationId;
+  authHeaders['x-correlation-id'] = generationTraceId;
   if (BYPASS_SECRET) {
     authHeaders['x-bypass-token'] = BYPASS_SECRET;
   } else {
@@ -283,14 +375,21 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Inngest background execution (production) ─────────────────────────────
-  // If INNGEST_EVENT_KEY is set, hand off to Inngest and return 202 immediately.
-  // The client polls /api/reports/[id]/status every 3s.
-  const useInngest = !!process.env.INNGEST_EVENT_KEY;
-  /** Dev server always allows inline. Prod requires Inngest unless explicitly opted in (E2E / local `next start`). */
-  const allowInlineOverride =
-    process.env.REPORT_PIPELINE_INLINE === '1' ||
-    process.env.REPORT_PIPELINE_INLINE === 'true';
-  const allowInlineFallback = process.env.NODE_ENV !== 'production' || allowInlineOverride;
+  // Only block if REPORT_START_REQUIRE_INNGEST is explicitly set.
+  // Otherwise, always fall through to inline execution to avoid 100% failure on Hobby plan.
+  if (!useInngest && requireStrictInngest) {
+    await releaseLock(lockKey);
+    return NextResponse.json(
+      {
+        error: 'Background job queue is required but INNGEST_EVENT_KEY is not set.',
+        code: 'INNGEST_NOT_CONFIGURED' as const,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        generation_trace_id: generationTraceId,
+      },
+      { status: 503 },
+    );
+  }
 
   if (useInngest) {
     try {
@@ -304,31 +403,67 @@ export async function POST(request: NextRequest) {
           input,
           base,
           authHeaders,
-          correlationId,
+          correlationId: generationTraceId,
+          generation_trace_id: generationTraceId,
         },
       });
-      console.log(`[reports/start] dispatched to Inngest: ${reportId}`);
+      console.log(
+        `[trace:${generationTraceId}] [reports/start] dispatched to Inngest reportId=${reportId}`,
+      );
       return NextResponse.json(
-        { reportId, ok: true, status: 'generating', engine: 'inngest' },
+        {
+          reportId,
+          ok: true,
+          status: 'generating',
+          engine: 'inngest' as ReportStartEngine,
+          dispatch_mode: 'inngest' as ReportStartDispatchMode,
+          generation_trace_id: generationTraceId,
+        },
         { status: 202 },
       );
     } catch (err) {
-      console.error(`[reports/start] Inngest dispatch failed:`, err);
-      if (!allowInlineFallback) {
+      console.error(`[trace:${generationTraceId}] [reports/start] Inngest dispatch failed:`, err);
+      const noInlineFallback = requireStrictInngest || !allowInlineFallback;
+      if (noInlineFallback) {
+        warnReportStartDispatchModeMismatch(reportId, generationTraceId, {
+          expected: 'inngest',
+          actual: 'blocked',
+          reason: 'inngest_send_failed',
+          detail: {
+            requireStrictInngest,
+            allowInlineFallback,
+            err: err instanceof Error ? err.message : String(err),
+            generation_trace_id: generationTraceId,
+          },
+        });
         await releaseLock(lockKey);
         return NextResponse.json(
-          { error: 'Background job queue is temporarily unavailable. Please retry shortly.' },
+          {
+            error: 'Background queue unavailable, please retry in a minute.',
+            code: 'INNGEST_DISPATCH_FAILED' as const,
+            engine: 'inngest' as ReportStartEngine,
+            dispatch_mode: 'blocked' as ReportStartDispatchMode,
+            generation_trace_id: generationTraceId,
+          },
           { status: 503 },
         );
       }
-      console.warn(`[reports/start] local/dev fallback running inline for ${reportId}`);
+      warnReportStartDispatchModeMismatch(reportId, generationTraceId, {
+        expected: 'inngest',
+        actual: 'inline_fallback',
+        reason: 'inngest_send_failed',
+        detail: { err: err instanceof Error ? err.message : String(err), generation_trace_id: generationTraceId },
+      });
     }
-  } else if (!allowInlineFallback) {
-    await releaseLock(lockKey);
-    return NextResponse.json(
-      { error: 'Background job queue is not configured. Set INNGEST_EVENT_KEY for production.' },
-      { status: 503 },
-    );
+  }
+
+  if (process.env.NODE_ENV === 'production' && !useInngest && allowInlineOverride) {
+    warnReportStartDispatchModeMismatch(reportId, generationTraceId, {
+      expected: 'inngest',
+      actual: 'inline_fallback',
+      reason: 'report_pipeline_inline_in_production_without_inngest',
+      detail: { generation_trace_id: generationTraceId },
+    });
   }
 
   // ── Inline synchronous fallback (dev / no Inngest key) ───────────────────
@@ -343,7 +478,7 @@ export async function POST(request: NextRequest) {
       authHeaders,
     );
   } catch (err) {
-    console.error(`[reports/start] pipeline failed for ${reportId}:`, err);
+    console.error(`[trace:${generationTraceId}] [reports/start] pipeline failed for ${reportId}:`, err);
     const errMsg = err instanceof Error ? err.message : String(err);
     await appendReportGenerationLog({
       reportId,
@@ -354,20 +489,24 @@ export async function POST(request: NextRequest) {
         level: 'error',
         step: 'start_route_inline_pipeline',
         message: errMsg,
-        detail: { route: 'POST /api/reports/start' },
+        detail: { route: 'POST /api/reports/start', generation_trace_id: generationTraceId },
       },
     });
-    await db
-      .from('reports')
-      .update({
-        status: 'error',
-        report_data: { error: String(err) },
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', reportId)
-      .neq('status', 'complete');
+    await markReportAsFailed(db, reportId, auth.user.id, {
+      message: errMsg,
+      errorStep: 'start_route_inline_pipeline',
+      generationErrorCode: inferReportGenerationErrorCode(errMsg, 'start_route_inline_pipeline'),
+    });
     await releaseLock(lockKey);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: String(err),
+        generation_trace_id: generationTraceId,
+        engine: 'node' as ReportStartEngine,
+        dispatch_mode: 'inline_fallback' as ReportStartDispatchMode,
+      },
+      { status: 500 },
+    );
   }
 
   const { data: finalRow } = await db
@@ -378,15 +517,27 @@ export async function POST(request: NextRequest) {
 
   if (finalRow?.status !== 'complete') {
     console.error(
-      `[reports/start] pipeline returned but DB status is '${finalRow?.status}' for ${reportId}`,
+      `[trace:${generationTraceId}] [reports/start] pipeline returned but DB status is '${finalRow?.status}' for ${reportId}`,
     );
     await releaseLock(lockKey);
     return NextResponse.json(
-      { error: 'Report pipeline did not complete — please retry.' },
+      {
+        error: 'Report pipeline did not complete — please retry.',
+        generation_trace_id: generationTraceId,
+        engine: 'node' as ReportStartEngine,
+        dispatch_mode: 'inline_fallback' as ReportStartDispatchMode,
+      },
       { status: 500 },
     );
   }
 
   await releaseLock(lockKey);
-  return NextResponse.json({ reportId, ok: true, status: 'complete' });
+  return NextResponse.json({
+    reportId,
+    ok: true,
+    status: 'complete',
+    generation_trace_id: generationTraceId,
+    engine: 'node' as ReportStartEngine,
+    dispatch_mode: 'inline_fallback' as ReportStartDispatchMode,
+  });
 }

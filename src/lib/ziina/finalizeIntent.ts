@@ -3,6 +3,7 @@
  * Idempotent: safe to call twice for the same completed intent.
  */
 
+import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { inngest } from '@/lib/inngest/client';
 import type { PipelineInput } from '@/lib/reports/orchestrator';
@@ -135,7 +136,24 @@ async function maybeDispatchReportGenerate(
   }
 
   try {
-    const correlationId = `${reportId}-ziina-${Date.now()}`;
+    const generationTraceId = randomUUID();
+    const nowIso = new Date().toISOString();
+    const { error: upErr } = await db
+      .from('reports')
+      .update({
+        status: 'generating',
+        generation_trace_id: generationTraceId,
+        generation_started_at: nowIso,
+        updated_at: nowIso,
+      })
+      .eq('id', reportId)
+      .eq('user_id', r.user_id);
+    if (upErr) {
+      console.warn(
+        `[trace:${generationTraceId}] [ziina/finalize] could not persist generation_trace_id:`,
+        upErr.message,
+      );
+    }
     await inngest.send({
       id: `report-generate:${reportId}`,
       name: 'report/generate',
@@ -145,11 +163,14 @@ async function maybeDispatchReportGenerate(
         userEmail: r.user_email ?? '',
         input,
         base: baseUrl,
-        authHeaders: buildAuthHeaders(reportId, r.user_id, correlationId),
-        correlationId,
+        authHeaders: buildAuthHeaders(reportId, r.user_id, generationTraceId),
+        correlationId: generationTraceId,
+        generation_trace_id: generationTraceId,
       },
     });
-    console.log(`[ziina/finalize] dispatched report/generate for ${reportId}`);
+    console.log(
+      `[trace:${generationTraceId}] [ziina/finalize] dispatched report/generate for ${reportId}`,
+    );
   } catch (e) {
     console.error('[ziina/finalize] inngest report/generate failed:', e);
   }

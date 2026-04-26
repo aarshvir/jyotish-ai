@@ -6,6 +6,7 @@
 
 import { createServiceClient } from '@/lib/supabase/admin';
 import { appendReportGenerationLog } from '@/lib/observability/generationLog';
+import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { validateReportData } from '@/lib/validation/reportValidation';
 import type { JyotishRagMode } from '@/lib/rag/ragMode';
 import { PHASE } from '@/lib/reports/phases/slugs';
@@ -392,6 +393,7 @@ type WeeksPayloadEntry = {
 function padWeeksSynthesisToSix(
   data: WeeksSynthApiResult,
   weeksPayload: WeeksPayloadEntry[],
+  logWarn?: (...args: unknown[]) => void,
 ): WeeksSynthApiResult {
   const existing = [...(data.weeks ?? [])];
   if (existing.length >= 6) {
@@ -415,7 +417,7 @@ function padWeeksSynthesisToSix(
     });
   }
   if (existing.length < 6) {
-    console.warn(
+    (logWarn ?? console.warn)(
       '[orchestrator] padWeeksSynthesisToSix: still <6 after pad — check weeksPayload length',
     );
   }
@@ -461,6 +463,10 @@ export async function generateReportPipeline(
     'x-correlation-id': correlationId,
     ...(reportRunId ? { 'x-report-run-id': reportRunId } : {}),
   };
+  const traceTag = `[trace:${correlationId}]`;
+  const tlog = (...args: unknown[]) => console.log(traceTag, ...args);
+  const twarn = (...args: unknown[]) => console.warn(traceTag, ...args);
+  const terr = (...args: unknown[]) => console.error(traceTag, ...args);
   const dailyGridLimit = createConcurrencyLimiter(5);
   const commentaryLimit = createConcurrencyLimiter(3);
   // Use SKIP_REPORT_VALIDATION (server-only). NEXT_PUBLIC_SKIP_VALIDATION kept as legacy alias.
@@ -473,15 +479,53 @@ export async function generateReportPipeline(
       : ({} as Record<string, string>);
 
   const db = createServiceClient();
+  /** Latest `generation_step` written via dbSetProgress; used when persisting error metadata. */
+  let lastGenerationStep: string = PHASE.EPHEMERIS_FETCHING;
   const pipelineT0 = Date.now();
-  /** Soft-budget for assertWithinBudget() checks. Set to 255s so the pipeline has ~25s
-   *  left to assemble and save before the 285s hard-kill fires (Vercel hard limit = 300s).
-   *  Override with REPORT_PIPELINE_BUDGET_MS env var for plans with higher maxDuration. */
-  const budgetMs =
-    Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 255_000;
-  /** Hard-kill fires at 285s: must be > budgetMs (so assertWithinBudget runs first)
-   *  and < Vercel's 300s FUNCTION_INVOCATION_TIMEOUT. */
-  const hardKillMs = Math.min(budgetMs + 30_000, 285_000);
+
+  /**
+   * Hobby-aware budget detection.
+   * Vercel Hobby plan caps serverless functions at 60s. Pro allows up to 300s.
+   * When running inside an Inngest step.run, each step is its own invocation,
+   * so the budget applies per-step. For inline execution (no Inngest), the
+   * entire pipeline must fit within the function timeout.
+   *
+   * Detection priority:
+   *   1. REPORT_PIPELINE_BUDGET_MS env var (explicit override)
+   *   2. Auto-detect from VERCEL_FUNCTION_MAX_DURATION (set by Vercel runtime)
+   *   3. Default to 55s (safe for Hobby) if on Vercel production
+   *   4. Default to 255s for local dev or Pro plan
+   */
+  const isVercel = !!process.env.VERCEL;
+  const vercelMaxDuration = Number(process.env.VERCEL_FUNCTION_MAX_DURATION || '0');
+  const explicitBudget = Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 0;
+  const isRunningInInngestStep = stopAfter != null; // Inngest phases set stopAfterPhase
+  const defaultBudgetMs = (() => {
+    if (explicitBudget > 0) return explicitBudget;
+    // Inside Inngest step: each phase gets its own function invocation
+    // Use per-step budget that fits within the function timeout
+    if (isRunningInInngestStep) {
+      if (vercelMaxDuration > 0) return Math.max((vercelMaxDuration - 5) * 1000, 10_000);
+      // Hobby default: 55s per step (60s max - 5s buffer)
+      if (isVercel && process.env.VERCEL_ENV === 'production') return 55_000;
+      return 255_000;
+    }
+    // Inline execution: entire pipeline in one function call
+    if (vercelMaxDuration > 0) return Math.max((vercelMaxDuration - 10) * 1000, 10_000);
+    // Hobby default: 50s for full pipeline (aggressive but better than 503)
+    if (isVercel && process.env.VERCEL_ENV === 'production') return 50_000;
+    return 255_000;
+  })();
+  const budgetMs = defaultBudgetMs;
+  const isHobbyBudget = budgetMs <= 60_000;
+
+  if (isHobbyBudget) {
+    tlog(`[orchestrator] Hobby-mode budget: ${budgetMs}ms (Inngest step: ${isRunningInInngestStep})`);
+  }
+
+  /** Hard-kill fires shortly after budget: must be > budgetMs (so assertWithinBudget runs first)
+   *  and < Vercel's actual function timeout. */
+  const hardKillMs = Math.min(budgetMs + (isHobbyBudget ? 8_000 : 30_000), isHobbyBudget ? 58_000 : 285_000);
 
   /**
    * Shared abort controller wired into every commentary fetch.
@@ -499,7 +543,7 @@ export async function generateReportPipeline(
    * direct DB update as a safety net.
    */
   let hardKillTimer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
-    console.error(`[orchestrator] hard-kill timeout (${hardKillMs}ms) for ${reportId}`);
+    terr(`[orchestrator] hard-kill timeout (${hardKillMs}ms) for ${reportId}`);
     void appendReportGenerationLog({
       reportId,
       userId,
@@ -509,31 +553,31 @@ export async function generateReportPipeline(
         level: 'error',
         step: 'hard_kill_timeout',
         message: `Pipeline exceeded ${hardKillMs}ms wall clock`,
-        detail: { pipeline_run: pipelineRunLabel, hardKillMs },
+        detail: { pipeline_run: pipelineRunLabel, hardKillMs, generation_trace_id: correlationId },
       },
     });
     onStep({ type: 'error', message: 'Report generation timed out — please try again.' });
     // Abort all in-flight commentary fetches so Promise.all unwinds immediately.
     budgetAbortController.abort(new Error('Pipeline budget exceeded'));
-    // Direct DB update as safety net. Guard with neq('status','complete') so a
-    // report that reached dbSaveFinal just before the kill is NOT downgraded.
-    db.from('reports')
-      .update({ status: 'error', updated_at: new Date().toISOString() })
-      .eq('id', reportId)
-      .eq('user_id', userId)
-      .neq('status', 'complete')
-      .then(({ error }) => {
-        if (error) console.error('[orchestrator] hard-kill DB update failed:', error.message);
-        else console.log('[orchestrator] hard-kill DB update (guard) done for', reportId);
-      });
+    // Guard with neq('status','complete') inside markReportAsFailed
+    const killMsg = `Report generation timed out after ${Math.round(hardKillMs / 1000)}s (server budget). Please try again.`;
+    void markReportAsFailed(db, reportId, userId, {
+      message: killMsg,
+      errorStep: 'hard_kill_timeout',
+      generationErrorCode: 'BUDGET_EXCEEDED',
+      generationErrorAtPhase: lastGenerationStep,
+    }).then(() => {
+      tlog('[orchestrator] hard-kill markReportAsFailed done for', reportId);
+    });
   }, hardKillMs);
 
   function logStep(step: string, extra?: Record<string, unknown>) {
     const elapsed_ms = Date.now() - pipelineT0;
-    console.log(
+    tlog(
       JSON.stringify({
         event: 'orchestrator_step',
         reportId,
+        generation_trace_id: correlationId,
         step,
         ms: elapsed_ms,
         ...extra,
@@ -548,7 +592,7 @@ export async function generateReportPipeline(
         level: 'info',
         step,
         message: typeof extra?.label === 'string' ? extra.label : step,
-        detail: { ...extra, pipeline_run: pipelineRunLabel },
+        detail: { ...extra, pipeline_run: pipelineRunLabel, generation_trace_id: correlationId },
       },
     });
   }
@@ -558,15 +602,14 @@ export async function generateReportPipeline(
     if (elapsed > budgetMs) {
       logStep('budget_exceeded', { phase, budgetMs });
       try {
-        // Guard with neq('status','complete') — never downgrade a completed report.
-        await db
-          .from('reports')
-          .update({ status: 'error', updated_at: new Date().toISOString() })
-          .eq('id', reportId)
-          .eq('user_id', userId)
-          .neq('status', 'complete');
+        await markReportAsFailed(db, reportId, userId, {
+          message: `Pipeline time budget exceeded (${phase})`,
+          errorStep: 'budget_exceeded',
+          generationErrorCode: 'BUDGET_EXCEEDED',
+          generationErrorAtPhase: lastGenerationStep,
+        });
       } catch (e) {
-        console.error('[orchestrator] budget mark error failed:', e);
+        terr('[orchestrator] budget mark error failed:', e);
       }
       throw new Error(`Pipeline time budget exceeded (${phase})`);
     }
@@ -577,6 +620,7 @@ export async function generateReportPipeline(
 
   // Helper: write real-time progress so the poll endpoint can expose it
   async function dbSetProgress(step: string, progress: number) {
+    lastGenerationStep = step;
     if (progress < lastProgressPct) {
       return;
     }
@@ -592,7 +636,7 @@ export async function generateReportPipeline(
         .eq('id', reportId)
         .eq('user_id', userId);
     } catch (e) {
-      console.warn('[orchestrator] dbSetProgress failed:', e instanceof Error ? e.message : String(e));
+      twarn('[orchestrator] dbSetProgress failed:', e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -666,7 +710,7 @@ export async function generateReportPipeline(
       { onConflict: 'id', ignoreDuplicates: false },
     );
     if (error && error.code !== '23505') {
-      console.error('[orchestrator] dbInsertGenerating:', error.message);
+      terr('[orchestrator] dbInsertGenerating:', error.message);
     }
   }
 
@@ -685,7 +729,7 @@ export async function generateReportPipeline(
       })
       .eq('id', reportId)
       .eq('user_id', userId);
-    if (error) console.error('[orchestrator] dbSaveEphemeris:', error.message);
+    if (error) terr('[orchestrator] dbSaveEphemeris:', error.message);
   }
 
   async function dbSaveDayScores(forecastDays: ForecastDayIntermediate[]) {
@@ -698,7 +742,7 @@ export async function generateReportPipeline(
       .update({ day_scores: dayScores, updated_at: new Date().toISOString() })
       .eq('id', reportId)
       .eq('user_id', userId);
-    if (error) console.error('[orchestrator] dbSaveDayScores:', error.message);
+    if (error) terr('[orchestrator] dbSaveDayScores:', error.message);
   }
 
   async function dbSaveFinal(reportPayload: Record<string, unknown>) {
@@ -721,7 +765,7 @@ export async function generateReportPipeline(
     for (let attempt = 0; attempt < 3; attempt++) {
       if (attempt > 0) {
         await new Promise((r) => setTimeout(r, 1500 * attempt));
-        console.warn(`[orchestrator] dbSaveFinal retry ${attempt} for ${reportId}`);
+        twarn(`[orchestrator] dbSaveFinal retry ${attempt} for ${reportId}`);
       }
       const { error } = await db
         .from('reports')
@@ -746,7 +790,7 @@ export async function generateReportPipeline(
         .eq('user_id', userId);
       if (!error) return; // success
       lastError = new Error(`dbSaveFinal failed: ${error.message}`);
-      console.error('[orchestrator] dbSaveFinal attempt', attempt, ':', error.message, 'code:', error.code);
+      terr('[orchestrator] dbSaveFinal attempt', attempt, ':', error.message, 'code:', error.code);
       // Don't retry on hard constraint violations (e.g. FK errors)
       if (error.code && ['23502', '23503', '23505', '42501', '42703'].includes(error.code)) break;
     }
@@ -765,9 +809,7 @@ export async function generateReportPipeline(
       await loadPipelineState(db, reportId);
     let pipelineState: PipelineState = loadedState;
     if (existingCheckpoint) {
-      console.log(
-        `[orchestrator] resuming ${reportId} from checkpoint=${existingCheckpoint}`,
-      );
+      tlog(`[orchestrator] resuming ${reportId} from checkpoint=${existingCheckpoint}`);
       logStep('resume_from_checkpoint', { checkpoint: existingCheckpoint });
     }
 
@@ -802,39 +844,55 @@ export async function generateReportPipeline(
       logStep('ephemeris_resumed');
     } else {
     try {
+      // Outbound hop must outlive the ephemeris route (max 90s) + EphemerisAgent (60s to Swiss API).
+      const EPH_OUTER_TIMEOUT_MS = 95_000;
       const ephRes = await traceAgentRun('ephemeris:natal-chart', 'ephemeris', () =>
-        resilientFetch(`${base}/api/agents/ephemeris`, {
-          method: 'POST',
-          headers: h,
-          body: JSON.stringify({
-            type: 'natal-chart',
-            birth_date: input.date,
-            birth_time: formatEphemerisBirthTime(input.time),
-            birth_city: input.city,
-            birth_lat: input.lat,
-            birth_lng: input.lng,
-          }),
-        }),
+        resilientFetch(
+          `${base}/api/agents/ephemeris`,
+          {
+            method: 'POST',
+            headers: h,
+            body: JSON.stringify({
+              type: 'natal-chart',
+              birth_date: input.date,
+              birth_time: formatEphemerisBirthTime(input.time),
+              birth_city: input.city,
+              birth_lat: input.lat,
+              birth_lng: input.lng,
+            }),
+          },
+          3,
+          2000,
+          EPH_OUTER_TIMEOUT_MS,
+        ),
       );
       if (!ephRes.ok) {
-        const e = await ephRes.json().catch(() => ({}));
-        throw new Error((e as { error?: string }).error ?? 'Ephemeris failed');
+        const text = await ephRes.text();
+        let parsed: { error?: string; success?: boolean } = {};
+        try {
+          parsed = JSON.parse(text) as { error?: string };
+        } catch {
+          /* raw body */
+        }
+        const hint = parsed.error?.trim() || text.trim().slice(0, 500) || 'empty body';
+        throw new Error(`Ephemeris HTTP ${ephRes.status}: ${hint}`);
       }
       const ephResult = await ephRes.json();
       ephemerisData = ephResult.data ?? ephResult;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error('[orchestrator][STEP-1] failed:', msg);
-      onStep({ type: 'error', message: `Birth chart calculation failed: ${msg}. Please try again.` });
+      terr('[orchestrator][STEP-1] failed:', msg);
+      const userMsg = `Birth chart calculation failed: ${msg}. Please try again.`;
+      onStep({ type: 'error', message: userMsg });
       try {
-        await db
-          .from('reports')
-          .update({ status: 'error', updated_at: new Date().toISOString() })
-          .eq('id', reportId)
-          .eq('user_id', userId)
-          .neq('status', 'complete');
+        await markReportAsFailed(db, reportId, userId, {
+          message: userMsg,
+          errorStep: 'ephemeris',
+          generationErrorCode: 'EPHEMERIS_DOWN',
+          generationErrorAtPhase: PHASE.EPHEMERIS_FETCHING,
+        });
       } catch (e) {
-        console.error('[orchestrator] mark error after ephemeris fail:', e);
+        terr('[orchestrator] mark error after ephemeris fail:', e);
       }
       // Throw so the outer catch in start/route.ts receives the error, sets status 500,
       // and the frontend polling sees the report row as 'error' rather than a false 'complete'.
@@ -903,7 +961,7 @@ export async function generateReportPipeline(
             nativityProfile = raw.data ?? raw;
           }
         } catch (err) {
-          console.error('[orchestrator][STEP-2] failed:', err instanceof Error ? err.message : String(err));
+          terr('[orchestrator][STEP-2] failed:', err instanceof Error ? err.message : String(err));
         }
       })(),
       // Step 3: Daily grids
@@ -935,7 +993,7 @@ export async function generateReportPipeline(
           );
           onStep({ type: 'step_completed', step: 2 });
         } catch (err) {
-          console.error('[orchestrator][STEP-3] failed:', err instanceof Error ? err.message : String(err));
+          terr('[orchestrator][STEP-3] failed:', err instanceof Error ? err.message : String(err));
         }
       })(),
     ]);
@@ -1158,7 +1216,7 @@ export async function generateReportPipeline(
           void dbSetProgress(PHASE.DAILY_BATCH_3, 50);
           onStep({ type: 'partial_report_updated', field: 'daily_overviews' });
         } catch (e) {
-          console.error('[orchestrator][STEP-4+5] failed:', e instanceof Error ? e.message : String(e));
+          terr('[orchestrator][STEP-4+5] failed:', e instanceof Error ? e.message : String(e));
           const fallback =
             'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
           forecastDays.forEach((day) => {
@@ -1272,7 +1330,7 @@ export async function generateReportPipeline(
           void dbSetProgress(PHASE.HOURLY_BATCH_6, 65);
           onStep({ type: 'partial_report_updated', field: 'hourly_commentary' });
         } catch (err) {
-          console.error('[orchestrator][STEP-6] failed:', err instanceof Error ? err.message : String(err));
+          terr('[orchestrator][STEP-6] failed:', err instanceof Error ? err.message : String(err));
         }
       })(),
 
@@ -1439,7 +1497,7 @@ export async function generateReportPipeline(
           void dbSetProgress(PHASE.MONTHS_SYNTHESIS, 75);
           onStep({ type: 'partial_report_updated', field: 'months' });
         } catch (e) {
-          console.error('[orchestrator][STEP-7] failed:', e instanceof Error ? e.message : String(e));
+          terr('[orchestrator][STEP-7] failed:', e instanceof Error ? e.message : String(e));
           if (!allowPartialLlmFallbackForPlan(input)) {
             throw e instanceof Error ? e : new Error(String(e));
           }
@@ -1505,19 +1563,19 @@ export async function generateReportPipeline(
                 `weeks-synthesis: HTTP ${synthRes.status} — paid report cannot continue without week narratives.`,
               );
             }
-            console.error('[orchestrator][STEP-8] weeks-synthesis failed:', synthRes.status);
+            terr('[orchestrator][STEP-8] weeks-synthesis failed:', synthRes.status);
           }
         } catch (err) {
           if (!allowPartialLlmFallbackForPlan(input)) {
             throw err instanceof Error ? err : new Error(String(err));
           }
-          console.error('[orchestrator][STEP-8] failed:', err instanceof Error ? err.message : String(err));
+          terr('[orchestrator][STEP-8] failed:', err instanceof Error ? err.message : String(err));
         }
       })(),
     ]);
 
     const weekCountBeforePad = (weeksSynthData.weeks ?? []).length;
-    weeksSynthData = padWeeksSynthesisToSix(weeksSynthData, weeksPayload);
+    weeksSynthData = padWeeksSynthesisToSix(weeksSynthData, weeksPayload, twarn);
     if ((weeksSynthData.weeks ?? []).length > weekCountBeforePad) {
       void appendReportGenerationLog({
         reportId,
@@ -1594,7 +1652,7 @@ export async function generateReportPipeline(
     const budgetUsed = Date.now() - pipelineT0;
     const skipValidationBudget = budgetUsed > budgetMs * 0.85;
     if (skipValidationBudget) {
-      console.warn(`[orchestrator] skipping validation — ${Math.round(budgetUsed / 1000)}s elapsed (${Math.round((budgetUsed / budgetMs) * 100)}% of budget)`);
+      twarn(`[orchestrator] skipping validation — ${Math.round(budgetUsed / 1000)}s elapsed (${Math.round((budgetUsed / budgetMs) * 100)}% of budget)`);
     }
     if (!skipValidation && !skipValidationBudget) {
       onStep({ type: 'step_started', step: 7, message: 'Validating commentary quality...', detail: 'Pass 1: checking word counts, STRATEGY sections, headlines' });
@@ -1655,7 +1713,7 @@ export async function generateReportPipeline(
         void dbSetProgress(PHASE.FINALIZE_PERSIST, 93);
         onStep({ type: 'step_completed', step: 9 });
       } catch (err) {
-        console.error('[orchestrator][STEP-9] validation error:', err);
+        terr('[orchestrator][STEP-9] validation error:', err);
       }
     }
 
@@ -1764,11 +1822,11 @@ export async function generateReportPipeline(
 
     const finalReportTyped = finalReport as unknown as ReportData;
     const errors = validateReportData(finalReportTyped);
-    if (errors.length > 0) console.warn('[orchestrator] validation issues:', errors);
+    if (errors.length > 0) twarn('[orchestrator] validation issues:', errors);
 
     // Save to DB
     const payloadBytes = JSON.stringify(finalReport).length;
-    console.log(`[orchestrator] report payload size: ${(payloadBytes / 1024).toFixed(0)} KB for ${reportId}`);
+    tlog(`[orchestrator] report payload size: ${(payloadBytes / 1024).toFixed(0)} KB for ${reportId}`);
     void dbSetProgress(PHASE.FINALIZE_PERSIST, 97);
     await dbSaveFinal(finalReport as unknown as Record<string, unknown>);
     onStep({ type: 'step_completed', step: 10 });
@@ -1786,7 +1844,7 @@ export async function generateReportPipeline(
       throw err;
     }
     const message = err instanceof Error ? err.message : 'Failed to generate report';
-    console.error('[orchestrator] fatal error:', message);
+    terr('[orchestrator] fatal error:', message);
     void appendReportGenerationLog({
       reportId,
       userId,
@@ -1798,6 +1856,7 @@ export async function generateReportPipeline(
         message,
         detail: {
           pipeline_run: pipelineRunLabel,
+          generation_trace_id: correlationId,
           name: err instanceof Error ? err.name : 'Error',
           stack: err instanceof Error ? err.stack?.slice(0, 4000) : undefined,
         },
@@ -1805,16 +1864,14 @@ export async function generateReportPipeline(
     });
     onStep({ type: 'error', message });
     try {
-      // Guard with neq('status','complete') — never downgrade a report that
-      // managed to call dbSaveFinal successfully before the exception propagated.
-      await db
-        .from('reports')
-        .update({ status: 'error', updated_at: new Date().toISOString() })
-        .eq('id', reportId)
-        .eq('user_id', userId)
-        .neq('status', 'complete');
+      await markReportAsFailed(db, reportId, userId, {
+        message,
+        errorStep: 'pipeline_fatal',
+        generationErrorCode: inferReportGenerationErrorCode(message, 'pipeline_fatal'),
+        generationErrorAtPhase: lastGenerationStep,
+      });
     } catch (markErr) {
-      console.error('[orchestrator] failed to mark report as error:', markErr);
+      terr('[orchestrator] failed to mark report as error:', markErr);
     }
     // Re-throw so callers (start/route.ts) can return HTTP 500 and the frontend
     // knows the pipeline failed rather than falsely receiving a 200 "complete".

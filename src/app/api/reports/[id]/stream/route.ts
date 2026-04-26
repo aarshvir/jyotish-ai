@@ -10,7 +10,7 @@
  * emits SSE `phase` frames so alternative clients (e.g. CLI tools) can watch
  * generation progress without hitting the status endpoint 300 times.
  *
- * The main web UI uses Supabase Realtime + /api/reports/[id]/status polling
+ * The main web UI uses Supabase Realtime + adaptive /api/reports/[id]/status polling
  * and does NOT rely on this route. It is kept as a public observability API.
  */
 

@@ -20,6 +20,10 @@ interface GeneratingScreenProps {
   onElapsed: (s: number) => void;
   generationStartRef: MutableRefObject<number | null>;
   serverPoll: ServerPollState | null;
+  /** Transient status/poll failures — generation may still be running on the server. */
+  reconnecting?: boolean;
+  /** Tier A copy (non-terminal); overrides default reconnecting label when set. */
+  connectionHint?: string | null;
   /** Kept for compatibility; main UI progress now uses Realtime + polling only. */
   extraHeaders?: Record<string, string>;
 }
@@ -38,6 +42,8 @@ export function GeneratingScreen({
   onElapsed,
   generationStartRef,
   serverPoll,
+  reconnecting = false,
+  connectionHint = null,
 }: GeneratingScreenProps) {
   const [telemetryLines, setTelemetryLines] = useState<TelemetryLine[]>([]);
   const lastSlugRef = useRef<string | null>(null);
@@ -118,6 +124,15 @@ export function GeneratingScreen({
         <p className="text-dust text-sm mb-8">
           Your blueprint is generating securely in the background. You may close this tab.
         </p>
+        {reconnecting ? (
+          <p
+            className="text-amber/85 text-xs font-mono mb-6 -mt-4 animate-pulse"
+            role="status"
+            aria-live="polite"
+          >
+            {connectionHint?.trim() ? connectionHint : 'Reconnecting…'}
+          </p>
+        ) : null}
 
         {/* Phase progress bar with per-segment boundaries */}
         <div className="w-full mb-6">

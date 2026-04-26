@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { markReportAsFailedUnscoped } from '@/lib/reports/reportErrors';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -50,16 +51,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: true, marked: 0, ids: [] });
   }
 
-  const now = new Date().toISOString();
-  const { error: upErr } = await db
-    .from('reports')
-    .update({ status: 'error', updated_at: now })
-    .in('id', ids)
-    .eq('status', 'generating');
-
-  if (upErr) {
-    console.error('[cron/stale-reports] update:', upErr.message);
-    return NextResponse.json({ error: upErr.message }, { status: 500 });
+  for (const id of ids) {
+    await markReportAsFailedUnscoped(db, id, {
+      message:
+        'Report generation was interrupted (stale — no completion after extended wait). Please try again.',
+      errorStep: 'stale_generating',
+      errorCode: 'STALE',
+      generationErrorCode: 'STATUS_POLL_TIMEOUT',
+    });
   }
 
   console.warn(`[cron/stale-reports] marked ${ids.length} stale generating rows as error`);

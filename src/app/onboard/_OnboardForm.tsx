@@ -921,11 +921,14 @@ function OnboardPageInner() {
         body: JSON.stringify(startPayload),
       });
       if (!startRes.ok) {
-        const errBody = await startRes.json().catch(() => ({})) as { error?: string };
+        const errBody = await startRes.json().catch(() => ({})) as { error?: string; code?: string };
         console.error('Report start failed:', errBody.error);
         setPaymentReturnBanner({
           type: 'error',
-          message: errBody.error ?? 'Failed to start report generation. Please try again.',
+          message:
+            errBody.code === 'INNGEST_DISPATCH_FAILED'
+              ? 'Background queue unavailable, please retry in a minute'
+              : (errBody.error ?? 'Failed to start report generation. Please try again.'),
         });
         setIsLoading(false);
         if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -16,6 +16,9 @@ export interface ReportRealtimeSnapshot {
   status: string | null;
   generation_step: string | null;
   generation_progress: number | null;
+  generation_trace_id?: string | null;
+  generation_error_code?: string | null;
+  generation_error_at_phase?: string | null;
   report_data: Record<string, unknown> | null;
   payment_status: string | null;
   updated_at: string | null;

@@ -25,6 +25,7 @@ import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
 import { buildFunctionalLordGroups } from '@/lib/engine/functionalNature';
 import { lagnaSignToIndex } from '@/lib/engine/horaBase';
 import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
+import { generationErrorCtaKind } from '@/lib/reports/reportErrors';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -89,6 +90,28 @@ function birthDisplayForUi(
 /** Stop polling after this if status is still `generating` (server likely dead or orphaned row). */
 const CLIENT_GENERATING_TIMEOUT_MS = 15 * 60 * 1000;
 
+/** Tier B: no successful HTTP `/status` for this long while Realtime is disconnected → terminal. */
+const STATUS_SIGNAL_STALE_MS = 90_000;
+/** Log once when consecutive transient /status failures reach this count (tolerance band vs legacy ~5). */
+const POLL_TRANSIENT_FAILURE_WARN_THRESHOLD = 10;
+
+/** Baseline HTTP status poll when Realtime is not healthy (± jitter). */
+const STATUS_POLL_BASE_MS = 3_000;
+/** Half-width jitter around baseline (3s ± 500ms). */
+const STATUS_POLL_BASE_JITTER_MS = 500;
+/** When Realtime is joined, poll is a sparse safety net (8–10s jitter). */
+const STATUS_POLL_REALTIME_MIN_MS = 8_000;
+const STATUS_POLL_REALTIME_JITTER_MS = 2_000;
+
+function realtimeStatusPollDelayMs(): number {
+  return STATUS_POLL_REALTIME_MIN_MS + Math.floor(Math.random() * STATUS_POLL_REALTIME_JITTER_MS);
+}
+
+function basePollIntervalWithJitterMs(): number {
+  const delta = Math.floor(Math.random() * (STATUS_POLL_BASE_JITTER_MS * 2 + 1)) - STATUS_POLL_BASE_JITTER_MS;
+  return STATUS_POLL_BASE_MS + delta;
+}
+
 function ReportContent() {
   const routeParams = useParams();
   const reportIdFromRoute = typeof routeParams?.id === 'string' ? routeParams.id : '';
@@ -114,7 +137,13 @@ function ReportContent() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** From DB when status=error; drives targeted retry / support copy. */
+  const [generationErrorMeta, setGenerationErrorMeta] = useState<{
+    code: string | null;
+    phase: string | null;
+  } | null>(null);
   const [generationLogEntries, setGenerationLogEntries] = useState<ReportGenerationLogEntry[] | null>(null);
+  const [copyDiagnosticsHint, setCopyDiagnosticsHint] = useState<string | null>(null);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [activeDayIndex, setActiveDayIndex] = useState(0);
@@ -153,6 +182,26 @@ function ReportContent() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const generationStartRef = useRef<number | null>(null);
   const [serverPoll, setServerPoll] = useState<{ status: string; progress: number; generation_step?: string | null } | null>(null);
+  const [statusReconnecting, setStatusReconnecting] = useState(false);
+  /** Tier A: non-terminal copy while HTTP polls fail (spinner stays). */
+  const [pollConnectionHint, setPollConnectionHint] = useState<string | null>(null);
+  const [generationTraceForUi, setGenerationTraceForUi] = useState<string | null>(null);
+  const [statusApiTraceForUi, setStatusApiTraceForUi] = useState<string | null>(null);
+  const generationTraceIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    generationTraceIdRef.current = generationTraceForUi;
+  }, [generationTraceForUi]);
+
+  useEffect(() => {
+    if (!error) return;
+    console.error('[report] generation or status failure', {
+      reportId: reportIdFromRoute,
+      generation_trace_id: generationTraceIdRef.current,
+      status_api_trace: statusApiTraceForUi,
+      message: error,
+    });
+  }, [error, reportIdFromRoute, statusApiTraceForUi]);
 
   // Show payment confirmation toast only when arriving from a real Ziina checkout
   // (ziina_report_id in sessionStorage proves the user went through the payment flow)
@@ -204,14 +253,48 @@ function ReportContent() {
     };
   }, [error, reportIdFromRoute, authJsonHeaders]);
 
+  const copyPipelineDiagnostics = useCallback(() => {
+    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
+    const logText =
+      generationLogEntries && generationLogEntries.length > 0
+        ? generationLogEntries
+            .map(
+              (e, i) =>
+                `${i + 1}. [+${e.elapsed_ms}ms] [${e.level}] ${e.step} — ${e.message}${
+                  e.detail && Object.keys(e.detail).length ? ` ${JSON.stringify(e.detail)}` : ''
+                }`,
+            )
+            .join('\n')
+        : '';
+    const codeLine =
+      generationErrorMeta?.code || generationErrorMeta?.phase
+        ? `generation_error_code: ${generationErrorMeta?.code ?? ''}
+generation_error_at_phase: ${generationErrorMeta?.phase ?? ''}`
+        : '';
+    const text = `reportId: ${reportIdFromRoute}
+generation_trace_id: ${generationTraceForUi ?? ''}
+status_api_trace: ${statusApiTraceForUi ?? ''}
+message: ${error ?? ''}
+${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText}` : ''}`.trim();
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopyDiagnosticsHint('Copied to clipboard');
+      window.setTimeout(() => setCopyDiagnosticsHint(null), 2500);
+    });
+  }, [reportIdFromRoute, error, generationLogEntries, generationErrorMeta, generationTraceForUi, statusApiTraceForUi]);
+
   /** Clears status polling (safe to call from unmount). */
   const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollCancelRef = useRef(false);
-  const pollConsecutiveErrorsRef = useRef(0);
+  /** Last successful HTTP `/status` (2xx body or 429). Tier B uses this, not Realtime pings. */
+  const lastSuccessfulHttpPollAtRef = useRef<number | null>(null);
+  const lastStatusSuccessAtRef = useRef<number | null>(null);
+  const pollConsecutiveTransientRef = useRef(0);
   /** Pillar 1: Supabase Realtime subscription cleanup fn. */
   const realtimeCleanupRef = useRef<(() => void) | null>(null);
-  /** True when the Realtime channel has joined — polling can downshift to a 15s keepalive. */
+  /** True when the Realtime channel has joined — HTTP polling downshifts to an 8–10s safety net. */
   const realtimeJoinedRef = useRef(false);
+  /** Last `next_poll_after_ms` from `/status` (server-driven pacing). */
+  const serverNextPollRef = useRef<number | null>(null);
 
   const stopReportPolling = useCallback(() => {
     pollCancelRef.current = true;
@@ -224,6 +307,9 @@ function ReportContent() {
       realtimeCleanupRef.current = null;
     }
     realtimeJoinedRef.current = false;
+    serverNextPollRef.current = null;
+    lastSuccessfulHttpPollAtRef.current = null;
+    pollConsecutiveTransientRef.current = 0;
   }, []);
 
   const createReportRecord = useCallback(async () => {
@@ -288,16 +374,28 @@ function ReportContent() {
     setIsInitializing(false);
     setIsGenerating(true);
     setError(null);
+    setGenerationErrorMeta(null);
     setServerPoll(null);
     generationStartRef.current = Date.now();
     setElapsedSeconds(0);
-    pollConsecutiveErrorsRef.current = 0;
+    lastStatusSuccessAtRef.current = null;
+    lastSuccessfulHttpPollAtRef.current = null;
+    pollConsecutiveTransientRef.current = 0;
+    serverNextPollRef.current = null;
+    setStatusReconnecting(false);
+    setPollConnectionHint(null);
+    setStatusApiTraceForUi(null);
 
     // Pillar 1: subscribe to Supabase Realtime so the UI reflects phase changes
     // within ~100ms instead of up to 3s. Polling stays as a safety-net fallback.
     realtimeCleanupRef.current = subscribeToReport(
       reportIdFromRoute,
       (row: ReportRealtimeSnapshot) => {
+        lastStatusSuccessAtRef.current = Date.now();
+        setStatusReconnecting(false);
+        if (typeof row.generation_trace_id === 'string' && row.generation_trace_id.trim() !== '') {
+          setGenerationTraceForUi(row.generation_trace_id);
+        }
         setServerPoll({
           status: String(row.status ?? 'generating'),
           progress: typeof row.generation_progress === 'number' ? row.generation_progress : 0,
@@ -317,6 +415,10 @@ function ReportContent() {
               ? String((rd as { error: unknown }).error)
               : '';
           setError(formatGenerationErrorMessage(err || null));
+          setGenerationErrorMeta({
+            code: row.generation_error_code ?? null,
+            phase: row.generation_error_at_phase ?? null,
+          });
           setIsGenerating(false);
         }
       },
@@ -325,10 +427,28 @@ function ReportContent() {
       },
     );
 
-    // Poll at 3s normally; once realtime has joined, we slow to a 15s keepalive
-    // that only acts as a safety net if the channel drops silently.
-    const pollIntervalMs = 3000;
     const pollLoopStartedAt = Date.now();
+
+    /** No successful HTTP poll (200 body or 429) within the stale window. */
+    const httpPollStale = () => {
+      const base = lastSuccessfulHttpPollAtRef.current ?? pollLoopStartedAt;
+      return Date.now() - base > STATUS_SIGNAL_STALE_MS;
+    };
+
+    /** Tier B: HTTP poll stale + Realtime off (5xx/network never terminal alone). */
+    const maybeTierBTerminalFromPollFailure = (causeHint?: string) => {
+      if (!httpPollStale() || realtimeJoinedRef.current) return false;
+      stopReportPolling();
+      setStatusReconnecting(false);
+      setPollConnectionHint(null);
+      const hint = causeHint ? ` (${causeHint})` : '';
+      setError(
+        `Lost contact with status updates for over 90s while live updates were unavailable.${hint} Check your network or refresh. If it keeps happening, contact support with the trace IDs below.`,
+      );
+      setGenerationErrorMeta({ code: 'STATUS_POLL_TIMEOUT', phase: null });
+      setIsGenerating(false);
+      return true;
+    };
 
     const tick = async () => {
       if (pollCancelRef.current) return;
@@ -338,6 +458,7 @@ function ReportContent() {
           setError(
             'Generation is taking unusually long or was interrupted on the server. Try again. If it keeps happening, check Vercel logs for timeouts or contact support.',
           );
+          setGenerationErrorMeta({ code: 'STATUS_POLL_TIMEOUT', phase: null });
           setIsGenerating(false);
           return;
         }
@@ -350,26 +471,60 @@ function ReportContent() {
         if (!response.ok) {
           if (response.status === 401) {
             stopReportPolling();
+            setStatusReconnecting(false);
             setError('Session expired — please log in again');
+            setGenerationErrorMeta(null);
             setIsGenerating(false);
             return;
           }
           if (response.status === 404) {
             stopReportPolling();
+            setStatusReconnecting(false);
             setError('Report not found');
+            setGenerationErrorMeta(null);
             setIsGenerating(false);
             return;
           }
-          // For other errors (5xx, network hiccups), retry up to 5 times before giving up
-          pollConsecutiveErrorsRef.current += 1;
-          if (pollConsecutiveErrorsRef.current >= 5) {
-            stopReportPolling();
-            setError(`Status check failed (${response.status}) — please refresh or try again`);
-            setIsGenerating(false);
+          if (response.status === 429) {
+            const j = (await response.json().catch(() => ({}))) as {
+              retry_after_ms?: number;
+              next_poll_after_ms?: number;
+            };
+            const backoff =
+              typeof j.next_poll_after_ms === 'number' && Number.isFinite(j.next_poll_after_ms)
+                ? j.next_poll_after_ms
+                : typeof j.retry_after_ms === 'number' && Number.isFinite(j.retry_after_ms)
+                  ? j.retry_after_ms
+                  : 5_000;
+            serverNextPollRef.current = Math.max(500, backoff);
+            lastSuccessfulHttpPollAtRef.current = Date.now();
+            lastStatusSuccessAtRef.current = Date.now();
+            pollConsecutiveTransientRef.current = 0;
+            setStatusReconnecting(false);
+            setPollConnectionHint(null);
+            return;
           }
+          let errBody: { traceId?: string; cause?: string } = {};
+          try {
+            errBody = (await response.json()) as { traceId?: string; cause?: string };
+          } catch {
+            /* non-JSON */
+          }
+          pollConsecutiveTransientRef.current += 1;
+          if (pollConsecutiveTransientRef.current === POLL_TRANSIENT_FAILURE_WARN_THRESHOLD) {
+            console.warn('[report poll] transient /status failures', {
+              reportId: reportIdFromRoute,
+              consecutive: pollConsecutiveTransientRef.current,
+            });
+          }
+          setStatusReconnecting(true);
+          setPollConnectionHint('Connection issue, retrying…');
+          if (typeof errBody.traceId === 'string' && errBody.traceId) {
+            setStatusApiTraceForUi(errBody.traceId);
+          }
+          if (maybeTierBTerminalFromPollFailure(errBody.cause)) return;
           return;
         }
-        pollConsecutiveErrorsRef.current = 0;
 
         const data = (await response.json()) as {
           status: string;
@@ -379,7 +534,25 @@ function ReportContent() {
           report: ReportData | null;
           generation_started_at?: string | null;
           generation_error?: string | null;
+          generation_error_code?: string | null;
+          generation_error_at_phase?: string | null;
+          next_poll_after_ms?: number;
+          generation_trace_id?: string | null;
         };
+
+        lastSuccessfulHttpPollAtRef.current = Date.now();
+        lastStatusSuccessAtRef.current = Date.now();
+        pollConsecutiveTransientRef.current = 0;
+        setStatusReconnecting(false);
+        setPollConnectionHint(null);
+        setStatusApiTraceForUi(null);
+        if (typeof data.generation_trace_id === 'string' && data.generation_trace_id.trim() !== '') {
+          setGenerationTraceForUi(data.generation_trace_id);
+        }
+
+        if (typeof data.next_poll_after_ms === 'number' && Number.isFinite(data.next_poll_after_ms)) {
+          serverNextPollRef.current = data.next_poll_after_ms;
+        }
 
         setServerPoll({
           status: data.status,
@@ -397,6 +570,7 @@ function ReportContent() {
             setError(
               'The server did not finish in time (likely a timeout). Use Try again to restart.',
             );
+            setGenerationErrorMeta({ code: 'STATUS_POLL_TIMEOUT', phase: data.generation_step ?? null });
             setIsGenerating(false);
             return;
           }
@@ -422,27 +596,38 @@ function ReportContent() {
           }
         } else if (data.status === 'error') {
           stopReportPolling();
+          setStatusReconnecting(false);
           setError(formatGenerationErrorMessage(data.generation_error));
+          setGenerationErrorMeta({
+            code: data.generation_error_code ?? null,
+            phase: data.generation_error_at_phase ?? null,
+          });
           setIsGenerating(false);
         }
       } catch (err) {
         console.error('[Polling] network error:', err);
-        pollConsecutiveErrorsRef.current += 1;
-        if (pollConsecutiveErrorsRef.current >= 5) {
-          stopReportPolling();
-          setError('Connection lost — please check your internet and try again');
-          setIsGenerating(false);
+        pollConsecutiveTransientRef.current += 1;
+        if (pollConsecutiveTransientRef.current === POLL_TRANSIENT_FAILURE_WARN_THRESHOLD) {
+          console.warn('[report poll] transient /status failures', {
+            reportId: reportIdFromRoute,
+            consecutive: pollConsecutiveTransientRef.current,
+          });
         }
+        setStatusReconnecting(true);
+        setPollConnectionHint('Connection issue, retrying…');
+        if (maybeTierBTerminalFromPollFailure()) return;
       }
     };
 
     void tick();
-    // Pillar 1: adaptive polling. If Realtime channel is joined, poll every 15s
-    // as a keepalive; otherwise every 3s. Self-rescheduling setTimeout supports
-    // dynamic interval adjustment without re-creating a setInterval.
+    // Adaptive polling: honor `next_poll_after_ms` from `/status`, with a floor of 3s or
+    // 8–10s (jitter) when Realtime is healthy so HTTP stays a sparse safety net.
     const scheduleNext = () => {
       if (pollCancelRef.current) return;
-      const nextDelay = realtimeJoinedRef.current ? 15_000 : pollIntervalMs;
+      const floorMs = realtimeJoinedRef.current ? realtimeStatusPollDelayMs() : basePollIntervalWithJitterMs();
+      const hint = serverNextPollRef.current;
+      const nextDelay =
+        hint != null && Number.isFinite(hint) ? Math.max(floorMs, hint) : floorMs;
       pollIntervalRef.current = setTimeout(async () => {
         await tick();
         scheduleNext();
@@ -457,6 +642,8 @@ function ReportContent() {
     setIsInitializing(false);
     setIsGenerating(true);
     setError(null);
+    setGenerationErrorMeta(null);
+    setPollConnectionHint(null);
     generationStartRef.current = Date.now();
     setElapsedSeconds(0);
 
@@ -502,8 +689,21 @@ function ReportContent() {
 
     if (!res.ok) {
       const errJson = await res.json().catch(() => ({}));
-      const msg = (errJson as { error?: string }).error ?? res.statusText;
-      setError(`Could not start generation: ${msg}`);
+      const ej = errJson as {
+        error?: string;
+        code?: string;
+        generation_trace_id?: string | null;
+      };
+      if (typeof ej.generation_trace_id === 'string' && ej.generation_trace_id.trim() !== '') {
+        setGenerationTraceForUi(ej.generation_trace_id);
+      }
+      setGenerationErrorMeta(null);
+      if (ej.code === 'INNGEST_DISPATCH_FAILED') {
+        setError('Background queue unavailable, please retry in a minute');
+      } else {
+        const msg = ej.error ?? res.statusText;
+        setError(`Could not start generation: ${msg}`);
+      }
       setIsGenerating(false);
       return;
     }
@@ -512,7 +712,11 @@ function ReportContent() {
       status?: string;
       skipped?: boolean;
       skippedPipeline?: boolean;
+      generation_trace_id?: string | null;
     };
+    if (typeof started.generation_trace_id === 'string' && started.generation_trace_id.trim() !== '') {
+      setGenerationTraceForUi(started.generation_trace_id);
+    }
     if (started.status === 'complete' && started.skipped) {
       const sb = createClient();
       const uid = userRef.current?.id;
@@ -743,6 +947,10 @@ function ReportContent() {
         if (row?.status === 'error' && !params.get('date')) {
           if (!cancelled) {
             setError('Report generation failed previously. Click Try again to restart.');
+            setGenerationErrorMeta({
+              code: (row as { generation_error_code?: string | null }).generation_error_code ?? null,
+              phase: (row as { generation_error_at_phase?: string | null }).generation_error_at_phase ?? null,
+            });
             setIsGenerating(false);
             setIsInitializing(false);
           }
@@ -784,6 +992,8 @@ function ReportContent() {
         onElapsed={setElapsedSeconds}
         generationStartRef={generationStartRef}
         serverPoll={serverPoll}
+        reconnecting={statusReconnecting}
+        connectionHint={pollConnectionHint}
         extraHeaders={authJsonHeaders()}
       />
     );
@@ -822,7 +1032,56 @@ function ReportContent() {
           <h1 className="font-body font-semibold text-star text-headline-lg mb-4">
             Generation Failed
           </h1>
-          <p className="font-body text-dust text-base mb-8">{error}</p>
+          <p className="font-body text-dust text-base mb-6">{error}</p>
+          {(() => {
+            const kind = generationErrorCtaKind(generationErrorMeta?.code ?? null);
+            const hint =
+              kind === 'retry_now'
+                ? 'You can try again now — this is usually a short-lived issue.'
+                : kind === 'retry_later'
+                  ? 'Wait several minutes before retrying so server time limits can reset.'
+                  : 'If this keeps happening, contact support and include the trace IDs below.';
+            return (
+              <p className="font-body text-dust/75 text-sm mb-4 max-w-lg mx-auto leading-relaxed">
+                {hint}
+              </p>
+            );
+          })()}
+          {generationErrorCtaKind(generationErrorMeta?.code ?? null) === 'contact_support' &&
+          isRouteUuid(reportIdFromRoute) ? (
+            <p className="font-mono text-[11px] text-dust/60 mb-4 break-all">
+              Report ID: {reportIdFromRoute}
+            </p>
+          ) : null}
+          {generationErrorMeta?.phase || generationErrorMeta?.code ? (
+            <p className="font-mono text-[11px] text-dust/55 mb-6 break-words">
+              {generationErrorMeta.phase ? (
+                <>
+                  Step: {generationErrorMeta.phase}
+                  {generationErrorMeta.code ? ` · ${generationErrorMeta.code}` : ''}
+                </>
+              ) : (
+                generationErrorMeta.code
+              )}
+            </p>
+          ) : null}
+          {(generationTraceForUi || statusApiTraceForUi) && (
+            <div className="mb-6 text-left w-full max-w-lg mx-auto rounded-card border border-horizon/25 bg-horizon/5 px-4 py-3 font-mono text-[11px] text-dust/80 space-y-1.5">
+              <p className="text-dust/50 text-[10px] uppercase tracking-wider">Support</p>
+              {generationTraceForUi ? (
+                <p>
+                  <span className="text-dust/55">Run trace: </span>
+                  {generationTraceForUi}
+                </p>
+              ) : null}
+              {statusApiTraceForUi ? (
+                <p>
+                  <span className="text-dust/55">Status request trace: </span>
+                  {statusApiTraceForUi}
+                </p>
+              ) : null}
+            </div>
+          )}
           {generationLogEntries && generationLogEntries.length > 0 && (
             <details className="mt-2 mb-6 text-left max-w-2xl mx-auto w-full">
               <summary className="font-body text-dust/80 text-sm cursor-pointer select-none">
@@ -841,15 +1100,29 @@ function ReportContent() {
               </pre>
             </details>
           )}
-          <button
-            onClick={() => {
-              hasFetched.current = false;
-              void kickOffBackgroundGeneration({ forceRestart: true });
-            }}
-            className="btn-primary px-8 py-3"
-          >
-            Try Again
-          </button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
+            <button
+              type="button"
+              onClick={copyPipelineDiagnostics}
+              className="btn-secondary px-6 py-2.5 text-sm w-full sm:w-auto"
+            >
+              Copy diagnostics
+            </button>
+            <button
+              onClick={() => {
+                hasFetched.current = false;
+                void kickOffBackgroundGeneration({ forceRestart: true });
+              }}
+              className="btn-primary px-8 py-3 w-full sm:w-auto"
+            >
+              {generationErrorCtaKind(generationErrorMeta?.code ?? null) === 'retry_later'
+                ? 'Try again after waiting'
+                : 'Try Again'}
+            </button>
+          </div>
+          {copyDiagnosticsHint ? (
+            <p className="mt-2 font-body text-dust/60 text-sm">{copyDiagnosticsHint}</p>
+          ) : null}
         </div>
       </div>
     );

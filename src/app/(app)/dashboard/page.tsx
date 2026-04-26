@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { RightNowCard } from '@/components/dashboard/RightNowCard';
 import { SynastryTeaser } from '@/components/marketing/SynastryTeaser';
 import type { PaymentRecord } from '@/app/api/user/payments/route';
+import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
