@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
 
   const { data: existing } = await readDb
     .from('reports')
-    .select('status, report_data, generation_started_at, generation_trace_id')
+    .select('status, report_data, generation_started_at')
     .eq('id', reportId)
     .eq('user_id', auth.user.id)
     .maybeSingle();
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
       ok: true,
       status: 'complete',
       skipped: true,
-      generation_trace_id: (existing?.generation_trace_id as string | null) ?? null,
+      generation_trace_id: null,
       engine: (useInngest ? 'inngest' : 'node') as ReportStartEngine,
       dispatch_mode: (useInngest ? 'inngest' : 'inline_fallback') as ReportStartDispatchMode,
     });
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
         status: 'generating',
         skippedPipeline: true,
         message: 'Generation already in progress — keep polling status.',
-        generation_trace_id: (existing?.generation_trace_id as string | null) ?? null,
+        generation_trace_id: null,
         engine: (useInngest ? 'inngest' : 'node') as ReportStartEngine,
         dispatch_mode: (useInngest ? 'inngest' : 'inline_fallback') as ReportStartDispatchMode,
       },
@@ -261,7 +261,7 @@ export async function POST(request: NextRequest) {
         status: 'generating',
         skippedPipeline: true,
         message: 'Generation already claimed — keep polling status.',
-        generation_trace_id: (existing?.generation_trace_id as string | null) ?? null,
+        generation_trace_id: null,
         engine: (useInngest ? 'inngest' : 'node') as ReportStartEngine,
         dispatch_mode: (useInngest ? 'inngest' : 'inline_fallback') as ReportStartDispatchMode,
       },
@@ -301,7 +301,6 @@ export async function POST(request: NextRequest) {
       payment_status: body.payment_status ?? 'free',
       generation_started_at: nowIso,
       updated_at: nowIso,
-      generation_trace_id: generationTraceId,
     },
     { onConflict: 'id' },
   );
@@ -317,6 +316,28 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 },
     );
+  }
+
+  // Optional columns (see migrations 20260426 / 20260427) — omit from upsert so older DBs work.
+  const { error: traceErr } = await db
+    .from('reports')
+    .update({ generation_trace_id: generationTraceId, updated_at: nowIso })
+    .eq('id', reportId)
+    .eq('user_id', auth.user.id);
+  if (traceErr) {
+    const m = traceErr.message ?? '';
+    if (!m.includes('generation_trace_id') && !m.includes('schema cache')) {
+      await releaseLock(lockKey);
+      return NextResponse.json(
+        {
+          error: traceErr.message,
+          generation_trace_id: generationTraceId,
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 500 },
+      );
+    }
   }
 
   // Reset append-only log when the column exists (migration). Omitted from upsert so older

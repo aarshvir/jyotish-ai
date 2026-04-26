@@ -12,7 +12,7 @@
  *   node scripts/retry-aarsh-admin100-loop.mjs http://localhost:3000 YOUR_BYPASS_SECRET
  *
  * Env (optional):
- *   E2E_BASE_URL, E2E_BYPASS, POLL_TIMEOUT_MS (default 20m), SLEEP_BETWEEN_MS (default 8s),
+ *   E2E_BASE_URL, E2E_BYPASS, POLL_TIMEOUT_MS (default 120m), SLEEP_BETWEEN_MS (default 12s),
  *   MAX_ATTEMPTS (default 0 = unlimited; cap with e.g. 25)
  */
 
@@ -37,9 +37,9 @@ if (existsSync(envPath)) {
 
 const BASE_URL = process.argv[2] || process.env.E2E_BASE_URL || 'http://localhost:3000';
 const BYPASS = process.argv[3] || process.env.E2E_BYPASS || process.env.BYPASS_SECRET || '';
-const POLL_TIMEOUT_MS = Number(process.env.POLL_TIMEOUT_MS) || 20 * 60 * 1000;
+const POLL_TIMEOUT_MS = Number(process.env.POLL_TIMEOUT_MS) || 120 * 60 * 1000;
 const POLL_INTERVAL_MS = Number(process.env.POLL_INTERVAL_MS) || 5000;
-const SLEEP_BETWEEN_MS = Number(process.env.SLEEP_BETWEEN_MS) || 8000;
+const SLEEP_BETWEEN_MS = Number(process.env.SLEEP_BETWEEN_MS) || 12_000;
 const MAX_ATTEMPTS = Number(process.env.MAX_ATTEMPTS) || 0;
 
 /** Aarsh — 5 Jan 1991, 19:45 Lucknow; living Dubai (same shape as onboard → /api/reports/start). */
@@ -129,11 +129,12 @@ async function pollUntilSettled(reportId) {
     if (d.status === 'error') {
       return { outcome: 'error', detail: d };
     }
-    if (d.status === 'complete' && d.report && Array.isArray(d.report.days) && d.report.days.length > 0) {
-      return { outcome: 'complete', detail: d };
-    }
-    if (d.status === 'complete' && (!d.report || !Array.isArray(d.report.days) || d.report.days.length === 0)) {
-      log('status complete but missing days — keep polling');
+    if (d.status === 'complete') {
+      const days = d.report?.days;
+      if (Array.isArray(days) && days.length > 0) {
+        return { outcome: 'complete', detail: d };
+      }
+      log('status complete but report.days missing in payload — keep polling (PostgREST lag?)');
     }
 
     await sleep(POLL_INTERVAL_MS);
@@ -190,12 +191,31 @@ async function main() {
       log('  (response is HTML — route crashed or wrong URL; check `npm run dev` terminal for stack trace)');
     }
 
-    if (startRes.status === 429 || startRes.status === 503) {
-      await sleep(SLEEP_BETWEEN_MS * 2);
+    if (startRes.status === 429) {
+      attempt -= 1;
+      const resetAt =
+        typeof startBody === 'object' && startBody && typeof startBody.resetAt === 'number'
+          ? startBody.resetAt
+          : null;
+      const waitMs = resetAt != null ? Math.max(5000, resetAt - Date.now() + 2500) : SLEEP_BETWEEN_MS * 5;
+      log(`  rate limited — sleeping ${Math.round(waitMs / 1000)}s`);
+      await sleep(waitMs);
+      continue;
+    }
+    if (startRes.status === 503) {
+      attempt -= 1;
+      await sleep(SLEEP_BETWEEN_MS * 3);
       continue;
     }
     if (startRes.status >= 500 && startRes.status !== 503) {
+      attempt -= 1;
       await sleep(SLEEP_BETWEEN_MS);
+      continue;
+    }
+    if (startRes.status !== 200 && startRes.status !== 202) {
+      attempt -= 1;
+      log('  unexpected /reports/start status — not polling');
+      await sleep(SLEEP_BETWEEN_MS * 2);
       continue;
     }
 
