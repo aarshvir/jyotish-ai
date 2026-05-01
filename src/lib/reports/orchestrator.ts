@@ -198,6 +198,9 @@ export type PipelinePhaseName =
   | 'commentary_hourly_1'
   | 'commentary_hourly_2'
   | 'commentary_hourly_3'
+  | 'commentary_hourly_4'
+  | 'commentary_hourly_5'
+  | 'commentary_hourly_6'
   | 'commentary_months'
   | 'commentary_weeks'
   | 'commentary'
@@ -1145,11 +1148,17 @@ export async function generateReportPipeline(
         pipelineState.commentary_weeks?.weeksSynthData &&
         pipelineState.commentary_months?.allMonthsData &&
         pipelineState.commentary_daily?.forecastDays &&
-        (pipelineState.commentary_hourly_3?.forecastDays ||
+        (pipelineState.commentary_hourly_6?.forecastDays ||
+          pipelineState.commentary_hourly_5?.forecastDays ||
+          pipelineState.commentary_hourly_4?.forecastDays ||
+          pipelineState.commentary_hourly_3?.forecastDays ||
           pipelineState.commentary_hourly_2?.forecastDays ||
           pipelineState.commentary_hourly_1?.forecastDays)
       ) {
         const fd =
+          (pipelineState.commentary_hourly_6?.forecastDays as ForecastDayIntermediate[] | undefined) ??
+          (pipelineState.commentary_hourly_5?.forecastDays as ForecastDayIntermediate[] | undefined) ??
+          (pipelineState.commentary_hourly_4?.forecastDays as ForecastDayIntermediate[] | undefined) ??
           (pipelineState.commentary_hourly_3?.forecastDays as ForecastDayIntermediate[] | undefined) ??
           (pipelineState.commentary_hourly_2?.forecastDays as ForecastDayIntermediate[] | undefined) ??
           (pipelineState.commentary_hourly_1?.forecastDays as ForecastDayIntermediate[] | undefined) ??
@@ -1174,7 +1183,13 @@ export async function generateReportPipeline(
       }
 
       // Restore working `forecastDays` / nativity / months / weeks from the latest saved sub-phase.
-      if (pipelineState.commentary_hourly_3?.forecastDays) {
+      if (pipelineState.commentary_hourly_6?.forecastDays) {
+        forecastDays = pipelineState.commentary_hourly_6.forecastDays as ForecastDayIntermediate[];
+      } else if (pipelineState.commentary_hourly_5?.forecastDays) {
+        forecastDays = pipelineState.commentary_hourly_5.forecastDays as ForecastDayIntermediate[];
+      } else if (pipelineState.commentary_hourly_4?.forecastDays) {
+        forecastDays = pipelineState.commentary_hourly_4.forecastDays as ForecastDayIntermediate[];
+      } else if (pipelineState.commentary_hourly_3?.forecastDays) {
         forecastDays = pipelineState.commentary_hourly_3.forecastDays as ForecastDayIntermediate[];
       } else if (pipelineState.commentary_hourly_2?.forecastDays) {
         forecastDays = pipelineState.commentary_hourly_2.forecastDays as ForecastDayIntermediate[];
@@ -1327,7 +1342,7 @@ export async function generateReportPipeline(
       // ── commentary_hourly_1/2/3: one batch per Inngest step (was all parallel → budget abort) ──
       type BatchSlot = { slot_index: number; commentary?: string; commentary_short?: string };
       type BatchDay = { dayIndex: number; slots?: BatchSlot[] };
-      const CHUNK_SIZE = 10;
+      const CHUNK_SIZE = 5;
       const allDaysInput = forecastDays.map((day, i) => ({
         dayIndex: i,
         date: day.date,
@@ -1382,7 +1397,7 @@ export async function generateReportPipeline(
         });
       };
 
-      const hourlyStopPhases = ['commentary_hourly_1', 'commentary_hourly_2', 'commentary_hourly_3'] as const;
+      const hourlyStopPhases = ['commentary_hourly_1', 'commentary_hourly_2', 'commentary_hourly_3', 'commentary_hourly_4', 'commentary_hourly_5', 'commentary_hourly_6'] as const;
       for (let hi = 0; hi < hourlyStopPhases.length; hi += 1) {
         const stopPh = hourlyStopPhases[hi];
         const chunkIdx = hi;
