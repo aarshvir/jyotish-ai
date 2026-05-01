@@ -10,7 +10,7 @@ import type { PipelineInput } from '@/lib/reports/orchestrator';
 import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
 import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { BYPASS_SECRET } from '@/lib/api/requireAuth';
-import { createJobToken } from '@/lib/api/jobToken';
+import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
 const YOUNG_GENERATING_MS = 10 * 60 * 1000;
 
@@ -66,7 +66,7 @@ function buildAuthHeaders(reportId: string, userId: string, correlationId: strin
     userId,
     purpose: 'pipeline',
     correlationId,
-    ttlSeconds: 60 * 60,
+    ttlSeconds: getPipelineJobTokenTtlSeconds(),
   });
   authHeaders['x-report-id'] = reportId;
   authHeaders['x-correlation-id'] = correlationId;

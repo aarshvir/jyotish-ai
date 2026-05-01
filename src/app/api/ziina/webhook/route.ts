@@ -10,6 +10,7 @@ import {
   isZiinaWebhookSenderIp,
 } from '@/lib/ziina/verifyWebhook';
 import { finalizeCompletedZiinaIntent } from '@/lib/ziina/finalizeIntent';
+import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 
 function extractIntentId(data: Record<string, unknown>): string {
   const id = data.id;
@@ -28,9 +29,7 @@ function extractIntentStatus(data: Record<string, unknown>): string {
 }
 
 function webhookBaseUrl(request: NextRequest): string {
-  const envUrl = (process.env.NEXT_PUBLIC_URL ?? '').trim().replace(/\/$/, '');
-  if (envUrl) return envUrl;
-  return request.nextUrl.origin;
+  return getCanonicalDispatchOrigin(request.nextUrl.origin);
 }
 
 /**

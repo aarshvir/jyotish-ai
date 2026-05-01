@@ -27,6 +27,24 @@ function sign(data: string): string {
   return createHmac('sha256', secret()).update(data).digest('hex');
 }
 
+/** Default TTL for long-running pipeline / extend jobs (multi-step Inngest). Override with `JOB_TOKEN_TTL_SECONDS`. */
+export const PIPELINE_JOB_TOKEN_DEFAULT_TTL_SECONDS = 6 * 60 * 60;
+
+function pipelineTtlFromEnv(): number {
+  const raw = process.env.JOB_TOKEN_TTL_SECONDS?.trim();
+  if (!raw) return PIPELINE_JOB_TOKEN_DEFAULT_TTL_SECONDS;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n)) return PIPELINE_JOB_TOKEN_DEFAULT_TTL_SECONDS;
+  if (n < 300) return 300;
+  if (n > 48 * 3600) return 48 * 3600;
+  return n;
+}
+
+/** TTL for `purpose: 'pipeline'` and `'extend'` internal job tokens (avoids mid-run 401 when runs exceed ~1h). */
+export function getPipelineJobTokenTtlSeconds(): number {
+  return pipelineTtlFromEnv();
+}
+
 export function createJobToken(
   payload: Omit<JobTokenPayload, 'exp'> & { ttlSeconds?: number },
 ): string {

@@ -69,6 +69,120 @@ export function inferReportGenerationErrorCode(
   return 'UNKNOWN';
 }
 
+/**
+ * High-level audit buckets from the report-generation failure runbook (maps `generation_error_code` + log text).
+ * Returned by `/api/debug/report-by-trace` for ops correlation.
+ */
+export const REPORT_FAILURE_BUCKETS = [
+  'internal_job_auth',
+  'llm_commentary',
+  'internal_fetch_base',
+  'ephemeris',
+  'platform_budget',
+  'client_status_poll',
+  'duplicate_start_lock',
+  'inngest_or_queue',
+  'unknown',
+] as const;
+
+export type ReportFailureBucket = (typeof REPORT_FAILURE_BUCKETS)[number];
+
+/** Map stored error codes to audit buckets (stable classification without parsing messages). */
+export function inferReportFailureBucketFromCode(
+  code: string | null | undefined,
+): ReportFailureBucket | null {
+  if (!code) return null;
+  switch (code) {
+    case 'AUTH_ERROR':
+      return 'internal_job_auth';
+    case 'EPHEMERIS_DOWN':
+      return 'ephemeris';
+    case 'BUDGET_EXCEEDED':
+    case 'HARD_KILL_TIMEOUT':
+      return 'platform_budget';
+    case 'STATUS_POLL_TIMEOUT':
+    case 'STALE':
+      return 'client_status_poll';
+    case 'LLM_PROVIDER_UNAVAILABLE':
+    case 'LLM_TIMEOUT':
+    case 'LLM_PARTIAL':
+      return 'llm_commentary';
+    case 'INNGEST_FAILURE':
+      return 'inngest_or_queue';
+    case 'SERVICE_UNAVAILABLE':
+      return 'internal_fetch_base';
+    case 'PIPELINE_ERROR':
+    case 'DB_SAVE_FAILED':
+    case 'RATE_LIMIT':
+    case 'UNKNOWN':
+    default:
+      return null;
+  }
+}
+
+/**
+ * Full bucket inference: prefers `generation_error_code`, then message/step heuristics
+ * (206, ephemeris, fetch failures, 401, budgets).
+ */
+export function inferReportFailureBucket(
+  message: string,
+  step?: string,
+  generationErrorCode?: string | null,
+): ReportFailureBucket {
+  const fromCode = inferReportFailureBucketFromCode(generationErrorCode);
+  if (fromCode) return fromCode;
+
+  const m = (message ?? '').toLowerCase();
+  const s = (step ?? '').toLowerCase();
+
+  if (m.includes('already generating') || m.includes('young_generating') || m.includes('duplicate'))
+    return 'duplicate_start_lock';
+  if (m.includes('401') || m.includes('unauthorized') || m.includes('job token') || m.includes('x-job-token'))
+    return 'internal_job_auth';
+  if (
+    m.includes('failed to fetch') ||
+    m.includes('fetch failed') ||
+    m.includes('econnrefused') ||
+    m.includes('enotfound') ||
+    m.includes('502') ||
+    m.includes('504')
+  )
+    return 'internal_fetch_base';
+  if (s === 'ephemeris' || m.includes('ephemeris') || m.includes('swiss') || m.includes('birth chart calculation failed'))
+    return 'ephemeris';
+  if (
+    m.includes('206') ||
+    m.includes('partial: true') ||
+    m.includes('llm unavailable') ||
+    m.includes('anthropic') ||
+    m.includes('openai') ||
+    m.includes('gemini')
+  )
+    return 'llm_commentary';
+  if (m.includes('budget') || m.includes('hard_kill') || m.includes('timed out after') || m.includes('server budget'))
+    return 'platform_budget';
+  if (m.includes('stale') || m.includes('poll timeout') || m.includes('status poll'))
+    return 'client_status_poll';
+  if (m.includes('inngest') || s.includes('inngest'))
+    return 'inngest_or_queue';
+
+  const inferred = inferReportGenerationErrorCode(message, step);
+  if (inferred === 'AUTH_ERROR') return 'internal_job_auth';
+  if (inferred === 'EPHEMERIS_DOWN') return 'ephemeris';
+  if (inferred === 'BUDGET_EXCEEDED' || inferred === 'HARD_KILL_TIMEOUT') return 'platform_budget';
+  if (inferred === 'STATUS_POLL_TIMEOUT' || inferred === 'STALE') return 'client_status_poll';
+  if (
+    inferred === 'LLM_PROVIDER_UNAVAILABLE' ||
+    inferred === 'LLM_TIMEOUT' ||
+    inferred === 'LLM_PARTIAL'
+  )
+    return 'llm_commentary';
+  if (inferred === 'INNGEST_FAILURE') return 'inngest_or_queue';
+  if (inferred === 'SERVICE_UNAVAILABLE') return 'internal_fetch_base';
+
+  return 'unknown';
+}
+
 // ── CTA classification for the error UI ──────────────────────────────────────
 
 export type GenerationErrorCtaKind = 'retry_now' | 'retry_later' | 'contact_support';

@@ -8,7 +8,7 @@ import { getCanonicalScoreLabel, getDayOutcomeTier } from '@/lib/guidance/labels
 import { buildSlotGuidance, buildDayBriefing } from '@/lib/guidance/builder';
 import { isV2GuidanceEnabled } from '@/lib/guidance/featureFlag';
 import type { ReportData } from '@/lib/agents/types';
-import { createJobToken } from '@/lib/api/jobToken';
+import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
 const SIGNS_FOR_LAGNA = [
   'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -67,7 +67,7 @@ function serviceHeaders(reportId: string, userId: string): Record<string, string
       userId,
       purpose: 'extend',
       correlationId,
-      ttlSeconds: 60 * 60,
+      ttlSeconds: getPipelineJobTokenTtlSeconds(),
     }),
     'x-report-id': reportId,
     'x-correlation-id': correlationId,

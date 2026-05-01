@@ -22,7 +22,8 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 import { inngest } from '@/lib/inngest/client';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
-import { createJobToken } from '@/lib/api/jobToken';
+import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
+import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
@@ -379,14 +380,14 @@ export async function POST(request: NextRequest) {
       : {}),
   };
 
-  const base = request.nextUrl.origin;
+  const base = getCanonicalDispatchOrigin(request.nextUrl.origin);
   const authHeaders: Record<string, string> = {};
   authHeaders['x-job-token'] = createJobToken({
     reportId,
     userId: auth.user.id,
     purpose: 'pipeline',
     correlationId: generationTraceId,
-    ttlSeconds: 60 * 60,
+    ttlSeconds: getPipelineJobTokenTtlSeconds(),
   });
   authHeaders['x-report-id'] = reportId;
   authHeaders['x-correlation-id'] = generationTraceId;

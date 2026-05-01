@@ -9,6 +9,7 @@ import {
   dispatchReportGenerateForPaidReport,
   finalizeCompletedZiinaIntent,
 } from '@/lib/ziina/finalizeIntent';
+import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 
 /**
  * GET /api/ziina/verify?intentId=...&reportId=...&planType=...&status=success|cancel|failure
@@ -25,6 +26,8 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status') ?? '';
 
   const origin = request.nextUrl.origin;
+  /** Internal orchestrator / extend fetches — stable prod URL when env overrides are set */
+  const dispatchOrigin = getCanonicalDispatchOrigin(origin);
 
   if (status === 'cancel') {
     return NextResponse.redirect(`${origin}/onboard?plan=${planType}&payment=cancelled`);
@@ -71,7 +74,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/onboard?plan=${resolvedPlanType}&payment=${reason}`);
     }
 
-    const fin = await finalizeCompletedZiinaIntent(db, intentId, origin, { intent });
+    const fin = await finalizeCompletedZiinaIntent(db, intentId, dispatchOrigin, { intent });
 
     if (!fin.ok) {
       return NextResponse.redirect(`${origin}/onboard?payment=error`);
@@ -102,16 +105,16 @@ export async function GET(request: NextRequest) {
           try {
             await inngest.send({
               name: 'report/extend',
-              data: { reportId, baseUrl: origin },
+              data: { reportId, baseUrl: dispatchOrigin },
             });
           } catch (e) {
             console.warn('[ziina/verify] Inngest send failed — inline extend:', e);
-            void extendReportToMonthly(origin, reportId).catch((err) =>
+            void extendReportToMonthly(dispatchOrigin, reportId).catch((err) =>
               console.error('[ziina/verify] inline extend failed:', err),
             );
           }
         } else {
-          void extendReportToMonthly(origin, reportId).catch((err) =>
+          void extendReportToMonthly(dispatchOrigin, reportId).catch((err) =>
             console.error('[ziina/verify] inline extend failed:', err),
           );
         }
@@ -124,7 +127,7 @@ export async function GET(request: NextRequest) {
         .eq('id', reportId);
 
       if (resolvedPlanType !== 'monthly_upgrade') {
-        await dispatchReportGenerateForPaidReport(db, reportId, origin);
+        await dispatchReportGenerateForPaidReport(db, reportId, dispatchOrigin);
       }
     }
 
