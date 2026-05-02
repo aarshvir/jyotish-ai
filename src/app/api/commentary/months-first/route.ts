@@ -134,10 +134,10 @@ ${horaBlock}
 
 Return ONLY valid JSON. No markdown, no backticks.`;
 
-  const userPrompt = `Generate monthly summaries for months 1-6. Lagna: ${lagnaSign}. Dasha: ${mahadasha}/${antardasha}.
+  const buildUserPrompt = (monthBatch: typeof months) => `Generate monthly summaries for the ${monthBatch.length} supplied month${monthBatch.length === 1 ? '' : 's'} from months 1-6. Lagna: ${lagnaSign}. Dasha: ${mahadasha}/${antardasha}.
 
 Months to analyse:
-${JSON.stringify(months, null, 2)}
+${JSON.stringify(monthBatch, null, 2)}
 
 MANDATORY RULES FOR analysis FIELD (a user is paying $100 — write with depth and specificity):
 1. Write 300-350 words. This is a full monthly briefing, not a summary.
@@ -150,9 +150,9 @@ MANDATORY RULES FOR analysis FIELD (a user is paying $100 — write with depth a
 4. End with EXACTLY: "BEST: [specific week or date window and why in plain terms]. WORST: [specific stretch and why]. Rating: [number]/100."
 5. Never use: H-notation, yogakaraka, dusthana, badhaka, trikona, kendra, generally, may, could, might, perhaps, various.
 
-overall_score RULE (enforce strictly): The first month MUST score 42-48. Later months can be 50-75. Jupiter enters Cancer mid-2026: June=70, July=73, August=75. The spread between max and min MUST be at least 30. Do NOT start at 55.
+overall_score RULE (enforce strictly): Only month_index 0 MUST score 42-48. Later months can be 50-75. Jupiter enters Cancer mid-2026: June=70, July=73, August=75. Across the full six-month section, the intended spread between max and min MUST be at least 30. Do NOT start at 55.
 
-Return exactly 6 month objects:
+Return exactly ${monthBatch.length} month object${monthBatch.length === 1 ? '' : 's'}:
 {
   "months": [
     {
@@ -173,19 +173,29 @@ Return exactly 6 month objects:
 Start with { and end with }.`;
 
   try {
-    const text = await completeLlmChat({
-      modelOverride,
-      systemPrompt,
-      userPrompt,
-      maxTokens: 9000,
-    });
-    const parsed = safeParseJson<{ months: unknown[] }>(text);
+    const out: unknown[] = [];
+    for (let i = 0; i < months.length; i += 3) {
+      const monthBatch = months.slice(i, i + 3);
+      const text = await completeLlmChat({
+        modelOverride,
+        systemPrompt,
+        userPrompt: buildUserPrompt(monthBatch),
+        maxTokens: 6000,
+      });
+      const parsed = safeParseJson<{ months: unknown[] }>(text);
+      if (!parsed?.months?.length || parsed.months.length !== monthBatch.length) {
+        throw new Error(
+          `month chunk ${i / 3 + 1} returned ${parsed?.months?.length ?? 0}/${monthBatch.length} months`,
+        );
+      }
+      out.push(...parsed.months);
+    }
 
-    return NextResponse.json({ months: parsed?.months ?? [] });
+    return NextResponse.json({ months: out.slice(0, months.length) });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[months-first]', msg);
-    return NextResponse.json({ months: buildFallbackMonths(body), partial: true }, { status: 206 });
+    console.error('[months-first]', msg.slice(0, 500));
+    return NextResponse.json({ months: buildFallbackMonths(body), partial: true, error: msg.slice(0, 300) }, { status: 206 });
   }
 }
 

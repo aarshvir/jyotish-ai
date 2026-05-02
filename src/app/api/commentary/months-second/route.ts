@@ -128,10 +128,10 @@ ${horaBlock}
 
 Return ONLY valid JSON. No markdown, no backticks.`;
 
-  const userPrompt = `Generate monthly summaries for months 7-12. Lagna: ${lagnaSign}. Dasha: ${mahadasha}/${antardasha}.
+  const buildUserPrompt = (monthBatch: typeof months) => `Generate monthly summaries for the ${monthBatch.length} supplied month${monthBatch.length === 1 ? '' : 's'} from months 7-12. Lagna: ${lagnaSign}. Dasha: ${mahadasha}/${antardasha}.
 
 Months to analyse:
-${JSON.stringify(months, null, 2)}
+${JSON.stringify(monthBatch, null, 2)}
 
 MANDATORY RULES FOR analysis FIELD (a user is paying $100 — write with depth and specificity):
 1. Write 300-350 words. This is a full monthly briefing, not a summary.
@@ -146,7 +146,7 @@ MANDATORY RULES FOR analysis FIELD (a user is paying $100 — write with depth a
 
 overall_score: Scores MUST range 42-75 across 6 months. Do NOT cluster all at 52-65.
 
-Return exactly 6 month objects:
+Return exactly ${monthBatch.length} month object${monthBatch.length === 1 ? '' : 's'}:
 {
   "months": [
     {
@@ -167,18 +167,29 @@ Return exactly 6 month objects:
 Start with { and end with }.`;
 
   try {
-    const text = await completeLlmChat({
-      modelOverride,
-      systemPrompt,
-      userPrompt,
-      maxTokens: 9000,
-    });
-    const parsed = safeParseJson<{ months: unknown[] }>(text);
-    return NextResponse.json({ months: parsed?.months ?? [] });
+    const out: unknown[] = [];
+    for (let i = 0; i < months.length; i += 3) {
+      const monthBatch = months.slice(i, i + 3);
+      const text = await completeLlmChat({
+        modelOverride,
+        systemPrompt,
+        userPrompt: buildUserPrompt(monthBatch),
+        maxTokens: 6000,
+      });
+      const parsed = safeParseJson<{ months: unknown[] }>(text);
+      if (!parsed?.months?.length || parsed.months.length !== monthBatch.length) {
+        throw new Error(
+          `month chunk ${i / 3 + 1} returned ${parsed?.months?.length ?? 0}/${monthBatch.length} months`,
+        );
+      }
+      out.push(...parsed.months);
+    }
+
+    return NextResponse.json({ months: out.slice(0, months.length) });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error('[months-second]', msg);
-    return NextResponse.json({ months: buildFallbackMonths(body), partial: true }, { status: 206 });
+    console.error('[months-second]', msg.slice(0, 500));
+    return NextResponse.json({ months: buildFallbackMonths(body), partial: true, error: msg.slice(0, 300) }, { status: 206 });
   }
 }
 
