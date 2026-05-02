@@ -202,8 +202,11 @@ export const generateReportJob = inngest.createFunction(
         await updateReportRun(reportRunId, { phase: 'commentary_hourly_6' }); return runPhase(data, 'commentary_hourly_6');
       });
 
-      await step.run('phase:commentary_months', async () => {
-        await updateReportRun(reportRunId, { phase: 'commentary_months' }); return runPhase(data, 'commentary_months');
+      await step.run('phase:commentary_months_1', async () => {
+        await updateReportRun(reportRunId, { phase: 'commentary_months_1' }); return runPhase(data, 'commentary_months_1');
+      });
+      await step.run('phase:commentary_months_2', async () => {
+        await updateReportRun(reportRunId, { phase: 'commentary_months_2' }); return runPhase(data, 'commentary_months_2');
       });
       await step.run('phase:commentary_weeks', async () => {
         await updateReportRun(reportRunId, { phase: 'commentary_weeks' }); return runPhase(data, 'commentary_weeks');

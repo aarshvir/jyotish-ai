@@ -29,6 +29,8 @@ export type PipelinePhase =
   | 'commentary_hourly_4'
   | 'commentary_hourly_5'
   | 'commentary_hourly_6'
+  | 'commentary_months_1'
+  | 'commentary_months_2'
   | 'commentary_months'
   | 'commentary_weeks'
   | 'commentary'
@@ -44,6 +46,8 @@ export const PHASE_ORDER: PipelinePhase[] = [
   'commentary_hourly_4',
   'commentary_hourly_5',
   'commentary_hourly_6',
+  'commentary_months_1',
+  'commentary_months_2',
   'commentary_months',
   'commentary_weeks',
   'commentary',
@@ -72,6 +76,8 @@ export interface PipelineState {
   commentary_hourly_4?: { forecastDays: unknown; };
   commentary_hourly_5?: { forecastDays: unknown; };
   commentary_hourly_6?: { forecastDays: unknown; };
+  commentary_months_1?: { months1Data: unknown; };
+  commentary_months_2?: { allMonthsData: unknown; };
   commentary_months?: { allMonthsData: unknown; };
   commentary_weeks?: { weeksSynthData: unknown; };
   commentary?: {
