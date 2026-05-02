@@ -1551,6 +1551,7 @@ export async function generateReportPipeline(
 
       // ── commentary_months_1 ─────────────────────────────────────────────────────
       if (phaseAtOrAfter(cp, 'commentary_months_1') && pipelineState.commentary_months_1?.months1Data) {
+        tlog('[orchestrator] Restoring months1Data from checkpoint (skipping LLM)');
         months1Data = pipelineState.commentary_months_1.months1Data as MonthSummary[];
       } else {
         await (async () => {

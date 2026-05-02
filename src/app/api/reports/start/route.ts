@@ -62,18 +62,23 @@ function parseReportStartEnv() {
   const inngestConfigured = !!process.env.INNGEST_EVENT_KEY;
   const allowInlineOverride =
     process.env.REPORT_PIPELINE_INLINE === '1' || process.env.REPORT_PIPELINE_INLINE === 'true';
-  // ALWAYS allow inline fallback — on Hobby plan, Inngest may not be configured,
-  // and returning 503 means 100% failure rate. The pipeline's own budget management
-  // handles timeouts gracefully. Only block inline if EXPLICITLY required via env var.
+  // Production report generation must be durable. Inline fallback is for local
+  // development or an explicit emergency override only.
+  const isProductionRuntime =
+    process.env.NODE_ENV === 'production' ||
+    process.env.VERCEL_ENV === 'production' ||
+    (process.env.VERCEL === '1' && process.env.NODE_ENV !== 'development');
   const requireStrictInngest =
     process.env.REPORT_START_REQUIRE_INNGEST === '1' ||
-    process.env.REPORT_START_REQUIRE_INNGEST === 'true';
-  const allowInlineFallback = !requireStrictInngest || allowInlineOverride;
+    process.env.REPORT_START_REQUIRE_INNGEST === 'true' ||
+    (isProductionRuntime && !allowInlineOverride);
+  const allowInlineFallback = allowInlineOverride || (!isProductionRuntime && !requireStrictInngest);
   return {
     useInngest: inngestConfigured,
     allowInlineOverride,
     allowInlineFallback,
     requireStrictInngest,
+    isProductionRuntime,
   };
 }
 
@@ -344,6 +349,18 @@ export async function POST(request: NextRequest) {
   // Reset append-only log when the column exists (migration). Omitted from upsert so older
   // DBs without `reports.generation_log` still accept the row; clears stale log on restart.
   await clearReportGenerationLog(reportId, auth.user.id);
+
+  // CRITICAL: On forceRestart, wipe pipeline_state so the next run does NOT reuse stale LLM
+  // checkpoints from previous failed/partial attempts. Without this, the orchestrator finds
+  // months/weeks checkpoints containing fallback text and skips all real LLM calls —
+  // producing a report that looks complete but contains 100% template copy.
+  if (forceRestart) {
+    await db
+      .from('reports')
+      .update({ pipeline_state: null, updated_at: nowIso })
+      .eq('id', reportId)
+      .eq('user_id', auth.user.id);
+  }
 
   const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
 
