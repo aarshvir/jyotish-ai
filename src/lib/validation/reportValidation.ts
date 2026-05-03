@@ -8,7 +8,7 @@
  * and has no dependencies on React, Next.js, or any API layer.
  */
 
-import type { ReportData, DayForecast, HoraSlot } from '@/lib/agents/types';
+import type { ReportData, DayForecast, HoraSlot, MonthSummary, WeekSummary } from '@/lib/agents/types';
 import { getCanonicalScoreLabel } from '@/lib/guidance/labels';
 
 // ---------------------------------------------------------------------------
@@ -86,6 +86,40 @@ function validateSlotLabelOrder(slot: HoraSlot, prevSlot: HoraSlot | undefined, 
 
 const INITIATION_WORDS = /\b(start|launch|sign|commit|initiate|begin new|open new|negotiate)\b/i;
 const STRONG_ACTION_WORDS = /\b(act decisively|seize|bold move|go all.?in|maximum effort|push hard)\b/i;
+const GENERATED_PLACEHOLDER_RE =
+  /commentary is generating|weekly narrative is generating|refresh in 30 seconds|until full commentary is available|daily-driven timing/i;
+
+function hasGeneratedPlaceholderText(value: string | undefined | null): boolean {
+  return GENERATED_PLACEHOLDER_RE.test(value ?? '');
+}
+
+function validateMonths(months: MonthSummary[] | undefined): string[] {
+  const errs: string[] = [];
+  if (!Array.isArray(months)) return errs;
+  months.forEach((month, index) => {
+    const label = month.month?.trim() || `month ${index + 1}`;
+    if (!month.commentary?.trim()) {
+      errs.push(`months[${index} ${label}]: commentary is empty`);
+    } else if (hasGeneratedPlaceholderText(month.commentary)) {
+      errs.push(`months[${index} ${label}]: commentary contains generated placeholder text`);
+    }
+  });
+  return errs;
+}
+
+function validateWeeks(weeks: WeekSummary[] | undefined): string[] {
+  const errs: string[] = [];
+  if (!Array.isArray(weeks)) return errs;
+  weeks.forEach((week, index) => {
+    const label = week.week_label?.trim() || `week ${index + 1}`;
+    if (!week.commentary?.trim()) {
+      errs.push(`weeks[${index} ${label}]: commentary is empty`);
+    } else if (hasGeneratedPlaceholderText(`${week.theme ?? ''}\n${week.commentary}`)) {
+      errs.push(`weeks[${index} ${label}]: commentary contains generated placeholder text`);
+    }
+  });
+  return errs;
+}
 
 function validateSlotSemantics(slot: HoraSlot, prefix: string): string[] {
   const warnings: string[] = [];
@@ -217,12 +251,16 @@ export function validateReportData(report: ReportData): string[] {
     errors.push(
       `months: expected length 12, got ${Array.isArray(report.months) ? report.months.length : 'non-array'}`
     );
+  } else {
+    errors.push(...validateMonths(report.months));
   }
 
   if (!Array.isArray(report.weeks) || report.weeks.length !== 6) {
     errors.push(
       `weeks: expected length 6, got ${Array.isArray(report.weeks) ? report.weeks.length : 'non-array'}`
     );
+  } else {
+    errors.push(...validateWeeks(report.weeks));
   }
 
   if (!Array.isArray(report.days) || report.days.length === 0) {

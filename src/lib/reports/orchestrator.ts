@@ -362,8 +362,17 @@ function assertNoPartialLlmForPaid(
   }
 }
 
-/** Stubs from monthlyFallback() — if most months still say this, the LLM never wrote real copy. */
+/** Stubs from fallback writers — paid reports must never persist this copy. */
 const MONTHLY_GENERATING_STUB = 'Commentary is generating — refresh in 30 seconds';
+const WEEKLY_GENERATING_STUB = 'Weekly narrative is generating — refresh in 30 seconds';
+const WEEKLY_PADDED_THEME = 'Daily-driven timing';
+const WEEKLY_PADDED_TEXT = 'Use the per-day scores and hourly table for this week.';
+const PLACEHOLDER_COPY_RE =
+  /commentary is generating|weekly narrative is generating|refresh in 30 seconds|until full commentary is available/i;
+
+function hasGeneratedPlaceholderCopy(value: string | null | undefined): boolean {
+  return PLACEHOLDER_COPY_RE.test(value ?? '');
+}
 
 /**
  * True when a row is the all-65 padding shape (orchestrator uses 65 as neutral when fields are missing).
@@ -391,16 +400,24 @@ function assertPaidMonthlySectionNotPlaceholder(months: MonthSummary[], input: P
   if (months.length < 12) {
     throw new Error('Monthly section: expected 12 months; got incomplete data. Check months-first/second API responses.');
   }
-  const stubText = months.filter((m) => (m.commentary ?? '').includes(MONTHLY_GENERATING_STUB));
-  if (stubText.length >= 6) {
+  const stubText = months
+    .map((m, i) => ({
+      index: i + 1,
+      label: String(m.month ?? `month ${i + 1}`).trim() || `month ${i + 1}`,
+      commentary: m.commentary ?? '',
+    }))
+    .filter((m) => !m.commentary.trim() || m.commentary.includes(MONTHLY_GENERATING_STUB) || hasGeneratedPlaceholderCopy(m.commentary));
+  if (stubText.length > 0) {
     throw new Error(
-      'Monthly section still contains "generating" placeholder copy. Paid report cannot be marked complete. Regenerate the report.',
+      `Monthly section contains placeholder or empty commentary in paid report (${stubText
+        .map((m) => `${m.index}:${m.label}`)
+        .join(', ')}). Regenerate the report.`,
     );
   }
   const uniform = months.filter(isUniform65PlaceholderRow);
-  if (uniform.length >= 12) {
+  if (uniform.length > 0) {
     throw new Error(
-      'All 12 months look like padding (65/65, no themes). Paid report cannot be completed — check months-first/second LLM output.',
+      `Monthly section contains ${uniform.length} padded 65/65 row(s). Paid report cannot be completed — check months-first/second LLM output.`,
     );
   }
 }
@@ -458,6 +475,29 @@ function assertPaidWeeksSynthesisPresent(data: WeeksSynthApiResult, input: Pipel
   if (n < 6) {
     throw new Error(
       `Weekly section: expected 6 week rows after merge; got ${n}. This should not happen — check weeksPayload and logs.`,
+    );
+  }
+  const badWeeks = (data.weeks ?? [])
+    .slice(0, 6)
+    .map((w, i) => ({
+      index: i + 1,
+      label: String(w.week_label ?? `week ${i + 1}`).trim() || `week ${i + 1}`,
+      theme: String(w.theme ?? ''),
+      commentary: String(w.analysis ?? w.commentary ?? ''),
+    }))
+    .filter(
+      (w) =>
+        !w.commentary.trim() ||
+        w.commentary.includes(WEEKLY_GENERATING_STUB) ||
+        w.commentary.includes(WEEKLY_PADDED_TEXT) ||
+        w.theme === WEEKLY_PADDED_THEME ||
+        hasGeneratedPlaceholderCopy(w.commentary),
+    );
+  if (badWeeks.length > 0) {
+    throw new Error(
+      `Weekly section contains placeholder, padded, or empty commentary in paid report (${badWeeks
+        .map((w) => `${w.index}:${w.label}`)
+        .join(', ')}). Regenerate the report.`,
     );
   }
 }
@@ -1812,6 +1852,9 @@ export async function generateReportPipeline(
       // Floor at 35 so weeks never show 0/100 for empty or short plans
       const sc = Math.max(35, w.overall_score ?? w.score ?? 65);
       const wc = (w.analysis ?? w.commentary ?? '').trim();
+      if (!allowPartialLlmFallbackForPlan(input) && (!wc || hasGeneratedPlaceholderCopy(wc))) {
+        throw new Error(`Weekly section: ${wl} is missing real commentary. Paid report cannot be marked complete.`);
+      }
       return {
         week_label: wl,
         week_start: weeksPayload[i]?.start_date ?? '',
@@ -1825,6 +1868,9 @@ export async function generateReportPipeline(
       };
     });
     while (weekList.length < 6) {
+      if (!allowPartialLlmFallbackForPlan(input)) {
+        throw new Error(`Weekly section: expected 6 final week rows; got ${weekList.length}. Paid report cannot be marked complete.`);
+      }
       const wk = `Week ${weekList.length + 1}`;
       weekList.push({
         week_label: wk, week_start: '', score: 65, theme: '',
@@ -2012,7 +2058,12 @@ export async function generateReportPipeline(
 
     const finalReportTyped = finalReport as unknown as ReportData;
     const errors = validateReportData(finalReportTyped);
-    if (errors.length > 0) twarn('[orchestrator] validation issues:', errors);
+    if (errors.length > 0) {
+      twarn('[orchestrator] validation issues:', errors);
+      if (!allowPartialLlmFallbackForPlan(input)) {
+        throw new Error(`Final report validation failed for paid report: ${errors.join('; ')}`);
+      }
+    }
 
     // Save to DB
     const payloadBytes = JSON.stringify(finalReport).length;

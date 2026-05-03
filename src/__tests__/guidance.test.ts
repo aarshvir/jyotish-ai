@@ -421,6 +421,26 @@ test('Wrong week count fails', () => {
   assert(errors.some((e) => e.includes('weeks')), 'should report weeks error');
 });
 
+test('Monthly generated placeholder fails structural validation', () => {
+  const report = makeMinimalReport();
+  report.months[11].commentary = 'April 2027 - Overall score: 48/100. Commentary is generating - refresh in 30 seconds.';
+  const errors = validateReportData(report);
+  assert(
+    errors.some((e) => e.includes('months[11') && e.includes('placeholder')),
+    'should reject monthly placeholder commentary',
+  );
+});
+
+test('Weekly generated placeholder fails structural validation', () => {
+  const report = makeMinimalReport();
+  report.weeks[2].commentary = 'Week 3 - Week score: 65/100. Weekly narrative is generating - refresh in 30 seconds.';
+  const errors = validateReportData(report);
+  assert(
+    errors.some((e) => e.includes('weeks[2') && e.includes('placeholder')),
+    'should reject weekly placeholder commentary',
+  );
+});
+
 test('Wrong slot count triggers error', () => {
   const report = makeMinimalReport();
   report.days[0].slots = report.days[0].slots.slice(0, 10);
