@@ -26,6 +26,7 @@ import { buildFunctionalLordGroups } from '@/lib/engine/functionalNature';
 import { lagnaSignToIndex } from '@/lib/engine/horaBase';
 import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
 import { generationErrorCtaKind } from '@/lib/reports/reportErrors';
+import { resolveLocalSlotTimes } from '@/lib/time/localTime';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -1157,19 +1158,27 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
   const safeMonthly = Array.isArray(reportData.months) ? reportData.months : [];
   const safeWeekly = Array.isArray(reportData.weeks) ? reportData.weeks : [];
   const reportDays = reportData.days ?? [];
+  const reportTimezoneOffset =
+    dbBirthRef.current?.timezone_offset ??
+    (typeof reportData.timezone_offset === 'number' && Number.isFinite(reportData.timezone_offset)
+      ? reportData.timezone_offset
+      : currentTzOffset);
 
   const mergedDays = reportDays.map((day) => {
     const slots = day.slots ?? [];
     const peakFromGrid = slots
       .filter((s) => (s.score ?? 0) >= 75 && !(s.is_rahu_kaal ?? false))
       .slice(0, 3)
-      .map((s) => ({
-        time: s.display_label ?? '',
-        hora: s.hora_planet ?? '',
-        choghadiya: s.choghadiya ?? '',
-        score: s.score ?? 0,
-        reason: '',
-      }));
+      .map((s) => {
+        const slotTimes = resolveLocalSlotTimes(s, reportTimezoneOffset);
+        return {
+          time: slotTimes.display_label ?? '',
+          hora: s.hora_planet ?? '',
+          choghadiya: s.choghadiya ?? '',
+          score: s.score ?? 0,
+          reason: '',
+        };
+      });
     const rk = day.rahu_kaal;
     const rahuKaalFormatted = rk && (rk.start || rk.end) ? { start: (rk.start ?? '').slice(0, 5), end: (rk.end ?? '').slice(0, 5) } : null;
     return {
@@ -1185,21 +1194,24 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       peak_count: day.peak_count ?? peakFromGrid.length,
       caution_count: day.caution_count ?? 0,
       hours: null,
-      hourlySlots: slots.map((s) => ({
-        slot_index: s.slot_index,
-        display_label: s.display_label,
-        time: s.start_iso?.slice(11, 19) ?? '',
-        end_time: s.end_iso?.slice(11, 19) ?? '',
-        score: s.score ?? 50,
-        hora_planet: s.hora_planet ?? '',
-        hora_planet_symbol: s.hora_planet_symbol ?? '',
-        choghadiya: s.choghadiya ?? '',
-        choghadiya_quality: s.choghadiya_quality ?? '',
-        is_rahu_kaal: s.is_rahu_kaal ?? false,
-        transit_lagna: s.transit_lagna ?? '',
-        transit_lagna_house: s.transit_lagna_house ?? undefined,
-        commentary: s.commentary ?? '',
-      })),
+      hourlySlots: slots.map((s) => {
+        const slotTimes = resolveLocalSlotTimes(s, reportTimezoneOffset);
+        return {
+          slot_index: s.slot_index,
+          display_label: slotTimes.display_label,
+          time: slotTimes.time,
+          end_time: slotTimes.end_time,
+          score: s.score ?? 50,
+          hora_planet: s.hora_planet ?? '',
+          hora_planet_symbol: s.hora_planet_symbol ?? '',
+          choghadiya: s.choghadiya ?? '',
+          choghadiya_quality: s.choghadiya_quality ?? '',
+          is_rahu_kaal: s.is_rahu_kaal ?? false,
+          transit_lagna: s.transit_lagna ?? '',
+          transit_lagna_house: s.transit_lagna_house ?? undefined,
+          commentary: s.commentary ?? '',
+        };
+      }),
     };
   });
 

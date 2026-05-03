@@ -301,7 +301,7 @@ export async function POST(request: NextRequest) {
       current_city: body.current_city ?? null,
       current_lat: body.current_lat ?? null,
       current_lng: body.current_lng ?? null,
-      timezone_offset: timezoneOffset || null,
+      timezone_offset: timezoneOffset,
       plan_type: body.plan_type ?? '7day',
       status: 'generating',
       payment_status: body.payment_status ?? 'free',

@@ -2036,6 +2036,8 @@ export async function generateReportPipeline(
     const finalReport = {
       report_id: `gen-${Date.now()}`,
       report_type: input.type || '7day',
+      timezone_offset: input.timezoneOffset,
+      current_city: input.currentCity ?? input.city ?? null,
       generated_at: new Date().toISOString().slice(0, 10),
       nativity: nativityData,
       months: allMonthsData,

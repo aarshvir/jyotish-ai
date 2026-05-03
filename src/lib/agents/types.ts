@@ -518,6 +518,12 @@ export interface ReportData {
   /** "7day" | "monthly" | "free" */
   report_type: string;
 
+  /** Current-city timezone offset in minutes east of UTC, e.g. Dubai = 240. */
+  timezone_offset?: number | null;
+
+  /** Current city used for forecast timing, which may differ from birth city. */
+  current_city?: string | null;
+
   /** ISO date when the report was generated, "YYYY-MM-DD". */
   generated_at: string;
 
