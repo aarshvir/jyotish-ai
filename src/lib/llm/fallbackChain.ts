@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import { logLlmAudit } from '@/lib/llm/audit';
+import { cleanEnv } from '@/lib/env';
 
 function getHttpStatus(err: unknown): number | undefined {
   if (err && typeof err === 'object' && 'status' in err) {
@@ -11,18 +11,15 @@ function getHttpStatus(err: unknown): number | undefined {
 }
 
 /**
- * When Anthropic fails for account/credit/billing (or clearly billing-shaped 400s),
- * use the next provider (e.g. OpenAI) without treating it as a bad payload.
- * Does **not** include 429/5xx (those are retried on Claude first in ForecastAgent).
+ * When Anthropic fails for account/credit/billing, use the next provider
+ * without treating it as a prompt or payload failure.
  */
 export function anthropicErrorWarrantsProviderFallback(err: unknown): boolean {
   const status = getHttpStatus(err);
   if (status === 401 || status === 402 || status === 403) return true;
   const msg = err instanceof Error ? err.message : String(err);
-  const lower = msg.toLowerCase();
-  // Some orgs return 400 with a billing/credit body; 402 is "Payment Required" when sent.
   return /credit|billing|balance|payment|invoice|quota|overage|insufficient|too low|funds|add funds|spend limit|usage limit|account disabled|exhausted.*quota|credit exhausted/i.test(
-    lower,
+    msg,
   );
 }
 
@@ -35,47 +32,32 @@ function messageSuggestsNetwork(err: unknown): boolean {
 }
 
 /**
- * After Anthropic fails: allow trying another provider unless the error is a bad request (same payload likely fails).
- * 401 / 402 / 403 and credit/billing-shaped 400s allow fallback to OpenAI when Claude credits or auth fail.
+ * Anthropic 400s are usually bad requests, except billing/credit/quota-shaped
+ * failures, which should immediately fall through to OpenAI.
  */
 export function anthropicFailureIsRetriableWithFallback(err: unknown): boolean {
   if (anthropicErrorWarrantsProviderFallback(err)) return true;
   const status = getHttpStatus(err);
   if (status === 400) return false;
-  if (status === undefined) {
-    return messageSuggestsNetwork(err) || true;
-  }
+  if (status === undefined) return messageSuggestsNetwork(err) || true;
   return true;
 }
 
 export function openAiFailureIsRetriable(err: unknown): boolean {
   const status = getHttpStatus(err);
-  if (status === 400) return false;
   if (status === undefined) return messageSuggestsNetwork(err) || true;
-  // 401/402/403: key or org billing — continue chain to Gemini/Grok
-  return [401, 402, 403, 408, 409, 429, 500, 502, 503, 529].includes(status) || status >= 520;
+  return [400, 401, 402, 403, 408, 409, 429, 500, 502, 503, 529].includes(status) || status >= 520;
 }
 
-export function geminiFailureIsRetriable(err: unknown): boolean {
-  const status = getHttpStatus(err);
-  if (status === 400) return false;
-  if (status === undefined) return messageSuggestsNetwork(err) || true;
-  return [429, 500, 503, 529].includes(status) || status >= 520;
-}
-
-function trimEnv(s: string | undefined): string {
-  return (s ?? '').trim();
+function env(s: string | undefined): string {
+  return cleanEnv(s);
 }
 
 export function hasAnyChatFallbackKey(): boolean {
-  const deepseekOn =
-    trimEnv(process.env.LLM_FALLBACK_DEEPSEEK_ENABLED).toLowerCase() === 'true' &&
-    Boolean(trimEnv(process.env.DEEPSEEK_API_KEY));
   return Boolean(
-    trimEnv(process.env.OPENAI_API_KEY) ||
-      trimEnv(process.env.GEMINI_API_KEY) ||
-      trimEnv(process.env.GROK_API_KEY) ||
-      deepseekOn
+    env(process.env.OPENAI_API_KEY) ||
+      env(process.env.GROK_API_KEY) ||
+      env(process.env.DEEPSEEK_API_KEY),
   );
 }
 
@@ -83,11 +65,9 @@ export type FallbackChainOpts = {
   systemPrompt: string;
   userPrompt: string;
   maxTokens: number;
-  /** When true, skip OpenAI (e.g. OpenAI was already attempted upstream). */
+  /** When true, skip OpenAI because it was already attempted upstream. */
   skipOpenAI?: boolean;
-  /** When true, skip Gemini (e.g. explicit gemini-* call already failed). */
-  skipGemini?: boolean;
-  /** Label for structured llm_audit logs (e.g. nativity, forecast_narrative). */
+  /** Label for structured llm_audit logs, e.g. nativity or forecast_narrative. */
   auditStage?: string;
 };
 
@@ -95,14 +75,41 @@ async function completeOpenAiFallback(opts: {
   systemPrompt: string;
   userPrompt: string;
   maxTokens: number;
-}): Promise<string> {
-  const key = trimEnv(process.env.OPENAI_API_KEY);
+}): Promise<{ model: string; text: string }> {
+  const key = env(process.env.OPENAI_API_KEY);
   if (!key) throw new Error('OPENAI_API_KEY missing for fallback');
-  const model = trimEnv(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-5.5';
-  const client = new OpenAI({ apiKey: key, timeout: 35_000, maxRetries: 0 });
+  const model = env(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-5.5';
+  const client = new OpenAI({ apiKey: key, timeout: 120_000, maxRetries: 1 });
+  const input = [
+    { role: 'system' as const, content: opts.systemPrompt },
+    { role: 'user' as const, content: opts.userPrompt },
+  ];
+
+  if (/^gpt-5/i.test(model)) {
+    const responsesApi = (
+      client as unknown as {
+        responses?: { create: (args: Record<string, unknown>) => Promise<unknown> };
+      }
+    ).responses;
+    if (responsesApi?.create) {
+      const r = await responsesApi.create({
+        model,
+        reasoning: { effort: 'high' },
+        input,
+        max_output_tokens: Math.min(opts.maxTokens, 16000),
+      });
+      const text = extractResponsesText(r);
+      if (text) return { model, text };
+      throw new Error('OpenAI Responses fallback returned empty content');
+    }
+  }
+
+  const tokenParam = /^gpt-5/i.test(model)
+    ? { max_completion_tokens: Math.min(opts.maxTokens, 16000) }
+    : { max_tokens: Math.min(opts.maxTokens, 16000) };
   const r = await client.chat.completions.create({
     model,
-    max_tokens: Math.min(opts.maxTokens, 16000),
+    ...tokenParam,
     messages: [
       { role: 'system', content: opts.systemPrompt },
       { role: 'user', content: opts.userPrompt },
@@ -110,40 +117,85 @@ async function completeOpenAiFallback(opts: {
   });
   const text = (r.choices[0]?.message?.content ?? '').trim();
   if (!text) throw new Error('OpenAI fallback returned empty content');
-  return text;
+  return { model, text };
 }
 
-async function completeGeminiFallback(opts: {
+function extractResponsesText(data: unknown): string {
+  if (!data || typeof data !== 'object') return '';
+  const direct = (data as { output_text?: unknown }).output_text;
+  if (typeof direct === 'string' && direct.trim()) return direct.trim();
+  const output = (data as { output?: unknown }).output;
+  if (!Array.isArray(output)) return '';
+  let text = '';
+  for (const item of output) {
+    const content = item && typeof item === 'object' ? (item as { content?: unknown }).content : undefined;
+    if (!Array.isArray(content)) continue;
+    for (const part of content) {
+      if (!part || typeof part !== 'object') continue;
+      const p = part as { type?: unknown; text?: unknown };
+      if (p.type === 'text' && typeof p.text === 'string') text += p.text;
+    }
+  }
+  return text.trim();
+}
+
+function grokCandidates(): string[] {
+  const configured = env(process.env.LLM_FALLBACK_GROK_MODEL);
+  const list = env(process.env.LLM_FALLBACK_GROK_MODELS)
+    .split(',')
+    .map((m) => m.trim())
+    .filter(Boolean);
+  return [
+    ...(configured ? [configured] : []),
+    ...list,
+    'grok-4.20',
+    'grok-4',
+    'grok-3',
+    'grok-2-1212',
+  ].filter((model, index, all) => all.indexOf(model) === index);
+}
+
+async function completeGrokFallback(opts: {
   systemPrompt: string;
   userPrompt: string;
   maxTokens: number;
-}): Promise<string> {
-  const key = trimEnv(process.env.GEMINI_API_KEY);
-  if (!key) throw new Error('GEMINI_API_KEY missing for fallback');
-  const modelId = trimEnv(process.env.LLM_FALLBACK_GEMINI_MODEL) || 'gemini-2.0-flash';
-  const genAI = new GoogleGenerativeAI(key);
-  const model = genAI.getGenerativeModel({
-    model: modelId,
-    systemInstruction: opts.systemPrompt,
-  });
-  const result = await model.generateContent({
-    contents: [{ role: 'user', parts: [{ text: opts.userPrompt }] }],
-    generationConfig: { maxOutputTokens: opts.maxTokens },
-  });
-  const text = result.response.text();
-  if (!text?.trim()) throw new Error('Gemini fallback returned empty response');
-  return text.trim();
+}): Promise<{ model: string; text: string }> {
+  const key = env(process.env.GROK_API_KEY);
+  if (!key) throw new Error('GROK_API_KEY missing for fallback');
+  const client = new OpenAI({ apiKey: key, baseURL: 'https://api.x.ai/v1', timeout: 90_000, maxRetries: 1 });
+  const errors: string[] = [];
+
+  for (const model of grokCandidates()) {
+    try {
+      const r = await client.chat.completions.create({
+        model,
+        max_tokens: Math.min(opts.maxTokens, 8192),
+        messages: [
+          { role: 'system', content: opts.systemPrompt },
+          { role: 'user', content: opts.userPrompt },
+        ],
+      });
+      const text = (r.choices[0]?.message?.content ?? '').trim();
+      if (!text) throw new Error('empty content');
+      return { model, text };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      errors.push(`${model}: ${msg.slice(0, 180)}`);
+    }
+  }
+
+  throw new Error(`Grok fallback exhausted: ${errors.join(' | ')}`);
 }
 
 async function completeDeepSeekFallback(opts: {
   systemPrompt: string;
   userPrompt: string;
   maxTokens: number;
-}): Promise<string> {
-  const key = trimEnv(process.env.DEEPSEEK_API_KEY);
+}): Promise<{ model: string; text: string }> {
+  const key = env(process.env.DEEPSEEK_API_KEY);
   if (!key) throw new Error('DEEPSEEK_API_KEY missing for fallback');
-  const model = trimEnv(process.env.LLM_FALLBACK_DEEPSEEK_MODEL) || 'deepseek-chat';
-  const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com' });
+  const model = env(process.env.LLM_FALLBACK_DEEPSEEK_MODEL) || 'deepseek-chat';
+  const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com', timeout: 90_000, maxRetries: 1 });
   const r = await client.chat.completions.create({
     model,
     max_tokens: Math.min(opts.maxTokens, 8192),
@@ -154,32 +206,12 @@ async function completeDeepSeekFallback(opts: {
   });
   const text = (r.choices[0]?.message?.content ?? '').trim();
   if (!text) throw new Error('DeepSeek fallback returned empty content');
-  return text;
-}
-
-async function completeGrokFallback(opts: {
-  systemPrompt: string;
-  userPrompt: string;
-  maxTokens: number;
-}): Promise<string> {
-  const key = trimEnv(process.env.GROK_API_KEY);
-  if (!key) throw new Error('GROK_API_KEY missing for fallback');
-  const client = new OpenAI({ apiKey: key, baseURL: 'https://api.x.ai/v1' });
-  const r = await client.chat.completions.create({
-    model: 'grok-4.2',
-    max_tokens: Math.min(opts.maxTokens, 8192),
-    messages: [
-      { role: 'system', content: opts.systemPrompt },
-      { role: 'user', content: opts.userPrompt },
-    ],
-  });
-  const text = (r.choices[0]?.message?.content ?? '').trim();
-  if (!text) throw new Error('Grok fallback returned empty content');
-  return text;
+  return { model, text };
 }
 
 /**
- * OpenAI → Gemini → Grok → optional DeepSeek. Never calls Anthropic.
+ * Runs after Anthropic fails. Order is intentionally fixed:
+ * OpenAI -> Grok -> DeepSeek.
  */
 export async function runChatFallbackChain(opts: FallbackChainOpts): Promise<string> {
   const auditStage = opts.auditStage ?? 'fallback_chain';
@@ -190,56 +222,37 @@ export async function runChatFallbackChain(opts: FallbackChainOpts): Promise<str
   };
   const errors: Error[] = [];
 
-  if (!opts.skipOpenAI && trimEnv(process.env.OPENAI_API_KEY)) {
+  if (!opts.skipOpenAI && env(process.env.OPENAI_API_KEY)) {
     try {
-      const text = await completeOpenAiFallback(base);
-      const om = trimEnv(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-5.5';
-      console.warn('[LLM fallback] success: OpenAI', om);
-      logLlmAudit(auditStage, 'openai', om);
+      const { model, text } = await completeOpenAiFallback(base);
+      console.warn('[LLM fallback] success: OpenAI', model);
+      logLlmAudit(auditStage, 'openai', model);
       return text;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
       errors.push(err);
-      if (!openAiFailureIsRetriable(e)) throw err;
-      console.warn('[LLM fallback] OpenAI failed, trying Grok:', err.message.slice(0, 120));
+      console.warn('[LLM fallback] OpenAI failed, trying Grok:', err.message.slice(0, 160));
     }
   }
 
-  if (trimEnv(process.env.GROK_API_KEY)) {
+  if (env(process.env.GROK_API_KEY)) {
     try {
-      const text = await completeGrokFallback(base);
-      console.warn('[LLM fallback] success: Grok');
-      logLlmAudit(auditStage, 'grok', 'grok-4.2');
+      const { model, text } = await completeGrokFallback(base);
+      console.warn('[LLM fallback] success: Grok', model);
+      logLlmAudit(auditStage, 'grok', model);
       return text;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));
       errors.push(err);
-      console.warn('[LLM fallback] Grok failed, trying Gemini:', err.message.slice(0, 120));
+      console.warn('[LLM fallback] Grok failed, trying DeepSeek:', err.message.slice(0, 160));
     }
   }
 
-  if (!opts.skipGemini && trimEnv(process.env.GEMINI_API_KEY)) {
+  if (env(process.env.DEEPSEEK_API_KEY)) {
     try {
-      const text = await completeGeminiFallback(base);
-      const gm = trimEnv(process.env.LLM_FALLBACK_GEMINI_MODEL) || 'gemini-2.0-flash';
-      console.warn('[LLM fallback] success: Gemini', gm);
-      logLlmAudit(auditStage, 'gemini', gm);
-      return text;
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      errors.push(err);
-      if (!geminiFailureIsRetriable(e)) throw err;
-      console.warn('[LLM fallback] Gemini failed, trying DeepSeek:', err.message.slice(0, 120));
-    }
-  }
-
-  const deepseekEnabled = trimEnv(process.env.LLM_FALLBACK_DEEPSEEK_ENABLED).toLowerCase() === 'true';
-  if (deepseekEnabled && trimEnv(process.env.DEEPSEEK_API_KEY)) {
-    try {
-      const text = await completeDeepSeekFallback(base);
-      const dm = trimEnv(process.env.LLM_FALLBACK_DEEPSEEK_MODEL) || 'deepseek-chat';
-      console.warn('[LLM fallback] success: DeepSeek');
-      logLlmAudit(auditStage, 'deepseek', dm);
+      const { model, text } = await completeDeepSeekFallback(base);
+      console.warn('[LLM fallback] success: DeepSeek', model);
+      logLlmAudit(auditStage, 'deepseek', model);
       return text;
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e));

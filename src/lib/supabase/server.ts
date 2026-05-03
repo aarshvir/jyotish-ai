@@ -1,9 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { cleanEnv } from '@/lib/env';
 
-// Trim env vars to guard against CRLF added by some CI/CD pipelines (e.g. Vercel CLI on Windows)
-const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
-const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
+// Normalize env vars to guard against copied CRLF suffixes in deployment secrets.
+const supabaseUrl = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const supabaseAnonKey = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 export async function createClient() {
   const cookieStore = await cookies();

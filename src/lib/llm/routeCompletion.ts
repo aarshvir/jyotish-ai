@@ -1,18 +1,19 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
+import { cleanEnv } from '@/lib/env';
 import {
   anthropicErrorWarrantsProviderFallback,
   anthropicFailureIsRetriableWithFallback,
-  geminiFailureIsRetriable,
   hasAnyChatFallbackKey,
-  openAiFailureIsRetriable,
   runChatFallbackChain,
 } from '@/lib/llm/fallbackChain';
 
-const anthropicClient = process.env.ANTHROPIC_API_KEY?.trim()
+const anthropicApiKey = cleanEnv(process.env.ANTHROPIC_API_KEY);
+
+const anthropicClient = anthropicApiKey
   ? new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY.trim(),
+      apiKey: anthropicApiKey,
       /** Commentary routes use maxDuration 300s and large max_tokens; 55s caused premature SDK timeouts. */
       timeout: 180_000,
       maxRetries: 0,
@@ -33,20 +34,38 @@ function extractAnthropicText(response: Anthropic.Message): string {
 /** True if we have an API key for the provider implied by model_override (default: Anthropic or chat fallback chain). */
 export function hasLlmCredentials(modelOverride?: string | null): boolean {
   const m = String(modelOverride ?? '').trim();
+  const hasAnthropic = Boolean(cleanEnv(process.env.ANTHROPIC_API_KEY));
+  const hasOpenAI = Boolean(cleanEnv(process.env.OPENAI_API_KEY));
+  const hasGemini = Boolean(cleanEnv(process.env.GEMINI_API_KEY));
+  const hasDeepSeek = Boolean(cleanEnv(process.env.DEEPSEEK_API_KEY));
+  const hasGrok = Boolean(cleanEnv(process.env.GROK_API_KEY));
+
+  let ok: boolean;
   if (!m || m.startsWith('claude-')) {
-    return Boolean(
-      process.env.ANTHROPIC_API_KEY?.trim() ||
-        process.env.OPENAI_API_KEY?.trim() ||
-        process.env.GEMINI_API_KEY?.trim() ||
-        (process.env.DEEPSEEK_API_KEY?.trim() &&
-          process.env.LLM_FALLBACK_DEEPSEEK_ENABLED?.trim().toLowerCase() === 'true')
-    );
+    ok = hasAnthropic || hasOpenAI || hasGrok || hasDeepSeek;
+  } else if (m.startsWith('gpt-')) {
+    ok = hasOpenAI;
+  } else if (m.startsWith('gemini-')) {
+    ok = hasGemini;
+  } else if (m.startsWith('deepseek-')) {
+    ok = Boolean(cleanEnv(process.env.DEEPSEEK_API_KEY));
+  } else if (m.startsWith('grok-')) {
+    ok = hasGrok;
+  } else {
+    ok = hasAnthropic || hasOpenAI || hasGrok || hasDeepSeek;
   }
-  if (m.startsWith('gpt-')) return Boolean(process.env.OPENAI_API_KEY);
-  if (m.startsWith('gemini-')) return Boolean(process.env.GEMINI_API_KEY);
-  if (m.startsWith('deepseek-')) return Boolean(process.env.DEEPSEEK_API_KEY);
-  if (m.startsWith('grok-')) return Boolean(process.env.GROK_API_KEY);
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+
+  if (!ok) {
+    console.error('[LLM] No credentials available for model override', {
+      modelOverride: m || '(default)',
+      hasAnthropic,
+      hasOpenAI,
+      hasGemini,
+      hasDeepSeek,
+      hasGrok,
+    });
+  }
+  return ok;
 }
 
 /** OpenAI / xAI Responses API shape (output_text or output[].content[]). */
@@ -252,7 +271,7 @@ export async function completeLlmChat(opts: {
     }
 
     if (hasAnyChatFallbackKey()) {
-      console.error('[LLM] ANTHROPIC_API_KEY missing — falling back to OpenAI/Gemini/Grok. Set ANTHROPIC_API_KEY in Vercel to use Claude.');
+      console.error('[LLM] ANTHROPIC_API_KEY missing - falling back to OpenAI/Grok/DeepSeek. Set ANTHROPIC_API_KEY in Vercel to use Claude.');
       return runChatFallbackChain({
         systemPrompt: opts.systemPrompt,
         userPrompt: opts.userPrompt,
@@ -263,7 +282,7 @@ export async function completeLlmChat(opts: {
   }
 
   if (modelId === 'gpt-5.5-high-reasoning' || modelId === 'gpt-5.4-high-reasoning') {
-    const key = process.env.OPENAI_API_KEY;
+    const key = cleanEnv(process.env.OPENAI_API_KEY);
     if (!key) throw new Error('OPENAI_API_KEY is not configured');
     try {
       return await completeOpenAiGpt55HighReasoning({
@@ -279,7 +298,7 @@ export async function completeLlmChat(opts: {
   }
 
   if (modelId.startsWith('gpt-')) {
-    const key = process.env.OPENAI_API_KEY;
+    const key = cleanEnv(process.env.OPENAI_API_KEY);
     if (!key) throw new Error('OPENAI_API_KEY is not configured');
     const client = new OpenAI({ apiKey: key });
     const useCompletionTokens = /^gpt-5/i.test(modelId);
@@ -296,7 +315,7 @@ export async function completeLlmChat(opts: {
       });
       return (r.choices[0]?.message?.content ?? '').trim();
     } catch (openErr: unknown) {
-      if (!openAiFailureIsRetriable(openErr) || !hasAnyChatFallbackKey()) {
+      if (!hasAnyChatFallbackKey()) {
         throw openErr;
       }
       console.warn('[LLM] OpenAI primary model failed, continuing fallback chain');
@@ -310,7 +329,7 @@ export async function completeLlmChat(opts: {
   }
 
   if (modelId.startsWith('gemini-')) {
-    const key = process.env.GEMINI_API_KEY;
+    const key = cleanEnv(process.env.GEMINI_API_KEY);
     if (!key) throw new Error('GEMINI_API_KEY is not configured');
     try {
       const genAI = new GoogleGenerativeAI(key);
@@ -332,10 +351,10 @@ export async function completeLlmChat(opts: {
         );
       }
     } catch (geminiOuter: unknown) {
-      if (!geminiFailureIsRetriable(geminiOuter) || !hasAnyChatFallbackKey()) {
+      if (!hasAnyChatFallbackKey()) {
         throw geminiOuter;
       }
-      console.warn('[LLM] Gemini primary failed, running OpenAI → Gemini → DeepSeek fallback chain');
+      console.warn('[LLM] Gemini primary failed, running OpenAI/Grok/DeepSeek fallback chain');
       return runChatFallbackChain({
         systemPrompt: opts.systemPrompt,
         userPrompt: opts.userPrompt,
@@ -345,7 +364,7 @@ export async function completeLlmChat(opts: {
   }
 
   if (modelId.startsWith('deepseek-')) {
-    const key = process.env.DEEPSEEK_API_KEY;
+    const key = cleanEnv(process.env.DEEPSEEK_API_KEY);
     if (!key) throw new Error('DEEPSEEK_API_KEY is not configured');
     const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com' });
     const r = await client.chat.completions.create({
@@ -360,7 +379,7 @@ export async function completeLlmChat(opts: {
   }
 
   if (modelId.startsWith('grok-')) {
-    const key = process.env.GROK_API_KEY;
+    const key = cleanEnv(process.env.GROK_API_KEY);
     if (!key) throw new Error('GROK_API_KEY is not configured');
     const client = new OpenAI({ apiKey: key, baseURL: 'https://api.x.ai/v1' });
 

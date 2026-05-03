@@ -306,6 +306,7 @@ export async function POST(request: NextRequest) {
       status: 'generating',
       payment_status: body.payment_status ?? 'free',
       generation_started_at: nowIso,
+      generation_progress: 0,
       updated_at: nowIso,
     },
     { onConflict: 'id' },
@@ -357,7 +358,7 @@ export async function POST(request: NextRequest) {
   if (forceRestart) {
     await db
       .from('reports')
-      .update({ pipeline_state: null, updated_at: nowIso })
+      .update({ pipeline_state: null, pipeline_checkpoint: null, generation_progress: 0, updated_at: nowIso })
       .eq('id', reportId)
       .eq('user_id', auth.user.id);
   }

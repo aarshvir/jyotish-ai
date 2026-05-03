@@ -9,6 +9,7 @@ import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPosition
 import { requireAuth } from '@/lib/api/requireAuth';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
+import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
 interface DayInputShape {
   date?: string;
@@ -109,6 +110,8 @@ export async function POST(req: NextRequest) {
       rahu_kaal: { start: string; end: string };
       peak_slots: Array<{ display_label: string; dominant_hora: string; dominant_choghadiya: string; score: number }>;
     }>;
+    scripture_context?: string;
+    require_scripture_grounding?: boolean;
   };
 
     try {
@@ -137,10 +140,23 @@ export async function POST(req: NextRequest) {
 
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
+  const scriptureBlock = buildScripturePromptBlock(body.scripture_context);
+  if (body.require_scripture_grounding) {
+    try {
+      assertRequiredScriptureGrounding(body.scripture_context, 'daily-overviews');
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : String(err), days: [] },
+        { status: 503 },
+      );
+    }
+  }
 
   const systemPrompt = `You are a Vedic astrologer writing a personal daily briefing for a busy professional. Your job is to tell them — in direct, plain English — what today holds, what their best moves are, and what to avoid. Write like a trusted advisor who happens to know astrology deeply, not like a horoscope column.
 
 Each day's data contains ACTUAL PLANETARY POSITIONS, verified yoga meaning, best timing window, and Rahu Kaal times. These are facts — do not contradict them.
+
+${scriptureBlock}
 
 LANGUAGE RULES:
 - Translate every astrological term into plain English. "Moon in H9" → "your instincts are drawn toward learning, travel, and big-picture thinking today." "Malefic in H6" → "there's low-level friction in your work environment — don't escalate it."

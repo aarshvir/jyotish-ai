@@ -20,6 +20,8 @@ export type ScriptureChunk = {
 };
 
 function chunksPath(): string {
+  const preferred = path.join(process.cwd(), 'data', 'scriptures', '_chunks_clean.json');
+  if (existsSync(preferred)) return preferred;
   return path.join(process.cwd(), 'data', 'scriptures', '_chunks.json');
 }
 

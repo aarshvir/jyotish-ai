@@ -7,12 +7,14 @@
  * Request body `jyotishRagMode` overrides `JYOTISH_RAG_MODE` and `DISABLE_RAG`.
  */
 
+import { cleanEnv } from '@/lib/env';
+
 export type JyotishRagMode = 'off' | 'keyword' | 'hybrid';
 
 const MODES: Set<string> = new Set(['off', 'keyword', 'hybrid']);
 
 function normalizeRaw(raw: string | undefined | null): string {
-  return (raw ?? '').trim().toLowerCase();
+  return cleanEnv(raw ?? undefined).toLowerCase();
 }
 
 /** Parse a single mode string; invalid → null */

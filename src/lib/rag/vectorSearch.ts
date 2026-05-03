@@ -14,25 +14,26 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/admin';
+import { cleanEnv } from '@/lib/env';
 import { buildScriptureContext, searchScriptures, type ScriptureEntry } from './scriptures';
 import type { JyotishRagMode } from './ragMode';
 import { resolveJyotishRagMode } from './ragMode';
 
-// gemini-embedding-2: supports outputDimensionality=1536, matching our pgvector schema
-// exactly — no DDL migration needed. Free tier available via GEMINI_API_KEY.
-const GOOGLE_EMBED_MODEL = 'gemini-embedding-2';
-const EMBED_DIMS = 1536;
+// Defaults match the latest jyotish_scriptures migration: vector(768) with Google
+// text-embedding-004. Override only after changing the database schema and re-embedding.
+const GOOGLE_EMBED_MODEL = cleanEnv(process.env.JYOTISH_RAG_EMBED_MODEL) || 'text-embedding-004';
+const EMBED_DIMS = Number(cleanEnv(process.env.JYOTISH_RAG_EMBED_DIMS) || '768') || 768;
 
 // Hard 15s timeout on the embed call
 const EMBED_TIMEOUT_MS = 15_000;
 
 /**
- * Embed text using Google's gemini-embedding-2 model with outputDimensionality=1536.
- * This matches the existing pgvector(1536) column schema exactly.
+ * Embed text using Google's configured retrieval embedding model.
+ * This must match the pgvector dimension in the active Supabase migration.
  * Falls back gracefully to null (triggering keyword search) on any failure.
  */
 export async function embedText(input: string): Promise<number[] | null> {
-  const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_AI_API_KEY;
+  const apiKey = cleanEnv(process.env.GEMINI_API_KEY) || cleanEnv(process.env.GOOGLE_AI_API_KEY);
   if (!apiKey) return null;
 
   const controller = new AbortController();

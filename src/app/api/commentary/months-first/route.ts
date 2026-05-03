@@ -10,6 +10,7 @@ import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPosition
 import { requireAuth } from '@/lib/api/requireAuth';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
+import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
 const DEFAULT_MONTHLY_MODEL =
   process.env.REPORT_MONTHLY_MODEL?.trim() ||
@@ -81,6 +82,8 @@ export async function POST(req: NextRequest) {
     reference_panchang?: { yoga?: string; nakshatra?: string };
     reference_slots?: Array<{ display_label?: string; score?: number; dominant_choghadiya?: string }>;
     reference_rahu_kaal?: { start?: string; end?: string };
+    scripture_context?: string;
+    require_scripture_grounding?: boolean;
   };
 
   try {
@@ -123,10 +126,23 @@ export async function POST(req: NextRequest) {
     slots: reference_slots,
     rahu_kaal: reference_rahu_kaal,
   });
+  const scriptureBlock = buildScripturePromptBlock(body.scripture_context);
+  if (body.require_scripture_grounding) {
+    try {
+      assertRequiredScriptureGrounding(body.scripture_context, 'months-first');
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : String(err), months: [] },
+        { status: 503 },
+      );
+    }
+  }
 
   const systemPrompt = `You are a Vedic astrologer writing a 6-month personal forecast. Your job is to give this person a clear, practical picture of what each month holds — what to push forward, what to protect, what to watch out for. Write in plain, direct English, not astrological jargon.
 
 ${anchorBlocks}
+
+${scriptureBlock}
 
 ANCHOR RULE: The planetary positions above are verified for the anchor date. For later months, describe the planetary themes qualitatively — do not invent exact positions that contradict this snapshot.
 

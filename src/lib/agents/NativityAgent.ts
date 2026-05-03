@@ -13,6 +13,7 @@ import { logLlmAudit } from '@/lib/llm/audit';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { detectYogas } from '@/lib/rag/yogaDetector';
 import { parseJyotishRagMode, resolveJyotishRagMode, type JyotishRagMode } from '@/lib/rag/ragMode';
+import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
 
 const SYSTEM_PROMPT = `You are a Vedic astrologer writing a premium personal report. Your job is to translate astrological data into practical, output-focused guidance a busy professional can act on today. You write like a trusted advisor — warm, specific, direct — not like a textbook.
 
@@ -151,7 +152,7 @@ export class NativityAgent {
    */
   async analyze(
     natalChart: NatalChartData,
-    rag: boolean | { disableRag?: boolean; jyotishRagMode?: string | null; ragTimeoutMs?: number } = false,
+    rag: boolean | { disableRag?: boolean; jyotishRagMode?: string | null; ragTimeoutMs?: number; requireScriptureGrounding?: boolean } = false,
   ): Promise<NativityProfile> {
     let lastError: unknown;
 
@@ -173,6 +174,9 @@ export class NativityAgent {
       : await buildScriptureContextHybrid(detectedYogas, natalChart.lagna, mode, {
           timeoutMs: opts.ragTimeoutMs,
         });
+    if (opts.requireScriptureGrounding) {
+      assertRequiredScriptureGrounding(ragContext, 'nativity');
+    }
 
     if (this.client) {
       // Single Anthropic attempt — SDK timeout handles the wall-clock limit.

@@ -9,7 +9,7 @@
  * Usage: node scripts/verify-report-generation-env.mjs
  */
 
-const trim = (v) => (v ?? '').trim();
+const trim = (v) => (v ?? '').trim().replace(/^["']|["']$/g, '').replace(/\\r|\\n/g, '').trim();
 const strict = process.env.CI === 'true' || process.env.VERIFY_REPORT_ENV_STRICT === '1';
 
 const errors = [];
@@ -35,7 +35,22 @@ const serviceRole = trim(process.env.SUPABASE_SERVICE_ROLE_KEY);
 if (!serviceRole) warn('SUPABASE_SERVICE_ROLE_KEY', 'server-side report rows / admin may fail');
 
 const inngest = trim(process.env.INNGEST_EVENT_KEY);
-if (!inngest) warn('INNGEST_EVENT_KEY', 'background report/generate will not run; inline fallback only where allowed');
+const inlineOverride = ['1', 'true'].includes(trim(process.env.REPORT_PIPELINE_INLINE).toLowerCase());
+const productionLike =
+  process.env.NODE_ENV === 'production' ||
+  process.env.VERCEL_ENV === 'production' ||
+  process.env.VERCEL === '1';
+if (!inngest) {
+  if ((strict || productionLike) && !inlineOverride) {
+    need(
+      'INNGEST_EVENT_KEY',
+      false,
+      'required for production report/generate background execution; set REPORT_PIPELINE_INLINE=true only as an emergency override',
+    );
+  } else {
+    warn('INNGEST_EVENT_KEY', 'background report/generate will not run; inline fallback only where allowed');
+  }
+}
 
 const ephem =
   trim(process.env.EPHEMERIS_SERVICE_URL) ||

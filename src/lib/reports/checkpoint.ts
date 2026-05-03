@@ -103,21 +103,22 @@ export function phaseAtOrAfter(
 export async function loadPipelineState(
   db: SupabaseClient,
   reportId: string,
-): Promise<{ checkpoint: PipelinePhase | null; state: PipelineState }> {
+): Promise<{ checkpoint: PipelinePhase | null; state: PipelineState; currentProgress: number }> {
   const { data, error } = await db
     .from('reports')
-    .select('pipeline_checkpoint, pipeline_state, status')
+    .select('pipeline_checkpoint, pipeline_state, status, generation_progress')
     .eq('id', reportId)
     .maybeSingle();
 
   if (error || !data) {
-    return { checkpoint: null, state: {} };
+    return { checkpoint: null, state: {}, currentProgress: -1 };
   }
 
   // If the report is already complete, return a signal so the caller can exit early.
   const cp = (data.pipeline_checkpoint ?? null) as PipelinePhase | null;
   const st = (data.pipeline_state ?? {}) as PipelineState;
-  return { checkpoint: cp, state: st };
+  const currentProgress = typeof data.generation_progress === 'number' ? data.generation_progress : -1;
+  return { checkpoint: cp, state: st, currentProgress };
 }
 
 /**

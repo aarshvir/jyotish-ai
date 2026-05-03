@@ -47,6 +47,8 @@ export function GeneratingScreen({
 }: GeneratingScreenProps) {
   const [telemetryLines, setTelemetryLines] = useState<TelemetryLine[]>([]);
   const lastSlugRef = useRef<string | null>(null);
+  /** Defense-in-depth: never let displayed progress go backwards. */
+  const highWaterMarkRef = useRef(0);
 
   // Elapsed timer
   useEffect(() => {
@@ -75,10 +77,12 @@ export function GeneratingScreen({
     }
   }, [serverPoll?.generation_step, serverPoll?.progress]);
 
-  // Display progress
+  // Display progress — monotonic: never decrease what the user sees.
   const realProgress = serverPoll?.progress ?? 0;
   const fallbackProgress = serverPoll ? 0 : Math.min(4, Math.floor(elapsedSeconds / 5));
-  const displayProgress = Math.max(realProgress, fallbackProgress);
+  const rawDisplay = Math.max(realProgress, fallbackProgress);
+  const displayProgress = Math.max(rawDisplay, highWaterMarkRef.current);
+  highWaterMarkRef.current = displayProgress;
   const currentSlug = lastSlugRef.current ?? serverPoll?.generation_step ?? null;
 
   // Elapsed label

@@ -289,6 +289,8 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
   const lastSuccessfulHttpPollAtRef = useRef<number | null>(null);
   const lastStatusSuccessAtRef = useRef<number | null>(null);
   const pollConsecutiveTransientRef = useRef(0);
+  /** Bug 4 fix: highest progress seen this generation — prevents UI regressions. */
+  const highestProgressRef = useRef(0);
   /** Pillar 1: Supabase Realtime subscription cleanup fn. */
   const realtimeCleanupRef = useRef<(() => void) | null>(null);
   /** True when the Realtime channel has joined — HTTP polling downshifts to an 8–10s safety net. */
@@ -378,6 +380,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
     setServerPoll(null);
     generationStartRef.current = Date.now();
     setElapsedSeconds(0);
+    highestProgressRef.current = 0;
     lastStatusSuccessAtRef.current = null;
     lastSuccessfulHttpPollAtRef.current = null;
     pollConsecutiveTransientRef.current = 0;
@@ -396,10 +399,15 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         if (typeof row.generation_trace_id === 'string' && row.generation_trace_id.trim() !== '') {
           setGenerationTraceForUi(row.generation_trace_id);
         }
-        setServerPoll({
-          status: String(row.status ?? 'generating'),
-          progress: typeof row.generation_progress === 'number' ? row.generation_progress : 0,
-          generation_step: row.generation_step ?? null,
+        setServerPoll(() => {
+          const rawProg = typeof row.generation_progress === 'number' ? row.generation_progress : 0;
+          const monotonicProg = Math.max(rawProg, highestProgressRef.current);
+          highestProgressRef.current = monotonicProg;
+          return {
+            status: String(row.status ?? 'generating'),
+            progress: monotonicProg,
+            generation_step: row.generation_step ?? null,
+          };
         });
         const rd = row.report_data as { days?: unknown[] } | null | undefined;
         const hasData = Array.isArray(rd?.days) && (rd!.days as unknown[]).length > 0;
@@ -554,10 +562,15 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           serverNextPollRef.current = data.next_poll_after_ms;
         }
 
-        setServerPoll({
-          status: data.status,
-          progress: typeof data.progress === 'number' ? data.progress : 0,
-          generation_step: data.generation_step ?? null,
+        setServerPoll(() => {
+          const rawProg = typeof data.progress === 'number' ? data.progress : 0;
+          const monotonicProg = Math.max(rawProg, highestProgressRef.current);
+          highestProgressRef.current = monotonicProg;
+          return {
+            status: data.status,
+            progress: monotonicProg,
+            generation_step: data.generation_step ?? null,
+          };
         });
 
         // If the server says still generating but generation_started_at is older than

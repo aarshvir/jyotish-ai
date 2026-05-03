@@ -10,6 +10,7 @@ import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { detectYogas, buildTransitQueryTerms } from '@/lib/rag/yogaDetector';
+import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
 import type { NatalChartData } from '@/lib/agents/types';
 
 export async function POST(req: NextRequest) {
@@ -40,6 +41,7 @@ export async function POST(req: NextRequest) {
     model_override?: string;
     jyotishRagMode?: string;
     jyotish_rag_mode?: string;
+    require_scripture_grounding?: boolean;
   };
 
   try {
@@ -80,6 +82,16 @@ export async function POST(req: NextRequest) {
   const allQueryTerms = Array.from(new Set([...detectedYogas, ...transitTerms]));
   const ragMode = resolveJyotishRagMode(body.jyotishRagMode ?? body.jyotish_rag_mode);
   const ragContext = await buildScriptureContextHybrid(allQueryTerms, lagnaSign, ragMode);
+  if (body.require_scripture_grounding) {
+    try {
+      assertRequiredScriptureGrounding(ragContext, 'nativity-text');
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : String(err) },
+        { status: 503 },
+      );
+    }
+  }
 
   const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a specific planet, house, or nakshatra.
 

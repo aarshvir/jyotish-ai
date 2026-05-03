@@ -12,6 +12,7 @@ import {
 import { requireAuth } from '@/lib/api/requireAuth';
 import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
@@ -49,6 +50,8 @@ export async function POST(req: NextRequest) {
       avg_score: number;
     };
     planet_positions_by_date?: DayAnchorInput[];
+    scripture_context?: string;
+    require_scripture_grounding?: boolean;
   };
 
   try {
@@ -78,6 +81,17 @@ export async function POST(req: NextRequest) {
 
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
+  const scriptureBlock = buildScripturePromptBlock(body.scripture_context);
+  if (body.require_scripture_grounding) {
+    try {
+      assertRequiredScriptureGrounding(body.scripture_context, 'weeks-synthesis');
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : String(err), weeks: [], period_synthesis: null },
+        { status: 503 },
+      );
+    }
+  }
 
   // Use only the first day as a reference anchor — the synthesis doesn't need all 7 days of positions
   const forecastAnchors = formatMultipleDaysCommentaryAnchors(
@@ -87,6 +101,8 @@ export async function POST(req: NextRequest) {
   const systemPrompt = `You are a Vedic astrologer writing a personal weekly strategy guide and period synthesis. Your job is to give this person a clear, practical picture of what each week holds and how to navigate the overall period. Write in plain, direct English — like a trusted advisor, not a textbook.
 
 ${forecastAnchors}
+
+${scriptureBlock}
 
 When discussing specific dates in this report window, use the verified data above. Do not contradict or invent other placements.
 

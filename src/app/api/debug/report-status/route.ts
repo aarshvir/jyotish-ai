@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { BYPASS_SECRET } from '@/lib/api/requireAuth';
+import { cleanEnv } from '@/lib/env';
 
 export async function GET(request: NextRequest) {
   const bypass = new URL(request.url).searchParams.get('bypass');
@@ -58,14 +59,14 @@ export async function GET(request: NextRequest) {
   }
 
   status.llm = {
-    anthropic_key_present: !!(process.env.ANTHROPIC_API_KEY?.trim()),
-    openai_key_present: !!(process.env.OPENAI_API_KEY?.trim()),
-    gemini_key_present: !!(process.env.GEMINI_API_KEY?.trim()),
-    grok_key_present: !!(process.env.GROK_API_KEY?.trim()),
+    anthropic_key_present: !!cleanEnv(process.env.ANTHROPIC_API_KEY),
+    openai_key_present: !!cleanEnv(process.env.OPENAI_API_KEY),
+    gemini_key_present: !!cleanEnv(process.env.GEMINI_API_KEY),
+    grok_key_present: !!cleanEnv(process.env.GROK_API_KEY),
   };
 
   // Live probe Anthropic — does the key actually work?
-  const anthropicKey = (process.env.ANTHROPIC_API_KEY ?? '').trim();
+  const anthropicKey = cleanEnv(process.env.ANTHROPIC_API_KEY);
   if (anthropicKey) {
     try {
       const probeRes = await fetch('https://api.anthropic.com/v1/messages', {
@@ -96,10 +97,10 @@ export async function GET(request: NextRequest) {
   }
 
   // Live probe OpenAI — does the key actually work?
-  const openaiKey = (process.env.OPENAI_API_KEY ?? '').trim();
+  const openaiKey = cleanEnv(process.env.OPENAI_API_KEY);
   if (openaiKey) {
     try {
-      const probeRes = await fetch('https://api.openai.com/v1/chat/completions', {
+      const probeRes = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${openaiKey}`,
@@ -107,8 +108,8 @@ export async function GET(request: NextRequest) {
         },
         body: JSON.stringify({
           model: 'gpt-5.5',
-          max_tokens: 8,
-          messages: [{ role: 'user', content: 'Reply OK' }],
+          max_output_tokens: 16,
+          input: [{ role: 'user', content: 'Reply OK' }],
         }),
         signal: AbortSignal.timeout(15000),
       });

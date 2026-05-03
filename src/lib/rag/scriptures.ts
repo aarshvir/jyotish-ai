@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+
 /**
  * Jyotish RAG — Classical Scripture Corpus
  * 
@@ -14,6 +17,7 @@ export interface ScriptureEntry {
   topic: string;
   source: string;
   chapter?: string;
+  verse_range?: string;
   text: string;
   keywords: string[];
 }
@@ -277,6 +281,78 @@ export const SCRIPTURE_CORPUS: ScriptureEntry[] = [
   },
 ];
 
+type ChunkFileEntry = {
+  id?: string;
+  topic?: string;
+  source?: string;
+  chapter?: string | null;
+  verse_range?: string | null;
+  text?: string;
+  keywords?: string[];
+};
+
+let cachedChunkCorpus: ScriptureEntry[] | null = null;
+
+function scriptureChunksPath(): string {
+  const preferred = path.join(process.cwd(), 'data', 'scriptures', '_chunks_clean.json');
+  if (existsSync(preferred)) return preferred;
+  return path.join(process.cwd(), 'data', 'scriptures', '_chunks.json');
+}
+
+function normalizeKeywords(entry: ChunkFileEntry): string[] {
+  const raw = Array.isArray(entry.keywords) ? entry.keywords : [];
+  const topicWords = String(entry.topic ?? '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length > 2);
+  const sourceWords = String(entry.source ?? '')
+    .toLowerCase()
+    .includes('parashara')
+    ? ['bphs', 'parashara', 'hora', 'shastra']
+    : [];
+  return Array.from(new Set([...raw.map(String), ...topicWords, ...sourceWords]));
+}
+
+function loadChunkCorpus(): ScriptureEntry[] {
+  if (cachedChunkCorpus) return cachedChunkCorpus;
+  const p = scriptureChunksPath();
+  if (!existsSync(p)) {
+    cachedChunkCorpus = [];
+    return cachedChunkCorpus;
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(p, 'utf8')) as ChunkFileEntry[];
+    cachedChunkCorpus = (Array.isArray(parsed) ? parsed : [])
+      .filter((entry) => entry.id && entry.topic && entry.source && entry.text)
+      .map((entry) => ({
+        id: String(entry.id),
+        topic: String(entry.topic),
+        source: String(entry.source),
+        chapter: entry.chapter ? String(entry.chapter) : undefined,
+        verse_range: entry.verse_range ? String(entry.verse_range) : undefined,
+        text: String(entry.text),
+        keywords: normalizeKeywords(entry),
+      }));
+    return cachedChunkCorpus;
+  } catch (err) {
+    console.error('[rag/scriptures] failed to load scripture chunks:', err);
+    cachedChunkCorpus = [];
+    return cachedChunkCorpus;
+  }
+}
+
+export function getSearchableScriptureCorpus(): ScriptureEntry[] {
+  const seen = new Set<string>();
+  const out: ScriptureEntry[] = [];
+  for (const entry of [...SCRIPTURE_CORPUS, ...loadChunkCorpus()]) {
+    if (seen.has(entry.id)) continue;
+    seen.add(entry.id);
+    out.push(entry);
+  }
+  return out;
+}
+
 /**
  * Search the scripture corpus for entries matching a topic or keywords.
  * Returns the top N most relevant entries.
@@ -288,23 +364,29 @@ export function searchScriptures(query: string, topN = 3): ScriptureEntry[] {
   const queryLower = query.toLowerCase();
   const queryWords = queryLower.split(/\s+/).filter(w => w.length > 2);
 
-  const scored = SCRIPTURE_CORPUS.map(entry => {
+  const scored = getSearchableScriptureCorpus().map(entry => {
     let score = 0;
+    const sourceLower = entry.source.toLowerCase();
+    const topicLower = entry.topic.toLowerCase();
+    const textLower = entry.text.toLowerCase();
 
     // Exact topic match (highest weight)
-    if (entry.topic.toLowerCase().includes(queryLower)) score += 10;
+    if (topicLower.includes(queryLower)) score += 10;
+    if (sourceLower.includes('parashara') || sourceLower.includes('bphs')) score += 1;
 
     // Keyword matches
     for (const keyword of entry.keywords) {
-      if (queryLower.includes(keyword)) score += 5;
+      const k = keyword.toLowerCase();
+      if (queryLower.includes(k)) score += 5;
       for (const qw of queryWords) {
-        if (keyword.includes(qw)) score += 2;
+        if (k.includes(qw)) score += 2;
       }
     }
 
     // Text content matches
     for (const qw of queryWords) {
-      if (entry.text.toLowerCase().includes(qw)) score += 1;
+      if (textLower.includes(qw)) score += 1;
+      if (topicLower.includes(qw)) score += 2;
     }
 
     return { entry, score };

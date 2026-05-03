@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       jyotishRagMode?: string;
       jyotish_rag_mode?: string;
       ragTimeoutMs?: number;
+      requireScriptureGrounding?: boolean;
     };
     const natalChart = (body.natalChart ?? body.chartData) as NatalChartData;
 
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest) {
         disableRag: body.disableRag === true,
         jyotishRagMode: body.jyotishRagMode ?? body.jyotish_rag_mode,
         ragTimeoutMs: typeof body.ragTimeoutMs === 'number' ? body.ragTimeoutMs : undefined,
+        requireScriptureGrounding: body.requireScriptureGrounding === true,
       }),
       new Promise<never>((_, reject) =>
         setTimeout(

@@ -2,17 +2,17 @@
 /**
  * Pillar 2 — Embed & upsert the Jyotish scripture corpus into Supabase pgvector.
  *
- * Usage (one-time after applying the 20260418_jyotish_rag_pgvector.sql migration):
+ * Usage (one-time after applying the latest jyotish_scriptures pgvector migration):
  *   node scripts/embed-scriptures.mjs
  *
  * Required env (pulled from .env.local automatically if run via `npm run ...`):
  *   NEXT_PUBLIC_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY
- *   OPENAI_API_KEY
+ *   GEMINI_API_KEY or GOOGLE_AI_API_KEY
  *
  * What it does:
  *   1. Reads SCRIPTURE_CORPUS from src/lib/rag/scriptures.ts
- *   2. Embeds each entry's topic + text using OpenAI text-embedding-3-small (1536 dims)
+ *   2. Embeds each entry's topic + text using Google text-embedding-004 (768 dims)
  *   3. Upserts into the `jyotish_scriptures` table
  *
  * Re-running is safe — it's an idempotent upsert keyed by `id`. Add new rows to
@@ -25,6 +25,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+
+const cleanEnv = (value) =>
+  (value ?? '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .replace(/\\r|\\n/g, '')
+    .trim();
 
 // Load .env.local manually (dotenv may not be installed standalone)
 try {
@@ -42,24 +49,24 @@ try {
   // .env.local may not exist in CI — rely on existing env vars
 }
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
+const SUPABASE_SERVICE_KEY = cleanEnv(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
   process.exit(1);
 }
 
-if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_AI_API_KEY) {
+if (!cleanEnv(process.env.GEMINI_API_KEY) && !cleanEnv(process.env.GOOGLE_AI_API_KEY)) {
   console.error('Missing GEMINI_API_KEY (or GOOGLE_AI_API_KEY) — required for Google text-embedding-004');
   process.exit(1);
 }
 
-// gemini-embedding-2: 1536-dim output (matches pgvector schema), free tier via GEMINI_API_KEY.
-const GOOGLE_EMBED_MODEL = 'gemini-embedding-2';
-const EMBED_DIMS = 1536;
+// Must match supabase/migrations/20260425_jyotish_scriptures_768dim.sql.
+const GOOGLE_EMBED_MODEL = cleanEnv(process.env.JYOTISH_RAG_EMBED_MODEL) || 'text-embedding-004';
+const EMBED_DIMS = Number(cleanEnv(process.env.JYOTISH_RAG_EMBED_DIMS) || '768') || 768;
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_AI_API_KEY;
+const GEMINI_API_KEY = cleanEnv(process.env.GEMINI_API_KEY) || cleanEnv(process.env.GOOGLE_AI_API_KEY);
 
 async function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -185,7 +192,7 @@ async function main() {
     process.exit(0);
   }
 
-  // Small inter-request delay to stay under OpenAI RPM limit (500 RPM on tier 1)
+  // Small inter-request delay to stay under provider RPM limits.
   const INTER_REQUEST_DELAY_MS = 150;
 
   for (let i = 0; i < corpus.length; i++) {
@@ -227,7 +234,7 @@ async function main() {
           console.log(`[embed-scriptures] progress: ${okCount} embedded, ${skipCount} skipped, ${failCount} failed (${i + 1}/${corpus.length})`);
         }
       }
-      // Rate-limit safety: ~7 req/s stays well under 500 RPM limit
+      // Rate-limit safety.
       await sleep(INTER_REQUEST_DELAY_MS);
     } catch (err) {
       console.error(`[embed-scriptures] embedding failed for ${entry.id}:`, err.message);

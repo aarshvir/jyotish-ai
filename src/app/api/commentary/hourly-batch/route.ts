@@ -19,6 +19,7 @@ import {
   type PlanetPositionsPayload,
 } from '@/lib/commentary/planetPositionsPrompt';
 import { buildSlotGuidance } from '@/lib/guidance/builder';
+import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
 const DEFAULT_BATCH_MODEL = 'claude-haiku-4-5-20251001';
 
@@ -123,6 +124,8 @@ export async function POST(req: NextRequest) {
       rahu_kaal?: { start?: string; end?: string };
       slots: unknown[];
     }>;
+    scripture_context?: string;
+    require_scripture_grounding?: boolean;
   };
 
   try {
@@ -153,6 +156,17 @@ export async function POST(req: NextRequest) {
 
   const ctx: LagnaContext = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
+  const scriptureBlock = buildScripturePromptBlock(body.scripture_context);
+  if (body.require_scripture_grounding) {
+    try {
+      assertRequiredScriptureGrounding(body.scripture_context, 'hourly-batch');
+    } catch (err) {
+      return NextResponse.json(
+        { error: err instanceof Error ? err.message : String(err), days: [] },
+        { status: 503 },
+      );
+    }
+  }
 
   const dayBlocks = daysIn.map((d) => {
     const normSlots = normalizeDaySlots(d.slots);
@@ -178,6 +192,8 @@ export async function POST(req: NextRequest) {
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA (use these — do not invent):
 ${horaBlock}
+
+${scriptureBlock}
 
 LANGUAGE RULES — enforce strictly:
 - No raw jargon without plain-English translation. Instead of "yogakaraka hora activates H10 kendra", write "this is your most powerful career hour — ${lagnaSign} lagna's strongest planet is running the show."

@@ -79,6 +79,9 @@ const nextConfig = {
       'openai',
       '@google/generative-ai',
     ],
+    outputFileTracingIncludes: {
+      '/api/**/*': ['./data/scriptures/**/*'],
+    },
   },
 };
 

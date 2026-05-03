@@ -29,6 +29,10 @@ import { getCanonicalScoreLabel, getDayOutcomeTier } from '@/lib/guidance/labels
 import { buildSlotGuidance, buildDayBriefing } from '@/lib/guidance/builder';
 import { isV2GuidanceEnabled } from '@/lib/guidance/featureFlag';
 import { insertAgentRun } from '@/lib/observability/reportRuns';
+import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
+import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
+import { buildTransitQueryTerms, detectYogas } from '@/lib/rag/yogaDetector';
+import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
 
@@ -338,6 +342,12 @@ function allowPartialLlmFallbackForPlan(input: PipelineInput): boolean {
   return p === 'free' || p === 'preview';
 }
 
+function requireScriptureGroundingForPlan(input: PipelineInput): boolean {
+  if (allowPartialLlmFallbackForPlan(input)) return false;
+  const mode = String(input.jyotishRagMode ?? process.env.JYOTISH_RAG_MODE ?? '').trim().toLowerCase();
+  return mode !== 'off' && mode !== 'false' && mode !== '0';
+}
+
 function assertNoPartialLlmForPaid(
   res: Response,
   routeLabel: string,
@@ -494,6 +504,7 @@ export async function generateReportPipeline(
     input.jyotishRagMode != null && String(input.jyotishRagMode).trim() !== ''
       ? { jyotishRagMode: String(input.jyotishRagMode).trim() }
       : ({} as Record<string, string>);
+  const requireScriptureGrounding = requireScriptureGroundingForPlan(input);
 
   const db = createServiceClient();
   /** Latest `generation_step` written via dbSetProgress; used when persisting error metadata. */
@@ -819,14 +830,22 @@ export async function generateReportPipeline(
   try {
     await dbInsertGenerating();
     logStep('db_insert_generating');
-    void dbSetProgress(PHASE.EPHEMERIS_FETCHING, 0);
-
     // ── Resume checkpoint (Pillar 1) ─────────────────────────────────────
     // Load any state persisted by a previous (failed) invocation so we can
     // skip already-completed phases on retry.
-    const { checkpoint: existingCheckpoint, state: loadedState } =
+    const { checkpoint: existingCheckpoint, state: loadedState, currentProgress: dbProgress } =
       await loadPipelineState(db, reportId);
     let pipelineState: PipelineState = loadedState;
+
+    // Bug 1 fix: seed lastProgressPct from the DB so cross-invocation writes
+    // (each Inngest step.run is a new orchestrator instance) never regress.
+    if (dbProgress > lastProgressPct) {
+      lastProgressPct = dbProgress;
+      tlog(`[orchestrator] seeded lastProgressPct=${dbProgress} from DB for ${reportId}`);
+    }
+
+    void dbSetProgress(PHASE.EPHEMERIS_FETCHING, 0);
+
     if (existingCheckpoint) {
       tlog(`[orchestrator] resuming ${reportId} from checkpoint=${existingCheckpoint}`);
       logStep('resume_from_checkpoint', { checkpoint: existingCheckpoint });
@@ -941,6 +960,46 @@ export async function generateReportPipeline(
     // `dasha` is used later for md/ad end dates in commentary payloads.
     // Derive from ephemerisData (works whether freshly computed or restored from state).
     const dasha = ephemerisData?.current_dasha ?? ({} as NatalChartData['current_dasha']);
+    const effectiveRagMode = resolveJyotishRagMode(
+      input.jyotishRagMode != null ? String(input.jyotishRagMode) : null,
+    );
+    let dashaTransitScriptureContextPromise: Promise<string> | null = null;
+    let timingScriptureContextPromise: Promise<string> | null = null;
+
+    const buildGroundedScriptureContext = async (terms: string[], label: string): Promise<string> => {
+      if (effectiveRagMode === 'off') return '';
+      const context = await buildScriptureContextHybrid(
+        Array.from(new Set(terms.filter(Boolean))),
+        ephemerisData.lagna,
+        effectiveRagMode,
+        { timeoutMs: 25_000 },
+      );
+      if (requireScriptureGrounding) assertRequiredScriptureGrounding(context, label);
+      return context;
+    };
+
+    const getDashaTransitScriptureContext = () => {
+      dashaTransitScriptureContextPromise ??= buildGroundedScriptureContext(
+        [
+          ...detectYogas(ephemerisData),
+          ...buildTransitQueryTerms(ephemerisData, mahadasha, antardasha),
+          'Vimshottari Dasha System',
+          'Jupiter Transit',
+          'Saturn Transit (Sade Sati)',
+          'Rahu and Ketu',
+        ],
+        'dasha-transit-commentary',
+      );
+      return dashaTransitScriptureContextPromise;
+    };
+
+    const getTimingScriptureContext = () => {
+      timingScriptureContextPromise ??= buildGroundedScriptureContext(
+        ['Hora System', 'Choghadiya System', 'Rahu Kaal and Inauspicious Timing'],
+        'timing-commentary',
+      );
+      return timingScriptureContextPromise;
+    };
 
     // ── STEP 2+3: Nativity + Daily grids (parallel) ──────────────────────
     let nativityProfile: NativityProfile | null = null;
@@ -952,7 +1011,8 @@ export async function generateReportPipeline(
       onStep({ type: 'step_completed', step: 1 });
       onStep({ type: 'step_completed', step: 2 });
       logStep('nativity_grids_resumed');
-      void dbSetProgress(PHASE.NATIVITY_SYNTHESIS, 22);
+      // Bug 2 fix: do NOT write progress during checkpoint resume — the DB
+      // already has a higher value from the previous invocation's final write.
     } else {
     await assertWithinBudget('pre_nativity_grids');
     onStep({ type: 'step_started', step: 1, message: 'Analysing birth chart & calculating hourly scores...', detail: 'Nativity analysis and daily grid calculation in parallel' });
@@ -972,7 +1032,12 @@ export async function generateReportPipeline(
             resilientFetch(`${base}/api/agents/nativity`, {
               method: 'POST',
               headers: h,
-              body: JSON.stringify({ natalChart: ephemerisData, ragTimeoutMs: 35_000, ...ragModePayload }),
+              body: JSON.stringify({
+                natalChart: ephemerisData,
+                ragTimeoutMs: 35_000,
+                requireScriptureGrounding,
+                ...ragModePayload,
+              }),
             }, 2, 3000, 160_000),
           );
           if (natRes.ok) {
@@ -1140,7 +1205,8 @@ export async function generateReportPipeline(
       onStep({ type: 'step_completed', step: 5 });
       onStep({ type: 'step_completed', step: 6 });
       logStep('commentary_resumed');
-      void dbSetProgress(PHASE.WEEKS_SYNTHESIS, 88);
+      // Bug 2 fix: do NOT write progress during checkpoint resume — DB already
+      // has the higher value from the invocation that completed this phase.
     } else {
       const cp = existingCheckpoint;
 
@@ -1218,10 +1284,13 @@ export async function generateReportPipeline(
         onStep({ type: 'step_started', step: 3, message: 'Writing daily commentary...', detail: 'Analyzing each day with your birth chart' });
         await (async () => {
         try {
+          const dailyScriptureContext = await getDashaTransitScriptureContext();
           const overviewBody = JSON.stringify({
             lagnaSign: ephemerisData.lagna,
             mahadasha,
             antardasha,
+            scripture_context: dailyScriptureContext,
+            require_scripture_grounding: requireScriptureGrounding,
             days: forecastDays.map((d) => ({
               date: d.date,
               panchang: d.panchang,
@@ -1252,6 +1321,7 @@ export async function generateReportPipeline(
             md_end: dasha.end_date,
             ad_end: dasha.end_date,
             planets: ephemerisData.planets ?? {},
+            require_scripture_grounding: requireScriptureGrounding,
             ...ragModePayload,
           });
 
@@ -1370,7 +1440,8 @@ export async function generateReportPipeline(
         PHASE.HOURLY_BATCH_1, PHASE.HOURLY_BATCH_2, PHASE.HOURLY_BATCH_3,
         PHASE.HOURLY_BATCH_4, PHASE.HOURLY_BATCH_5, PHASE.HOURLY_BATCH_6,
       ] as const;
-      const HOURLY_BATCH_PCTS = [55, 58, 61, 63, 65, 65] as const;
+      // Bug 3 fix: percentages must be strictly non-decreasing and match ORDERED_PHASES
+      const HOURLY_BATCH_PCTS = [58, 62, 65, 68, 71, 75] as const;
 
       const applyHourlyBatchToDays = (hourlyResults: BatchDay[]) => {
         hourlyResults.forEach(({ dayIndex, slots }) => {
@@ -1400,6 +1471,7 @@ export async function generateReportPipeline(
       };
 
       const hourlyStopPhases = ['commentary_hourly_1', 'commentary_hourly_2', 'commentary_hourly_3', 'commentary_hourly_4', 'commentary_hourly_5', 'commentary_hourly_6'] as const;
+      const timingScriptureContext = await getTimingScriptureContext();
       for (let hi = 0; hi < hourlyStopPhases.length; hi += 1) {
         const stopPh = hourlyStopPhases[hi];
         const chunkIdx = hi;
@@ -1408,17 +1480,20 @@ export async function generateReportPipeline(
           Boolean((pipelineState as Record<string, unknown>)[stopPh]);
         if (!already) {
           onStep({ type: 'step_started', step: 4, message: 'Writing hourly commentary...', detail: `Batch ${hi + 1} of ${hourlyStopPhases.length}` });
-          void dbSetProgress(PHASE.HOURLY_GRID, 53);
+          // Bug 3 fix: removed dbSetProgress(PHASE.HOURLY_GRID, 53) that regressed progress
+          // every iteration. Only write the per-batch progress which is monotonically increasing.
+          const batchSlug = HOURLY_BATCH_SLUGS[Math.min(chunkIdx, HOURLY_BATCH_SLUGS.length - 1)];
+          const batchPct = HOURLY_BATCH_PCTS[Math.min(chunkIdx, HOURLY_BATCH_PCTS.length - 1)];
+          void dbSetProgress(batchSlug, batchPct);
           try {
             if (chunkIdx < chunks.length) {
               const chunkDays = chunks[chunkIdx];
-              const batchSlug = HOURLY_BATCH_SLUGS[Math.min(chunkIdx, HOURLY_BATCH_SLUGS.length - 1)];
-              const batchPct = HOURLY_BATCH_PCTS[Math.min(chunkIdx, HOURLY_BATCH_PCTS.length - 1)];
-              void dbSetProgress(batchSlug, batchPct);
               const batchBody = JSON.stringify({
                 lagnaSign: ephemerisData.lagna,
                 mahadasha,
                 antardasha,
+                scripture_context: timingScriptureContext,
+                require_scripture_grounding: requireScriptureGrounding,
                 days: chunkDays,
               });
               const res = await commentaryLimit(() =>
@@ -1437,7 +1512,6 @@ export async function generateReportPipeline(
                 applyHourlyBatchToDays(json.days ?? []);
               }
             }
-            void dbSetProgress(PHASE.HOURLY_BATCH_6, 65);
             onStep({ type: 'partial_report_updated', field: 'hourly_commentary' });
           } catch (err) {
             terr('[orchestrator][STEP-6] failed:', err instanceof Error ? err.message : String(err));
@@ -1527,9 +1601,12 @@ export async function generateReportPipeline(
         const hints = ingressByMonth[ym] ?? [];
         return { month_label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), month_index: i, key_transits_hint: hints.join('; ') };
       });
+      const monthlyScriptureContext = await getDashaTransitScriptureContext();
       const refPayload = {
         lagnaSign: ephemerisData.lagna, mahadasha, antardasha,
         startMonth: forecastDays[0].date.substring(0, 7),
+        scripture_context: monthlyScriptureContext,
+        require_scripture_grounding: requireScriptureGrounding,
         reference_planet_positions: forecastDays[0]?.planet_positions,
         reference_planet_positions_date: forecastDays[0]?.date,
         reference_panchang: forecastDays[0]?.panchang,
@@ -1556,7 +1633,7 @@ export async function generateReportPipeline(
       } else {
         await (async () => {
           onStep({ type: 'step_started', step: 5, message: 'Building monthly forecast...', detail: 'Generating months 1-6' });
-          void dbSetProgress(PHASE.MONTHS_SYNTHESIS, 71);
+          void dbSetProgress(PHASE.MONTHS_SYNTHESIS, 78);
           try {
             const m1Res = await commentaryLimit(() => traceAgentRun('months-first', 'llm', () => fetch(`${base}/api/commentary/months-first`, {
               method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(260_000), budgetSignal]),
@@ -1586,7 +1663,7 @@ export async function generateReportPipeline(
       } else {
         await (async () => {
           onStep({ type: 'step_started', step: 5, message: 'Building monthly forecast...', detail: 'Generating months 7-12' });
-          void dbSetProgress(PHASE.MONTHS_SYNTHESIS, 75);
+          void dbSetProgress(PHASE.MONTHS_SYNTHESIS, 82);
           let months2Data: MonthSummary[] = [];
           try {
             const m2Res = await commentaryLimit(() => traceAgentRun('months-second', 'llm', () => fetch(`${base}/api/commentary/months-second`, {
@@ -1632,6 +1709,8 @@ export async function generateReportPipeline(
               lagnaSign: ephemerisData.lagna ?? 'Cancer',
               mahadasha: mahadasha ?? 'Rahu',
               antardasha: antardasha ?? 'Mercury',
+              scripture_context: monthlyScriptureContext,
+              require_scripture_grounding: requireScriptureGrounding,
               reportStartDate: forecastDays[0].date,
               weeks: weeksPayload,
               planet_positions_by_date: forecastDays.map((d) => ({
