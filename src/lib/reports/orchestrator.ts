@@ -1559,7 +1559,7 @@ export async function generateReportPipeline(
           void dbSetProgress(PHASE.MONTHS_SYNTHESIS, 71);
           try {
             const m1Res = await commentaryLimit(() => traceAgentRun('months-first', 'llm', () => fetch(`${base}/api/commentary/months-first`, {
-              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(200_000), budgetSignal]),
+              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(260_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(0, 6) }),
             })));
             assertNoPartialLlmForPaid(m1Res, 'months-first', input);
@@ -1590,7 +1590,7 @@ export async function generateReportPipeline(
           let months2Data: MonthSummary[] = [];
           try {
             const m2Res = await commentaryLimit(() => traceAgentRun('months-second', 'llm', () => fetch(`${base}/api/commentary/months-second`, {
-              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(200_000), budgetSignal]),
+              method: 'POST', headers: h, signal: AbortSignal.any([AbortSignal.timeout(260_000), budgetSignal]),
               body: JSON.stringify({ ...refPayload, months: allMonths.slice(6, 12) }),
             })));
             assertNoPartialLlmForPaid(m2Res, 'months-second', input);

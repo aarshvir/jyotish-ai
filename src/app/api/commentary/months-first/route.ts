@@ -11,6 +11,11 @@ import { requireAuth } from '@/lib/api/requireAuth';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 
+const DEFAULT_MONTHLY_MODEL =
+  process.env.REPORT_MONTHLY_MODEL?.trim() ||
+  process.env.LLM_FALLBACK_OPENAI_MODEL?.trim() ||
+  'gpt-5.5';
+
 function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mahadasha?: string; antardasha?: string }): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; theme: string; key_transits: string[]; analysis: string }[] {
   const fallbackScores = [48, 52, 58, 70, 73, 65];
   const inputMonths = Array.isArray(body?.months) ? body.months : [];
@@ -85,7 +90,9 @@ export async function POST(req: NextRequest) {
   }
 
   const modelOverride =
-    typeof body.model_override === 'string' ? body.model_override.trim() : undefined;
+    typeof body.model_override === 'string' && body.model_override.trim()
+      ? body.model_override.trim()
+      : DEFAULT_MONTHLY_MODEL;
   if (!hasLlmCredentials(modelOverride)) {
     return NextResponse.json({ months: buildFallbackMonths(body), partial: true }, { status: 206 });
   }
