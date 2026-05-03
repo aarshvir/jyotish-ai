@@ -180,9 +180,11 @@ Return exactly ${monthBatch.length} month object${monthBatch.length === 1 ? '' :
 Start with { and end with }.`;
 
   try {
-    const out: unknown[] = [];
+    const chunks = [];
     for (let i = 0; i < months.length; i += 3) {
-      const monthBatch = months.slice(i, i + 3);
+      chunks.push({ index: i / 3 + 1, monthBatch: months.slice(i, i + 3) });
+    }
+    const chunkResults = await Promise.all(chunks.map(async ({ index, monthBatch }) => {
       const text = await completeLlmChat({
         modelOverride,
         systemPrompt,
@@ -192,11 +194,12 @@ Start with { and end with }.`;
       const parsed = safeParseJson<{ months: unknown[] }>(text);
       if (!parsed?.months?.length || parsed.months.length !== monthBatch.length) {
         throw new Error(
-          `month chunk ${i / 3 + 1} returned ${parsed?.months?.length ?? 0}/${monthBatch.length} months`,
+          `month chunk ${index} returned ${parsed?.months?.length ?? 0}/${monthBatch.length} months`,
         );
       }
-      out.push(...parsed.months);
-    }
+      return parsed.months;
+    }));
+    const out = chunkResults.flat();
 
     return NextResponse.json({ months: out.slice(0, months.length) });
   } catch (err: unknown) {
