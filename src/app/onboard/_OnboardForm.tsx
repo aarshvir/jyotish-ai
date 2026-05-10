@@ -371,12 +371,13 @@ interface Step3Props {
   promoDiscount: number;
   hasBypass: boolean;
   isAdmin: boolean;
+  isLoading: boolean;
   geoPrices: GeoPrices | null;
 }
 
 function Step3({
   form, setReportType, onSubmit, onAdminFreeSubmit, onBack,
-  promoCode, setPromoCode, promoDiscount, hasBypass, isAdmin, geoPrices,
+  promoCode, setPromoCode, promoDiscount, hasBypass, isAdmin, isLoading, geoPrices,
 }: Step3Props) {
   const paidPlan = form.reportType === '7day' || form.reportType === 'monthly' || form.reportType === 'annual';
   const fullPromo = paidPlan && promoDiscount >= 100;
@@ -501,7 +502,7 @@ function Step3({
           <button className="btn-secondary flex-1 py-3" onClick={onBack}>
             Back
           </button>
-          <button className="btn-primary flex-[2] py-3" onClick={onSubmit}>
+          <button className="btn-primary flex-[2] py-3" onClick={onSubmit} disabled={isLoading}>
             {hasBypass || fullPromo || !paidPlan
               ? 'Generate Report Free'
               : 'Continue to Payment →'}
@@ -556,6 +557,8 @@ function OnboardPageInner() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
   const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const birthGeocodeAbort = useRef<AbortController | null>(null);
+  const currentGeocodeAbort = useRef<AbortController | null>(null);
   const [hasBypass, setHasBypass] = useState(false);
   const [bypassToken, setBypassToken] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -726,11 +729,16 @@ function OnboardPageInner() {
 
   async function geocodeCity(city: string, isCurrent = false) {
     if (!city.trim()) return;
+    const abortRef = isCurrent ? currentGeocodeAbort : birthGeocodeAbort;
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+    const { signal } = abortRef.current;
+
     if (isCurrent) { setCurrentGeoLoading(true); setCurrentGeoError(null); setCurrentGeo(null); }
     else { setGeoLoading(true); setGeoError(null); setGeo(null); }
 
     try {
-      const res = await fetch(`/api/geocode?city=${encodeURIComponent(city)}`);
+      const res = await fetch(`/api/geocode?city=${encodeURIComponent(city)}`, { signal });
       if (!res.ok) {
         const err = 'Location lookup failed. You can continue without it.';
         if (isCurrent) setCurrentGeoError(err); else setGeoError(err);
@@ -763,7 +771,8 @@ function OnboardPageInner() {
         const err = 'City not found. Try a different spelling.';
         if (isCurrent) setCurrentGeoError(err); else setGeoError(err);
       }
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       const msg = 'Location lookup failed. You can continue without it.';
       if (isCurrent) setCurrentGeoError(msg); else setGeoError(msg);
     } finally {
@@ -861,8 +870,10 @@ function OnboardPageInner() {
 
         // Store the final report URL in sessionStorage so we can resume after payment redirect
         if (typeof window !== 'undefined') {
-          sessionStorage.setItem('ziina_report_url', finalUrl);
-          sessionStorage.setItem('ziina_report_id', reportId);
+          try {
+            sessionStorage.setItem('ziina_report_url', finalUrl);
+            sessionStorage.setItem('ziina_report_id', reportId);
+          } catch { /* storage unavailable (private mode/quota) — redirect proceeds */ }
         }
 
         // Redirect user to Ziina's hosted payment page
@@ -1054,7 +1065,7 @@ function OnboardPageInner() {
                   form={form} setReportType={setReportType}
                   onSubmit={handleSubmit} onAdminFreeSubmit={handleAdminFreeSubmit} onBack={back}
                   promoCode={promoCode} setPromoCode={setPromoCode} promoDiscount={promoDiscount}
-                  hasBypass={hasBypass} isAdmin={isAdmin} geoPrices={geoPrices}
+                  hasBypass={hasBypass} isAdmin={isAdmin} isLoading={isLoading} geoPrices={geoPrices}
                 />
               </motion.div>
             )}

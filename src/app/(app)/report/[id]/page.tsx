@@ -182,6 +182,7 @@ function ReportContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const generationStartRef = useRef<number | null>(null);
+  const retryInFlightRef = useRef(false);
   const [serverPoll, setServerPoll] = useState<{ status: string; progress: number; generation_step?: string | null } | null>(null);
   const [statusReconnecting, setStatusReconnecting] = useState(false);
   /** Tier A: non-terminal copy while HTTP polls fail (spinner stays). */
@@ -1124,8 +1125,12 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             </button>
             <button
               onClick={() => {
+                if (retryInFlightRef.current) return;
+                retryInFlightRef.current = true;
                 hasFetched.current = false;
-                void kickOffBackgroundGeneration({ forceRestart: true });
+                void kickOffBackgroundGeneration({ forceRestart: true }).finally(() => {
+                  retryInFlightRef.current = false;
+                });
               }}
               className="btn-primary px-8 py-3 w-full sm:w-auto"
             >

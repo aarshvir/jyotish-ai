@@ -281,7 +281,7 @@ function ReportCard({ report, compact = false }: { report: Report; compact?: boo
             </Link>
           )}
           {isFailed && (
-            <Link href="/onboard" className="btn-secondary text-body-sm px-4 py-2">
+            <Link href={`/report/${report.id}`} className="btn-secondary text-body-sm px-4 py-2">
               Retry →
             </Link>
           )}

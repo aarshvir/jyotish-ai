@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/api/requireAuth';
 import {
   createPaymentIntent,
   countryToCurrency,
+  getPaymentIntent,
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
@@ -68,7 +69,40 @@ export async function POST(request: NextRequest) {
     ? `${verifyBase}failure`
     : `${verifyBase}failure&reportId=${reportId}`;
 
+  const db = createServiceClient();
+
   try {
+    if (reportId && !isSynastryStandalone) {
+      const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();
+      const { data: existingPayment, error: existingPaymentErr } = await db
+        .from('ziina_payments')
+        .select('ziina_intent_id')
+        .eq('user_id', auth.user.id)
+        .eq('report_id', reportId)
+        .eq('plan_type', planType)
+        .eq('status', 'pending')
+        .gte('created_at', pendingCutoff)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPaymentErr) {
+        console.warn(
+          '[ziina/create-intent] pending intent lookup failed (continuing with new intent):',
+          existingPaymentErr.message,
+        );
+      } else if (existingPayment?.ziina_intent_id) {
+        const existingIntent = await getPaymentIntent(existingPayment.ziina_intent_id);
+        return NextResponse.json({
+          intentId: existingIntent.id,
+          redirectUrl: existingIntent.redirect_url,
+          currency,
+          amount: existingIntent.amount,
+          discountPct,
+        });
+      }
+    }
+
     const intent = await createPaymentIntent({
       planType,
       currency,
@@ -84,7 +118,6 @@ export async function POST(request: NextRequest) {
     // confirm the reportId in the redirect URL hasn't been tampered with.
     // Non-fatal: if the ziina_payments table hasn't been migrated yet, the
     // payment redirect still works — verify route falls back to URL param.
-    const db = createServiceClient();
     const { error: dbErr } = await db.from('ziina_payments').insert({
       ziina_intent_id: intent.id,
       report_id: isSynastryStandalone ? null : reportId,
