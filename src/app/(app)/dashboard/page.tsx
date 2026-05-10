@@ -402,7 +402,7 @@ function DashboardInner() {
           .select('id, native_name, birth_date, birth_city, plan_type, status, created_at, day_scores, lagna_sign, moon_sign, dasha_mahadasha, dasha_antardasha, payment_status, payment_provider, report_start_date, report_end_date, generation_completed_at')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
-          .limit(50),
+          .limit(200),
         fetch('/api/user/payments', { credentials: 'include' })
           .then(r => r.ok ? r.json() : { payments: [] })
           .catch(() => ({ payments: [] })),
