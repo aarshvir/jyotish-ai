@@ -7,6 +7,10 @@ import {
   cleanupOrphanedReports,
 } from '@/lib/inngest/functions';
 
+if (process.env.NODE_ENV === 'production' && !process.env.INNGEST_SIGNING_KEY?.trim()) {
+  console.error('[inngest/route] CRITICAL: INNGEST_SIGNING_KEY is not set. Webhook signature verification DISABLED.');
+}
+
 /**
  * Inngest webhook endpoint.
  * Inngest's executor calls this route to run background functions.

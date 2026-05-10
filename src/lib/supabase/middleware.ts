@@ -70,9 +70,7 @@ export async function updateSession(
   const hasValidBypass = (() => {
     const secret = cleanEnv(process.env.BYPASS_SECRET);
     if (!secret) return false;
-    const bp =
-      request.nextUrl.searchParams.get('bypass') ||
-      request.headers.get('x-bypass-token');
+    const bp = request.headers.get('x-bypass-token');
     return bp === secret;
   })();
 

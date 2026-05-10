@@ -3,12 +3,11 @@ import type { MetadataRoute } from 'next';
 const theme = '#080C18';
 
 function appOrigin(): string {
-  const raw = (process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com').trim();
-  try {
-    return new URL(raw).origin;
-  } catch {
-    return 'https://www.vedichour.com';
-  }
+  const raw = (process.env.NEXT_PUBLIC_URL ?? '').trim();
+  const safe = (raw.startsWith('http://localhost') || raw === '')
+    ? 'https://www.vedichour.com'
+    : raw;
+  try { return new URL(safe).origin; } catch { return 'https://www.vedichour.com'; }
 }
 
 export default function manifest(): MetadataRoute.Manifest {
