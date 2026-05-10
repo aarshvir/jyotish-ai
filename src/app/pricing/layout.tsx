@@ -34,7 +34,11 @@ export const metadata: Metadata = {
   },
 };
 
-const SITE_URL = (process.env.NEXT_PUBLIC_URL ?? 'https://www.vedichour.com').trim().replace(/\/+$/, '');
+const RAW_SITE_URL = process.env.NEXT_PUBLIC_URL ?? '';
+const SITE_URL = (RAW_SITE_URL.startsWith('http://localhost') || RAW_SITE_URL === ''
+  ? 'https://www.vedichour.com'
+  : RAW_SITE_URL
+).trim().replace(/\/+$/, '');
 
 const pricingJsonLd = {
   '@context': 'https://schema.org',

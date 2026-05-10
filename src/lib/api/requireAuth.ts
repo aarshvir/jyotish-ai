@@ -37,9 +37,7 @@ export type AuthResult =
  *   const { user } = auth;
  */
 export async function requireAuth(request: NextRequest): Promise<AuthResult> {
-  const url = new URL(request.url);
-  const bypass =
-    url.searchParams.get('bypass') || request.headers.get('x-bypass-token');
+  const bypass = request.headers.get('x-bypass-token');
 
   if (BYPASS_SECRET && bypass === BYPASS_SECRET) {
     return {
