@@ -87,7 +87,7 @@ function validateSlotLabelOrder(slot: HoraSlot, prevSlot: HoraSlot | undefined, 
 const INITIATION_WORDS = /\b(start|launch|sign|commit|initiate|begin new|open new|negotiate)\b/i;
 const STRONG_ACTION_WORDS = /\b(act decisively|seize|bold move|go all.?in|maximum effort|push hard)\b/i;
 const GENERATED_PLACEHOLDER_RE =
-  /commentary is generating|weekly narrative is generating|refresh in 30 seconds|until full commentary is available|daily-driven timing/i;
+  /commentary is generating|weekly narrative is generating|refresh in 30 seconds|until full commentary is available/i;
 
 function hasGeneratedPlaceholderText(value: string | undefined | null): boolean {
   return GENERATED_PLACEHOLDER_RE.test(value ?? '');
