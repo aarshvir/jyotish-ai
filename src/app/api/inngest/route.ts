@@ -1,5 +1,6 @@
 import { serve } from 'inngest/next';
 import { inngest } from '@/lib/inngest/client';
+import { isNextProductionBuildPhase } from '@/lib/next/buildPhase';
 import {
   generateReportJob,
   extendReportToMonthlyJob,
@@ -7,8 +8,14 @@ import {
   cleanupOrphanedReports,
 } from '@/lib/inngest/functions';
 
-if (process.env.NODE_ENV === 'production' && !process.env.INNGEST_SIGNING_KEY?.trim()) {
-  console.error('[inngest/route] CRITICAL: INNGEST_SIGNING_KEY is not set. Webhook signature verification DISABLED.');
+if (
+  process.env.NODE_ENV === 'production' &&
+  !process.env.INNGEST_SIGNING_KEY?.trim() &&
+  !isNextProductionBuildPhase()
+) {
+  console.error(
+    '[inngest/route] CRITICAL: INNGEST_SIGNING_KEY is not set. Webhook signature verification DISABLED.',
+  );
 }
 
 /**

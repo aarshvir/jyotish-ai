@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { verifyJobToken } from '@/lib/api/jobToken';
+import { isNextProductionBuildPhase } from '@/lib/next/buildPhase';
 
 // Trim to guard against env var stored with trailing \r\n (common in CI/Windows pipes)
 const _rawBypass = (process.env.BYPASS_SECRET ?? '').trim();
 
-if (!_rawBypass) {
+if (!_rawBypass && !isNextProductionBuildPhase()) {
   console.warn(
     '[requireAuth] BYPASS_SECRET env var is not set — bypass authentication is DISABLED. ' +
-    'Set BYPASS_SECRET in your environment to enable admin bypass access.'
+      'Set BYPASS_SECRET in your environment to enable admin bypass access.'
   );
 }
 
