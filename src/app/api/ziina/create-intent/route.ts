@@ -70,9 +70,27 @@ export async function POST(request: NextRequest) {
     : `${verifyBase}failure&reportId=${reportId}`;
 
   const db = createServiceClient();
+  const productionRuntime =
+    process.env.NODE_ENV === 'production' ||
+    process.env.VERCEL_ENV === 'production' ||
+    (process.env.VERCEL === '1' && process.env.NODE_ENV !== 'development');
+  const allowTestMode = testMode === true && !productionRuntime;
 
   try {
     if (reportId && !isSynastryStandalone) {
+      const { data: reportRow, error: reportErr } = await db
+        .from('reports')
+        .select('user_id')
+        .eq('id', reportId)
+        .maybeSingle();
+
+      if (reportErr) {
+        return NextResponse.json({ error: reportErr.message }, { status: 500 });
+      }
+      if (reportRow && reportRow.user_id !== auth.user.id) {
+        return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      }
+
       const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();
       const { data: existingPayment, error: existingPaymentErr } = await db
         .from('ziina_payments')
@@ -111,13 +129,11 @@ export async function POST(request: NextRequest) {
       cancelUrl,
       failureUrl,
       discountPct: discountPct > 0 ? discountPct : undefined,
-      test: testMode ?? false,
+      test: allowTestMode,
     });
 
-    // Store intentId → reportId binding server-side so the verify route can
-    // confirm the reportId in the redirect URL hasn't been tampered with.
-    // Non-fatal: if the ziina_payments table hasn't been migrated yet, the
-    // payment redirect still works — verify route falls back to URL param.
+    // Store intentId -> reportId binding server-side so verification never
+    // trusts redirect URL parameters for payment/report ownership.
     const { error: dbErr } = await db.from('ziina_payments').insert({
       ziina_intent_id: intent.id,
       report_id: isSynastryStandalone ? null : reportId,
@@ -128,7 +144,8 @@ export async function POST(request: NextRequest) {
       status: 'pending',
     });
     if (dbErr) {
-      console.warn('[ziina/create-intent] ziina_payments insert failed (table may not exist yet):', dbErr.message);
+      console.error('[ziina/create-intent] ziina_payments insert failed:', dbErr.message);
+      return NextResponse.json({ error: 'Failed to bind payment intent' }, { status: 500 });
     }
 
     return NextResponse.json({

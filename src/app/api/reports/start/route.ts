@@ -17,7 +17,6 @@ export const dynamic = 'force-dynamic';
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
-import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 import { inngest } from '@/lib/inngest/client';
@@ -140,6 +139,16 @@ interface StartRequestBody {
   currentLng?: string | number | null;
 }
 
+type ExistingReportForStart = {
+  user_id: string | null;
+  status: string | null;
+  report_data: unknown;
+  generation_started_at: string | null;
+  plan_type: string | null;
+  payment_status: string | null;
+  payment_provider: string | null;
+};
+
 /** Merge legacy field names from the onboard client (date/time/city/lat/forecastStart/currentTz). */
 function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
   const b = { ...raw } as StartRequestBody;
@@ -154,6 +163,58 @@ function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
   if (b.current_lat == null && b.currentLat != null) b.current_lat = b.currentLat;
   if (b.current_lng == null && b.currentLng != null) b.current_lng = b.currentLng;
   return b;
+}
+
+function safeNonPaidPaymentStatus(
+  requested: string | null | undefined,
+  planType: string | null | undefined,
+): string {
+  if (requested === 'promo' || requested === 'free' || requested === 'bypass') return requested;
+  const normalizedPlan = (planType ?? '').trim();
+  return normalizedPlan === 'free' || normalizedPlan === 'preview' ? 'free' : 'unpaid';
+}
+
+async function hasCompletedZiinaPayment(
+  db: ReturnType<typeof createServiceClient>,
+  reportId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await db
+    .from('ziina_payments')
+    .select('ziina_intent_id')
+    .eq('report_id', reportId)
+    .eq('user_id', userId)
+    .eq('status', 'completed')
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[reports/start] completed payment lookup failed:', error.message);
+    return false;
+  }
+  return !!data;
+}
+
+async function resolveTrustedPaymentStatus(
+  db: ReturnType<typeof createServiceClient>,
+  reportId: string,
+  userId: string,
+  body: StartRequestBody,
+  existing: ExistingReportForStart | null,
+  isAdmin: boolean,
+): Promise<string> {
+  if (isAdmin && typeof body.payment_status === 'string' && body.payment_status.trim() !== '') {
+    return body.payment_status.trim();
+  }
+
+  if (await hasCompletedZiinaPayment(db, reportId, userId)) {
+    return 'paid';
+  }
+
+  return safeNonPaidPaymentStatus(
+    typeof body.payment_status === 'string' ? body.payment_status : existing?.payment_status,
+    body.plan_type ?? existing?.plan_type,
+  );
 }
 
 /**
@@ -208,14 +269,34 @@ export async function POST(request: NextRequest) {
     parseReportStartEnv();
 
   const db = createServiceClient();
-  const readDb = auth.isAdmin ? db : await createClient();
-
-  const { data: existing } = await readDb
+  const { data: existingRaw, error: existingErr } = await db
     .from('reports')
-    .select('status, report_data, generation_started_at')
+    .select('user_id, status, report_data, generation_started_at, plan_type, payment_status, payment_provider')
     .eq('id', reportId)
-    .eq('user_id', auth.user.id)
     .maybeSingle();
+
+  if (existingErr) {
+    return NextResponse.json(
+      {
+        error: existingErr.message,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 500 },
+    );
+  }
+
+  const existing = (existingRaw as ExistingReportForStart | null) ?? null;
+  if (existing && existing.user_id !== auth.user.id && !auth.isAdmin) {
+    return NextResponse.json(
+      {
+        error: 'Report not found',
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 404 },
+    );
+  }
 
   const rd = existing?.report_data as { days?: unknown[] } | null | undefined;
   const alreadyDone =
@@ -286,6 +367,14 @@ export async function POST(request: NextRequest) {
         : 0;
 
   const nowIso = new Date().toISOString();
+  const trustedPaymentStatus = await resolveTrustedPaymentStatus(
+    db,
+    reportId,
+    auth.user.id,
+    body,
+    existing,
+    auth.isAdmin === true,
+  );
 
   const { error: upsertError } = await db.from('reports').upsert(
     {
@@ -304,7 +393,11 @@ export async function POST(request: NextRequest) {
       timezone_offset: timezoneOffset,
       plan_type: body.plan_type ?? '7day',
       status: 'generating',
-      payment_status: body.payment_status ?? 'free',
+      payment_status: trustedPaymentStatus,
+      payment_provider:
+        trustedPaymentStatus === 'paid'
+          ? 'ziina'
+          : existing?.payment_provider ?? null,
       generation_started_at: nowIso,
       generation_progress: 0,
       updated_at: nowIso,
@@ -392,7 +485,7 @@ export async function POST(request: NextRequest) {
     type: body.plan_type ?? '7day',
     forecastStart: body.forecast_start ?? undefined,
     planType: body.plan_type ?? '7day',
-    paymentStatus: body.payment_status ?? 'bypass',
+    paymentStatus: trustedPaymentStatus,
     ...(ragRaw != null && String(ragRaw).trim() !== ''
       ? { jyotishRagMode: String(ragRaw).trim() }
       : {}),

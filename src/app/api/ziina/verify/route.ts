@@ -3,12 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaymentIntent } from '@/lib/ziina/server';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { inngest } from '@/lib/inngest/client';
-import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
-import {
-  dispatchReportGenerateForPaidReport,
-  finalizeCompletedZiinaIntent,
-} from '@/lib/ziina/finalizeIntent';
+import { finalizeCompletedZiinaIntent } from '@/lib/ziina/finalizeIntent';
 import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 
 /**
@@ -43,7 +38,7 @@ export async function GET(request: NextRequest) {
   try {
     const { data: storedIntent, error: lookupErr } = await db
       .from('ziina_payments')
-      .select('report_id, plan_type, status, upsell_of_intent_id')
+      .select('report_id, plan_type, status, upsell_of_intent_id, user_id')
       .eq('ziina_intent_id', intentId)
       .maybeSingle();
 
@@ -52,6 +47,24 @@ export async function GET(request: NextRequest) {
     }
 
     if (storedIntent?.status === 'completed' && storedIntent.report_id) {
+      if (storedIntent.user_id) {
+        const { data: completedReport, error: completedReportErr } = await db
+          .from('reports')
+          .select('user_id')
+          .eq('id', storedIntent.report_id)
+          .maybeSingle();
+        if (completedReportErr) {
+          console.warn('[ziina/verify] completed report ownership lookup failed:', completedReportErr.message);
+          return NextResponse.redirect(`${origin}/onboard?payment=error`);
+        }
+        if (completedReport && completedReport.user_id !== storedIntent.user_id) {
+          console.error('[ziina/verify] completed intent/report owner mismatch', {
+            intentId,
+            reportId: storedIntent.report_id,
+          });
+          return NextResponse.redirect(`${origin}/onboard?payment=error`);
+        }
+      }
       return NextResponse.redirect(`${origin}/report/${storedIntent.report_id}?payment_status=paid`);
     }
 
@@ -85,50 +98,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (fin.action === 'no_binding') {
-      await db
-        .from('ziina_payments')
-        .update({ status: 'completed', amount: intent.amount, currency: intent.currency_code })
-        .eq('ziina_intent_id', intentId);
-
-      if (resolvedPlanType === 'monthly_upgrade') {
-        await db
-          .from('reports')
-          .update({
-            payment_status: 'paid',
-            payment_provider: 'ziina',
-            plan_type: 'monthly',
-            upsell_converted_at: new Date().toISOString(),
-          })
-          .eq('id', reportId);
-        const hasInngest = !!(process.env.INNGEST_EVENT_KEY ?? '').trim();
-        if (hasInngest) {
-          try {
-            await inngest.send({
-              name: 'report/extend',
-              data: { reportId, baseUrl: dispatchOrigin },
-            });
-          } catch (e) {
-            console.warn('[ziina/verify] Inngest send failed — inline extend:', e);
-            void extendReportToMonthly(dispatchOrigin, reportId).catch((err) =>
-              console.error('[ziina/verify] inline extend failed:', err),
-            );
-          }
-        } else {
-          void extendReportToMonthly(dispatchOrigin, reportId).catch((err) =>
-            console.error('[ziina/verify] inline extend failed:', err),
-          );
-        }
-        return NextResponse.redirect(`${origin}/report/${reportId}?payment_status=paid&upgraded=1`);
-      }
-
-      await db
-        .from('reports')
-        .update({ payment_status: 'paid', payment_provider: 'ziina' })
-        .eq('id', reportId);
-
-      if (resolvedPlanType !== 'monthly_upgrade') {
-        await dispatchReportGenerateForPaidReport(db, reportId, dispatchOrigin);
-      }
+      console.error('[ziina/verify] completed intent has no server-side payment binding', {
+        intentId,
+        reportId,
+      });
+      return NextResponse.redirect(`${origin}/onboard?payment=error`);
     }
 
     if (resolvedPlanType === 'monthly_upgrade' || storedIntent?.plan_type === 'monthly_upgrade') {

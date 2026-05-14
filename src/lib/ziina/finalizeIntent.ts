@@ -258,6 +258,32 @@ export async function finalizeCompletedZiinaIntent(
     return { ok: true, action: 'no_binding' };
   }
 
+  const { data: reportForPayment, error: reportForPaymentErr } = await db
+    .from('reports')
+    .select('id, user_id')
+    .eq('id', reportId)
+    .maybeSingle();
+
+  if (reportForPaymentErr) {
+    console.error('[ziina/finalize] report ownership lookup:', reportForPaymentErr.message);
+    return { ok: false, error: reportForPaymentErr.message };
+  }
+
+  const boundUserId = row.user_id;
+  if (reportForPayment && (!boundUserId || reportForPayment.user_id !== boundUserId)) {
+    console.error('[ziina/finalize] payment/report owner mismatch', {
+      intentId,
+      reportId,
+      paymentUserId: boundUserId,
+      reportUserId: reportForPayment.user_id,
+    });
+    return { ok: false, error: 'Payment is not bound to the report owner' };
+  }
+
+  if (planType === 'monthly_upgrade' && (!reportForPayment || !boundUserId)) {
+    return { ok: false, error: 'Upgrade payment is missing a report owner binding' };
+  }
+
   await db
     .from('ziina_payments')
     .update({
@@ -276,7 +302,8 @@ export async function finalizeCompletedZiinaIntent(
         plan_type: 'monthly',
         upsell_converted_at: new Date().toISOString(),
       })
-      .eq('id', reportId);
+      .eq('id', reportId)
+      .eq('user_id', boundUserId);
 
     const hasInngest = !!(process.env.INNGEST_EVENT_KEY ?? '').trim();
     if (hasInngest) {
@@ -299,13 +326,16 @@ export async function finalizeCompletedZiinaIntent(
     return { ok: true, action: 'processed' };
   }
 
-  await db
-    .from('reports')
-    .update({ payment_status: 'paid', payment_provider: 'ziina' })
-    .eq('id', reportId);
+  if (reportForPayment && boundUserId) {
+    await db
+      .from('reports')
+      .update({ payment_status: 'paid', payment_provider: 'ziina' })
+      .eq('id', reportId)
+      .eq('user_id', boundUserId);
+  }
 
   const forecastPlans = new Set(['7day', 'monthly', 'annual']);
-  if (forecastPlans.has(planType)) {
+  if (forecastPlans.has(planType) && reportForPayment) {
     await maybeDispatchReportGenerate(db, reportId, baseUrl);
   }
 

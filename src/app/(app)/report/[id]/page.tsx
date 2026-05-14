@@ -346,7 +346,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       timezone_offset: cached?.timezone_offset ?? currentTzOffset,
       plan_type: planType,
       status: 'generating',
-      payment_status: cached?.payment_status ?? (paymentStatusParam === 'paid' ? 'paid' : 'bypass'),
+      payment_status: cached?.payment_status ?? 'bypass',
     });
 
     if (error && error.code !== '23505') {
@@ -691,8 +691,8 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       timezone_offset: tz,
       plan_type: planType,
       forecast_start: forecastStartParam || undefined,
-      // Use DB-cached payment_status if present, otherwise fall back to URL param.
-      payment_status: cached?.payment_status ?? (paymentStatusParam === 'paid' ? 'paid' : 'bypass'),
+      // The server derives "paid" from completed Ziina rows; URL params are presentation-only.
+      payment_status: cached?.payment_status ?? 'bypass',
       ...(opts?.forceRestart ? { forceRestart: true } : {}),
     };
 
