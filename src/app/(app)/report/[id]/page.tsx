@@ -366,7 +366,6 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
     currentLng,
     currentTzOffset,
     type,
-    paymentStatusParam,
   ]);
 
   /** Polls until the server marks the report complete (works after tab close). */
@@ -771,7 +770,6 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
     currentTzOffset,
     type,
     forecastStartParam,
-    paymentStatusParam,
   ]);
 
   const displayName = birthDisplay?.name ?? name;
