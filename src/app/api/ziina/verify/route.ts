@@ -43,10 +43,26 @@ export async function GET(request: NextRequest) {
       .maybeSingle();
 
     if (lookupErr) {
-      console.warn('[ziina/verify] DB lookup failed (falling back to URL param):', lookupErr.message);
+      console.warn('[ziina/verify] DB lookup failed:', lookupErr.message);
+      return NextResponse.redirect(`${origin}/onboard?payment=error`);
     }
 
-    if (storedIntent?.status === 'completed' && storedIntent.report_id) {
+    if (!storedIntent) {
+      console.error('[ziina/verify] completed intent has no server-side payment binding', {
+        intentId,
+        urlReportId,
+      });
+      return NextResponse.redirect(`${origin}/onboard?payment=error`);
+    }
+
+    const resolvedPlanType: string = storedIntent.plan_type ?? planType ?? '';
+    const isSynastry = resolvedPlanType === 'synastry' || planType === 'synastry';
+
+    if (storedIntent.status === 'completed' && isSynastry) {
+      return NextResponse.redirect(`${origin}/synastry?unlocked=1`);
+    }
+
+    if (storedIntent.status === 'completed' && storedIntent.report_id) {
       if (storedIntent.user_id) {
         const { data: completedReport, error: completedReportErr } = await db
           .from('reports')
@@ -68,12 +84,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/report/${storedIntent.report_id}?payment_status=paid`);
     }
 
-    const reportId: string = storedIntent?.report_id ?? urlReportId;
-    if (!reportId) {
+    const reportId: string = storedIntent.report_id ?? '';
+    if (!reportId && !isSynastry) {
       console.error('[ziina/verify] no reportId available from DB or URL');
       return NextResponse.redirect(`${origin}/onboard?payment=error`);
     }
-    const resolvedPlanType: string = storedIntent?.plan_type ?? planType ?? '';
 
     const intent = await getPaymentIntent(intentId);
 
@@ -93,7 +108,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/onboard?payment=error`);
     }
 
-    if (resolvedPlanType === 'synastry' || planType === 'synastry') {
+    if (isSynastry) {
       return NextResponse.redirect(`${origin}/synastry?unlocked=1`);
     }
 
@@ -105,7 +120,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/onboard?payment=error`);
     }
 
-    if (resolvedPlanType === 'monthly_upgrade' || storedIntent?.plan_type === 'monthly_upgrade') {
+    if (resolvedPlanType === 'monthly_upgrade' || storedIntent.plan_type === 'monthly_upgrade') {
       return NextResponse.redirect(`${origin}/report/${reportId}?payment_status=paid&upgraded=1`);
     }
 
