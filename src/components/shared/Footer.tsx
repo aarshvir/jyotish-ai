@@ -15,6 +15,12 @@ export default function Footer() {
             <Link href="/refund" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5">Refund Policy</Link>
             <Link href="/privacy" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5">Privacy</Link>
             <Link href="/terms" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5">Terms</Link>
+            <a
+              href="mailto:support@vedichour.com"
+              className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5"
+            >
+              support@vedichour.com
+            </a>
           </div>
 
           <p className="font-mono text-mono-sm text-dust/50 tracking-wider">

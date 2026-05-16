@@ -61,7 +61,7 @@ export default function RefundPage() {
           <h2 className="text-lg font-semibold mb-2.5 text-emerald font-display">24-Hour Satisfaction Guarantee</h2>
           <p className="text-sm text-dust/70 leading-relaxed font-sans">
             Not satisfied within 24 hours of receiving your report? Email{' '}
-            <a href="mailto:hello@vedichour.com" className="text-amber hover:underline">hello@vedichour.com</a>.
+            <a href="mailto:support@vedichour.com" className="text-amber hover:underline">support@vedichour.com</a>.
             Full refund. No forms, no questions.
           </p>
         </div>

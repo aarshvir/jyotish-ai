@@ -77,7 +77,11 @@ TASK
 Return ONLY valid JSON (no prose, no code fences) with this exact structure.
 CRITICAL: Dense paragraphs only. No bullet points. 
 - Mention actual planets, houses, nakshatra. 
-- Whenever you base an interpretation on the provided classical gochara references, include an inline citation in the format [[SOURCE:CHAPTER:VERSE]], e.g., [[BPHS:34:12]] or [[PHAL:6:3]]. Valid SOURCE codes: BPHS, PHAL, JAIMINI, UPADESHA. Never use abbreviated codes like PH or BH.
+- Whenever you base an interpretation on the provided classical gochara references, include an inline citation. Use the MOST SPECIFIC form the retrieved chunk supports — DO NOT invent verse numbers:
+    * Full:    [[BPHS:34:12]]   — only when the chunk explicitly provides chapter AND verse.
+    * Chapter: [[BPHS:34]]      — chapter known, verse absent.
+    * Source:  [[BPHS]]         — neither chapter nor verse in the chunk.
+  Valid SOURCE codes: BPHS, PHAL, JAIMINI, UPADESHA. Never abbreviate as PH or BH.
 - Never invent scores — all scores in text must match the provided numeric inputs exactly. 
 - Do not truncate strings.
 {

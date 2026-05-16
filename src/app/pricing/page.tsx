@@ -60,7 +60,7 @@ const BASE_PLANS = [
     cta: 'Get Monthly Oracle',
     href: '/onboard?plan=monthly',
     highlight: true,
-    badge: 'Most Popular',
+    badge: 'Recommended',
   },
   {
     id: 'annual',
@@ -161,9 +161,6 @@ export default async function PricingPage() {
                 <p className="font-mono text-mono-sm text-dust/50 mt-1">{plan.priceNote}</p>
                 {plan.id === 'annual' && (
                   <p className="font-mono text-mono-sm text-success/80 mt-1">≈ $0.14/day · best value per insight</p>
-                )}
-                {plan.highlight && (
-                  <p className="font-mono text-mono-sm text-amber/70 mt-1">Chosen by 60% of our seekers</p>
                 )}
               </div>
 

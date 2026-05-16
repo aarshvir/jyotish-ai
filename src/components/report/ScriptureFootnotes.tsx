@@ -46,10 +46,18 @@ export function ScriptureFootnotes({ citations, className = '' }: ScriptureFootn
             <div>
               <span className="font-mono text-xs text-dust/80">
                 <span className="text-star/60">{c.sourceName}</span>
-                {', Ch. '}
-                <span className="text-amber/80">{c.chapter}</span>
-                {', v. '}
-                <span className="text-amber/80">{c.verse}</span>
+                {c.chapter ? (
+                  <>
+                    {', Ch. '}
+                    <span className="text-amber/80">{c.chapter}</span>
+                    {c.verse ? (
+                      <>
+                        {', v. '}
+                        <span className="text-amber/80">{c.verse}</span>
+                      </>
+                    ) : null}
+                  </>
+                ) : null}
               </span>
             </div>
           </li>
@@ -57,7 +65,7 @@ export function ScriptureFootnotes({ citations, className = '' }: ScriptureFootn
       </ol>
 
       <p className="mt-3 font-mono text-xs text-dust/30 italic">
-        Citations grounded in reference corpus; classical verse numbering follows standard scholarly editions.
+        Citations grounded in the classical reference corpus retrieved for this report.
       </p>
     </motion.div>
   );

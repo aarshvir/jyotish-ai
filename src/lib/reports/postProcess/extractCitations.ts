@@ -1,30 +1,33 @@
 /**
  * extractCitations.ts — Post-processor for AI-generated Jyotish commentary.
  *
- * Parses [[SOURCE:CH:V]] citation markers from LLM output into structured
- * citation objects, enabling the report UI to render footnotes and
- * superscript references rather than raw bracket markers.
+ * Parses [[SOURCE]] / [[SOURCE:CHAPTER]] / [[SOURCE:CHAPTER:VERSE]] citation
+ * markers from LLM output into structured citation objects, enabling the
+ * report UI to render footnotes and superscript references rather than raw
+ * bracket markers.
  *
- * Citation format: [[SOURCE:CHAPTER:VERSE]]
- * Examples:
- *   [[BPHS:34:12]]         → BPHS, Chapter 34, Verse 12
- *   [[PHAL:6:3]]           → Phaladeepika, Chapter 6, Verse 3
- *   [[JAIMINI:1:15]]       → Jaimini Sutras, Adhyaya 1, Sutra 15
- *   [[UPADESHA:2:7]]       → Upadesha Sutras, Pada 2, Sutra 7
+ * Three accepted forms (most-specific to least-specific):
+ *   [[BPHS:34:12]]   → source + chapter + verse (verse metadata available)
+ *   [[BPHS:34]]      → source + chapter (chapter known, verse not in chunk)
+ *   [[BPHS]]         → source only (chunk lacked structured chapter metadata)
+ *
+ * Rationale: requiring chapter+verse let the model invent scholarly-sounding
+ * numbers when the retrieved chunk only had source-level metadata. Accepting
+ * source-only is the safer truth posture for launch.
  */
 
-const CITATION_RE = /\[\[(BPHS|PHAL|JAIMINI|UPADESHA):(\d+):(\d+)\]\]/g;
+const CITATION_RE = /\[\[(BPHS|PHAL|JAIMINI|UPADESHA)(?::(\d+))?(?::(\d+))?\]\]/g;
 
 export interface Citation {
-  /** The full original marker, e.g. [[BPHS:34:12]] */
+  /** The full original marker, e.g. [[BPHS:34:12]] or [[BPHS]] */
   marker: string;
   /** Short source code: BPHS | PHAL | JAIMINI | UPADESHA */
   source: string;
   /** Human-readable source name */
   sourceName: string;
-  /** Chapter number as string */
+  /** Chapter number as string, or empty if not provided */
   chapter: string;
-  /** Verse number as string */
+  /** Verse number as string, or empty if not provided */
   verse: string;
   /** Footnote index (1-based, assigned in order of first appearance) */
   footnoteIndex: number;
@@ -53,8 +56,8 @@ export function extractCitations(text: string): Citation[] {
         marker,
         source,
         sourceName: SOURCE_NAMES[source] ?? source,
-        chapter,
-        verse,
+        chapter: chapter ?? '',
+        verse: verse ?? '',
         footnoteIndex: footnoteIndex++,
       });
     }
@@ -64,12 +67,10 @@ export function extractCitations(text: string): Citation[] {
 }
 
 /**
- * Replace [[SOURCE:CH:V]] markers in text with superscript footnote numbers.
+ * Replace citation markers in text with superscript footnote numbers.
  * Returns both the transformed text and the citation list.
  *
- * Example:
- *   Input:  "Jupiter in Kendra is auspicious [[BPHS:36:4]]"
- *   Output: text = "Jupiter in Kendra is auspicious¹", citations = [{...}]
+ * Accepts all three forms: [[BPHS:34:12]], [[BPHS:34]], [[BPHS]].
  */
 export function replaceCitationsWithFootnotes(text: string): {
   text: string;
@@ -81,17 +82,17 @@ export function replaceCitationsWithFootnotes(text: string): {
     return { text, citations: [] };
   }
 
-  // Build a lookup: marker → footnote index
   const lookup = new Map<string, number>(
     citations.map((c) => [c.marker, c.footnoteIndex])
   );
 
-  // Replace each marker with a placeholder the UI can style as superscript.
-  // We use a special delimiter that React can detect.
-  const transformed = text.replace(/\[\[(BPHS|PHAL|JAIMINI|UPADESHA):\d+:\d+\]\]/g, (marker) => {
-    const idx = lookup.get(marker);
-    return idx != null ? `[${idx}]` : marker;
-  });
+  const transformed = text.replace(
+    /\[\[(BPHS|PHAL|JAIMINI|UPADESHA)(?::\d+)?(?::\d+)?\]\]/g,
+    (marker) => {
+      const idx = lookup.get(marker);
+      return idx != null ? `[${idx}]` : marker;
+    }
+  );
 
   return { text: transformed, citations };
 }
@@ -100,13 +101,25 @@ export function replaceCitationsWithFootnotes(text: string): {
  * Strip all citation markers from text entirely (for plain-text contexts like PDF).
  */
 export function stripCitations(text: string): string {
-  return text.replace(/\[\[(BPHS|PHAL|JAIMINI|UPADESHA):\d+:\d+\]\]/g, '');
+  return text.replace(
+    /\[\[(BPHS|PHAL|JAIMINI|UPADESHA)(?::\d+)?(?::\d+)?\]\]/g,
+    ''
+  );
 }
 
 /**
  * Build a human-readable citation reference line.
- * e.g. "[1] Brihat Parashara Hora Shastra, Ch. 34, v. 12"
+ *   Source + chapter + verse:  "[1] Brihat Parashara Hora Shastra, Ch. 34, v. 12"
+ *   Source + chapter:          "[1] Brihat Parashara Hora Shastra, Ch. 34"
+ *   Source only:               "[1] Brihat Parashara Hora Shastra"
  */
 export function formatCitationLine(citation: Citation): string {
-  return `[${citation.footnoteIndex}] ${citation.sourceName}, Ch. ${citation.chapter}, v. ${citation.verse}`;
+  const parts = [citation.sourceName];
+  if (citation.chapter) {
+    parts.push(`Ch. ${citation.chapter}`);
+    if (citation.verse) {
+      parts.push(`v. ${citation.verse}`);
+    }
+  }
+  return `[${citation.footnoteIndex}] ${parts.join(', ')}`;
 }

@@ -140,7 +140,7 @@ export default function Pricing() {
               {plan.featured && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center px-3.5 py-1 rounded-pill bg-amber text-space text-label-sm font-mono font-medium tracking-[0.12em] uppercase whitespace-nowrap">
-                    Most Popular
+                    Recommended
                   </span>
                 </div>
               )}

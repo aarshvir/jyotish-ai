@@ -2,9 +2,12 @@ import Link from 'next/link';
 import { StarField } from '@/components/ui/StarField';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 
+// Trust line: provable product facts only. The previous "12,000+ charts" and
+// "★ 4.8 from 340+ seekers" entries were not tied to live instrumentation and
+// were removed under the launch "no fake proof" rule.
 const TRUST_STATS = [
-  { value: '12,000+', label: 'charts generated' },
-  { value: '★ 4.8', label: 'from 340+ seekers' },
+  { value: 'Swiss', label: 'Ephemeris precision' },
+  { value: 'Lahiri', label: 'sidereal ayanamsa' },
   { value: '18', label: 'hourly Vedic windows/day' },
   { value: '24h', label: 'no-questions refund' },
 ];
