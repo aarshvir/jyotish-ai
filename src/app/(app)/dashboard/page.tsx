@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { RightNowCard } from '@/components/dashboard/RightNowCard';
 import { SynastryTeaser } from '@/components/marketing/SynastryTeaser';
+import CurrencySwitcher from '@/components/landing/CurrencySwitcher';
 import type { PaymentRecord } from '@/app/api/user/payments/route';
 import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
 
@@ -809,6 +810,19 @@ function DashboardInner() {
                 <div>
                   <label className="block text-dust/70 text-mono-sm font-mono uppercase tracking-widest mb-1">Member Since</label>
                   <p className="text-star/60 text-body-sm">{profile?.created_at ? formatDate(profile.created_at) : '—'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Preferences */}
+            <div className="card p-6">
+              <h2 className="font-body font-semibold text-star mb-1">Preferences</h2>
+              <p className="text-dust/60 text-body-sm mb-5">How prices and content show up across the app.</p>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-dust/70 text-mono-sm font-mono uppercase tracking-widest mb-2">Currency</label>
+                  <CurrencySwitcher size="md" />
+                  <p className="text-dust/40 text-mono-sm font-mono mt-2">Auto-detected from your location. Override here if needed.</p>
                 </div>
               </div>
             </div>
