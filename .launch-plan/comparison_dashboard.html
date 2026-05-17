@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VedicHour Launch Plan — v1–v6 Comparison Dashboard</title>
+<style>
+:root {
+  --bg: #0a0a1a;
+  --bg-2: #0d0d2b;
+  --bg-3: #14143a;
+  --bg-4: #1c1b50;
+  --amber: #d4af37;
+  --amber-soft: #f1d77c;
+  --amber-dim: #8a7222;
+  --text: #f5f0e1;
+  --text-dim: #c5b896;
+  --text-mute: #807762;
+  --border: #2a2858;
+  --border-strong: #3d3a75;
+  --opus: #c887e6;
+  --gpt55: #6fd2c1;
+  --combined: #ffb86b;
+  --red: #ff6464;
+  --green: #6ce0b8;
+}
+* { box-sizing: border-box; }
+html,body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family: 'DM Sans', 'Inter', system-ui, sans-serif; }
+header {
+  padding: 36px 48px 28px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg-2) 0%, var(--bg) 100%);
+  position: relative;
+}
+header::after {
+  content: '';
+  position: absolute; left:48px; right:48px; bottom:-1px; height:1px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+}
+h1 { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 500; font-size: 42px; margin: 0; color: var(--amber); letter-spacing: -0.01em; }
+.subtitle { color: var(--text-dim); margin-top: 10px; font-size: 14.5px; }
+.meta-row { display:flex; gap: 24px; margin-top: 16px; font-size: 12px; color: var(--text-mute); flex-wrap: wrap; }
+.meta-row span strong { color: var(--text-dim); font-weight: 500; }
+.container { max-width: 1520px; margin: 0 auto; padding: 32px 48px 80px; }
+.tabs { display:flex; gap:2px; border-bottom: 1px solid var(--border); margin-bottom: 32px; position: sticky; top: 0; background: var(--bg); z-index: 10; padding-top: 4px; flex-wrap: wrap; }
+.tab {
+  padding: 12px 20px;
+  cursor: pointer;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  font-size: 13.5px;
+  letter-spacing: 0.02em;
+  transition: all 120ms;
+}
+.tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+.tab:hover:not(.active) { color: var(--text); background: rgba(212,175,55,0.04); }
+.section { display:none; animation: fadeIn 200ms ease; }
+.section.active { display:block; }
+@keyframes fadeIn { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: none; } }
+h2 { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 28px; color: var(--amber-soft); margin: 0 0 16px; }
+h3 { font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px; color: var(--text); margin: 24px 0 12px; }
+.scorecard { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 36px; }
+.score-card { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 22px; position: relative; overflow: hidden; }
+.score-card::before { content:''; position:absolute; top:0; left:0; width:4px; height:100%; }
+.score-card.v1::before, .score-card.v3::before { background: var(--opus); }
+.score-card.v2::before, .score-card.v4::before, .score-card.v6::before { background: var(--gpt55); }
+.score-card.v5::before { background: var(--combined); }
+.score-card h3 { margin:0 0 6px; font-family: 'Cormorant Garamond', serif; font-size: 24px; color: var(--amber-soft); font-weight: 500; }
+.score-card .author { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 14px; }
+.score-card .total { font-size: 44px; font-family: 'Cormorant Garamond', serif; color: var(--text); line-height: 1; }
+.score-card .total small { font-size: 16px; color: var(--text-dim); margin-left: 4px; }
+.score-card .summary { font-size: 12.5px; color: var(--text-dim); margin-top: 10px; line-height: 1.5; }
+.score-card .audited { font-size: 10.5px; color: var(--gpt55); margin-top: 6px; }
+.rubric-table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--bg-2); border-radius: 10px; overflow: hidden; }
+.rubric-table th, .rubric-table td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.rubric-table th { color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; font-weight: 600; background: var(--bg-3); }
+.rubric-table th:not(:first-child), .rubric-table td:not(:first-child) { text-align: center; }
+.rubric-table tr:last-child td { border-bottom: none; font-weight: 600; color: var(--amber-soft); background: var(--bg-3); }
+.rubric-table tr:hover td { background: rgba(212,175,55,0.04); }
+.score-cell { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text); white-space: nowrap; }
+.score-cell.high { color: var(--green); }
+.score-cell.low { color: var(--red); }
+.cols { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+.col { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; max-height: 78vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border-strong) var(--bg-2); }
+.col::-webkit-scrollbar { width: 6px; } .col::-webkit-scrollbar-track { background: var(--bg-2); } .col::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+.col h4 { margin: 0 0 6px; font-family: 'Cormorant Garamond', serif; font-weight: 500; font-size: 22px; color: var(--amber-soft); }
+.col .meta { font-size: 10.5px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.col p, .col li { font-size: 13px; line-height: 1.55; color: var(--text); }
+.col p { margin: 8px 0; }
+.col ul { padding-left: 20px; margin: 8px 0; }
+.col code { background: var(--bg-3); padding: 2px 6px; border-radius: 4px; font-size: 11.5px; font-family: 'JetBrains Mono', monospace; color: var(--amber-soft); }
+.col strong { color: var(--amber-soft); font-weight: 600; }
+.gap { background: rgba(255, 100, 100, 0.07); border-left: 3px solid var(--red); padding: 14px 16px; margin: 14px 0; border-radius: 4px; }
+.gap .label { font-size: 10.5px; color: #ff8a8a; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 6px; display: block; }
+.win { background: rgba(108, 224, 184, 0.07); border-left: 3px solid var(--green); padding: 14px 16px; margin: 14px 0; border-radius: 4px; }
+.win .label { font-size: 10.5px; color: var(--green); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; margin-bottom: 6px; display: block; }
+.note { background: rgba(255, 184, 107, 0.06); border-left: 3px solid var(--combined); padding: 14px 16px; margin: 14px 0; border-radius: 4px; font-size: 13px; }
+.critical { background: rgba(255, 100, 100, 0.12); border-left: 3px solid var(--red); padding: 14px 16px; margin: 14px 0; border-radius: 4px; }
+.critical .label { font-size: 10.5px; color: #ff6464; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 6px; display: block; }
+.dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align: middle; }
+.dot.opus { background: var(--opus); }
+.dot.gpt55 { background: var(--gpt55); }
+.dot.combined { background: var(--combined); }
+.disagreement { background: var(--bg-2); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+.disagreement-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; gap: 16px; flex-wrap: wrap; }
+.disagreement-header .topic { font-family: 'Cormorant Garamond', serif; font-size: 19px; color: var(--amber-soft); }
+.disagreement-header .verdict { font-size: 11px; color: var(--text-mute); text-transform: uppercase; letter-spacing: 0.1em; }
+.disagreement .stances { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.stance { padding: 12px 14px; border-radius: 6px; font-size: 12.5px; line-height: 1.5; }
+.stance.opus { background: rgba(200, 135, 230, 0.08); border-left: 3px solid var(--opus); }
+.stance.gpt55 { background: rgba(111, 210, 193, 0.08); border-left: 3px solid var(--gpt55); }
+.stance .src { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-mute); margin-bottom: 4px; font-weight: 600; }
+.resolution { margin-top: 12px; padding: 10px 14px; background: rgba(255, 184, 107, 0.08); border-left: 3px solid var(--combined); border-radius: 4px; font-size: 12.5px; }
+.resolution strong { color: var(--combined); }
+.attribution-table { width:100%; border-collapse: collapse; font-size: 13px; background: var(--bg-2); border-radius: 10px; overflow: hidden; }
+.attribution-table th, .attribution-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+.attribution-table th { color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; font-weight: 600; background: var(--bg-3); }
+.flag { display: inline-block; font-size: 10.5px; padding: 2px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; white-space: nowrap; }
+.flag.opus { background: rgba(200,135,230,0.15); color: var(--opus); }
+.flag.gpt55 { background: rgba(111,210,193,0.15); color: var(--gpt55); }
+.flag.both { background: rgba(255,184,107,0.15); color: var(--combined); }
+.flag.consensus { background: rgba(108, 224, 184, 0.15); color: var(--green); }
+.exec-summary { background: var(--bg-2); border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; margin-bottom: 32px; }
+.exec-summary p { font-size: 14.5px; line-height: 1.7; color: var(--text-dim); }
+.exec-summary p:first-of-type { font-size: 16px; color: var(--text); }
+footer { padding: 32px 48px; color: var(--text-mute); font-size: 12px; border-top: 1px solid var(--border); }
+.legend { display:flex; gap: 24px; margin-bottom: 24px; font-size: 12px; color: var(--text-dim); flex-wrap: wrap; }
+.legend span { display:inline-flex; align-items: center; }
+.score-arrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 14px;
+  color: var(--text-dim); margin: 16px 0 24px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.score-arrow .pill { padding: 6px 12px; border-radius: 8px; background: var(--bg-2); border: 1px solid var(--border); }
+.score-arrow .pill.high { border-color: var(--green); color: var(--green); }
+.score-arrow .pill.low { border-color: var(--red); color: var(--red); }
+.tldr { background: linear-gradient(135deg, var(--bg-2), var(--bg-3)); border: 1px solid var(--amber); border-radius: 12px; padding: 24px 28px; margin-bottom: 32px; }
+.tldr h2 { color: var(--amber); margin: 0 0 12px; }
+.tldr p { color: var(--text); font-size: 15px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<header>
+  <h1>VedicHour — Launch Plan v1–v6</h1>
+  <div class="subtitle">Opus 4.7 ⇄ GPT-5.5 xhigh validation loop · Six artifacts · Built for Mon 2026-05-18 launch</div>
+  <div class="meta-row">
+    <span><strong>Authored:</strong> Claude Opus 4.7 (1M ctx)</span>
+    <span><strong>Validated by:</strong> GPT-5.5 xhigh via Codex CLI 0.130.0</span>
+    <span><strong>Rubric:</strong> 10 dimensions × 1–10 (max 100)</span>
+    <span><strong>Token cost:</strong> ~190k Codex output across 3 runs</span>
+  </div>
+</header>
+<div class="container">
+  <div class="tabs">
+    <div class="tab active" data-tab="overview">Overview</div>
+    <div class="tab" data-tab="scores">Rubric Scores</div>
+    <div class="tab" data-tab="sidebyside">Side-by-side v1–v4</div>
+    <div class="tab" data-tab="disagreements">Disagreements</div>
+    <div class="tab" data-tab="bugs">Real Bugs Found</div>
+    <div class="tab" data-tab="attribution">Model Attribution</div>
+    <div class="tab" data-tab="combined">Combined v5 + v6 Audit</div>
+    <div class="tab" data-tab="verdict">Final Verdict</div>
+  </div>
+
+  <section class="section active" id="overview">
+    <div class="tldr">
+      <h2>One-paragraph TL;DR</h2>
+      <p>The two-model loop found <strong>real launch bugs that no single pass surfaced</strong>. GPT-5.5 v4 caught a hard-coded fake-stats array in <code>Hero.tsx:5</code> ("12,000+ charts", "★ 4.8 from 340+") that violates the no-fake-proof rule. GPT-5.5 v6 audit of v5 caught five more — off-by-one in burst test, Ziina intent-reuse semantics, bypass E2E false-green, fake proof on the pricing page, and the fact that Upstash absence breaks <strong>locks</strong> not just rate limits (serverless = duplicate paid reports on double-click). The honest final verdict: <strong>fall back to Mon 18:00 IST</strong> unless v5 is patched with v6's corrections first. The loop did its job.</p>
+    </div>
+
+    <div class="exec-summary">
+      <h2>Executive summary</h2>
+      <p>Six artifacts, two models, three round-trips. Score progression: <strong>67 → 86 → 88 → 85 → 89 → 76</strong> (v6 scoring v5, not its own plan). The drop from 89 (Opus self-score on consolidated v5) to 76 (GPT-5.5 red-team of v5) measures exactly how far Opus over-rated its own consolidation work — and how much value the adversarial pass added.</p>
+      <p>The codebase is more mature than the user's mental model suggested. Ziina payments, pgvector RAG with 768-dim embeddings, scripture corpus, Inngest durable jobs, checkpoint resumption, dashboard tabs, 3-step onboarding, geo-currency (INR/AED/USD), and PDF generation are all already wired. Monday launch is <strong>not</strong> a platform build; it is a careful validation of what exists plus a small, well-scoped set of additions.</p>
+      <p><strong>Headline finding:</strong> three real, file-level launch bugs survived three plans and were caught only by adversarial passes. Hero hard-codes fake stats. Citation parser at <code>extractCitations.ts:16</code> structurally requires verse numbers. Pricing page hard-codes "Chosen by 60% of our seekers". All three must be fixed before any user pays Ziina.</p>
+    </div>
+
+    <h3>Six artifacts</h3>
+    <div class="scorecard">
+      <div class="score-card v1">
+        <h3>v1 — Initial</h3>
+        <div class="author"><span class="dot opus"></span> Opus 4.7</div>
+        <div class="total">67<small>/100</small></div>
+        <div class="summary">10 workstreams, broad refactor, full i18n scaffold, 14 P0 items. Strategic but too large for the window.</div>
+        <div class="audited">Scored by GPT-5.5 v2 critique</div>
+      </div>
+      <div class="score-card v2">
+        <h3>v2 — Critique + own</h3>
+        <div class="author"><span class="dot gpt55"></span> GPT-5.5 xhigh</div>
+        <div class="total">86<small>/100</small></div>
+        <div class="summary">Independent plan + section-by-section critique of v1. Forbids orchestrator refactor. Bans fake testimonials. Corrects 5+ factual errors in v1.</div>
+        <div class="audited">Self-scored</div>
+      </div>
+      <div class="score-card v3">
+        <h3>v3 — Revision</h3>
+        <div class="author"><span class="dot opus"></span> Opus 4.7</div>
+        <div class="total">88<small>/100</small></div>
+        <div class="summary">Adopts v2's scope cuts. Adds citation-truth gate, performance budget, cost guardrails, support runbook, DPDP compliance.</div>
+        <div class="audited">Self-scored 88; GPT-5.5 v4 scored it 79</div>
+      </div>
+      <div class="score-card v4">
+        <h3>v4 — Final iteration</h3>
+        <div class="author"><span class="dot gpt55"></span> GPT-5.5 xhigh</div>
+        <div class="total">85<small>/100</small></div>
+        <div class="summary">Tighter 18h timeline. Found three real launch bugs: Hero TRUST_STATS, citation parser pattern lock, footer support email gap.</div>
+        <div class="audited">Self-scored</div>
+      </div>
+      <div class="score-card v5">
+        <h3>v5 — Consolidated</h3>
+        <div class="author"><span class="dot combined"></span> Opus 4.7</div>
+        <div class="total">89<small>/100</small></div>
+        <div class="summary">Merges v1–v4. 10 P0 items, 2 binding approval gates, Mon 18:00 fallback, every action attributed to its source.</div>
+        <div class="audited">Self-scored 89; GPT-5.5 v6 scored it 76</div>
+      </div>
+      <div class="score-card v6">
+        <h3>v6 — Red-team</h3>
+        <div class="author"><span class="dot gpt55"></span> GPT-5.5 xhigh</div>
+        <div class="total">76<small>/100</small></div>
+        <div class="summary">Adversarial audit of v5. Found off-by-one in burst test, Ziina intent reuse, bypass E2E false-green, fake proof on pricing, Upstash-breaks-locks severity.</div>
+        <div class="audited">v6 is an audit, not its own plan; score is for v5</div>
+      </div>
+    </div>
+
+    <h3>Score progression</h3>
+    <div class="score-arrow">
+      <span class="pill low">67 v1</span><span>→</span>
+      <span class="pill high">86 v2</span><span>→</span>
+      <span class="pill high">88 v3</span><span>→</span>
+      <span class="pill high">85 v4</span><span>→</span>
+      <span class="pill high">89 v5</span><span>→</span>
+      <span class="pill low">76 v5-audited</span>
+    </div>
+    <p style="color:var(--text-dim); font-size: 13px;">The 13-point drop from v5 self-score to v5 audit-score is the cost of self-rating bias and the value of an adversarial pass.</p>
+
+    <div class="legend">
+      <span><span class="dot opus"></span> Opus 4.7 authored</span>
+      <span><span class="dot gpt55"></span> GPT-5.5 xhigh authored</span>
+      <span><span class="dot combined"></span> Consolidated</span>
+    </div>
+  </section>
+
+  <section class="section" id="scores">
+    <h2>Rubric scores by version</h2>
+    <p style="color:var(--text-dim); max-width:780px;">Each plan scored 1–10 on the same ten dimensions. v6 scores v5 (it is not its own plan, but an audit). Where a plan was both self-scored AND externally scored, the self-score is shown — see the Verdict tab for the gap analysis.</p>
+    <table class="rubric-table">
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>v1 Opus</th>
+          <th>v2 GPT-5.5</th>
+          <th>v3 Opus</th>
+          <th>v4 GPT-5.5</th>
+          <th>v5 Opus</th>
+          <th>v6 (audits v5)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>1. Feasibility in window</td><td class="score-cell low">5</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell">8</td></tr>
+        <tr><td>2. Technical depth</td><td class="score-cell">8</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell">7</td></tr>
+        <tr><td>3. Sequencing</td><td class="score-cell">6</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell">7</td></tr>
+        <tr><td>4. Testing rigour</td><td class="score-cell">8</td><td class="score-cell">8</td><td class="score-cell">8</td><td class="score-cell">8</td><td class="score-cell">8</td><td class="score-cell low">6</td></tr>
+        <tr><td>5. Domain fidelity</td><td class="score-cell">7</td><td class="score-cell">8</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td></tr>
+        <tr><td>6. UX realism</td><td class="score-cell">6</td><td class="score-cell">8</td><td class="score-cell high">9</td><td class="score-cell">8</td><td class="score-cell high">9</td><td class="score-cell">8</td></tr>
+        <tr><td>7. i18n / market fit</td><td class="score-cell">6</td><td class="score-cell">8</td><td class="score-cell high">9</td><td class="score-cell">8</td><td class="score-cell high">9</td><td class="score-cell">8</td></tr>
+        <tr><td>8. Observability</td><td class="score-cell">8</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell">8</td><td class="score-cell high">9</td><td class="score-cell">8</td></tr>
+        <tr><td>9. Risk management</td><td class="score-cell">6</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell high">9</td><td class="score-cell">7</td></tr>
+        <tr><td>10. Autonomy</td><td class="score-cell">7</td><td class="score-cell high">9</td><td class="score-cell">8</td><td class="score-cell">8</td><td class="score-cell high">9</td><td class="score-cell">8</td></tr>
+        <tr><td>Total</td><td class="score-cell low">67</td><td class="score-cell high">86</td><td class="score-cell high">88</td><td class="score-cell high">85</td><td class="score-cell high">89</td><td class="score-cell low">76</td></tr>
+      </tbody>
+    </table>
+    <h3>Score-gap analysis</h3>
+    <ul>
+      <li><strong>v1 → v2 (+19):</strong> Feasibility (+4), Sequencing (+3), Risk (+3), UX (+2), i18n (+2). GPT-5.5's defensive framing was just better-calibrated to a launch window.</li>
+      <li><strong>v2 → v3 (+2):</strong> Domain (+1), UX (+1) from citation-truth elevation and correct surface naming. Autonomy −1 from adding a third gate.</li>
+      <li><strong>v3 self-score → v4 audit (−9 = 88→79):</strong> v4 marked v3 down for adding too many files, overrating feasibility, and a stale dashboard-CTA proposal.</li>
+      <li><strong>v3 → v4 (−3):</strong> v4 dropped UX (−1), i18n (−1), Observability (−1) by being stricter on PostHog/consent gating.</li>
+      <li><strong>v4 → v5 (+4):</strong> v5 reincorporated v4's three real-bug catches and re-elevated UX with the Hero patch.</li>
+      <li><strong>v5 self-score → v6 audit (−13 = 89→76):</strong> The biggest single drop in the whole loop. Testing rigour −2 (false-green acceptance), Risk −2 (Upstash severity), Tech depth −2 (LOC mix-up + missed pricing fake proof), Sequencing −2 (PostHog/privacy inconsistency).</li>
+    </ul>
+  </section>
+
+  <section class="section" id="sidebyside">
+    <h2>Side-by-side comparison v1 → v4</h2>
+    <p style="color:var(--text-dim);">Four primary versions. v5 is in the Combined tab; v6 is the audit of v5.</p>
+    <div class="cols">
+      <div class="col">
+        <h4>v1 — Opus initial</h4>
+        <div class="meta">29.4KB · 10 workstreams · 14 P0 items</div>
+        <p><strong>Frame:</strong> Build for Mon launch with full workstream coverage.</p>
+        <p><strong>P0 highlights:</strong></p>
+        <ul>
+          <li>Extract <code>orchestrator.ts</code> into 5 modules</li>
+          <li>Scaffold <code>next-intl</code> with /en+/hi routes</li>
+          <li>12 new E2E specs</li>
+          <li>Python pytest 70% coverage</li>
+          <li>k6 load test 50 VU / 200 RPS</li>
+          <li>Admin refund route</li>
+          <li>Dashboard tabs refactor</li>
+          <li>RAG 50-Q eval, retrieval@5 ≥85%</li>
+        </ul>
+        <div class="win"><span class="label">Strengths</span>Strategic framing; flagged "1-in-1M failure" as unachievable; correctly identified the gaps to fill.</div>
+        <div class="gap"><span class="label">Weaknesses</span>Treated currency as absent (wrong); treated dashboard as untabbed (wrong); orchestrator extraction high-risk; 5 factual errors in cited filenames/LOC.</div>
+      </div>
+
+      <div class="col">
+        <h4>v2 — GPT-5.5 own</h4>
+        <div class="meta">29.1KB · 5 lanes · 8 P0 items</div>
+        <p><strong>Frame:</strong> Ship the existing product with confidence. Don't rewrite during launch.</p>
+        <p><strong>P0 highlights:</strong></p>
+        <ul>
+          <li>Env walkthrough via <code>.env.example</code></li>
+          <li><code>/api/health</code> with explicit dep shape</li>
+          <li>Sentry + PostHog with CSP update</li>
+          <li>Existing tests green</li>
+          <li>Ziina create-intent → verify smoke</li>
+          <li>One free + one paid bypass report</li>
+          <li>UX polish only — tabs already exist</li>
+          <li>English launch + Hindi waitlist + glossary</li>
+        </ul>
+        <div class="win"><span class="label">Strengths</span>5 hard launch-definition clauses. Disallowed-list bright-line. Banned fake testimonials. Cited 30+ files with line numbers. Real risk register.</div>
+        <div class="gap"><span class="label">Misses</span>No cost guardrails. No support runbook. No performance budget. Citation hygiene as display polish, not gate. No DPA/cookie path.</div>
+      </div>
+
+      <div class="col">
+        <h4>v3 — Opus revised</h4>
+        <div class="meta">21.4KB · 5 lanes · 9 P0 items</div>
+        <p><strong>Frame:</strong> Adopt v2's discipline. Add operational nets v2 missed.</p>
+        <p><strong>Changes from v1:</strong></p>
+        <ul>
+          <li><strong>Out:</strong> orchestrator refactor, next-intl scaffold, 12 E2E, k6 load, admin refund, fake testimonials, dashboard rebuild — all deferred or banned.</li>
+          <li><strong>Adopted from v2:</strong> env walkthrough, /api/health shape, CSP-before-SDK, 5-lane topology, allowed/disallowed partition, kill switches.</li>
+          <li><strong>New:</strong> citation-truth audit as P0 launch-blocker, performance budget (LCP/CLS/TBT/p95), cost guardrails (Anthropic/Inngest/Sentry), support runbook with SLAs, DPDP cookie consent for IN.</li>
+        </ul>
+        <div class="win"><span class="label">Strengths</span>Combines v2 safety with operational depth. 3 approval gates. Content-correctness audit before paid users see paid reports.</div>
+        <div class="gap"><span class="label">Weaknesses caught later</span>Content gate at Mon 04:00 too late. 20-VU burst test ignores per-user rate limit. PostHog as unconditional P0 ignores consent timing.</div>
+      </div>
+
+      <div class="col">
+        <h4>v4 — GPT-5.5 final</h4>
+        <div class="meta">25.7KB · 5 lanes · 9 P0 items</div>
+        <p><strong>Frame:</strong> 18h timeline. Patch citations in code. Fall back to Mon 18:00 if any gate red at 02:00.</p>
+        <p><strong>New catches v3 missed:</strong></p>
+        <ul>
+          <li><strong>Hero <code>TRUST_STATS</code></strong> at <code>Hero.tsx:5</code> — hard-coded "12,000+ charts", "★ 4.8 from 340+". P0 launch-blocker.</li>
+          <li><strong>Citation parser</strong> at <code>extractCitations.ts:16</code> structurally requires <code>SOURCE:CHAPTER:VERSE</code>. Code change required, not audit.</li>
+          <li><strong>Footer support email</strong> missing at <code>Footer.tsx:12</code>.</li>
+          <li>Dashboard CTAs already exist (4 locations) — don't propose adding more.</li>
+          <li>20-concurrent bypass burst conflicts with rate limit + single bypass user_id. Use 3 same-user instead.</li>
+          <li>Content gate at Mon 04:00 too late; move to Sun 23:00.</li>
+          <li>PostHog conditional on consent done by Sun 15:00.</li>
+        </ul>
+        <div class="win"><span class="label">Strengths</span>Calibrated 18h plan. Three real launch bugs found. Mon 18:00 fallback explicit. Rate-limit-aware burst test.</div>
+        <div class="gap"><span class="label">Weaknesses</span>LOC numbers reported as EOF lines (2129/678) instead of non-empty (1992/631). Sequencing inconsistency between PostHog decision (15:00) and privacy text (22:00).</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="disagreements">
+    <h2>Sharpest disagreements across versions</h2>
+    <p style="color:var(--text-dim);">Where the two models took materially different positions. Each item shows both stances and the consolidated resolution.</p>
+
+    <div class="disagreement">
+      <div class="disagreement-header">
+        <span class="topic">1. Refactoring <code>orchestrator.ts</code> before launch</span>
+        <span class="verdict">→ GPT-5.5 wins</span>
+      </div>
+      <div class="stances">
+        <div class="stance opus"><span class="src">Opus v1</span>Extract 5 modules from <code>orchestrator.ts</code>. Pure extractions with behaviour-equivalence rule. Each commit reverted if tests fail.</div>
+        <div class="stance gpt55"><span class="src">GPT-5.5 v2</span>Explicitly forbidden. Pipeline has working checkpoint, paid-fallback guard, Inngest dispatch, rate limit, lock, trace. Splitting in 24 hours creates regression risk tests cannot catch.</div>
+      </div>
+      <div class="resolution"><strong>Resolved in v3+:</strong> Adopted GPT-5.5's position. Frozen until after launch. Refactor → weeks 2-3 with golden snapshots.</div>
+    </div>
+
+    <div class="disagreement">
+      <div class="disagreement-header">
+        <span class="topic">2. Citation hygiene strategy</span>
+        <span class="verdict">→ Two-step push: Opus elevated, GPT-5.5 refined to code</span>
+      </div>
+      <div class="stances">
+        <div class="stance opus"><span class="src">Opus v3</span>Citation truthfulness is P0 launch-blocker. Manual audit on 3 reports. Change prompt if metadata bad.</div>
+        <div class="stance gpt55"><span class="src">GPT-5.5 v4</span>Audit alone insufficient. Parser at <code>extractCitations.ts:16</code> structurally requires verse numbers. UI at <code>ScriptureFootnotes.tsx:47</code> prints "Ch." and "v." unconditionally. Code change required.</div>
+      </div>
+      <div class="resolution"><strong>Resolved in v5:</strong> Both required — prompt change + parser patch + UI patch + manual audit. Display source-only if no chapter metadata.</div>
+    </div>
+
+    <div class="disagreement">
+      <div class="disagreement-header">
+        <span class="topic">3. Placeholder testimonials &amp; counters</span>
+        <span class="verdict">→ GPT-5.5 wins outright</span>
+      </div>
+      <div class="stances">
+        <div class="stance opus"><span class="src">Opus v1</span>Three placeholder testimonial cards while real ones sourced. Swap to "1,200 charts decoded" credibility bar "only if true".</div>
+        <div class="stance gpt55"><span class="src">GPT-5.5 v2</span>No fake testimonials. No fake counters. No fake scarcity. If proof is needed, show a sample report excerpt and source footnote. Period.</div>
+      </div>
+      <div class="resolution"><strong>Resolved in v3:</strong> Bright-line rule adopted. v4 then operationalised it by finding actual Hero stats and pricing claims that violate the rule.</div>
+    </div>
+
+    <div class="disagreement">
+      <div class="disagreement-header">
+        <span class="topic">4. Load test model</span>
+        <span class="verdict">→ Three iterations; GPT-5.5 v6 has the final correct answer</span>
+      </div>
+      <div class="stances">
+        <div class="stance opus"><span class="src">Opus v1</span>k6 at 50 VU, 200 RPS target on /api/reports/start.</div>
+        <div class="stance gpt55"><span class="src">GPT-5.5 v2</span>Don't run 200 RPS against a 3-min LLM job. Wrong metric. 20 concurrent bypass starts instead.</div>
+      </div>
+      <div class="resolution"><strong>v4 → v5 → v6:</strong> v4 corrected to 3 same-user starts (per-user limit 3/60s). v5 inherited but invented wrong acceptance ({202,202,429}). v6 audit: limit allows ≤limit so 3 starts return all 202; 4th gets 429.</div>
+    </div>
+
+    <div class="disagreement">
+      <div class="disagreement-header">
+        <span class="topic">5. Currency support — present or absent?</span>
+        <span class="verdict">→ GPT-5.5 factually correct</span>
+      </div>
+      <div class="stances">
+        <div class="stance opus"><span class="src">Opus v1</span>Currency switcher absent. Multi-currency out of P0 scope.</div>
+        <div class="stance gpt55"><span class="src">GPT-5.5 v2</span>Auto-geo-currency wired: <code>middleware.ts:13</code> forwards <code>x-currency</code>, <code>pricing.ts:17</code> serves USD/INR/AED, <code>Pricing.tsx:85</code> hits <code>/api/geo</code>. Missing piece is manual user picker.</div>
+      </div>
+      <div class="resolution"><strong>Resolved in v3:</strong> Manual picker = P2. Auto-geo-currency is launch-ready as-is.</div>
+    </div>
+
+    <div class="disagreement">
+      <div class="disagreement-header">
+        <span class="topic">6. Number of approval gates</span>
+        <span class="verdict">→ Settled at 2 in v5</span>
+      </div>
+      <div class="stances">
+        <div class="stance opus"><span class="src">Opus v3</span>Three approvals: (1) positioning Sat eve, (2) staging Sun 22:00, (3) content audit Mon 04:00. The third converts "we have RAG" into "we shipped correct astrology."</div>
+        <div class="stance gpt55"><span class="src">GPT-5.5 v4</span>Two approvals. Mon 04:00 content gate too late; move to Sun 23:00–Mon 00:30. Final go/no-go at Mon 02:00.</div>
+      </div>
+      <div class="resolution"><strong>Resolved in v5:</strong> Two gates — content correctness at Sun 23:00 and final go/no-go at Mon 02:00. v3's "positioning copy" gate is past tense (already Sunday).</div>
+    </div>
+
+    <div class="disagreement">
+      <div class="disagreement-header">
+        <span class="topic">7. Upstash absence severity</span>
+        <span class="verdict">→ GPT-5.5 v6 escalates</span>
+      </div>
+      <div class="stances">
+        <div class="stance opus"><span class="src">Opus v3 / v5</span>Upstash absence: rate limiter falls back to in-memory. Severity Medium.</div>
+        <div class="stance gpt55"><span class="src">GPT-5.5 v6</span>Upstash absence breaks LOCKS too: <code>redis/locks.ts:19,22</code> falls back to <code>localLocks</code>. Serverless = different process = no shared lock. Double-click → duplicate paid generation. Severity High.</div>
+      </div>
+      <div class="resolution"><strong>Adopted from v6:</strong> Upstash now a critical pre-launch verification. Test that locks are Redis-backed, not local.</div>
+    </div>
+  </section>
+
+  <section class="section" id="bugs">
+    <h2>Real launch bugs found by the loop</h2>
+    <p style="color:var(--text-dim);">These are concrete, file-level issues that survived earlier passes and would have shipped to production without the validation loop. Each was caught by adversarial passes (v4 or v6) after Opus did not flag them.</p>
+
+    <div class="critical">
+      <span class="label">Critical — caught in v4</span>
+      <h3 style="margin-top: 8px; color: var(--red);">Hero hard-coded fake stats</h3>
+      <p>File: <code>src/components/landing/Hero.tsx:5</code></p>
+      <p><code>TRUST_STATS = [{"value": "12,000+", "label": "charts generated"}, {"value": "★ 4.8", "label": "from 340+ seekers"}, ...]</code></p>
+      <p>Neither "12,000+ charts" nor "★ 4.8 from 340+" is tied to live instrumentation. Under the "no fake proof" rule (consensus from v2 onward), this violates a bright-line bans the platform agreed on by v2. <strong>Three plans missed it.</strong> v4 caught it.</p>
+      <p><strong>Fix:</strong> Remove or replace with provable claims (Swiss Ephemeris, Lahiri ayanamsa). Sub-15 minutes of work.</p>
+    </div>
+
+    <div class="critical">
+      <span class="label">Critical — caught in v4</span>
+      <h3 style="margin-top: 8px; color: var(--red);">Citation parser structurally requires verse numbers</h3>
+      <p>Files: <code>src/lib/reports/postProcess/extractCitations.ts:16</code> + <code>src/components/report/ScriptureFootnotes.tsx:47</code></p>
+      <p>The parser regex requires all three of <code>SOURCE:CHAPTER:VERSE</code>. The UI prints "Ch." and "v." unconditionally. v3 said "audit + change prompt if metadata bad" — but even if the prompt is changed to allow source-only, the parser drops anything that doesn't have all three fields. v4 escalated to <strong>code change required</strong>.</p>
+      <p><strong>Fix:</strong> Patch regex to accept <code>SOURCE</code>, <code>SOURCE:CHAPTER</code>, <code>SOURCE:CHAPTER:VERSE</code>. Patch UI to render "Ch." only when chapter present, "v." only when verse present. Remove "scholarly editions" footer text. Estimated 30–45 min.</p>
+    </div>
+
+    <div class="critical">
+      <span class="label">Critical — caught in v6</span>
+      <h3 style="margin-top: 8px; color: var(--red);">Fake proof beyond Hero</h3>
+      <p>File: <code>src/app/pricing/page.tsx:166</code></p>
+      <p>The pricing page hard-codes "Chosen by 60% of our seekers" — exactly the same class of unsupported claim as the Hero counter. <strong>v4 caught the Hero but didn't site-sweep.</strong> v5 inherited the narrow Hero-only fix. v6 audit found the pricing claim. Also: "Most Popular" labels at <code>pricing/page.tsx:63</code> and <code>landing/Pricing.tsx:143</code> imply popularity data.</p>
+      <p><strong>Fix:</strong> Site-wide sweep. Replace popularity claims with product proof. ~15 minutes additional.</p>
+    </div>
+
+    <div class="critical">
+      <span class="label">High — caught in v6</span>
+      <h3 style="margin-top: 8px; color: var(--red);">Bypass E2E spec false-green</h3>
+      <p>File: <code>e2e/report-generation-bypass.spec.ts:72,77,78</code></p>
+      <p>The spec accepts <code>status="error"</code> with non-empty <code>generation_error</code> as a pass. v5 listed <code>npm run test:e2e:bypass</code> as a launch gate. <strong>Green CI doesn't mean successful report.</strong> The spec is useful diagnostic behaviour but is the wrong gate for "paid report works."</p>
+      <p><strong>Fix:</strong> Add a separate hard assertion: at least one successful paid/bypass report with non-empty days array, no error status. Estimated 20 min.</p>
+    </div>
+
+    <div class="critical">
+      <span class="label">High — caught in v6</span>
+      <h3 style="margin-top: 8px; color: var(--red);">Upstash absence breaks locks (not just rate limits)</h3>
+      <p>Files: <code>src/lib/redis/locks.ts:3,19,22</code> + <code>src/lib/redis/client.ts:8</code></p>
+      <p>When Upstash env vars are absent, <code>getRedis()</code> returns null and locks fall back to <code>localLocks</code> (in-process Map). In serverless production, different invocations run in different processes — so "local locks" are effectively no locks at all. <strong>A user double-clicking "Generate" could spawn two paid generations charged to Ziina once.</strong> v5 rated this Medium. v6 correctly elevated to High.</p>
+      <p><strong>Fix:</strong> Pre-launch hard test that locks are Redis-backed (acquire twice, verify second fails). If env missing, no-go.</p>
+    </div>
+
+    <div class="critical">
+      <span class="label">Medium — caught in v6</span>
+      <h3 style="margin-top: 8px; color: var(--red);">Refund page support-email split-brain</h3>
+      <p>File: <code>src/app/refund/page.tsx:63,64,81</code></p>
+      <p>Refund callout tells users to email <code>hello@vedichour.com</code>; the refund CTA on the same page uses <code>support@vedichour.com</code>. Either both inboxes exist and are monitored or one is broken. Either way: confusing on launch day when actual refund requests come in.</p>
+      <p><strong>Fix:</strong> Pick one. 5 min edit.</p>
+    </div>
+
+    <div class="critical">
+      <span class="label">Medium — caught in v6</span>
+      <h3 style="margin-top: 8px; color: var(--red);">Burst test off-by-one acceptance</h3>
+      <p>Files: <code>src/lib/api/rateLimit.ts:48</code> + <code>src/app/api/reports/start/route.ts:35,236,241</code></p>
+      <p>v5 §3.9 says 3 same-user starts should return <code>{202, 202, 429}</code>. But the limiter allows <code>count &lt;= limit</code>, so 3 should all return 202; the 4th returns 429. <strong>QA running v5's test as written would falsely declare the limiter broken</strong> and waste launch-window recovery time.</p>
+      <p><strong>Fix:</strong> Update acceptance: 3 same-user gets {202, 202, 202}; 4th gets 429. 1 min edit.</p>
+    </div>
+
+    <div class="critical">
+      <span class="label">Medium — caught in v6</span>
+      <h3 style="margin-top: 8px; color: var(--red);">Ziina create-intent reuses pending intent</h3>
+      <p>File: <code>src/app/api/ziina/create-intent/route.ts:94,99,112,120</code></p>
+      <p>v5 §3.9 says "5 sequential Ziina create-intents in 30s should produce 5 distinct intent IDs". But the route intentionally reuses any pending intent for the same user/report/plan within 90s. <strong>Test as written would falsely declare Ziina broken.</strong></p>
+      <p><strong>Fix:</strong> Either use 5 distinct report IDs or change acceptance to "first call creates, next 4 calls reuse the same intent." 5 min edit.</p>
+    </div>
+
+    <div class="critical">
+      <span class="label">Medium — caught in v6</span>
+      <h3 style="margin-top: 8px; color: var(--red);">Production bypass smoke assumes <code>BYPASS_SECRET</code></h3>
+      <p>Files: <code>src/lib/api/requireAuth.ts:8,16,40,42</code> + <code>scripts/verify-report-generation-env.mjs:82,83</code></p>
+      <p>v5 schedules a production bypass report after deploy. But bypass auth is disabled when <code>BYPASS_SECRET</code> is unset, and the env verifier only <em>warns</em> about missing bypass (does not fail). If prod doesn't have <code>BYPASS_SECRET</code>, the smoke silently can't run.</p>
+      <p><strong>Fix:</strong> Either set <code>BYPASS_SECRET</code> in prod (with audit logging) or skip the prod bypass smoke and rely on a real low-value paid Ziina flow.</p>
+    </div>
+  </section>
+
+  <section class="section" id="attribution">
+    <h2>Model attribution analysis</h2>
+    <p style="color:var(--text-dim);">Where each model contributed unique, non-trivial value across the six artifacts. Identifies what each model is observably better at.</p>
+
+    <table class="attribution-table">
+      <thead>
+        <tr><th>Item</th><th>Origin</th><th>Why it matters</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Five-clause launch definition (free works, paid works, paid report has X fields, failures visible, no double-charge)</td><td><span class="flag gpt55">GPT-5.5 v2</span></td><td>Converts launch from a date to a measurable event</td></tr>
+        <tr><td>Allowed P0 / Disallowed P0 refactor partition</td><td><span class="flag gpt55">GPT-5.5 v2</span></td><td>Bright-line rule prevents scope creep mid-execution</td></tr>
+        <tr><td>"No fake proof" rule</td><td><span class="flag gpt55">GPT-5.5 v2</span></td><td>Brand-protective bright line; v1 was permissive</td></tr>
+        <tr><td>Kill switch enumeration (<code>REPORT_START_REQUIRE_INNGEST</code>, <code>UPSELL_ENABLED</code>, <code>JYOTISH_RAG_MODE</code>)</td><td><span class="flag gpt55">GPT-5.5 v2</span></td><td>Operational levers if deploy goes sideways</td></tr>
+        <tr><td>5-lane agent topology with disjoint write scopes</td><td><span class="flag gpt55">GPT-5.5 v2</span></td><td>Prevents simultaneous edits to risky files</td></tr>
+        <tr><td>Hero <code>TRUST_STATS</code> identification</td><td><span class="flag gpt55">GPT-5.5 v4</span></td><td>Concrete instance of fake-proof violation that 3 plans missed</td></tr>
+        <tr><td>Citation parser pattern lock at <code>extractCitations.ts:16</code></td><td><span class="flag gpt55">GPT-5.5 v4</span></td><td>Escalated from audit to code change; without this, prompt fix is futile</td></tr>
+        <tr><td>Footer support email gap at <code>Footer.tsx:12</code></td><td><span class="flag gpt55">GPT-5.5 v4</span></td><td>Support discoverability on launch day</td></tr>
+        <tr><td>18h timeline with content gate at Sun 23:00 (not Mon 04:00)</td><td><span class="flag gpt55">GPT-5.5 v4</span></td><td>Real recovery window before 06:00 launch</td></tr>
+        <tr><td>PostHog conditional on consent path</td><td><span class="flag gpt55">GPT-5.5 v4</span></td><td>Prevents shipping PII telemetry without legal cover</td></tr>
+        <tr><td>Rate-limit-aware burst test (3 same-user, not 20 concurrent)</td><td><span class="flag gpt55">GPT-5.5 v4</span></td><td>v3's spec would have falsely failed; v4 corrected the design</td></tr>
+        <tr><td>Pricing page fake proof ("Chosen by 60%")</td><td><span class="flag gpt55">GPT-5.5 v6</span></td><td>Site-wide sweep v4+v5 forgot; rule application beyond Hero</td></tr>
+        <tr><td>Upstash absence breaks LOCKS, not just rate limits</td><td><span class="flag gpt55">GPT-5.5 v6</span></td><td>Severity correction; serverless != local lock semantics</td></tr>
+        <tr><td>Bypass E2E false-green pattern</td><td><span class="flag gpt55">GPT-5.5 v6</span></td><td>Forces real assertion, not "test passes"</td></tr>
+        <tr><td>Burst test off-by-one (3 starts = all 202, 4th = 429)</td><td><span class="flag gpt55">GPT-5.5 v6</span></td><td>Caught Opus's invented acceptance number</td></tr>
+        <tr><td>Ziina pending-intent reuse within 90s</td><td><span class="flag gpt55">GPT-5.5 v6</span></td><td>Caught Opus's bad 5-distinct-IDs expectation</td></tr>
+        <tr><td>Refund page email split-brain (hello@ vs support@)</td><td><span class="flag gpt55">GPT-5.5 v6</span></td><td>Concrete user-facing bug v4+v5 missed</td></tr>
+        <tr><td>Citation truth as P0 launch-blocker (not display polish)</td><td><span class="flag opus">Opus v3</span></td><td>Elevated from v2's "soften copy" — domain-protective</td></tr>
+        <tr><td>Content correctness gate (3rd approval)</td><td><span class="flag opus">Opus v3</span></td><td>v4 then moved the timing; the concept was Opus's</td></tr>
+        <tr><td>Performance budget with hard numbers</td><td><span class="flag opus">Opus v3</span></td><td>v2 referenced runbook only; v3 made budgets explicit</td></tr>
+        <tr><td>Cost guardrails (Anthropic, Inngest, Sentry, Vercel)</td><td><span class="flag opus">Opus v3</span></td><td>Prevents bill shock on launch-day virality</td></tr>
+        <tr><td>Support runbook with first-response SLAs + standard macros</td><td><span class="flag opus">Opus v3</span></td><td>v2 mentioned support email; v3 made it operational</td></tr>
+        <tr><td>DPDP Act 2023 cookie consent for IN traffic</td><td><span class="flag opus">Opus v3</span></td><td>Jurisdictional compliance v2 missed</td></tr>
+        <tr><td>20-VU burst test on staging</td><td><span class="flag opus">Opus v3</span></td><td>Counter to v2's "no load tests"; later corrected by v4/v6 but principle was right</td></tr>
+        <tr><td>Recognition that codebase is mature (Ziina, pgvector, Inngest, tabs all live)</td><td><span class="flag consensus">Consensus</span></td><td>Foundation of every safer-than-rewrite stance</td></tr>
+        <tr><td>Sentry + PostHog + /api/health observability triple</td><td><span class="flag consensus">Consensus</span></td><td>Universal from v1 onward</td></tr>
+        <tr><td>English-first launch + Hindi waitlist + glossary</td><td><span class="flag consensus">Consensus</span></td><td>Same answer from both models, different routes</td></tr>
+        <tr><td>Ziina redirect verify as primary, webhook optional</td><td><span class="flag consensus">Consensus</span></td><td>v2 corrected v1's misread; everyone adopted</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Pattern observations</h3>
+    <ul>
+      <li><strong>GPT-5.5 is observably better at file-level / line-level repo reading.</strong> Every claim came with a <code>path:line</code>. Three real launch bugs were caught by GPT-5.5 (v4: Hero, citation, footer; v6: pricing, locks, refund). Zero were caught by Opus alone.</li>
+      <li><strong>GPT-5.5 is observably better at ruthless triage.</strong> v2's 8-item P0 was cleaner than v1's 14-item P0; v4 pruned v3 further; v6 found stale items in v5.</li>
+      <li><strong>GPT-5.5 is observably better at catching false-greens in test specs.</strong> v6 caught the bypass E2E pattern. Opus listed the same command as a launch gate without noticing the spec accepts errors.</li>
+      <li><strong>Opus is observably better at operational depth.</strong> Cost ceilings, support runbooks, performance budgets, jurisdictional compliance all came from Opus v3 — items GPT-5.5 didn't propose despite having repo access.</li>
+      <li><strong>Opus is observably better at strategic narrative.</strong> The five-paragraph "what each model is observably better at" framing came from Opus. The bright-line "no fake proof" rule that Opus added wasn't in v1 — but the rule itself was GPT-5.5's, and Opus had to be told.</li>
+      <li><strong>Self-rating bias is large and one-sided.</strong> Opus v5 self-scored 89; GPT-5.5 v6 audit scored 76. Opus v3 self-scored 88; GPT-5.5 v4 audit scored 79. Both delta-9 to delta-13. GPT-5.5 self-rates conservatively (v2=86, v4=85).</li>
+      <li><strong>Both passes are necessary.</strong> Neither model alone produced the final v5 plan. v5's biggest weaknesses (false-green gates, fake proof beyond Hero, Upstash severity) were caught only by adversarial GPT-5.5 in v6.</li>
+    </ul>
+  </section>
+
+  <section class="section" id="combined">
+    <h2>v5 — Consolidated best-path plan</h2>
+    <p style="color:var(--text-dim);">Pure consolidation of v1–v4. Every item attributed. No new ideas. Score: 89 self-rated, 76 per v6 audit.</p>
+
+    <h3>The 10 P0 items (v5)</h3>
+    <ol>
+      <li><strong>Freeze the report pipeline.</strong> No edits to <code>orchestrator.ts</code> or <code>/api/reports/start/route.ts</code> unless a gate fails.</li>
+      <li><strong>Production env verification</strong> via <code>scripts/verify-report-generation-env.mjs</code> + manual Ziina/Upstash audit.</li>
+      <li><strong>/api/health + Sentry</strong> with PII scrubbing, CSP update before SDK init.</li>
+      <li><strong>Citation truth patch:</strong> prompt + extractor + UI changes (not just audit).</li>
+      <li><strong>Hero TRUST_STATS removal + Footer support email.</strong></li>
+      <li><strong>Payment smoke + idempotency proof.</strong></li>
+      <li><strong>End-to-end report smoke</strong> (free + paid/bypass) with domain checklist.</li>
+      <li><strong>Existing test suite green.</strong></li>
+      <li><strong>Burst test</strong> (rate-limit-aware, 3 same-user + health 50 RPS + 5× Ziina intent).</li>
+      <li><strong>Cost caps, support runbook, privacy text.</strong></li>
+    </ol>
+
+    <h3>v6 red-team audit of v5</h3>
+    <div class="critical">
+      <span class="label">v6 verdict</span>
+      <p style="margin-top: 8px;"><strong>Fall back to Mon 18:00 IST</strong> as v5 is written. Mon 06:00 launch possible only if v5 is patched immediately with v6's corrections:</p>
+      <ul style="margin-top: 8px;">
+        <li>Fix burst test acceptance ({202,202,202} + 4th=429, not {202,202,429}).</li>
+        <li>Make Ziina intent test use distinct report IDs OR change expectation to reuse.</li>
+        <li>Replace <code>npm run test:e2e:bypass</code> as launch gate with a hard "non-empty days, status≠error" assertion.</li>
+        <li>Sweep fake proof site-wide (pricing page, "Most Popular" labels).</li>
+        <li>Fix refund page email inconsistency (pick hello@ or support@).</li>
+        <li>Test Redis-backed locks before production deploy.</li>
+        <li>Confirm <code>BYPASS_SECRET</code> set in prod OR drop production bypass smoke step.</li>
+      </ul>
+    </div>
+
+    <h3>Single most important sentence</h3>
+    <div class="note">
+      The launch goal is not "finish the roadmap" or "build the world's top 0.001% product in 18 hours." It is: <strong>no user pays Ziina and receives an ungrounded, broken, unobservable, or unrecoverable Vedic astrology report.</strong> Everything downstream serves that one goal.
+    </div>
+  </section>
+
+  <section class="section" id="verdict">
+    <h2>Final verdict</h2>
+
+    <div class="exec-summary">
+      <h3 style="margin-top: 0;">Should you launch Monday 06:00 IST?</h3>
+      <p><strong>Yes — but only if v5 is patched with v6's 7 corrections first.</strong> Estimated patch effort: 90–120 minutes of focused work. If those patches aren't done by Sun 22:00 IST, fall back to Mon 18:00 IST.</p>
+      <p>The validation loop did its job. It found three real launch bugs that would have shipped to production:</p>
+      <ol>
+        <li><strong>Hero hard-coded fake stats</strong> — would have damaged trust on the first viewing.</li>
+        <li><strong>Citation parser pattern lock</strong> — would have either dropped valid source-only citations or rendered "Ch.undefined" / "v.undefined" placeholders.</li>
+        <li><strong>Pricing page "Chosen by 60%" claim</strong> — same fake-proof violation as Hero, only caught after a third pass.</li>
+      </ol>
+      <p>It also found four operational landmines:</p>
+      <ul>
+        <li>Bypass E2E test passes on report failure ("false-green").</li>
+        <li>Upstash absence breaks shared locks → duplicate paid generations on double-click.</li>
+        <li>Refund page support email inconsistency (hello@ vs support@).</li>
+        <li>Off-by-one in burst test acceptance criteria.</li>
+      </ul>
+    </div>
+
+    <h3>What the loop reveals about the two models</h3>
+    <ul>
+      <li><strong>Both models are strong, in different ways.</strong> Opus 4.7 is the better strategist and narrative author. GPT-5.5 xhigh is the better repo-reader and triage agent.</li>
+      <li><strong>Neither model alone is sufficient.</strong> Opus's v1 would have shipped 14 P0 items in 48h, most of which were unnecessary or wrong. GPT-5.5's v2 was tight but missed operational nets (cost, support, compliance) that Opus added in v3.</li>
+      <li><strong>The most expensive bias is self-rating.</strong> Opus consistently self-scored ~10 points above the adversarial pass. GPT-5.5 self-scored conservatively.</li>
+      <li><strong>Adversarial passes find bugs that collaborative passes miss.</strong> Every concrete file-level bug came from a GPT-5.5 audit pass, not from Opus's authoring or revision passes.</li>
+      <li><strong>Six iterations was not over-engineered for this scale of decision.</strong> Stopping after v4 would have missed the pricing-page fake proof, the bypass E2E false-green, and the lock-fallback severity. v5 alone would have shipped with a false sense of confidence.</li>
+    </ul>
+
+    <h3>Recommended next actions</h3>
+    <ol>
+      <li><strong>Sun 12:00–13:30:</strong> Apply v6's 7 patches to v5. Total ~90 min.</li>
+      <li><strong>Sun 13:30 onward:</strong> Execute the patched v5 plan per its §5 timeline.</li>
+      <li><strong>Mon 02:00:</strong> Final go/no-go. If any P0 gate red → Mon 18:00 fallback. No exception.</li>
+      <li><strong>Mon 06:00:</strong> Launch with active support per the runbook (or postpone).</li>
+    </ol>
+
+    <h3>What this comparison costs vs returns</h3>
+    <p style="color: var(--text-dim);">Six artifacts, ~190k Codex output tokens, ~2.5 hours wall-clock. In return: 3 launch bugs prevented, 4 false-green gates corrected, 1 verdict-changing severity escalation. Conservatively: any one of the bug catches saves more than the loop cost. The exercise paid for itself by v4 and again by v6.</p>
+    <h3>Source artifacts on disk</h3>
+    <ul style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+      <li><code>.launch-plan/plan_v1_opus.md</code> — 29.4KB</li>
+      <li><code>.launch-plan/plan_v2_gpt55_own.md</code> — 29.1KB</li>
+      <li><code>.launch-plan/plan_v2_gpt55_critique.md</code> — 18.7KB</li>
+      <li><code>.launch-plan/plan_v3_opus_revised.md</code> — 21.4KB</li>
+      <li><code>.launch-plan/plan_v4_gpt55_final.md</code> — 25.7KB</li>
+      <li><code>.launch-plan/plan_v4_gpt55_critique_of_v3.md</code> — 11.2KB</li>
+      <li><code>.launch-plan/plan_v5_consolidated.md</code> — ~25KB</li>
+      <li><code>.launch-plan/plan_v6_gpt55_redteam.md</code> — 13.5KB</li>
+    </ul>
+  </section>
+</div>
+<footer>
+  Built by Claude Opus 4.7 (1M ctx) · Validated and red-teamed by GPT-5.5 xhigh via Codex CLI 0.130.0 · vedichour.com launch artifact · 2026-05-17
+</footer>
+<script>
+const tabs = document.querySelectorAll('.tab');
+tabs.forEach(t => t.addEventListener('click', () => {
+  tabs.forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById(t.dataset.tab).classList.add('active');
+  history.replaceState(null, '', '#' + t.dataset.tab);
+}));
+if (location.hash) {
+  const target = document.querySelector('.tab[data-tab="' + location.hash.slice(1) + '"]');
+  if (target) target.click();
+}
+</script>
+</body>
+</html>
