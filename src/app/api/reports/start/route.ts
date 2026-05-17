@@ -26,6 +26,7 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
+import { getPromoDiscount } from '@/lib/promo/server';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -126,6 +127,7 @@ interface StartRequestBody {
   testOptions?: { disableRag?: boolean };
   jyotishRagMode?: string;
   jyotish_rag_mode?: string;
+  promoCode?: string;
   /** legacy aliases */
   date?: string;
   time?: string;
@@ -165,13 +167,29 @@ function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
   return b;
 }
 
-function safeNonPaidPaymentStatus(
-  requested: string | null | undefined,
-  planType: string | null | undefined,
-): string {
-  if (requested === 'promo' || requested === 'free' || requested === 'bypass') return requested;
+function isPaidReportPlan(planType: string | null | undefined): boolean {
   const normalizedPlan = (planType ?? '').trim();
-  return normalizedPlan === 'free' || normalizedPlan === 'preview' ? 'free' : 'unpaid';
+  if (!normalizedPlan) return true;
+  return normalizedPlan !== 'free' && normalizedPlan !== 'preview';
+}
+
+function canGenerateReportPlan(
+  planType: string | null | undefined,
+  paymentStatus: string | null | undefined,
+): boolean {
+  if (!isPaidReportPlan(planType)) return true;
+  return paymentStatus === 'paid' || paymentStatus === 'promo' || paymentStatus === 'bypass';
+}
+
+function safeNonPaidPaymentStatus(planType: string | null | undefined): string {
+  return isPaidReportPlan(planType) ? 'unpaid' : 'free';
+}
+
+async function hasValidFullPromo(body: StartRequestBody, userEmail: string | undefined): Promise<boolean> {
+  const code = typeof body.promoCode === 'string' ? body.promoCode.trim() : '';
+  if (!code) return false;
+  const promo = await getPromoDiscount(code, userEmail);
+  return promo.valid && promo.discountPct >= 100;
 }
 
 async function hasCompletedZiinaPayment(
@@ -202,6 +220,7 @@ async function resolveTrustedPaymentStatus(
   body: StartRequestBody,
   existing: ExistingReportForStart | null,
   isAdmin: boolean,
+  userEmail: string | undefined,
 ): Promise<string> {
   if (isAdmin && typeof body.payment_status === 'string' && body.payment_status.trim() !== '') {
     return body.payment_status.trim();
@@ -211,10 +230,16 @@ async function resolveTrustedPaymentStatus(
     return 'paid';
   }
 
-  return safeNonPaidPaymentStatus(
-    typeof body.payment_status === 'string' ? body.payment_status : existing?.payment_status,
-    body.plan_type ?? existing?.plan_type,
-  );
+  const effectivePlanType = body.plan_type ?? existing?.plan_type;
+  const requested =
+    typeof body.payment_status === 'string' ? body.payment_status.trim() : '';
+
+  if (requested === 'promo' && isPaidReportPlan(effectivePlanType)) {
+    const validFullPromo = await hasValidFullPromo(body, userEmail);
+    if (validFullPromo) return 'promo';
+  }
+
+  return safeNonPaidPaymentStatus(effectivePlanType);
 }
 
 /**
@@ -367,6 +392,7 @@ export async function POST(request: NextRequest) {
         : 0;
 
   const nowIso = new Date().toISOString();
+  const effectivePlanType = body.plan_type ?? existing?.plan_type ?? '7day';
   const trustedPaymentStatus = await resolveTrustedPaymentStatus(
     db,
     reportId,
@@ -374,7 +400,21 @@ export async function POST(request: NextRequest) {
     body,
     existing,
     auth.isAdmin === true,
+    auth.user.email,
   );
+
+  if (!canGenerateReportPlan(effectivePlanType, trustedPaymentStatus)) {
+    await releaseLock(lockKey);
+    return NextResponse.json(
+      {
+        error: 'Payment is required before generating this report.',
+        code: 'PAYMENT_REQUIRED',
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 402 },
+    );
+  }
 
   const { error: upsertError } = await db.from('reports').upsert(
     {
@@ -391,7 +431,7 @@ export async function POST(request: NextRequest) {
       current_lat: body.current_lat ?? null,
       current_lng: body.current_lng ?? null,
       timezone_offset: timezoneOffset,
-      plan_type: body.plan_type ?? '7day',
+      plan_type: effectivePlanType,
       status: 'generating',
       payment_status: trustedPaymentStatus,
       payment_provider:

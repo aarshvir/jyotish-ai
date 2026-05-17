@@ -863,6 +863,46 @@ function OnboardPageInner() {
 
     if (needsPayment) {
       try {
+        const supabase = createClient();
+        const {
+          data: { user },
+          error: userErr,
+        } = await supabase.auth.getUser();
+        if (userErr || !user) {
+          throw new Error('You must be signed in before starting checkout.');
+        }
+        const rawTime = form.birthTime;
+        const birthTimeNorm =
+          rawTime && rawTime.includes(':') && rawTime.split(':').length === 2
+            ? `${rawTime}:00`
+            : rawTime || '12:00:00';
+        const tzFallback =
+          form.currentTzOffset ??
+          (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
+        const { error: pendingReportErr } = await supabase.from('reports').insert({
+          id: reportId,
+          user_id: user.id,
+          user_email: user.email ?? '',
+          native_name: form.name || 'Unknown',
+          birth_date: form.birthDate,
+          birth_time: birthTimeNorm,
+          birth_city: paramsObj.city,
+          birth_lat: form.birthLat,
+          birth_lng: form.birthLng,
+          current_city: useCurrent ? form.currentCity : null,
+          current_lat: useCurrent ? form.currentLat : null,
+          current_lng: useCurrent ? form.currentLng : null,
+          timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
+          plan_type: effectiveType,
+          report_start_date: form.forecastStartDate || null,
+          status: 'pending_payment',
+          generation_started_at: null,
+          payment_status: 'unpaid',
+        });
+        if (pendingReportErr && pendingReportErr.code !== '23505') {
+          throw new Error(pendingReportErr.message);
+        }
+
         // Honour the user's manual currency pick (set by <CurrencySwitcher />)
         // if it exists, so checkout matches what they saw on the pricing card.
         let preferredCurrency: string | null = null;
@@ -942,7 +982,7 @@ function OnboardPageInner() {
         birth_lng: form.birthLng as number,
         type: effectiveType,
         plan_type: paramsObj.plan_type ?? effectiveType,
-        payment_status: isPaidPlan ? 'promo' : 'free',
+        payment_status: hasBypass ? 'bypass' : (isPaidPlan ? 'promo' : 'free'),
         timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
         ...(form.forecastStartDate ? { forecast_start: form.forecastStartDate } : {}),
         ...(useCurrent ? {
@@ -952,9 +992,12 @@ function OnboardPageInner() {
         } : {}),
         ...(promoCode ? { promoCode } : {}),
       };
+      const startHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (hasBypass && bypassToken) startHeaders['x-bypass-token'] = bypassToken;
+
       const startRes = await fetch('/api/reports/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: startHeaders,
         credentials: 'include',
         body: JSON.stringify(startPayload),
       });

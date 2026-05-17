@@ -1,4 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { inngest } from '@/lib/inngest/client';
 import { finalizeCompletedZiinaIntent } from './finalizeIntent';
 
 vi.mock('@/lib/ziina/server', () => ({
@@ -97,6 +98,12 @@ const completedIntent = {
 };
 
 describe('finalizeCompletedZiinaIntent', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.INNGEST_EVENT_KEY;
+    process.env.JOB_TOKEN_SECRET = 'test-job-secret';
+  });
+
   it('rejects a completed payment bound to a different report owner', async () => {
     const tables: Tables = {
       ziina_payments: [
@@ -147,5 +154,78 @@ describe('finalizeCompletedZiinaIntent', () => {
     expect(result).toEqual({ ok: true, action: 'processed' });
     expect(tables.ziina_payments[0].status).toBe('completed');
     expect(tables.reports).toEqual([]);
+  });
+
+  it('marks a pre-created paid report row and dispatches generation after payment', async () => {
+    process.env.INNGEST_EVENT_KEY = 'test-inngest-key';
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'new_report',
+          plan_type: '7day',
+          status: 'pending',
+          user_id: 'buyer_user',
+        },
+      ],
+      reports: [
+        {
+          id: 'new_report',
+          user_id: 'buyer_user',
+          user_email: 'buyer@example.test',
+          native_name: 'Buyer',
+          birth_date: '1990-01-02',
+          birth_time: '10:30:00',
+          birth_city: 'Delhi, India',
+          birth_lat: 28.6139,
+          birth_lng: 77.209,
+          current_city: null,
+          current_lat: null,
+          current_lng: null,
+          timezone_offset: 330,
+          plan_type: '7day',
+          report_start_date: '2026-06-01',
+          status: 'pending_payment',
+          generation_started_at: null,
+          report_data: null,
+          payment_status: 'unpaid',
+        },
+      ],
+    };
+
+    const result = await finalizeCompletedZiinaIntent(
+      createMockDb(tables) as never,
+      'intent_1',
+      'https://example.test',
+      { intent: completedIntent as never },
+    );
+
+    expect(result).toEqual({ ok: true, action: 'processed' });
+    expect(tables.ziina_payments[0]).toMatchObject({
+      status: 'completed',
+      amount: 999,
+      currency: 'USD',
+    });
+    expect(tables.reports[0]).toMatchObject({
+      payment_status: 'paid',
+      payment_provider: 'ziina',
+      status: 'generating',
+    });
+    expect(inngest.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'report/generate',
+        data: expect.objectContaining({
+          reportId: 'new_report',
+          userId: 'buyer_user',
+          input: expect.objectContaining({
+            city: 'Delhi, India',
+            lat: 28.6139,
+            lng: 77.209,
+            forecastStart: '2026-06-01',
+            paymentStatus: 'paid',
+          }),
+        }),
+      }),
+    );
   });
 });
