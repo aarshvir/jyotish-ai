@@ -6,11 +6,21 @@ import { countryToCurrency, ZIINA_PLANS, getPlanAmount, formatAmount, type Suppo
 /**
  * GET /api/geo
  * Returns detected currency and formatted prices for all plans.
- * Uses Vercel's x-vercel-ip-country header for country detection.
+ *
+ * Currency precedence:
+ *   1. `vh_currency` cookie (set by <CurrencySwitcher />) — user's manual override.
+ *   2. `x-vercel-ip-country` header — geo-detected default.
  */
+
+function normaliseCurrency(v: string | null | undefined): SupportedCurrency | null {
+  if (v === 'USD' || v === 'INR' || v === 'AED') return v;
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   const country = request.headers.get('x-vercel-ip-country') ?? null;
-  const currency: SupportedCurrency = countryToCurrency(country);
+  const cookieCurrency = normaliseCurrency(request.cookies.get('vh_currency')?.value);
+  const currency: SupportedCurrency = cookieCurrency ?? countryToCurrency(country);
 
   const prices: Record<string, { amount: number; display: string; currency: string }> = {};
   for (const [planId] of Object.entries(ZIINA_PLANS)) {

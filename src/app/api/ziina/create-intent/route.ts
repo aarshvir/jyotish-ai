@@ -54,8 +54,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Use a valid promo code — this report is free' }, { status: 400 });
   }
 
+  // Currency precedence (most-specific wins):
+  //   1. Explicit body override (`body.currency`) — used by the manual switcher when
+  //      the client wants to pin a non-geo currency for checkout.
+  //   2. Cookie `vh_currency` set by <CurrencySwitcher /> on landing/dashboard.
+  //   3. Geo-detected currency from `x-vercel-ip-country` (legacy default).
+  function readCookie(name: string): string | null {
+    const raw = request.headers.get('cookie');
+    if (!raw) return null;
+    for (const part of raw.split(';')) {
+      const eq = part.indexOf('=');
+      if (eq < 0) continue;
+      const k = part.slice(0, eq).trim();
+      if (k === name) return decodeURIComponent(part.slice(eq + 1).trim());
+    }
+    return null;
+  }
+  function normaliseCurrency(v: string | null): SupportedCurrency | null {
+    if (v === 'USD' || v === 'INR' || v === 'AED') return v;
+    return null;
+  }
+
+  const bodyCurrencyRaw =
+    (body as { currency?: unknown }).currency &&
+    typeof (body as { currency?: unknown }).currency === 'string'
+      ? ((body as { currency?: string }).currency as string)
+      : null;
+  const cookieCurrency = normaliseCurrency(readCookie('vh_currency'));
   const country = request.headers.get('x-vercel-ip-country') ?? null;
-  const currency: SupportedCurrency = countryToCurrency(country);
+  const currency: SupportedCurrency =
+    normaliseCurrency(bodyCurrencyRaw) ?? cookieCurrency ?? countryToCurrency(country);
 
   const origin = request.nextUrl.origin;
   const verifyBase = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&planType=${planType}&status=`;

@@ -37,8 +37,8 @@ function NativityPanel() {
         {[
           { label: 'Lagna', value: 'Cancer' },
           { label: 'Moon Sign', value: 'Capricorn' },
-          { label: 'Current MD', value: 'Jupiter' },
-          { label: 'Current AD', value: 'Mercury' },
+          { label: 'Current MD', value: 'Rahu' },
+          { label: 'Current AD', value: 'Jupiter' },
         ].map((kv) => (
           <div key={kv.label} className="bg-bg-3 rounded-md py-3 px-2 border border-horizon/30">
             <div className="font-mono text-mono-sm text-dust/50 uppercase tracking-wider">{kv.label}</div>
@@ -48,23 +48,24 @@ function NativityPanel() {
       </div>
 
       <p className="font-body text-body-md text-star/85 leading-relaxed">
-        You are a <strong className="text-amber">Cancer-lagna</strong> native with a strong
-        Jupiter-ruled lagna lord placed in the 10th house — a classical sign of
-        professional recognition through service and care. Your Moon in Capricorn
-        gives an emotional steadiness that masks an intensely sensitive inner life.
-        Ancient Vedic texts single this combination out as a mark of lasting,
-        respected work in fields where empathy and analysis meet
+        You are a <strong className="text-amber">Cancer-lagna</strong> native — your lagna
+        lord is the <strong className="text-amber">Moon</strong>, placed here in the 7th house
+        in Capricorn. This combination shapes identity through relationships and partnerships:
+        the 7th-house Moon makes you emotionally attuned to others and well-suited to
+        collaborative, public-facing work. Ancient Vedic texts single this Moon placement out as
+        a mark of magnetic interpersonal influence and steady leadership of teams
         <sup className="text-amber text-xs">[1]</sup>.
       </p>
 
       <div className="bg-amber/[0.04] border-l-2 border-amber/40 pl-4 py-3">
         <p className="font-mono text-mono-sm text-amber/80 tracking-wider uppercase mb-1.5">
-          Current Theme — Jupiter / Mercury Period
+          Current Theme — Rahu / Jupiter Period
         </p>
         <p className="font-body text-body-sm text-dust">
-          A 14-month window opens in early 2026 for visible expansion in your career
-          area — particularly through writing, teaching, or advisory work. Avoid
-          rushing partnerships; the same period quietly tests legacy commitments.
+          A long Rahu Mahadasha (18 years) opened in 2025 — expect unconventional growth,
+          foreign or scaled opportunities, and a pull toward bigger arenas. The Jupiter
+          Antardasha running now softens Rahu&apos;s edge and adds wisdom, advisory work,
+          and teaching as natural fits.
         </p>
       </div>
 
@@ -94,7 +95,7 @@ function HourlyPanel() {
       <p className="font-mono text-mono-sm text-amber/70 tracking-[0.15em] uppercase mb-3">
         Tuesday, 19 May 2026 · Bangalore
       </p>
-      <h3 className="font-display text-2xl text-star mb-5">18 Hourly Vedic Windows</h3>
+      <h3 className="font-display text-2xl text-star mb-5">Sample · 8 of 18 daily windows</h3>
 
       <div className="space-y-1.5">
         {slots.map((s) => {
@@ -214,7 +215,7 @@ export default function SampleReportPreview() {
             See what a paid report looks like
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Three tabs, three angles. No demo data — a real Jyotish report runs ~40 pages.
+            Three tabs, three angles. Plausible sample, not your data — a real Jyotish report runs ~40 pages.
           </p>
         </div>
 

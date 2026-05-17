@@ -23,7 +23,7 @@ const CASES = [
     title: 'Janam Kundali',
     plain: 'Birth chart deep-dive',
     body:
-      'Full natal Jyotish: lagna, all 9 grahas, 27 nakshatras, current dasha, yogas, dignities. A 40-page personalised reading from the classical sources.',
+      'Full natal Jyotish: lagna, all 9 grahas, 27 nakshatras, current dasha, yogas, dignities. A multi-page personalised reading grounded in the classical sources.',
     icon: (
       <svg width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden>
         <rect x="8" y="8" width="32" height="32" stroke="currentColor" strokeWidth="1" opacity="0.6" rx="2" />
@@ -54,7 +54,7 @@ const CASES = [
     title: 'Gochara',
     plain: 'Transit windows',
     body:
-      'Daily and weekly planetary transits applied to your natal chart. Saturn return, Jupiter transit through your 10th, Rahu / Ketu shifts — all flagged in plain English.',
+      'Daily planetary transits applied to your natal chart and woven into each day&apos;s forecast in plain English — including major shifts like Saturn, Jupiter, and Rahu/Ketu when they affect your chart.',
     icon: (
       <svg width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="5" fill="currentColor" opacity="0.9" />
@@ -83,7 +83,7 @@ const CASES = [
     title: 'Annual Varshaphala',
     plain: 'Year-ahead forecast',
     body:
-      'Solar-return reading: month-by-month + week-by-week + day-by-day forecast for the year ahead. Career, relationships, health, and money themes called out separately.',
+      'Solar-return reading: a month-by-month thematic forecast across the next 12 months, plus 30 days of hour-level detail to start. Career, relationships, health, and money themes called out separately.',
     icon: (
       <svg width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="18" stroke="currentColor" strokeWidth="1" opacity="0.5" />

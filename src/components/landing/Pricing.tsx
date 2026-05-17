@@ -14,6 +14,25 @@ const PRICE_DISPLAY: Record<Currency, Record<string, string>> = {
 
 const USD_PRICES = PRICE_DISPLAY.USD;
 
+const ANNUAL_PLAN = {
+  id: 'annual',
+  name: 'Annual Oracle',
+  description: 'A full cosmic year ahead',
+  features: [
+    'Everything in Monthly Oracle',
+    'Annual Varshaphala synthesis',
+    'Month-by-month theme across 12 months',
+    'Annual dasha transitions called out',
+    'Yearly muhurta calendar',
+    'Premium PDF + digital access',
+  ],
+  cta: 'Get Annual Oracle',
+  href: '/onboard?plan=annual',
+  featured: false,
+  isPaid: true,
+  badge: 'Best Value',
+} as const;
+
 const PLANS = [
   {
     id: 'free',
@@ -142,8 +161,8 @@ export default function Pricing() {
         </div>
 
         {/* Cards */}
-        <div className="grid md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-          {PLANS.map((plan) => (
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
+          {[...PLANS, ANNUAL_PLAN].map((plan) => (
             <div
               key={plan.name}
               className={`relative flex flex-col rounded-card transition-all duration-250 ${
@@ -159,6 +178,13 @@ export default function Pricing() {
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center px-3.5 py-1 rounded-pill bg-amber text-space text-label-sm font-mono font-medium tracking-[0.12em] uppercase whitespace-nowrap">
                     Most Popular
+                  </span>
+                </div>
+              )}
+              {!plan.featured && 'badge' in plan && plan.badge && (
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span className="inline-flex items-center px-3.5 py-1 rounded-pill bg-amber/15 text-amber text-label-sm font-mono font-medium tracking-[0.12em] uppercase whitespace-nowrap">
+                    {plan.badge}
                   </span>
                 </div>
               )}

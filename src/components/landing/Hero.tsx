@@ -72,9 +72,12 @@ export default function Hero() {
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </Link>
-          <Link href="#hourly-preview" className="font-body text-body-sm text-dust/60 hover:text-dust underline-offset-2 hover:underline transition-colors">
+          <Link href="#sample-report" className="font-body text-body-sm text-dust/60 hover:text-dust underline-offset-2 hover:underline transition-colors">
             Or preview a sample report →
           </Link>
+          <p className="font-mono text-mono-sm text-dust/40 tracking-wider">
+            Free account in 20 seconds · no card required
+          </p>
         </div>
 
         {/* Trust bar — social proof */}

@@ -781,6 +781,18 @@ function OnboardPageInner() {
   }
 
   async function goToReportGeneration(opts?: { forcePaidPlan?: boolean }) {
+    // Gate: refuse to dispatch a report when geocoding did not resolve.
+    // Falling back to 0,0 silently produces a chart anchored near the Gulf of
+    // Guinea, which contradicts the marketing promise of "sub-degree precision".
+    if (form.birthLat == null || form.birthLng == null) {
+      setPaymentReturnBanner({
+        type: 'error',
+        message: `We could not pin "${form.birthCity || 'your birth city'}" to a precise location. Please go back and re-enter your birth city — try adding the country (e.g. "Lucknow, India").`,
+      });
+      setStep(1);
+      return;
+    }
+
     setIsLoading(true);
     setLoadingStage(0);
     stageTimer.current = setInterval(() => {
@@ -796,8 +808,8 @@ function OnboardPageInner() {
           birth_date: form.birthDate,
           birth_time: `${form.birthTime}:00`,
           birth_city: form.birthCity,
-          birth_lat: form.birthLat ?? 0,
-          birth_lng: form.birthLng ?? 0,
+          birth_lat: form.birthLat,
+          birth_lng: form.birthLng,
         }),
       });
     } catch (err) {
@@ -851,9 +863,22 @@ function OnboardPageInner() {
 
     if (needsPayment) {
       try {
+        // Honour the user's manual currency pick (set by <CurrencySwitcher />)
+        // if it exists, so checkout matches what they saw on the pricing card.
+        let preferredCurrency: string | null = null;
+        try {
+          preferredCurrency = typeof window !== 'undefined'
+            ? window.localStorage.getItem('vh_currency')
+            : null;
+        } catch { /* private mode — fall back to cookie/geo */ }
         const intentRes = await fetch('/api/ziina/create-intent', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
-          body: JSON.stringify({ planType: effectiveType, reportId, promoCode: promoCode || undefined }),
+          body: JSON.stringify({
+            planType: effectiveType,
+            reportId,
+            promoCode: promoCode || undefined,
+            ...(preferredCurrency ? { currency: preferredCurrency } : {}),
+          }),
         });
         if (!intentRes.ok) {
           const errBody = await intentRes.json().catch(() => ({})) as { error?: string };
@@ -911,8 +936,10 @@ function OnboardPageInner() {
         birth_date: form.birthDate,
         birth_time: birthTimeNorm,
         birth_city: paramsObj.city,
-        birth_lat: form.birthLat ?? 0,
-        birth_lng: form.birthLng ?? 0,
+        // Non-null asserted: the gate at the top of goToReportGeneration() refuses
+        // to proceed without resolved coordinates.
+        birth_lat: form.birthLat as number,
+        birth_lng: form.birthLng as number,
         type: effectiveType,
         plan_type: paramsObj.plan_type ?? effectiveType,
         payment_status: isPaidPlan ? 'promo' : 'free',
