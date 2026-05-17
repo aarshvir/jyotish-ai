@@ -1,15 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { SupportedCurrency } from '@/lib/pricing';
 import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
+import CurrencySwitcher, { type Currency } from './CurrencySwitcher';
 
-const USD_PRICES: Record<string, string> = {
-  '7day': '$9.99',
-  monthly: '$19.99',
-  annual: '$49.99',
+const PRICE_DISPLAY: Record<Currency, Record<string, string>> = {
+  USD: { '7day': '$9.99', monthly: '$19.99', annual: '$49.99' },
+  INR: { '7day': '₹799', monthly: '₹1,499', annual: '₹3,999' },
+  AED: { '7day': 'د.إ 37.99', monthly: 'د.إ 69.99', annual: 'د.إ 184.99' },
 };
+
+const USD_PRICES = PRICE_DISPLAY.USD;
 
 const PLANS = [
   {
@@ -82,6 +85,8 @@ export default function Pricing() {
   const [currency, setCurrency] = useState<SupportedCurrency>('USD');
   const [prices, setPrices] = useState<Record<string, string>>(USD_PRICES);
 
+  // First-load: prefer auto-detected currency from /api/geo (set by middleware).
+  // User-pick via <CurrencySwitcher /> overrides immediately and persists.
   useEffect(() => {
     fetch('/api/geo')
       .then((r) => r.json())
@@ -96,6 +101,11 @@ export default function Pricing() {
         }
       })
       .catch(() => { /* keep USD defaults */ });
+  }, []);
+
+  const handleCurrencyChange = useCallback((c: Currency) => {
+    setCurrency(c as SupportedCurrency);
+    setPrices(PRICE_DISPLAY[c]);
   }, []);
 
   function priceFor(planId: string): string {
@@ -121,6 +131,14 @@ export default function Pricing() {
           <p className="section-subtitle text-body-lg mx-auto">
             Free Kundli included. One-time payments for deeper Jyotish forecasts. No subscriptions.
           </p>
+
+          <div className="flex justify-center mt-7">
+            <CurrencySwitcher
+              initial={currency as Currency}
+              onChange={handleCurrencyChange}
+              size="sm"
+            />
+          </div>
         </div>
 
         {/* Cards */}
@@ -140,7 +158,7 @@ export default function Pricing() {
               {plan.featured && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center px-3.5 py-1 rounded-pill bg-amber text-space text-label-sm font-mono font-medium tracking-[0.12em] uppercase whitespace-nowrap">
-                    Recommended
+                    Most Popular
                   </span>
                 </div>
               )}
