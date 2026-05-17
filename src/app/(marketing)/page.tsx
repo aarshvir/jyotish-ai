@@ -4,6 +4,7 @@ import HowItWorks from '@/components/landing/HowItWorks';
 import FreeKundli from '@/components/landing/FreeKundli';
 import HourlyPreview from '@/components/landing/HourlyPreview';
 import Pricing from '@/components/landing/Pricing';
+import HindiWaitlist from '@/components/landing/HindiWaitlist';
 import FAQ from '@/components/landing/FAQ';
 import { FAQS } from '@/lib/faq-data';
 import FinalCTA from '@/components/landing/FinalCTA';
@@ -96,6 +97,7 @@ export default async function LandingPage() {
       <FreeKundli />
       <HourlyPreview />
       <Pricing />
+      <HindiWaitlist />
       <FAQ />
       <FinalCTA />
     </div>
