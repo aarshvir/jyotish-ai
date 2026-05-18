@@ -26,6 +26,7 @@ import { buildFunctionalLordGroups } from '@/lib/engine/functionalNature';
 import { lagnaSignToIndex } from '@/lib/engine/horaBase';
 import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
 import { generationErrorCtaKind } from '@/lib/reports/reportErrors';
+import { getStaleOrphanUpdatedAtMs } from '@/lib/reports/staleGeneratingConstants';
 import { resolveLocalSlotTimes } from '@/lib/time/localTime';
 
 const UUID_RE =
@@ -88,8 +89,11 @@ function birthDisplayForUi(
   };
 }
 
-/** Stop polling after this if status is still `generating` (server likely dead or orphaned row). */
-const CLIENT_GENERATING_TIMEOUT_MS = 15 * 60 * 1000;
+/**
+ * Stop polling after this if status is still `generating`.
+ * Aligns with default pipeline job token TTL (6h) so long Inngest runs are not cut off at 15m.
+ */
+const CLIENT_GENERATING_TIMEOUT_MS = 6 * 60 * 60 * 1000;
 
 /** Tier B: no successful HTTP `/status` for this long while Realtime is disconnected → terminal. */
 const STATUS_SIGNAL_STALE_MS = 90_000;
@@ -574,22 +578,6 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           };
         });
 
-        // If the server says still generating but generation_started_at is older than
-        // Vercel's maxDuration (300s) + buffer (60s), the serverless function is dead.
-        // Stop waiting and show the retry button immediately rather than after 15 min.
-        if (data.status === 'generating' && data.generation_started_at) {
-          const startedMs = new Date(data.generation_started_at).getTime();
-          if (!Number.isNaN(startedMs) && Date.now() - startedMs > 900_000) {
-            stopReportPolling();
-            setError(
-              'The server did not finish in time (likely a timeout). Use Try again to restart.',
-            );
-            setGenerationErrorMeta({ code: 'STATUS_POLL_TIMEOUT', phase: data.generation_step ?? null });
-            setIsGenerating(false);
-            return;
-          }
-        }
-
         if (data.isComplete && data.report) {
           stopReportPolling();
           setReportData(data.report);
@@ -714,6 +702,10 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       setGenerationErrorMeta(null);
       if (ej.code === 'INNGEST_DISPATCH_FAILED') {
         setError('Background queue unavailable, please retry in a minute');
+      } else if (ej.code === 'INNGEST_NOT_CONFIGURED') {
+        setError(
+          'Report generation is not configured on this deployment (background jobs). Please contact support.',
+        );
       } else {
         const msg = ej.error ?? res.statusText;
         setError(`Could not start generation: ${msg}`);
@@ -930,12 +922,16 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         if (!cancelled && isRowGenerating) {
           hasFetched.current = true;
           setBirthDisplay(birthDisplayForUi(row ?? undefined, { name, date, time, city }));
-          // Check if the previous run is stale (older than 360s = past Vercel maxDuration+buffer).
-          // If so, force-restart so we don't immediately hit the timeout error UI.
-          const startedMs = row?.generation_started_at
-            ? new Date(row.generation_started_at as string).getTime()
-            : 0;
-          const isStale = !Number.isNaN(startedMs) && startedMs > 0 && Date.now() - startedMs > 360_000;
+          // Only force-restart when the row heartbeat is stale (same `updated_at` window as server
+          // orphan cleanup). Using `generation_started_at` would abort healthy multi-hour Inngest runs.
+          const updatedRaw = row?.updated_at;
+          const updatedMs =
+            typeof updatedRaw === 'string' && updatedRaw ? new Date(updatedRaw).getTime() : NaN;
+          const staleHeartbeatMs = getStaleOrphanUpdatedAtMs();
+          const isStale =
+            Number.isFinite(updatedMs) &&
+            updatedMs > 0 &&
+            Date.now() - updatedMs > staleHeartbeatMs;
           if (isStale) {
             void kickOffBackgroundGeneration({ forceRestart: true });
           } else {
