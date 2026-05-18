@@ -54,6 +54,7 @@ type ReportRow = {
   current_lng: number | null;
   timezone_offset: number | null;
   plan_type: string | null;
+  report_start_date: string | null;
   status: string | null;
   generation_started_at: string | null;
   report_data: unknown;
@@ -91,7 +92,7 @@ async function maybeDispatchReportGenerate(
   const { data: row, error } = await db
     .from('reports')
     .select(
-      'id, user_id, user_email, native_name, birth_date, birth_time, birth_city, birth_lat, birth_lng, current_city, current_lat, current_lng, timezone_offset, plan_type, status, generation_started_at, report_data',
+      'id, user_id, user_email, native_name, birth_date, birth_time, birth_city, birth_lat, birth_lng, current_city, current_lat, current_lng, timezone_offset, plan_type, report_start_date, status, generation_started_at, report_data',
     )
     .eq('id', reportId)
     .maybeSingle();
@@ -126,6 +127,7 @@ async function maybeDispatchReportGenerate(
     currentCity: r.current_city ?? r.birth_city ?? '',
     timezoneOffset: tz,
     type: planType,
+    forecastStart: r.report_start_date ?? undefined,
     planType,
     paymentStatus: 'paid',
   };
