@@ -70,8 +70,9 @@ export default function CurrencySwitcher({
   // Hydrate from localStorage on mount (client-side override of server-detected currency)
   useEffect(() => {
     const stored = readStoredCurrency();
-    if (stored && stored !== current) {
-      setCurrent(stored);
+    if (stored) {
+      persistCurrency(stored);
+      if (stored !== current) setCurrent(stored);
       onChange?.(stored);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

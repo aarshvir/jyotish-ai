@@ -857,27 +857,42 @@ function OnboardPageInner() {
     const reportId = crypto.randomUUID();
     const isPaidPlan = effectiveType !== 'free';
     const needsPayment = isPaidPlan && !hasBypass && promoDiscount < 100;
+    const rawTime = form.birthTime;
+    const birthTimeNorm =
+      rawTime && rawTime.includes(':') && rawTime.split(':').length === 2
+        ? `${rawTime}:00`
+        : rawTime || '12:00:00';
+    const tzFallback =
+      form.currentTzOffset ??
+      (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
     const params = new URLSearchParams(paramsObj);
     if (needsPayment) params.set('payment_status', 'paid');
     const finalUrl = `/report/${reportId}?${params.toString()}`;
 
     if (needsPayment) {
       try {
-        // Honour the user's manual currency pick (set by <CurrencySwitcher />)
-        // if it exists, so checkout matches what they saw on the pricing card.
-        let preferredCurrency: string | null = null;
-        try {
-          preferredCurrency = typeof window !== 'undefined'
-            ? window.localStorage.getItem('vh_currency')
-            : null;
-        } catch { /* private mode — fall back to cookie/geo */ }
+        // Pin checkout to the currency currently displayed in this form.
+        const displayedCurrency = geoPrices?.currency;
         const intentRes = await fetch('/api/ziina/create-intent', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
           body: JSON.stringify({
             planType: effectiveType,
             reportId,
             promoCode: promoCode || undefined,
-            ...(preferredCurrency ? { currency: preferredCurrency } : {}),
+            name: form.name,
+            birth_date: form.birthDate,
+            birth_time: birthTimeNorm,
+            birth_city: form.birthCity,
+            birth_lat: form.birthLat,
+            birth_lng: form.birthLng,
+            timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
+            ...(form.forecastStartDate ? { forecast_start: form.forecastStartDate } : {}),
+            ...(useCurrent ? {
+              current_city: form.currentCity,
+              current_lat: form.currentLat ?? 0,
+              current_lng: form.currentLng ?? 0,
+            } : {}),
+            ...(displayedCurrency ? { currency: displayedCurrency } : {}),
           }),
         });
         if (!intentRes.ok) {
@@ -921,15 +936,6 @@ function OnboardPageInner() {
     // We must call /api/reports/start to create the DB row and trigger the Inngest pipeline.
     // Field names MUST match /api/reports/start (same as report/[id] kickOffBackgroundGeneration).
     try {
-      const rawTime = form.birthTime;
-      const birthTimeNorm =
-        rawTime && rawTime.includes(':') && rawTime.split(':').length === 2
-          ? `${rawTime}:00`
-          : rawTime || '12:00:00';
-      const tzFallback =
-        form.currentTzOffset ??
-        (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
-
       const startPayload: Record<string, unknown> = {
         reportId,
         name: form.name,
