@@ -11,6 +11,7 @@ import {
 } from '@/lib/ziina/server';
 import { getPromoDiscount } from '@/lib/promo/server';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { upsertPendingReportDraft } from '@/lib/ziina/pendingReportDraft';
 
 /**
  * POST /api/ziina/create-intent
@@ -32,6 +33,17 @@ export async function POST(request: NextRequest) {
     reportId?: string;
     promoCode?: string;
     testMode?: boolean;
+    name?: unknown;
+    birth_date?: unknown;
+    birth_time?: unknown;
+    birth_city?: unknown;
+    birth_lat?: unknown;
+    birth_lng?: unknown;
+    current_city?: unknown;
+    current_lat?: unknown;
+    current_lng?: unknown;
+    timezone_offset?: unknown;
+    forecast_start?: unknown;
   };
 
   const { planType, reportId, promoCode, testMode } = body;
@@ -119,13 +131,41 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Report not found' }, { status: 404 });
       }
 
+      try {
+        const { error: draftErr } = await upsertPendingReportDraft(db, {
+          reportId,
+          userId: auth.user.id,
+          userEmail: auth.user.email ?? '',
+          planType,
+          name: body.name,
+          birth_date: body.birth_date,
+          birth_time: body.birth_time,
+          birth_city: body.birth_city,
+          birth_lat: body.birth_lat,
+          birth_lng: body.birth_lng,
+          current_city: body.current_city,
+          current_lat: body.current_lat,
+          current_lng: body.current_lng,
+          timezone_offset: body.timezone_offset,
+          forecast_start: body.forecast_start,
+        });
+        if (draftErr) {
+          console.error('[ziina/create-intent] pending report draft upsert failed:', draftErr.message);
+          return NextResponse.json({ error: 'Failed to prepare report for checkout' }, { status: 500 });
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Missing report details';
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+
       const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();
       const { data: existingPayment, error: existingPaymentErr } = await db
         .from('ziina_payments')
-        .select('ziina_intent_id')
+        .select('ziina_intent_id, currency')
         .eq('user_id', auth.user.id)
         .eq('report_id', reportId)
         .eq('plan_type', planType)
+        .eq('currency', currency)
         .eq('status', 'pending')
         .gte('created_at', pendingCutoff)
         .order('created_at', { ascending: false })
@@ -142,7 +182,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
           intentId: existingIntent.id,
           redirectUrl: existingIntent.redirect_url,
-          currency,
+          currency: existingPayment.currency ?? currency,
           amount: existingIntent.amount,
           discountPct,
         });
