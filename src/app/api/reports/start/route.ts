@@ -26,6 +26,11 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
+import { getPromoDiscount, redeemPromoCode } from '@/lib/promo/server';
+import {
+  normalizeReportStartPlanType,
+  resolveReportStartPaymentStatus,
+} from '@/lib/reports/startPaymentAuthorization';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -121,6 +126,7 @@ interface StartRequestBody {
   timezone_offset?: string | number | null;
   plan_type?: string;
   payment_status?: string;
+  promoCode?: string;
   forecast_start?: string;
   forceRestart?: boolean;
   testOptions?: { disableRag?: boolean };
@@ -165,15 +171,6 @@ function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
   return b;
 }
 
-function safeNonPaidPaymentStatus(
-  requested: string | null | undefined,
-  planType: string | null | undefined,
-): string {
-  if (requested === 'promo' || requested === 'free' || requested === 'bypass') return requested;
-  const normalizedPlan = (planType ?? '').trim();
-  return normalizedPlan === 'free' || normalizedPlan === 'preview' ? 'free' : 'unpaid';
-}
-
 async function hasCompletedZiinaPayment(
   db: ReturnType<typeof createServiceClient>,
   reportId: string,
@@ -189,32 +186,44 @@ async function hasCompletedZiinaPayment(
     .maybeSingle();
 
   if (error) {
-    console.warn('[reports/start] completed payment lookup failed:', error.message);
-    return false;
+    throw new Error(error.message);
   }
   return !!data;
 }
 
-async function resolveTrustedPaymentStatus(
+async function hasRedeemedFullPromo(
   db: ReturnType<typeof createServiceClient>,
   reportId: string,
   userId: string,
-  body: StartRequestBody,
-  existing: ExistingReportForStart | null,
-  isAdmin: boolean,
-): Promise<string> {
-  if (isAdmin && typeof body.payment_status === 'string' && body.payment_status.trim() !== '') {
-    return body.payment_status.trim();
+): Promise<boolean> {
+  const { data: redemption, error: redemptionError } = await db
+    .from('promo_redemptions')
+    .select('code_id')
+    .eq('order_id', reportId)
+    .eq('user_id', userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (redemptionError) {
+    console.warn('[reports/start] promo redemption lookup failed:', redemptionError.message);
+    return false;
+  }
+  const codeId = (redemption as { code_id?: string } | null)?.code_id;
+  if (!codeId) return false;
+
+  const { data: promo, error: promoError } = await db
+    .from('promo_codes')
+    .select('discount_pct')
+    .eq('id', codeId)
+    .limit(1)
+    .maybeSingle();
+
+  if (promoError) {
+    console.warn('[reports/start] redeemed promo lookup failed:', promoError.message);
+    return false;
   }
 
-  if (await hasCompletedZiinaPayment(db, reportId, userId)) {
-    return 'paid';
-  }
-
-  return safeNonPaidPaymentStatus(
-    typeof body.payment_status === 'string' ? body.payment_status : existing?.payment_status,
-    body.plan_type ?? existing?.plan_type,
-  );
+  return Number((promo as { discount_pct?: number } | null)?.discount_pct ?? 0) >= 100;
 }
 
 /**
@@ -367,14 +376,37 @@ export async function POST(request: NextRequest) {
         : 0;
 
   const nowIso = new Date().toISOString();
-  const trustedPaymentStatus = await resolveTrustedPaymentStatus(
-    db,
+  const paymentResolution = await resolveReportStartPaymentStatus({
     reportId,
-    auth.user.id,
-    body,
-    existing,
-    auth.isAdmin === true,
-  );
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    requestedPlanType: body.plan_type,
+    existingPlanType: existing?.plan_type,
+    requestedPaymentStatus: typeof body.payment_status === 'string' ? body.payment_status : undefined,
+    isAdmin: auth.isAdmin === true,
+    promoCode: typeof body.promoCode === 'string' ? body.promoCode : undefined,
+    hasCompletedPayment: (id, userId) => hasCompletedZiinaPayment(db, id, userId),
+    hasRedeemedFullPromo: (id, userId) => hasRedeemedFullPromo(db, id, userId),
+    validatePromoCode: (code, email) => getPromoDiscount(code, email),
+    redeemPromoCode: (codeId, userId, id) => redeemPromoCode(codeId, userId, id),
+  });
+
+  if (!paymentResolution.ok) {
+    await releaseLock(lockKey);
+    return NextResponse.json(
+      {
+        error: paymentResolution.error,
+        code: paymentResolution.code,
+        generation_trace_id: generationTraceId,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: paymentResolution.status },
+    );
+  }
+
+  const trustedPaymentStatus = paymentResolution.paymentStatus;
+  const trustedPlanType = normalizeReportStartPlanType(paymentResolution.planType);
 
   const { error: upsertError } = await db.from('reports').upsert(
     {
@@ -391,7 +423,7 @@ export async function POST(request: NextRequest) {
       current_lat: body.current_lat ?? null,
       current_lng: body.current_lng ?? null,
       timezone_offset: timezoneOffset,
-      plan_type: body.plan_type ?? '7day',
+      plan_type: trustedPlanType,
       status: 'generating',
       payment_status: trustedPaymentStatus,
       payment_provider:
@@ -482,9 +514,9 @@ export async function POST(request: NextRequest) {
     currentLng: toNum(body.current_lng ?? body.birth_lng),
     currentCity: body.current_city ?? body.birth_city ?? '',
     timezoneOffset,
-    type: body.plan_type ?? '7day',
+    type: trustedPlanType,
     forecastStart: body.forecast_start ?? undefined,
-    planType: body.plan_type ?? '7day',
+    planType: trustedPlanType,
     paymentStatus: trustedPaymentStatus,
     ...(ragRaw != null && String(ragRaw).trim() !== ''
       ? { jyotishRagMode: String(ragRaw).trim() }
