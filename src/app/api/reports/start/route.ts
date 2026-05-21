@@ -26,6 +26,10 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
+import {
+  normalizedReportPlan,
+  resolveReportStartPaymentAuthorization,
+} from '@/lib/reports/startPaymentAuthorization';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -121,6 +125,7 @@ interface StartRequestBody {
   timezone_offset?: string | number | null;
   plan_type?: string;
   payment_status?: string;
+  promoCode?: string;
   forecast_start?: string;
   forceRestart?: boolean;
   testOptions?: { disableRag?: boolean };
@@ -163,58 +168,6 @@ function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
   if (b.current_lat == null && b.currentLat != null) b.current_lat = b.currentLat;
   if (b.current_lng == null && b.currentLng != null) b.current_lng = b.currentLng;
   return b;
-}
-
-function safeNonPaidPaymentStatus(
-  requested: string | null | undefined,
-  planType: string | null | undefined,
-): string {
-  if (requested === 'promo' || requested === 'free' || requested === 'bypass') return requested;
-  const normalizedPlan = (planType ?? '').trim();
-  return normalizedPlan === 'free' || normalizedPlan === 'preview' ? 'free' : 'unpaid';
-}
-
-async function hasCompletedZiinaPayment(
-  db: ReturnType<typeof createServiceClient>,
-  reportId: string,
-  userId: string,
-): Promise<boolean> {
-  const { data, error } = await db
-    .from('ziina_payments')
-    .select('ziina_intent_id')
-    .eq('report_id', reportId)
-    .eq('user_id', userId)
-    .eq('status', 'completed')
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.warn('[reports/start] completed payment lookup failed:', error.message);
-    return false;
-  }
-  return !!data;
-}
-
-async function resolveTrustedPaymentStatus(
-  db: ReturnType<typeof createServiceClient>,
-  reportId: string,
-  userId: string,
-  body: StartRequestBody,
-  existing: ExistingReportForStart | null,
-  isAdmin: boolean,
-): Promise<string> {
-  if (isAdmin && typeof body.payment_status === 'string' && body.payment_status.trim() !== '') {
-    return body.payment_status.trim();
-  }
-
-  if (await hasCompletedZiinaPayment(db, reportId, userId)) {
-    return 'paid';
-  }
-
-  return safeNonPaidPaymentStatus(
-    typeof body.payment_status === 'string' ? body.payment_status : existing?.payment_status,
-    body.plan_type ?? existing?.plan_type,
-  );
 }
 
 /**
@@ -338,6 +291,37 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const tzBody = body.timezone_offset;
+  const timezoneOffset =
+    typeof tzBody === 'number' && Number.isFinite(tzBody)
+      ? tzBody
+      : typeof tzBody === 'string' && tzBody.trim() !== ''
+        ? parseInt(tzBody, 10) || 0
+        : 0;
+
+  const paymentAuthorization = await resolveReportStartPaymentAuthorization({
+    db,
+    reportId,
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    body,
+    existing,
+    isAdmin: auth.isAdmin === true,
+  });
+  if (!paymentAuthorization.ok) {
+    return NextResponse.json(
+      {
+        error: paymentAuthorization.error,
+        code: paymentAuthorization.code,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: paymentAuthorization.status },
+    );
+  }
+
+  const trustedPaymentStatus = paymentAuthorization.paymentStatus;
+
   const lockKey = `report:${reportId}:generation`;
   const gotLock = forceRestart || await acquireLock(lockKey, 10 * 60);
   if (!gotLock) {
@@ -357,24 +341,8 @@ export async function POST(request: NextRequest) {
   }
 
   const generationTraceId = randomUUID();
-
-  const tzBody = body.timezone_offset;
-  const timezoneOffset =
-    typeof tzBody === 'number' && Number.isFinite(tzBody)
-      ? tzBody
-      : typeof tzBody === 'string' && tzBody.trim() !== ''
-        ? parseInt(tzBody, 10) || 0
-        : 0;
-
   const nowIso = new Date().toISOString();
-  const trustedPaymentStatus = await resolveTrustedPaymentStatus(
-    db,
-    reportId,
-    auth.user.id,
-    body,
-    existing,
-    auth.isAdmin === true,
-  );
+  const effectivePlanType = normalizedReportPlan(body.plan_type ?? existing?.plan_type);
 
   const { error: upsertError } = await db.from('reports').upsert(
     {
@@ -391,7 +359,7 @@ export async function POST(request: NextRequest) {
       current_lat: body.current_lat ?? null,
       current_lng: body.current_lng ?? null,
       timezone_offset: timezoneOffset,
-      plan_type: body.plan_type ?? '7day',
+      plan_type: effectivePlanType,
       status: 'generating',
       payment_status: trustedPaymentStatus,
       payment_provider:
@@ -482,9 +450,9 @@ export async function POST(request: NextRequest) {
     currentLng: toNum(body.current_lng ?? body.birth_lng),
     currentCity: body.current_city ?? body.birth_city ?? '',
     timezoneOffset,
-    type: body.plan_type ?? '7day',
+    type: effectivePlanType,
     forecastStart: body.forecast_start ?? undefined,
-    planType: body.plan_type ?? '7day',
+    planType: effectivePlanType,
     paymentStatus: trustedPaymentStatus,
     ...(ragRaw != null && String(ragRaw).trim() !== ''
       ? { jyotishRagMode: String(ragRaw).trim() }
