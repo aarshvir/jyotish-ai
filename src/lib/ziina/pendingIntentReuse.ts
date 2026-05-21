@@ -6,7 +6,7 @@ import {
   type ZiinaPaymentIntent,
 } from './server';
 
-const REUSABLE_ZIINA_STATUSES: ReadonlySet<ZiinaPaymentIntent['status']> = new Set([
+const REUSABLE_ZIINA_STATUSES = new Set<ZiinaPaymentIntent['status']>([
   'requires_payment_instrument',
   'requires_user_action',
   'pending',
