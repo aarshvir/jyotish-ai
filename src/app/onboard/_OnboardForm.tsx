@@ -954,7 +954,10 @@ function OnboardPageInner() {
       };
       const startRes = await fetch('/api/reports/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(hasBypass && bypassToken ? { 'x-bypass-token': bypassToken } : {}),
+        },
         credentials: 'include',
         body: JSON.stringify(startPayload),
       });

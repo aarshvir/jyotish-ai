@@ -22,6 +22,12 @@ export interface PromoResult {
   reason?: string;
 }
 
+export interface PromoRedemptionResult {
+  redeemed: boolean;
+  alreadyRedeemed: boolean;
+  error?: string;
+}
+
 /**
  * Look up a promo code from the DB and validate it.
  * Optionally pass the requesting email to enforce the allowlist.
@@ -61,19 +67,37 @@ export async function getPromoDiscount(
   return { valid: true, discountPct: data.discount_pct, codeId: data.id };
 }
 
+function isUniqueViolation(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const code = 'code' in error && typeof error.code === 'string' ? error.code : '';
+  const message = 'message' in error && typeof error.message === 'string' ? error.message : '';
+  return code === '23505' || message.toLowerCase().includes('duplicate key');
+}
+
 /** Increment used_count and record the redemption. Idempotent per order_id. */
 export async function redeemPromoCode(
   codeId: string,
   userId: string,
   orderId?: string,
-): Promise<void> {
+): Promise<PromoRedemptionResult> {
   const supabase = createServiceClient();
-  await Promise.all([
-    supabase.rpc('increment_promo_used_count', { p_code_id: codeId }),
-    supabase.from('promo_redemptions').insert({
-      code_id: codeId,
-      user_id: userId,
-      order_id: orderId ?? null,
-    }),
-  ]);
+  const { error: insertError } = await supabase.from('promo_redemptions').insert({
+    code_id: codeId,
+    user_id: userId,
+    order_id: orderId ?? null,
+  });
+
+  if (insertError) {
+    if (orderId && isUniqueViolation(insertError)) {
+      return { redeemed: true, alreadyRedeemed: true };
+    }
+    return { redeemed: false, alreadyRedeemed: false, error: insertError.message };
+  }
+
+  const { error: incrementError } = await supabase.rpc('increment_promo_used_count', { p_code_id: codeId });
+  if (incrementError) {
+    return { redeemed: false, alreadyRedeemed: false, error: incrementError.message };
+  }
+
+  return { redeemed: true, alreadyRedeemed: false };
 }

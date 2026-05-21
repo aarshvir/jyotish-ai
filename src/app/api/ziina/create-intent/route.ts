@@ -11,6 +11,7 @@ import {
 } from '@/lib/ziina/server';
 import { getPromoDiscount } from '@/lib/promo/server';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
 
 /**
  * POST /api/ziina/create-intent
@@ -139,12 +140,26 @@ export async function POST(request: NextRequest) {
         );
       } else if (existingPayment?.ziina_intent_id) {
         const existingIntent = await getPaymentIntent(existingPayment.ziina_intent_id);
-        return NextResponse.json({
-          intentId: existingIntent.id,
-          redirectUrl: existingIntent.redirect_url,
+        const reusableIntent = getReusablePendingZiinaIntent(existingIntent, {
+          planType,
           currency,
-          amount: existingIntent.amount,
           discountPct,
+        });
+
+        if (reusableIntent.reusable) {
+          return NextResponse.json({
+            intentId: existingIntent.id,
+            redirectUrl: existingIntent.redirect_url,
+            currency: reusableIntent.currency,
+            amount: existingIntent.amount,
+            discountPct,
+          });
+        }
+
+        console.info('[ziina/create-intent] creating a fresh intent instead of reusing pending intent', {
+          intentId: existingPayment.ziina_intent_id,
+          reason: reusableIntent.reason,
+          requestedCurrency: currency,
         });
       }
     }
