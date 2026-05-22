@@ -12,7 +12,7 @@ import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
-const YOUNG_GENERATING_MS = 10 * 60 * 1000;
+const ACTIVE_GENERATING_MS = 120 * 60 * 1000;
 
 function birthTimeToPipelineTime(s: string): string {
   const raw = (s || '12:00:00').trim();
@@ -25,11 +25,11 @@ function birthTimeToPipelineTime(s: string): string {
   return '12:00';
 }
 
-function isYoungGenerating(generationStartedAt: string | null | undefined): boolean {
+function isActiveGenerating(generationStartedAt: string | null | undefined): boolean {
   if (!generationStartedAt) return false;
   const t = new Date(generationStartedAt).getTime();
   if (Number.isNaN(t)) return false;
-  return Date.now() - t < YOUNG_GENERATING_MS;
+  return Date.now() - t < ACTIVE_GENERATING_MS;
 }
 
 type ZiinaPaymentRow = {
@@ -107,7 +107,7 @@ async function maybeDispatchReportGenerate(
   if (r.status === 'complete' && Array.isArray(rd?.days) && rd!.days.length > 0) {
     return;
   }
-  if (r.status === 'generating' && isYoungGenerating(r.generation_started_at)) {
+  if (r.status === 'generating' && isActiveGenerating(r.generation_started_at)) {
     return;
   }
 

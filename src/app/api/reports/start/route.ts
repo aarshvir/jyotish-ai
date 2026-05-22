@@ -33,10 +33,10 @@ import {
 } from '@/lib/reports/startPaymentAuthorization';
 
 /**
- * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
- * 10 minutes — Inngest jobs can take that long.
+ * If a row is `generating` and within the normal long-running Inngest window,
+ * skip starting a duplicate pipeline. Real paid pipelines can run 45-90+ min.
  */
-const YOUNG_GENERATING_MS = 10 * 60 * 1000;
+const ACTIVE_GENERATING_MS = 120 * 60 * 1000;
 const REPORT_START_LIMIT = 3;
 const REPORT_START_WINDOW_MS = 60_000;
 
@@ -52,11 +52,11 @@ function birthTimeToPipelineTime(s: string): string {
   return '12:00';
 }
 
-function isYoungGenerating(generationStartedAt: string | null | undefined): boolean {
+function isActiveGenerating(generationStartedAt: string | null | undefined): boolean {
   if (!generationStartedAt) return false;
   const t = new Date(generationStartedAt).getTime();
   if (Number.isNaN(t)) return false;
-  return Date.now() - t < YOUNG_GENERATING_MS;
+  return Date.now() - t < ACTIVE_GENERATING_MS;
 }
 
 type ReportStartEngine = 'inngest' | 'node' | 'none';
@@ -329,7 +329,7 @@ export async function POST(request: NextRequest) {
 
   if (
     existing?.status === 'generating' &&
-    isYoungGenerating(existing.generation_started_at) &&
+    isActiveGenerating(existing.generation_started_at) &&
     !forceRestart
   ) {
     return NextResponse.json(

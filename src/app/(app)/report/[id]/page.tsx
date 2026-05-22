@@ -89,7 +89,7 @@ function birthDisplayForUi(
 }
 
 /** Stop polling after this if status is still `generating` (server likely dead or orphaned row). */
-const CLIENT_GENERATING_TIMEOUT_MS = 15 * 60 * 1000;
+const CLIENT_GENERATING_TIMEOUT_MS = 120 * 60 * 1000;
 
 /** Tier B: no successful HTTP `/status` for this long while Realtime is disconnected → terminal. */
 const STATUS_SIGNAL_STALE_MS = 90_000;
@@ -574,22 +574,6 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           };
         });
 
-        // If the server says still generating but generation_started_at is older than
-        // Vercel's maxDuration (300s) + buffer (60s), the serverless function is dead.
-        // Stop waiting and show the retry button immediately rather than after 15 min.
-        if (data.status === 'generating' && data.generation_started_at) {
-          const startedMs = new Date(data.generation_started_at).getTime();
-          if (!Number.isNaN(startedMs) && Date.now() - startedMs > 900_000) {
-            stopReportPolling();
-            setError(
-              'The server did not finish in time (likely a timeout). Use Try again to restart.',
-            );
-            setGenerationErrorMeta({ code: 'STATUS_POLL_TIMEOUT', phase: data.generation_step ?? null });
-            setIsGenerating(false);
-            return;
-          }
-        }
-
         if (data.isComplete && data.report) {
           stopReportPolling();
           setReportData(data.report);
@@ -931,17 +915,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         if (!cancelled && isRowGenerating) {
           hasFetched.current = true;
           setBirthDisplay(birthDisplayForUi(row ?? undefined, { name, date, time, city }));
-          // Check if the previous run is stale (older than 360s = past Vercel maxDuration+buffer).
-          // If so, force-restart so we don't immediately hit the timeout error UI.
-          const startedMs = row?.generation_started_at
-            ? new Date(row.generation_started_at as string).getTime()
-            : 0;
-          const isStale = !Number.isNaN(startedMs) && startedMs > 0 && Date.now() - startedMs > 360_000;
-          if (isStale) {
-            void kickOffBackgroundGeneration({ forceRestart: true });
-          } else {
-            startPollingForReport();
-          }
+          startPollingForReport();
           return;
         }
 
