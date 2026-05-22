@@ -857,6 +857,14 @@ function OnboardPageInner() {
     const reportId = crypto.randomUUID();
     const isPaidPlan = effectiveType !== 'free';
     const needsPayment = isPaidPlan && !hasBypass && promoDiscount < 100;
+    const rawTime = form.birthTime;
+    const birthTimeNorm =
+      rawTime && rawTime.includes(':') && rawTime.split(':').length === 2
+        ? `${rawTime}:00`
+        : rawTime || '12:00:00';
+    const tzFallback =
+      form.currentTzOffset ??
+      (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
     const params = new URLSearchParams(paramsObj);
     if (needsPayment) params.set('payment_status', 'paid');
     const finalUrl = `/report/${reportId}?${params.toString()}`;
@@ -877,6 +885,19 @@ function OnboardPageInner() {
             planType: effectiveType,
             reportId,
             promoCode: promoCode || undefined,
+            name: form.name,
+            birth_date: form.birthDate,
+            birth_time: birthTimeNorm,
+            birth_city: paramsObj.city,
+            birth_lat: form.birthLat,
+            birth_lng: form.birthLng,
+            timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
+            ...(form.forecastStartDate ? { forecast_start: form.forecastStartDate } : {}),
+            ...(useCurrent ? {
+              current_city: form.currentCity,
+              current_lat: form.currentLat,
+              current_lng: form.currentLng,
+            } : {}),
             ...(preferredCurrency ? { currency: preferredCurrency } : {}),
           }),
         });
@@ -921,15 +942,6 @@ function OnboardPageInner() {
     // We must call /api/reports/start to create the DB row and trigger the Inngest pipeline.
     // Field names MUST match /api/reports/start (same as report/[id] kickOffBackgroundGeneration).
     try {
-      const rawTime = form.birthTime;
-      const birthTimeNorm =
-        rawTime && rawTime.includes(':') && rawTime.split(':').length === 2
-          ? `${rawTime}:00`
-          : rawTime || '12:00:00';
-      const tzFallback =
-        form.currentTzOffset ??
-        (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
-
       const startPayload: Record<string, unknown> = {
         reportId,
         name: form.name,
