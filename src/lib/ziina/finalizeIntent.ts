@@ -12,7 +12,7 @@ import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
-const YOUNG_GENERATING_MS = 10 * 60 * 1000;
+const ACTIVE_GENERATING_MS = 120 * 60 * 1000;
 
 function birthTimeToPipelineTime(s: string): string {
   const raw = (s || '12:00:00').trim();
@@ -25,11 +25,11 @@ function birthTimeToPipelineTime(s: string): string {
   return '12:00';
 }
 
-function isYoungGenerating(generationStartedAt: string | null | undefined): boolean {
+function isActiveGenerating(generationStartedAt: string | null | undefined): boolean {
   if (!generationStartedAt) return false;
   const t = new Date(generationStartedAt).getTime();
   if (Number.isNaN(t)) return false;
-  return Date.now() - t < YOUNG_GENERATING_MS;
+  return Date.now() - t < ACTIVE_GENERATING_MS;
 }
 
 type ZiinaPaymentRow = {
@@ -54,6 +54,7 @@ type ReportRow = {
   current_lng: number | null;
   timezone_offset: number | null;
   plan_type: string | null;
+  report_start_date: string | null;
   status: string | null;
   generation_started_at: string | null;
   report_data: unknown;
@@ -91,7 +92,7 @@ async function maybeDispatchReportGenerate(
   const { data: row, error } = await db
     .from('reports')
     .select(
-      'id, user_id, user_email, native_name, birth_date, birth_time, birth_city, birth_lat, birth_lng, current_city, current_lat, current_lng, timezone_offset, plan_type, status, generation_started_at, report_data',
+      'id, user_id, user_email, native_name, birth_date, birth_time, birth_city, birth_lat, birth_lng, current_city, current_lat, current_lng, timezone_offset, plan_type, report_start_date, status, generation_started_at, report_data',
     )
     .eq('id', reportId)
     .maybeSingle();
@@ -106,7 +107,7 @@ async function maybeDispatchReportGenerate(
   if (r.status === 'complete' && Array.isArray(rd?.days) && rd!.days.length > 0) {
     return;
   }
-  if (r.status === 'generating' && isYoungGenerating(r.generation_started_at)) {
+  if (r.status === 'generating' && isActiveGenerating(r.generation_started_at)) {
     return;
   }
 
@@ -126,6 +127,7 @@ async function maybeDispatchReportGenerate(
     currentCity: r.current_city ?? r.birth_city ?? '',
     timezoneOffset: tz,
     type: planType,
+    forecastStart: r.report_start_date ?? undefined,
     planType,
     paymentStatus: 'paid',
   };

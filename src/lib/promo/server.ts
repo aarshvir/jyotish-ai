@@ -68,12 +68,13 @@ export async function redeemPromoCode(
   orderId?: string,
 ): Promise<void> {
   const supabase = createServiceClient();
-  await Promise.all([
-    supabase.rpc('increment_promo_used_count', { p_code_id: codeId }),
-    supabase.from('promo_redemptions').insert({
-      code_id: codeId,
-      user_id: userId,
-      order_id: orderId ?? null,
-    }),
-  ]);
+  const { error } = await supabase.rpc('redeem_promo_code', {
+    p_code_id: codeId,
+    p_user_id: userId,
+    p_order_id: orderId ?? null,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }

@@ -11,6 +11,7 @@ import {
 } from '@/lib/ziina/server';
 import { getPromoDiscount } from '@/lib/promo/server';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { buildPendingPaymentReportDraft } from '@/lib/ziina/pendingReportDraft';
 
 /**
  * POST /api/ziina/create-intent
@@ -32,6 +33,18 @@ export async function POST(request: NextRequest) {
     reportId?: string;
     promoCode?: string;
     testMode?: boolean;
+    currency?: string;
+    name?: string;
+    birth_date?: string;
+    birth_time?: string;
+    birth_city?: string;
+    birth_lat?: string | number;
+    birth_lng?: string | number;
+    current_city?: string;
+    current_lat?: string | number;
+    current_lng?: string | number;
+    timezone_offset?: string | number;
+    forecast_start?: string;
   };
 
   const { planType, reportId, promoCode, testMode } = body;
@@ -117,6 +130,43 @@ export async function POST(request: NextRequest) {
       }
       if (reportRow && reportRow.user_id !== auth.user.id) {
         return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      }
+      if (!reportRow) {
+        const reportDraft = buildPendingPaymentReportDraft(body as Record<string, unknown>);
+        if (!reportDraft) {
+          return NextResponse.json(
+            { error: 'Complete birth details are required before checkout' },
+            { status: 400 },
+          );
+        }
+
+        const nowIso = new Date().toISOString();
+        const { error: pendingReportErr } = await db.from('reports').insert({
+          id: reportId,
+          user_id: auth.user.id,
+          user_email: auth.user.email ?? '',
+          native_name: reportDraft.native_name,
+          birth_date: reportDraft.birth_date,
+          birth_time: reportDraft.birth_time,
+          birth_city: reportDraft.birth_city,
+          birth_lat: reportDraft.birth_lat,
+          birth_lng: reportDraft.birth_lng,
+          current_city: reportDraft.current_city,
+          current_lat: reportDraft.current_lat,
+          current_lng: reportDraft.current_lng,
+          timezone_offset: reportDraft.timezone_offset,
+          plan_type: planType,
+          report_start_date: reportDraft.forecast_start,
+          status: 'pending_payment',
+          generation_started_at: null,
+          payment_status: 'unpaid',
+          payment_provider: null,
+          updated_at: nowIso,
+        });
+        if (pendingReportErr) {
+          console.error('[ziina/create-intent] pending reports insert failed:', pendingReportErr.message);
+          return NextResponse.json({ error: 'Failed to prepare report for checkout' }, { status: 500 });
+        }
       }
 
       const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();
