@@ -863,6 +863,13 @@ function OnboardPageInner() {
 
     if (needsPayment) {
       try {
+        const birthTimeNorm =
+          form.birthTime && form.birthTime.includes(':') && form.birthTime.split(':').length === 2
+            ? `${form.birthTime}:00`
+            : form.birthTime || '12:00:00';
+        const tzFallback =
+          form.currentTzOffset ??
+          (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
         // Honour the user's manual currency pick (set by <CurrencySwitcher />)
         // if it exists, so checkout matches what they saw on the pricing card.
         let preferredCurrency: string | null = null;
@@ -877,6 +884,18 @@ function OnboardPageInner() {
             planType: effectiveType,
             reportId,
             promoCode: promoCode || undefined,
+            name: form.name,
+            birth_date: form.birthDate,
+            birth_time: birthTimeNorm,
+            birth_city: form.birthCity,
+            birth_lat: form.birthLat,
+            birth_lng: form.birthLng,
+            timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
+            ...(useCurrent ? {
+              current_city: form.currentCity,
+              current_lat: form.currentLat ?? 0,
+              current_lng: form.currentLng ?? 0,
+            } : {}),
             ...(preferredCurrency ? { currency: preferredCurrency } : {}),
           }),
         });

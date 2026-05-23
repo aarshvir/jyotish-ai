@@ -12,9 +12,42 @@ import {
 import { getPromoDiscount } from '@/lib/promo/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 
+type CreateIntentBody = {
+  planType?: string;
+  reportId?: string;
+  promoCode?: string;
+  testMode?: boolean;
+  currency?: string;
+  name?: string;
+  birth_date?: string;
+  birth_time?: string;
+  birth_city?: string;
+  birth_lat?: string | number | null;
+  birth_lng?: string | number | null;
+  current_city?: string | null;
+  current_lat?: string | number | null;
+  current_lng?: string | number | null;
+  timezone_offset?: string | number | null;
+};
+
+function normalizeBirthTime(raw: string | undefined): string {
+  const value = raw?.trim();
+  if (!value) return '12:00:00';
+  return value.includes(':') && value.split(':').length === 2 ? `${value}:00` : value;
+}
+
+function numberOrNull(value: string | number | null | undefined): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
 /**
  * POST /api/ziina/create-intent
- * Body: { planType: '7day' | 'monthly' | 'annual', reportId: string }
+ * Body: { planType: '7day' | 'monthly' | 'annual', reportId: string, birth fields... }
  * Returns: { intentId, redirectUrl, currency, amount }
  *
  * Country detected from x-vercel-ip-country header → currency selected automatically.
@@ -27,12 +60,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Payment not configured' }, { status: 503 });
   }
 
-  const body = await request.json().catch(() => ({})) as {
-    planType?: string;
-    reportId?: string;
-    promoCode?: string;
-    testMode?: boolean;
-  };
+  const body = await request.json().catch(() => ({})) as CreateIntentBody;
 
   const { planType, reportId, promoCode, testMode } = body;
   if (!planType) {
@@ -75,11 +103,7 @@ export async function POST(request: NextRequest) {
     return null;
   }
 
-  const bodyCurrencyRaw =
-    (body as { currency?: unknown }).currency &&
-    typeof (body as { currency?: unknown }).currency === 'string'
-      ? ((body as { currency?: string }).currency as string)
-      : null;
+  const bodyCurrencyRaw = typeof body.currency === 'string' ? body.currency : null;
   const cookieCurrency = normaliseCurrency(readCookie('vh_currency'));
   const country = request.headers.get('x-vercel-ip-country') ?? null;
   const currency: SupportedCurrency =
@@ -108,7 +132,7 @@ export async function POST(request: NextRequest) {
     if (reportId && !isSynastryStandalone) {
       const { data: reportRow, error: reportErr } = await db
         .from('reports')
-        .select('user_id')
+        .select('user_id, status')
         .eq('id', reportId)
         .maybeSingle();
 
@@ -117,6 +141,41 @@ export async function POST(request: NextRequest) {
       }
       if (reportRow && reportRow.user_id !== auth.user.id) {
         return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      }
+
+      if (!reportRow || reportRow.status === 'pending_payment') {
+        if (!body.birth_date || !body.birth_city) {
+          return NextResponse.json({ error: 'Birth details required for checkout' }, { status: 400 });
+        }
+
+        const nowIso = new Date().toISOString();
+        const { error: draftErr } = await db.from('reports').upsert(
+          {
+            id: reportId,
+            user_id: auth.user.id,
+            user_email: auth.user.email ?? '',
+            native_name: body.name?.trim() || 'Seeker',
+            birth_date: body.birth_date,
+            birth_time: normalizeBirthTime(body.birth_time),
+            birth_city: body.birth_city,
+            birth_lat: numberOrNull(body.birth_lat),
+            birth_lng: numberOrNull(body.birth_lng),
+            current_city: body.current_city ?? null,
+            current_lat: numberOrNull(body.current_lat),
+            current_lng: numberOrNull(body.current_lng),
+            timezone_offset: numberOrNull(body.timezone_offset),
+            plan_type: planType,
+            status: 'pending_payment',
+            payment_status: 'unpaid',
+            updated_at: nowIso,
+          },
+          { onConflict: 'id' },
+        );
+
+        if (draftErr) {
+          console.error('[ziina/create-intent] pending report draft upsert failed:', draftErr.message);
+          return NextResponse.json({ error: 'Failed to save report details for checkout' }, { status: 500 });
+        }
       }
 
       const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();

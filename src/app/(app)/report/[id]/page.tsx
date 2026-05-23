@@ -326,6 +326,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
     const cached = dbBirthRef.current;
     const planRaw = cached?.plan_type || params.get('plan_type') || type;
     const planType = planRaw === 'free' ? 'preview' : planRaw;
+    const initialPaymentStatus = planType === 'preview' ? 'free' : 'unpaid';
     const rawTime = cached?.birth_time || params.get('time') || time;
     const birthTimeNorm =
       rawTime && rawTime.includes(':') && rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime || '12:00:00';
@@ -346,7 +347,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       timezone_offset: cached?.timezone_offset ?? currentTzOffset,
       plan_type: planType,
       status: 'generating',
-      payment_status: cached?.payment_status ?? 'bypass',
+      payment_status: cached?.payment_status ?? initialPaymentStatus,
     });
 
     if (error && error.code !== '23505') {
@@ -668,6 +669,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
     const cached = dbBirthRef.current;
     const planRaw = cached?.plan_type || params.get('plan_type') || type;
     const planType = planRaw === 'free' ? 'preview' : planRaw;
+    const clientPaymentStatus = planType === 'preview' ? 'free' : undefined;
     const rawTime = cached?.birth_time || params.get('time') || time;
     const birthTimeNorm =
       rawTime && rawTime.includes(':') && rawTime.split(':').length === 2 ? `${rawTime}:00` : rawTime || '12:00:00';
@@ -691,7 +693,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       plan_type: planType,
       forecast_start: forecastStartParam || undefined,
       // The server derives "paid" from completed Ziina rows; URL params are presentation-only.
-      payment_status: cached?.payment_status ?? 'bypass',
+      payment_status: clientPaymentStatus,
       ...(opts?.forceRestart ? { forceRestart: true } : {}),
     };
 

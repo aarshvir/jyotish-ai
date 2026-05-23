@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { safeInternalRedirectPath } from '@/lib/auth/safeRedirect';
 
 function humanizeAuthError(raw: string | null | undefined): string {
   if (!raw) return '';
@@ -106,7 +107,7 @@ function LoginInner() {
       );
     }
 
-    const next = searchParams.get('next') ?? '/dashboard';
+    const next = safeInternalRedirectPath(searchParams.get('next'));
     router.push(next);
     router.refresh();
   }
