@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { safeInternalRedirectPath } from '@/lib/auth/safeRedirect';
 
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
 const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
@@ -17,9 +18,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(origin + '/login?error=auth');
   }
 
-  // Guard against open redirect via //evil.com — allow only paths starting with a single slash
-  // followed by a non-slash character (no protocol-relative URLs).
-  const safePath = /^\/[^/]/.test(next) ? next : '/dashboard';
+  // Guard against open redirect via protocol-relative URLs such as //evil.com.
+  const safePath = safeInternalRedirectPath(next);
   const dest = origin + safePath;
   let response = NextResponse.redirect(dest);
 

@@ -26,6 +26,7 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
+import { resolveReportStartPaymentAuthorization } from '@/lib/reports/startPaymentAuthorization';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -123,6 +124,8 @@ interface StartRequestBody {
   payment_status?: string;
   forecast_start?: string;
   forceRestart?: boolean;
+  promoCode?: string;
+  promo_code?: string;
   testOptions?: { disableRag?: boolean };
   jyotishRagMode?: string;
   jyotish_rag_mode?: string;
@@ -163,58 +166,6 @@ function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
   if (b.current_lat == null && b.currentLat != null) b.current_lat = b.currentLat;
   if (b.current_lng == null && b.currentLng != null) b.current_lng = b.currentLng;
   return b;
-}
-
-function safeNonPaidPaymentStatus(
-  requested: string | null | undefined,
-  planType: string | null | undefined,
-): string {
-  if (requested === 'promo' || requested === 'free' || requested === 'bypass') return requested;
-  const normalizedPlan = (planType ?? '').trim();
-  return normalizedPlan === 'free' || normalizedPlan === 'preview' ? 'free' : 'unpaid';
-}
-
-async function hasCompletedZiinaPayment(
-  db: ReturnType<typeof createServiceClient>,
-  reportId: string,
-  userId: string,
-): Promise<boolean> {
-  const { data, error } = await db
-    .from('ziina_payments')
-    .select('ziina_intent_id')
-    .eq('report_id', reportId)
-    .eq('user_id', userId)
-    .eq('status', 'completed')
-    .limit(1)
-    .maybeSingle();
-
-  if (error) {
-    console.warn('[reports/start] completed payment lookup failed:', error.message);
-    return false;
-  }
-  return !!data;
-}
-
-async function resolveTrustedPaymentStatus(
-  db: ReturnType<typeof createServiceClient>,
-  reportId: string,
-  userId: string,
-  body: StartRequestBody,
-  existing: ExistingReportForStart | null,
-  isAdmin: boolean,
-): Promise<string> {
-  if (isAdmin && typeof body.payment_status === 'string' && body.payment_status.trim() !== '') {
-    return body.payment_status.trim();
-  }
-
-  if (await hasCompletedZiinaPayment(db, reportId, userId)) {
-    return 'paid';
-  }
-
-  return safeNonPaidPaymentStatus(
-    typeof body.payment_status === 'string' ? body.payment_status : existing?.payment_status,
-    body.plan_type ?? existing?.plan_type,
-  );
 }
 
 /**
@@ -298,6 +249,37 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const paymentAuthorization = await resolveReportStartPaymentAuthorization({
+    db,
+    reportId,
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    planType: body.plan_type ?? existing?.plan_type,
+    requestedPaymentStatus:
+      typeof body.payment_status === 'string' ? body.payment_status : existing?.payment_status,
+    existingPaymentStatus: existing?.payment_status,
+    isAdmin: auth.isAdmin === true,
+    promoCode:
+      typeof body.promoCode === 'string'
+        ? body.promoCode
+        : typeof body.promo_code === 'string'
+          ? body.promo_code
+          : null,
+  });
+
+  if (!paymentAuthorization.ok) {
+    return NextResponse.json(
+      {
+        error: paymentAuthorization.error,
+        code: paymentAuthorization.code,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 403 },
+    );
+  }
+  const trustedPaymentStatus = paymentAuthorization.status;
+
   const rd = existing?.report_data as { days?: unknown[] } | null | undefined;
   const alreadyDone =
     existing?.status === 'complete' &&
@@ -367,15 +349,6 @@ export async function POST(request: NextRequest) {
         : 0;
 
   const nowIso = new Date().toISOString();
-  const trustedPaymentStatus = await resolveTrustedPaymentStatus(
-    db,
-    reportId,
-    auth.user.id,
-    body,
-    existing,
-    auth.isAdmin === true,
-  );
-
   const { error: upsertError } = await db.from('reports').upsert(
     {
       id: reportId,
