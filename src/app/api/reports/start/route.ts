@@ -26,6 +26,7 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
+import { getPromoDiscount, redeemPromoCode } from '@/lib/promo/server';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -126,6 +127,7 @@ interface StartRequestBody {
   testOptions?: { disableRag?: boolean };
   jyotishRagMode?: string;
   jyotish_rag_mode?: string;
+  promoCode?: string;
   /** legacy aliases */
   date?: string;
   time?: string;
@@ -149,6 +151,12 @@ type ExistingReportForStart = {
   payment_provider: string | null;
 };
 
+type TrustedPaymentResolution = {
+  status: string;
+  authorized: boolean;
+  reason?: string;
+};
+
 /** Merge legacy field names from the onboard client (date/time/city/lat/forecastStart/currentTz). */
 function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
   const b = { ...raw } as StartRequestBody;
@@ -165,13 +173,22 @@ function normalizeStartBody(raw: Record<string, unknown>): StartRequestBody {
   return b;
 }
 
+function normalizePlanType(planType: string | null | undefined): string {
+  const normalized = (planType ?? '').trim().toLowerCase();
+  return normalized === 'free' ? 'preview' : normalized;
+}
+
+function isPaidForecastPlan(planType: string | null | undefined): boolean {
+  return new Set(['7day', 'monthly', 'annual']).has(normalizePlanType(planType));
+}
+
 function safeNonPaidPaymentStatus(
   requested: string | null | undefined,
   planType: string | null | undefined,
 ): string {
-  if (requested === 'promo' || requested === 'free' || requested === 'bypass') return requested;
-  const normalizedPlan = (planType ?? '').trim();
-  return normalizedPlan === 'free' || normalizedPlan === 'preview' ? 'free' : 'unpaid';
+  if (requested === 'free') return requested;
+  const normalizedPlan = normalizePlanType(planType);
+  return normalizedPlan === 'preview' ? 'free' : 'unpaid';
 }
 
 async function hasCompletedZiinaPayment(
@@ -195,26 +212,102 @@ async function hasCompletedZiinaPayment(
   return !!data;
 }
 
+async function hasRecordedPromoRedemption(
+  db: ReturnType<typeof createServiceClient>,
+  reportId: string,
+  userId: string,
+): Promise<boolean> {
+  const { data, error } = await db
+    .from('promo_redemptions')
+    .select('id')
+    .eq('order_id', reportId)
+    .eq('user_id', userId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[reports/start] promo redemption lookup failed:', error.message);
+    return false;
+  }
+  return !!data;
+}
+
+async function validateAndRedeemFullPromo(
+  db: ReturnType<typeof createServiceClient>,
+  reportId: string,
+  userId: string,
+  userEmail: string | undefined,
+  promoCode: string | null | undefined,
+): Promise<boolean> {
+  if (await hasRecordedPromoRedemption(db, reportId, userId)) return true;
+
+  const code = typeof promoCode === 'string' ? promoCode.trim() : '';
+  if (!code) return false;
+
+  const promo = await getPromoDiscount(code, userEmail);
+  if (!promo.valid || promo.discountPct < 100 || !promo.codeId) return false;
+
+  try {
+    await redeemPromoCode(promo.codeId, userId, reportId);
+    return true;
+  } catch (err) {
+    // A duplicate insert can happen if the client retries after a successful
+    // redemption; verify the durable redemption before failing closed.
+    if (await hasRecordedPromoRedemption(db, reportId, userId)) return true;
+    console.warn('[reports/start] promo redemption failed:', err);
+    return false;
+  }
+}
+
 async function resolveTrustedPaymentStatus(
   db: ReturnType<typeof createServiceClient>,
   reportId: string,
   userId: string,
+  userEmail: string | undefined,
   body: StartRequestBody,
   existing: ExistingReportForStart | null,
   isAdmin: boolean,
-): Promise<string> {
+): Promise<TrustedPaymentResolution> {
+  const planType = body.plan_type ?? existing?.plan_type;
+  const requested =
+    typeof body.payment_status === 'string'
+      ? body.payment_status.trim()
+      : existing?.payment_status?.trim();
+
   if (isAdmin && typeof body.payment_status === 'string' && body.payment_status.trim() !== '') {
-    return body.payment_status.trim();
+    return { status: body.payment_status.trim(), authorized: true };
   }
 
   if (await hasCompletedZiinaPayment(db, reportId, userId)) {
-    return 'paid';
+    return { status: 'paid', authorized: true };
   }
 
-  return safeNonPaidPaymentStatus(
-    typeof body.payment_status === 'string' ? body.payment_status : existing?.payment_status,
-    body.plan_type ?? existing?.plan_type,
-  );
+  const paidForecastPlan = isPaidForecastPlan(planType);
+  if (paidForecastPlan && requested === 'promo') {
+    const promoAuthorized = await validateAndRedeemFullPromo(
+      db,
+      reportId,
+      userId,
+      userEmail,
+      body.promoCode,
+    );
+    if (promoAuthorized) {
+      return { status: 'promo', authorized: true };
+    }
+  }
+
+  if (paidForecastPlan) {
+    return {
+      status: 'unpaid',
+      authorized: false,
+      reason: 'Paid report generation requires a completed payment or valid 100% promo code.',
+    };
+  }
+
+  return {
+    status: safeNonPaidPaymentStatus(requested, planType),
+    authorized: true,
+  };
 }
 
 /**
@@ -367,14 +460,30 @@ export async function POST(request: NextRequest) {
         : 0;
 
   const nowIso = new Date().toISOString();
-  const trustedPaymentStatus = await resolveTrustedPaymentStatus(
+  const trustedPayment = await resolveTrustedPaymentStatus(
     db,
     reportId,
     auth.user.id,
+    auth.user.email,
     body,
     existing,
     auth.isAdmin === true,
   );
+  const trustedPaymentStatus = trustedPayment.status;
+
+  if (!trustedPayment.authorized) {
+    await releaseLock(lockKey);
+    return NextResponse.json(
+      {
+        error: trustedPayment.reason ?? 'Payment required',
+        code: 'PAYMENT_REQUIRED' as const,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        generation_trace_id: generationTraceId,
+      },
+      { status: 402 },
+    );
+  }
 
   const { error: upsertError } = await db.from('reports').upsert(
     {

@@ -12,9 +12,24 @@ import {
 import { getPromoDiscount } from '@/lib/promo/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 
+function toFiniteNumber(value: string | number | null | undefined): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const n = Number.parseFloat(value);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function normaliseBirthTime(value: string | null | undefined): string {
+  const raw = (value ?? '').trim();
+  if (!raw) return '12:00:00';
+  return raw.includes(':') && raw.split(':').length === 2 ? `${raw}:00` : raw;
+}
+
 /**
  * POST /api/ziina/create-intent
- * Body: { planType: '7day' | 'monthly' | 'annual', reportId: string }
+ * Body: { planType: '7day' | 'monthly' | 'annual', reportId: string, ...birthData }
  * Returns: { intentId, redirectUrl, currency, amount }
  *
  * Country detected from x-vercel-ip-country header → currency selected automatically.
@@ -32,6 +47,18 @@ export async function POST(request: NextRequest) {
     reportId?: string;
     promoCode?: string;
     testMode?: boolean;
+    name?: string;
+    birth_date?: string;
+    birth_time?: string;
+    birth_city?: string;
+    birth_lat?: string | number | null;
+    birth_lng?: string | number | null;
+    current_city?: string | null;
+    current_lat?: string | number | null;
+    current_lng?: string | number | null;
+    timezone_offset?: string | number | null;
+    forecast_start?: string;
+    currency?: string;
   };
 
   const { planType, reportId, promoCode, testMode } = body;
@@ -117,6 +144,56 @@ export async function POST(request: NextRequest) {
       }
       if (reportRow && reportRow.user_id !== auth.user.id) {
         return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      }
+      if (!reportRow) {
+        const hasRequiredBirthData =
+          typeof body.name === 'string' &&
+          body.name.trim() !== '' &&
+          typeof body.birth_date === 'string' &&
+          body.birth_date.trim() !== '' &&
+          typeof body.birth_time === 'string' &&
+          body.birth_time.trim() !== '' &&
+          typeof body.birth_city === 'string' &&
+          body.birth_city.trim() !== '' &&
+          toFiniteNumber(body.birth_lat) != null &&
+          toFiniteNumber(body.birth_lng) != null;
+
+        if (!hasRequiredBirthData) {
+          return NextResponse.json(
+            { error: 'birth data required before checkout' },
+            { status: 400 },
+          );
+        }
+
+        const nowIso = new Date().toISOString();
+        const { error: draftErr } = await db.from('reports').insert({
+          id: reportId,
+          user_id: auth.user.id,
+          user_email: auth.user.email ?? '',
+          native_name: body.name!.trim(),
+          birth_date: body.birth_date!.trim(),
+          birth_time: normaliseBirthTime(body.birth_time),
+          birth_city: body.birth_city!.trim(),
+          birth_lat: toFiniteNumber(body.birth_lat),
+          birth_lng: toFiniteNumber(body.birth_lng),
+          current_city:
+            typeof body.current_city === 'string' && body.current_city.trim() !== ''
+              ? body.current_city.trim()
+              : null,
+          current_lat: toFiniteNumber(body.current_lat),
+          current_lng: toFiniteNumber(body.current_lng),
+          timezone_offset: toFiniteNumber(body.timezone_offset) ?? 0,
+          plan_type: planType,
+          status: 'pending_payment',
+          payment_status: 'unpaid',
+          payment_provider: null,
+          updated_at: nowIso,
+        });
+
+        if (draftErr) {
+          console.error('[ziina/create-intent] report draft insert failed:', draftErr.message);
+          return NextResponse.json({ error: 'Failed to prepare report for checkout' }, { status: 500 });
+        }
       }
 
       const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();

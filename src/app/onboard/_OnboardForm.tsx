@@ -871,12 +871,33 @@ function OnboardPageInner() {
             ? window.localStorage.getItem('vh_currency')
             : null;
         } catch { /* private mode — fall back to cookie/geo */ }
+        const rawTime = form.birthTime;
+        const birthTimeNorm =
+          rawTime && rawTime.includes(':') && rawTime.split(':').length === 2
+            ? `${rawTime}:00`
+            : rawTime || '12:00:00';
+        const tzFallback =
+          form.currentTzOffset ??
+          (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
         const intentRes = await fetch('/api/ziina/create-intent', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
           body: JSON.stringify({
             planType: effectiveType,
             reportId,
             promoCode: promoCode || undefined,
+            name: form.name,
+            birth_date: form.birthDate,
+            birth_time: birthTimeNorm,
+            birth_city: paramsObj.city,
+            birth_lat: form.birthLat,
+            birth_lng: form.birthLng,
+            timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
+            forecast_start: form.forecastStartDate || undefined,
+            ...(useCurrent ? {
+              current_city: form.currentCity,
+              current_lat: form.currentLat,
+              current_lng: form.currentLng,
+            } : {}),
             ...(preferredCurrency ? { currency: preferredCurrency } : {}),
           }),
         });
@@ -954,7 +975,10 @@ function OnboardPageInner() {
       };
       const startRes = await fetch('/api/reports/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(hasBypass && bypassToken ? { 'x-bypass-token': bypassToken } : {}),
+        },
         credentials: 'include',
         body: JSON.stringify(startPayload),
       });
