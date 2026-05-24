@@ -35,6 +35,11 @@ function isRouteUuid(id: string) {
   return UUID_RE.test(id);
 }
 
+function clientWritablePaymentStatus(planType: string | null | undefined): 'free' | 'unpaid' {
+  const normalized = (planType ?? '').trim().toLowerCase();
+  return normalized === 'free' || normalized === 'preview' ? 'free' : 'unpaid';
+}
+
 /** Surfaces `report_data.error` from the server so users see a hint (not only “please retry”). */
 function formatGenerationErrorMessage(detail: string | null | undefined): string {
   if (!detail?.trim()) return 'Generation failed — please retry';
@@ -346,7 +351,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       timezone_offset: cached?.timezone_offset ?? currentTzOffset,
       plan_type: planType,
       status: 'generating',
-      payment_status: cached?.payment_status ?? 'bypass',
+      payment_status: cached?.payment_status ?? clientWritablePaymentStatus(planType),
     });
 
     if (error && error.code !== '23505') {
@@ -691,7 +696,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       plan_type: planType,
       forecast_start: forecastStartParam || undefined,
       // The server derives "paid" from completed Ziina rows; URL params are presentation-only.
-      payment_status: cached?.payment_status ?? 'bypass',
+      payment_status: cached?.payment_status ?? clientWritablePaymentStatus(planType),
       ...(opts?.forceRestart ? { forceRestart: true } : {}),
     };
 
