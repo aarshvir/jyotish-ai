@@ -190,12 +190,12 @@ async function hasCompletedZiinaPayment(
 
   if (error) {
     console.warn('[reports/start] completed payment lookup failed:', error.message);
-    return false;
+    throw new Error('completed payment lookup failed');
   }
   return !!data;
 }
 
-async function resolveTrustedPaymentStatus(
+export async function resolveTrustedPaymentStatus(
   db: ReturnType<typeof createServiceClient>,
   reportId: string,
   userId: string,
@@ -367,14 +367,29 @@ export async function POST(request: NextRequest) {
         : 0;
 
   const nowIso = new Date().toISOString();
-  const trustedPaymentStatus = await resolveTrustedPaymentStatus(
-    db,
-    reportId,
-    auth.user.id,
-    body,
-    existing,
-    auth.isAdmin === true,
-  );
+  let trustedPaymentStatus: string;
+  try {
+    trustedPaymentStatus = await resolveTrustedPaymentStatus(
+      db,
+      reportId,
+      auth.user.id,
+      body,
+      existing,
+      auth.isAdmin === true,
+    );
+  } catch (err) {
+    await releaseLock(lockKey);
+    console.error('[reports/start] unable to verify payment status:', err);
+    return NextResponse.json(
+      {
+        error: 'Unable to verify payment status. Please retry.',
+        generation_trace_id: generationTraceId,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 503 },
+    );
+  }
 
   const { error: upsertError } = await db.from('reports').upsert(
     {
