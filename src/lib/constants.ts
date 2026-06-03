@@ -19,18 +19,3 @@ export const REPORT_STATUS = {
   COMPLETED: 'completed',
   FAILED: 'failed',
 } as const;
-
-export const PLAN_LIMITS = {
-  [PLANS.FREE]: {
-    reportsPerMonth: 1,
-    price: 0,
-  },
-  [PLANS.MONTHLY]: {
-    reportsPerMonth: -1,
-    price: 4900,
-  },
-  [PLANS.YEARLY]: {
-    reportsPerMonth: -1,
-    price: 39900,
-  },
-} as const;
