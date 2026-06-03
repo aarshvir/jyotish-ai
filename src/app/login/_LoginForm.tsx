@@ -44,6 +44,9 @@ function LoginInner() {
   const [info, setInfo] = useState('');
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [resetSending, setResetSending] = useState(false);
+  // When the user was sent here from the free-Kundli / onboarding flow, show
+  // welcoming "create your free account" framing instead of a bare sign-in wall.
+  const fromOnboard = (searchParams.get('next') ?? '').includes('/onboard');
 
   useEffect(() => {
     const m = searchParams.get('mode');
@@ -145,7 +148,11 @@ function LoginInner() {
             VedicHour
           </Link>
           <p className="font-body text-sm text-dust mt-2">
-            {mode === 'login' ? 'Sign in to your account' : 'Create your account'}
+            {fromOnboard
+              ? 'Create your free account to generate your Kundli — no card required.'
+              : mode === 'login'
+                ? 'Sign in to your account'
+                : 'Create your account'}
           </p>
         </div>
 
