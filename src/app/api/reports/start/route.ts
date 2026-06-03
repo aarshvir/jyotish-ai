@@ -376,6 +376,31 @@ export async function POST(request: NextRequest) {
     auth.isAdmin === true,
   );
 
+  // Guard: refuse to generate for unresolved birth coordinates. A geocode failure
+  // that fell back to 0,0 (open ocean — no inhabited birth city resolves there)
+  // would otherwise produce a confident but astronomically wrong chart presented
+  // as complete. Reject BEFORE creating the 'generating' row so nothing is stranded.
+  const guardLat = parseFloat(String(body.birth_lat ?? ''));
+  const guardLng = parseFloat(String(body.birth_lng ?? ''));
+  if (
+    !Number.isFinite(guardLat) ||
+    !Number.isFinite(guardLng) ||
+    (Math.abs(guardLat) < 0.01 && Math.abs(guardLng) < 0.01)
+  ) {
+    await releaseLock(lockKey);
+    return NextResponse.json(
+      {
+        error:
+          'We could not resolve your birth location. Please re-enter your birth city so we can compute an accurate chart.',
+        code: 'INVALID_BIRTH_COORDINATES' as const,
+        generation_trace_id: generationTraceId,
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 400 },
+    );
+  }
+
   const { error: upsertError } = await db.from('reports').upsert(
     {
       id: reportId,
