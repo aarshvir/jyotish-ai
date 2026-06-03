@@ -594,12 +594,14 @@ function DashboardInner() {
         </div>
 
         {/* ── Tab Bar ────────────────────────────────────────────────────── */}
-        <div className="flex gap-1 mb-6 p-1 bg-horizon/20 rounded-xl border border-horizon/30">
+        <div role="tablist" aria-label="Dashboard sections" className="flex gap-1 mb-6 p-1 bg-horizon/20 rounded-xl border border-horizon/30">
           {(['overview', 'reports', 'payments', 'settings'] as Tab[]).map(tab => (
             <button
               key={tab}
+              role="tab"
+              aria-selected={activeTab === tab}
               onClick={() => switchTab(tab)}
-              className={`flex-1 py-2 px-3 rounded-lg text-body-sm font-medium transition-all duration-200 capitalize ${
+              className={`flex-1 py-2 px-3 rounded-lg text-body-sm font-medium transition-all duration-200 capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber/60 ${
                 activeTab === tab
                   ? 'bg-amber text-space shadow-sm font-semibold'
                   : 'text-dust hover:text-star hover:bg-horizon/30'
@@ -611,8 +613,14 @@ function DashboardInner() {
         </div>
 
         {loadError && (
-          <div className="mb-6 px-4 py-3 rounded-card border border-error/30 bg-error/10 text-error font-body text-sm">
-            {loadError}
+          <div className="mb-6 px-4 py-3 rounded-card border border-error/30 bg-error/10 text-error font-body text-sm flex items-center justify-between gap-4">
+            <span>{loadError}</span>
+            <button
+              onClick={() => window.location.reload()}
+              className="shrink-0 btn-secondary px-3 py-1.5 text-xs"
+            >
+              Retry
+            </button>
           </div>
         )}
 
@@ -761,7 +769,7 @@ function DashboardInner() {
                 <div className="mb-4 text-3xl text-amber/40">✦</div>
                 <p className="font-body text-body-lg text-dust mb-2">No payment history yet.</p>
                 <p className="text-dust/50 text-body-sm mb-6">Free (preview) reports are not billed. Paid reports appear here once payment is verified.</p>
-                <Link href="/onboard" className="btn-primary px-8 py-3">Generate a paid report →</Link>
+                <Link href="/pricing" className="btn-primary px-8 py-3">See paid plans →</Link>
               </div>
             ) : (
               <div className="card overflow-hidden">
@@ -775,7 +783,7 @@ function DashboardInner() {
                 </ul>
                 <div className="px-5 py-3 border-t border-horizon/20 bg-horizon/10">
                   <p className="text-dust/40 text-mono-sm font-mono">
-                    All payments are final. For refunds, contact support within 24 hours of purchase.
+                    Within 24 hours of delivery, email support@vedichour.com for a no-questions refund. Sales are final after that.
                   </p>
                 </div>
               </div>

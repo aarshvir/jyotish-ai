@@ -9,6 +9,7 @@ import {
   formatAmount,
   getMonthlyUpgradeAmount,
   isZiinaConfigured,
+  type SupportedCurrency,
 } from '@/lib/ziina/server';
 import { emitUpsellEvent } from '@/lib/analytics/upsellEvents';
 
@@ -60,8 +61,22 @@ export async function POST(request: NextRequest) {
 
   const parentIntentId = parentPay?.ziina_intent_id ?? '';
 
+  // Honour the user's manual currency pick (vh_currency cookie) over geo-IP so the
+  // upgrade charge matches the currency used for the original purchase + the display.
+  const cookieRaw = (() => {
+    const raw = request.headers.get('cookie');
+    if (!raw) return null;
+    for (const part of raw.split(';')) {
+      const eq = part.indexOf('=');
+      if (eq < 0) continue;
+      if (part.slice(0, eq).trim() === 'vh_currency') return decodeURIComponent(part.slice(eq + 1).trim());
+    }
+    return null;
+  })();
+  const cookieCurrency: SupportedCurrency | null =
+    cookieRaw === 'USD' || cookieRaw === 'INR' || cookieRaw === 'AED' ? cookieRaw : null;
   const country = request.headers.get('x-vercel-ip-country');
-  const currency = countryToCurrency(country);
+  const currency = cookieCurrency ?? countryToCurrency(country);
   const amount = getMonthlyUpgradeAmount(currency);
 
   const origin = request.nextUrl.origin;
