@@ -26,7 +26,7 @@ const FEATURES: { group: string; rows: Array<{ label: string; free: string | boo
       { label: 'Hora schedule (24/day)', free: 'sample', week: true, month: true, year: true },
       { label: 'Choghadiya (8 muhurtas/day)', free: false, week: true, month: true, year: true },
       { label: 'Rahu Kaal warnings', free: false, week: true, month: true, year: true },
-      { label: 'Hourly Vedic windows (18/day)', free: false, week: true, month: true, year: true },
+      { label: 'Hourly Vedic windows (18/day)', free: 'sample', week: true, month: true, year: true },
       { label: 'AI narrative per day', free: false, week: true, month: true, year: true },
       { label: 'Peak / avoid window highlights', free: false, week: true, month: true, year: true },
     ],
@@ -36,9 +36,9 @@ const FEATURES: { group: string; rows: Array<{ label: string; free: string | boo
     rows: [
       { label: '7-day hour-level forecast', free: false, week: true, month: true, year: true },
       { label: '30-day hour-level forecast', free: false, week: false, month: true, year: true },
-      { label: 'Weekly synthesis (next 4 weeks)', free: false, week: false, month: true, year: true },
-      { label: 'Monthly theme analysis (12 months ahead)', free: false, week: false, month: true, year: true },
-      { label: 'Annual Varshaphala synthesis', free: false, week: false, month: false, year: true },
+      { label: 'Weekly synthesis (next 4 weeks)', free: false, week: true, month: true, year: true },
+      { label: '12-month thematic outlook', free: false, week: true, month: true, year: true },
+      { label: 'Priority support + 12-month access', free: false, week: false, month: false, year: true },
     ],
   },
   {
@@ -55,8 +55,8 @@ const FEATURES: { group: string; rows: Array<{ label: string; free: string | boo
 const PLANS = [
   { key: 'free', label: 'Free Kundli', sub: 'Free' },
   { key: 'week', label: '7-Day Forecast', sub: '7 days' },
-  { key: 'month', label: 'Monthly Oracle', sub: '30 days · Most Popular', highlight: true },
-  { key: 'year', label: 'Annual Oracle', sub: '365 days · Best Value' },
+  { key: 'month', label: 'Monthly Oracle', sub: '30 days · Recommended', highlight: true },
+  { key: 'year', label: 'Annual Oracle', sub: '12-mo + 30-day · Best Value' },
 ] as const;
 
 function Cell({ value }: { value: string | boolean }) {

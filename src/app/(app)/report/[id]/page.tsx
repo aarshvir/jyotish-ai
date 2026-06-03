@@ -88,8 +88,15 @@ function birthDisplayForUi(
   };
 }
 
-/** Stop polling after this if status is still `generating` (server likely dead or orphaned row). */
-const CLIENT_GENERATING_TIMEOUT_MS = 15 * 60 * 1000;
+/**
+ * Stop polling after this if status is still `generating` (server likely dead or orphaned row).
+ * Must exceed the worst-case real pipeline runtime — a monthly/annual report fans out
+ * 30 days × 18 hourly slots + 12 months + 6 weeks of LLM commentary and can legitimately
+ * run ~16-20 min. Set to 25 min so we never declare a healthy long job "failed" (which
+ * would tempt the user into a wasteful force-restart). Aligns above the 30-min dashboard
+ * stale threshold's intent while staying under the 120-min server orphan sweep.
+ */
+const CLIENT_GENERATING_TIMEOUT_MS = 25 * 60 * 1000;
 
 /** Tier B: no successful HTTP `/status` for this long while Realtime is disconnected → terminal. */
 const STATUS_SIGNAL_STALE_MS = 90_000;
@@ -574,12 +581,12 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           };
         });
 
-        // If the server says still generating but generation_started_at is older than
-        // Vercel's maxDuration (300s) + buffer (60s), the serverless function is dead.
-        // Stop waiting and show the retry button immediately rather than after 15 min.
+        // If the server says still generating but generation_started_at is older than the
+        // worst-case real pipeline runtime, the background job is almost certainly dead/orphaned.
+        // Use the shared ceiling so a healthy long monthly/annual run isn't declared failed early.
         if (data.status === 'generating' && data.generation_started_at) {
           const startedMs = new Date(data.generation_started_at).getTime();
-          if (!Number.isNaN(startedMs) && Date.now() - startedMs > 900_000) {
+          if (!Number.isNaN(startedMs) && Date.now() - startedMs > CLIENT_GENERATING_TIMEOUT_MS) {
             stopReportPolling();
             setError(
               'The server did not finish in time (likely a timeout). Use Try again to restart.',
@@ -661,11 +668,28 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
     generationStartRef.current = Date.now();
     setElapsedSeconds(0);
 
+    // Resolve birth coordinates FIRST and refuse to create a 'generating' row or
+    // dispatch if they're unresolved (0,0 / NaN). Runs BEFORE createReportRecord so a
+    // bad deep-link / null-coord row never strands a 'generating' row client-side.
+    const cached = dbBirthRef.current;
+    const guardLat = Number(cached?.birth_lat ?? (parseFloat(params.get('lat') || lat || '0') || 0));
+    const guardLng = Number(cached?.birth_lng ?? (parseFloat(params.get('lng') || lng || '0') || 0));
+    if (
+      !Number.isFinite(guardLat) ||
+      !Number.isFinite(guardLng) ||
+      (Math.abs(guardLat) < 0.01 && Math.abs(guardLng) < 0.01)
+    ) {
+      setError(
+        'We could not resolve your birth location. Please return to the form and re-enter your birth city so we can compute an accurate chart.',
+      );
+      setIsGenerating(false);
+      return;
+    }
+
     await createReportRecord();
 
     // Prefer DB-cached birth data (populated during init()) over URL params.
     // This is what fixes "Try Again" sending placeholder "Seeker / 2000-01-01" data.
-    const cached = dbBirthRef.current;
     const planRaw = cached?.plan_type || params.get('plan_type') || type;
     const planType = planRaw === 'free' ? 'preview' : planRaw;
     const rawTime = cached?.birth_time || params.get('time') || time;
@@ -930,12 +954,13 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         if (!cancelled && isRowGenerating) {
           hasFetched.current = true;
           setBirthDisplay(birthDisplayForUi(row ?? undefined, { name, date, time, city }));
-          // Check if the previous run is stale (older than 360s = past Vercel maxDuration+buffer).
-          // If so, force-restart so we don't immediately hit the timeout error UI.
+          // Check if the previous run is stale (older than the worst-case pipeline
+          // runtime). If so, force-restart; otherwise keep polling a healthy long job
+          // instead of throwing away a nearly-complete monthly/annual generation.
           const startedMs = row?.generation_started_at
             ? new Date(row.generation_started_at as string).getTime()
             : 0;
-          const isStale = !Number.isNaN(startedMs) && startedMs > 0 && Date.now() - startedMs > 360_000;
+          const isStale = !Number.isNaN(startedMs) && startedMs > 0 && Date.now() - startedMs > CLIENT_GENERATING_TIMEOUT_MS;
           if (isStale) {
             void kickOffBackgroundGeneration({ forceRestart: true });
           } else {
@@ -1218,6 +1243,14 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
     };
   });
 
+  // Plan gating for the free preview tier. Free reports run the full pipeline but
+  // are presented as a preview: natal chart + one sample day. The multi-day forecast,
+  // weekly/monthly synthesis, print-all, and PDF/Markdown exports are reserved for paid
+  // plans. plan_type is stored as 'free' (onboard) or normalised to 'preview' (kickoff).
+  // Fail-open: an unknown/undefined plan renders fully (never hides content a paid user bought).
+  const reportPlanType = dbBirthRef.current?.plan_type;
+  const isPreviewPlan = reportPlanType === 'free' || reportPlanType === 'preview';
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1275,13 +1308,14 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
               <span className="text-success">Link copied!</span>
             ) : (
               <>
-                <span>Copy Share Link</span>
+                <span>Copy report link</span>
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               </>
             )}
           </button>
+          {!isPreviewPlan && (
           <div className="flex flex-col items-end gap-2 pdf-exclude" data-print-hide>
             <div className="flex items-center gap-2">
               <button
@@ -1323,6 +1357,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
               PDF uses your browser&apos;s print dialog — choose &quot;Save as PDF&quot;.
             </p>
           </div>
+          )}
           </div>
         </div>
         {copyLinkError && (
@@ -1399,36 +1434,41 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             />
           </ReportErrorBoundary>
 
-          <ReportErrorBoundary fallbackTitle="Monthly Analysis">
-            <MonthlyAnalysis months={safeMonthly} />
-          </ReportErrorBoundary>
+          {!isPreviewPlan && (
+            <ReportErrorBoundary fallbackTitle="Monthly Analysis">
+              <MonthlyAnalysis months={safeMonthly} />
+            </ReportErrorBoundary>
+          )}
 
-          <ReportErrorBoundary fallbackTitle="Weekly Analysis">
-            <WeeklyAnalysis weeks={safeWeekly} />
-          </ReportErrorBoundary>
+          {!isPreviewPlan && (
+            <ReportErrorBoundary fallbackTitle="Weekly Analysis">
+              <WeeklyAnalysis weeks={safeWeekly} />
+            </ReportErrorBoundary>
+          )}
 
           {mergedDays.length > 0 && (
             <ReportErrorBoundary fallbackTitle="Daily Forecast">
               <DailyAnalysis
-                days={mergedDays}
-                activeDayIndex={activeDayIndex}
+                days={isPreviewPlan ? mergedDays.slice(0, 1) : mergedDays}
+                activeDayIndex={isPreviewPlan ? 0 : activeDayIndex}
                 onDayChange={setActiveDayIndex}
                 lagna={natalChart?.lagna}
               />
             </ReportErrorBoundary>
           )}
 
-          <ReportErrorBoundary fallbackTitle="Period Synthesis">
-            <PeriodSynthesis
-              synthesis={reportData?.synthesis ?? ''}
-              dailyScores={mergedDays.map((d) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
-              onDayClick={handleDaySelectFromCalendar}
-            />
-          </ReportErrorBoundary>
+          {!isPreviewPlan && (
+            <ReportErrorBoundary fallbackTitle="Period Synthesis">
+              <PeriodSynthesis
+                synthesis={reportData?.synthesis ?? ''}
+                dailyScores={mergedDays.map((d) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
+                onDayClick={handleDaySelectFromCalendar}
+              />
+            </ReportErrorBoundary>
+          )}
 
-          {/* Print-only full report — all 7 days × 18 slots with commentary.
-              Hidden on screen, rendered during @media print to bypass tab-based DailyAnalysis. */}
-          <PrintAllDays days={mergedDays} weeks={safeWeekly} />
+          {/* Print-only full report — paid plans only (hidden on screen, @media print). */}
+          {!isPreviewPlan && <PrintAllDays days={mergedDays} weeks={safeWeekly} />}
         </div>
 
         {/* Methodology & AI disclosure — shown in PDF as well, so users and recipients understand how the report was produced */}
@@ -1448,7 +1488,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         </section>
 
         {/* In-report upsell — preview plan only; excluded from PDF */}
-        {dbBirthRef.current?.plan_type === 'free' && (
+        {isPreviewPlan && (
           <div className="pdf-exclude mt-10" data-print-hide>
             <div className="rounded-card border border-amber/30 bg-gradient-to-br from-amber/[0.07] via-amber/[0.03] to-transparent p-6 sm:p-8">
               <p className="section-eyebrow mb-2">Ready for more precision?</p>

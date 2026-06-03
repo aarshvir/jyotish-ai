@@ -78,7 +78,7 @@ const REPORT_TYPES = [
     plan_type: 'annual' as const,
     title: 'Annual Oracle',
     defaultPrice: '$49.99',
-    description: 'Full year forecast + monthly breakdowns + PDF',
+    description: '12-month outlook + 30-day hourly + PDF',
     bestValue: true,
   },
 ] as const;
@@ -473,7 +473,7 @@ function Step3({
         <div className="mb-4 px-3.5 py-2.5 rounded-button bg-amber/10 border border-amber/25 flex items-center gap-2.5">
           <span className="text-amber text-base shrink-0">🚀</span>
           <p className="font-mono text-mono-sm text-amber tracking-wide">
-            Launch offer active — enter your promo code above for 30% off
+            Launch offer active — use code NEWUSER30 below for 30% off
           </p>
         </div>
       )}
@@ -575,7 +575,10 @@ function OnboardPageInner() {
     const supabase = createClient();
     void supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
-        router.replace(`/login?next=${encodeURIComponent('/onboard' + window.location.search)}`);
+        // First-time visitors from "Free Kundli" need the Sign Up tab + context, not a
+        // bare Sign In wall. mode=signup pre-selects Sign Up; the login page also shows
+        // free-Kundli framing when `next` points back to /onboard.
+        router.replace(`/login?mode=signup&next=${encodeURIComponent('/onboard' + window.location.search)}`);
         return;
       }
       // Pre-fill form from saved profile defaults
@@ -871,6 +874,16 @@ function OnboardPageInner() {
             ? window.localStorage.getItem('vh_currency')
             : null;
         } catch { /* private mode — fall back to cookie/geo */ }
+        // Send birth data so the server persists a paid report DRAFT row before
+        // checkout — guarantees a row exists to generate after Ziina returns.
+        const rawTimePaid = form.birthTime;
+        const birthTimeNormPaid =
+          rawTimePaid && rawTimePaid.includes(':') && rawTimePaid.split(':').length === 2
+            ? `${rawTimePaid}:00`
+            : rawTimePaid || '12:00:00';
+        const tzFallbackPaid =
+          form.currentTzOffset ??
+          (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
         const intentRes = await fetch('/api/ziina/create-intent', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
           body: JSON.stringify({
@@ -878,6 +891,19 @@ function OnboardPageInner() {
             reportId,
             promoCode: promoCode || undefined,
             ...(preferredCurrency ? { currency: preferredCurrency } : {}),
+            name: form.name,
+            birth_date: form.birthDate,
+            birth_time: birthTimeNormPaid,
+            birth_city: form.birthCity,
+            birth_lat: form.birthLat,
+            birth_lng: form.birthLng,
+            timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallbackPaid) : tzFallbackPaid,
+            ...(useCurrent ? {
+              current_city: form.currentCity,
+              current_lat: form.currentLat,
+              current_lng: form.currentLng,
+            } : {}),
+            ...(form.forecastStartDate ? { forecast_start: form.forecastStartDate } : {}),
           }),
         });
         if (!intentRes.ok) {

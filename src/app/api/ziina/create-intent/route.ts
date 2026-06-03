@@ -32,6 +32,20 @@ export async function POST(request: NextRequest) {
     reportId?: string;
     promoCode?: string;
     testMode?: boolean;
+    currency?: string;
+    // Birth fields — persisted as a draft report row BEFORE checkout so a completed
+    // payment always has a row to mark paid + generate.
+    name?: string;
+    birth_date?: string;
+    birth_time?: string;
+    birth_city?: string;
+    birth_lat?: number | string;
+    birth_lng?: number | string;
+    current_city?: string;
+    current_lat?: number | string;
+    current_lng?: number | string;
+    timezone_offset?: number | string;
+    forecast_start?: string;
   };
 
   const { planType, reportId, promoCode, testMode } = body;
@@ -146,6 +160,46 @@ export async function POST(request: NextRequest) {
           amount: existingIntent.amount,
           discountPct,
         });
+      }
+    }
+
+    // Persist a paid report DRAFT row (with full birth data) BEFORE checkout so a
+    // completed Ziina payment ALWAYS has a row to mark paid + generate. Without this,
+    // verify redirects to a bare /report/{id} with no row → the buyer sees "not found"
+    // after paying. Created 'pending'/'unpaid'; finalize flips it to paid + dispatches
+    // generation from these stored birth fields. ignoreDuplicates so it never clobbers
+    // an already-owned (e.g. already-paid) row.
+    if (reportId && !isSynastryStandalone) {
+      const toCoord = (v: unknown): number | null => {
+        const n = parseFloat(String(v ?? ''));
+        return Number.isFinite(n) ? n : null;
+      };
+      const { error: draftErr } = await db.from('reports').upsert(
+        {
+          id: reportId,
+          user_id: auth.user.id,
+          user_email: auth.user.email ?? '',
+          native_name: body.name ?? 'Seeker',
+          birth_date: body.birth_date ?? '2000-01-01',
+          birth_time: body.birth_time ?? '12:00:00',
+          birth_city: body.birth_city ?? 'Unknown',
+          birth_lat: toCoord(body.birth_lat),
+          birth_lng: toCoord(body.birth_lng),
+          current_city: body.current_city ?? null,
+          current_lat: toCoord(body.current_lat),
+          current_lng: toCoord(body.current_lng),
+          timezone_offset:
+            typeof body.timezone_offset === 'number'
+              ? body.timezone_offset
+              : parseInt(String(body.timezone_offset ?? '0'), 10) || 0,
+          plan_type: planType,
+          status: 'pending',
+          payment_status: 'unpaid',
+        },
+        { onConflict: 'id', ignoreDuplicates: true },
+      );
+      if (draftErr) {
+        console.error('[ziina/create-intent] draft report upsert failed:', draftErr.message);
       }
     }
 

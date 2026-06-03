@@ -14,12 +14,6 @@ import {
 
 export type { SupportedCurrency };
 
-export const PRICE_TABLE = {
-  USD: { '7day': 9.99,  monthly: 19.99, annual: 49.99  },
-  INR: { '7day': 799,   monthly: 1499,  annual: 3999   },
-  AED: { '7day': 37.99, monthly: 69.99, annual: 184.99 },
-} as const;
-
 /** Display string for a single plan in the requested currency. */
 export function getDisplayPrice(planId: string, currency: SupportedCurrency): string {
   const amount = getPlanAmount(planId, currency);

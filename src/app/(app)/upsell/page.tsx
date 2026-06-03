@@ -6,6 +6,9 @@ import { UpsellButton } from './_UpsellButton';
 import { UpsellCountdown } from './_UpsellCountdown';
 import { DismissToReport } from './_DismissToReport';
 import { createClient } from '@/lib/supabase/server';
+import { headers } from 'next/headers';
+import { currencyFromHeader } from '@/lib/pricing';
+import { getMonthlyUpgradeAmount, formatAmount } from '@/lib/ziina/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +47,12 @@ export default async function UpsellPage({ searchParams }: Props) {
     redirect(`/report/${reportId}`);
   }
 
+  // Localized upgrade price — matches the currency the upgrade route will charge
+  // (middleware sets x-currency from the vh_currency cookie → geo, same as /api/ziina/upgrade).
+  const h = await headers();
+  const upgradeCurrency = currencyFromHeader(h.get('x-currency'));
+  const upgradeLabel = formatAmount(getMonthlyUpgradeAmount(upgradeCurrency), upgradeCurrency);
+
   return (
     <div className="min-h-[calc(100vh-var(--nav-height))] bg-space flex flex-col items-center justify-center p-6">
       <StarField />
@@ -71,7 +80,7 @@ export default async function UpsellPage({ searchParams }: Props) {
           <div className="flex justify-between items-start mb-4">
             <div>
               <h3 className="text-amber font-body font-semibold text-xl">30-Day Monthly Oracle</h3>
-              <p className="text-dust/70 text-sm">Upgrade delta (approx. $9 after loyalty discount)</p>
+              <p className="text-dust/70 text-sm">Upgrade delta ({upgradeLabel} after loyalty discount)</p>
             </div>
             <div className="text-right">
               <span className="text-2xl font-bold text-success">+Δ</span>

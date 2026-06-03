@@ -2,7 +2,7 @@ const STEPS = [
   {
     number: '01',
     title: 'Enter Birth Data (Kundli Input)',
-    description: 'Provide your date, time, and place of birth — the foundation of your Janam Kundali. We auto-geocode your city for sub-degree precision.',
+    description: 'Provide your date, time, and place of birth — the foundation of your Janam Kundali. We geocode your birth city automatically — no manual coordinates needed.',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="1" opacity="0.4" />
@@ -59,7 +59,7 @@ export default function HowItWorks() {
             How Your Jyotish Forecast Is Built
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Classical Jyotish precision, computed in seconds.
+            Classical Jyotish precision — your full forecast in minutes.
           </p>
         </div>
 

@@ -9,7 +9,7 @@ import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 const BASE_PLANS = [
   {
     id: 'free',
-    name: 'Preview Report',
+    name: 'Free Kundli',
     description: 'Discover your cosmic blueprint',
     features: [
       'Free Kundli (Janam Kundali)',
@@ -60,20 +60,19 @@ const BASE_PLANS = [
     cta: 'Get Monthly Oracle',
     href: '/onboard?plan=monthly',
     highlight: true,
-    badge: 'Most Popular',
+    badge: 'Recommended',
   },
   {
     id: 'annual',
     name: 'Annual Oracle',
-    description: 'Your complete cosmic year ahead',
+    description: 'Our deepest annual reading',
     features: [
       'Everything in Monthly Oracle',
-      'Month-by-month theme breakdown across 12 months',
-      'Annual Varshaphala synthesis',
-      'Annual dasha analysis & key transition windows',
-      'Peak opportunity windows for the year',
-      'Yearly muhurta calendar',
-      'Premium PDF + digital access',
+      '30-day hour-by-hour forecast',
+      'Full 12-month thematic outlook',
+      'Dasha transitions across the year',
+      'Priority email support',
+      '1-year report access + premium PDF',
     ],
     cta: 'Get Annual Oracle',
     href: '/onboard?plan=annual',
@@ -119,7 +118,7 @@ export default async function PricingPage() {
           Free Kundli &amp; Jyotish Forecast Plans
         </h1>
         <p className="font-body text-body-lg text-dust max-w-lg mx-auto leading-relaxed">
-          Generate your free Kundli (Janam Kundali) instantly — no card needed. Upgrade for a full
+          Generate your free Kundli (Janam Kundali) in minutes — no card needed. Upgrade for a full
           AI Jyotish forecast with 18 hourly Vedic windows per day. One-time payments. No subscriptions.
         </p>
         <p className="mt-4 font-mono text-mono-sm text-dust/50">
@@ -159,10 +158,7 @@ export default async function PricingPage() {
                 </span>
                 <p className="font-mono text-mono-sm text-dust/50 mt-1">{plan.priceNote}</p>
                 {plan.id === 'annual' && (
-                  <p className="font-mono text-mono-sm text-success/80 mt-1">≈ $0.14/day · best value per insight</p>
-                )}
-                {plan.highlight && (
-                  <p className="font-mono text-mono-sm text-amber/70 mt-1">Chosen by 60% of our seekers</p>
+                  <p className="font-mono text-mono-sm text-success/80 mt-1">Best value · our deepest reading</p>
                 )}
               </div>
 

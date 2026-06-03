@@ -75,8 +75,10 @@ export function getMonthlyUpgradeAmount(currency: SupportedCurrency): number {
 /** Format amount as display string for the given currency. */
 export function formatAmount(amountBaseUnits: number, currency: SupportedCurrency): string {
   const major = amountBaseUnits / 100;
+  // INR uses Indian-grouped thousands (₹1,499) so the landing switcher, /api/geo,
+  // pricing page, dashboard, and upsell all render the SAME string for the same amount.
   if (currency === 'AED') return `AED ${major.toFixed(2)}`;
-  if (currency === 'INR') return `₹${(major).toFixed(0)}`;
+  if (currency === 'INR') return `₹${Math.round(major).toLocaleString('en-IN')}`;
   return `$${major.toFixed(2)}`;
 }
 
