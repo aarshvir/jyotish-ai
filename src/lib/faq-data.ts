@@ -9,7 +9,7 @@ export interface QA {
 export const FAQS: QA[] = [
   {
     q: 'What is Jyotish astrology?',
-    a: 'Jyotish (Sanskrit: "science of light") is the classical Indian system of Vedic astrology. It uses sidereal planetary positions, the Lahiri Ayanamsa, and time-based systems like Vimshottari Dasha and hora rulers to interpret life events and optimal timing. VedicHour applies classical Jyotish rules computed via the Swiss Ephemeris to produce AI-written Jyotish forecasts for any date range.',
+    a: 'Jyotish (Sanskrit: "science of light") is the classical Indian system of Vedic astrology. It uses sidereal planetary positions, the Lahiri Ayanamsa, and time-based systems like Vimshottari Dasha and hora rulers to interpret life events and optimal timing. VedicHour applies classical Jyotish rules computed via the Swiss Ephemeris to produce AI-written Jyotish forecasts for the days and months ahead.',
   },
   {
     q: 'What is a Kundli (Janam Kundali)?',
@@ -17,11 +17,11 @@ export const FAQS: QA[] = [
   },
   {
     q: 'Can I get a free Kundli here?',
-    a: 'Yes — our Free Kundli plan is completely free, no credit card needed. Enter your birth date, time, and city and we will generate your Janam Kundali with your Lagna, Moon sign, current Dasha period, and a sample Jyotish hora schedule. Upgrade to a paid plan for full hourly forecasts across 7, 30, or 365 days.',
+    a: 'Yes — our Free Kundli plan is completely free, no credit card needed. Enter your birth date, time, and city and we will generate your Janam Kundali with your Lagna, Moon sign, current Dasha period, and a sample Jyotish hora schedule. Upgrade to a paid plan for full hourly forecasts across 7 or 30 days, plus a 12-month outlook.',
   },
   {
     q: 'What is AI Jyotish / AI Kundli?',
-    a: 'AI Jyotish (or AI Kundli) refers to using artificial intelligence to interpret a classically computed Jyotish chart. VedicHour first calculates your planetary positions and timings using the Swiss Ephemeris — no guesswork. It then passes that mathematical data to AI (Anthropic Claude) to generate written commentary, narrative forecasts, and actionable guidance in plain language.',
+    a: 'AI Jyotish (or AI Kundli) refers to using artificial intelligence to interpret a classically computed Jyotish chart. VedicHour first calculates your planetary positions and timings using the Swiss Ephemeris — no guesswork. It then passes that mathematical data to AI (Anthropic Claude, with automatic fallback to OpenAI or Google Gemini) to generate written commentary, narrative forecasts, and actionable guidance in plain language.',
   },
   {
     q: 'How is a Vedic forecast different from a Sun-sign horoscope?',
@@ -49,7 +49,7 @@ export const FAQS: QA[] = [
   },
   {
     q: 'Which payment methods are supported?',
-    a: 'International cards (Visa, Mastercard, Amex) via Ziina. Prices auto-adjust to INR, AED, or USD based on your location.',
+    a: 'International cards (Visa, Mastercard, Amex) via Ziina. Prices auto-adjust to INR, AED, or USD based on your location, or the currency you select.',
   },
   {
     q: 'Can I gift a Jyotish report to someone else?',
