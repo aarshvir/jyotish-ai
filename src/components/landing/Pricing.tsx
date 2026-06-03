@@ -9,7 +9,7 @@ import CurrencySwitcher, { type Currency } from './CurrencySwitcher';
 const PRICE_DISPLAY: Record<Currency, Record<string, string>> = {
   USD: { '7day': '$9.99', monthly: '$19.99', annual: '$49.99' },
   INR: { '7day': '₹799', monthly: '₹1,499', annual: '₹3,999' },
-  AED: { '7day': 'د.إ 37.99', monthly: 'د.إ 69.99', annual: 'د.إ 184.99' },
+  AED: { '7day': 'AED 37.99', monthly: 'AED 69.99', annual: 'AED 184.99' },
 };
 
 const USD_PRICES = PRICE_DISPLAY.USD;
@@ -17,14 +17,14 @@ const USD_PRICES = PRICE_DISPLAY.USD;
 const ANNUAL_PLAN = {
   id: 'annual',
   name: 'Annual Oracle',
-  description: 'A full cosmic year ahead',
+  description: 'Our deepest annual reading',
   features: [
     'Everything in Monthly Oracle',
-    'Annual Varshaphala synthesis',
-    'Month-by-month theme across 12 months',
-    'Annual dasha transitions called out',
-    'Yearly muhurta calendar',
-    'Premium PDF + digital access',
+    '30-day hour-by-hour forecast',
+    'Full 12-month thematic outlook',
+    'Dasha transitions across the year',
+    'Priority email support',
+    '1-year report access + PDF',
   ],
   cta: 'Get Annual Oracle',
   href: '/onboard?plan=annual',
@@ -63,7 +63,7 @@ const PLANS = [
     ],
     cta: 'Get 7-Day Forecast',
     href: '/onboard?plan=7day',
-    featured: true,
+    featured: false,
     isPaid: true,
   },
   {
@@ -79,7 +79,7 @@ const PLANS = [
     ],
     cta: 'Get Monthly Oracle',
     href: '/onboard?plan=monthly',
-    featured: false,
+    featured: true,
     isPaid: true,
   },
 ] as const;
@@ -177,7 +177,7 @@ export default function Pricing() {
               {plan.featured && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center px-3.5 py-1 rounded-pill bg-amber text-space text-label-sm font-mono font-medium tracking-[0.12em] uppercase whitespace-nowrap">
-                    Most Popular
+                    Recommended
                   </span>
                 </div>
               )}
