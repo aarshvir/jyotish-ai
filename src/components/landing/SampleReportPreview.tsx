@@ -71,7 +71,7 @@ function NativityPanel() {
 
       <div className="border-t border-horizon/30 pt-3">
         <p className="font-mono text-mono-sm text-dust/40 italic">
-          [1] Brihat Parashara Hora Shastra, Ch. 12 · grounded in retrieved corpus
+          [1] Illustrative citation — your report cites the classical sources retrieved for your specific chart.
         </p>
       </div>
     </div>
@@ -264,7 +264,7 @@ export default function SampleReportPreview() {
         </div>
 
         <p className="text-center mt-7 font-mono text-mono-sm text-dust/50 tracking-wider">
-          Generate your own in under 90 seconds.
+          Generate your own in minutes.
         </p>
       </div>
     </section>
