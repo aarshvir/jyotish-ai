@@ -23,7 +23,7 @@ const KUNDLI_FEATURES = [
   },
   {
     title: 'Jyotish Hora Schedule',
-    desc: 'A sample hourly Jyotish forecast showing hora rulers and choghadiya quality for today. Upgrade for the full 7–365 day AI Vedic forecast.',
+    desc: 'A sample hourly Jyotish forecast showing hora rulers and choghadiya quality for today. Upgrade for the full 7- or 30-day AI Vedic forecast plus a 12-month outlook.',
   },
 ];
 
@@ -52,7 +52,7 @@ export default function FreeKundli() {
             </h2>
             <p className="font-body text-body-lg text-dust leading-relaxed mb-6">
               VedicHour is a free Kundli generator built on classical Jyotish. Enter
-              your birth date, time, and city to get your Janam Kundali instantly.
+              your birth date, time, and city to get your Janam Kundali in minutes.
               No astrologer needed. No card required.
             </p>
             <p className="font-body text-body-md text-dust/80 leading-relaxed mb-8">
@@ -110,7 +110,7 @@ export default function FreeKundli() {
             </h3>
             <div className="space-y-3 font-body text-body-md text-dust leading-relaxed">
               <p>
-                A <strong className="text-star">Kundli</strong> (also spelledKundali, or called
+                A <strong className="text-star">Kundli</strong> (also spelled Kundali, or called
                 Janam Kundali / Janam Patri) is a birth chart in classical{' '}
                 <strong className="text-star">Jyotish</strong> astrology — the ancient Indian
                 system also known as Vedic astrology. It maps the positions of the 9 Jyotish
@@ -130,8 +130,8 @@ export default function FreeKundli() {
                 engine used by professional Jyotish astrologers worldwide), then use AI to turn
                 those calculations into readable, actionable{' '}
                 <strong className="text-star">Vedic astrology reports</strong> — from a free
-                Kundli preview to a full 365-day{' '}
-                <strong className="text-star">Jyotish forecast</strong>.
+                Kundli preview to a full 30-day{' '}
+                <strong className="text-star">Jyotish forecast</strong> with a 12-month outlook.
               </p>
             </div>
           </div>
