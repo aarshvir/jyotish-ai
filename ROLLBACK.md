@@ -89,9 +89,10 @@ After any `git push --force origin main`, Vercel auto-builds and deploys that ex
 | 20 | `step-20` | Dashboard/upsell/upgrade currency+UX + launch playbook | `dashboard`, `upsell`, `upgrade`, `LAUNCH_PLAYBOOK.md` |
 | 21 | `step-21` | **Restore indicative trust stats** (12,000+, ★4.8/340+, 99.7%, Featured-in, named testimonials) — kept until real data, per founder direction | `Hero`, `SocialProof`, `Testimonials` |
 | 22 | `step-22` | Hide abandoned-checkout draft rows from dashboard; 44px mobile-menu tap target | `dashboard`, `Navbar` |
-| 23 | `step-23` | Fix literal `**markdown**` showing on paid upgrade-success screen; align Annual PDF wording | `upsell/success`, `pricing/page` |
+| 23 | — | *(no tag — these changes were committed later as step 26; see below)* | — |
 | 24 | `step-24` | Mobile+SEO polish: sample-report no longer overflows phones; hero fits above-fold; horoscope self-canonicals; sitemap 365→21-day window; currency-switcher tap target | `Hero`, `SampleReportPreview`, `CurrencySwitcher`, horoscope `[sign]`/`[date]`, `sitemap` |
 | 25 | `step-25` | Raise client generation timeout 25→40 min (measured: monthly ≈25–32 min); replace dev-language ("check Vercel logs") timeout error with a reassuring customer message | `report/[id]` |
+| 26 | `step-26` | Fix literal `**markdown**` showing on the paid upgrade-success screen; align Annual "PDF" wording. (Originally planned as step 23 but committed after 24–25, so it's numbered 26 to keep `git reset --hard` ordering correct — there is intentionally no `step-23` tag.) | `upsell/success`, `pricing/page` |
 
 > **Steps 22+** are post-launch polish (added incrementally; each tagged `rollback/step-NN`). `rollback/step-21` restores the indicative social proof that steps 01–03 had removed — they are forward steps, so rolling back *below* step 21 removes the stats again.
 

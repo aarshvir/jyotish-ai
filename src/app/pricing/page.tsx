@@ -72,7 +72,7 @@ const BASE_PLANS = [
       'Full 12-month thematic outlook',
       'Dasha transitions across the year',
       'Priority email support',
-      '1-year report access + premium PDF',
+      '1-year report access + PDF',
     ],
     cta: 'Get Annual Oracle',
     href: '/onboard?plan=annual',

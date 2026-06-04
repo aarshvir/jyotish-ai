@@ -34,7 +34,7 @@ function UpsellSuccessContent() {
 
         <h1 className="text-display-sm font-display mb-4">Upgrade Successful</h1>
         <p className="text-dust text-lg mb-8">
-          The stars are aligning. We are currently extending your 7-day outlook into a full **30-Day Monthly Oracle**.
+          The stars are aligning. We are currently extending your 7-day outlook into a full <strong className="text-success">30-Day Monthly Oracle</strong>.
         </p>
 
         <div className="mb-8">
