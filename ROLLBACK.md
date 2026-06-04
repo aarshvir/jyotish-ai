@@ -87,6 +87,9 @@ After any `git push --force origin main`, Vercel auto-builds and deploys that ex
 | 18 | `step-18` | Reject 0,0/NaN birth coordinates server-side | `reports/start/route.ts` |
 | 19 | `step-19` | **Free-tier gating** + coord guard + 25-min timeout | `report/[id]/page.tsx` |
 | 20 | `step-20` | Dashboard/upsell/upgrade currency+UX + launch playbook | `dashboard`, `upsell`, `upgrade`, `LAUNCH_PLAYBOOK.md` |
+| 21 | `step-21` | **Restore indicative trust stats** (12,000+, ★4.8/340+, 99.7%, Featured-in, named testimonials) — kept until real data, per founder direction | `Hero`, `SocialProof`, `Testimonials` |
+
+> **Steps 22+** are post-launch polish (added incrementally; each tagged `rollback/step-NN`). `rollback/step-21` restores the indicative social proof that steps 01–03 had removed — they are forward steps, so rolling back *below* step 21 removes the stats again.
 
 ## ⚠️ Dependency notes (if you stop at an intermediate step)
 
