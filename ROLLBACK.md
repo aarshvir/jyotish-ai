@@ -91,6 +91,7 @@ After any `git push --force origin main`, Vercel auto-builds and deploys that ex
 | 22 | `step-22` | Hide abandoned-checkout draft rows from dashboard; 44px mobile-menu tap target | `dashboard`, `Navbar` |
 | 23 | `step-23` | Fix literal `**markdown**` showing on paid upgrade-success screen; align Annual PDF wording | `upsell/success`, `pricing/page` |
 | 24 | `step-24` | Mobile+SEO polish: sample-report no longer overflows phones; hero fits above-fold; horoscope self-canonicals; sitemap 365→21-day window; currency-switcher tap target | `Hero`, `SampleReportPreview`, `CurrencySwitcher`, horoscope `[sign]`/`[date]`, `sitemap` |
+| 25 | `step-25` | Raise client generation timeout 25→40 min (measured: monthly ≈25–32 min); replace dev-language ("check Vercel logs") timeout error with a reassuring customer message | `report/[id]` |
 
 > **Steps 22+** are post-launch polish (added incrementally; each tagged `rollback/step-NN`). `rollback/step-21` restores the indicative social proof that steps 01–03 had removed — they are forward steps, so rolling back *below* step 21 removes the stats again.
 

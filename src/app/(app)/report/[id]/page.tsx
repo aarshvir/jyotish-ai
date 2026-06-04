@@ -90,13 +90,13 @@ function birthDisplayForUi(
 
 /**
  * Stop polling after this if status is still `generating` (server likely dead or orphaned row).
- * Must exceed the worst-case real pipeline runtime — a monthly/annual report fans out
- * 30 days × 18 hourly slots + 12 months + 6 weeks of LLM commentary and can legitimately
- * run ~16-20 min. Set to 25 min so we never declare a healthy long job "failed" (which
- * would tempt the user into a wasteful force-restart). Aligns above the 30-min dashboard
- * stale threshold's intent while staying under the 120-min server orphan sweep.
+ * Must exceed the worst-case real pipeline runtime. MEASURED on production (bypass e2e):
+ * a 7-day report ≈ 11–12 min; a 30-day monthly/annual report (30 days × 18 hourly slots +
+ * 12 months + 6 weeks of LLM commentary across 6 hourly batches) runs ≈ 25–32 min. Set to
+ * 40 min so a healthy long monthly/annual job is never declared "failed" (which would tempt
+ * a wasteful force-restart). Still well under the 120-min server orphan sweep.
  */
-const CLIENT_GENERATING_TIMEOUT_MS = 25 * 60 * 1000;
+const CLIENT_GENERATING_TIMEOUT_MS = 40 * 60 * 1000;
 
 /** Tier B: no successful HTTP `/status` for this long while Realtime is disconnected → terminal. */
 const STATUS_SIGNAL_STALE_MS = 90_000;
@@ -472,7 +472,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         if (Date.now() - pollLoopStartedAt > CLIENT_GENERATING_TIMEOUT_MS) {
           stopReportPolling();
           setError(
-            'Generation is taking unusually long or was interrupted on the server. Try again. If it keeps happening, check Vercel logs for timeouts or contact support.',
+            'This is taking longer than usual. Large monthly and annual reports can take 20–30 minutes, and yours may still be generating on our servers. You can safely close this tab and find it in your dashboard when it’s ready — or use Try again if nothing appears, or contact support@vedichour.com.',
           );
           setGenerationErrorMeta({ code: 'STATUS_POLL_TIMEOUT', phase: null });
           setIsGenerating(false);
