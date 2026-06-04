@@ -485,6 +485,10 @@ function DashboardInner() {
 
   // Filtered reports
   const filteredReports = reports.filter(r => {
+    // Hide pre-payment draft rows: a paid checkout persists a pending/unpaid draft
+    // BEFORE payment (see /api/ziina/create-intent). Abandoned checkouts leave these
+    // behind; they aren't real reports the user generated, so keep them off the list.
+    if (r.status === 'pending' && r.payment_status === 'unpaid') return false;
     if (reportFilter === 'all') return true;
     if (reportFilter === 'complete') return r.status === 'complete';
     if (reportFilter === 'generating') return r.status === 'generating' && !isStale(r);
