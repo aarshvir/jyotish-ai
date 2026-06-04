@@ -256,7 +256,7 @@ export default function SampleReportPreview() {
         <div
           id={`panel-${active}`}
           role="tabpanel"
-          className="bg-cosmos border border-horizon/30 rounded-card p-7 md:p-10 min-h-[480px]"
+          className="bg-cosmos border border-horizon/30 rounded-card p-7 md:p-10 min-h-[480px] overflow-x-auto"
         >
           {active === 'nativity' && <NativityPanel />}
           {active === 'hourly' && <HourlyPanel />}

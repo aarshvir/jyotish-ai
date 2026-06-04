@@ -14,6 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${s} horoscope — daily dates`,
     description: `Browse ${s} daily Vedic-style horoscope stubs for the week ahead.`,
+    alternates: { canonical: `/horoscope/${params.sign?.toLowerCase()}` },
   };
 }
 

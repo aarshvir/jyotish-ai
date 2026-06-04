@@ -25,11 +25,16 @@ const TRANSIT_ROUTES = PLANETS.flatMap((planet) =>
   })),
 );
 
-/** Rolling year window: today + next 364 days × 12 signs (Pillar 4 SEO coverage). */
+/**
+ * Rolling 3-week window: today + next 20 days × 12 signs. Kept short on purpose —
+ * the day pages are algorithmically generated, so advertising a full 365-day window
+ * (4,380 thin URLs) wastes crawl budget and risks duplicate/thin-content signals.
+ * Each page also self-canonicals.
+ */
 function horoscopeRoutes(): { path: string; changefreq: string; priority: string }[] {
   const out: { path: string; changefreq: string; priority: string }[] = [];
   const today = new Date();
-  for (let d = 0; d < 365; d++) {
+  for (let d = 0; d < 21; d++) {
     const dt = new Date(today);
     dt.setUTCDate(dt.getUTCDate() + d);
     const iso = dt.toISOString().split('T')[0];

@@ -87,7 +87,7 @@ export default function CurrencySwitcher({
     [current, onChange]
   );
 
-  const padding = size === 'md' ? 'px-4 py-2 text-sm' : 'px-3 py-1.5 text-xs';
+  const padding = size === 'md' ? 'px-4 py-2 text-sm' : 'px-3 py-2.5 text-xs';
 
   return (
     <div

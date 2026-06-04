@@ -17,7 +17,7 @@ const TRUST_STATS = [
  */
 export default function Hero() {
   return (
-    <section className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden bg-space">
+    <section className="relative min-h-[calc(100svh-var(--header-height,6rem))] flex flex-col items-center justify-center overflow-hidden bg-space">
       <StarField />
 
       {/* Premium Glow & Aurora */}
