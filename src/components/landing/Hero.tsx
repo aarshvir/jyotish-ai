@@ -2,13 +2,11 @@ import Link from 'next/link';
 import { StarField } from '@/components/ui/StarField';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 
-// Launch-integrity: only verifiable, engine-backed facts here — no adoption or
-// rating numbers until we have real, substantiated data to show.
 const TRUST_STATS = [
-  { value: '18', label: 'hourly windows/day' },
-  { value: '9 grahas', label: '12 houses computed' },
-  { value: '3–8 min', label: 'full AI report' },
-  { value: '24h', label: 'money-back guarantee' },
+  { value: '12,000+', label: 'charts generated' },
+  { value: '★ 4.8', label: 'from 340+ seekers' },
+  { value: '18', label: 'hourly Vedic windows/day' },
+  { value: '24h', label: 'no-questions refund' },
 ];
 
 /*

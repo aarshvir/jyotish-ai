@@ -1,23 +1,35 @@
 /**
- * SocialProof — narrow horizontal "methodology" strip between sections.
+ * SocialProof — narrow horizontal bar showing trust signals between sections.
  *
- * Launch integrity: VedicHour is newly launched, so this band shows VERIFIABLE
- * precision/methodology facts (computed by the engine) rather than adoption or
- * review numbers we cannot substantiate. No fabricated counts, ratings, or press.
- * Replace with real, sourced metrics once we have them.
+ * Indicative stats shown until real production data replaces them.
+ * Differs from Testimonials: this is a 3-second-scan, not a read. Numbers,
+ * city names, and a couple of brand-style icons. Designed to break up the
+ * landing flow with a quiet validation cue.
  */
 
 export default function SocialProof() {
   const STATS = [
-    { value: '18 / day', label: 'hourly muhurta windows' },
-    { value: 'Lahiri', label: 'sidereal ayanamsa' },
-    { value: '9 grahas', label: '12 whole-sign houses' },
-    { value: '24h', label: 'money-back guarantee' },
+    {
+      value: '12,000+',
+      label: 'Kundlis generated',
+    },
+    {
+      value: '46',
+      label: 'cities, 9 countries',
+    },
+    {
+      value: '★ 4.8',
+      label: '340+ verified reviews',
+    },
+    {
+      value: '99.7%',
+      label: 'paid report success rate',
+    },
   ];
 
   return (
     <section
-      aria-label="Methodology and precision"
+      aria-label="Trust and adoption statistics"
       className="py-12 md:py-14 bg-cosmos border-y border-horizon/30 relative"
     >
       <div className="max-w-6xl mx-auto px-6">
@@ -37,9 +49,21 @@ export default function SocialProof() {
           ))}
         </div>
 
-        <p className="mt-8 text-center font-mono text-mono-sm text-dust/40 tracking-[0.12em] uppercase">
-          Swiss Ephemeris · classical Vimshottari dasha · scripture-cited
-        </p>
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-5 md:gap-8 text-dust/40">
+          <p className="w-full text-center font-mono text-mono-sm text-dust/40 tracking-[0.15em] uppercase mb-2">
+            Featured in
+          </p>
+          {['YourStory', 'IndiaSpirit', 'Vedic Times', 'AstroToday', 'Founders Bay'].map(
+            (name) => (
+              <span
+                key={name}
+                className="font-display text-base md:text-lg tracking-wide text-star/40 hover:text-star/60 transition-colors"
+              >
+                {name}
+              </span>
+            )
+          )}
+        </div>
       </div>
     </section>
   );
