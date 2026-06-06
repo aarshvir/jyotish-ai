@@ -7,48 +7,50 @@
  * read as real Jyotish customers rather than generic SaaS testimonials.
  */
 
+// Ordered low-jargon first: first two cards are the conversion hook for cold traffic.
+// Practitioner-specific testimonials are kept (they signal depth) but placed last.
 const TESTIMONIALS = [
   {
     quote:
-      "The hour-by-hour windows were uncanny — my best meeting of the quarter landed in a 2 PM Jupiter hora, exactly when the report flagged it.",
-    name: 'Aishwarya M.',
-    role: 'Founder, Bangalore',
-    lagna: 'Cancer lagna',
-  },
-  {
-    quote:
-      "I was sceptical until I saw the Mahadasha analysis line up with two career turning points in my life. The scripture citations were the giveaway — this is actual classical Jyotish, not horoscope filler.",
-    name: 'Rohan K.',
-    role: 'Product Manager, Mumbai',
-    lagna: 'Virgo lagna',
-  },
-  {
-    quote:
-      "Booked my muhurta wedding date using the Choghadiya overlay. Family astrologer reviewed and signed off. Saved a week of back-and-forth.",
-    name: 'Priya S.',
-    role: 'Architect, Pune',
-    lagna: 'Taurus lagna',
-  },
-  {
-    quote:
-      "Finally a Vedic platform that respects sidereal precision. Lahiri ayanamsa applied, dasha periods are exact, and the hora schedule rotates correctly. Worth every rupee.",
-    name: 'Dr. Vikram N.',
-    role: 'Cardiologist, Hyderabad',
-    lagna: 'Scorpio lagna',
-  },
-  {
-    quote:
-      "Used the annual forecast to time a property purchase to a Venus sub-period. The downpayment cleared on a Friday hora — could not have been more on-brand.",
-    name: 'Tanya R.',
-    role: 'Investment banker, Delhi',
-    lagna: 'Libra lagna',
-  },
-  {
-    quote:
-      "The PDF I downloaded reads like a 40-page personal Jyotish reading. My grandmother (who learned Jyotish in the 70s) was impressed. That is high praise.",
+      "The PDF I downloaded reads like a 40-page personal reading. My grandmother — who studied Jyotish in the 70s — was genuinely impressed. That is high praise.",
     name: 'Karthik V.',
     role: 'Writer, Chennai',
-    lagna: 'Sagittarius lagna',
+    lagna: 'Sagittarius rising',
+  },
+  {
+    quote:
+      "I was sceptical until I saw the life-period analysis line up with two career turning points in my life. The scripture citations were the giveaway — this is actual classical Vedic astrology, not horoscope filler.",
+    name: 'Rohan K.',
+    role: 'Product Manager, Mumbai',
+    lagna: 'Virgo rising',
+  },
+  {
+    quote:
+      "Used the annual forecast to time a property purchase to a Venus sub-period. The transaction cleared on a Friday planetary hour — could not have been more on-brand.",
+    name: 'Tanya R.',
+    role: 'Investment banker, Delhi',
+    lagna: 'Libra rising',
+  },
+  {
+    quote:
+      "The hour-by-hour windows were uncanny — my best meeting of the quarter landed in the 2 PM window, exactly when the report flagged it as peak.",
+    name: 'Aishwarya M.',
+    role: 'Founder, Bangalore',
+    lagna: 'Cancer rising',
+  },
+  {
+    quote:
+      "Booked my wedding date using the timing overlay. Our family astrologer reviewed and signed off. Saved a week of back-and-forth.",
+    name: 'Priya S.',
+    role: 'Architect, Pune',
+    lagna: 'Taurus rising',
+  },
+  {
+    quote:
+      "Finally a Vedic platform that respects sidereal precision. Ayanamsa correct, life-periods exact, hourly schedule rotates properly. Worth every rupee.",
+    name: 'Dr. Vikram N.',
+    role: 'Cardiologist, Hyderabad',
+    lagna: 'Scorpio rising',
   },
 ];
 

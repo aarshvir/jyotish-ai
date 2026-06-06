@@ -37,9 +37,19 @@ function leadSentences(text: string | undefined, max = 2): string {
   return parts.slice(0, max).join(' ').trim();
 }
 
-/** One clean, plain line from a domain-priority blob. */
+/** One clean, plain line from a domain-priority blob.
+ *  Returns empty string if the text is a generic instruction
+ *  rather than a genuine domain forecast (e.g. "Use daily scores..."). */
 function oneLine(text: string | undefined): string {
-  return plainify(leadSentences(text, 1) || (text ?? ''));
+  const cleaned = plainify(leadSentences(text, 1) || (text ?? ''));
+  // Suppress non-insight lines that are instructions, not forecasts
+  if (
+    !cleaned ||
+    /^use\s+(your\s+)?(daily scores|high-?score|peak|hourly)/i.test(cleaned) ||
+    /align.*with.*scores/i.test(cleaned) ||
+    isDevFallback(cleaned)
+  ) return '';
+  return cleaned;
 }
 
 /** "2026-06-24" -> "Jun 24". */
