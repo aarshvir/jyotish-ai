@@ -69,9 +69,12 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
       transition={{ duration: 0.6 }}
       className="bg-cosmos border border-horizon rounded-sm p-8"
     >
-      <h3 className="font-display font-semibold text-star text-3xl mb-6">
-        Period Synthesis
+      <h3 className="font-display font-semibold text-star text-3xl mb-2">
+        Your timing calendar
       </h3>
+      <p className="font-mono text-mono-sm text-dust/60 mb-6">
+        Click any date to jump to that day&apos;s detail
+      </p>
 
       {isStructured ? (
         <div className="space-y-1 mb-8">

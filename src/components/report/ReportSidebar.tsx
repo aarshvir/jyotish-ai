@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { id: 'weekly', label: 'Weeks' },
   { id: 'daily', label: 'Days' },
   { id: 'hourly', label: 'Hours' },
+  { id: 'synthesis', label: 'Calendar' },
   { id: 'nativity', label: 'Your chart' },
 ];
 
