@@ -45,7 +45,7 @@ const PLANET_SYMBOLS: Record<string, string> = {
 
 function getScoreLabel(score: number, isRahuKaal: boolean): { label: string; color: string; icon: string } {
   const ratingLabel = getCanonicalScoreLabel(score, isRahuKaal);
-  if (isRahuKaal) return { label: 'RAHU KAAL', color: 'text-caution', icon: '⚠' };
+  if (isRahuKaal) return { label: 'CHALLENGING WINDOW', color: 'text-caution', icon: '⚠' };
   const color = getLabelColor(ratingLabel);
   const icon = getLabelIcon(ratingLabel, isRahuKaal);
   return { label: `${icon} ${ratingLabel.toUpperCase()}`, color, icon };

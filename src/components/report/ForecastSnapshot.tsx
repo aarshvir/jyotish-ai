@@ -16,7 +16,7 @@
 
 import { useState } from 'react';
 import type { PeriodSynthesis, MonthSummary } from '@/lib/agents/types';
-import { plainify } from '@/lib/utils/plainify';
+import { plainify, isDevFallback } from '@/lib/utils/plainify';
 
 interface ForecastSnapshotProps {
   name: string;
@@ -227,7 +227,7 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
             {showFull && (
               <div className="mt-3 space-y-3 max-w-3xl">
                 <p className="font-body text-body-md text-dust leading-relaxed">{plainify(synthesis.opening_paragraph)}</p>
-                {synthesis.closing_paragraph && (
+                {synthesis.closing_paragraph && !isDevFallback(synthesis.closing_paragraph) && (
                   <p className="font-body text-body-md text-dust/85 leading-relaxed">{plainify(synthesis.closing_paragraph)}</p>
                 )}
                 {lifeThemes && lifeThemes.length > 0 && (

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { isDevFallback, plainify, stripTemplateSections } from '@/lib/utils/plainify';
 
 interface MonthData {
   month: string;
@@ -41,18 +42,21 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       money_score: ex?.domain_scores?.money ?? ex?.money_score,
       health_score: ex?.domain_scores?.health ?? ex?.health_score,
       love_score: ex?.domain_scores?.relationships ?? ex?.love_score,
-      theme: (ex?.theme ?? '').trim() || `${label} energy arc.`,
+      theme: (() => {
+        const t = (ex?.theme ?? '').trim();
+        // Suppress literal template placeholder
+        if (!t || isDevFallback(t) || t === 'Weekly energy arc.' || t.toLowerCase().startsWith('fallback')) return '';
+        return t;
+      })(),
       key_transits: ex?.key_transits ?? [],
       commentary: (() => {
         const c = (ex?.commentary ?? '').trim();
         const sc = ex?.score ?? ex?.overall_score ?? 65;
-        if (
-          !c ||
-          c.includes('Monthly overview will be available when the forecast is generated')
-        ) {
-          return `${label} — Overall score: ${sc}/100. Commentary is generating — refresh in 30 seconds.`;
+        if (!c || isDevFallback(c) || c.includes('Monthly overview will be available when the forecast is generated')) {
+          return `A ${sc >= 70 ? 'strong' : sc >= 55 ? 'steady' : 'quieter'} month overall (score ${sc}/100). Use your highest-scoring days for important decisions, and the hourly detail for precision timing.`;
         }
-        return c;
+        // Strip "PHASE LINE —" and "Strategy:" template sections; apply plainify
+        return plainify(stripTemplateSections(c));
       })(),
       days: ex?.days,
       weekly_scores: ex?.weekly_scores,

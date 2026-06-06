@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HourlyAnalysis } from './HourlyAnalysis';
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
 import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
-import { plainify, choghadiyaLabel, PANCHANG_FIELD_LABELS } from '@/lib/utils/plainify';
+import { plainify, choghadiyaLabel, PANCHANG_FIELD_LABELS, stripTemplateSections, isDevFallback } from '@/lib/utils/plainify';
 
 interface HourSlot {
   time: string;
@@ -312,15 +312,23 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                 </div>
               )}
               <p className="font-mono text-mono-sm text-dust leading-relaxed">
-                {currentDay.briefing_v2.why_today}
+                {plainify(currentDay.briefing_v2.why_today)}
               </p>
             </div>
           )}
 
-          {/* Day overview */}
-          <p className="font-display text-star text-base leading-[1.8] text-center max-w-2xl mx-auto mb-8 whitespace-pre-line">
-            {currentDay.day_overview || 'Overview unavailable'}
-          </p>
+          {/* Day overview — strip template section headers, apply plain-language guard */}
+          {(() => {
+            const raw = currentDay.day_overview || '';
+            if (!raw || isDevFallback(raw)) return null;
+            const clean = plainify(stripTemplateSections(raw));
+            if (!clean) return null;
+            return (
+              <p className="font-display text-star text-base leading-[1.8] text-center max-w-2xl mx-auto mb-8 whitespace-pre-line">
+                {clean}
+              </p>
+            );
+          })()}
 
           {/* Quick windows — today's action guide */}
           {(currentDay.best_windows?.length || currentDay.rahu_kaal || currentDay.avoid_windows?.length) ? (
@@ -353,7 +361,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                       </span>
                       <span className="font-mono text-mono-sm text-success">{timeStr}</span>
                       <span className="text-success/50">·</span>
-                      <span className="font-mono text-mono-sm text-success/70">{w.choghadiya}</span>
+                      <span className="font-mono text-mono-sm text-success/70" title={`${w.choghadiya} — Vedic time quality`}>{choghadiyaLabel(w.choghadiya)}</span>
                       <span className="text-success/50">·</span>
                       <span className="font-mono text-mono-sm text-success font-medium">{w.score}</span>
                     </div>

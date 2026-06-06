@@ -142,11 +142,11 @@ export function HourlyChart({ hours }: HourlyChartProps) {
                 <span className="text-amber">
                   {h.hora_planet_symbol || PLANET_SYMBOLS[h.hora_planet] || ''}
                 </span>
-                <span className="font-mono text-xs text-dust">{h.hora_planet} Hora</span>
+                <span className="font-mono text-xs text-dust">{h.hora_planet} planetary hour</span>
               </div>
               {h.transit_lagna && (
                 <div className="font-mono text-xs text-dust/70 mb-1">
-                  {h.transit_lagna} · H{h.transit_lagna_house}
+                  {h.transit_lagna} rising{h.transit_lagna_house ? ` · house ${h.transit_lagna_house}` : ''}
                 </div>
               )}
               <div className="font-mono text-xs text-dust/60 mb-2">{h.choghadiya}</div>
@@ -179,7 +179,7 @@ export function HourlyChart({ hours }: HourlyChartProps) {
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-3 rounded-sm" style={{ background: 'repeating-linear-gradient(45deg, #dc2626, #dc2626 3px, #1a0505 3px, #1a0505 7px)' }} />
-          <span className="font-mono text-[10px] text-dust/60">Rahu Kaal</span>
+          <span className="font-mono text-[10px] text-dust/60">Challenging window</span>
         </div>
       </div>
     </div>

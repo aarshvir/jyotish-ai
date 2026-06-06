@@ -60,7 +60,9 @@ const JARGON_MAP: [RegExp, string][] = [
   [/\brashis?\b/gi, 'sign'],
   [/\brasis?\b/gi, 'sign'],
   [/\bgochar\b/gi, 'transit'],
-  [/\bRahu Kaal\b/gi, 'the challenging hour (Rahu Kaal)'],
+  [/\bRahu Kaal\b/gi, 'the challenging window'],
+  [/\bH(\d+)\b/g, 'house $1'],
+  [/\bgrahas?\b/gi, 'planet'],
   [/\bchoghadiya\b/gi, 'time quality'],
 ];
 
@@ -96,6 +98,23 @@ export function plainify(text: string | undefined): string {
   return t.replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Strip "Strategy:" / "BEST ACTION:" / "PHASE LINE" section headers from
+ * day overviews and month commentaries. These are LLM template artefacts that
+ * turn a personal reading into a chatbot response. The bullet content below the
+ * header is kept (with "- " prefix removed) so no information is lost.
+ */
+export function stripTemplateSections(text: string): string {
+  if (!text) return '';
+  // Remove "Strategy:" section header line (keep bullets below it)
+  let t = text.replace(/^Strategy:\s*\n?/gim, '');
+  // Remove "BEST ACTION:" section header
+  t = t.replace(/^BEST ACTION:\s*/gim, '');
+  // Remove "PHASE LINE —" prefix (orchestrator scaffold)
+  t = t.replace(/^PHASE LINE\s*[—\-]+\s*/gim, '');
+  return t;
+}
+
 /** Known dev-only fallback sentinel strings that must never reach users. */
 const DEV_FALLBACK_SENTINELS = [
   'Fallback weekly overview',
@@ -107,6 +126,8 @@ const DEV_FALLBACK_SENTINELS = [
   'STRATEGY: Use peak hora windows',
   "native's fundamental disposition",
   'benefic horas for important actions',
+  'PHASE LINE',
+  'Fallback monthly theme',
 ];
 
 /**

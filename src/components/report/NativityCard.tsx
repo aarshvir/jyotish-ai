@@ -57,10 +57,10 @@ const PLANET_SYMBOLS: Record<string, string> = {
 };
 
 const LAGNA_FALLBACK = (lagna: string, moonSign: string, dasha: string) =>
-  `${lagna} lagna native with Moon in ${moonSign}. Current dasha period ${dasha} shapes the dominant themes. The lagna lord governs identity and vitality; functional benefics and malefics for this lagna influence daily outcomes.`;
+  `Your chart has ${lagna} as the rising sign with the Moon in ${moonSign} — these two placements are the primary lens through which you experience life and relationships. You are currently in your ${dasha} period: a chapter that shapes which themes feel most prominent and alive in your day-to-day experience.`;
 
 const DASHA_FALLBACK = (dasha: string) =>
-  `Current ${dasha} dasha period shapes dominant themes. Use hora and choghadiya to align important activities with favourable planetary hours.`;
+  `Your ${dasha} period is currently active — use your highest-scoring days for decisions that require commitment, and the best hourly windows for timing within those days.`;
 
 function safeText(text: string | undefined, fallback: string): string {
   const t = (text ?? '').trim();
