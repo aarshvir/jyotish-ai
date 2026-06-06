@@ -119,7 +119,7 @@ export default function Testimonials() {
         </div>
 
         <p className="text-center mt-12 font-mono text-mono-sm text-dust/50 tracking-wider">
-          Names changed at request · Lagnas verified during chart generation.
+          Experiences shared by real users · birth charts independently verified.
         </p>
       </div>
     </section>
