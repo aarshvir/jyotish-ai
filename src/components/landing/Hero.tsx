@@ -44,13 +44,15 @@ export default function Hero() {
          */}
         <h1 className="font-display font-semibold text-star mb-6 text-display-xl tracking-tight">
           <span className="inline-block mr-[0.2em]">Your</span>{' '}
-          <span className="inline-block mr-[0.2em] text-amber">Jyotish</span>{' '}
+          <span className="inline-block mr-[0.2em] text-amber">Vedic</span>{' '}
           <span className="inline-block mr-[0.2em]">Forecast,</span>{' '}
           <span className="inline-block mr-[0.2em]">Decoded</span>{' '}
           <span className="inline-block mr-[0.2em]">Hour</span>{' '}
           <span className="inline-block mr-[0.2em]">by</span>{' '}
           <span className="inline-block text-amber-gradient">Hour.</span>
         </h1>
+        {/* SEO: keep Jyotish as a keyword signal without putting it in the visible H1 */}
+        <span className="sr-only">Jyotish Forecast · AI Jyotish</span>
 
         {/* Subtitle — CSS fade-up */}
         <p className="animate-fade-up-1 font-body text-body-lg text-dust max-w-xl mx-auto mb-10 leading-relaxed">
