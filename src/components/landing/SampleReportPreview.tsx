@@ -16,9 +16,9 @@ import { useState } from 'react';
 type Tab = 'nativity' | 'hourly' | 'dasha';
 
 const TABS: { id: Tab; label: string; sublabel: string }[] = [
-  { id: 'nativity', label: 'Nativity Profile', sublabel: 'Lagna analysis + yogas' },
-  { id: 'hourly', label: 'Hourly Windows', sublabel: '18 ratings per day' },
-  { id: 'dasha', label: 'Dasha Timeline', sublabel: 'Vimshottari 120-yr cycle' },
+  { id: 'nativity', label: 'Your chart summary', sublabel: 'Rising sign · life themes' },
+  { id: 'hourly', label: 'Hourly windows', sublabel: '18 precision slots per day' },
+  { id: 'dasha', label: 'Life chapters', sublabel: 'Your 120-year timing arc' },
 ];
 
 function NativityPanel() {
@@ -35,10 +35,10 @@ function NativityPanel() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
         {[
-          { label: 'Lagna', value: 'Cancer' },
-          { label: 'Moon Sign', value: 'Capricorn' },
-          { label: 'Current MD', value: 'Rahu' },
-          { label: 'Current AD', value: 'Jupiter' },
+          { label: 'Rising sign', value: 'Cancer' },
+          { label: 'Moon sign', value: 'Capricorn' },
+          { label: 'Main period', value: 'Rahu' },
+          { label: 'Sub-period', value: 'Jupiter' },
         ].map((kv) => (
           <div key={kv.label} className="bg-bg-3 rounded-md py-3 px-2 border border-horizon/30">
             <div className="font-mono text-mono-sm text-dust/50 uppercase tracking-wider">{kv.label}</div>
@@ -59,12 +59,12 @@ function NativityPanel() {
 
       <div className="bg-amber/[0.04] border-l-2 border-amber/40 pl-4 py-3">
         <p className="font-mono text-mono-sm text-amber/80 tracking-wider uppercase mb-1.5">
-          Current Theme — Rahu / Jupiter Period
+          Current chapter — Rahu / Jupiter period
         </p>
         <p className="font-body text-body-sm text-dust">
-          A long Rahu Mahadasha (18 years) opened in 2025 — expect unconventional growth,
+          A long Rahu period (18 years) opened in 2025 — expect unconventional growth,
           foreign or scaled opportunities, and a pull toward bigger arenas. The Jupiter
-          Antardasha running now softens Rahu&apos;s edge and adds wisdom, advisory work,
+          sub-period running now softens Rahu&apos;s edge and adds wisdom, advisory work,
           and teaching as natural fits.
         </p>
       </div>
@@ -80,14 +80,14 @@ function NativityPanel() {
 
 function HourlyPanel() {
   const slots = [
-    { time: '06:00–07:00', label: 'Amrit', score: 92, lord: 'Moon', tone: 'peak' },
-    { time: '07:00–08:00', label: 'Shubha', score: 78, lord: 'Saturn', tone: 'good' },
-    { time: '08:00–09:00', label: 'Labha', score: 84, lord: 'Jupiter', tone: 'good' },
-    { time: '09:00–10:00', label: 'Char', score: 61, lord: 'Mars', tone: 'neutral' },
-    { time: '10:00–11:00', label: 'Rog', score: 28, lord: 'Sun', tone: 'avoid' },
-    { time: '11:00–12:00', label: 'Udveg', score: 35, lord: 'Venus', tone: 'avoid' },
-    { time: '12:00–13:00', label: 'Char', score: 64, lord: 'Mercury', tone: 'neutral' },
-    { time: '13:00–14:00', label: 'Labha', score: 81, lord: 'Moon', tone: 'good' },
+    { time: '06:00–07:00', label: 'Excellent', score: 92, lord: 'Moon', tone: 'peak' },
+    { time: '07:00–08:00', label: 'Auspicious', score: 78, lord: 'Saturn', tone: 'good' },
+    { time: '08:00–09:00', label: 'Gainful', score: 84, lord: 'Jupiter', tone: 'good' },
+    { time: '09:00–10:00', label: 'Variable', score: 61, lord: 'Mars', tone: 'neutral' },
+    { time: '10:00–11:00', label: 'Difficult', score: 28, lord: 'Sun', tone: 'avoid' },
+    { time: '11:00–12:00', label: 'Anxious', score: 35, lord: 'Venus', tone: 'avoid' },
+    { time: '12:00–13:00', label: 'Variable', score: 64, lord: 'Mercury', tone: 'neutral' },
+    { time: '13:00–14:00', label: 'Gainful', score: 81, lord: 'Moon', tone: 'good' },
   ];
 
   return (
@@ -133,7 +133,7 @@ function HourlyPanel() {
           <div className="font-body text-base text-star mt-0.5">10:00–12:00</div>
         </div>
         <div className="bg-bg-3 border border-horizon/30 rounded-md py-2 px-2">
-          <div className="font-mono text-mono-sm text-dust/60 uppercase tracking-wider">Rahu Kaal</div>
+          <div className="font-mono text-mono-sm text-dust/60 uppercase tracking-wider">Avoid</div>
           <div className="font-body text-base text-star mt-0.5">15:00–16:30</div>
         </div>
       </div>
@@ -153,9 +153,9 @@ function DashaPanel() {
   return (
     <div className="text-left">
       <p className="font-mono text-mono-sm text-amber/70 tracking-[0.15em] uppercase mb-3">
-        Vimshottari · 120-year cycle
+        Sample · 120-year arc
       </p>
-      <h3 className="font-display text-2xl text-star mb-5">Your Life Chapters</h3>
+      <h3 className="font-display text-2xl text-star mb-5">Your life chapters</h3>
 
       <ol className="space-y-3">
         {dashas.map((d) => (
@@ -173,7 +173,7 @@ function DashaPanel() {
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <span className={`font-body text-headline-sm ${d.current ? 'text-amber' : 'text-star'}`}>
-                  {d.lord} Mahadasha
+                  {d.lord} period
                 </span>
                 {d.current && (
                   <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber text-space">
@@ -188,7 +188,7 @@ function DashaPanel() {
       </ol>
 
       <p className="font-mono text-mono-sm text-dust/40 italic mt-4">
-        Vimshottari dasha periods computed from Moon&apos;s nakshatra at birth · Lahiri ayanamsa
+        Planetary periods computed from Moon&apos;s birth star position using the classical Vedic system
       </p>
     </div>
   );
@@ -207,7 +207,7 @@ export default function SampleReportPreview() {
 
       <div className="max-w-5xl mx-auto px-6">
         <div className="section-header text-center">
-          <p className="section-eyebrow">Sample · Cancer Lagna</p>
+          <p className="section-eyebrow">Sample report · Cancer rising</p>
           <h2
             id="sample-report-heading"
             className="section-title text-display-md"
@@ -215,7 +215,7 @@ export default function SampleReportPreview() {
             See what a paid report looks like
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Three tabs, three angles. Plausible sample, not your data — a real Jyotish report runs ~40 pages.
+            Three angles into a real report. Sample data — your report is generated from your exact birth details.
           </p>
         </div>
 
