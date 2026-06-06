@@ -26,15 +26,16 @@ function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mah
   return (inputMonths as Array<Record<string, unknown>>).slice(0, 6).map((m, i: number) => {
     const overall_score = fallbackScores[i % fallbackScores.length];
     const month_label = String(m?.month_label ?? `Month ${i + 7}`);
+    const strengthWord = overall_score >= 70 ? 'strong' : overall_score >= 55 ? 'steady' : 'quieter';
     const analysis =
-      `PHASE LINE — ${month_label} for ${lagnaSign} lagna. ` +
-      `${mahadasha}-${antardasha} dasha continues activating key house themes through planetary transit patterns. ` +
-      `Jupiter emphasis shapes wisdom and expansion in relevant houses while Saturn demands disciplined structure. ` +
-      `Mars and Mercury interplay strengthens communication and service delivery through focused steps. ` +
-      `Moon majority supports gains while dasha lord influence demands risk control. ` +
-      `Choose career actions aligned with H10 deliverables and prioritize health routines via H6. ` +
-      `Best days arrive when hora timing aligns with supportive choghadiya and stable house activation. ` +
-      `Worst days arrive when inauspicious choghadiya overlaps with dasha pressure, so postpone signatures and protect momentum.`;
+      `${month_label} is a ${strengthWord} month overall (score ${overall_score}/100). ` +
+      `${overall_score >= 70
+        ? 'A good window for important decisions, new initiatives, and key conversations.'
+        : overall_score >= 55
+          ? 'Solid for steady progress — use peak-scoring days for decisions and lower-scoring days for preparation.'
+          : 'A quieter stretch best used for reflection, preparation, and completing existing work.'
+      } ` +
+      `Use the daily score calendar to find your strongest days, and the hourly detail for precision timing.`;
 
     return {
       month_index: typeof m?.month_index === 'number' ? m.month_index : i + 6,
@@ -44,7 +45,7 @@ function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mah
       money_score: overall_score,
       health_score: overall_score,
       love_score: overall_score,
-      theme: 'Fallback monthly theme.',
+      theme: `A ${strengthWord} month (${overall_score}/100).`,
       key_transits: [],
       analysis,
     };

@@ -27,18 +27,16 @@ function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mah
   return (inputMonths as Array<Record<string, unknown>>).slice(0, 6).map((m, i: number) => {
     const overall_score = fallbackScores[i % fallbackScores.length];
     const month_label = String(m?.month_label ?? `Month ${i + 1}`);
+    const strengthWord = overall_score >= 70 ? 'strong' : overall_score >= 55 ? 'steady' : 'quieter';
     const analysis =
-      `PHASE LINE — ${month_label} for ${lagnaSign} lagna. ` +
-      `${mahadasha}-${antardasha} dasha activates key house themes through planetary transit patterns. ` +
-      `Jupiter emphasis shapes wisdom and expansion while Saturn demands disciplined structure and delayed outcomes. ` +
-      `Mars influence supports courage and immediate execution in career-linked houses. ` +
-      `Mercury interaction highlights communication and service outcomes, requiring precise wording and planning. ` +
-      `Moon passage shifts emotional priorities through multiple houses, stabilizing gains on high-score days. ` +
-      `Best days follow whenever the hourly table aligns with benefic hora planets and favorable choghadiya. ` +
-      `Worst days appear when the schedule overlaps inauspicious choghadiya, so delay signatures and avoid friction. ` +
-      `Career action should target H10 deliverables, and health focus must protect H6 routines. ` +
-      `Select one domain to advance and keep the workflow measurable through house-based alignment. ` +
-      `Rating: ${overall_score}/100.`;
+      `${month_label} is a ${strengthWord} month overall (score ${overall_score}/100). ` +
+      `${overall_score >= 70
+        ? 'This is a good window for important decisions, new initiatives, and key conversations across career, money, and relationships.'
+        : overall_score >= 55
+          ? 'A solid month for steady progress — use your peak-scoring days for decisions and save lower-scoring days for preparation and review.'
+          : 'A quieter month best used for reflection, preparation, and completing existing work rather than major new starts.'
+      } ` +
+      `Use the daily score calendar to find your strongest days, and the hourly detail for precision timing within those days.`;
 
     return {
       month_index: typeof m?.month_index === 'number' ? m.month_index : i,
@@ -48,7 +46,7 @@ function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mah
       money_score: overall_score,
       health_score: overall_score,
       love_score: overall_score,
-      theme: 'Fallback monthly theme.',
+      theme: `A ${strengthWord} month (${overall_score}/100).`,
       key_transits: [],
       analysis,
     };
