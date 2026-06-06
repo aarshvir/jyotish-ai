@@ -30,9 +30,9 @@ const WEEK_FALLBACK: WeekData = {
   week_label: '',
   week_start: '',
   score: 65,
-  theme: 'Weekly energy arc.',
-  commentary: 'Weekly overview will be available when the forecast is generated.',
-  daily_scores: [65, 65, 65, 65, 65, 65, 65],
+  theme: '',
+  commentary: '',
+  daily_scores: [],   // empty avoids fake flat 65/65/65 sparkline
   moon_journey: [],
   peak_days_count: 0,
   caution_days_count: 0,

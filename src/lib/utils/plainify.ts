@@ -102,6 +102,11 @@ const DEV_FALLBACK_SENTINELS = [
   'Use daily scores and hourly table as primary guidance',
   'Commentary service temporarily degraded',
   'rely on daily scores and hourly tables as primary guidance',
+  'FALLBACK DAY',
+  'USE HOURLY TABLE',
+  'STRATEGY: Use peak hora windows',
+  "native's fundamental disposition",
+  'benefic horas for important actions',
 ];
 
 /**

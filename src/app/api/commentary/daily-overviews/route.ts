@@ -194,7 +194,7 @@ Days data:
 ${JSON.stringify(batchDays, null, 2)}
 
 MANDATORY RULES for day_overview (enforce all — a user is paying $100 for this analysis):
-1. First line: ALL-CAPS headline (8-12 words, ends with period). Make it feel like a headline about what THIS day holds — energetic, direct. Example: "FOCUSED EXECUTION DAY — BEST FOR CAREER MOVES AND BOLD DECISIONS." or "REST AND RESET — CONSERVE ENERGY AND AVOID NEW COMMITMENTS TODAY."
+1. First line: a single compelling sentence in normal sentence case (8-12 words, ends with a period). Make it feel like a personal advisor's opening — warm, energetic, and direct. Example: "A focused day — your peak window falls early and career moves land well." or "A quieter day to restore energy and wrap up loose ends." Do NOT use ALL-CAPS.
 2. Total word count: 200-250 words. This is a substantive personal daily briefing, not a summary.
 3. STRUCTURE — write in this exact order:
    PART A (60-80 words): Set the energy of the day in plain English. What is the Moon doing emotionally for this person today — restless, focused, expansive, withdrawn? Reference the nakshatra and day yoga in plain terms (e.g. "Pushya nakshatra adds a nurturing, stabilising quality", not "Pushya nakshatra in Moon's H9"). Tell them how the overall cosmic weather feels and whether the day's energy aligns with the active ${mahadasha}/${antardasha} period.

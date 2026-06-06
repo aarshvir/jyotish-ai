@@ -1547,7 +1547,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
                   Compare plans
                 </Link>
                 <span className="font-mono text-mono-sm text-dust/60">
-                  30% off all plans · 24-hour refund
+                  24-hour money-back guarantee
                 </span>
               </div>
             </div>

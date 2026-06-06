@@ -1386,7 +1386,7 @@ export async function generateReportPipeline(
           }
 
           const fallbackOverview =
-            'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
+            'Your hourly timing is ready — use the highest-scoring slots in the table below for your most important work. The challenging window (Rahu Kaal) is shown: keep it for routine and review tasks only.';
 
           if (overviewRes.ok || overviewRes.status === 206) {
             const overviewData = await overviewRes.json();
@@ -1400,7 +1400,7 @@ export async function generateReportPipeline(
             // Removing the 'STRATEGY' check — real Claude responses don't contain that word.
             if (!day.day_overview || day.day_overview.trim().length < 40) {
               day.day_overview = fallbackOverview;
-              if (!day.day_theme) day.day_theme = 'Use hourly scores and peak windows.';
+              if (!day.day_theme) day.day_theme = 'Check your hourly table for the best windows today.';
             }
           });
 
@@ -1414,11 +1414,12 @@ export async function generateReportPipeline(
             const lagna = ephemerisData.lagna ?? 'Unknown';
             const md = ephemerisData.current_dasha?.mahadasha ?? 'Unknown';
             const ad = ephemerisData.current_dasha?.antardasha ?? 'Unknown';
-            if (!nativityData.lagna_analysis?.trim()) {
-              nativityData.lagna_analysis = `${lagna} lagna shapes the native's fundamental disposition. The ${md}-${ad} period is currently active. Refer to the daily and hourly scores for timing guidance.`;
+            // Also replace stubs that are suspiciously short (<200 chars) — known to happen on 30-day plans
+            if (!nativityData.lagna_analysis?.trim() || nativityData.lagna_analysis.trim().length < 200) {
+              nativityData.lagna_analysis = `Your birth chart has ${lagna} as the rising sign — this shapes how you naturally approach life, relationships, and opportunity. You are in your ${md} period right now${ad !== 'Unknown' ? `, with ${ad} as the active sub-period` : ''}: a chapter that brings ${md}'s qualities and themes to the foreground. Use your highest-scoring days and best hourly windows for decisions that require clarity and commitment.`;
             }
             if (!nativityData.current_dasha_interpretation?.trim()) {
-              nativityData.current_dasha_interpretation = `${md} Mahadasha with ${ad} Antardasha is active. Use high-score days and benefic horas for important actions.`;
+              nativityData.current_dasha_interpretation = `Your ${md} main period${ad !== 'Unknown' ? ` and ${ad} sub-period are` : ' is'} active right now — a chapter that shapes what feels most pressing and rewarding. Use your peak-scoring days for important decisions and the best hourly windows for precision timing.`;
             }
           }
           void dbSetProgress(PHASE.DAILY_BATCH_3, 50);
@@ -1426,21 +1427,21 @@ export async function generateReportPipeline(
         } catch (e) {
           terr('[orchestrator][STEP-4+5] failed:', e instanceof Error ? e.message : String(e));
           const fallback =
-            'FALLBACK DAY — USE HOURLY TABLE. STRATEGY: Use peak hora windows from the hourly table. Avoid Rahu Kaal. Schedule high-stakes work in slots with score ≥ 75.';
+            'Your hourly timing is ready — use the highest-scoring slots in the table below for your most important work. The challenging window (Rahu Kaal) is shown: keep it for routine and review tasks only.';
           forecastDays.forEach((day) => {
             day.day_overview = day.day_overview || fallback;
-            if (!day.day_theme) day.day_theme = 'Use hourly scores and peak windows.';
+            if (!day.day_theme) day.day_theme = 'Check your hourly table for the best windows today.';
           });
         } finally {
           // Guarantee nativity text is never blank regardless of LLM outcome or abort
           const lagna = ephemerisData.lagna ?? 'Unknown';
           const md = ephemerisData.current_dasha?.mahadasha ?? 'Unknown';
           const ad = ephemerisData.current_dasha?.antardasha ?? 'Unknown';
-          if (!nativityData.lagna_analysis?.trim()) {
-            nativityData.lagna_analysis = `${lagna} lagna shapes the native's fundamental disposition. The ${md}-${ad} period is currently active. Refer to the daily and hourly scores for timing guidance.`;
+          if (!nativityData.lagna_analysis?.trim() || nativityData.lagna_analysis.trim().length < 200) {
+            nativityData.lagna_analysis = `Your birth chart has ${lagna} as the rising sign — this shapes how you naturally approach life, relationships, and opportunity. You are in your ${md} period right now${ad !== 'Unknown' ? `, with ${ad} as the active sub-period` : ''}: a chapter that brings ${md}'s qualities and themes to the foreground. Use your highest-scoring days and best hourly windows for decisions that require clarity and commitment.`;
           }
           if (!nativityData.current_dasha_interpretation?.trim()) {
-            nativityData.current_dasha_interpretation = `${md} Mahadasha with ${ad} Antardasha is active. Use high-score days and benefic horas for important actions.`;
+            nativityData.current_dasha_interpretation = `Your ${md} main period${ad !== 'Unknown' ? ` and ${ad} sub-period are` : ' is'} active right now — a chapter that shapes what feels most pressing and rewarding. Use your peak-scoring days for important decisions and the best hourly windows for precision timing.`;
           }
         }
         })();
