@@ -8,8 +8,9 @@ import {
   getScoreNumColor,
 } from '@/lib/guidance/labels';
 import type { SlotGuidanceV2 } from '@/lib/guidance/types';
+import { choghadiyaLabel, CHOGHADIYA_PLAIN } from '@/lib/utils/plainify';
 
-const COMMENTARY_FALLBACK = 'Use this period according to the hora lord\'s functional role for your lagna.';
+const COMMENTARY_FALLBACK = 'Use the score and quality rating above to decide how to use this hour — higher scores favour important work and decisions.';
 
 interface HourData {
   slot_index?: number;
@@ -115,9 +116,12 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                   </span>
                 </span>
 
-                {/* Choghadiya */}
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-mono-sm shrink-0 ${getChoghadiyaBg(hour.choghadiya)}`}>
-                  {hour.choghadiya}
+                {/* Choghadiya — plain label, Sanskrit as native tooltip */}
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-mono-sm shrink-0 ${getChoghadiyaBg(hour.choghadiya)}`}
+                  title={hour.choghadiya !== choghadiyaLabel(hour.choghadiya) ? `${hour.choghadiya} — Vedic time quality` : undefined}
+                >
+                  {choghadiyaLabel(hour.choghadiya)}
                 </span>
 
                 {/* Score — pushed right */}
@@ -197,13 +201,13 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                 Time
               </th>
               <th className="font-mono text-mono-sm uppercase text-dust text-left py-3 px-3">
-                Hora
+                Planet hour
               </th>
-              <th className="font-mono text-mono-sm uppercase text-dust text-left py-3 px-3">
-                Choghadiya
+              <th className="font-mono text-mono-sm uppercase text-dust text-left py-3 px-3" title="Choghadiya — Vedic time-quality system">
+                Quality
               </th>
               <th className="font-mono text-mono-sm uppercase text-dust text-left py-3 px-3 hidden lg:table-cell">
-                Transit Lagna
+                Rising sign
               </th>
               <th className="font-mono text-mono-sm uppercase text-dust text-center py-3 px-3">
                 Score
@@ -256,20 +260,23 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                       </div>
                     </td>
 
-                    {/* Choghadiya */}
+                    {/* Choghadiya — plain label */}
                     <td className="py-3 px-3">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-mono-sm ${getChoghadiyaBg(hour.choghadiya)}`}>
-                        {hour.choghadiya}
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-sm border font-mono text-mono-sm ${getChoghadiyaBg(hour.choghadiya)}`}
+                        title={`${hour.choghadiya} — Vedic time quality`}
+                      >
+                        {choghadiyaLabel(hour.choghadiya)}
                       </span>
                     </td>
 
-                    {/* Transit Lagna */}
+                    {/* Rising sign (transit lagna) */}
                     <td className="py-3 px-3 hidden lg:table-cell">
                       {hour.transit_lagna ? (
                         <span className="font-mono text-mono-sm text-dust/80 whitespace-nowrap">
                           {hour.transit_lagna}
                           {hour.transit_lagna_house ? (
-                            <span className="ml-1 text-amber/60">· H{hour.transit_lagna_house}</span>
+                            <span className="ml-1 text-dust/40 text-xs">house {hour.transit_lagna_house}</span>
                           ) : null}
                         </span>
                       ) : (
@@ -302,11 +309,11 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                               {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || ''}
                             </span>
                             <span className="font-mono text-mono-sm text-amber tracking-wider uppercase">
-                              {hour.hora_planet} Hora · {timeLabel}
+                              {hour.hora_planet} hour · {timeLabel}
                             </span>
                             {hour.transit_lagna && (
                               <span className="font-mono text-mono-sm text-dust/60">
-                                {hour.transit_lagna} H{hour.transit_lagna_house}
+                                {hour.transit_lagna} rising{hour.transit_lagna_house ? ` (house ${hour.transit_lagna_house})` : ''}
                               </span>
                             )}
                             <span className={`font-mono text-mono-sm font-bold ${getScoreNumColor(hour.score, hour.is_rahu_kaal)}`}>

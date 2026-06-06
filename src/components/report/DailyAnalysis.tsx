@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { HourlyAnalysis } from './HourlyAnalysis';
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
 import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
+import { plainify, choghadiyaLabel, PANCHANG_FIELD_LABELS } from '@/lib/utils/plainify';
 
 interface HourSlot {
   time: string;
@@ -147,7 +148,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
       className="space-y-6 mb-12"
     >
       <h2 className="font-display font-semibold text-star text-3xl">
-        Daily Forecast
+        Day by Day
       </h2>
 
       {/* Tab strip — one tab per day */}
@@ -223,16 +224,20 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
             <div className="space-y-3 font-mono text-sm text-star">
               {playbook.peak && (
                 <p>
-                  <span className="text-success">Peak</span> · {playbook.peak.display_label ?? '—'} (score{' '}
-                  {playbook.peak.score ?? '—'}) — {(playbook.peak as HourSlot).hora_planet || '—'} hora ·{' '}
-                  {(playbook.peak as HourSlot).choghadiya || '—'}
+                  <span className="text-success">Best window</span> · {playbook.peak.display_label ?? '—'} (score{' '}
+                  {playbook.peak.score ?? '—'}) — {(playbook.peak as HourSlot).hora_planet || '—'} hour ·{' '}
+                  <span title={`${(playbook.peak as HourSlot).choghadiya} — Vedic time quality`}>
+                    {choghadiyaLabel((playbook.peak as HourSlot).choghadiya)}
+                  </span>
                 </p>
               )}
               {playbook.second && (
                 <p>
-                  <span className="text-amber">Second</span> · {playbook.second.display_label ?? '—'} (score{' '}
-                  {playbook.second.score ?? '—'}) — {(playbook.second as HourSlot).hora_planet || '—'} hora ·{' '}
-                  {(playbook.second as HourSlot).choghadiya || '—'}
+                  <span className="text-amber">2nd window</span> · {playbook.second.display_label ?? '—'} (score{' '}
+                  {playbook.second.score ?? '—'}) — {(playbook.second as HourSlot).hora_planet || '—'} hour ·{' '}
+                  <span title={`${(playbook.second as HourSlot).choghadiya} — Vedic time quality`}>
+                    {choghadiyaLabel((playbook.second as HourSlot).choghadiya)}
+                  </span>
                 </p>
               )}
               {playbook.rk && (playbook.rk.start || playbook.rk.end) && (
@@ -241,46 +246,35 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
                 </p>
               )}
               <p className="text-dust text-xs leading-relaxed border-t border-horizon/40 pt-3">
-                Today&apos;s theme: {playbook.theme}
+                Today&apos;s theme: {plainify(playbook.theme)}
               </p>
             </div>
           </div>
 
-          {/* Panchang */}
+          {/* Panchang — plain labels with Sanskrit tooltips */}
           {currentDay.panchang && (
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
-              {currentDay.panchang.tithi && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
-                  Tithi: {currentDay.panchang.tithi}
+            <div className="flex flex-wrap justify-center gap-2 mb-8">
+              {([
+                ['tithi', currentDay.panchang.tithi],
+                ['nakshatra', currentDay.panchang.nakshatra],
+                ['yoga', currentDay.panchang.yoga],
+                ['moon_sign', currentDay.panchang.moon_sign],
+              ] as [string, string | undefined][]).filter(([, v]) => v).map(([key, val]) => (
+                <span
+                  key={key}
+                  className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust cursor-help"
+                  title={PANCHANG_FIELD_LABELS[key]?.tooltip}
+                >
+                  {PANCHANG_FIELD_LABELS[key]?.label ?? key}: {val}
                 </span>
-              )}
-              {currentDay.panchang.nakshatra && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
-                  Nakshatra: {currentDay.panchang.nakshatra}
-                </span>
-              )}
-              {currentDay.panchang.yoga && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
-                  Yoga: {currentDay.panchang.yoga}
-                </span>
-              )}
-              {currentDay.panchang.karana && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
-                  Karana: {currentDay.panchang.karana}
-                </span>
-              )}
-              {currentDay.panchang.moon_sign && (
-                <span className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust">
-                  Moon: {currentDay.panchang.moon_sign}
-                </span>
-              )}
+              ))}
             </div>
           )}
 
-          {/* Theme */}
+          {/* Theme — plainified */}
           {currentDay.day_theme && (
             <p className="font-display italic text-amber text-xl text-center mb-6">
-              {currentDay.day_theme}
+              {plainify(currentDay.day_theme)}
             </p>
           )}
 

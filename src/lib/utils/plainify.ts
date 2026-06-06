@@ -1,4 +1,39 @@
 /**
+ * Choghadiya (Vedic time-quality system) — plain English labels.
+ * Choghadiya divides the day into 8 periods, each ruled by a planet,
+ * each with a quality label in Sanskrit. We show the plain quality
+ * and keep the Sanskrit as a native title-tooltip for enthusiasts.
+ */
+export const CHOGHADIYA_PLAIN: Record<string, { label: string; quality: 'excellent' | 'good' | 'neutral' | 'avoid' }> = {
+  Amrit:   { label: 'Excellent',   quality: 'excellent' },
+  Shubh:   { label: 'Auspicious',  quality: 'good' },
+  Labh:    { label: 'Gainful',     quality: 'good' },
+  Char:    { label: 'Variable',    quality: 'neutral' },
+  Chal:    { label: 'Moving',      quality: 'neutral' },
+  Rog:     { label: 'Difficult',   quality: 'avoid' },
+  Kaal:    { label: 'Challenging', quality: 'avoid' },
+  Udveg:   { label: 'Anxious',     quality: 'avoid' },
+};
+
+/** Plain label for a choghadiya value, falling back to the raw value. */
+export function choghadiyaLabel(raw: string | undefined): string {
+  if (!raw) return '';
+  return CHOGHADIYA_PLAIN[raw]?.label ?? raw;
+}
+
+/**
+ * Panchang (daily almanac) field labels — plain English for each key.
+ * These replace the Sanskrit field names in the daily panchang chip strip.
+ */
+export const PANCHANG_FIELD_LABELS: Record<string, { label: string; tooltip: string }> = {
+  tithi:     { label: 'Moon phase',    tooltip: 'The lunar day (1-30) — indicates the phase of the Moon' },
+  nakshatra: { label: 'Birth star',    tooltip: 'The lunar mansion where the Moon is placed today (one of 27 nakshatras)' },
+  yoga:      { label: 'Day quality',   tooltip: 'Combined Sun-Moon energy that shapes the overall tone of the day' },
+  karana:    { label: 'Half-day',      tooltip: 'The half-lunar-day energy (changes twice daily)' },
+  moon_sign: { label: 'Moon in',       tooltip: 'The zodiac sign where the Moon is transiting today' },
+};
+
+/**
  * plainify — presentation-layer plain-language guard.
  *
  * The report hero and synthesis are the most prominent surfaces. This function

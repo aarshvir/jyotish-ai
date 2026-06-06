@@ -90,7 +90,7 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
       className="space-y-6 mb-12"
     >
       <h2 className="font-display font-semibold text-star text-3xl">
-        Weekly Breakdown
+        The Next 6 Weeks
       </h2>
 
       <div className="grid sm:grid-cols-2 gap-6">
