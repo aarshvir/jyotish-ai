@@ -1380,6 +1380,19 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             <p className="font-mono text-mono-sm text-caution">{pdfError}</p>
           </div>
         )}
+        {/* Post-purchase upsell strip — shown only to 7-day plan users, nudges toward Monthly.
+            Placed at the top of the report while intent is high, before any content. */}
+        {reportPlanType === '7day' && !isPreviewPlan && (
+          <div className="pdf-exclude mb-6 rounded-card border border-amber/25 bg-amber/[0.04] px-5 py-3 flex flex-wrap items-center justify-between gap-3" data-print-hide>
+            <p className="font-body text-body-sm text-dust">
+              <span className="text-amber font-semibold">7-day report</span> — want 30 days, the full year, and weekly synthesis?
+            </p>
+            <Link href="/onboard?plan=monthly" className="btn-primary text-xs px-4 py-2 shrink-0">
+              Upgrade to Monthly →
+            </Link>
+          </div>
+        )}
+
         <div id="report-content">
           {/* Summary-first hero — the plain-language "what's ahead" brief. */}
           <ReportErrorBoundary fallbackTitle="Your forecast at a glance">

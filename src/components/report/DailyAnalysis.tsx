@@ -72,6 +72,7 @@ const PLANET_SYMBOLS: Record<string, string> = {
 
 export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: DailyAnalysisProps) {
   const [internalActive, setInternalActive] = useState(0);
+  const [showPanchang, setShowPanchang] = useState(false);
   const selectedDay = onDayChange ? activeDayIndex : internalActive;
   const setSelectedDay = onDayChange ? onDayChange : setInternalActive;
 
@@ -251,23 +252,36 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
             </div>
           </div>
 
-          {/* Panchang — plain labels with Sanskrit tooltips */}
+          {/* Panchang — collapsed by default (noise for non-practitioners) */}
           {currentDay.panchang && (
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
-              {([
-                ['tithi', currentDay.panchang.tithi],
-                ['nakshatra', currentDay.panchang.nakshatra],
-                ['yoga', currentDay.panchang.yoga],
-                ['moon_sign', currentDay.panchang.moon_sign],
-              ] as [string, string | undefined][]).filter(([, v]) => v).map(([key, val]) => (
-                <span
-                  key={key}
-                  className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust cursor-help"
-                  title={PANCHANG_FIELD_LABELS[key]?.tooltip}
-                >
-                  {PANCHANG_FIELD_LABELS[key]?.label ?? key}: {val}
-                </span>
-              ))}
+            <div className="mb-8">
+              <button
+                type="button"
+                onClick={() => setShowPanchang((v) => !v)}
+                className="font-mono text-mono-sm text-dust/50 hover:text-dust/80 transition-colors flex items-center gap-1.5 mx-auto min-h-[36px]"
+                aria-expanded={showPanchang}
+              >
+                <span>{showPanchang ? '▲' : '▼'}</span>
+                <span>{showPanchang ? 'Hide almanac details' : 'View almanac details (Moon phase, birth star…)'}</span>
+              </button>
+              {showPanchang && (
+                <div className="flex flex-wrap justify-center gap-2 mt-3">
+                  {([
+                    ['tithi', currentDay.panchang.tithi],
+                    ['nakshatra', currentDay.panchang.nakshatra],
+                    ['yoga', currentDay.panchang.yoga],
+                    ['moon_sign', currentDay.panchang.moon_sign],
+                  ] as [string, string | undefined][]).filter(([, v]) => v).map(([key, val]) => (
+                    <span
+                      key={key}
+                      className="px-3 py-1.5 rounded-sm bg-cosmos border border-horizon font-mono text-mono-sm text-dust cursor-help"
+                      title={PANCHANG_FIELD_LABELS[key]?.tooltip}
+                    >
+                      {PANCHANG_FIELD_LABELS[key]?.label ?? key}: {val}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
