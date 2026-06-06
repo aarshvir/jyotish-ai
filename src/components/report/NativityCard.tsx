@@ -294,8 +294,8 @@ export function NativityCard({
 
           {(nativitySummary?.functional_neutral?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
-                Neutral
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3" title="Planets that are neither particularly supportive nor challenging for this rising sign — results depend more on placement and context">
+                Neutral planets
               </p>
               <div className="flex flex-wrap gap-2">
                 {(nativitySummary?.functional_neutral ?? []).map((line, i) => (
