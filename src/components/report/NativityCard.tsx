@@ -236,8 +236,8 @@ export function NativityCard({
 
           {(nativitySummary?.functional_benefics?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
-                Functional Benefics
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3" title="Planets that are naturally supportive for this rising sign — their transits and periods tend to bring constructive results">
+                Supportive planets
               </p>
               <div className="flex flex-wrap gap-2">
                 {(nativitySummary?.functional_benefics ?? []).map((planet, i) => (
@@ -256,8 +256,8 @@ export function NativityCard({
 
           {(nativitySummary?.functional_malefics?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
-                Functional Malefics
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3" title="Planets that tend to create more friction or challenge for this rising sign — not bad, but requiring more careful handling">
+                Challenging planets
               </p>
               <div className="flex flex-wrap gap-2">
                 {(nativitySummary?.functional_malefics ?? []).map((planet, i) => (
@@ -276,8 +276,8 @@ export function NativityCard({
 
           {(nativitySummary?.badhaka_lines?.length ?? 0) > 0 && (
             <div>
-              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
-                Badhaka
+              <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3" title="Badhaka — an obstacle zone in the chart. These placements can create friction, but awareness helps navigate them.">
+                Obstacle zone (Badhaka)
               </p>
               <div className="flex flex-wrap gap-2">
                 {(nativitySummary?.badhaka_lines ?? []).map((line, i) => (

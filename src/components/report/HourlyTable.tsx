@@ -235,10 +235,15 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                 <>
                   <tr
                     key={`row-${hour.slot_index ?? i}`}
-                    className={`hover:bg-nebula/40 transition-colors cursor-pointer ${
+                    className={`hover:bg-nebula/40 transition-colors cursor-pointer focus-within:outline-none focus-within:ring-1 focus-within:ring-amber/60 ${
                       hour.is_rahu_kaal ? 'bg-caution/5' : ''
                     } ${isExpanded ? 'bg-nebula/20' : ''}`}
                     onClick={() => setExpandedIndex(isExpanded ? null : i)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedIndex(isExpanded ? null : i); } }}
+                    tabIndex={0}
+                    role="button"
+                    aria-expanded={isExpanded}
+                    aria-label={`${timeLabel} — ${scoreInfo.label}. Press Enter to ${isExpanded ? 'close' : 'expand'}.`}
                   >
                     {/* Time */}
                     <td className="font-mono text-sm text-star py-3 px-3 whitespace-nowrap">

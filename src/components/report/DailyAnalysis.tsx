@@ -308,12 +308,15 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
             {currentDay.day_overview || 'Overview unavailable'}
           </p>
 
-          {/* Quick windows */}
+          {/* Quick windows — today's action guide */}
+          {(currentDay.best_windows?.length || currentDay.rahu_kaal || currentDay.avoid_windows?.length) ? (
+            <p className="section-eyebrow text-center mb-4">Today&apos;s timing guide</p>
+          ) : null}
           <div className="space-y-4">
             {currentDay.best_windows && currentDay.best_windows.length > 0 && (
               <div>
                 <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3 text-center">
-                  Optimal Windows
+                  Best windows
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
                   {currentDay.best_windows.map((w, i) => {

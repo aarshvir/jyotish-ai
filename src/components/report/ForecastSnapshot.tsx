@@ -177,8 +177,8 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
           </div>
         )}
 
-        {/* Five domain cards (Family is conditional + responsible) */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+        {/* Four domain cards — driven by real chart domain_scores */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
           {domains.map((d) => {
             const t = trendWord(d.score);
             return (
@@ -191,17 +191,6 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
               </div>
             );
           })}
-          {/* Family & children — conditional, responsible (no predictions about specific people) */}
-          <div className="rounded-md bg-bg-3/40 border border-horizon/30 p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="font-body text-body-sm text-star font-semibold">Family</span>
-              <span className="font-mono text-mono-sm text-amber">If relevant</span>
-            </div>
-            <p className="font-body text-mono-sm text-dust/80 leading-snug">
-              If children or family are part of your life, this period favours planning,
-              honest conversations, and steady support more than forcing big changes.
-            </p>
-          </div>
         </div>
 
         {/* Moments that matter */}

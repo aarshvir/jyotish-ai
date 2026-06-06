@@ -74,7 +74,7 @@ export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean
                 onClick={() => scrollToSection(item.id)}
                 role="tab"
                 aria-selected={activeSection === item.id}
-                className={`px-3.5 py-2 rounded-button font-mono text-label-sm uppercase tracking-wider whitespace-nowrap transition-all min-h-[36px] ${
+                className={`px-3.5 py-2 rounded-button font-mono text-label-sm uppercase tracking-wider whitespace-nowrap transition-all min-h-[44px] ${
                   activeSection === item.id
                     ? 'bg-amber text-space'
                     : 'bg-cosmos border border-horizon text-dust hover:border-amber/30 hover:text-star'
