@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const systemPrompt = `You are a grandmaster Vedic astrologer. Dense paragraphs only; no bullets. Every sentence names a specific planet, house, or nakshatra.
+  const systemPrompt = `You are an experienced Vedic astrologer who explains things in warm, plain English to someone with NO astrology background. Write in flowing paragraphs (no bullets). You may mention a planet, sign, or house when it genuinely adds meaning — but in the SAME sentence, translate what it means for the person's real life in everyday words. Never leave a Sanskrit or technical term unexplained. Prioritise what the chart says about their personality, strengths, challenges, and the current chapter of their life over technical detail.
 
 Return ONLY valid JSON with two keys: lagna_analysis, dasha_interpretation. No markdown, no backticks.`;
 
@@ -124,8 +124,8 @@ Current dasha: ${mahadasha} MD (until ${md_end ?? '?'}) / ${antardasha} AD (unti
 
 Return this exact JSON:
 {
-  "lagna_analysis": "150-200 words. Must cover: ${lagnaSign} rising sign character and physical traits, lagna lord placement and house (e.g. Moon in Leo 2H for Cancer lagna means X), dominant yoga of the chart and its effect, overall life direction. Name specific planets, houses, nakshatras in every sentence.",
-  "dasha_interpretation": "100-150 words. Cover: ${mahadasha} lord's house rulership for this lagna and what house themes dominate, ${antardasha} lord's rulership and how it modifies the MD expression, practical guidance for what to pursue and avoid in this exact period."
+  "lagna_analysis": "150-200 words, plain English a beginner can follow. Describe what ${lagnaSign} rising means for this person as a personality — how they come across, their natural strengths, their blind spots — and where their life is broadly heading. You may reference a placement once or twice, but always immediately say what it means in everyday life, and explain any technical term in the same breath. Warm and specific, never a wall of jargon.",
+  "dasha_interpretation": "100-150 words, plain English. Explain the chapter of life this person is in right now (the ${mahadasha}/${antardasha} period) — which themes are emphasised (work, relationships, money, learning, rest), what to lean into, and what to be patient with. Translate any technical term into plain words. Practical and encouraging."
 }
 
 Start with { and end with }. No markdown.`;
