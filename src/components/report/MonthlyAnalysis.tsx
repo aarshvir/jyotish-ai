@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface MonthData {
@@ -57,6 +57,15 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
     };
   });
   }, [months]);
+
+  const [selected, setSelected] = useState(0);
+  const shortLabel = (m: string): string => {
+    const parts = m.split(' ');
+    const mon = (parts[0] || m).slice(0, 3);
+    const yr = parts[1] ? `'${parts[1].slice(-2)}` : '';
+    return `${mon} ${yr}`.trim();
+  };
+
   const getColor = (score: number) => {
     if (score >= 70) return 'bg-success';
     if (score >= 50) return 'bg-amber';
@@ -78,12 +87,40 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       transition={{ duration: 0.6 }}
       className="space-y-6 mb-12"
     >
-      <h2 className="font-display font-semibold text-star text-3xl">
-        Monthly Overview
-      </h2>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
+        <h2 className="font-display font-semibold text-star text-3xl">
+          The Year Ahead
+        </h2>
+        <p className="font-mono text-mono-sm text-dust/60">Tap a month for the full detail</p>
+      </div>
 
+      {/* Compact 12-month strip — the whole year at a glance */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+        {monthsData.map((m, si) => {
+          const sel = si === selected;
+          return (
+            <button
+              key={si}
+              type="button"
+              onClick={() => setSelected(si)}
+              aria-pressed={sel}
+              className={`rounded-sm border p-3 text-left transition-all min-h-[60px] ${sel ? 'border-amber bg-amber/10' : 'border-horizon bg-cosmos hover:border-amber/40'}`}
+            >
+              <div className="flex items-center justify-between gap-1">
+                <span className="font-mono text-[11px] text-dust uppercase tracking-wider">{shortLabel(m.month)}</span>
+                <span className={`font-display font-bold text-lg ${getScoreColor(m.overall_score)}`}>{m.overall_score}</span>
+              </div>
+              <div className="h-1 bg-horizon/40 rounded-full mt-2 overflow-hidden">
+                <div className={`h-full rounded-full ${getColor(m.overall_score)}`} style={{ width: `${Math.min(100, m.overall_score)}%` }} />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Full detail for the selected month only */}
       <div className="space-y-6">
-        {monthsData.map((month, i) => {
+        {[monthsData[selected]].map((month, i) => {
           const weeklyAvgs = month.weekly_scores || (() => {
             if (!month.days) return [65, 65, 65, 65];
             const weeks: number[] = [];
