@@ -10,20 +10,20 @@ import Link from 'next/link';
 
 const KUNDLI_FEATURES = [
   {
-    title: 'Janam Kundali',
-    desc: 'Your complete birth chart (Kundli) with all 9 Jyotish grahas across the 12 houses. Lagna, Moon sign, and planetary dignities included.',
+    title: 'Birth chart (Kundali)',
+    desc: 'Your complete Vedic birth chart with all 9 planets across 12 houses — rising sign, Moon sign, and planetary placements.',
   },
   {
-    title: 'Lagna & Moon Sign',
-    desc: 'Your Vedic rising sign (Lagna) and Moon nakshatra — the two most important factors in classical Jyotish.',
+    title: 'Rising sign & Moon sign',
+    desc: 'Your rising sign (Lagna) and Moon sign — the two most important chart factors in classical Vedic astrology.',
   },
   {
-    title: 'Vimshottari Dasha',
-    desc: 'Current Mahadasha and Antardasha period — the Jyotish timing system that shows which planetary cycle is active in your life.',
+    title: 'Life-period timing',
+    desc: 'Your current planetary period (Mahadasha and sub-period) — the Vedic timing system that shows which chapter of life is active.',
   },
   {
-    title: 'Jyotish Hora Schedule',
-    desc: 'A sample hourly Jyotish forecast showing hora rulers and choghadiya quality for today. Upgrade for the full 7- or 30-day AI Vedic forecast plus a 12-month outlook.',
+    title: 'Hourly windows (sample)',
+    desc: 'A sample of today\'s hourly forecast — scores and quality ratings for each hour. Upgrade for the full 7- or 30-day forecast plus a 12-month outlook.',
   },
 ];
 
