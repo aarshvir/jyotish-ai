@@ -138,7 +138,7 @@ export default function HourlyPreview() {
         {/* CTA */}
         <div className="text-center mt-10 md:mt-12">
           <p className="font-body text-body-md text-dust mb-5">
-            Your chart will show your specific hora rulers, choghadiya windows, and Rahu Kaal.
+            Your report will show your specific planetary hours, timing quality for each window, and the daily challenging hour to avoid.
           </p>
           <a href="/onboard" className="btn-primary text-base px-8 py-3.5">
             Get My Hourly Forecast

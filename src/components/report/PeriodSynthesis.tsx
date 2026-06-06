@@ -51,13 +51,13 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
 
   const isStructured = typeof synthesis === 'object' && synthesis !== null && synthesis !== undefined;
   const s = synthesis as SynthesisStructured;
-  const OPENING_FALLBACK = 'This forecast period holds clear patterns for your career, relationships, finances, and wellbeing. Use the highest-scoring daily windows for important decisions and actions — and avoid starting anything new during Rahu Kaal.';
+  const OPENING_FALLBACK = 'This forecast period holds clear patterns for your career, relationships, finances, and wellbeing. Use the highest-scoring daily windows for important decisions — and ease off during the challenging windows.';
   const CLOSING_FALLBACK = 'Align your key moves with your highest-scoring days and best hourly windows. Small timing adjustments compound into meaningful results over the forecast period.';
   const DOMAIN_FALLBACK: Record<string, string> = {
-    career: 'Use your highest-scoring days and Mars hora windows for bold career moves, proposals, and important conversations. Avoid low-score days for irreversible decisions.',
-    money: 'Best financial timing falls on high-score days — align larger decisions with your peak windows. Avoid new financial commitments during Rahu Kaal or low-score periods.',
+    career: 'Use your highest-scoring days for bold career moves, proposals, and important conversations. Ease off on low-score days for irreversible decisions.',
+    money: 'Best financial timing falls on high-score days — align larger decisions with your peak windows. Avoid new financial commitments during low-score stretches and challenging windows.',
     health: 'Rest and recovery are most effective on low-score days. Protect your energy during the most demanding stretches and prioritise consistent routines over bursts of effort.',
-    relationships: 'Important conversations land best on high-score days with favourable hourly windows. Avoid pressing sensitive topics during low-score periods or Rahu Kaal.',
+    relationships: 'Important conversations land best on high-score days with favourable hourly windows. Avoid pressing sensitive topics during low-score periods or challenging windows.',
   };
 
   return (

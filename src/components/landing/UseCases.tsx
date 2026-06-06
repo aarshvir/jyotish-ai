@@ -10,7 +10,7 @@ const CASES = [
     title: 'Muhurta',
     plain: 'Auspicious timing',
     body:
-      'Time the wedding ceremony, the registry signing, the property handover, or the big interview. Cross-reference Choghadiya + Hora + Rahu Kaal in 18 hourly windows.',
+      'Time the wedding ceremony, the registry signing, the property handover, or the big interview. Cross-reference timing quality, planetary hours, and the daily avoid-window across 18 hourly slots.',
     icon: (
       <svg width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="18" stroke="currentColor" strokeWidth="1" opacity="0.5" />
@@ -39,7 +39,7 @@ const CASES = [
     title: 'Dasha-bhukti',
     plain: 'Life-chapter forecast',
     body:
-      'Vimshottari Mahadasha + Antardasha analysis: what is being activated right now, what is being tested, and the one thing not to miss in the next 6 months.',
+      'Main period + sub-period analysis: what themes are being activated right now, what is being tested, and the one thing not to miss in the next 6 months.',
     icon: (
       <svg width="36" height="36" viewBox="0 0 48 48" fill="none" aria-hidden>
         <path d="M4 36 L16 22 L26 30 L42 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
