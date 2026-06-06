@@ -1429,6 +1429,43 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             </ReportErrorBoundary>
           )}
 
+          {/* Mid-report upsell — shown to free/preview users right after the sample day,
+              before the chart. At this point the user has seen the summary + 1 day and has
+              activation energy. This is the highest-converting placement. */}
+          {isPreviewPlan && (
+            <div className="pdf-exclude my-10" data-print-hide>
+              <div className="rounded-card border border-amber/40 bg-gradient-to-br from-amber/[0.08] via-cosmos to-cosmos p-6 sm:p-8 relative overflow-hidden">
+                <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-amber/15 blur-3xl" />
+                <p className="section-eyebrow mb-2">Your full forecast is ready</p>
+                <h2 className="font-display text-headline-sm text-star mb-3">
+                  Unlock 7 days of hourly windows + your year ahead
+                </h2>
+                <ul className="space-y-2 mb-5 max-w-lg">
+                  {[
+                    '18 precision hourly windows per day for 7 days',
+                    '12-month year-ahead overview with career, money, and health scores',
+                    'Next 6 weeks in detail with peak and caution days',
+                    'Your timing calendar — click any date to jump to its detail',
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-2 font-body text-body-sm text-dust">
+                      <span className="text-success mt-0.5 shrink-0">✓</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link href="/onboard?plan=7day" className="btn-primary px-6 py-3 text-sm">
+                    Unlock my full report →
+                  </Link>
+                  <Link href="/pricing" className="btn-secondary px-5 py-2.5 text-sm">
+                    Compare plans
+                  </Link>
+                  <span className="font-mono text-mono-sm text-dust/60">24-hour money-back guarantee</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* About your chart — the technical birth-chart detail, demoted below the forecast
               so the report leads with plain-language insight. Here for those who want the "why". */}
           <div className="mt-14 pt-6 border-t border-horizon/30">
