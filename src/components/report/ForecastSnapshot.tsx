@@ -36,9 +36,9 @@ function leadSentences(text: string | undefined, max = 2): string {
   return parts.slice(0, max).join(' ').trim();
 }
 
-/** One clean line from a domain-priority blob. */
+/** One clean, plain line from a domain-priority blob. */
 function oneLine(text: string | undefined): string {
-  return leadSentences(text, 1) || (text ?? '').replace(/\s+/g, ' ').trim();
+  return plainify(leadSentences(text, 1) || (text ?? ''));
 }
 
 /** "2026-06-24" -> "Jun 24". */
@@ -73,15 +73,74 @@ function toneClass(tone: 'good' | 'mixed' | 'tender'): string {
   return 'text-amber';
 }
 
+/** Plain-English replacements for the most common Sanskrit/technical terms. */
+const JARGON: [RegExp, string][] = [
+  [/\bbenefics?\b/gi, 'favourable'],
+  [/\bmalefics?\b/gi, 'challenging'],
+  [/\bmahadasha\b/gi, 'main life-period'],
+  [/\bantardasha\b/gi, 'sub-period'],
+  [/\bpratyantardasha\b/gi, 'micro-period'],
+  [/\bdashas?\b/gi, 'life-period'],
+  [/\bhoras\b/gi, 'planetary hours'],
+  [/\bhora\b/gi, 'planetary hour'],
+  [/\blagnas?\b/gi, 'rising sign'],
+  [/\bnakshatras?\b/gi, 'birth star'],
+  [/\bgrahas?\b/gi, 'planet'],
+  [/\brashis?\b/gi, 'sign'],
+  [/\brasis?\b/gi, 'sign'],
+  [/\bgochar\b/gi, 'transit'],
+];
+
+/**
+ * Presentation-layer plain-language guard. The hero is the #1 "plain English"
+ * surface, so it must never show raw jargon even when its data source does:
+ * it drops a leading ALL-CAPS "section header" sentence (LLM scaffolding) and
+ * swaps common Sanskrit terms for everyday words.
+ */
+function plainify(text: string | undefined): string {
+  if (!text) return '';
+  let t = String(text).replace(/\s+/g, ' ').trim();
+  const stop = t.search(/[.!?]/);
+  if (stop > 10) {
+    const head = t.slice(0, stop);
+    const letters = head.replace(/[^a-zA-Z]/g, '');
+    const upper = head.replace(/[^A-Z]/g, '');
+    if (letters.length > 8 && upper.length / letters.length > 0.6) {
+      t = t.slice(stop + 1).trim();
+    }
+  }
+  for (const [re, rep] of JARGON) t = t.replace(re, rep);
+  return t.replace(/\s+/g, ' ').trim();
+}
+
+/** Guaranteed-plain thesis built from structured data when no clean theme exists. */
+function constructedThesis(
+  domains: { label: string; score: number | null }[],
+  best?: { date?: string },
+  watch?: { date?: string },
+): string {
+  const scored = domains.filter((d): d is { label: string; score: number } => typeof d.score === 'number');
+  let lead: string;
+  if (scored.length >= 2) {
+    const top = [...scored].sort((a, b) => b.score - a.score)[0];
+    const low = [...scored].sort((a, b) => a.score - b.score)[0];
+    lead = top.label !== low.label && top.score - low.score >= 4
+      ? `The year ahead looks strongest for ${top.label.toLowerCase()}, and asks for a little more patience with ${low.label.toLowerCase()}.`
+      : 'The year ahead looks broadly steady across the main areas of your life.';
+  } else {
+    lead = 'Your forecast highlights the strongest windows ahead and where to move with care.';
+  }
+  const parts = [lead];
+  if (best?.date) parts.push(`Your strongest opening is around ${prettyDate(best.date)}.`);
+  if (watch?.date) parts.push(`Ease off a little around ${prettyDate(watch.date)}.`);
+  return parts.join(' ');
+}
+
 export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, lifeThemes, preview }: ForecastSnapshotProps) {
   const [showFull, setShowFull] = useState(false);
 
   const firstName = (name || 'Your').trim().split(/\s+/)[0] || 'Your';
   const possessive = /s$/i.test(firstName) ? `${firstName}'` : `${firstName}'s`;
-
-  // Thesis: prefer the life-shaped current-year theme; fall back to the synthesis opening.
-  const thesis = leadSentences(currentYearTheme, 2) || leadSentences(synthesis?.opening_paragraph, 2)
-    || 'Your forecast highlights the strongest windows ahead and where to move with care.';
 
   const dp = synthesis?.domain_priorities;
   const domains = [
@@ -93,6 +152,11 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
 
   const best = (synthesis?.strategic_windows ?? []).filter((w) => w?.date).slice(0, 3);
   const watch = (synthesis?.caution_dates ?? []).filter((w) => w?.date).slice(0, 2);
+
+  // Thesis: a clean current-year theme if we have one, otherwise a guaranteed-plain
+  // line built from structured data. Never surface raw jargon as the headline.
+  const cleanTheme = plainify(leadSentences(currentYearTheme, 2));
+  const thesis = cleanTheme.length > 40 ? cleanTheme : constructedThesis(domains, best[0], watch[0]);
 
   // Three "what's shifting" lines (plain). Reuse the strongest domain copy.
   const shifts = [
@@ -210,9 +274,9 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
             </button>
             {showFull && (
               <div className="mt-3 space-y-3 max-w-3xl">
-                <p className="font-body text-body-md text-dust leading-relaxed">{synthesis.opening_paragraph}</p>
+                <p className="font-body text-body-md text-dust leading-relaxed">{plainify(synthesis.opening_paragraph)}</p>
                 {synthesis.closing_paragraph && (
-                  <p className="font-body text-body-md text-dust/85 leading-relaxed">{synthesis.closing_paragraph}</p>
+                  <p className="font-body text-body-md text-dust/85 leading-relaxed">{plainify(synthesis.closing_paragraph)}</p>
                 )}
                 {lifeThemes && lifeThemes.length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1">

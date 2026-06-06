@@ -11,6 +11,8 @@ interface MonthData {
   money_score?: number;
   health_score?: number;
   love_score?: number;
+  /** Canonical shape from the pipeline (MonthSummary). love maps to relationships. */
+  domain_scores?: { career?: number; money?: number; health?: number; relationships?: number };
   theme: string;
   key_transits?: string[];
   commentary: string;
@@ -35,10 +37,10 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       month: ex?.month ?? label,
       score: ex?.score ?? ex?.overall_score ?? 65,
       overall_score: ex?.overall_score ?? ex?.score ?? 65,
-      career_score: ex?.career_score,
-      money_score: ex?.money_score,
-      health_score: ex?.health_score,
-      love_score: ex?.love_score,
+      career_score: ex?.domain_scores?.career ?? ex?.career_score,
+      money_score: ex?.domain_scores?.money ?? ex?.money_score,
+      health_score: ex?.domain_scores?.health ?? ex?.health_score,
+      love_score: ex?.domain_scores?.relationships ?? ex?.love_score,
       theme: (ex?.theme ?? '').trim() || `${label} energy arc.`,
       key_transits: ex?.key_transits ?? [],
       commentary: (() => {
