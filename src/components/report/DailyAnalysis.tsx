@@ -111,7 +111,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
     const rk = currentDay.rahu_kaal;
     const theme =
       (currentDay.day_theme ?? '').trim() ||
-      [currentDay.panchang?.yoga, currentDay.panchang?.nakshatra].filter(Boolean).join(' · ') ||
+      plainify([currentDay.panchang?.yoga, currentDay.panchang?.nakshatra].filter(Boolean).join(' · ')) ||
       'Use hourly scores to sequence work and rest.';
     return { peak, second, rk, theme };
   }, [currentDay, slotsForSummary]);
@@ -242,7 +242,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
               )}
               {playbook.rk && (playbook.rk.start || playbook.rk.end) && (
                 <p className="text-caution">
-                  Rahu Kaal · {playbook.rk.start ?? '—'}–{playbook.rk.end ?? '—'} — keep to routine tasks only.
+                  Challenging window · {playbook.rk.start ?? '—'}–{playbook.rk.end ?? '—'} — routine tasks only.
                 </p>
               )}
               <p className="text-dust text-xs leading-relaxed border-t border-horizon/40 pt-3">
@@ -350,14 +350,14 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
 
             {currentDay.rahu_kaal && (currentDay.rahu_kaal.start || currentDay.rahu_kaal.end) && (
               <div>
-                <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3 text-center">
-                  Rahu Kaal
+                <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3 text-center" title="Rahu Kaal — the challenging daily window in Vedic astrology. Avoid new starts during this time.">
+                  Challenging window
                 </p>
                 <div className="flex justify-center">
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-caution/10 border border-caution/20">
                     <span className="text-caution">⚠</span>
                     <span className="font-mono text-mono-sm text-caution">
-                      Rahu Kaal: {(() => {
+                      Avoid new starts: {(() => {
                         const fmtTime = (t: string): string => {
                           if (!t) return '';
                           if (t.includes('T')) t = t.split('T')[1];
