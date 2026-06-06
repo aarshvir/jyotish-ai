@@ -34,7 +34,7 @@ export default function Hero() {
         <div className="animate-fade-down inline-flex items-center gap-2 mb-8 md:mb-10 px-4 py-1.5 rounded-pill border border-amber/20 bg-amber/[0.04]">
           <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse-amber" />
           <span className="font-mono text-mono-sm text-amber tracking-[0.15em] uppercase">
-            Swiss Ephemeris · Lahiri Ayanamsa · Vimshottari Dasha
+            Classical Vedic system · AI-powered · Swiss Ephemeris precision
           </span>
         </div>
 
