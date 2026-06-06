@@ -16,8 +16,8 @@ export default function FinalCTA() {
           Your Vedic Forecast Starts Free.
         </h2>
         <p className="font-body text-body-lg text-dust max-w-xl mx-auto mb-10">
-          Get your free Kundli (Janam Kundali) in minutes — no card needed. Upgrade anytime
-          for a full AI Jyotish forecast across 7 or 30 days, plus a 12-month outlook.
+          Generate your free birth chart and see today&apos;s hourly windows — no card needed. Upgrade anytime
+          for a full 7-day or 30-day forecast with a 12-month year-ahead view.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">

@@ -1,8 +1,8 @@
 const STEPS = [
   {
     number: '01',
-    title: 'Enter Birth Data (Kundli Input)',
-    description: 'Provide your date, time, and place of birth — the foundation of your Janam Kundali. We geocode your birth city automatically — no manual coordinates needed.',
+    title: 'Enter your birth details',
+    description: 'Provide your date, time, and place of birth. We locate your city automatically — no coordinates, no configuration. Takes about 30 seconds.',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="1" opacity="0.4" />
@@ -17,8 +17,8 @@ const STEPS = [
   },
   {
     number: '02',
-    title: 'Jyotish Engine Calculates',
-    description: 'Real planetary positions via Swiss Ephemeris (pyswisseph). Lahiri Ayanamsa, Vimshottari Dasha, true sidereal Lagna. Classical Jyotish — no approximations.',
+    title: 'Classical Vedic calculation',
+    description: 'Actual planetary positions computed using Swiss Ephemeris — the same engine used by professional astrologers worldwide. Classical Vedic system, precise to the minute, no approximations.',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="5" fill="currentColor" opacity="0.9" />
@@ -31,8 +31,8 @@ const STEPS = [
   },
   {
     number: '03',
-    title: 'AI Interprets Your Jyotish Chart',
-    description: 'Cross-references your Kundli with every hora and choghadiya window, producing 18 hourly scores and actionable Vedic forecast narrative.',
+    title: 'AI writes your personal forecast',
+    description: 'Generates 18 precision hourly windows per day — each with a score, quality rating, and plain-English guidance. Your chart, translated into decisions you can act on today.',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
         <rect x="6" y="30" width="8" height="12" rx="1" fill="currentColor" opacity="0.35" />
