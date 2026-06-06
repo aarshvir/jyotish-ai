@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { buildLagnaContext } from '@/lib/agents/lagnaContext';
+import { choghadiyaLabel } from '@/lib/utils/plainify';
 
 interface HourData {
   time: string;
@@ -78,8 +79,8 @@ export function BestWindows({ hours, lagna = 'Cancer' }: BestWindowsProps) {
                     {hour.hora_planet_symbol || PLANET_SYMBOLS[hour.hora_planet] || hour.hora_planet}
                   </span>
                   <span className="text-success">·</span>
-                  <span className="font-mono text-mono-sm text-success/70">
-                    {hour.choghadiya}
+                  <span className="font-mono text-mono-sm text-success/70" title={`${hour.choghadiya} — Vedic time quality`}>
+                    {choghadiyaLabel(hour.choghadiya)}
                   </span>
                   <span className="text-success">·</span>
                   <span className="font-mono text-mono-sm text-success font-medium">
@@ -95,8 +96,8 @@ export function BestWindows({ hours, lagna = 'Cancer' }: BestWindowsProps) {
       {/* Rahu Kaal */}
       {rahuKaal.length > 0 && (
         <div>
-          <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3">
-            Rahu Kaal
+          <p className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-3" title="Rahu Kaal — the challenging daily window. Avoid new starts.">
+            Challenging window
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-sm bg-caution/10 border border-caution/20">
             <span className="text-caution">⚠</span>

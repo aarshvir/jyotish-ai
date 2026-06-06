@@ -180,13 +180,13 @@ export function NativityCard({
               </p>
             </div>
             <div>
-              <span className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase">
-                Dasha
+              <span className="font-mono text-mono-sm text-dust tracking-[0.15em] uppercase" title="Life period — the active chapter of your Vedic timing cycle">
+                Life period
               </span>
               <div className="mt-1">
                 <span className="inline-flex items-center px-3 py-1 rounded-full bg-amber/10 border border-amber/20">
                   <span className="font-mono text-mono-sm text-amber uppercase tracking-wider">
-                    {currentDasha.mahadasha} MD · {currentDasha.antardasha} AD
+                    {currentDasha.mahadasha} · {currentDasha.antardasha} sub-period
                   </span>
                 </span>
               </div>
