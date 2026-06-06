@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { ScoreBadge } from './ScoreBadge';
+import { isDevFallback } from '@/lib/utils/plainify';
 
 interface WeekData {
   week_label: string;
@@ -45,7 +46,11 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
       ...base,
       week_label: (base.week_label ?? '').trim() || `Week ${i + 1} of 6`,
       theme: (base.theme ?? '').trim() || 'Weekly energy arc.',
-      commentary: (base.commentary ?? '').trim() || 'Weekly overview will be available when the forecast is generated.',
+      commentary: (() => {
+        const c = (base.commentary ?? '').trim();
+        if (!c || isDevFallback(c)) return 'Use the daily score calendar below to find your best days this week, and the hourly table for precision timing.';
+        return c;
+      })(),
     };
   });
   const getBarBg = (score: number) => {

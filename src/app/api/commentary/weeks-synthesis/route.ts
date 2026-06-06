@@ -205,38 +205,44 @@ Start with { and end with }. No markdown.`;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[weeks-synthesis]', msg.slice(0, 200));
-    const fallbackAnalysis =
-      'Fallback weekly overview. Use daily scores and hourly table as primary guidance. BEST: use synthesis_context.best_date and high-score days. WORST: avoid synthesis_context.worst_date and low-score days. Commentary service temporarily degraded.';
+    const fallbackAnalysis = "Use the daily score calendar below to find your best days this week, and the hourly table for precision timing.";
     const fallbackWeeks = (body.weeks ?? []).slice(0, 6).map((w, i) => ({
       week_index: i,
       week_label: w.week_label ?? `Week ${i + 1}`,
       overall_score: 65,
-      theme: 'Weekly energy arc.',
+      theme: "A steady week - check daily scores for the best moments.",
       analysis: fallbackAnalysis,
       commentary: fallbackAnalysis,
       moon_signs: [],
     }));
-    const bestDate = body.synthesis_context?.best_date ?? '2026-03-10';
-    const worstDate = body.synthesis_context?.worst_date ?? '2026-03-13';
-    const opening = `${mahadasha.toUpperCase()}-${antardasha.toUpperCase()} PERIOD SYNTHESIS FOR ${lagnaSign.toUpperCase()} LAGNA - DASHA THEMES AND ACTION AXIS.
-${mahadasha} as the mahadasha lord activates key house themes for ${lagnaSign} lagna, while ${antardasha} as the antardasha lord shapes the quality and direction of results. The Moon journey during this period repeatedly shifts practical focus: when the Moon transits the 1st house, confidence rises and work begins faster; when it transits the 5th house, analysis and education increase; when it reaches the 9th house, travel intentions and counsel become stronger; when it touches the 11th house, gains stabilize. Use Mars energy for execution, because Mars hora supports H10 deliverables and makes proposals actionable. Choose best windows anchored to ${bestDate} because high-score days align with favourable choghadiya and benefic hora planets. Avoid the worst pressure around ${worstDate}, especially during Rahu Kaal, because dasha urgency can distort judgment. BEST ACTION: launch only after you align Mars hora with the day’s top choghadiya.`;
+    const bestDate = body.synthesis_context?.best_date ?? '';
+    const worstDate = body.synthesis_context?.worst_date ?? '';
+    const opening = [
+      'Your forecast covers the key patterns shaping your career, relationships, finances, and wellbeing over the next several weeks.',
+      bestDate ? `Your strongest opening falls around ${bestDate} — a good window for important decisions and new starts.` : '',
+      worstDate ? `Around ${worstDate}, ease off a little — patience and review work better than big launches then.` : '',
+      'Use the daily score calendar for the best days, and the hourly detail for precision timing.',
+    ].filter(Boolean).join(' ');
     return NextResponse.json({
       weeks: fallbackWeeks,
       partial: true,
       period_synthesis: {
         opening_paragraph: opening,
-        strategic_windows: [
-          { date: body.synthesis_context?.best_date ?? '2026-03-10', score: 74, nakshatra: '—', reason: 'Use peak-score day from synthesis context; schedule high-stakes work in slots with score 75+.' },
-          { date: '2026-03-11', score: 70, nakshatra: '—', reason: 'Secondary best day; use Mars and Jupiter horas for career and decisions.' },
-        ],
-        caution_dates: [{ date: body.synthesis_context?.worst_date ?? '2026-03-13', score: 34, nakshatra: '—', reason: 'Avoid new commitments and speculative actions; use for completion and routine only.' }],
+        strategic_windows: bestDate ? [
+          { date: bestDate, score: 74, nakshatra: '—', reason: 'A strong window — good for proposals, important conversations, and new initiatives.' },
+        ] : [],
+        caution_dates: worstDate ? [
+          { date: worstDate, score: 34, nakshatra: '—', reason: 'Better for patience, review, and completion than new starts.' },
+        ] : [],
         domain_priorities: {
-          career: `Career: Use benefic horas and schedule key deliverables on ${bestDate}. Favour high-score days for proposals, coordination, and approvals. Avoid Rahu Kaal windows and low-score days for new initiations; keep decisions measurable and timeboxed.`,
-          money: 'High-score days favour gains; avoid major expenditure or new financial commitments on worst-date days. Use daily scores and Rahu Kaal markers as primary filters.',
-          health: 'Rest and recovery are most effective on low-score days. Prioritise hydration and short walks during favourable horas. Avoid physical strain during Rahu Kaal.',
-          relationships: 'Gentle gestures and clear communication are most effective on high-score days. Avoid confrontations or important conversations on low-score days or during Rahu Kaal.',
+          career: `Use your highest-scoring days for proposals, key conversations, and decisions. Avoid new initiatives on low-score days — save those for preparation and review.`,
+          money: 'Align larger financial decisions with your peak-scoring days. Low-score stretches are better for budgeting and reviewing than for new commitments.',
+          health: 'Rest and recovery land best on lower-score days. Protect your energy during demanding stretches and keep consistent routines.',
+          relationships: 'Important conversations land well on high-score days. Avoid pressing sensitive topics during challenging periods.',
         },
-        closing_paragraph: `${mahadasha}-${antardasha} dasha period: rely on daily scores and hourly tables as primary guidance until full commentary is available. Best day: ${bestDate}. Worst day: ${worstDate}.`,
+        closing_paragraph: bestDate
+          ? `Make the most of your strongest windows — small timing adjustments compound into meaningful results over the forecast period. Your best opening is around ${bestDate}.`
+          : 'Make the most of your strongest windows — small timing adjustments compound into meaningful results over the forecast period.',
       },
     }, { status: 206 });
   }

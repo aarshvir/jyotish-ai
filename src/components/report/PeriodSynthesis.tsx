@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { plainify } from '@/lib/utils/plainify';
 
 interface SynthesisStructured {
   opening_paragraph?: string;
@@ -75,7 +76,7 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
       {isStructured ? (
         <div className="space-y-1 mb-8">
           <p className="font-display text-star text-base leading-[1.8]">
-            {(s?.opening_paragraph ?? '').trim() || OPENING_FALLBACK}
+            {plainify((s?.opening_paragraph ?? '').trim()) || OPENING_FALLBACK}
           </p>
           <div className="pt-6">
             <p className="font-mono text-mono-sm text-amber tracking-[0.15em] uppercase mb-3">
@@ -122,13 +123,13 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
               <div key={key} className="py-2 px-3 rounded-sm bg-cosmos border border-horizon/60">
                 <p className="font-mono text-mono-sm text-dust uppercase mb-1">{key}</p>
                 <p className="font-display text-star text-body-sm leading-[1.6]">
-                  {(s?.domain_priorities?.[key] ?? '').trim() || DOMAIN_FALLBACK[key]}
+                  {plainify((s?.domain_priorities?.[key] ?? '').trim()) || DOMAIN_FALLBACK[key]}
                 </p>
               </div>
             ))}
           </div>
           <p className="font-display text-star text-base leading-[1.8] pt-6 italic">
-            {(s?.closing_paragraph ?? '').trim() || CLOSING_FALLBACK}
+            {plainify((s?.closing_paragraph ?? '').trim()) || CLOSING_FALLBACK}
           </p>
         </div>
       ) : (

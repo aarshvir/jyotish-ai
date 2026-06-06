@@ -16,6 +16,7 @@
 
 import { useState } from 'react';
 import type { PeriodSynthesis, MonthSummary } from '@/lib/agents/types';
+import { plainify } from '@/lib/utils/plainify';
 
 interface ForecastSnapshotProps {
   name: string;
@@ -73,45 +74,7 @@ function toneClass(tone: 'good' | 'mixed' | 'tender'): string {
   return 'text-amber';
 }
 
-/** Plain-English replacements for the most common Sanskrit/technical terms. */
-const JARGON: [RegExp, string][] = [
-  [/\bbenefics?\b/gi, 'favourable'],
-  [/\bmalefics?\b/gi, 'challenging'],
-  [/\bmahadasha\b/gi, 'main life-period'],
-  [/\bantardasha\b/gi, 'sub-period'],
-  [/\bpratyantardasha\b/gi, 'micro-period'],
-  [/\bdashas?\b/gi, 'life-period'],
-  [/\bhoras\b/gi, 'planetary hours'],
-  [/\bhora\b/gi, 'planetary hour'],
-  [/\blagnas?\b/gi, 'rising sign'],
-  [/\bnakshatras?\b/gi, 'birth star'],
-  [/\bgrahas?\b/gi, 'planet'],
-  [/\brashis?\b/gi, 'sign'],
-  [/\brasis?\b/gi, 'sign'],
-  [/\bgochar\b/gi, 'transit'],
-];
-
-/**
- * Presentation-layer plain-language guard. The hero is the #1 "plain English"
- * surface, so it must never show raw jargon even when its data source does:
- * it drops a leading ALL-CAPS "section header" sentence (LLM scaffolding) and
- * swaps common Sanskrit terms for everyday words.
- */
-function plainify(text: string | undefined): string {
-  if (!text) return '';
-  let t = String(text).replace(/\s+/g, ' ').trim();
-  const stop = t.search(/[.!?]/);
-  if (stop > 10) {
-    const head = t.slice(0, stop);
-    const letters = head.replace(/[^a-zA-Z]/g, '');
-    const upper = head.replace(/[^A-Z]/g, '');
-    if (letters.length > 8 && upper.length / letters.length > 0.6) {
-      t = t.slice(stop + 1).trim();
-    }
-  }
-  for (const [re, rep] of JARGON) t = t.replace(re, rep);
-  return t.replace(/\s+/g, ' ').trim();
-}
+// plainify is imported from @/lib/utils/plainify
 
 /** Guaranteed-plain thesis built from structured data when no clean theme exists. */
 function constructedThesis(
