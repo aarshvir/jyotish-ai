@@ -3,16 +3,16 @@
 import { useEffect, useState } from 'react';
 
 const NAV_ITEMS = [
-  { id: 'nativity', label: 'Nativity' },
-  { id: 'monthly', label: 'Monthly' },
-  { id: 'weekly', label: 'Weekly' },
-  { id: 'daily', label: 'Daily' },
-  { id: 'hourly', label: 'Hourly' },
-  { id: 'synthesis', label: 'Synthesis' },
+  { id: 'snapshot', label: 'Summary' },
+  { id: 'monthly', label: 'Year' },
+  { id: 'weekly', label: 'Weeks' },
+  { id: 'daily', label: 'Days' },
+  { id: 'hourly', label: 'Hours' },
+  { id: 'nativity', label: 'Your chart' },
 ];
 
 export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean }) {
-  const [activeSection, setActiveSection] = useState('nativity');
+  const [activeSection, setActiveSection] = useState('snapshot');
 
   useEffect(() => {
     if (!reportLoaded) return;

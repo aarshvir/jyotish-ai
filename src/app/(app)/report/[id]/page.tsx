@@ -11,6 +11,7 @@ import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { ReportSidebar } from '@/components/report/ReportSidebar';
 import { NativityCard } from '@/components/report/NativityCard';
+import { ForecastSnapshot } from '@/components/report/ForecastSnapshot';
 import { MonthlyAnalysis } from '@/components/report/MonthlyAnalysis';
 import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 import { DailyAnalysis } from '@/components/report/DailyAnalysis';
@@ -22,6 +23,7 @@ import { PrintAllDays } from '@/components/report/PrintAllDays';
 import { GeneratingScreen } from '@/components/report/GeneratingScreen';
 import type { NatalChartData, NativityProfile, ReportData } from '@/lib/agents/types';
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
+import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
 import { buildFunctionalLordGroups } from '@/lib/engine/functionalNature';
 import { lagnaSignToIndex } from '@/lib/engine/horaBase';
 import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
@@ -1221,6 +1223,9 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       avoid_windows: [],
       peak_count: day.peak_count ?? peakFromGrid.length,
       caution_count: day.caution_count ?? 0,
+      // Plain-language day briefing (best-for / not-ideal / why) — generated but
+      // previously dropped here, so it never reached the UI. Now plumbed through.
+      briefing_v2: (day as unknown as { briefing_v2?: DayBriefingV2 }).briefing_v2,
       hours: null,
       hourlySlots: slots.map((s) => {
         const slotTimes = resolveLocalSlotTimes(s, reportTimezoneOffset);
@@ -1238,6 +1243,9 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           transit_lagna: s.transit_lagna ?? '',
           transit_lagna_house: s.transit_lagna_house ?? undefined,
           commentary: s.commentary ?? '',
+          // Plain-language slot guidance (best-for / avoid / still-ok / summary) —
+          // previously dropped in this mapping; now carried so HourlyTable renders it.
+          guidance_v2: (s as unknown as { guidance_v2?: SlotGuidanceV2 }).guidance_v2,
         };
       }),
     };
@@ -1373,66 +1381,20 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           </div>
         )}
         <div id="report-content">
-          <ReportErrorBoundary fallbackTitle="Nativity">
-            <NativityCard
+          {/* Summary-first hero — the plain-language "what's ahead" brief. */}
+          <ReportErrorBoundary fallbackTitle="Your forecast at a glance">
+            <ForecastSnapshot
               name={displayName}
-              birthDate={displayDate}
-              birthTime={displayTime}
-              birthCity={displayCity}
-              lagna={natalChart?.lagna || 'Unknown'}
-              lagnaDegree={natalChart?.lagna_degree ?? 0}
-              moonSign={natalChart?.planets?.Moon?.sign || 'Unknown'}
-              moonNakshatra={natalChart?.moon_nakshatra || 'Unknown'}
-              currentDasha={
-                natalChart?.current_dasha ??
-                reportData?.nativity?.natal_chart?.current_dasha ?? {
-                  mahadasha: 'Unknown',
-                  antardasha: 'Unknown',
-                }
-              }
-              nativitySummary={
-                reportData?.nativity
-                  ? (() => {
-                      const flg = natalChart?.functional_lord_groups;
-                      const useEngine =
-                        flg &&
-                        ((flg.benefics?.length ?? 0) > 0 ||
-                          (flg.malefics?.length ?? 0) > 0 ||
-                          (flg.neutral?.length ?? 0) > 0 ||
-                          (flg.badhaka?.length ?? 0) > 0);
-                      const lagnaName = natalChart?.lagna?.trim();
-                      const tsFlg =
-                        !useEngine && lagnaName && lagnaName !== 'Unknown'
-                          ? buildFunctionalLordGroups(lagnaSignToIndex(lagnaName))
-                          : null;
-                      const effective = useEngine ? flg! : tsFlg;
-                      return {
-                        lagna_analysis: reportData.nativity.lagna_analysis ?? '',
-                        current_dasha_interpretation:
-                          reportData.nativity.current_dasha_interpretation ?? '',
-                        key_yogas: reportData.nativity.key_yogas ?? [],
-                        functional_benefics: effective
-                          ? effective.benefics
-                          : (reportData.nativity.functional_benefics ?? []),
-                        functional_malefics: effective
-                          ? effective.malefics
-                          : (reportData.nativity.functional_malefics ?? []),
-                        functional_neutral: effective ? effective.neutral : undefined,
-                        badhaka_lines: effective ? effective.badhaka : undefined,
-                      };
-                    })()
-                  : undefined
-              }
-              nativity={
-                (reportData?.nativity?.profile ??
-                reportData?.nativity ?? {
-                  planetary_positions: [],
-                  life_themes: [],
-                  current_year_theme: '',
-                }) as NativityProfile | undefined
-              }
+              synthesis={reportData?.synthesis}
+              months={reportData?.months ?? []}
+              currentYearTheme={reportData?.nativity?.profile?.current_year_theme}
+              lifeThemes={reportData?.nativity?.profile?.life_themes}
+              preview={isPreviewPlan}
             />
           </ReportErrorBoundary>
+
+          {/* (Birth-chart detail moved below the forecast — see "About your chart". The
+              report now leads with plain-language insight, not the technical chart.) */}
 
           {!isPreviewPlan && (
             <ReportErrorBoundary fallbackTitle="Monthly Analysis">
@@ -1466,6 +1428,77 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
               />
             </ReportErrorBoundary>
           )}
+
+          {/* About your chart — the technical birth-chart detail, demoted below the forecast
+              so the report leads with plain-language insight. Here for those who want the "why". */}
+          <div className="mt-14 pt-6 border-t border-horizon/30">
+            <p className="section-eyebrow mb-1">The deeper detail</p>
+            <h2 className="font-display text-headline-md text-star mb-1">About your birth chart</h2>
+            <p className="font-body text-body-sm text-dust/70 mb-5 max-w-2xl">
+              The classical foundation behind everything above — your lagna, dasha periods, planetary
+              placements and yogas. Optional reading for the curious.
+            </p>
+            <ReportErrorBoundary fallbackTitle="Nativity">
+              <NativityCard
+                name={displayName}
+                birthDate={displayDate}
+                birthTime={displayTime}
+                birthCity={displayCity}
+                lagna={natalChart?.lagna || 'Unknown'}
+                lagnaDegree={natalChart?.lagna_degree ?? 0}
+                moonSign={natalChart?.planets?.Moon?.sign || 'Unknown'}
+                moonNakshatra={natalChart?.moon_nakshatra || 'Unknown'}
+                currentDasha={
+                  natalChart?.current_dasha ??
+                  reportData?.nativity?.natal_chart?.current_dasha ?? {
+                    mahadasha: 'Unknown',
+                    antardasha: 'Unknown',
+                  }
+                }
+                nativitySummary={
+                  reportData?.nativity
+                    ? (() => {
+                        const flg = natalChart?.functional_lord_groups;
+                        const useEngine =
+                          flg &&
+                          ((flg.benefics?.length ?? 0) > 0 ||
+                            (flg.malefics?.length ?? 0) > 0 ||
+                            (flg.neutral?.length ?? 0) > 0 ||
+                            (flg.badhaka?.length ?? 0) > 0);
+                        const lagnaName = natalChart?.lagna?.trim();
+                        const tsFlg =
+                          !useEngine && lagnaName && lagnaName !== 'Unknown'
+                            ? buildFunctionalLordGroups(lagnaSignToIndex(lagnaName))
+                            : null;
+                        const effective = useEngine ? flg! : tsFlg;
+                        return {
+                          lagna_analysis: reportData.nativity.lagna_analysis ?? '',
+                          current_dasha_interpretation:
+                            reportData.nativity.current_dasha_interpretation ?? '',
+                          key_yogas: reportData.nativity.key_yogas ?? [],
+                          functional_benefics: effective
+                            ? effective.benefics
+                            : (reportData.nativity.functional_benefics ?? []),
+                          functional_malefics: effective
+                            ? effective.malefics
+                            : (reportData.nativity.functional_malefics ?? []),
+                          functional_neutral: effective ? effective.neutral : undefined,
+                          badhaka_lines: effective ? effective.badhaka : undefined,
+                        };
+                      })()
+                    : undefined
+                }
+                nativity={
+                  (reportData?.nativity?.profile ??
+                  reportData?.nativity ?? {
+                    planetary_positions: [],
+                    life_themes: [],
+                    current_year_theme: '',
+                  }) as NativityProfile | undefined
+                }
+              />
+            </ReportErrorBoundary>
+          </div>
 
           {/* Print-only full report — paid plans only (hidden on screen, @media print). */}
           {!isPreviewPlan && <PrintAllDays days={mergedDays} weeks={safeWeekly} />}

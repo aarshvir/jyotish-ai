@@ -33,7 +33,9 @@ function toMinutes(t: string): number {
 }
 
 export function HourlyAnalysis({ hours, lagna }: HourlyAnalysisProps) {
-  const [viewMode, setViewMode] = useState<'visual' | 'table'>('table');
+  // Default to the scannable visual chart (+ BestWindows below); the full 18-row
+  // table with per-hour commentary is one click away. Less overwhelming on arrival.
+  const [viewMode, setViewMode] = useState<'visual' | 'table'>('visual');
   const [timeFilter, setTimeFilter] = useState<'waking' | 'full'>('waking');
 
   // Filter hours based on time range

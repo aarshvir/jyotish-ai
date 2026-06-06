@@ -1,0 +1,231 @@
+'use client';
+
+/**
+ * ForecastSnapshot — the summary-first hero at the very top of the report.
+ *
+ * Phase 1 of the report rehaul: it makes the report SUMMARY-FIRST and plain-language
+ * by surfacing the most life-shaped data that already exists (current-year theme,
+ * period synthesis, per-domain priorities, and the best/caution date windows) — which
+ * was previously buried at the BOTTOM of the page. No new generation; pure presentation.
+ *
+ * Phase 2 will replace the composed copy here with a purpose-built "what will happen in
+ * your life" generation pass. Until then this is honestly labelled "at a glance".
+ *
+ * Emotional arc: recognition -> orientation -> agency. Plain language only; no Sanskrit.
+ */
+
+import { useState } from 'react';
+import type { PeriodSynthesis, MonthSummary } from '@/lib/agents/types';
+
+interface ForecastSnapshotProps {
+  name: string;
+  synthesis?: PeriodSynthesis;
+  months?: MonthSummary[];
+  currentYearTheme?: string;
+  lifeThemes?: string[];
+  /** Preview (free) shows a teaser version. */
+  preview?: boolean;
+}
+
+/** First 1–2 sentences of a paragraph, for a scannable thesis line. */
+function leadSentences(text: string | undefined, max = 2): string {
+  if (!text) return '';
+  const clean = text.replace(/\s+/g, ' ').trim();
+  const parts = clean.match(/[^.!?]+[.!?]+/g);
+  if (!parts) return clean;
+  return parts.slice(0, max).join(' ').trim();
+}
+
+/** One clean line from a domain-priority blob. */
+function oneLine(text: string | undefined): string {
+  return leadSentences(text, 1) || (text ?? '').replace(/\s+/g, ' ').trim();
+}
+
+/** "2026-06-24" -> "Jun 24". */
+function prettyDate(iso: string | undefined): string {
+  if (!iso) return '';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  if (!m) return iso;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const mi = Math.max(0, Math.min(11, parseInt(m[2], 10) - 1));
+  return `${months[mi]} ${parseInt(m[3], 10)}`;
+}
+
+/** Average a domain across the 12 months -> 0–100, then a plain trend word. */
+function domainAverage(months: MonthSummary[] | undefined, key: keyof MonthSummary['domain_scores']): number | null {
+  if (!months || months.length === 0) return null;
+  const vals = months.map((m) => m.domain_scores?.[key]).filter((v): v is number => typeof v === 'number' && v > 0);
+  if (vals.length === 0) return null;
+  return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+}
+
+function trendWord(score: number | null): { word: string; tone: 'good' | 'mixed' | 'tender' } {
+  if (score == null) return { word: 'Unfolding', tone: 'mixed' };
+  if (score >= 68) return { word: 'Strong', tone: 'good' };
+  if (score >= 55) return { word: 'Steady', tone: 'good' };
+  if (score >= 45) return { word: 'Mixed', tone: 'mixed' };
+  return { word: 'Tender', tone: 'tender' };
+}
+
+function toneClass(tone: 'good' | 'mixed' | 'tender'): string {
+  if (tone === 'good') return 'text-success';
+  if (tone === 'tender') return 'text-caution';
+  return 'text-amber';
+}
+
+export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, lifeThemes, preview }: ForecastSnapshotProps) {
+  const [showFull, setShowFull] = useState(false);
+
+  const firstName = (name || 'Your').trim().split(/\s+/)[0] || 'Your';
+  const possessive = /s$/i.test(firstName) ? `${firstName}'` : `${firstName}'s`;
+
+  // Thesis: prefer the life-shaped current-year theme; fall back to the synthesis opening.
+  const thesis = leadSentences(currentYearTheme, 2) || leadSentences(synthesis?.opening_paragraph, 2)
+    || 'Your forecast highlights the strongest windows ahead and where to move with care.';
+
+  const dp = synthesis?.domain_priorities;
+  const domains = [
+    { label: 'Career', line: oneLine(dp?.career), score: domainAverage(months, 'career') },
+    { label: 'Money', line: oneLine(dp?.money), score: domainAverage(months, 'money') },
+    { label: 'Love', line: oneLine(dp?.relationships), score: domainAverage(months, 'relationships') },
+    { label: 'Health', line: oneLine(dp?.health), score: domainAverage(months, 'health') },
+  ];
+
+  const best = (synthesis?.strategic_windows ?? []).filter((w) => w?.date).slice(0, 3);
+  const watch = (synthesis?.caution_dates ?? []).filter((w) => w?.date).slice(0, 2);
+
+  // Three "what's shifting" lines (plain). Reuse the strongest domain copy.
+  const shifts = [
+    dp?.career && { tag: 'Career & public life', text: oneLine(dp.career) },
+    dp?.money && { tag: 'Money & stability', text: oneLine(dp.money) },
+    dp?.relationships && { tag: 'Love, family & home', text: oneLine(dp.relationships) },
+  ].filter(Boolean) as { tag: string; text: string }[];
+
+  return (
+    <section id="snapshot" aria-labelledby="snapshot-heading" className="mb-12 scroll-mt-24">
+      <div className="rounded-card border border-amber/25 bg-gradient-to-br from-amber/[0.06] via-cosmos to-cosmos p-6 sm:p-8 md:p-10 relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-20 -right-20 w-64 h-64 rounded-full bg-amber/10 blur-3xl" />
+
+        <p className="section-eyebrow mb-2">Your forecast at a glance</p>
+        <h2 id="snapshot-heading" className="font-display text-display-sm md:text-display-md text-star leading-tight mb-2">
+          {possessive} year ahead
+        </h2>
+        <p className="font-mono text-mono-sm text-dust/60 mb-6 max-w-2xl">
+          Drawn from your birth chart and timing cycles. These are your strongest windows and
+          tendencies — guidance to act on, not fixed outcomes.
+        </p>
+
+        {/* The thesis — the one-line story of the period */}
+        <p className="font-body text-body-lg md:text-headline-sm text-star/90 leading-relaxed max-w-3xl mb-6">
+          {thesis}
+        </p>
+
+        {/* What's shifting — 3 plain lines */}
+        {shifts.length > 0 && (
+          <div className="grid sm:grid-cols-3 gap-3 mb-6">
+            {shifts.map((s) => (
+              <div key={s.tag} className="rounded-md bg-bg-3/60 border border-horizon/30 p-4">
+                <p className="font-mono text-mono-sm text-amber/80 tracking-wider uppercase mb-1.5">{s.tag}</p>
+                <p className="font-body text-body-sm text-dust leading-relaxed">{s.text}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Timing chips — best opening / go slower */}
+        {(best[0] || watch[0]) && (
+          <div className="flex flex-wrap gap-3 mb-6">
+            {best[0] && (
+              <div className="inline-flex items-center gap-2 rounded-pill bg-success/10 border border-success/30 px-4 py-2">
+                <span className="font-mono text-mono-sm text-success uppercase tracking-wider">Best opening</span>
+                <span className="font-body text-body-sm text-star">{prettyDate(best[0].date)}{best[0].reason ? ` — ${oneLine(best[0].reason)}` : ''}</span>
+              </div>
+            )}
+            {watch[0] && (
+              <div className="inline-flex items-center gap-2 rounded-pill bg-caution/10 border border-caution/30 px-4 py-2">
+                <span className="font-mono text-mono-sm text-caution uppercase tracking-wider">Go slower</span>
+                <span className="font-body text-body-sm text-star">{prettyDate(watch[0].date)}{watch[0].reason ? ` — ${oneLine(watch[0].reason)}` : ''}</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Five domain cards (Family is conditional + responsible) */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+          {domains.map((d) => {
+            const t = trendWord(d.score);
+            return (
+              <div key={d.label} className="rounded-md bg-bg-3/40 border border-horizon/30 p-4 flex flex-col">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-body text-body-sm text-star font-semibold">{d.label}</span>
+                  <span className={`font-mono text-mono-sm ${toneClass(t.tone)}`}>{t.word}</span>
+                </div>
+                <p className="font-body text-mono-sm text-dust/80 leading-snug">{d.line || 'A steady area this period — no major swings expected.'}</p>
+              </div>
+            );
+          })}
+          {/* Family & children — conditional, responsible (no predictions about specific people) */}
+          <div className="rounded-md bg-bg-3/40 border border-horizon/30 p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="font-body text-body-sm text-star font-semibold">Family</span>
+              <span className="font-mono text-mono-sm text-amber">If relevant</span>
+            </div>
+            <p className="font-body text-mono-sm text-dust/80 leading-snug">
+              If children or family are part of your life, this period favours planning,
+              honest conversations, and steady support more than forcing big changes.
+            </p>
+          </div>
+        </div>
+
+        {/* Moments that matter */}
+        {(best.length > 0 || watch.length > 0) && !preview && (
+          <div className="rounded-md bg-cosmos/60 border border-horizon/30 p-4 mb-2">
+            <p className="font-mono text-mono-sm text-dust/60 uppercase tracking-wider mb-3">Moments that matter</p>
+            <ul className="space-y-2">
+              {best.map((w, i) => (
+                <li key={`b${i}`} className="flex items-start gap-3 font-body text-body-sm">
+                  <span className="font-mono text-success shrink-0 w-16">{prettyDate(w.date)}</span>
+                  <span className="text-star/85">{oneLine(w.reason) || 'A strong window — good for important moves.'}</span>
+                </li>
+              ))}
+              {watch.map((w, i) => (
+                <li key={`w${i}`} className="flex items-start gap-3 font-body text-body-sm">
+                  <span className="font-mono text-caution shrink-0 w-16">{prettyDate(w.date)}</span>
+                  <span className="text-star/85">{oneLine(w.reason) || 'Move with care — better for patience than big launches.'}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Full picture (expand) */}
+        {synthesis?.opening_paragraph && (
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => setShowFull((v) => !v)}
+              className="font-mono text-mono-sm text-amber hover:text-amber-glow transition-colors min-h-[44px] inline-flex items-center"
+            >
+              {showFull ? 'Hide the full picture ▲' : 'Read the full picture ▼'}
+            </button>
+            {showFull && (
+              <div className="mt-3 space-y-3 max-w-3xl">
+                <p className="font-body text-body-md text-dust leading-relaxed">{synthesis.opening_paragraph}</p>
+                {synthesis.closing_paragraph && (
+                  <p className="font-body text-body-md text-dust/85 leading-relaxed">{synthesis.closing_paragraph}</p>
+                )}
+                {lifeThemes && lifeThemes.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {lifeThemes.slice(0, 6).map((th, i) => (
+                      <span key={i} className="font-mono text-mono-sm text-amber/80 bg-amber/10 border border-amber/20 rounded-pill px-3 py-1">{th}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
