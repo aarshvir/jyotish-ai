@@ -12,6 +12,7 @@ import { StarField } from '@/components/ui/StarField';
 import { ReportSidebar } from '@/components/report/ReportSidebar';
 import { NativityCard } from '@/components/report/NativityCard';
 import { ForecastSnapshot } from '@/components/report/ForecastSnapshot';
+import { DashaTimeline } from '@/components/report/DashaTimeline';
 import { MonthlyAnalysis } from '@/components/report/MonthlyAnalysis';
 import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 import { DailyAnalysis } from '@/components/report/DailyAnalysis';
@@ -1326,6 +1327,20 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           {!isPreviewPlan && (
           <div className="flex flex-col items-end gap-2 pdf-exclude" data-print-hide>
             <div className="flex items-center gap-2">
+              <Link
+                href={`/api/reports/${reportIdFromRoute}/calendar`}
+                download
+                className="pdf-exclude btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5"
+                aria-label="Add best dates to calendar"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth={2} />
+                  <line x1="16" y1="2" x2="16" y2="6" strokeWidth={2} strokeLinecap="round" />
+                  <line x1="8" y1="2" x2="8" y2="6" strokeWidth={2} strokeLinecap="round" />
+                  <line x1="3" y1="10" x2="21" y2="10" strokeWidth={2} />
+                </svg>
+                <span>Calendar</span>
+              </Link>
               <button
                 onClick={() => handleDownloadMarkdown()}
                 className="pdf-exclude btn-secondary px-3 py-1.5 text-xs flex items-center gap-1.5"
@@ -1548,6 +1563,17 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
                 }
               />
             </ReportErrorBoundary>
+
+            {/* Life chapters timeline — dasha sequence as a visual "where am I in my life?" */}
+            {natalChart?.dasha_sequence && natalChart.dasha_sequence.length > 0 && (
+              <div className="mt-10 pt-6 border-t border-horizon/30">
+                <ReportErrorBoundary fallbackTitle="Life chapters">
+                  <DashaTimeline
+                    dashaSequence={natalChart.dasha_sequence as Array<{ planet: string; start_date: string; end_date: string }>}
+                  />
+                </ReportErrorBoundary>
+              </div>
+            )}
           </div>
 
           {/* Print-only full report — paid plans only (hidden on screen, @media print). */}

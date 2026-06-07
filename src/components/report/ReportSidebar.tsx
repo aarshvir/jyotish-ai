@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { id: 'hourly', label: 'Hours' },
   { id: 'synthesis', label: 'Calendar' },
   { id: 'nativity', label: 'Your chart' },
+  { id: 'dasha-timeline', label: 'Chapters' },
 ];
 
 export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean }) {

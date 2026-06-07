@@ -65,6 +65,27 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
   }, [months]);
 
   const [selected, setSelected] = useState(0);
+  const [domainFilter, setDomainFilter] = useState<'overall' | 'career' | 'money' | 'health' | 'love'>('overall');
+
+  const DOMAIN_FILTERS = [
+    { key: 'overall', label: 'All' },
+    { key: 'career', label: 'Career' },
+    { key: 'money', label: 'Money' },
+    { key: 'health', label: 'Health' },
+    { key: 'love', label: 'Love' },
+  ] as const;
+
+  type MonthRow = (typeof monthsData)[number];
+  /** Get the score to display in the strip based on current domain filter */
+  const stripScore = (m: MonthRow): number => {
+    if (domainFilter === 'overall') return m.overall_score;
+    if (domainFilter === 'career') return m.career_score ?? m.overall_score;
+    if (domainFilter === 'money') return m.money_score ?? m.overall_score;
+    if (domainFilter === 'health') return m.health_score ?? m.overall_score;
+    if (domainFilter === 'love') return m.love_score ?? m.overall_score;
+    return m.overall_score;
+  };
+
   const shortLabel = (m: string): string => {
     const parts = m.split(' ');
     const mon = (parts[0] || m).slice(0, 3);
@@ -100,10 +121,30 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
         <p className="font-mono text-mono-sm text-dust/60">Tap a month for the full detail</p>
       </div>
 
+      {/* Domain filter toggle */}
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="font-mono text-mono-sm text-dust/50 mr-1">Show:</span>
+        {DOMAIN_FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            onClick={() => setDomainFilter(f.key)}
+            className={`px-3 py-1.5 rounded-sm font-mono text-mono-sm transition-colors min-h-[36px] ${
+              domainFilter === f.key
+                ? 'bg-amber text-space'
+                : 'bg-cosmos border border-horizon text-dust hover:border-amber/40 hover:text-star'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* Compact 12-month strip — the whole year at a glance */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
         {monthsData.map((m, si) => {
           const sel = si === selected;
+          const score = stripScore(m);
           return (
             <button
               key={si}
@@ -114,10 +155,10 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
             >
               <div className="flex items-center justify-between gap-1">
                 <span className="font-mono text-[11px] text-dust uppercase tracking-wider">{shortLabel(m.month)}</span>
-                <span className={`font-display font-bold text-lg ${getScoreColor(m.overall_score)}`}>{m.overall_score}</span>
+                <span className={`font-display font-bold text-lg ${getScoreColor(score ?? m.overall_score)}`}>{score ?? m.overall_score}</span>
               </div>
               <div className="h-1 bg-horizon/40 rounded-full mt-2 overflow-hidden">
-                <div className={`h-full rounded-full ${getColor(m.overall_score)}`} style={{ width: `${Math.min(100, m.overall_score)}%` }} />
+                <div className={`h-full rounded-full ${getColor(score ?? m.overall_score)}`} style={{ width: `${Math.min(100, score ?? m.overall_score)}%` }} />
               </div>
             </button>
           );
