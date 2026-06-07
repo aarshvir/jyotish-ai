@@ -165,6 +165,38 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
         })}
       </div>
 
+      {/* Month in brief — glanceable summary of the selected month */}
+      {monthsData[selected] && (() => {
+        const m = monthsData[selected];
+        const scores = [
+          { label: 'Career', score: m.career_score, key: 'career' },
+          { label: 'Money', score: m.money_score, key: 'money' },
+          { label: 'Health', score: m.health_score, key: 'health' },
+          { label: 'Love', score: m.love_score, key: 'love' },
+        ].filter((d) => d.score != null) as { label: string; score: number; key: string }[];
+        const best = [...scores].sort((a, b) => b.score - a.score)[0];
+        const worst = [...scores].sort((a, b) => a.score - b.score)[0];
+        if (!best) return null;
+        return (
+          <div className="rounded-sm bg-nebula/20 border border-horizon/40 px-4 py-3 flex flex-wrap gap-x-6 gap-y-2 items-center">
+            <span className="font-mono text-mono-sm text-dust/60">This month at a glance:</span>
+            {best && (
+              <span className="font-mono text-mono-sm text-success">
+                ✓ Strong for {best.label.toLowerCase()} ({best.score}/100)
+              </span>
+            )}
+            {worst && worst.key !== best?.key && worst.score < 55 && (
+              <span className="font-mono text-mono-sm text-caution">
+                ⚠ Light for {worst.label.toLowerCase()} ({worst.score}/100)
+              </span>
+            )}
+            <span className="font-mono text-mono-sm text-amber">
+              Overall: {m.overall_score}/100
+            </span>
+          </div>
+        );
+      })()}
+
       {/* Full detail for the selected month only */}
       <div className="space-y-6">
         {[monthsData[selected]].map((month, i) => {
