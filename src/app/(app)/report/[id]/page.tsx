@@ -13,6 +13,7 @@ import { ReportSidebar } from '@/components/report/ReportSidebar';
 import { NativityCard } from '@/components/report/NativityCard';
 import { ForecastSnapshot } from '@/components/report/ForecastSnapshot';
 import { DashaTimeline } from '@/components/report/DashaTimeline';
+import { DecideSection } from '@/components/report/DecideSection';
 import { MonthlyAnalysis } from '@/components/report/MonthlyAnalysis';
 import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 import { DailyAnalysis } from '@/components/report/DailyAnalysis';
@@ -1423,6 +1424,17 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
 
           {/* (Birth-chart detail moved below the forecast — see "About your chart". The
               report now leads with plain-language insight, not the technical chart.) */}
+
+          {/* DECIDE — domain-filtered timing intelligence: "When should I act on X?" */}
+          {!isPreviewPlan && reportData?.months && reportData.months.length > 0 && (
+            <ReportErrorBoundary fallbackTitle="Timing by domain">
+              <DecideSection
+                months={reportData.months}
+                strategicWindows={reportData?.synthesis?.strategic_windows ?? []}
+                days={mergedDays.map((d) => ({ date: d.date ?? '', day_score: d.day_score ?? 50 }))}
+              />
+            </ReportErrorBoundary>
+          )}
 
           {!isPreviewPlan && (
             <ReportErrorBoundary fallbackTitle="Monthly Analysis">

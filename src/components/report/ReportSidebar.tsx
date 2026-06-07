@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 const NAV_ITEMS = [
   { id: 'snapshot', label: 'Summary' },
+  { id: 'decide', label: 'Decide' },
   { id: 'monthly', label: 'Year' },
   { id: 'weekly', label: 'Weeks' },
   { id: 'daily', label: 'Days' },
