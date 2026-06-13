@@ -10,6 +10,9 @@ export default function Footer() {
           </span>
 
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 font-body text-body-sm text-dust">
+            <Link href="/kundali" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5">Free Kundli</Link>
+            <Link href="/synastry" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5">Kundli Matching</Link>
+            <Link href="/horoscope/aries" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5">Daily Horoscope</Link>
             <Link href="/#how-it-works" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5">How It Works</Link>
             <Link href="/pricing" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5">Pricing</Link>
             <Link href="/refund" className="hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-0.5">Refund Policy</Link>
