@@ -7,7 +7,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import type { NatalChartData } from '@/lib/agents/types';
 import { plainify } from '@/lib/utils/plainify';
 import { buildDeepKundli } from '@/lib/kundli/deepKundli';
-import { buildKundliCommentary } from '@/lib/kundli/kundliCommentary';
+import { buildKundliCommentary, type KundliSections } from '@/lib/kundli/kundliCommentary';
 
 type BirthPayload = {
   name?: string;
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
   const deep = buildDeepKundli(chart, { currentSaturnSign });
 
   // 3) Scripture-grounded narrative (overview + 7 life areas + 5-year outlook).
-  let sections;
+  let sections: KundliSections;
   try {
     sections = await buildKundliCommentary(chart, deep, p.name || 'You');
   } catch (e) {
@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
       lifeAreas: {
         life: '', career_finances: '', relationships: '',
         marriage_intimacy: '', health: '', children: '', family: '',
-      } as Record<string, string>,
-      yearOutlook: [] as Array<{ year: number; text: string }>,
+      },
+      yearOutlook: [],
     };
   }
 

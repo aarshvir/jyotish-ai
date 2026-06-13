@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/stale-reports",
       "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/reconcile-payments",
+      "schedule": "*/15 * * * *"
     }
   ]
 }
