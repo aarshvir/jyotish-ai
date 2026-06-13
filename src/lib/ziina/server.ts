@@ -34,12 +34,19 @@ export const ZIINA_PLANS: Record<string, ZiinaPlan> = {
     amountUSD: 1000,
     amountINR: 70000,
   },
-  /** Ashtakoot compatibility — standalone product */
+  /** Ashtakoot compatibility (matchmaking) — standalone product. $9.99 / ₹899 / AED 36.99 */
   synastry: {
-    name: 'VedicHour Synastry (Ashtakoot)',
-    amountAED: 5699,
-    amountUSD: 1499,
-    amountINR: 119900,
+    name: 'VedicHour Matchmaking (Ashtakoot)',
+    amountAED: 3699,
+    amountUSD: 999,
+    amountINR: 89900,
+  },
+  /** High-level Kundali (birth chart) analysis — standalone product. $9.99 / ₹899 / AED 36.99 */
+  kundali: {
+    name: 'VedicHour Kundali Analysis',
+    amountAED: 3699,
+    amountUSD: 999,
+    amountINR: 89900,
   },
 };
 

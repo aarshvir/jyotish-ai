@@ -17,7 +17,8 @@ const AuthButton = dynamic(() => import('@/components/shared/AuthButton'), {
 });
 
 const NAV_LINKS = [
-  { href: '/#how-it-works', label: 'How it works' },
+  { href: '/kundali', label: 'Kundali' },
+  { href: '/synastry', label: 'Matchmaking' },
   { href: '/pricing', label: 'Pricing' },
 ] as const;
 
