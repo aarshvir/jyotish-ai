@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VedicHour — Launch Playbook</title>
+<style>
+  :root{
+    --bg:#0d1020; --panel:#151a30; --panel2:#1b2140; --ink:#eaeefc; --dim:#aab2d5;
+    --muted:#7a83ad; --amber:#e6b84a; --amber2:#f4d27a; --line:#2a3157;
+    --red:#ff6b6b; --redbg:#2a1626; --green:#46d39a; --greenbg:#0f2a22; --warnbg:#2a2310;
+    --code:#0a0d1c;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:0 22px 120px}
+  header.hero{padding:54px 22px 30px;text-align:center;border-bottom:1px solid var(--line);
+    background:radial-gradient(120% 80% at 50% 0%, rgba(230,184,74,.10), transparent 60%)}
+  header.hero .eyebrow{color:var(--amber);font-size:13px;letter-spacing:.22em;text-transform:uppercase;font-weight:600}
+  header.hero h1{font-size:40px;margin:10px 0 6px;letter-spacing:-.02em}
+  header.hero p{color:var(--dim);margin:0;font-size:17px}
+  header.hero .tag{display:inline-block;margin-top:16px;background:var(--redbg);color:var(--red);
+    border:1px solid rgba(255,107,107,.4);border-radius:999px;padding:6px 16px;font-weight:600;font-size:14px}
+  h2{font-size:27px;margin:46px 0 6px;padding-top:14px;letter-spacing:-.01em}
+  h2 .num{color:var(--amber);font-variant-numeric:tabular-nums}
+  h3{font-size:19px;margin:26px 0 4px;color:var(--amber2)}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 16px}
+  p{margin:10px 0}
+  a{color:var(--amber2)}
+  code{background:var(--code);border:1px solid var(--line);border-radius:5px;padding:1px 6px;
+    font:13.5px/1.5 "SF Mono",ui-monospace,Menlo,Consolas,monospace;color:#ffd98a}
+  /* callout boxes */
+  .box{border-radius:12px;padding:16px 18px;margin:18px 0;border:1px solid var(--line);background:var(--panel)}
+  .box.red{background:var(--redbg);border-color:rgba(255,107,107,.35)}
+  .box.green{background:var(--greenbg);border-color:rgba(70,211,154,.3)}
+  .box.amber{background:var(--warnbg);border-color:rgba(230,184,74,.35)}
+  .box h4{margin:0 0 8px;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
+  .box.red h4{color:var(--red)} .box.green h4{color:var(--green)} .box.amber h4{color:var(--amber)}
+  /* step card */
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin:16px 0}
+  .step .head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .step .id{font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums;font-size:17px}
+  .step .ttl{font-weight:600;font-size:17px}
+  .step .time{margin-left:auto;color:var(--muted);font-size:13px;font-family:ui-monospace,monospace;white-space:nowrap}
+  .step ol{margin:8px 0 8px 0;padding-left:22px}
+  .step ol li{margin:5px 0}
+  .row{display:flex;gap:8px;margin:8px 0;font-size:14.5px}
+  .row .k{flex:0 0 86px;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+  .row.done .k{color:var(--green)} .row.warn .k{color:var(--amber)} .row.why .k{color:var(--muted)}
+  .row .v{flex:1}
+  /* checklist */
+  ul.check{list-style:none;padding:0;margin:10px 0}
+  ul.check li{display:flex;gap:11px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line)}
+  ul.check li:last-child{border-bottom:0}
+  ul.check input{margin-top:4px;width:17px;height:17px;accent-color:var(--amber);flex:0 0 auto;cursor:pointer}
+  ul.check label{cursor:pointer}
+  /* tables */
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--amber);font-size:12px;text-transform:uppercase;letter-spacing:.05em;background:var(--panel2)}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  /* paste assets */
+  .paste{background:var(--code);border:1px solid var(--line);border-left:3px solid var(--amber);
+    border-radius:8px;padding:14px 16px;margin:12px 0;font:14px/1.6 ui-monospace,Menlo,Consolas,monospace;
+    color:#dfe6ff;white-space:pre-wrap}
+  .paste .lbl{display:block;color:var(--amber);font-family:inherit;font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;margin-bottom:8px}
+  .pill{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+    padding:2px 10px;font-size:12px;color:var(--dim);margin:2px 4px 2px 0}
+  /* sticky toc */
+  nav.toc{position:sticky;top:0;z-index:5;background:rgba(13,16,32,.92);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);padding:10px 22px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+  nav.toc a{color:var(--dim);text-decoration:none;font-size:12.5px;padding:4px 9px;border-radius:7px;white-space:nowrap}
+  nav.toc a:hover{background:var(--panel2);color:var(--ink)}
+  hr{border:0;border-top:1px solid var(--line);margin:40px 0}
+  .foot{color:var(--muted);font-size:13px;text-align:center;margin-top:40px}
+  @media print{
+    body{background:#fff;color:#111}
+    nav.toc{display:none}.step,.box{break-inside:avoid}
+    header.hero{background:none}
+  }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="eyebrow">VedicHour · vedichour.com</div>
+  <h1>Launch Playbook</h1>
+  <p>Zero to live — written for someone who has never touched Supabase, Vercel, Ziina or Google Ads.</p>
+  <div class="tag">🚀 Launching tomorrow · do the phases in order</div>
+</header>
+
+<nav class="toc">
+  <a href="#reality">Reality</a>
+  <a href="#blockers">Blockers</a>
+  <a href="#p0">0 · Go-live</a>
+  <a href="#p1">1 · Money works</a>
+  <a href="#p15">1.5 · Funnel</a>
+  <a href="#p2">2 · Offer</a>
+  <a href="#p3">3 · Launch day</a>
+  <a href="#p4">4 · Google Ads</a>
+  <a href="#p5">5 · Video</a>
+  <a href="#p6">6 · Community</a>
+  <a href="#p7">7 · Numbers</a>
+  <a href="#p8">8 · If it breaks</a>
+</nav>
+
+<div class="wrap">
+
+<section id="reality">
+<h2>📦 Honest reality</h2>
+<p class="sub">Read once, then stop refreshing the sales number.</p>
+<div class="box amber">
+  <p style="margin-top:0"><strong>$5,000 in week 1 is the stretch, not the plan.</strong> At ~$10/sale that's ~500 sales (~70/day) — a brand-new site with no audience and a new ad account can't hit that on paid ads alone. <strong>Honest base case: $300–$1,200 week 1.</strong> $1,800–$2,500 needs a video to pop. $5k happens only if a video/community post goes viral <em>and</em> you raise average order value (the bundle, Phase 2).</p>
+  <p><strong>The one most important thing:</strong> before spending a rupee or recording a video, fix the funnel‑vs‑product mismatch (<a href="#p15">Phase 1.5</a>). Your viral plan points strangers at a "free Gun Milan tool" — the free version now exists thanks to the teaser build, but you must point traffic at the right page.</p>
+  <p style="margin-bottom:0"><strong>Four things live only in your dashboards</strong> (no code can see them): is the Ziina key <strong>live</strong>? Is <code>OPENAI_API_KEY</code> funded? Is <code>INNGEST_EVENT_KEY</code> set? Are the migrations applied in your <strong>live</strong> Supabase? Phases 0 &amp; 1 make you prove each by hand.</p>
+</div>
+</section>
+
+<section id="blockers">
+<h2>☑️ Phase 0 blockers</h2>
+<p class="sub">Must be TRUE before you accept one real payment. Tick each — the boxes save while this page is open.</p>
+<div class="box red">
+<ul class="check">
+  <li><input type="checkbox" id="b0"><label for="b0"><strong>0.0</strong> — Identified the <strong>live</strong> Supabase project (ref matches <code>NEXT_PUBLIC_SUPABASE_URL</code>)</label></li>
+  <li><input type="checkbox" id="b1"><label for="b1"><strong>0.1</strong> — <strong>BOTH</strong> <code>20260613_kundali_standalone.sql</code> + <code>20260613_kundali_deep_report.sql</code> applied to the live project</label></li>
+  <li><input type="checkbox" id="b2"><label for="b2"><strong>0.2</strong> — <code>user_synastry_unlock</code> table confirmed present</label></li>
+  <li><input type="checkbox" id="b3"><label for="b3"><strong>0.3a</strong> — <code>ZIINA_API_TOKEN</code> is the <strong>live</strong> key, Production scope, <strong>redeployed</strong></label></li>
+  <li><input type="checkbox" id="b4"><label for="b4"><strong>0.3b</strong> — <code>INNGEST_EVENT_KEY</code> present in Production <em>or</em> Forecast held back</label></li>
+  <li><input type="checkbox" id="b5"><label for="b5"><strong>0.4</strong> — One real Forecast checked: domain scores vary, not the <code>48/52/58/70/73/65</code> fallback</label></li>
+  <li><input type="checkbox" id="b6"><label for="b6"><strong>0.7</strong> — Railway ephemeris service confirmed <strong>awake</strong></label></li>
+  <li><input type="checkbox" id="b7"><label for="b7"><strong>1.5</strong> — Funnel decision made in incognito (where does traffic go?)</label></li>
+</ul>
+</div>
+</section>
+
+<section id="p0">
+<h2><span class="num">Phase 0</span> — Tonight, before you sleep</h2>
+<p class="sub">Technical go-live · ~100–120 min · if you do nothing else: 0.0, 0.1, 0.3a, 0.3b, 0.7</p>
+<div class="box red">
+  <h4>Four separate ways money silently disappears</h4>
+  <ol style="margin:0;padding-left:20px">
+    <li>Kundali buyer charged but locked out → missing migration (0.1)</li>
+    <li>Forecast buyer charged but no report → missing <code>INNGEST_EVENT_KEY</code> (0.3b)</li>
+    <li>No real money collected → test Ziina key (0.3a)</li>
+    <li>Every product fails at "calculating your chart" → Railway asleep (0.7)</li>
+  </ol>
+</div>
+
+<div class="step">
+  <div class="head"><span class="id">0.0</span><span class="ttl">Find which Supabase project is live 🔴</span><span class="time">~6 min</span></div>
+  <div class="row why"><div class="k">Why</div><div class="v">Run migrations on the wrong project and they "succeed" but change nothing live — you'd tick the box while every buyer is still locked out.</div></div>
+  <ol>
+    <li><strong>vercel.com</strong> → log in → project <strong>jyotish-ai</strong> → <strong>Settings → Environment Variables</strong>.</li>
+    <li>Click the <strong>eye icon</strong> on <code>NEXT_PUBLIC_SUPABASE_URL</code> → it reads <code>https://abcd1234.supabase.co</code> → copy the part before <code>.supabase.co</code>. Write it down.</li>
+    <li><strong>supabase.com</strong> → each project → <strong>Project Settings → General → Reference ID</strong>. The one that <strong>matches</strong> is your live DB. Bookmark it.</li>
+  </ol>
+  <div class="row done"><div class="k">Done when</div><div class="v">One project's ref matches. Every Supabase step happens only in this project.</div></div>
+  <div class="row warn"><div class="k">If stuck</div><div class="v">No match → you're in the wrong Supabase login. Don't run migrations anywhere until it matches.</div></div>
+</div>
+
+<div class="step">
+  <div class="head"><span class="id">0.1</span><span class="ttl">Apply BOTH Kundali migrations — the #1 blocker 🔴</span><span class="time">~10 min</span></div>
+  <div class="row why"><div class="k">Why</div><div class="v">Kundali writes to tables/columns that don't exist yet. Without File 1 a buyer is charged but locked out; without File 2 the deep report fails to save.</div></div>
+  <ol>
+    <li>Live Supabase → <strong>SQL Editor → + New query</strong>.</li>
+    <li>Open <code>…\supabase\migrations\20260613_kundali_standalone.sql</code> in <strong>Notepad</strong> (right-click → Open with → Notepad). <strong>Ctrl+A, Ctrl+C</strong> → paste in the SQL box → <strong>Run</strong>.</li>
+    <li><strong>+ New query</strong> → open <code>20260613_kundali_deep_report.sql</code> → copy → paste → <strong>Run</strong>.</li>
+  </ol>
+  <div class="row done"><div class="k">Done when</div><div class="v">Both show green <strong>"Success. No rows returned."</strong> — that is correct for table changes.</div></div>
+  <div class="row warn"><div class="k">If stuck</div><div class="v">"already exists"/"column already exists" = good, already there. Any other red error → don't sell Kundali tomorrow; launch Forecast + Matchmaking, fix Kundali after.</div></div>
+</div>
+
+<div class="step">
+  <div class="head"><span class="id">0.2</span><span class="ttl">Confirm the Matchmaking table</span><span class="time">~4 min</span></div>
+  <ol><li>Same project → <strong>Table Editor</strong> → look for <code>user_synastry_unlock</code>.</li></ol>
+  <div class="row warn"><div class="k">If missing</div><div class="v">Run <code>20260420_pillar4_revenue_synastry.sql</code> then <code>20260422_synastry_unlock_ziina_user.sql</code>, then click the <strong>refresh icon</strong> (Table Editor doesn't auto-update).</div></div>
+</div>
+
+<div class="step">
+  <div class="head"><span class="id">0.3a</span><span class="ttl">Confirm Ziina collects REAL money 💰</span><span class="time">~12 min</span></div>
+  <div class="row why"><div class="k">Why</div><div class="v">The code reads one setting — <code>ZIINA_API_TOKEN</code>. Live‑vs‑test is entirely whether that token is live.</div></div>
+  <ol>
+    <li><strong>app.ziina.com → Settings → API Keys</strong> → turn OFF any "Test mode" → copy the <strong>LIVE</strong> key.</li>
+    <li>Vercel → Environment Variables → reveal <code>ZIINA_API_TOKEN</code>. If it isn't the live key → <strong>Edit</strong> → paste → check <strong>Production</strong> → Save.</li>
+    <li><strong>Deployments → newest → … → Redeploy</strong> (keep "Use existing Build Cache").</li>
+  </ol>
+  <div class="row done"><div class="k">Done when</div><div class="v">Redeploy shows <strong>Ready</strong>. The only 100% proof is the Phase 1 real-card buy charging you.</div></div>
+</div>
+
+<div class="step">
+  <div class="head"><span class="id">0.3b</span><span class="ttl">Confirm INNGEST_EVENT_KEY — the silent Forecast-killer 🔴</span><span class="time">~4 min</span></div>
+  <div class="row why"><div class="k">Why</div><div class="v">The paid Forecast is generated in the background by Inngest. No key = the buyer pays and the report never generates.</div></div>
+  <ol><li>Vercel → Environment Variables → confirm <code>INNGEST_EVENT_KEY</code> has a value, Production scope.</li></ol>
+  <div class="row warn"><div class="k">If missing &amp; you don't know Inngest</div><div class="v">You can't fix it tonight — and that's OK. <strong>Hold the Forecast back, launch only Kundali + Matchmaking</strong> (neither uses Inngest, both unlock instantly).</div></div>
+</div>
+
+<div class="step">
+  <div class="head"><span class="id">0.4</span><span class="ttl">Verify Forecast report quality 🎯</span><span class="time">~15 min (in 1C)</span></div>
+  <div class="row why"><div class="k">Why</div><div class="v">If <code>OPENAI_API_KEY</code> is missing/unfunded, months silently fall back to template text.</div></div>
+  <div class="row"><div class="k">Check</div><div class="v">In the generated report, ANY of these = AI didn't run: (a) the 4 domain scores are <strong>identical</strong> within a month; (b) the six overalls are exactly <code>48,52,58,70,73,65</code>; (c) robot themes like "A strong month (73/100)"; (d) months with no named transits.</div></div>
+  <div class="row warn"><div class="k">If broken</div><div class="v">Confirm <code>OPENAI_API_KEY</code> has billing; if <code>gpt-5.5</code> is the issue set <code>REPORT_MONTHLY_MODEL</code> to a known-good model + redeploy. Until fixed, don't run paid ads to the Forecast.</div></div>
+</div>
+
+<div class="step">
+  <div class="head"><span class="id">0.5–0.6</span><span class="ttl">Prices &amp; analytics</span><span class="time">~6 min</span></div>
+  <div class="row"><div class="k">Prices</div><div class="v">Open <strong>vedichour.com</strong> → prices show in your currency. <strong>Don't "fix" the numbers</strong> — they're intentional (7-day is AED 37.99, not 36.99 — that's correct).</div></div>
+  <div class="row"><div class="k">Analytics</div><div class="v">Vercel → <strong>Analytics</strong> tab → Enable.</div></div>
+</div>
+
+<div class="step">
+  <div class="head"><span class="id">0.7</span><span class="ttl">Confirm Railway ephemeris is AWAKE 🟠</span><span class="time">~4 min</span></div>
+  <div class="row why"><div class="k">Why</div><div class="v">Free tiers sleep when idle. If cold, every product fails at chart calculation.</div></div>
+  <ol><li>Open <strong>vedichour.com/kundali</strong> and start a flow far enough to trigger a chart calc (first load may be a slow cold-start; a 2nd try should be fast). Or check <strong>railway.app</strong> → service is <strong>Active</strong>.</li></ol>
+  <div class="row warn"><div class="k">If 502s</div><div class="v">Railway down/out of credits — don't launch anything until it answers; restart it in Railway.</div></div>
+</div>
+</section>
+
+<section id="p1">
+<h2><span class="num">Phase 1</span> — Prove the money works</h2>
+<p class="sub">First thing in the morning. Buy each with your own real card in incognito as a brand-new user, confirm you get the product, refund yourself.</p>
+<div class="box amber">
+  <p style="margin:0">You can't trigger test mode on the live site — expect real charges. You'll likely eat a small non-refundable FX loss (Ziina settles AED). Refunds take 5–10 business days. <strong>Test logged-out in incognito (Chrome Ctrl+Shift+N)</strong> through a real sign-up — otherwise you'll miss whether cold strangers can even reach checkout.</p>
+</div>
+<table>
+  <tr><th>Test</th><th>Steps</th><th>✅ Done when</th></tr>
+  <tr><td><strong>1A Matchmaking</strong><br>/synastry</td><td>Incognito → sign up → "See our compatibility — free" → you get the free score → Unlock → pay → enter two births</td><td>Free score shows, then full 8-part breakdown after payment; payment in Ziina</td></tr>
+  <tr><td><strong>1B Kundali</strong><br>/kundali</td><td>Incognito → sign up → free chart facts → Unlock → pay → enter one birth</td><td>Deep reading appears; you're not asked to pay again</td></tr>
+  <tr><td><strong>1C Forecast</strong><br>homepage</td><td>Free-Kundli flow → 7-day plan → pay → wait</td><td>Report appears AND passes the 0.4 quality check</td></tr>
+  <tr><td><strong>1D Refund</strong></td><td>app.ziina.com → Payments → open each → Refund</td><td>All three show Refunded</td></tr>
+</table>
+</section>
+
+<section id="p15">
+<h2><span class="num">Phase 1.5</span> — The funnel decision 🔴</h2>
+<p class="sub">Before any ad/video/post. It rewrites all your copy.</p>
+<div class="box red">
+  <p style="margin-top:0">Your viral plan needs a <strong>free</strong> thing to point people to. The teaser build now gives <code>/synastry</code> a <strong>free 36-point score</strong> (breakdown stays paid) and <code>/kundali</code> a <strong>free chart summary</strong> (full reading paid). Decide where traffic goes and keep "free" honest:</p>
+  <ul style="margin:8px 0">
+    <li><strong>Recommended:</strong> point matchmaking ads/videos at <code>/synastry</code> — strangers get their free Gun Milan score, then "comment your score" works.</li>
+    <li>Point Kundali ads at <code>/kundali</code> (free chart summary) or the homepage free Kundli.</li>
+  </ul>
+  <p style="margin-bottom:0"><strong>If you point "free" ads at a page that errors or forces login first, Google disapproves them (₹0 spent) or they convert ~0%.</strong> Confirm in incognito what a logged-out stranger sees before spending.</p>
+</div>
+</section>
+
+<section id="p2">
+<h2><span class="num">Phase 2</span> — The offer</h2>
+<p class="sub">⚠ NOT a tonight task — day-2 priority. The only realistic path to $5k. Launch without it; add it day 2.</p>
+<p><strong>Bundle = hardcoded price, NOT a coupon.</strong> "LAUNCH40" silently does nothing (promos are skipped for standalone products). Hardcode a "Complete Reading" bundle (Kundali + Matchmaking + Monthly Forecast) at <strong>$29 / ₹2,499</strong> with a struck-through "$39 / ₹2,999" and "Launch price — ends Sunday." Monday, raise it.</p>
+<p><strong>Trust on every product page:</strong> the 24-hour money-back guarantee (prominent), a free/redacted sample, a one-line "who made this," and real testimonials once you have buyers.</p>
+<p><strong>Capture emails (week-1, highest ROI after the bundle):</strong> ~98% of visitors leave forever — add "enter your email to save your score" + a 2-email follow-up.</p>
+</section>
+
+<section id="p3">
+<h2><span class="num">Phase 3</span> — Launch day rhythm (IST)</h2>
+<p class="sub">Day-1 success = 3 videos posted + 5 communities seeded + every comment answered. Sales lag.</p>
+<table>
+  <tr><th>Time IST</th><th>Do</th></tr>
+  <tr><td>7:00–7:30am</td><td>Post <strong>Video #1</strong> to YouTube Shorts + IG Reels + TikTok (prime India window)</td></tr>
+  <tr><td>7:30–8:30am</td><td>First WhatsApp/Facebook group message; glance at Ads (expect no clicks)</td></tr>
+  <tr><td>9:00am</td><td>First check-in (Phase 7)</td></tr>
+  <tr><td>9:30am–12pm</td><td>Reply to <strong>every</strong> comment — comments boost reach most</td></tr>
+  <tr><td>12:00–1:00pm</td><td><strong>Video #2</strong> (new hook); seed 1–2 more communities</td></tr>
+  <tr><td>8:00–9:00pm</td><td><strong>Video #3</strong> — best India window, strongest hook</td></tr>
+  <tr><td>9:00pm</td><td>Evening check-in; plan tomorrow</td></tr>
+</table>
+</section>
+
+<section id="p4">
+<h2><span class="num">Phase 4</span> — Google Ads, click by click</h2>
+<p class="sub">Set up the night before — review runs overnight; expect zero Day-1 clicks (normal). Don't start until Phase 1.5 is decided.</p>
+<ol>
+  <li><strong>ads.google.com</strong> → Start now → if pushed to "Smart mode," click <strong>"Switch to Expert Mode" → "Create a campaign without a goal's guidance."</strong></li>
+  <li>Type <strong>Search</strong> only. Uncheck Display + Search partners. Location <strong>India</strong>. Language English + Hindi. Budget <strong>₹1,000/day</strong>. Bidding "Maximize clicks" → expand advanced → <strong>max CPC = ₹40</strong>.</li>
+  <li>Ad group <strong>Kundli Matching</strong>, phrase match: <span class="pill">"kundli matching online"</span><span class="pill">"gun milan calculator"</span><span class="pill">"kundli milan by name"</span><span class="pill">"ashtakoot gun milan"</span><span class="pill">"marriage compatibility kundli"</span></li>
+  <li><strong>Final URL</strong> = your Phase 1.5 destination <strong>with UTMs</strong>: <code>https://vedichour.com/synastry?utm_source=google&amp;utm_campaign=kundli</code></li>
+  <li>Negatives: <span class="pill">software</span><span class="pill">app download</span><span class="pill">job</span> → Publish.</li>
+</ol>
+<div class="paste"><span class="lbl">Paste — ad copy</span>Headline 1: Free Kundli Matching Online
+Headline 2: Get Your Gun Milan Score
+Headline 3: 36-Point Ashtakoot Match
+Description 1: Check marriage compatibility instantly. Free 36-point Gun Milan score with full 8-fold breakdown.
+Description 2: Accurate Vedic Kundli matching by birth details. Try it free in 60 seconds.</div>
+<div class="box amber"><p style="margin:0"><strong>A disapproved ad spends ₹0.</strong> If spend is zero, check the <strong>Status</strong> column before blaming budget — usual cause is "free" landing on a login/paywall (the Phase 1.5 fix).</p></div>
+</section>
+
+<section id="p5">
+<h2><span class="num">Phase 5</span> — The 30-second video</h2>
+<p class="sub">Your only channel that carries volume at $0. ~30–45 min first, ~15 after. Post 1–3/day.</p>
+<ol>
+  <li><strong>Record</strong> the real product: phone screen recorder or OBS → go to <code>/synastry</code>, type details slowly, reveal the free score (~30–45s).</li>
+  <li><strong>Edit in CapCut (free):</strong> trim under 30s (reveal by ~20s), <strong>auto-captions</strong> (most watch muted), bold hook text first 3s, voiceover via CapCut TTS or ElevenLabs free.</li>
+  <li><strong>Post</strong> the same video to YouTube Shorts + IG Reels + TikTok. Best India times 7–9am &amp; 8–10pm IST. <strong>End every video with "comment your score."</strong></li>
+</ol>
+<div class="paste"><span class="lbl">Paste — 30-sec script</span>Most couples score below 18 out of 36 — and they have no idea. Let me check a real one.
+I'll enter both birth details… and here's their Gun Milan score. [reveal]
+Twenty-six out of thirty-six. That's the 8-part Ashtakoot breakdown — mind, health, even future children.
+Want to check yours? It's free. Comment your score below.</div>
+<div class="paste"><span class="lbl">Paste — caption + hashtags</span>Check your marriage compatibility free 👇
+#vedicastrology #kundli #gunmilan #jyotish #kundlimatching #marriagecompatibility</div>
+</section>
+
+<section id="p6">
+<h2><span class="num">Phase 6</span> — Community seeding</h2>
+<p class="sub">~30 min/day. Lead with a screenshot of a real score, not a link. One post per group, never twice/day. Be a member, not a spammer.</p>
+<div class="paste"><span class="lbl">Paste — WhatsApp #1 (attach a score screenshot)</span>Found a free Gun Milan / Kundli matching tool that gives the full 36-point Ashtakoot breakdown (not just a number). Tried it for fun — got 26/36 😅. Sharing in case it's useful: vedichour.com</div>
+<div class="paste"><span class="lbl">Paste — WhatsApp #2 (matrimony / parents groups)</span>For anyone doing Kundli matching for a rishta — this free tool gives the full 8-fold Ashtakoot breakdown, not just a total. Did one for my cousin's match, came out 24/36. Might save a trip to the astrologer: vedichour.com</div>
+<div class="paste"><span class="lbl">Paste — Reddit post</span>Title: Made a free Kundli matching tool that shows the full 8-fold Ashtakoot breakdown (not just a number)
+
+I built it as a free resource, not selling anything here — genuinely curious what scores people get and whether the breakdown matches their experience. [link]</div>
+<div class="paste"><span class="lbl">Paste — Instagram caption</span>She said "we're perfect for each other" 😏 so I checked their Gun Milan. 👀
+Most couples have NO idea they score below 18/36. Free 36-point Ashtakoot breakdown — mind, health, even future kids.
+👉 Check yours free (link in bio). Comment your score 👇
+#vedicastrology #kundli #gunmilan #jyotish #kundlimatching</div>
+</section>
+
+<section id="p7">
+<h2><span class="num">Phase 7</span> — Watch the numbers</h2>
+<p class="sub">9am + 9pm. Two dashboards: Ziina (sales) and Google Ads (spend/clicks).</p>
+<div class="box amber"><p style="margin:0"><strong>Attribution:</strong> Vercel Analytics + Ziina can't tie a sale to an ad click. Put <strong>UTM tags on ad URLs before turning ads on</strong>, or you'll burn ₹1,000/day with no kill signal.</p></div>
+<table>
+  <tr><th>Metric</th><th>Where</th><th>Rule</th></tr>
+  <tr><td>Sales / revenue</td><td>Ziina → Payments</td><td>the truth</td></tr>
+  <tr><td>Ad spend / clicks</td><td>Google Ads</td><td>₹0 Day-1 is fine</td></tr>
+  <tr><td>Keyword cost</td><td>Google Ads</td><td><strong>Kill</strong> any keyword &gt;₹400 with 0 clicks/sales</td></tr>
+  <tr><td>Cost per sale</td><td>spend ÷ sales</td><td><strong>Scale</strong> +50% if under ~$10; pause if over</td></tr>
+  <tr><td>Refunds / complaints</td><td>Ziina + DMs</td><td><strong>2+ broken-report reports → STOP all ads</strong></td></tr>
+</table>
+<div class="box red"><p style="margin:0"><strong>Chargeback circuit-breaker:</strong> if 2+ buyers report a broken/generic report, pause all ads and stop posting links immediately — too many chargebacks can freeze your Ziina account. Fix the report (0.3b / 0.4 / 0.7) then resume.</p></div>
+</section>
+
+<section id="p8">
+<h2><span class="num">Phase 8</span> — If something breaks</h2>
+<table>
+  <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td>Migrations "succeeded" but still broken</td><td>wrong Supabase project</td><td>redo 0.0, run files in correct project</td></tr>
+  <tr><td>Kundali/Matchmaking buyer locked out</td><td>unlock table missing</td><td>run the migration; manual-unlock if already charged</td></tr>
+  <tr><td>Forecast paid, never generates</td><td><code>INNGEST_EVENT_KEY</code> missing</td><td>add key + redeploy, or hold Forecast</td></tr>
+  <tr><td>Every product fails "calculating"</td><td>Railway asleep</td><td>wake/restart Railway</td></tr>
+  <tr><td>No real money arriving</td><td>test <code>ZIINA_API_TOKEN</code></td><td>0.3a + redeploy</td></tr>
+  <tr><td>Scores identical / are 48,52,58,70,73,65</td><td>OpenAI key / gpt-5.5</td><td>fix key or set <code>REPORT_MONTHLY_MODEL</code></td></tr>
+</table>
+<h3>🟠 Manual-unlock (buyer charged before the migration)</h3>
+<p>Find their <code>user_id</code> in Supabase <strong>Authentication → Users</strong>, then in SQL Editor:</p>
+<div class="paste"><span class="lbl">SQL</span>insert into user_kundali_unlock (user_id) values ('THE-USER-UUID') on conflict do nothing;
+-- for a matchmaking buyer instead:
+-- insert into user_synastry_unlock (user_id) values ('THE-USER-UUID') on conflict do nothing;</div>
+<div class="box green">
+  <h4>🚨 Rollback — your safety net</h4>
+  <p style="margin:6px 0"><strong>Fastest, non-technical (use this 99% of the time):</strong> vercel.com → jyotish-ai → <strong>Deployments</strong> → a pre-launch one marked <strong>Ready</strong> → <strong>… → Promote to Production</strong>. Instant, no rebuild. Your panic button.</p>
+  <p style="margin:6px 0 0"><strong>Full code rollback — developer only</strong> (contains <code>git push --force</code>): tags <code>rollback/pre-launch-build</code>, <code>rollback/step-54…59</code>. With a dev: <code>git reset --hard rollback/pre-launch-build &amp;&amp; git push --force origin main</code>.</p>
+</div>
+</section>
+
+<hr>
+<p class="foot">The thing most likely to make tomorrow work isn't the ads — it's pointing traffic at something that's actually free and works (1.5), how many videos you post, how fast you reply, and capturing emails. Get 0.0 / 0.3a / 0.3b / 0.7 / 1.5 right and the rest is posting and replying. Go. 🚀</p>
+</div>
+</body>
+</html>
