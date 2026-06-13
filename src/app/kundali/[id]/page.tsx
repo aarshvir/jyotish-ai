@@ -28,7 +28,9 @@ export default async function KundaliResultPage({ params }: Props) {
 
   const { data: row } = await supabase
     .from('kundali_charts')
-    .select('person, chart, lagna_analysis, dasha_interpretation, created_at')
+    .select(
+      'person, chart, lagna_analysis, dasha_interpretation, overview, vargas, doshas, life_areas, year_outlook, created_at',
+    )
     .eq('id', params.id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -43,6 +45,16 @@ export default async function KundaliResultPage({ params }: Props) {
     dasha_sequence?: Array<{ planet: string; start_date: string; end_date: string }>;
   };
   const person = row.person as { name?: string };
+
+  type DoshaFlag = { present?: boolean; severity?: string; from?: string[]; note?: string };
+  const doshas = (row.doshas ?? {}) as {
+    manglik?: DoshaFlag;
+    kaalSarpa?: DoshaFlag;
+    sadeSati?: DoshaFlag;
+  };
+  const vargas = (row.vargas ?? {}) as { d9?: Record<string, string>; d9Lagna?: string; navamsaNote?: string };
+  const lifeAreas = (row.life_areas ?? {}) as Record<string, string>;
+  const yearOutlook = (row.year_outlook ?? []) as Array<{ year: number; text: string }>;
 
   return (
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
@@ -59,6 +71,11 @@ export default async function KundaliResultPage({ params }: Props) {
           dashaSequence={chart?.dasha_sequence ?? []}
           lagnaAnalysis={String(row.lagna_analysis ?? '')}
           dashaInterpretation={String(row.dasha_interpretation ?? '')}
+          overview={String(row.overview ?? row.lagna_analysis ?? '')}
+          lifeAreas={lifeAreas}
+          yearOutlook={yearOutlook}
+          doshas={doshas}
+          navamsaNote={String(vargas?.navamsaNote ?? '')}
           createdAt={String(row.created_at ?? '')}
         />
       </main>

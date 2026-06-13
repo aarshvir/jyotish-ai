@@ -130,7 +130,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
           </div>
 
           <div className="max-w-sm mx-auto mb-6 space-y-1.5">
-            {['Who you are (full reading)', 'The chapter you are in now', 'Your life-chapters timeline'].map((k) => (
+            {['Life, career & money, marriage, health, kids, family', 'Your year-by-year outlook (next 5 years)', 'Manglik, Kaal Sarpa & Sade Sati checks'].map((k) => (
               <div key={k} className="flex items-center justify-between rounded-md bg-bg-3/40 border border-horizon/30 px-3 py-2">
                 <span className="font-body text-body-sm text-dust/80">{k}</span>
                 <span className="font-mono text-mono-sm text-dust/40">🔒 locked</span>

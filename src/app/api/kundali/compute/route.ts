@@ -1,10 +1,13 @@
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import type { NatalChartData } from '@/lib/agents/types';
 import { plainify } from '@/lib/utils/plainify';
+import { buildDeepKundli } from '@/lib/kundli/deepKundli';
+import { buildKundliCommentary } from '@/lib/kundli/kundliCommentary';
 
 type BirthPayload = {
   name?: string;
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
     'x-service-key': process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
   };
 
-  // 1) Natal chart from the ephemeris service
+  // 1) Natal chart from the ephemeris service (deterministic, Swiss Ephemeris / Lahiri)
   const chartRes = await fetch(`${origin}/api/agents/ephemeris`, {
     method: 'POST',
     headers: h,
@@ -74,61 +77,78 @@ export async function POST(request: NextRequest) {
   const chartJson = await chartRes.json();
   const chart = (chartJson.data ?? chartJson) as NatalChartData;
 
-  const lagna = chart.lagna ?? 'Unknown';
-  const moon = chart.planets?.Moon;
-  const md = chart.current_dasha?.mahadasha ?? 'Unknown';
-  const ad = chart.current_dasha?.antardasha ?? 'Unknown';
-
-  // 2) Plain-language chart reading from the nativity-text agent
-  let lagna_analysis = '';
-  let dasha_interpretation = '';
+  // 1b) Best-effort current Saturn sign for Sade Sati (date-only is sufficient for sidereal sign).
+  let currentSaturnSign: string | undefined;
   try {
-    const natRes = await fetch(`${origin}/api/commentary/nativity-text`, {
+    const today = new Date().toISOString().slice(0, 10);
+    const nowRes = await fetch(`${origin}/api/agents/ephemeris`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Cookie: request.headers.get('cookie') ?? '' },
+      headers: h,
       body: JSON.stringify({
-        lagnaSign: lagna,
-        lagnaDegreee: chart.lagna_degree ?? 0,
-        moonSign: moon?.sign ?? 'Unknown',
-        moonNakshatra: moon?.nakshatra ?? chart.moon_nakshatra ?? 'Unknown',
-        mahadasha: md,
-        antardasha: ad,
-        md_end: chart.current_dasha?.end_date ?? '',
-        ad_end: '',
-        planets: chart.planets ?? {},
+        type: 'natal-chart',
+        birth_date: today,
+        birth_time: '12:00:00',
+        birth_city: p.birth_city || 'Unknown',
+        birth_lat: p.birth_lat,
+        birth_lng: p.birth_lng,
       }),
-      signal: AbortSignal.timeout(80_000),
+      signal: AbortSignal.timeout(20_000),
     });
-    if (natRes.ok || natRes.status === 206) {
-      const nat = await natRes.json();
-      lagna_analysis = nat.lagna_analysis ?? '';
-      dasha_interpretation = nat.dasha_interpretation ?? '';
+    if (nowRes.ok) {
+      const nowJson = await nowRes.json();
+      const nowChart = (nowJson.data ?? nowJson) as NatalChartData;
+      currentSaturnSign = nowChart.planets?.Saturn?.sign;
     }
   } catch {
-    // fall through to deterministic fallback below
+    // Sade Sati will report "pending live transit" — non-fatal.
   }
 
-  // Warm deterministic fallback (never store empty/jargon)
-  if (!lagna_analysis.trim() || lagna_analysis.trim().length < 120) {
-    lagna_analysis =
-      `Your chart has ${lagna} as the rising sign, with the Moon in ${moon?.sign ?? 'your Moon sign'} — together these shape how you naturally approach life, relationships, and opportunity. You are currently in your ${md} period${ad !== 'Unknown' ? `, with ${ad} as the active sub-period` : ''}: a chapter that brings ${md}'s qualities and themes to the foreground.`;
-  }
-  if (!dasha_interpretation.trim()) {
-    dasha_interpretation =
-      `Your ${md} main period${ad !== 'Unknown' ? ` and ${ad} sub-period are` : ' is'} active right now — the chapter that colours what feels most pressing and rewarding in your life. Use your strongest days for decisions that require commitment.`;
+  const moon = chart.planets?.Moon;
+
+  // 2) Deterministic deep engine: divisional charts, doshas, 5-year dasha seeds.
+  const deep = buildDeepKundli(chart, { currentSaturnSign });
+
+  // 3) Scripture-grounded narrative (overview + 7 life areas + 5-year outlook).
+  let sections;
+  try {
+    sections = await buildKundliCommentary(chart, deep, p.name || 'You');
+  } catch (e) {
+    console.error('[kundali/compute] commentary failed, using minimal fallback:', e);
+    sections = {
+      overview:
+        `Your chart has ${chart.lagna ?? 'your rising sign'} rising with the Moon in ${moon?.sign ?? 'your Moon sign'}. ` +
+        `You are currently in your ${chart.current_dasha?.mahadasha ?? 'current'} life period.`,
+      lifeAreas: {
+        life: '', career_finances: '', relationships: '',
+        marriage_intimacy: '', health: '', children: '', family: '',
+      } as Record<string, string>,
+      yearOutlook: [] as Array<{ year: number; text: string }>,
+    };
   }
 
-  lagna_analysis = plainify(lagna_analysis);
-  dasha_interpretation = plainify(dasha_interpretation);
+  const overview = plainify(sections.overview || '');
+  const lifeAreas = Object.fromEntries(
+    Object.entries(sections.lifeAreas || {}).map(([k, v]) => [k, plainify(String(v || ''))]),
+  );
+  const yearOutlook = (sections.yearOutlook || []).map((y) => ({
+    year: y.year,
+    text: plainify(String(y.text || '')),
+  }));
 
-  // 3) Persist
+  // Back-compat scalar fields the older result view still reads.
+  const lagna_analysis = overview;
+  const dasha_interpretation =
+    yearOutlook[0]?.text ||
+    `You are in your ${chart.current_dasha?.mahadasha ?? 'current'} period — the chapter that colours what feels most pressing right now.`;
+
+  // 4) Persist the full deep report.
   const { data: inserted, error: insErr } = await db
     .from('kundali_charts')
     .insert({
       user_id: auth.user.id,
       person: { ...p, name: p.name || 'You' },
       chart: {
-        lagna,
+        lagna: chart.lagna ?? 'Unknown',
         lagna_degree: chart.lagna_degree ?? 0,
         moon_sign: moon?.sign ?? '',
         moon_nakshatra: moon?.nakshatra ?? chart.moon_nakshatra ?? '',
@@ -139,6 +159,13 @@ export async function POST(request: NextRequest) {
       lagna_analysis,
       dasha_interpretation,
       life_themes: [],
+      overview,
+      vargas: deep.vargas as unknown as Record<string, unknown>,
+      doshas: deep.doshas as unknown as Record<string, unknown>,
+      yogas: [],
+      life_areas: lifeAreas,
+      year_outlook: yearOutlook,
+      engine_version: 'deep-v1',
     })
     .select('id')
     .single();
@@ -148,5 +175,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to save your Kundali.' }, { status: 500 });
   }
 
-  return NextResponse.json({ id: inserted.id, lagna_analysis, dasha_interpretation });
+  return NextResponse.json({ id: inserted.id, overview, lifeAreas, yearOutlook });
 }

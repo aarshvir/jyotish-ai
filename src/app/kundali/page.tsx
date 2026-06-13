@@ -8,16 +8,16 @@ import { currencyFromHeader, getDisplayPrice } from '@/lib/pricing';
 import { KundaliForm } from './KundaliForm';
 
 export const metadata: Metadata = {
-  title: 'Kundali Analysis — Your Vedic Birth Chart Reading | VedicHour',
+  title: 'Deep Kundali Report — Your Full Vedic Birth Chart | VedicHour',
   description:
-    'A personalized Vedic birth chart (Kundali) reading in plain English — your rising sign, Moon sign, the life chapter you are in now, and what it means for you. $9.99 / ₹899, instant.',
+    'A deep, personalized Vedic birth report — your full chart read across career & money, marriage & intimacy, health, children and family, a year-by-year outlook for the next 5 years, and the classical checks (Manglik, Kaal Sarpa, Sade Sati). Computed with the Swiss Ephemeris. $9.99 / ₹899.',
   alternates: { canonical: '/kundali' },
 };
 
 const POINTS = [
-  { t: 'Who you are', d: 'Your rising sign and Moon sign — your natural strengths, blind spots, and the way you move through life.' },
-  { t: 'The chapter you are in', d: 'Your current planetary period (dasha) explained in plain language — what it is activating and how long it lasts.' },
-  { t: 'Your life chapters', d: 'A visual timeline of your past, current, and upcoming planetary periods — see where you are in your life.' },
+  { t: 'Every area of life', d: 'Career & money, marriage & intimacy, health, children, and family — each read directly from your chart in plain English, not generic horoscope filler.' },
+  { t: 'Your next 5 years', d: 'A year-by-year outlook driven by your exact planetary periods (dasha) — what each year emphasises and how to make the most of it.' },
+  { t: 'The classical checks', d: 'Manglik, Kaal Sarpa and Sade Sati assessed from real Swiss Ephemeris calculations — explained clearly, never with fear.' },
 ];
 
 export default async function KundaliPage() {
@@ -32,11 +32,12 @@ export default async function KundaliPage() {
         <div className="text-center mb-10">
           <p className="section-eyebrow mb-3">Kundali · Birth Chart Reading</p>
           <h1 className="text-display-md font-display text-star mb-4">
-            Your birth chart, <span className="text-amber">decoded for you</span>
+            Your birth chart, <span className="text-amber">read in full</span>
           </h1>
           <p className="text-body-lg text-dust max-w-2xl mx-auto leading-relaxed">
-            A personalized Vedic birth chart reading in plain English — no jargon, no horoscope filler.
-            Understand who you are, the life chapter you are in right now, and what it means. Instant.
+            A deep, personalized Vedic birth report in plain English — your character, career &amp; money,
+            marriage &amp; intimacy, health, children and family, plus a year-by-year outlook for the next
+            five years. Computed from your exact birth moment with the Swiss Ephemeris.
           </p>
         </div>
 
