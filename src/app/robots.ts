@@ -17,6 +17,9 @@ export default function robots(): MetadataRoute.Robots {
           '/onboard',
           '/login',
           '/signup',
+          '/upsell',
+          '/kundali/',   // private report pages /kundali/{id} (NOT the /kundali landing page)
+          '/synastry/',  // private report pages /synastry/{id} (NOT the /synastry landing page)
         ],
       },
     ],

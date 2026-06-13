@@ -43,7 +43,9 @@ function makeChart(overrides: Partial<Record<string, PlanetData>> = {}, lagna = 
   return {
     lagna,
     lagna_degree: 5,
-    planets: { ...base, ...overrides },
+    // overrides is Partial<> (values widen to PlanetData | undefined); the merged
+    // object is always fully populated by `base`, so assert the concrete type.
+    planets: { ...base, ...overrides } as Record<string, PlanetData>,
     moon_nakshatra: 'Rohini',
     dasha_sequence: [],
     current_dasha: {
