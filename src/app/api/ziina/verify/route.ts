@@ -96,6 +96,9 @@ export async function GET(request: NextRequest) {
     if (resolvedPlanType === 'synastry' || planType === 'synastry') {
       return NextResponse.redirect(`${origin}/synastry?unlocked=1`);
     }
+    if (resolvedPlanType === 'kundali' || planType === 'kundali') {
+      return NextResponse.redirect(`${origin}/kundali?unlocked=1`);
+    }
 
     if (fin.action === 'no_binding') {
       console.error('[ziina/verify] completed intent has no server-side payment binding', {

@@ -227,10 +227,11 @@ export async function finalizeCompletedZiinaIntent(
   const planType = row.plan_type ?? '';
   const reportId = row.report_id;
 
-  const synStandalone =
-    planType === 'synastry' && !reportId && row.user_id;
+  // Standalone unlock products (no report bound): synastry (matchmaking) + kundali.
+  const standaloneUnlock =
+    (planType === 'synastry' || planType === 'kundali') && !reportId && row.user_id;
 
-  if (synStandalone) {
+  if (standaloneUnlock) {
     await db
       .from('ziina_payments')
       .update({
@@ -240,7 +241,8 @@ export async function finalizeCompletedZiinaIntent(
       })
       .eq('ziina_intent_id', intentId);
 
-    const { error: upErr } = await db.from('user_synastry_unlock').upsert(
+    const unlockTable = planType === 'kundali' ? 'user_kundali_unlock' : 'user_synastry_unlock';
+    const { error: upErr } = await db.from(unlockTable).upsert(
       {
         user_id: row.user_id,
         unlocked_at: new Date().toISOString(),
@@ -248,7 +250,7 @@ export async function finalizeCompletedZiinaIntent(
       { onConflict: 'user_id' },
     );
     if (upErr) {
-      console.error('[ziina/finalize] user_synastry_unlock upsert:', upErr);
+      console.error(`[ziina/finalize] ${unlockTable} upsert:`, upErr);
       return { ok: false, error: upErr.message };
     }
     return { ok: true, action: 'processed' };

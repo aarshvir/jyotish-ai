@@ -126,6 +126,37 @@ export default async function PricingPage() {
         </p>
       </section>
 
+      {/* Three standalone readings */}
+      <section className="max-w-5xl mx-auto px-5 sm:px-8 pb-6">
+        <div className="grid sm:grid-cols-2 gap-5">
+          <Link href="/kundali" className="group rounded-card border border-horizon/50 hover:border-amber/50 bg-cosmos p-6 transition-colors">
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="font-display text-headline-md text-star">Kundali Analysis</h3>
+              <span className="font-display text-xl text-amber">{prices['kundali'] ?? usdPrices['kundali']}</span>
+            </div>
+            <p className="font-body text-body-sm text-dust leading-relaxed mb-3">
+              A personalized birth-chart reading in plain English — who you are, the life chapter you are
+              in now, and your life-chapters timeline. Instant.
+            </p>
+            <span className="font-mono text-mono-sm text-amber group-hover:underline">Get your reading →</span>
+          </Link>
+          <Link href="/synastry" className="group rounded-card border border-horizon/50 hover:border-amber/50 bg-cosmos p-6 transition-colors">
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="font-display text-headline-md text-star">Matchmaking (Gun Milan)</h3>
+              <span className="font-display text-xl text-amber">{prices['synastry'] ?? usdPrices['synastry']}</span>
+            </div>
+            <p className="font-body text-body-sm text-dust leading-relaxed mb-3">
+              Enter two birth details and get your 36-point Ashtakoot compatibility score with a full
+              eight-fold breakdown. The classical Kundli matching, computed instantly.
+            </p>
+            <span className="font-mono text-mono-sm text-amber group-hover:underline">Check compatibility →</span>
+          </Link>
+        </div>
+        <p className="text-center font-mono text-mono-sm text-dust/40 mt-5">
+          Or get the hour-by-hour timing forecast below ⌄
+        </p>
+      </section>
+
       {/* Plans */}
       <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-14 sm:pb-18">
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">

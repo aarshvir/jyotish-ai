@@ -52,19 +52,19 @@ export async function POST(request: NextRequest) {
   if (!planType) {
     return NextResponse.json({ error: 'planType required' }, { status: 400 });
   }
-  const isSynastryStandalone = planType === 'synastry' && !reportId;
-  if (!reportId && !isSynastryStandalone) {
+  const isStandaloneUnlock = (planType === 'synastry' || planType === 'kundali') && !reportId;
+  if (!reportId && !isStandaloneUnlock) {
     return NextResponse.json({ error: 'reportId required for this plan' }, { status: 400 });
   }
 
   const promoResult =
-    !isSynastryStandalone && promoCode
+    !isStandaloneUnlock && promoCode
       ? await getPromoDiscount(promoCode, auth.user.email ?? undefined)
       : { valid: false, discountPct: 0 };
 
   const discountPct = promoResult.valid ? promoResult.discountPct : 0;
 
-  if (!isSynastryStandalone && discountPct >= 100) {
+  if (!isStandaloneUnlock && discountPct >= 100) {
     return NextResponse.json({ error: 'Use a valid promo code — this report is free' }, { status: 400 });
   }
 
@@ -101,13 +101,13 @@ export async function POST(request: NextRequest) {
 
   const origin = request.nextUrl.origin;
   const verifyBase = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&planType=${planType}&status=`;
-  const successUrl = isSynastryStandalone
+  const successUrl = isStandaloneUnlock
     ? `${verifyBase}success`
     : `${verifyBase}success&reportId=${reportId}`;
-  const cancelUrl = isSynastryStandalone
+  const cancelUrl = isStandaloneUnlock
     ? `${verifyBase}cancel`
     : `${verifyBase}cancel&reportId=${reportId}`;
-  const failureUrl = isSynastryStandalone
+  const failureUrl = isStandaloneUnlock
     ? `${verifyBase}failure`
     : `${verifyBase}failure&reportId=${reportId}`;
 
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
   const allowTestMode = testMode === true && !productionRuntime;
 
   try {
-    if (reportId && !isSynastryStandalone) {
+    if (reportId && !isStandaloneUnlock) {
       const { data: reportRow, error: reportErr } = await db
         .from('reports')
         .select('user_id')
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
     // after paying. Created 'pending'/'unpaid'; finalize flips it to paid + dispatches
     // generation from these stored birth fields. ignoreDuplicates so it never clobbers
     // an already-owned (e.g. already-paid) row.
-    if (reportId && !isSynastryStandalone) {
+    if (reportId && !isStandaloneUnlock) {
       const toCoord = (v: unknown): number | null => {
         const n = parseFloat(String(v ?? ''));
         return Number.isFinite(n) ? n : null;
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
     // trusts redirect URL parameters for payment/report ownership.
     const { error: dbErr } = await db.from('ziina_payments').insert({
       ziina_intent_id: intent.id,
-      report_id: isSynastryStandalone ? null : reportId,
+      report_id: isStandaloneUnlock ? null : reportId,
       user_id: auth.user.id,
       amount: intent.amount,
       currency: currency,
