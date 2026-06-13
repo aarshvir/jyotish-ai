@@ -145,7 +145,7 @@ function Step1({ form, update, onNext }: Step1Props) {
             id="onboard-name"
             type="text"
             className="cosmic-input"
-            placeholder="Arjuna Sharma"
+            placeholder="Your full name"
             value={form.name}
             onChange={(e) => update('name', e.target.value)}
             onBlur={() => setNameTouched(true)}
@@ -255,7 +255,7 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
             id="onboard-birth-city"
             type="text"
             className="cosmic-input"
-            placeholder="Lucknow, India"
+            placeholder="City, Country (e.g. Mumbai, India)"
             value={form.birthCity}
             onChange={(e) => update('birthCity', e.target.value)}
             onBlur={(e) => onGeocode(e.target.value, false)}
@@ -291,7 +291,7 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
               id="onboard-current-city"
               type="text"
               className="cosmic-input"
-              placeholder="Dubai, UAE (or same as birth city)"
+              placeholder="Your current city (or same as birth city)"
               value={form.currentCity}
               onChange={(e) => update('currentCity', e.target.value)}
               onBlur={(e) => {
