@@ -8,7 +8,9 @@ const DEFAULT: BirthDetails = {
   name: '', birth_date: '', birth_time: '12:00:00', birth_city: '', birth_lat: 0, birth_lng: 0,
 };
 
-export function KundaliForm() {
+interface Teaser { lagna: string; moon_sign: string; moon_nakshatra: string; mahadasha: string; antardasha: string }
+
+export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [err, setErr] = useState<string | null>(null);
@@ -16,10 +18,13 @@ export function KundaliForm() {
   const [loading, setLoading] = useState(false);
   const [paying, setPaying] = useState(false);
   const [p, setP] = useState<BirthDetails>({ ...DEFAULT });
+  const [teaser, setTeaser] = useState<Teaser | null>(null);
 
   useEffect(() => {
     if (searchParams.get('unlocked') === '1') {
-      setOkMsg('Your Kundali analysis is unlocked — enter your birth details below to generate your reading.');
+      setOkMsg('Your Kundali analysis is unlocked — enter your birth details and tap "See my chart" for the full reading.');
+    } else if (searchParams.get('payment') === 'error') {
+      setErr('Something went wrong finishing your payment. If you were charged, refresh this page in a minute — your unlock should appear.');
     }
   }, [searchParams]);
 
@@ -33,6 +38,10 @@ export function KundaliForm() {
         credentials: 'include',
         body: JSON.stringify({ planType: 'kundali' }),
       });
+      if (res.status === 401) {
+        window.location.href = `/login?next=${encodeURIComponent('/kundali')}`;
+        return;
+      }
       const data = (await res.json().catch(() => ({}))) as { redirectUrl?: string; error?: string };
       if (!res.ok) { setErr(data.error ?? 'Checkout failed'); return; }
       if (data.redirectUrl) window.location.href = data.redirectUrl;
@@ -46,29 +55,36 @@ export function KundaliForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    if (!p.birth_date) { setErr('Enter your birth date.'); return; }
-    if (!p.birth_lat || !p.birth_lng) { setErr('Enter and confirm your birth city.'); return; }
+    setTeaser(null);
+    if (!p.birth_date || !p.birth_lat || !p.birth_lng) {
+      setErr('Enter your birth date and confirm your birth city.');
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch('/api/kundali/compute', {
+      const full = await fetch('/api/kundali/compute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ person: { ...p, name: p.name || 'You' } }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 402) {
-        setErr((data as { error?: string }).error ?? 'Unlock your Kundali analysis to continue.');
-        setLoading(false);
-        return;
+      if (full.ok) {
+        const data = await full.json().catch(() => ({}));
+        const id = (data as { id?: string }).id;
+        if (id) { router.push(`/kundali/${id}`); return; }
       }
-      if (!res.ok) {
-        setErr((data as { error?: string }).error ?? 'Request failed');
-        setLoading(false);
-        return;
+      // 401/402 → free chart-facts teaser + unlock CTA
+      const t = await fetch('/api/kundali/teaser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person: p }),
+      });
+      const tData = await t.json().catch(() => ({}));
+      if (t.ok && tData.lagna) {
+        setTeaser(tData as Teaser);
+      } else {
+        setErr((tData as { error?: string }).error ?? 'Could not read your chart. Please try again.');
       }
-      const id = (data as { id?: string }).id;
-      if (id) router.push(`/kundali/${id}`);
     } catch {
       setErr('Network error');
     } finally {
@@ -78,11 +94,7 @@ export function KundaliForm() {
 
   return (
     <form onSubmit={onSubmit} className="max-w-lg mx-auto space-y-6 text-left">
-      {okMsg && (
-        <p className="text-success text-body-sm border border-success/30 rounded-md px-4 py-3 bg-success/10">
-          {okMsg}
-        </p>
-      )}
+      {okMsg && <p className="text-success text-body-sm border border-success/30 rounded-md px-4 py-3 bg-success/10">{okMsg}</p>}
 
       <div className="card border border-horizon rounded-card p-6">
         <BirthDetailsInput value={p} onChange={setP} showName={false} />
@@ -90,22 +102,50 @@ export function KundaliForm() {
 
       {err && <p className="text-caution text-body-sm">{err}</p>}
 
-      <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-        <button type="submit" disabled={loading} className="btn-primary px-10 py-3 disabled:opacity-50">
-          {loading ? 'Reading your chart…' : 'Generate my Kundali reading'}
-        </button>
-        <button
-          type="button"
-          disabled={paying}
-          onClick={() => void startCheckout()}
-          className="px-6 py-3 rounded-button border border-amber/40 text-amber text-body-sm hover:bg-amber/10 transition-colors disabled:opacity-50"
-        >
-          {paying ? 'Redirecting…' : 'Unlock Kundali — $9.99'}
-        </button>
-      </div>
-      <p className="text-center font-mono text-mono-sm text-dust/50">
-        One-time unlock. 24-hour money-back guarantee. Already bought any VedicHour forecast? It&apos;s included.
-      </p>
+      {!teaser && (
+        <div className="text-center">
+          <button type="submit" disabled={loading} className="btn-primary px-10 py-3 disabled:opacity-50">
+            {loading ? 'Reading your chart…' : 'See my chart — free'}
+          </button>
+          <p className="mt-3 font-mono text-mono-sm text-dust/50">Free chart summary. No card needed.</p>
+        </div>
+      )}
+
+      {/* FREE chart facts + locked full reading */}
+      {teaser && (
+        <div className="rounded-card border border-amber/30 bg-gradient-to-br from-amber/[0.07] via-cosmos to-cosmos p-6 sm:p-8 text-center">
+          <p className="section-eyebrow mb-3">Your chart at a glance</p>
+          <div className="grid grid-cols-2 gap-3 mb-6 text-left">
+            {[
+              ['Rising sign', teaser.lagna],
+              ['Moon sign', teaser.moon_sign],
+              ['Birth star', teaser.moon_nakshatra || '—'],
+              ['Life period', `${teaser.mahadasha}${teaser.antardasha && teaser.antardasha !== 'Unknown' ? ` · ${teaser.antardasha}` : ''}`],
+            ].map(([label, val]) => (
+              <div key={label} className="rounded-md bg-bg-3/40 border border-horizon/30 p-3">
+                <div className="font-mono text-mono-sm text-dust/50 uppercase tracking-wider">{label}</div>
+                <div className="font-display text-lg text-amber">{val}</div>
+              </div>
+            ))}
+          </div>
+
+          <div className="max-w-sm mx-auto mb-6 space-y-1.5">
+            {['Who you are (full reading)', 'The chapter you are in now', 'Your life-chapters timeline'].map((k) => (
+              <div key={k} className="flex items-center justify-between rounded-md bg-bg-3/40 border border-horizon/30 px-3 py-2">
+                <span className="font-body text-body-sm text-dust/80">{k}</span>
+                <span className="font-mono text-mono-sm text-dust/40">🔒 locked</span>
+              </div>
+            ))}
+          </div>
+
+          <button type="button" disabled={paying} onClick={() => void startCheckout()} className="btn-primary px-8 py-3 disabled:opacity-50">
+            {paying ? 'Redirecting…' : `Unlock your full reading — ${priceLabel}`}
+          </button>
+          <p className="mt-3 font-mono text-mono-sm text-dust/50">
+            One-time. 24-hour money-back guarantee. Already bought any VedicHour forecast? It&apos;s included — sign in.
+          </p>
+        </div>
+      )}
     </form>
   );
 }

@@ -232,15 +232,9 @@ export async function finalizeCompletedZiinaIntent(
     (planType === 'synastry' || planType === 'kundali') && !reportId && row.user_id;
 
   if (standaloneUnlock) {
-    await db
-      .from('ziina_payments')
-      .update({
-        status: 'completed',
-        amount: intent.amount,
-        currency: intent.currency_code,
-      })
-      .eq('ziina_intent_id', intentId);
-
+    // Grant the unlock FIRST. Only mark the payment 'completed' after it succeeds —
+    // so if the unlock table is missing/errors, our payment row stays un-completed and
+    // a later re-verify retries (instead of stranding a charged buyer who can't self-heal).
     const unlockTable = planType === 'kundali' ? 'user_kundali_unlock' : 'user_synastry_unlock';
     const { error: upErr } = await db.from(unlockTable).upsert(
       {
@@ -253,6 +247,16 @@ export async function finalizeCompletedZiinaIntent(
       console.error(`[ziina/finalize] ${unlockTable} upsert:`, upErr);
       return { ok: false, error: upErr.message };
     }
+
+    await db
+      .from('ziina_payments')
+      .update({
+        status: 'completed',
+        amount: intent.amount,
+        currency: intent.currency_code,
+      })
+      .eq('ziina_intent_id', intentId);
+
     return { ok: true, action: 'processed' };
   }
 

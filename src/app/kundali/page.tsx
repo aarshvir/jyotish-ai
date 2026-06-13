@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { headers } from 'next/headers';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
+import { currencyFromHeader, getDisplayPrice } from '@/lib/pricing';
 import { KundaliForm } from './KundaliForm';
 
 export const metadata: Metadata = {
@@ -18,7 +20,9 @@ const POINTS = [
   { t: 'Your life chapters', d: 'A visual timeline of your past, current, and upcoming planetary periods — see where you are in your life.' },
 ];
 
-export default function KundaliPage() {
+export default async function KundaliPage() {
+  const currency = currencyFromHeader((await headers()).get('x-currency'));
+  const priceLabel = getDisplayPrice('kundali', currency);
   return (
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
@@ -46,7 +50,7 @@ export default function KundaliPage() {
         </div>
 
         <Suspense fallback={<p className="text-center text-dust">Loading form…</p>}>
-          <KundaliForm />
+          <KundaliForm priceLabel={priceLabel} />
         </Suspense>
       </main>
 

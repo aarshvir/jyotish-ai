@@ -68,6 +68,28 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${origin}/report/${storedIntent.report_id}?payment_status=paid`);
     }
 
+    // Standalone unlock products (synastry/kundali) have NO bound report. Handle them
+    // BEFORE the report-required guard below — otherwise a paid standalone checkout
+    // dead-ends at "payment error" and the buyer is charged but never unlocked.
+    const standalonePlan = storedIntent?.plan_type ?? planType ?? '';
+    const isStandaloneVerify =
+      (standalonePlan === 'synastry' || standalonePlan === 'kundali') &&
+      !(storedIntent?.report_id ?? urlReportId);
+    if (isStandaloneVerify) {
+      const sIntent = await getPaymentIntent(intentId);
+      if (sIntent.status !== 'completed') {
+        const reason =
+          sIntent.status === 'failed' ? 'failed' : sIntent.status === 'pending' ? 'pending' : 'incomplete';
+        return NextResponse.redirect(`${origin}/${standalonePlan}?payment=${reason}`);
+      }
+      const sFin = await finalizeCompletedZiinaIntent(db, intentId, dispatchOrigin, { intent: sIntent });
+      if (!sFin.ok) {
+        console.error('[ziina/verify] standalone finalize failed:', sFin.error);
+        return NextResponse.redirect(`${origin}/${standalonePlan}?payment=error`);
+      }
+      return NextResponse.redirect(`${origin}/${standalonePlan}?unlocked=1`);
+    }
+
     const reportId: string = storedIntent?.report_id ?? urlReportId;
     if (!reportId) {
       console.error('[ziina/verify] no reportId available from DB or URL');

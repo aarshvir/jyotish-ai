@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { headers } from 'next/headers';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
+import { currencyFromHeader, getDisplayPrice } from '@/lib/pricing';
 import { SynastryForm } from './SynastryForm';
 
 export const metadata: Metadata = {
@@ -18,7 +20,9 @@ const STEPS = [
   { n: '2 min', label: 'instant result' },
 ];
 
-export default function SynastryPage() {
+export default async function SynastryPage() {
+  const currency = currencyFromHeader((await headers()).get('x-currency'));
+  const priceLabel = getDisplayPrice('synastry', currency);
   return (
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
@@ -45,7 +49,7 @@ export default function SynastryPage() {
           </div>
         </div>
         <Suspense fallback={<p className="text-center text-dust">Loading form…</p>}>
-          <SynastryForm />
+          <SynastryForm priceLabel={priceLabel} />
         </Suspense>
       </main>
 

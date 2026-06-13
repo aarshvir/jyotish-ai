@@ -7,9 +7,12 @@ import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDe
 const DEFAULT_A: BirthDetails = {
   name: '', birth_date: '', birth_time: '12:00:00', birth_city: '', birth_lat: 0, birth_lng: 0,
 };
-const DEFAULT_B: BirthDetails = { ...DEFAULT_A };
 
-export function SynastryForm() {
+const KOOTAS = ['Varna', 'Vashya', 'Tara', 'Yoni', 'Graha Maitri', 'Gana', 'Bhakoot', 'Nadi'];
+
+interface Teaser { total: number; max: number; label: string; tone: string }
+
+export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [err, setErr] = useState<string | null>(null);
@@ -17,13 +20,20 @@ export function SynastryForm() {
   const [loading, setLoading] = useState(false);
   const [paying, setPaying] = useState(false);
   const [a, setA] = useState<BirthDetails>({ ...DEFAULT_A });
-  const [b, setB] = useState<BirthDetails>({ ...DEFAULT_B });
+  const [b, setB] = useState<BirthDetails>({ ...DEFAULT_A });
+  const [teaser, setTeaser] = useState<Teaser | null>(null);
 
   useEffect(() => {
     if (searchParams.get('unlocked') === '1') {
-      setOkMsg('Your Matchmaking unlock is active — enter both birth details below to see your compatibility.');
+      setOkMsg('Your Matchmaking unlock is active — enter both birth details and tap "See our compatibility" for the full breakdown.');
+    } else if (searchParams.get('payment') === 'error') {
+      setErr('Something went wrong finishing your payment. If you were charged, refresh this page in a minute — your unlock should appear.');
     }
   }, [searchParams]);
+
+  function valid(p: BirthDetails): boolean {
+    return !!(p.birth_date && p.birth_lat && p.birth_lng);
+  }
 
   async function startCheckout() {
     setErr(null);
@@ -35,6 +45,11 @@ export function SynastryForm() {
         credentials: 'include',
         body: JSON.stringify({ planType: 'synastry' }),
       });
+      if (res.status === 401) {
+        // Not signed in — send them to sign-in and bring them back here, don't dead-end on an error.
+        window.location.href = `/login?next=${encodeURIComponent('/synastry')}`;
+        return;
+      }
       const data = (await res.json().catch(() => ({}))) as { redirectUrl?: string; error?: string };
       if (!res.ok) { setErr(data.error ?? 'Checkout failed'); return; }
       if (data.redirectUrl) window.location.href = data.redirectUrl;
@@ -45,21 +60,18 @@ export function SynastryForm() {
     }
   }
 
-  function validate(p: BirthDetails, who: string): string | null {
-    if (!p.birth_date) return `Enter ${who}'s birth date.`;
-    if (!p.birth_lat || !p.birth_lng) return `Enter and confirm ${who}'s birth city.`;
-    return null;
-  }
-
+  // One button: paid/logged-in users get the full result; everyone else gets the free score + unlock.
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    const vA = validate(a, 'the first person');
-    const vB = validate(b, 'the second person');
-    if (vA || vB) { setErr(vA || vB); return; }
+    setTeaser(null);
+    if (!valid(a) || !valid(b)) {
+      setErr('Enter both birth dates and confirm both birth cities.');
+      return;
+    }
     setLoading(true);
     try {
-      const res = await fetch('/api/synastry/compute', {
+      const full = await fetch('/api/synastry/compute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -68,19 +80,23 @@ export function SynastryForm() {
           partnerB: { ...b, name: b.name || 'Person 2' },
         }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (res.status === 402) {
-        setErr((data as { error?: string }).error ?? 'Unlock Matchmaking to see your compatibility.');
-        setLoading(false);
-        return;
+      if (full.ok) {
+        const data = await full.json().catch(() => ({}));
+        const id = (data as { id?: string }).id;
+        if (id) { router.push(`/synastry/${id}`); return; }
       }
-      if (!res.ok) {
-        setErr((data as { error?: string }).error ?? 'Request failed');
-        setLoading(false);
-        return;
+      // 401 (logged out) or 402 (unpaid) → show the FREE score teaser + unlock CTA
+      const t = await fetch('/api/synastry/teaser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ partnerA: a, partnerB: b }),
+      });
+      const tData = await t.json().catch(() => ({}));
+      if (t.ok && typeof tData.total === 'number') {
+        setTeaser(tData as Teaser);
+      } else {
+        setErr((tData as { error?: string }).error ?? 'Could not calculate your score. Please try again.');
       }
-      const id = (data as { id?: string }).id;
-      if (id) router.push(`/synastry/${id}`);
     } catch {
       setErr('Network error');
     } finally {
@@ -88,13 +104,11 @@ export function SynastryForm() {
     }
   }
 
+  const toneColor = teaser?.tone === 'excellent' ? 'text-success' : teaser?.tone === 'work' ? 'text-caution' : 'text-amber';
+
   return (
     <form onSubmit={onSubmit} className="space-y-8 text-left">
-      {okMsg && (
-        <p className="text-success text-body-sm border border-success/30 rounded-md px-4 py-3 bg-success/10">
-          {okMsg}
-        </p>
-      )}
+      {okMsg && <p className="text-success text-body-sm border border-success/30 rounded-md px-4 py-3 bg-success/10">{okMsg}</p>}
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="card border border-horizon rounded-card p-6">
@@ -107,22 +121,48 @@ export function SynastryForm() {
 
       {err && <p className="text-caution text-body-sm">{err}</p>}
 
-      <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-        <button type="submit" disabled={loading} className="btn-primary px-10 py-3 disabled:opacity-50">
-          {loading ? 'Calculating compatibility…' : 'See our compatibility'}
-        </button>
-        <button
-          type="button"
-          disabled={paying}
-          onClick={() => void startCheckout()}
-          className="px-6 py-3 rounded-button border border-amber/40 text-amber text-body-sm hover:bg-amber/10 transition-colors disabled:opacity-50"
-        >
-          {paying ? 'Redirecting…' : 'Unlock Matchmaking — $9.99'}
-        </button>
-      </div>
-      <p className="text-center font-mono text-mono-sm text-dust/50">
-        One-time unlock. 24-hour money-back guarantee. Already bought any VedicHour forecast? It&apos;s included.
-      </p>
+      {!teaser && (
+        <div className="text-center">
+          <button type="submit" disabled={loading} className="btn-primary px-10 py-3 disabled:opacity-50">
+            {loading ? 'Calculating your score…' : 'See our compatibility — free'}
+          </button>
+          <p className="mt-3 font-mono text-mono-sm text-dust/50">Free 36-point score. No card needed.</p>
+        </div>
+      )}
+
+      {/* FREE score reveal + locked full breakdown */}
+      {teaser && (
+        <div className="rounded-card border border-amber/30 bg-gradient-to-br from-amber/[0.07] via-cosmos to-cosmos p-6 sm:p-8 text-center">
+          <p className="section-eyebrow mb-2">Your Gun Milan score</p>
+          <div className="flex items-baseline justify-center gap-1 mb-1">
+            <span className={`font-display font-bold text-6xl ${toneColor}`}>{teaser.total}</span>
+            <span className="text-2xl text-dust/40">/ 36</span>
+          </div>
+          <p className={`font-display text-headline-sm ${toneColor} mb-6`}>{teaser.label}</p>
+
+          <div className="max-w-sm mx-auto mb-6 space-y-1.5">
+            <p className="font-mono text-mono-sm text-dust/60 uppercase tracking-wider mb-2">The full 8-fold breakdown</p>
+            {KOOTAS.map((k) => (
+              <div key={k} className="flex items-center justify-between rounded-md bg-bg-3/40 border border-horizon/30 px-3 py-2">
+                <span className="font-body text-body-sm text-dust/80">{k}</span>
+                <span className="font-mono text-mono-sm text-dust/40">🔒 locked</span>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            disabled={paying}
+            onClick={() => void startCheckout()}
+            className="btn-primary px-8 py-3 disabled:opacity-50"
+          >
+            {paying ? 'Redirecting…' : `Unlock the full breakdown + reading — ${priceLabel}`}
+          </button>
+          <p className="mt-3 font-mono text-mono-sm text-dust/50">
+            One-time. 24-hour money-back guarantee. Already bought any VedicHour forecast? It&apos;s included — sign in.
+          </p>
+        </div>
+      )}
     </form>
   );
 }
