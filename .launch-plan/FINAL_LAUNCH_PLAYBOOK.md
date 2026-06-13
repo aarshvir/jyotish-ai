@@ -2,7 +2,7 @@
 
 **For a 20-year-old who has never touched Supabase, Vercel, Ziina, Inngest, or Google Ads.** Every step says exactly where to go, what to click, how to know it worked, and what to do if it doesn't. Do the phases **in order**. **Phase 0, Phase 1, and the Phase 1.5 funnel decision determine whether you make any money at all — do not skip them.**
 
-> Note: an earlier draft mentioned a second Kundali migration file (`20260613_kundali_deep_report.sql`). That was for an unbuilt feature and has been **removed** — you only need **`20260613_kundali_standalone.sql`** (File 1). Ignore any "File 2" reference.
+> **Kundali now needs TWO migrations** (the deep birth-report feature is built and live): run **both** `20260613_kundali_standalone.sql` (File 1 — creates the tables) **and** `20260613_kundali_deep_report.sql` (File 2 — adds the deep-report columns). Without File 2, every Kundali save fails with "Failed to save your Kundali." Both are `IF NOT EXISTS`, so safe to run.
 
 ---
 
@@ -17,7 +17,7 @@
 ## ☑️ PHASE 0 BLOCKERS — must be TRUE before you accept one real payment
 
 > - [ ] **0.0** — Identified the **LIVE** Supabase project (ref matches `NEXT_PUBLIC_SUPABASE_URL` in Vercel)
-> - [ ] **0.1** — `20260613_kundali_standalone.sql` applied to the **live** project (Kundali buyer otherwise pays + gets locked out — **#1 blocker**)
+> - [ ] **0.1** — **BOTH** `20260613_kundali_standalone.sql` + `20260613_kundali_deep_report.sql` applied to the **live** project (without #1 the buyer pays + gets locked out; without #2 the Kundali report fails to save — **#1 blocker**)
 > - [ ] **0.2** — `user_synastry_unlock` table confirmed present (Matchmaking otherwise = guaranteed refund)
 > - [ ] **0.3a** — `ZIINA_API_TOKEN` in Vercel is the **LIVE** key, Production scope, **redeployed** (else $0 collected)
 > - [ ] **0.3b** — `INNGEST_EVENT_KEY` present in Production **OR** Forecast held back (else Forecast buyer pays, report never generates — **co-#1 blocker**)
@@ -47,10 +47,11 @@
 
 ## Step 0.1 — Apply the Kundali database migration (THE #1 BLOCKER) 🔴
 **Why:** Kundali writes to a table `user_kundali_unlock` that doesn't exist yet. In `finalizeIntent.ts` a Kundali purchase marks the payment **`completed` (lines 235–242)** then writes the unlock **(244–255)**; if the table's missing the write fails but the payment is already completed, so a retry won't self-heal. Buyer pays, told to pay again.
+Run **BOTH** files (the deep birth-report feature needs the second one):
 1. Live Supabase project → **SQL Editor** (left) → green **+ New query**.
-2. On your PC open **`C:\Users\aarsh\Downloads\jyotish-ai\supabase\migrations\20260613_kundali_standalone.sql`** with **Notepad** (right-click → Open with → Notepad — don't double-click). **Ctrl+A**, **Ctrl+C**.
-3. Click the SQL box → **Ctrl+V** → green **Run** (or Ctrl+Enter).
-**(c)** ~8 min. **✅ Done when:** green **"Success. No rows returned."** ("No rows returned" is CORRECT for table creation — don't panic.) **⚠ If "already exists":** good, it's already there, move on. Any other red error → **don't sell Kundali tomorrow**, screenshot it, launch Forecast + Matchmaking, fix Kundali after.
+2. Open **`...\supabase\migrations\20260613_kundali_standalone.sql`** with **Notepad** (right-click → Open with → Notepad). **Ctrl+A**, **Ctrl+C** → paste in the SQL box → **Run**.
+3. **+ New query** again → open **`...\supabase\migrations\20260613_kundali_deep_report.sql`** in Notepad → copy → paste → **Run**.
+**(c)** ~10 min. **✅ Done when:** both show green **"Success. No rows returned."** (CORRECT for table changes.) **⚠ If "already exists" / "column already exists":** good, already there, move on. Any other red error → **don't sell Kundali tomorrow**; launch Forecast + Matchmaking, fix Kundali after. (File 1 missing = buyer charged but locked out; File 2 missing = the report fails to save.)
 
 ## Step 0.2 — Confirm the Matchmaking table is already applied
 **Why:** Matchmaking has the identical charge-before-unlock pattern against `user_synastry_unlock`. Missing table = every match sale is a refund.

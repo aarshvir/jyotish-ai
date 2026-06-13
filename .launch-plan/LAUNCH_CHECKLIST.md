@@ -14,9 +14,10 @@ Prices auto-localize to AED / USD / INR by geo + the currency switcher. All one-
 
 ## ⚠️ YOU MUST DO THESE BEFORE ACCEPTING MONEY (I cannot — they need your Supabase / keys)
 
-### 1. Apply the database migration (CRITICAL — Kundali will not work without it)
-Run this in the Supabase SQL editor (or your migration pipeline):
-- `supabase/migrations/20260613_kundali_standalone.sql`  ← NEW, creates `user_kundali_unlock` + `kundali_charts`
+### 1. Apply the database migrations (CRITICAL — Kundali will not work without them)
+Run these in the Supabase SQL editor, in order:
+- `supabase/migrations/20260613_kundali_standalone.sql`  ← creates `user_kundali_unlock` + `kundali_charts` (without it: buyer charged but locked out)
+- `supabase/migrations/20260613_kundali_deep_report.sql`  ← adds deep-report columns (without it: the Kundali report fails to save)
 
 Also CONFIRM these (Matchmaking depends on them — likely already applied since synastry was pre-built):
 - `supabase/migrations/20260420_pillar4_revenue_synastry.sql`
