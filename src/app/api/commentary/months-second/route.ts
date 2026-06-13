@@ -171,19 +171,30 @@ MANDATORY RULES FOR analysis FIELD (a user is paying $100 — write with depth a
 
 overall_score: Scores MUST range 42-75 across 6 months. Do NOT cluster all at 52-65.
 
+DOMAIN SCORE RULES (critical — do NOT set all four the same):
+- career_score: strength for professional moves, visibility, authority. Driven by career zone transits, Sun/Mars/Jupiter influence.
+- money_score: financial stability and growth. Driven by wealth zone transits, Venus/Jupiter/Mercury influence.
+- health_score: physical energy and wellbeing. Driven by health zone and Sun/Mars influence.
+- love_score: relationships, partnership, emotional connection. Driven by relationship zone transits, Venus/Moon influence.
+- All four MUST differ meaningfully from each other. A month where career=72 might have money=55, health=60, love=45. Never assign the same score to all four domains — this makes the report useless for users asking "which months are good for my career?"
+
+theme RULE: Write as a plain-English outcome sentence. Example: "A strong month for financial decisions — big moves land well" or "A quiet month to restore energy and strengthen relationships."
+
+key_transits RULE: Use ONLY plain language. Example: "Saturn moves through your stability zone — good for long-term financial decisions." Never use H-notation.
+
 Return exactly ${monthBatch.length} month object${monthBatch.length === 1 ? '' : 's'}:
 {
   "months": [
     {
       "month_index": 6,
       "month_label": "September 2026",
-      "overall_score": 55,
-      "career_score": 55,
-      "money_score": 55,
-      "health_score": 55,
-      "love_score": 55,
-      "theme": "one plain-English sentence describing the month's dominant theme for this person",
-      "key_transits": ["Planet moves on [date] → affects [plain-English life area] → person should [action]"],
+      "overall_score": 68,
+      "career_score": 75,
+      "money_score": 58,
+      "health_score": 65,
+      "love_score": 48,
+      "theme": "A strong month for career and professional visibility — push on your biggest goals",
+      "key_transits": ["Jupiter favours expansion in your professional life — present ideas, seek recognition", "Venus creates some friction in relationships — handle sensitive conversations with care"],
       "analysis": "300-350 words structured as above, ending with BEST: WORST: Rating: lines"
     }
   ]

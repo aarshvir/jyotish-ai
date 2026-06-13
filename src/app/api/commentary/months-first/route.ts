@@ -173,19 +173,30 @@ MANDATORY RULES FOR analysis FIELD (a user is paying $100 — write with depth a
 
 overall_score RULE (enforce strictly): Only month_index 0 MUST score 42-48. Later months can be 50-75. Jupiter enters Cancer mid-2026: June=70, July=73, August=75. Across the full six-month section, the intended spread between max and min MUST be at least 30. Do NOT start at 55.
 
+DOMAIN SCORE RULES (critical — do NOT set all four the same):
+- career_score: strength for professional moves, visibility, authority. Driven by 10th zone transits, Sun/Mars/Jupiter influence.
+- money_score: financial stability and growth. Driven by 2nd/11th zone transits, Venus/Jupiter/Mercury influence.
+- health_score: physical energy and wellbeing. Driven by 6th zone and Sun/Mars influence.
+- love_score: relationships, partnership, emotional connection. Driven by 7th zone transits, Venus/Moon influence.
+- All four MUST differ meaningfully from each other. A month where career=72 might have money=55, health=60, love=45. Never assign the same score to all four domains — this is the most common error and makes the report useless.
+
+theme RULE: Write as a plain-English outcome sentence (not "Aries lagna with Jupiter in H9"). Example: "A strong month for career visibility — bold proposals land well" or "Steady rebuilding — prioritise health and finances over bold new moves."
+
+key_transits RULE: Use ONLY plain language. Example: "Jupiter moves into your creative zone — new opportunities in teaching, travel, or creative work open up." Never use H-notation (H10, H6 etc), yogakaraka, kendra, or other jargon.
+
 Return exactly ${monthBatch.length} month object${monthBatch.length === 1 ? '' : 's'}:
 {
   "months": [
     {
       "month_index": 0,
       "month_label": "March 2026",
-      "overall_score": 55,
-      "career_score": 55,
-      "money_score": 55,
+      "overall_score": 48,
+      "career_score": 65,
+      "money_score": 42,
       "health_score": 55,
-      "love_score": 55,
-      "theme": "one sentence naming a planet, house, and the key theme",
-      "key_transits": ["Planet transit date-range → H-notation house → specific effect for this lagna"],
+      "love_score": 38,
+      "theme": "Career doors open — push forward professionally, but protect finances and relationships",
+      "key_transits": ["Jupiter moves through your creative zone — good for new ventures and teaching", "Mercury favours contracts and negotiations mid-month"],
       "analysis": "300-350 words structured as above, ending with BEST: WORST: Rating: lines"
     }
   ]

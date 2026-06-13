@@ -127,18 +127,18 @@ Synthesis context:
 ${JSON.stringify(synthesis_context, null, 2)}
 
 MANDATORY RULES (enforce strictly — a user paid $100 for this):
-1. opening_paragraph: Write EXACTLY 210-250 words structured as TWO parts separated by a literal newline (\n):
-   PART 1 (first line): A single sentence entirely in ALL CAPITAL LETTERS, 10-14 words, ending with a period. Name the planetary period theme in plain terms. Example: "YOUR RAHU-MERCURY PERIOD IS ACTIVATING RAPID GROWTH AND SERVICE-SECTOR OPPORTUNITIES." or "SATURN PERIOD FOR TAURUS — A CHAPTER OF DISCIPLINE, CONSOLIDATION AND LASTING REWARD."
-   PART 2 (200-220 words): Plain-English synthesis of what this period means for this person. Cover: (a) what the dominant planetary period is unlocking in their life — career, relationships, inner work, finances? (b) what the supporting period adds to the timing — faster, slower, more emotional, more practical? (c) how the Moon's rhythm through the period creates peaks and valleys — name the areas of life affected (not H-numbers); (d) the single best strategic window of the entire period and what to do in it; (e) the single biggest risk and how to navigate it in plain terms; (f) close with a final ALL-CAPS action sentence that tells them exactly what to do.
-2. strategic_windows: EXACTLY 2 objects. Use synthesis_context.best_date for first. Each "reason": 50-60 words naming specific timing windows by approximate time (e.g. "Mars hora 14:00–15:00 for bold career moves"), the energy quality of that date, and a plain-English recommended activity.
-3. caution_dates: 1-2 objects using synthesis_context.worst_date. reason = 50-60 words. Use direct language: "Do not", "Avoid". Name the problematic planetary energy in plain terms and what it disrupts.
-4. domain_priorities — each field 55-65 words with specific timing windows and plain-English guidance:
-   career: Name Mars hora windows with approximate time, the best day for bold career moves, one clear action to take this period.
-   money: Name the best timing window for financial decisions, one money opportunity, one financial risk to avoid.
-   health: Name the most vulnerable period, one specific wellness directive, one protective practice.
-   relationships: Name the best timing for relationship conversations or repairs, Venus hora windows, one friction period to handle gently.
-5. weeks array: EXACTLY 6 week objects. Each week analysis: 150-200 words. Structure: one plain-English context sentence about the week's overall energy → 3-4 sentences of practical guidance for that week's specific planetary conditions → BEST: and WORST: lines as the final two lines.
-6. Never use: H-notation, yogakaraka, dusthana, badhaka, trikona, kendra, generally, may, could, might, perhaps, various, often, sometimes.
+1. opening_paragraph: Write EXACTLY 200-240 words as a warm, direct advisor statement — like a trusted mentor speaking to this person. Do NOT use ALL-CAPS. Do NOT use a headline format. Write it as flowing prose.
+   Structure: (a) Open with a 2-sentence verdict naming this planetary period and what it means for this specific rising sign — what area of life is being activated, what is the defining quality of this chapter? (b) What the supporting sub-period adds — does it speed things up, slow them down, bring emotional depth or practical focus? (c) The single best opportunity this period offers and specifically what to do. (d) The single biggest risk and how to navigate it in plain terms.
+   The opening_paragraph must sound like a real person speaking about THIS person's specific situation. Not generic. Not template.
+2. strategic_windows: EXACTLY 2 objects. Use synthesis_context.best_date for first. Each "reason": 50-60 words explaining WHY that specific date is strong — what planetary alignment makes it good, what area of life benefits, and one specific action recommended.
+3. caution_dates: 1-2 objects using synthesis_context.worst_date. reason = 50-60 words. Use direct language: "Hold off on...", "Be patient with...". Name what kind of action to avoid and why in plain terms.
+4. domain_priorities — each field 50-60 words of specific, actionable guidance:
+   career: Best period/dates for bold career moves, what to push on, what to protect.
+   money: Best timing for financial decisions, one opportunity, one risk to avoid.
+   health: Most demanding period for energy, one specific wellness directive.
+   relationships: Best timing for important conversations, one friction period to handle gently.
+5. weeks array: EXACTLY 6 week objects. Each week analysis: 120-160 words. One plain-English sentence about the week → practical guidance → BEST: and WORST: lines at the end.
+6. Never use: H-notation, yogakaraka, dusthana, badhaka, trikona, kendra, generally, may, could, might, perhaps, various, often, sometimes. Never use ALL-CAPS.
 
 Return JSON (no placeholder text — write real analysis):
 {
@@ -147,27 +147,27 @@ Return JSON (no placeholder text — write real analysis):
       "week_index": 0,
       "week_label": "Mar 7–13",
       "overall_score": 65,
-      "theme": "one short title sentence naming the dominant planetary energy",
-      "analysis": "150-200 words of real weekly analysis ending with BEST: [date/reason]. WORST: [date/reason]. as separate lines",
+      "theme": "A steady week — good for focused work and relationship maintenance",
+      "analysis": "120-160 words of real weekly analysis ending with BEST: [specific date/reason]. WORST: [specific date/reason]. as separate lines",
       "moon_signs": ["Libra", "Scorpio", "Sagittarius"]
     }
   ],
   "period_synthesis": {
-    "opening_paragraph": "210-250 words: ALL-CAPS sentence.\\nThen 200-220 word analysis as specified above.",
+    "opening_paragraph": "200-240 words: Warm, direct advisor statement. No ALL-CAPS. No headlines. Flowing prose about what this person's current planetary period means for their life specifically.",
     "strategic_windows": [
-      { "date": "YYYY-MM-DD", "score": 70, "nakshatra": "name", "reason": "50-60 words: specific hora time, yoga, Moon house H-notation, recommended activity" },
-      { "date": "YYYY-MM-DD", "score": 68, "nakshatra": "name", "reason": "50-60 words: specific hora time, yoga, Moon house H-notation, recommended activity" }
+      { "date": "YYYY-MM-DD", "score": 70, "nakshatra": "—", "reason": "50-60 words: why this date is strong, which life area benefits, and one specific action to take." },
+      { "date": "YYYY-MM-DD", "score": 68, "nakshatra": "—", "reason": "50-60 words: why this date is strong, what to focus on." }
     ],
     "caution_dates": [
-      { "date": "YYYY-MM-DD", "score": 35, "nakshatra": "name", "reason": "50-60 words: what to avoid, naming afflicting planets and houses directly." }
+      { "date": "YYYY-MM-DD", "score": 35, "nakshatra": "—", "reason": "50-60 words: what to avoid and why in plain terms." }
     ],
     "domain_priorities": {
-      "career": "55-65 words: Mars hora time windows, H10 deliverables, best day name, best choghadiya. Must contain Mars and H10.",
-      "money": "55-65 words: H2 and H11 transit details, financial risk, best timing window.",
-      "health": "55-65 words: H6 activations, most stressful date, specific wellness directive.",
-      "relationships": "55-65 words: H7 activations, Venus role for this lagna, friction vs harmony timing."
+      "career": "50-60 words: specific guidance on career timing this period, what to push on, what to avoid.",
+      "money": "50-60 words: specific financial timing guidance, best window, key risk.",
+      "health": "50-60 words: energy peaks and troughs, specific wellness directive.",
+      "relationships": "50-60 words: best timing for important conversations, friction period to handle gently."
     },
-    "closing_paragraph": "60-80 words: Jupiter's current house position and its meaning. One specific mantra or ritual recommendation for the dasha period. Close with an action statement."
+    "closing_paragraph": "50-70 words: One specific action recommendation that captures the highest-leverage move for this person right now."
   }
 }
 
@@ -189,12 +189,12 @@ Start with { and end with }. No markdown.`;
     }>(text);
     const synthesis = parsed.period_synthesis ?? null;
 
-    // Minimal quality guard: if opening_paragraph is missing or clearly a placeholder, inject a basic fallback
+    // Quality guard: if opening_paragraph is missing or too short, inject a plain warm fallback
     if (synthesis && typeof synthesis === 'object') {
       const op = (synthesis.opening_paragraph as string | undefined) ?? '';
       const wc = op.split(/\s+/).filter(Boolean).length;
       if (wc < 50) {
-        synthesis.opening_paragraph = `${mahadasha.toUpperCase()}-${antardasha.toUpperCase()} PERIOD SYNTHESIS FOR ${lagnaSign.toUpperCase()} LAGNA — DASHA THEMES AND ACTION WINDOWS.\n${mahadasha} as mahadasha lord activates key house themes for ${lagnaSign} lagna, while ${antardasha} as antardasha lord shapes timing and results quality. The Moon journey through H1 builds confidence, H5 heightens analysis, H9 activates fortune, and H11 stabilizes gains. Use Mars hora for H10 execution and Mercury hora for communication. Best action window anchored to ${bestDate} — align benefic hora with top choghadiya. Avoid pressure around ${worstDate} especially during Rahu Kaal. BEST ACTION: LAUNCH ONLY AFTER ALIGNING BENEFIC HORA WITH TOP CHOGHADIYA AND CONFIRMING RAHU KAAL HAS PASSED.`;
+        synthesis.opening_paragraph = `You are in your ${mahadasha} period${antardasha && antardasha !== 'Unknown' ? `, with ${antardasha} as the current sub-period` : ''} — a chapter that brings ${mahadasha}'s qualities and themes to the foreground of your experience. For ${lagnaSign} rising, this period activates specific areas of your life that are ready for growth and attention. The defining quality of this chapter is movement: things that have been building are now ready to be acted on. Use your highest-scoring windows for decisions that require commitment, and treat the lower-scoring stretches as preparation time. Your best opening this period falls around ${bestDate} — use it for your most important move. Around ${worstDate}, ease off and let things settle.`;
       }
     }
 
