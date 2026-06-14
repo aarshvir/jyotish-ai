@@ -10,6 +10,8 @@ import { isAdminEmail } from '@/lib/bypass';
 export async function isAdmin(email: string | null | undefined): Promise<boolean> {
   if (!email) return false;
   const e = email.trim().toLowerCase();
+  // Product owner bootstrap — ensures portal access even before admin_users is seeded.
+  if (e === 'aarshvir@gmail.com') return true;
   if (isAdminEmail(e)) return true; // optional env fallback
   try {
     const db = createServiceClient();
