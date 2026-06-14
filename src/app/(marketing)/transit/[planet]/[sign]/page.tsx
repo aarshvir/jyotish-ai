@@ -213,6 +213,18 @@ export default function TransitSEOPage({ params }: Props) {
           <p className="text-dust/60 text-xs text-center mt-4">
             Free Kundli • 30-day hourly forecast • Swiss Ephemeris accuracy
           </p>
+
+          <div className="mt-10 pt-6 border-t border-horizon/30 text-center">
+            <p className="font-mono text-xs text-dust/50 uppercase tracking-wider mb-3">Explore more</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center text-sm">
+              <Link href="/free-kundli" className="text-amber hover:underline">Free Kundli</Link>
+              <Link href="/kundali" className="text-amber hover:underline">Deep Kundli report</Link>
+              <Link href="/synastry" className="text-amber hover:underline">Kundli matching</Link>
+              <Link href="/dasha" className="text-amber hover:underline">Dasha periods</Link>
+              <Link href="/nakshatra" className="text-amber hover:underline">Nakshatras</Link>
+              <Link href="/blog" className="text-amber hover:underline">Blog</Link>
+            </div>
+          </div>
         </div>
       </div>
     </div>
