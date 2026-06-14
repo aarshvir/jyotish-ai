@@ -41,11 +41,13 @@ export async function POST(req: NextRequest) {
       user_id: userId,
       event_name: name,
       properties: {
+        // Spread untrusted props FIRST so the sanitized fields below always win
+        // (prevents a client from overriding path/referrer/session/user attribution).
+        ...(body.props && typeof body.props === 'object' ? body.props : {}),
         path: typeof body.path === 'string' ? body.path.slice(0, 256) : null,
         referrer: typeof body.referrer === 'string' ? body.referrer.slice(0, 256) : null,
         utm: utm && Object.keys(utm).length ? utm : null,
         session_id: typeof body.session_id === 'string' ? body.session_id.slice(0, 64) : null,
-        ...(body.props && typeof body.props === 'object' ? body.props : {}),
       },
     });
   } catch {
