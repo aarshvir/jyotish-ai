@@ -310,6 +310,23 @@ export async function finalizeCompletedZiinaIntent(
     })
     .eq('ziina_intent_id', intentId);
 
+  // Behavioral event: reliable revenue signal for the analytics dashboard. Never throw.
+  try {
+    await db.from('analytics_events').insert({
+      user_id: boundUserId ?? null,
+      event_name: 'purchase_completed',
+      properties: {
+        plan_type: planType,
+        amount: intent.amount,
+        currency: intent.currency_code,
+        report_id: reportId ?? null,
+        intent_id: intentId,
+      },
+    });
+  } catch {
+    /* analytics must never break payment finalization */
+  }
+
   if (planType === 'monthly_upgrade') {
     await db
       .from('reports')

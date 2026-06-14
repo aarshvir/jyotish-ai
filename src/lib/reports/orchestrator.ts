@@ -858,7 +858,23 @@ export async function generateReportPipeline(
         })
         .eq('id', reportId)
         .eq('user_id', userId);
-      if (!error) return; // success
+      if (!error) {
+        // Behavioral event: reliable activation signal for the analytics dashboard. Never throw.
+        try {
+          await db.from('analytics_events').insert({
+            user_id: userId,
+            event_name: 'report_completed',
+            properties: {
+              report_id: reportId,
+              plan_type: input.planType ?? input.type ?? null,
+              generation_time_seconds: generationTimeSec,
+            },
+          });
+        } catch {
+          /* analytics must never break the pipeline */
+        }
+        return; // success
+      }
       lastError = new Error(`dbSaveFinal failed: ${error.message}`);
       terr('[orchestrator] dbSaveFinal attempt', attempt, ':', error.message, 'code:', error.code);
       // Don't retry on hard constraint violations (e.g. FK errors)
