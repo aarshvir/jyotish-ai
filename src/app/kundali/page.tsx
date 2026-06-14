@@ -7,6 +7,7 @@ import { StarField } from '@/components/ui/StarField';
 import { currencyFromHeader, getDisplayPrice } from '@/lib/pricing';
 import { KundaliForm } from './KundaliForm';
 import { JsonLd } from '@/components/seo/JsonLd';
+import KundaliSamplePreview from '@/components/landing/KundaliSamplePreview';
 import { SeoProse, FaqSection } from '@/components/seo/SeoSection';
 import { faqPageLd, breadcrumbLd, softwareAppLd, type Faq } from '@/lib/seo/jsonLd';
 
@@ -77,6 +78,8 @@ export default async function KundaliPage() {
         <Suspense fallback={<p className="text-center text-dust">Loading form…</p>}>
           <KundaliForm priceLabel={priceLabel} />
         </Suspense>
+
+        <KundaliSamplePreview />
 
         <SeoProse heading="What your Kundli reveals" id="kundli-explained">
           {KUNDALI_SECTIONS.map((s) => (

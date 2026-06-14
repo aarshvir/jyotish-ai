@@ -1,31 +1,16 @@
-interface HourBar {
-  time: string;
-  score: number;
-  hora: string;
-  peak?: boolean;
-}
+import { SAMPLE_GRID, SAMPLE_SEEKER, SAMPLE_DASHA, SAMPLE_DAY_SCORE, activeDashaIndex } from './sampleData';
 
-// 18 fixed hourly buckets: 06:00–24:00 in your current city's local time
-const HOURS: HourBar[] = [
-  { time: '06', score: 96, hora: 'Jupiter', peak: true },
-  { time: '07', score: 88, hora: 'Mars' },
-  { time: '08', score: 68, hora: 'Sun' },
-  { time: '09', score: 60, hora: 'Mercury' },
-  { time: '10', score: 52, hora: 'Saturn' },
-  { time: '11', score: 47, hora: 'Jupiter' },
-  { time: '12', score: 63, hora: 'Mars' },
-  { time: '13', score: 75, hora: 'Sun' },
-  { time: '14', score: 82, hora: 'Venus', peak: true },
-  { time: '15', score: 93, hora: 'Mercury', peak: true },
-  { time: '16', score: 87, hora: 'Moon' },
-  { time: '17', score: 94, hora: 'Saturn', peak: true },
-  { time: '18', score: 77, hora: 'Jupiter' },
-  { time: '19', score: 65, hora: 'Mars' },
-  { time: '20', score: 73, hora: 'Sun' },
-  { time: '21', score: 58, hora: 'Venus' },
-  { time: '22', score: 61, hora: 'Mercury' },
-  { time: '23', score: 70, hora: 'Moon' },
-];
+// Derived from VERIFIED engine output (see sampleData.ts) — real horas + real scores.
+const HOURS = SAMPLE_GRID.map((s) => ({
+  time: s.label.slice(0, 2),
+  score: s.score,
+  hora: s.hora,
+  peak: s.score >= 88,
+}));
+
+const PEAK_LABEL = HOURS.filter((h) => h.peak).map((h) => `${h.time}:00`).join(' · ') || '—';
+const LOW = [...SAMPLE_GRID].sort((a, b) => a.score - b.score)[0];
+const CURRENT_MD = SAMPLE_DASHA[activeDashaIndex(SAMPLE_DASHA)]?.lord ?? 'Sun';
 
 function barColor(score: number): string {
   if (score >= 78) return 'var(--success)';
@@ -52,7 +37,7 @@ export default function HourlyPreview() {
 
       <div className="max-w-6xl mx-auto px-6">
         <div className="section-header text-center">
-          <p className="section-eyebrow">Sample Output</p>
+          <p className="section-eyebrow">Sample Output · real engine</p>
           <h2 className="section-title text-display-md">
             Your Jyotish Forecast — Hour by Hour
           </h2>
@@ -76,7 +61,7 @@ export default function HourlyPreview() {
               </div>
             ))}
             <div className="ml-auto font-mono text-mono-sm text-dust/60 tracking-wide">
-              Sample · Cancer Lagna · Rahu MD
+              Sample · {SAMPLE_SEEKER.lagna} Lagna · {CURRENT_MD} MD
             </div>
           </div>
 
@@ -128,9 +113,11 @@ export default function HourlyPreview() {
 
           {/* Footer */}
           <div className="flex items-center justify-between mt-5 pt-4 border-t border-[var(--color-border)]/40">
-            <span className="font-mono text-mono-sm text-dust/40">18 hourly windows · your city&apos;s local time</span>
             <span className="font-mono text-mono-sm text-dust/40">
-              Peak windows: 06:00 · 14–17
+              18 windows · {SAMPLE_SEEKER.sampleDayLabel} · day score {SAMPLE_DAY_SCORE}
+            </span>
+            <span className="font-mono text-mono-sm text-dust/40">
+              Peak: {PEAK_LABEL} · avoid {LOW.label.slice(0, 5)}
             </span>
           </div>
         </div>
