@@ -32,6 +32,7 @@ const COMPANY = [
   { href: '/refund', label: 'Refund Policy' },
   { href: '/privacy', label: 'Privacy' },
   { href: '/terms', label: 'Terms' },
+  { href: '/account', label: 'Your data' },
 ];
 
 const linkCls =
