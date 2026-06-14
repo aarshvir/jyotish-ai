@@ -1,0 +1,30 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="st" cx="70%" cy="8%" r="90%">
+      <stop offset="0%" stop-color="#1a2140"/>
+      <stop offset="42%" stop-color="#0c1226"/>
+      <stop offset="100%" stop-color="#06060f"/>
+    </radialGradient>
+    <radialGradient id="stglow" cx="72%" cy="10%" r="38%">
+      <stop offset="0%" stop-color="#d4af37" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#d4af37" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1080" height="1920" fill="url(#st)"/>
+  <rect width="1080" height="1920" fill="url(#stglow)"/>
+  <g fill="#f5efe0" opacity="0.5">
+    <circle cx="140" cy="300" r="2.5"/><circle cx="280" cy="220" r="1.8"/><circle cx="420" cy="340" r="2"/>
+    <circle cx="900" cy="520" r="2.2"/><circle cx="980" cy="380" r="1.6"/><circle cx="180" cy="1500" r="2"/>
+    <circle cx="320" cy="1640" r="1.8"/><circle cx="820" cy="1560" r="2.2"/><circle cx="960" cy="1460" r="1.6"/>
+    <circle cx="540" cy="1740" r="1.8"/>
+  </g>
+  <g stroke="#d4af37" stroke-width="1.2" opacity="0.22">
+    <line x1="140" y1="300" x2="280" y2="220"/><line x1="280" y1="220" x2="420" y2="340"/>
+  </g>
+  <g transform="translate(80,1820)">
+    <circle cx="0" cy="0" r="16" fill="none" stroke="#d4af37" stroke-width="2" opacity="0.85"/>
+    <circle cx="0" cy="0" r="6" fill="#d4af37"/>
+    <text x="32" y="9" font-family="Georgia, serif" font-size="36" font-weight="600" fill="#f5efe0">VedicHour</text>
+  </g>
+  <text x="540" y="960" text-anchor="middle" font-family="'Courier New', monospace" font-size="30" fill="#f5efe0" opacity="0.18">— add your hook here —</text>
+</svg>
