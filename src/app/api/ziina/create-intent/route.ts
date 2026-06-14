@@ -10,7 +10,6 @@ import {
   type SupportedCurrency,
 } from '@/lib/ziina/server';
 import { getPromoDiscount, redeemPromoCode, hasUserRedeemed } from '@/lib/promo/server';
-import { isAdmin } from '@/lib/admin/isAdmin';
 import { createServiceClient } from '@/lib/supabase/admin';
 
 /**
@@ -85,10 +84,8 @@ export async function POST(request: NextRequest) {
   // Standalone (Kundali / Matchmaking) + 100% code: grant the unlock directly and skip
   // Ziina (a zero-amount intent is invalid). Mirrors finalizeIntent's standalone grant.
   if (isStandaloneUnlock && discountPct >= 100) {
-    // A 100%-off free unlock is admin-only (e.g. ADMIN100) — regular users must pay.
-    if (!(await isAdmin(auth.user.email))) {
-      return NextResponse.json({ error: 'This coupon is not available for your account.' }, { status: 403 });
-    }
+    // 100%-off codes (e.g. ADMIN100) grant a direct unlock to anyone who enters them,
+    // by owner's explicit choice. Manage/disable in /admin → Coupons.
     const dbFree = createServiceClient();
     const unlockTable = planType === 'kundali' ? 'user_kundali_unlock' : 'user_synastry_unlock';
     const { error: unlockErr } = await dbFree.from(unlockTable).upsert(
