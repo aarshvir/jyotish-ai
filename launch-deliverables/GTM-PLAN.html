@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VedicHour — Week-1 Go-To-Market Plan</title>
+<style>
+  :root{
+    --navy:#0d1b3e; --navy2:#13265a; --ink:#1a1f2e; --slate:#475069;
+    --gold:#b8923a; --gold-bg:#f7f0df; --line:#e3e6ee; --line2:#cfd4e2;
+    --bg:#ffffff; --soft:#f6f7fb; --softer:#fbfcfe;
+    --good:#1d7a5a; --good-bg:#e6f3ec; --warn:#9a6a12; --warn-bg:#fbf2dd;
+    --bad:#9a2a28; --bad-bg:#fbe9e8; --blue:#1f5fa5; --blue-bg:#e9f1fa;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:#eef0f5; color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6; font-size:15.5px; -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1080px; margin:0 auto; background:var(--bg); padding:0 0 80px;
+    box-shadow:0 0 0 1px rgba(13,27,62,.05), 0 18px 50px rgba(13,27,62,.10);}
+  header.mast{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%); color:#fff;
+    padding:46px 56px 40px; position:relative; overflow:hidden;}
+  header.mast::after{content:""; position:absolute; right:-60px; top:-60px; width:280px; height:280px;
+    border-radius:50%; background:radial-gradient(circle at center,rgba(184,146,58,.30),transparent 68%);}
+  .kicker{letter-spacing:.22em; text-transform:uppercase; font-size:11.5px; color:var(--gold);
+    font-weight:700; margin-bottom:14px;}
+  header.mast h1{margin:0 0 8px; font-size:33px; line-height:1.12; font-weight:700; letter-spacing:-.5px;}
+  header.mast .sub{font-size:16px; color:#c9d3ee; max-width:760px; margin:0;}
+  .metarow{display:flex; flex-wrap:wrap; gap:26px; margin-top:24px; font-size:12.5px; color:#aab8db;}
+  .metarow b{color:#fff; font-weight:600;}
+  .verdict-chip{display:inline-block; background:var(--gold); color:#23180a; font-weight:700;
+    padding:5px 14px; border-radius:30px; font-size:12.5px; letter-spacing:.04em; margin-top:22px;}
+  main{padding:0 56px;}
+  nav.toc{background:var(--softer); border:1px solid var(--line); border-radius:12px;
+    padding:20px 26px; margin:34px 0 8px; columns:2; column-gap:40px;}
+  nav.toc h4{margin:0 0 12px; font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--slate);
+    column-span:all; font-weight:700;}
+  nav.toc a{display:block; padding:4px 0; color:var(--navy2); text-decoration:none; font-size:13.5px;
+    break-inside:avoid; border-bottom:1px dotted transparent;}
+  nav.toc a:hover{color:var(--gold); border-bottom-color:var(--gold);}
+  nav.toc a span{display:inline-block; width:26px; color:var(--gold); font-weight:700;}
+  section{padding-top:30px; margin-top:18px;}
+  h2.sec{font-size:13px; letter-spacing:.04em; color:var(--navy); margin:0 0 4px; font-weight:700;
+    display:flex; align-items:center; gap:12px;}
+  h2.sec .num{background:var(--navy); color:#fff; width:30px; height:30px; border-radius:7px;
+    display:inline-flex; align-items:center; justify-content:center; font-size:13.5px; flex:none;}
+  h2.sec .txt{font-size:22px; letter-spacing:-.3px;}
+  .lede{color:var(--slate); font-size:15px; margin:6px 0 18px; padding-left:42px;}
+  h3{font-size:16.5px; margin:26px 0 8px; color:var(--navy2); font-weight:650;}
+  h4.mini{font-size:13.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--gold);
+    margin:22px 0 8px; font-weight:700;}
+  p{margin:9px 0;}
+  ul,ol{margin:9px 0 9px; padding-left:22px;}
+  li{margin:5px 0;}
+  hr.div{border:none; border-top:1px solid var(--line); margin:36px 0 0;}
+  a.src{color:var(--blue); text-decoration:none; font-size:12px; border-bottom:1px dotted var(--blue);}
+  a.src:hover{color:var(--navy);}
+  code{background:var(--soft); border:1px solid var(--line); border-radius:4px; padding:1px 6px;
+    font-family:"SF Mono",Consolas,Menlo,monospace; font-size:12.5px; color:var(--navy2);}
+  .small{font-size:12.5px; color:var(--slate);}
+  .exec{background:linear-gradient(180deg,#fbf9f3,#fff); border:1px solid var(--gold);
+    border-left:6px solid var(--gold); border-radius:12px; padding:26px 30px; margin:26px 0 6px;}
+  .exec h3{margin-top:0; color:var(--navy); font-size:18px; display:flex; align-items:center; gap:10px;}
+  .exec .strat{background:var(--navy); color:#fff; border-radius:9px; padding:14px 18px; margin:14px 0 18px;
+    font-size:15px; line-height:1.5;}
+  .exec .strat b{color:var(--gold);}
+  .exec ol{padding-left:20px;} .exec li{margin:7px 0;}
+  .call{border-radius:10px; padding:15px 18px 15px 16px; margin:16px 0; font-size:14px; border:1px solid;}
+  .call b{font-weight:650;}
+  .call.good{background:var(--good-bg); border-color:#bfe0cd; color:#11402f;}
+  .call.warn{background:var(--warn-bg); border-color:#ecd6a3; color:#5c4209;}
+  .call.bad{background:var(--bad-bg); border-color:#f0c9c7; color:#651b1a;}
+  .call.info{background:var(--blue-bg); border-color:#c5dcf2; color:#123a64;}
+  .call .tag{display:inline-block; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    font-weight:700; margin-bottom:4px;}
+  table{border-collapse:collapse; width:100%; margin:16px 0; font-size:13.3px;}
+  caption{caption-side:top; text-align:left; font-size:11.5px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--slate); font-weight:700; padding-bottom:8px;}
+  th{background:var(--navy); color:#fff; text-align:left; padding:9px 11px; font-weight:600; font-size:12px;
+    letter-spacing:.02em; border:1px solid var(--navy2); vertical-align:bottom;}
+  td{padding:8px 11px; border:1px solid var(--line); vertical-align:top;}
+  tbody tr:nth-child(even){background:var(--softer);}
+  tbody tr:hover{background:var(--gold-bg);}
+  td.r,th.r{text-align:right; font-variant-numeric:tabular-nums;}
+  td.c,th.c{text-align:center;}
+  tfoot td{background:#eef1f8; font-weight:700; border-top:2px solid var(--navy2);}
+  .pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:700;
+    letter-spacing:.02em;}
+  .pill.hi{background:var(--good-bg); color:var(--good);}
+  .pill.md{background:var(--warn-bg); color:var(--warn);}
+  .pill.lo{background:var(--bad-bg); color:var(--bad);}
+  .pill.nm{background:var(--blue-bg); color:var(--blue);}
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:20px 0 6px;}
+  .stat{background:var(--soft); border:1px solid var(--line); border-radius:11px; padding:16px 16px 14px;}
+  .stat .v{font-size:25px; font-weight:700; color:var(--navy); letter-spacing:-.5px; line-height:1.05;}
+  .stat .v small{font-size:14px; color:var(--gold); font-weight:700;}
+  .stat .l{font-size:11.5px; color:var(--slate); margin-top:5px; line-height:1.35;}
+  .viz{border:1px solid var(--line); border-radius:12px; padding:22px 24px; margin:20px 0; background:var(--softer);}
+  .viz h4{margin:0 0 16px; font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--slate); font-weight:700;}
+  .frow{display:grid; grid-template-columns:150px 1fr 150px; align-items:center; gap:14px; margin:8px 0;}
+  .flabel{font-size:13px; color:var(--ink); font-weight:600;}
+  .fbar{height:30px; border-radius:6px; display:flex; align-items:center; padding-left:12px;
+    color:#fff; font-size:12.5px; font-weight:700; min-width:50px;}
+  .fval{font-size:12.5px; color:var(--slate); text-align:right; font-variant-numeric:tabular-nums;}
+  .legend{display:flex; flex-wrap:wrap; gap:16px; margin-top:12px; font-size:12px; color:var(--slate);}
+  .legend span{display:flex; align-items:center; gap:6px;}
+  .dot{width:11px; height:11px; border-radius:3px; flex:none;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:22px; margin:16px 0;}
+  .card{border:1px solid var(--line); border-radius:11px; padding:18px 20px; background:#fff;}
+  .card.scen{border-top:4px solid var(--navy);}
+  .card.scen.stretch{border-top-color:var(--gold);}
+  .card h4{margin:0 0 4px;}
+  .day{border:1px solid var(--line); border-radius:11px; margin:12px 0; overflow:hidden;}
+  .day .dh{background:var(--navy); color:#fff; padding:10px 16px; display:flex; justify-content:space-between;
+    align-items:center; font-size:14px;}
+  .day .dh .tag{font-size:11px; color:var(--gold); font-weight:700; letter-spacing:.05em;}
+  .day .db{padding:6px 18px 12px;}
+  .day .db table{margin:8px 0;}
+  .track{display:inline-block; font-size:10px; font-weight:700; padding:2px 7px; border-radius:5px;
+    letter-spacing:.03em; text-transform:uppercase;}
+  .t-content{background:#ede7f8; color:#4a2f8a;}
+  .t-paid{background:var(--good-bg); color:var(--good);}
+  .t-comm{background:var(--blue-bg); color:var(--blue);}
+  .t-pr{background:var(--gold-bg); color:var(--gold);}
+  .t-ops{background:var(--soft); color:var(--slate);}
+  .script{border:1px solid var(--line2); border-radius:11px; margin:16px 0; overflow:hidden; background:#fff;}
+  .script .sh{background:var(--navy2); color:#fff; padding:10px 16px; font-size:13.5px; font-weight:650;
+    display:flex; justify-content:space-between; align-items:center;}
+  .script .sh .dur{font-size:11px; color:var(--gold); font-weight:700;}
+  .beat{display:grid; grid-template-columns:84px 1fr; border-top:1px solid var(--line);}
+  .beat .bt{background:var(--soft); padding:10px 12px; font-size:11px; font-weight:700; color:var(--navy2);
+    border-right:1px solid var(--line); letter-spacing:.02em;}
+  .beat .bc{padding:10px 14px; font-size:13.5px;}
+  .beat .bc em{color:var(--slate); font-style:italic;}
+  .beat .bc .vo{color:var(--ink);}
+  .beat .bc .txt-overlay{display:inline-block; background:#111; color:#fff; font-size:11.5px; font-weight:700;
+    padding:2px 8px; border-radius:4px; margin-top:5px;}
+  .concept{display:grid; grid-template-columns:34px 1fr; gap:12px; padding:11px 0; border-bottom:1px solid var(--line);}
+  .concept .n{background:var(--gold-bg); color:var(--gold); font-weight:700; border-radius:8px;
+    display:flex; align-items:center; justify-content:center; font-size:14px; height:34px;}
+  .concept .hk{font-weight:650; color:var(--navy2); font-size:14.5px;}
+  .concept .meta{font-size:12px; color:var(--slate); margin-top:2px;}
+  .concept .meta b{color:var(--ink); font-weight:600;}
+  .steps{counter-reset:st; list-style:none; padding-left:0;}
+  .steps>li{position:relative; padding:4px 0 14px 44px; margin:0; border-left:2px solid var(--line2); margin-left:15px;}
+  .steps>li::before{counter-increment:st; content:counter(st); position:absolute; left:-15px; top:2px;
+    width:28px; height:28px; background:var(--navy); color:#fff; border-radius:50%; display:flex;
+    align-items:center; justify-content:center; font-size:13px; font-weight:700;}
+  .steps>li:last-child{border-left-color:transparent;}
+  .steps b{color:var(--navy2);}
+  footer{margin:50px 56px 0; padding-top:22px; border-top:2px solid var(--navy); color:var(--slate); font-size:12px;}
+  .src-list{font-size:11.5px; line-height:1.8; columns:2; column-gap:34px;}
+  .src-list a{color:var(--blue); text-decoration:none;}
+  .anchor{scroll-margin-top:14px;}
+  @media print{
+    body{background:#fff;} .page{box-shadow:none; max-width:100%;}
+    section{break-inside:avoid-page;} .day,.script,.viz,table,.exec{break-inside:avoid;}
+    header.mast::after{display:none;} a.src{color:#444;}
+    nav.toc{break-inside:avoid;}
+  }
+  @media(max-width:820px){
+    main,header.mast{padding-left:24px; padding-right:24px;}
+    nav.toc{columns:1;} .stats{grid-template-columns:repeat(2,1fr);}
+    .grid2{grid-template-columns:1fr;} .frow{grid-template-columns:110px 1fr 80px;}
+    .src-list{columns:1;} footer{margin-left:24px; margin-right:24px;}
+    header.mast h1{font-size:26px;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="mast">
+  <div class="kicker">Growth &amp; Performance Strategy — Confidential</div>
+  <h1>VedicHour — Week-1 Go-To-Market Plan</h1>
+  <p class="sub">Launching three paid AI-Vedic products on a $200 cash budget with a $5,000 Week-1 revenue target. A funnel-honest, channel-ranked, policy-compliant operating plan built for the first 168 hours.</p>
+  <div class="verdict-chip">VERDICT: GO — with eyes open on the gap</div>
+  <div class="metarow">
+    <div><b>Prepared for</b> &middot; Founder / launch owner</div>
+    <div><b>Horizon</b> &middot; Day 0 (pre-launch) &rarr; Day 7</div>
+    <div><b>Date</b> &middot; 13 June 2026</div>
+    <div><b>AOV</b> &middot; ~$10 / &#8377;899 blended</div>
+    <div><b>FX basis</b> &middot; $1 &asymp; &#8377;86</div>
+  </div>
+</header>
+
+<main>
+
+<nav class="toc">
+  <h4>Contents</h4>
+  <a href="#s1"><span>1</span>Executive summary &amp; verdict</a>
+  <a href="#s2"><span>2</span>Funnel math: base vs stretch</a>
+  <a href="#s3"><span>3</span>Channel strategy, ranked</a>
+  <a href="#s4"><span>4</span>YouTube Shorts deep-dive</a>
+  <a href="#s5"><span>5</span>Video production pipeline</a>
+  <a href="#s6"><span>6</span>Promoting the videos</a>
+  <a href="#s7"><span>7</span>Google Ads — compliant build</a>
+  <a href="#s8"><span>8</span>Ad-policy reality (Google &amp; Meta)</a>
+  <a href="#s9"><span>9</span>7-day launch calendar</a>
+  <a href="#s10"><span>10</span>KPIs &amp; tracking dashboard</a>
+  <a href="#s11"><span>11</span>Risks &amp; contingencies</a>
+  <a href="#s12"><span>12</span>Appendix &amp; sources</a>
+</nav>
+
+<section id="s1" class="anchor">
+  <h2 class="sec"><span class="num">1</span><span class="txt">Executive summary &amp; verdict</span></h2>
+  <p class="lede">The honest headline: $200 of paid spend cannot buy $5,000 in Week 1. Organic short-form is the engine; the free-Kundli lead magnet is the conversion flywheel; paid is a scalpel, not the engine.</p>
+
+  <div class="exec">
+    <h3>The one-line strategy</h3>
+    <div class="strat">
+      <b>Flood high-intent free-Kundli demand</b> with batch-produced faceless short-form (Shorts + Reels + TikTok), <b>capture every visitor's email/WhatsApp via the free chart</b>, then <b>monetise through on-site upsell + a 72-hour WhatsApp/email sequence + cheap retargeting</b> &mdash; using $150 of Google Search only on bottom-funnel buyer keywords where intent is already proven.
+    </div>
+    <p style="margin:0 0 6px"><b>Why GO:</b> The demand is enormous and proven &mdash; Astrotalk did ~&#8377;1,176 cr (~$140M) revenue in FY25, the India astrology-app market is ~$163M (2024) growing ~49% CAGR, and "free kundli / kundli matching" are massive, high-intent, low-CPC queries (&#8377;8&ndash;25 blended India CPC). VedicHour already ranks for the lead magnet. The unit economics ($10 AOV, ~zero COGS on a digital AI report) mean even modest volume is profitable. <a class="src" href="https://www.storyboard18.com/how-it-works/biz-of-belief-how-indias-astrology-apps-are-turning-faith-into-fortune-amid-rising-regulatory-concerns-83027.htm">[Storyboard18]</a></p>
+    <ol>
+      <li><b>$5,000 in 7 days is a STRETCH, not a base case.</b> Realistic base on this budget + a cold start (no audience, no list) is <b>$1,400&ndash;$2,300 (140&ndash;230 orders)</b>. The $5k path exists but needs &ge;1 short-form video to break out (50k+ views) AND the free-Kundli list to convert at the top of its range. Plan for base; build the machine that makes stretch possible.</li>
+      <li><b>Organic short-form is the #1 channel by orders.</b> It is the only zero-marginal-cost lever that can produce 5&ndash;6 figure reach in a week. One breakout Reel/Short is worth more than the entire $200.</li>
+      <li><b>The lead magnet is the real product.</b> Free Kundli is not a freebie &mdash; it is an email/WhatsApp capture that lets you sell 3+ times over the next 30 days for $0 incremental cost. Treat list growth as a co-equal KPI with revenue.</li>
+      <li><b>Google Ads is viable but fragile.</b> Astrology/Kundli is <b>not</b> on Google's prohibited or named-restricted list &mdash; disapprovals come from <em>Misrepresentation / Unacceptable Business Practices</em> (guaranteed-outcome and "miracle" claims), not the topic itself. Run informational, no-promise copy with a visible disclaimer and you can advertise. <a class="src" href="https://support.google.com/adspolicy/answer/6020955?hl=en">[Google Misrepresentation policy]</a></li>
+      <li><b>Spend the $200 with discipline:</b> ~$150 Google Search on buyer-intent keywords (matching/report, not "free"), ~$40 retargeting the warm traffic, ~$10 buffer/tools. Do <b>not</b> pour cash into cold prospecting &mdash; at this budget it cannot reach efficiency.</li>
+      <li><b>The week is won or lost on two numbers:</b> (a) short-form views, and (b) free&rarr;paid conversion of captured leads. Instrument both from hour one; everything else is secondary.</li>
+    </ol>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v">$5,000</div><div class="l">Week-1 revenue target (stretch)</div></div>
+    <div class="stat"><div class="v">~500</div><div class="l">Orders needed @ ~$10 AOV</div></div>
+    <div class="stat"><div class="v">$200</div><div class="l">Total cash + ad spend</div></div>
+    <div class="stat"><div class="v">$1.4&ndash;2.3k</div><div class="l">Honest base case (140&ndash;230 orders)</div></div>
+  </div>
+</section>
+
+<hr class="div">
+
+<section id="s2" class="anchor">
+  <h2 class="sec"><span class="num">2</span><span class="txt">Funnel math: why $200 alone can't, and what can</span></h2>
+  <p class="lede">$5,000 &divide; ~$10 AOV = ~500 orders. The whole question is where 500 orders come from when you have $200 and no audience. The arithmetic below shows why paid-only fails and what the blended machine must deliver.</p>
+
+  <h3>2.1 The brutal paid-only check</h3>
+  <p>Take the most generous realistic paid assumptions for high-intent India + diaspora astrology search: blended CPC &asymp; <b>&#8377;20 (~$0.23)</b> on buyer keywords, and a strong landing-page CVR of <b>4%</b> (e-commerce LPs average ~4.3%; spiritual impulse offers can hit this with a tight page). <a class="src" href="https://owlclaw.com/benchmarks/ppc-benchmarks-india/">[OwlClaw India PPC]</a> <a class="src" href="https://www.shopify.com/blog/landing-page-conversion-rate">[Shopify LP benchmarks]</a></p>
+
+  <div class="viz">
+    <h4>$150 Google Search, paid-only &mdash; what it buys</h4>
+    <div class="frow"><div class="flabel">Ad spend</div><div><div class="fbar" style="width:14%;background:var(--navy);">$150</div></div><div class="fval">&asymp; &#8377;12,900</div></div>
+    <div class="frow"><div class="flabel">Clicks @ $0.23</div><div><div class="fbar" style="width:46%;background:var(--blue);">~650 clicks</div></div><div class="fval">650</div></div>
+    <div class="frow"><div class="flabel">Orders @ 4% CVR</div><div><div class="fbar" style="width:7%;background:var(--gold);">~26</div></div><div class="fval">26</div></div>
+    <div class="frow"><div class="flabel">Revenue @ $10</div><div><div class="fbar" style="width:6%;background:var(--good);">~$260</div></div><div class="fval">&#8377;22.4k</div></div>
+    <div class="legend"><span><span class="dot" style="background:var(--gold)"></span>Paid-only ceiling &asymp; <b>26 orders / $260</b> &mdash; about <b>5% of the goal</b>.</span></div>
+  </div>
+
+  <div class="call bad"><span class="tag">The gap</span><b>Paid alone reaches ~5% of target.</b> Even doubling CVR to 8% (aggressive) and spending all $200 on clicks tops out near $560 / 56 orders. The remaining ~90% of orders MUST come from organic reach and the lead-magnet list. This is not a budgeting problem you can spend your way out of &mdash; it is a <em>reach</em> problem solved by content, and a <em>monetisation</em> problem solved by capture + sequence.</div>
+
+  <h3>2.2 Conversion assumptions (the levers)</h3>
+  <table>
+    <caption>Funnel rates used &mdash; conservative&rarr;optimistic</caption>
+    <thead><tr><th>Stage</th><th class="c">Conservative</th><th class="c">Base</th><th class="c">Optimistic</th><th>Basis / note</th></tr></thead>
+    <tbody>
+      <tr><td>Short-form view &rarr; profile/link tap</td><td class="c">1.5%</td><td class="c">2.5%</td><td class="c">4%</td><td>Link-in-bio CTR; strong CTA + pinned comment</td></tr>
+      <tr><td>Link tap &rarr; site session</td><td class="c">80%</td><td class="c">85%</td><td class="c">90%</td><td>Drop-off on redirect/load</td></tr>
+      <tr><td>Session &rarr; free Kundli (lead captured)</td><td class="c">25%</td><td class="c">35%</td><td class="c">45%</td><td>Free tool = low friction; email/WA gate</td></tr>
+      <tr><td>Free Kundli &rarr; paid (on-site + 72h sequence)</td><td class="c">3%</td><td class="c">6%</td><td class="c">10%</td><td>Impulse price; urgency; matchmaking hook</td></tr>
+      <tr><td>Paid search session &rarr; order (LP CVR)</td><td class="c">2.5%</td><td class="c">4%</td><td class="c">6%</td><td>Buyer-intent keyword + matched LP</td></tr>
+      <tr><td>Retargeting session &rarr; order</td><td class="c">5%</td><td class="c">8%</td><td class="c">12%</td><td>Warm audience, already saw free chart</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.3 Base case vs stretch &mdash; the build to 500 orders</h3>
+  <div class="grid2">
+    <div class="card scen">
+      <h4>Base case &mdash; "the machine runs"</h4>
+      <p class="small" style="margin-top:0">No breakout video. Disciplined daily posting, list captured, sequence converts mid-range. <b>This is what to underwrite.</b></p>
+      <table style="font-size:12.5px;margin:6px 0">
+        <tr><td>Short-form views (wk, ~20&ndash;28 posts)</td><td class="r">220,000</td></tr>
+        <tr><td>&rarr; Site sessions (organic)</td><td class="r">~4,700</td></tr>
+        <tr><td>&rarr; Free Kundli leads captured</td><td class="r">~1,640</td></tr>
+        <tr><td>&rarr; Orders from free&rarr;paid @ 6%</td><td class="r">~98</td></tr>
+        <tr><td>+ Google Search orders</td><td class="r">~26</td></tr>
+        <tr><td>+ Retargeting orders</td><td class="r">~14</td></tr>
+        <tr><td>+ SEO / direct / Reddit-Quora</td><td class="r">~22</td></tr>
+        <tr style="background:var(--gold-bg)"><td><b>Total orders</b></td><td class="r"><b>~174</b></td></tr>
+        <tr style="background:var(--gold-bg)"><td><b>Revenue</b></td><td class="r"><b>~$1,740 / &#8377;1.5L</b></td></tr>
+      </table>
+      <p class="small" style="margin-bottom:0">Range with variance: <b>$1,400&ndash;$2,300</b>.</p>
+    </div>
+    <div class="card scen stretch">
+      <h4>Stretch case &mdash; "one video breaks out"</h4>
+      <p class="small" style="margin-top:0">&ge;1 Reel/Short hits 50k&ndash;150k views, list converts at the top of range, you put $40 paid behind the winner. <b>This is the $5k path.</b></p>
+      <table style="font-size:12.5px;margin:6px 0">
+        <tr><td>Short-form views (1+ breakout)</td><td class="r">900,000</td></tr>
+        <tr><td>&rarr; Site sessions (organic)</td><td class="r">~19,100</td></tr>
+        <tr><td>&rarr; Free Kundli leads captured</td><td class="r">~7,600</td></tr>
+        <tr><td>&rarr; Orders from free&rarr;paid @ 5&ndash;6%</td><td class="r">~420</td></tr>
+        <tr><td>+ Google Search orders</td><td class="r">~30</td></tr>
+        <tr><td>+ Retargeting (scaled on warm pool)</td><td class="r">~32</td></tr>
+        <tr><td>+ SEO / direct / community</td><td class="r">~30</td></tr>
+        <tr style="background:var(--gold-bg)"><td><b>Total orders</b></td><td class="r"><b>~512</b></td></tr>
+        <tr style="background:var(--gold-bg)"><td><b>Revenue</b></td><td class="r"><b>~$5,120 / &#8377;4.4L</b></td></tr>
+      </table>
+      <p class="small" style="margin-bottom:0">Hinges on the <b>view number</b>. The list does the rest.</p>
+    </div>
+  </div>
+
+  <div class="call info"><span class="tag">Read this</span>The difference between $1.7k and $5.1k is almost entirely <b>one variable: short-form views</b> (220k &rarr; 900k). Free&rarr;paid conversion barely moves between the two. <b>Strategic implication:</b> over-invest your finite human hours in (a) volume of shots-on-goal for a viral hit and (b) the capture+sequence that monetises whatever reach you get. Do not spend the week optimising the Google Ads bid by 8%.</div>
+
+  <h3>2.4 CAC &amp; payback by channel</h3>
+  <table>
+    <caption>Blended Week-1 CAC / payback &mdash; base case</caption>
+    <thead><tr><th>Channel</th><th class="r">Cash cost</th><th class="r">Orders</th><th class="r">CAC</th><th class="r">Rev</th><th class="r">ROAS</th><th>Payback</th></tr></thead>
+    <tbody>
+      <tr><td>Organic short-form</td><td class="r">$0*</td><td class="r">98</td><td class="r">~$0**</td><td class="r">$980</td><td class="r">&infin;</td><td>Immediate</td></tr>
+      <tr><td>Free-Kundli list (sequence)</td><td class="r">$0</td><td class="r">incl. above</td><td class="r">$0</td><td class="r">&mdash;</td><td class="r">&infin;</td><td>Immediate</td></tr>
+      <tr><td>Google Search (buyer kw)</td><td class="r">$150</td><td class="r">26</td><td class="r">$5.77</td><td class="r">$260</td><td class="r">1.7&times;</td><td>1st order</td></tr>
+      <tr><td>Retargeting</td><td class="r">$40</td><td class="r">14</td><td class="r">$2.86</td><td class="r">$140</td><td class="r">3.5&times;</td><td>1st order</td></tr>
+      <tr><td>SEO / community</td><td class="r">$0</td><td class="r">22</td><td class="r">$0</td><td class="r">$220</td><td class="r">&infin;</td><td>Immediate</td></tr>
+    </tbody>
+    <tfoot><tr><td>Blended</td><td class="r">$190</td><td class="r">~174</td><td class="r">$1.09</td><td class="r">$1,740</td><td class="r">9.2&times;</td><td>Same week</td></tr></tfoot>
+  </table>
+  <p class="small">*Organic carries a real <b>time</b> cost (~12&ndash;16 hrs production + posting over the week), not cash. **CAC &asymp; $0 cash but allocate founder hours. Google Search ROAS of 1.7&times; is thin but positive on a digital product with ~zero COGS &mdash; acceptable because its second job is feeding the retargeting pool that converts at 3.5&times;. <b>LTV note:</b> with a 30-day sequence + Forecast subscriptions (monthly $19.99 / annual $49.99), true LTV is materially above $10 AOV &mdash; Week-1 CAC is recovered many times over, which is the real argument for spending the full $200.</p>
+</section>
+
+<hr class="div">
+
+<section id="s3" class="anchor">
+  <h2 class="sec"><span class="num">3</span><span class="txt">Channel strategy &mdash; ranked by Week-1 orders</span></h2>
+  <p class="lede">Six channels, ranked by expected contribution. Effort is founder-hours; "cash" is out-of-pocket. The ranking is deliberately reach-first, because reach is the binding constraint.</p>
+
+  <table>
+    <caption>Channel scorecard &mdash; Week 1</caption>
+    <thead><tr><th>#</th><th>Channel</th><th>Role in the funnel</th><th class="c">Effort</th><th class="c">Cash</th><th class="r">Exp. orders</th><th class="c">Priority</th></tr></thead>
+    <tbody>
+      <tr><td class="c">1</td><td><b>Organic short-form</b><br><span class="small">Shorts &middot; Reels &middot; TikTok</span></td><td>Top-of-funnel reach engine. The only lever that scales to 6-figure views at $0 cash. Drives traffic to free Kundli.</td><td class="c"><span class="pill lo">High</span></td><td class="c">$0</td><td class="r">90&ndash;420</td><td class="c"><span class="pill hi">P0</span></td></tr>
+      <tr><td class="c">2</td><td><b>Free-Kundli lead magnet + sequence</b></td><td>Conversion flywheel. Captures email/WhatsApp from all traffic; monetises via on-site upsell + 72h sequence. Multiplies every other channel.</td><td class="c"><span class="pill md">Med</span></td><td class="c">$0</td><td class="r">(amplifies all)</td><td class="c"><span class="pill hi">P0</span></td></tr>
+      <tr><td class="c">3</td><td><b>SEO (already ranking)</b></td><td>Free, high-intent, already live. Optimise the free-Kundli page for capture + upsell; add internal links to paid products. Compounds beyond Week 1.</td><td class="c"><span class="pill hi">Low</span></td><td class="c">$0</td><td class="r">15&ndash;30</td><td class="c"><span class="pill hi">P0</span></td></tr>
+      <tr><td class="c">4</td><td><b>Google Search (paid)</b></td><td>Bottom-funnel scalpel. Buys ready-to-buy clicks on matching/report keywords; feeds retargeting pool. Capped at ~$150.</td><td class="c"><span class="pill md">Med</span></td><td class="c">$150</td><td class="r">20&ndash;35</td><td class="c"><span class="pill md">P1</span></td></tr>
+      <tr><td class="c">5</td><td><b>Retargeting (paid)</b></td><td>Cheapest paid orders. Re-engages free-chart visitors who didn't buy. Warm, high-CVR. Scale up if a video breaks out.</td><td class="c"><span class="pill hi">Low</span></td><td class="c">$40</td><td class="r">10&ndash;32</td><td class="c"><span class="pill md">P1</span></td></tr>
+      <tr><td class="c">6</td><td><b>Reddit / Quora + WhatsApp/India communities + influencer seeding</b></td><td>Trust-led demand. Answer high-intent threads (kundli matching, manglik, career), seed micro-creators, share free tool in diaspora groups. Slow-burn but free.</td><td class="c"><span class="pill md">Med</span></td><td class="c">$0&ndash;10</td><td class="r">10&ndash;25</td><td class="c"><span class="pill md">P1</span></td></tr>
+    </tbody>
+  </table>
+
+  <h4 class="mini">Channel-by-channel playbook</h4>
+  <div class="grid2">
+    <div class="card">
+      <h4>1 &middot; Organic short-form <span class="pill hi">P0</span></h4>
+      <ul class="small" style="margin-bottom:0">
+        <li><b>Platforms, in order:</b> Instagram Reels (best diaspora reach + DM-to-sell), YouTube Shorts (best evergreen compounding + search), TikTok (US/UK/SG diaspora, fastest cold virality).</li>
+        <li><b>Cross-post the same vertical 9:16 asset</b> to all three &mdash; never platform-exclusive in Week 1.</li>
+        <li><b>Goal:</b> 20&ndash;28 videos shipped over 7 days; &ge;3 "swings for the fences" concepts daily.</li>
+        <li><b>One job:</b> drive taps to link-in-bio &rarr; free Kundli.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>2 &middot; Lead magnet + sequence <span class="pill hi">P0</span></h4>
+      <ul class="small" style="margin-bottom:0">
+        <li><b>Gate the free chart</b> on email + (ideally) WhatsApp opt-in &mdash; this is the asset.</li>
+        <li><b>On-results-page upsell:</b> "Your chart shows 3 critical yogas &mdash; unlock your Deep Kundli ($9.99)." + matchmaking cross-sell.</li>
+        <li><b>72-hour sequence</b> (email + WhatsApp): T+0 deliver chart, T+3h "what we found," T+24h matchmaking hook, T+48h forecast + soft urgency, T+72h last-call discount.</li>
+        <li>WhatsApp open rates dwarf email in India &mdash; prioritise it.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>4 &middot; Google Search <span class="pill md">P1</span></h4>
+      <ul class="small" style="margin-bottom:0">
+        <li>Bid on <b>buyer-intent</b> only (matching, report, premium) &mdash; never burn budget on "free kundli" where intent is to <em>not</em> pay.</li>
+        <li>India CPC &#8377;8&ndash;25; diaspora $0.40&ndash;1.20. ~$150 &asymp; 600&ndash;700 clicks blended.</li>
+        <li>Doubles as the <b>fuel for retargeting</b> &mdash; every click is a future warm impression.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>6 &middot; Reddit/Quora + communities <span class="pill md">P1</span></h4>
+      <ul class="small" style="margin-bottom:0">
+        <li><b>Reddit:</b> r/vedicastrology, r/AskAstrologers, r/IndianAstrology &mdash; answer genuinely, link the free tool only where it adds value (kill spam = bans).</li>
+        <li><b>Quora:</b> target evergreen "kundli matching for marriage / manglik dosha" questions; these rank on Google for years.</li>
+        <li><b>WhatsApp/diaspora:</b> share free chart in family/regional groups (US-Telugu, UAE-Malayali, UK-Gujarati). Person-to-person, not blast.</li>
+        <li><b>Influencer seeding:</b> DM 15&ndash;20 micro astro-creators (5&ndash;50k) the free tool + a no-cash affiliate (% of referred sales via discount code).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<hr class="div">
+
+<section id="s4" class="anchor">
+  <h2 class="sec"><span class="num">4</span><span class="txt">YouTube Shorts deep-dive &mdash; is it the right bet?</span></h2>
+  <p class="lede">Verdict: <b>partly yes &mdash; but as one leg of a three-platform stool, not the lead.</b> Shorts is the best <em>compounding/search</em> surface; Reels is the best <em>conversion/diaspora</em> surface. Make once, post to all three. Don't bet the week on Shorts alone.</p>
+
+  <div class="call good"><span class="tag">Reasoned yes/partly</span><b>YES, include Shorts</b> &mdash; it's free, evergreen (a Short can pull views for weeks, unlike a Reel), surfaces in YouTube <em>search</em> for "kundli"/"nakshatra" queries (intent you want), and has the strongest CTA-to-long-form mechanic. <b>PARTLY</b> &mdash; for a 7-day cold start with no subscribers, Reels typically delivers faster diaspora reach and easier DM-to-sale, and TikTok cold-virality can spike fastest. <b>So:</b> Shorts is a co-equal pillar, but in Week 1 your fastest <em>orders</em> likely come via Reels DMs. Produce platform-agnostic 9:16 and cross-post everything.</div>
+
+  <h3>4.1 Format spec (2026 best practice)</h3>
+  <table>
+    <thead><tr><th>Element</th><th>Spec</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Hook timing</td><td><b>0&ndash;3 sec, visual + verbal</b></td><td>~71% of viewers decide within the first few seconds <a class="src" href="https://virvid.ai/blog/ai-shorts-script-hook-ultimate-guide-2026">[VirVid]</a></td></tr>
+      <tr><td>Length</td><td><b>25&ndash;40 sec</b> (sweet spot ~30s)</td><td>Long enough to deliver value, short enough for 70%+ completion (algo boost) <a class="src" href="https://joinbrands.com/blog/youtube-shorts-best-practices/">[JoinBrands]</a></td></tr>
+      <tr><td>Structure</td><td>Hook (0&ndash;3) &rarr; Value/Problem (3&ndash;22) &rarr; CTA (last 5&ndash;8)</td><td>Proven converting arc <a class="src" href="https://www.gpt.social/blog/how-to-grow-on-youtube-shorts-2026">[SocialGPT]</a></td></tr>
+      <tr><td>Captions</td><td><b>Always-on, word-by-word, animated</b></td><td>80%+ watch muted; captions lift completion</td></tr>
+      <tr><td>CTA &mdash; Shorts</td><td>"Full breakdown / free chart &mdash; link on my channel/profile"</td><td>Drives profile taps + watch time</td></tr>
+      <tr><td>CTA &mdash; Reels</td><td>First CTA at sec 12&ndash;18, hard CTA at end: "Comment 'CHART' / link in bio for your free Kundli"</td><td>Reels ad best practice; comment-to-DM automation <a class="src" href="https://www.influencers-time.com/instagram-reels-creative-brief-hook-shot-and-cta-guide/">[Influencers-Time]</a></td></tr>
+      <tr><td>Cadence</td><td><b>3&ndash;4/day Mon&ndash;Wed, analyse Thu, 2&ndash;3/day Fri&ndash;Sun</b></td><td>Volume = shots on goal for a breakout <a class="src" href="https://joinbrands.com/blog/youtube-shorts-best-practices/">[JoinBrands]</a></td></tr>
+    </tbody>
+  </table>
+
+  <h3>4.2 Ten concepts with hooks (astrology, marriage/career/health anxiety)</h3>
+  <div class="concepts">
+    <div class="concept"><div class="n">1</div><div><div class="hk">"Your Moon nakshatra decides who you should marry &mdash; here's yours."</div><div class="meta"><b>Angle:</b> matchmaking &middot; <b>CTA:</b> free Kundli to find your nakshatra &rarr; matching upsell</div></div></div>
+    <div class="concept"><div class="n">2</div><div><div class="hk">"If you're Manglik, read this before you say yes to any marriage."</div><div class="meta"><b>Angle:</b> fear/relief &middot; high search volume term &middot; <b>CTA:</b> free chart checks Mangal dosha</div></div></div>
+    <div class="concept"><div class="n">3</div><div><div class="hk">"3 signs Saturn is about to change your career in 2026."</div><div class="meta"><b>Angle:</b> career anxiety + timeliness &middot; <b>CTA:</b> 7-day/Annual forecast</div></div></div>
+    <div class="concept"><div class="n">4</div><div><div class="hk">"This one yoga in your chart means money comes late &mdash; but big."</div><div class="meta"><b>Angle:</b> curiosity/wealth &middot; <b>CTA:</b> Deep Kundli report reveals your yogas</div></div></div>
+    <div class="concept"><div class="n">5</div><div><div class="hk">"Couples with these two Rashis fight the most. Are you one?"</div><div class="meta"><b>Angle:</b> synastry/relatable &middot; screenshot-bait &middot; <b>CTA:</b> run your matching</div></div></div>
+    <div class="concept"><div class="n">6</div><div><div class="hk">"Your rising sign is lying to you &mdash; your real personality is the Moon."</div><div class="meta"><b>Angle:</b> myth-bust/contrarian hook &middot; <b>CTA:</b> free chart shows your Moon sign</div></div></div>
+    <div class="concept"><div class="n">7</div><div><div class="hk">"Born between these dates? Sade Sati is hitting you right now."</div><div class="meta"><b>Angle:</b> urgency/fear &middot; evergreen anxiety &middot; <b>CTA:</b> forecast report</div></div></div>
+    <div class="concept"><div class="n">8</div><div><div class="hk">"What your 7th house says about your future spouse (it's scary accurate)."</div><div class="meta"><b>Angle:</b> marriage curiosity &middot; <b>CTA:</b> Deep Kundli decodes your 7th house</div></div></div>
+    <div class="concept"><div class="n">9</div><div><div class="hk">"Free kundli apps hide this. Here's what your real birth chart shows."</div><div class="meta"><b>Angle:</b> product/authority &middot; positions VedicHour vs free apps &middot; <b>CTA:</b> get the real chart free</div></div></div>
+    <div class="concept"><div class="n">10</div><div><div class="hk">"Health red flags hidden in your 6th house &mdash; check yours tonight."</div><div class="meta"><b>Angle:</b> health anxiety (keep gentle, no medical claims) &middot; <b>CTA:</b> free chart + Deep report</div></div></div>
+  </div>
+  <p class="small">Production rule: shoot variants of #1, #2, #5 (matchmaking is the highest-AOV, most shareable wedge). Screenshot-bait hooks (#5, #6) drive shares; fear/urgency hooks (#2, #7) drive saves + taps.</p>
+
+  <h3>4.3 Two full ~30-second scripts</h3>
+
+  <div class="script">
+    <div class="sh"><span>Script A &mdash; "Moon nakshatra &amp; marriage" (matchmaking)</span><span class="dur">~30s &middot; vertical 9:16</span></div>
+    <div class="beat"><div class="bt">HOOK<br>0&ndash;3s</div><div class="bc"><span class="vo">"Your Moon nakshatra decides who you're actually compatible with &mdash; and almost nobody checks it."</span><br><span class="txt-overlay">Your nakshatra &ne; your sun sign</span></div></div>
+    <div class="beat"><div class="bt">VALUE<br>3&ndash;13s</div><div class="bc"><span class="vo">"In Vedic astrology, marriage matching isn't about sun signs. It's your Moon's nakshatra &mdash; the exact star it sat in when you were born. There are 27, and they control Guna Milan, the 36-point score every Indian family checks before a wedding."</span><br><em>B-roll: starfield, rotating zodiac wheel, 27 nakshatra list scrolling</em></div></div>
+    <div class="beat"><div class="bt">PROOF<br>13&ndash;22s</div><div class="bc"><span class="vo">"Two people can look perfect on paper and score 14 out of 36 &mdash; that's a red flag traditional astrologers won't ignore. Or you score 28+ and it's a green light. The catch: you need your exact birth time to know."</span><br><span class="txt-overlay">36-point Guna Milan</span></div></div>
+    <div class="beat"><div class="bt">CTA<br>22&ndash;30s</div><div class="bc"><span class="vo">"Generate your free Kundli at the link in my bio &mdash; it shows your Moon nakshatra in 30 seconds. Then run your matching with your partner. Comment 'MATCH' and I'll send the link."</span><br><span class="txt-overlay">Free chart &rarr; link in bio &middot; comment "MATCH"</span></div></div>
+  </div>
+
+  <div class="script">
+    <div class="sh"><span>Script B &mdash; "Saturn &amp; your 2026 career" (forecast)</span><span class="dur">~30s &middot; vertical 9:16</span></div>
+    <div class="beat"><div class="bt">HOOK<br>0&ndash;3s</div><div class="bc"><span class="vo">"If your career feels stuck in 2026, Saturn is probably the reason &mdash; and there's a window coming."</span><br><span class="txt-overlay">Saturn is testing you right now</span></div></div>
+    <div class="beat"><div class="bt">VALUE<br>3&ndash;14s</div><div class="bc"><span class="vo">"Saturn &mdash; Shani &mdash; rewards patience and punishes shortcuts. When it transits your 10th house of career, promotions stall, effort feels invisible, and you question everything. It's not bad luck. It's a setup. The people who understand the timing come out the other side with a completely new level."</span><br><em>B-roll: slow Saturn rings, calendar flipping, person at desk</em></div></div>
+    <div class="beat"><div class="bt">PROOF<br>14&ndash;22s</div><div class="bc"><span class="vo">"The shift isn't the same date for everyone &mdash; it depends on your Moon sign and your dasha period. Knowing your window means you stop forcing doors that won't open and push the ones that will."</span><br><span class="txt-overlay">Your window &ne; everyone's window</span></div></div>
+    <div class="beat"><div class="bt">CTA<br>22&ndash;30s</div><div class="bc"><span class="vo">"Get your free birth chart at the link in my bio to see your Saturn placement &mdash; then the 2026 forecast maps your exact career months. Save this so you don't forget."</span><br><span class="txt-overlay">Free chart in bio &middot; save this</span></div></div>
+  </div>
+  <div class="call warn"><span class="tag">Compliance in scripts</span>Keep every claim <b>informational and chart-based</b> ("your chart shows / Vedic tradition holds"), never <b>guaranteed outcomes</b> ("we'll fix your marriage / cure your illness / guarantee a promotion"). Avoid medical claims entirely on the health concept. This keeps you safe for organic <em>and</em> means the same hooks can be reused (cleaned up) in paid.</div>
+</section>
+
+<hr class="div">
+
+<section id="s5" class="anchor">
+  <h2 class="sec"><span class="num">5</span><span class="txt">Video production &mdash; the faceless pipeline (build 20 in a weekend)</span></h2>
+  <p class="lede">A non-technical founder can batch 20 faceless videos in one weekend for under $20 total. The trick is to separate writing (fast, batched) from assembly (templated, repetitive) and never appear on camera.</p>
+
+  <h3>5.1 The toolstack (budget-first)</h3>
+  <table>
+    <caption>Recommended tools &mdash; all within the $200 cap</caption>
+    <thead><tr><th>Job</th><th>Tool</th><th class="r">Cost</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Scripts (20 at once)</td><td>ChatGPT / Claude</td><td class="r">$0&ndash;20</td><td>Prompt with hook formulas from &sect;4.2; batch all 20 in one session</td></tr>
+      <tr><td>Voiceover (AI)</td><td>ElevenLabs (free tier) <span class="small">or CapCut built-in TTS</span></td><td class="r">$0</td><td>Warm Indian-English voice; free tier covers ~20 shorts</td></tr>
+      <tr><td>Editing + assembly</td><td><b>CapCut</b> (free, no watermark)</td><td class="r">$0</td><td>Templates, auto-captions, TTS, B-roll, transitions &mdash; the workhorse <a class="src" href="https://fluxnote.io/guides/capcut-alternatives-ai-video-2026">[FluxNote]</a></td></tr>
+      <tr><td>Full text-to-video (faster path)</td><td>InVideo AI <span class="small">or FluxNote Pro</span></td><td class="r">~$20/mo</td><td>Script &rarr; finished video w/ B-roll + VO + captions; one month covers launch <a class="src" href="https://fluxnote.io/guides/ai-video-tools-comparison-pricing-2026">[FluxNote pricing]</a></td></tr>
+      <tr><td>Caption polish (optional)</td><td>Submagic (~$20/mo)</td><td class="r">opt.</td><td>Animated word-by-word captions if CapCut's aren't punchy enough <a class="src" href="https://quso.ai/blog/submagic-ai-alternative">[quso.ai]</a></td></tr>
+      <tr><td>Stock visuals</td><td>Pexels / Pixabay (free)</td><td class="r">$0</td><td>Cosmos, temples, couples, hands &mdash; all royalty-free</td></tr>
+      <tr><td>Thumbnails / overlays</td><td>Canva (free)</td><td class="r">$0</td><td>Nakshatra graphics, text cards, brand frame</td></tr>
+    </tbody>
+  </table>
+  <div class="call good"><span class="tag">Recommended stack</span><b>Free path:</b> ChatGPT + ElevenLabs free + CapCut + Pexels = <b>$0</b>. <b>Speed path:</b> add InVideo AI <b>or</b> FluxNote Pro (~$20) to auto-assemble from scripts and roughly halve production time. Pick speed-path if your hours are the bottleneck (they are). Either way you stay well under budget.</div>
+
+  <h3>5.2 Two faceless visual formats (pick per concept)</h3>
+  <div class="grid2">
+    <div class="card"><h4>Format A &mdash; "B-roll + voiceover + captions"</h4><p class="small" style="margin-bottom:0">AI voice reads the script over stitched cosmic/temple/couple B-roll, big animated captions, one text-card per beat. Fastest to batch. Best for fear/curiosity hooks (#2, #4, #7).</p></div>
+    <div class="card"><h4>Format B &mdash; "Text-on-screen / faceless explainer"</h4><p class="small" style="margin-bottom:0">Bold kinetic text reveals the "list" (e.g., the 3 Saturn signs) over a moving background + trending audio, minimal/no VO. Best for screenshot-bait list hooks (#1, #5, #6). Highest share rate.</p></div>
+  </div>
+
+  <h3>5.3 The weekend batch &mdash; step by step</h3>
+  <ol class="steps">
+    <li><b>Sat AM (90 min) &mdash; Write all 20 scripts.</b> One AI session. Feed the 10 concepts from &sect;4.2 + the Hook&rarr;Value&rarr;CTA structure; ask for 2 variants each. Paste into a doc, lightly edit for voice + compliance (no guarantees). <span class="small">Output: 20 scripts.</span></li>
+    <li><b>Sat midday (45 min) &mdash; Generate all voiceovers.</b> Batch every script through ElevenLabs/CapCut TTS. Name files <code>v01.mp3 &hellip; v20.mp3</code>. <span class="small">~2 min each.</span></li>
+    <li><b>Sat PM (60 min) &mdash; Build ONE master CapCut template.</b> Brand frame, caption style, intro sting, CTA end-card, font. Get it perfect once. <span class="small">This is the leverage step.</span></li>
+    <li><b>Sat PM &rarr; Sun (the bulk) &mdash; Assemble 20 from the template.</b> Duplicate the project, drop in VO + matched Pexels B-roll, auto-caption, swap the text cards, export 1080&times;1920. <span class="small">~12&ndash;18 min per video once templated &rarr; 20 in ~5&ndash;6 focused hours.</span></li>
+    <li><b>Sun PM (30 min) &mdash; Batch captions, hashtags, hooks.</b> Write each video's on-platform caption + hashtag set + pinned-comment CTA in a tracker now, so posting week is copy-paste. <span class="small">Removes daily friction.</span></li>
+    <li><b>Sun PM (20 min) &mdash; Schedule.</b> Queue Reels + Shorts via Meta/YouTube native schedulers; TikTok post manually or via scheduler. Front-load Mon&ndash;Wed. <span class="small">You now have a full week of content done before launch.</span></li>
+  </ol>
+  <div class="call info"><span class="tag">Throughput math</span>Template-once + duplicate-many is what makes 20 feasible in a weekend: the first video takes ~45 min (you're building the template), videos 2&ndash;20 take ~15 min each. Total &asymp; <b>8&ndash;9 hours across Sat+Sun</b>, fully within a solo founder's reach. Always keep 4&ndash;5 unposted in reserve to react to what's working.</div>
+</section>
+
+<hr class="div">
+
+<section id="s6" class="anchor">
+  <h2 class="sec"><span class="num">6</span><span class="txt">Promoting the videos &mdash; seeding, loops &amp; when to pay</span></h2>
+  <p class="lede">Posting is 40% of the job; engineering the engagement loop is the other 60%. The algorithm rewards early velocity, completion, and shares &mdash; manufacture all three.</p>
+
+  <div class="grid2">
+    <div class="card">
+      <h4>Distribution &amp; seeding</h4>
+      <ul class="small" style="margin-bottom:0">
+        <li><b>Cross-post the same asset</b> to Reels, Shorts, TikTok within the same hour. Re-share top Reels to Stories with a "new post" sticker.</li>
+        <li><b>Seed the first 60 min:</b> drop the link in 3&ndash;4 WhatsApp groups + your story the moment it's live &mdash; early views/watch-time signal the algo.</li>
+        <li><b>Pin a comment with the CTA + link</b> on every video ("Free Kundli &rarr; [link]"). Reply to the first 10 comments fast to spike engagement.</li>
+        <li><b>Repurpose winners:</b> a 50k-view Reel becomes a YouTube Short, a TikTok, and a carousel within 24h.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>Hashtags &amp; discovery</h4>
+      <ul class="small" style="margin-bottom:0">
+        <li><b>Mix broad + niche + intent:</b> #vedicastrology #kundli #astrology + #kundlimatching #nakshatra #manglik + #marriageastrology #careerastrology.</li>
+        <li>Diaspora tags: #indianastrology, regional (#telugu #gujarati) when relevant.</li>
+        <li>Shorts: put 2&ndash;3 keywords in the <b>title</b> (YouTube search), not just hashtags.</li>
+        <li>Use 1 trending audio per Format-B video for reach.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h4 class="mini">Engagement loops (manufacture velocity)</h4>
+  <ul>
+    <li><b>Comment-to-DM:</b> CTA "Comment 'MATCH'/'CHART' for the link." Each comment boosts ranking AND opens a DM you can auto-reply with the link (Instagram automation). This is the single highest-converting mechanic for Reels.</li>
+    <li><b>Question hooks for saves:</b> "Save this so you don't forget your window." Saves are weighted heavily.</li>
+    <li><b>Screenshot bait:</b> list formats ("these 2 rashis fight most") drive shares to partners/family &mdash; the cheapest reach there is.</li>
+    <li><b>Reply with video:</b> turn the best comment on a winner into the next video's hook &mdash; free idea + built-in audience.</li>
+  </ul>
+
+  <h4 class="mini">When to put paid spend behind a winner</h4>
+  <div class="call good"><span class="tag">The trigger rule</span>Promote a video <b>only after it has proven organic product-market fit</b>, never on day one. <b>Boost trigger:</b> a video that organically hits <b>&ge;10k views with above-median watch-time and link taps in 24&ndash;48h</b>. Then: put <b>$15&ndash;25</b> behind it (Instagram "Boost" to a lookalike of profile visitors, or as a Reels ad to interest-based astrology audiences) and/or shift retargeting budget to people who engaged with it. <b>Do not</b> boost a video that's flat organically &mdash; paid amplifies a signal, it doesn't create one. Cap total "boost a winner" spend at ~$40 so it doesn't cannibalise the Google Search budget.</div>
+</section>
+
+<hr class="div">
+
+<section id="s7" class="anchor">
+  <h2 class="sec"><span class="num">7</span><span class="txt">Google Ads &mdash; policy-compliant campaign build (~$150 / 7 days)</span></h2>
+  <p class="lede">Structure for intent and compliance. Buyer-intent Search only; no Display/cold prospecting at this budget. Every ad is informational, disclaimer-backed, and points to a matched landing page.</p>
+
+  <h3>7.1 Account &amp; campaign structure</h3>
+  <table>
+    <caption>Campaigns &rarr; ad groups &rarr; themes</caption>
+    <thead><tr><th>Campaign</th><th>Ad group</th><th>Match &rarr; landing page</th><th class="r">Budget/day</th><th class="c">Priority</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="2"><b>C1 &middot; Matchmaking (India)</b><br><span class="small">Search &middot; INR &middot; Tier-1+2</span></td><td>Kundli matching</td><td>"kundli matching", "horoscope matching marriage" &rarr; <code>/matchmaking</code></td><td class="r">&#8377;500</td><td class="c"><span class="pill hi">P0</span></td></tr>
+      <tr><td>Manglik / guna milan</td><td>"manglik dosha check", "guna milan online" &rarr; <code>/matchmaking</code></td><td class="r">&#8377;300</td><td class="c"><span class="pill hi">P0</span></td></tr>
+      <tr><td><b>C2 &middot; Deep Kundli (India)</b></td><td>Detailed/premium report</td><td>"detailed kundli report", "janam kundli analysis" &rarr; <code>/deep-kundli</code></td><td class="r">&#8377;300</td><td class="c"><span class="pill md">P1</span></td></tr>
+      <tr><td><b>C3 &middot; Forecast (India)</b></td><td>Horoscope/forecast</td><td>"2026 horoscope prediction", "yearly astrology report" &rarr; <code>/forecast</code></td><td class="r">&#8377;200</td><td class="c"><span class="pill md">P1</span></td></tr>
+      <tr><td><b>C4 &middot; Diaspora (US/UAE/UK/CA/SG)</b><br><span class="small">Search &middot; USD &middot; geo-targeted</span></td><td>Matching + report (English)</td><td>"online kundli matching", "vedic birth chart reading" &rarr; localized LPs</td><td class="r">$2&ndash;3</td><td class="c"><span class="pill md">P1</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small"><b>Geo split rationale:</b> India CPCs are &#8377;8&ndash;25 so rupees stretch far; diaspora CPCs run $0.40&ndash;1.20 but AOV is full USD $9.99 and intent is high. Allocate ~70% to India campaigns, ~30% diaspora. Total &asymp; <b>&#8377;1,300/day India + ~$3/day diaspora &asymp; $18&ndash;20/day &rarr; ~$130&ndash;145 over 7 days</b>, leaving headroom for retargeting (&sect;7.6).</p>
+
+  <h3>7.2 Keywords &mdash; exact buyer-intent set</h3>
+  <table>
+    <thead><tr><th>Ad group</th><th>Keywords (phrase/exact)</th><th class="c">Intent</th><th class="r">Est. CPC</th></tr></thead>
+    <tbody>
+      <tr><td>Kundli matching</td><td>"kundli matching", [kundli matching online], "horoscope matching for marriage", "kundli milan", [marriage matching by date of birth]</td><td class="c"><span class="pill hi">Buyer</span></td><td class="r">&#8377;15&ndash;30</td></tr>
+      <tr><td>Manglik / guna</td><td>"manglik dosha check", "guna milan", [mangal dosha calculator], "ashtakoot milan"</td><td class="c"><span class="pill hi">Buyer</span></td><td class="r">&#8377;10&ndash;22</td></tr>
+      <tr><td>Deep Kundli</td><td>"detailed kundli report", "janam kundli analysis", [full birth chart report], "kundli with predictions"</td><td class="c"><span class="pill hi">Buyer</span></td><td class="r">&#8377;12&ndash;25</td></tr>
+      <tr><td>Forecast</td><td>"2026 yearly horoscope", "personal astrology forecast", [career astrology prediction], "monthly horoscope report"</td><td class="c"><span class="pill md">Mixed</span></td><td class="r">&#8377;8&ndash;18</td></tr>
+      <tr><td>Diaspora</td><td>"online kundli matching", "vedic astrology report", [indian birth chart reading], "kundli matching usa"</td><td class="c"><span class="pill hi">Buyer</span></td><td class="r">$0.40&ndash;1.10</td></tr>
+    </tbody>
+  </table>
+
+  <h4 class="mini">Negative keywords (protect the budget)</h4>
+  <p class="small"><code>free</code>, <code>free kundli</code>, <code>free download</code>, <code>software</code>, <code>app download</code>, <code>pdf free</code>, <code>job</code>, <code>jobs</code>, <code>astrologer near me</code>, <code>talk to astrologer</code>, <code>call</code>, <code>consultation</code>, <code>course</code>, <code>learn astrology</code>, <code>meaning</code>, <code>in hindi pdf</code>, <code>2025</code> (stale). Critically negate <b>"free"</b> on all paid campaigns &mdash; free-seekers are served by the organic lead magnet, not paid clicks.</p>
+
+  <h3>7.3 Compliant ad copy (examples)</h3>
+  <div class="grid2">
+    <div class="card">
+      <h4 class="mini" style="margin-top:0">RSA &mdash; Matchmaking &check; compliant</h4>
+      <p class="small" style="margin:4px 0"><b>Headlines:</b> Vedic Kundli Matching Online &middot; 36-Point Guna Milan Report &middot; Check Compatibility in Minutes &middot; Detailed Match Analysis $9.99</p>
+      <p class="small" style="margin:4px 0"><b>Descriptions:</b> Get a detailed Vedic compatibility report based on both birth charts. Instant, private, easy to read. &middot; Traditional Ashtakoot matching with clear scores and insights. For guidance only.</p>
+    </div>
+    <div class="card">
+      <h4 class="mini" style="margin-top:0">RSA &mdash; Deep Kundli &check; compliant</h4>
+      <p class="small" style="margin:4px 0"><b>Headlines:</b> Your Detailed Vedic Birth Chart &middot; Full Kundli Report &mdash; $9.99 &middot; Yogas, Dasha &amp; Houses Explained &middot; Instant PDF Report</p>
+      <p class="small" style="margin:4px 0"><b>Descriptions:</b> A complete, easy-to-understand analysis of your birth chart. Delivered instantly. &middot; Explore your planetary placements and periods. For informational and entertainment purposes.</p>
+    </div>
+  </div>
+  <div class="call bad"><span class="tag">Do NOT write</span>Avoid anything Google reads as a guaranteed outcome or "miracle": &cross; "Fix your marriage," &cross; "Guaranteed match," &cross; "Cure your problems," &cross; "Remove doshas 100%," &cross; "Change your destiny." These trigger <b>Misrepresentation / Unacceptable Business Practices</b> disapprovals &mdash; the actual reason astrology advertisers get blocked (not the topic). <a class="src" href="https://support.google.com/adspolicy/answer/6020955?hl=en">[Misrepresentation]</a></div>
+
+  <h3>7.4 Bidding, pacing &amp; conversion tracking</h3>
+  <ul>
+    <li><b>Bidding:</b> Start <b>Maximize Clicks with a manual CPC cap</b> (&#8377;25 India / $1 diaspora) for days 1&ndash;3 to control cost and gather data &mdash; Smart Bidding starves on a $150/week budget with no conversion history. If &ge;15 conversions land by day 4, switch the top ad group to <b>Maximize Conversions</b>.</li>
+    <li><b>Pacing (&asymp;$150 over 7 days):</b> Days 1&ndash;2 at ~$25/day (learn + seed retargeting pool), days 3&ndash;5 at ~$20/day (cut losers, double winners), days 6&ndash;7 at ~$18/day with budget tilted to the best ad group + retargeting. Set <b>ad schedule to India peaks 10am&ndash;12pm &amp; 7pm&ndash;10pm IST</b> to avoid wasted off-peak spend. <a class="src" href="https://owlclaw.com/benchmarks/ppc-benchmarks-india/">[OwlClaw]</a></li>
+    <li><b>Conversion tracking (do before launch):</b> install Google Ads conversion tag + GA4; mark <b>Purchase</b> (Ziina success/thank-you URL) as the primary conversion with value, and <b>Free-Kundli lead</b> as a secondary conversion. Import GA4 events into Ads. Without this, you're flying blind and Smart Bidding can never work.</li>
+    <li><b>Landing-page mapping:</b> each ad group &rarr; its exact product page (no homepage dumping). Every LP must show <b>price, what's included, instant delivery, social proof, and the disclaimer</b> ("For guidance/entertainment; not a substitute for professional advice") &mdash; the disclaimer doubles as policy cover and trust signal.</li>
+  </ul>
+
+  <h3>7.5 Tracking &amp; review</h3>
+  <p class="small">Check the <b>Policy manager</b> within 1&ndash;2 hours of launch &mdash; disapprovals show fast. Per &sect;8, "Other restricted businesses" violations carry a <b>7-day warning before suspension</b>, so a first disapproval is fixable, not fatal. Review search-terms report daily and add negatives.</p>
+
+  <h3>7.6 Retargeting (~$40)</h3>
+  <p class="small">Build a remarketing audience from <b>all site visitors + free-Kundli completers who didn't purchase</b> (GA4/Ads audience). Run a small Search-remarketing bid adjustment + a tiny Performance Max or Display remarketing line capped at <b>~$5&ndash;6/day</b>. These users already saw their chart &mdash; expected CVR 8&ndash;12%, the cheapest paid orders you'll get. Scale this first if a video breaks out and floods the pool.</p>
+</section>
+
+<hr class="div">
+
+<section id="s8" class="anchor">
+  <h2 class="sec"><span class="num">8</span><span class="txt">Ad-policy reality check &mdash; Google &amp; Meta (June 2026)</span></h2>
+  <p class="lede">The widely-repeated claim "you can't advertise astrology" is wrong in the nuance &mdash; and the nuance is the whole game. Here is the actual 2026 position and exactly how to stay live.</p>
+
+  <h3>8.1 Google Ads &mdash; the real position</h3>
+  <table>
+    <thead><tr><th>Question</th><th>Finding (June 2026)</th></tr></thead>
+    <tbody>
+      <tr><td>Is astrology/Kundli explicitly <b>prohibited</b>?</td><td><b>No.</b> It does not appear in Google's Prohibited Content list (counterfeit, dangerous products, dishonest behavior, inappropriate content). <a class="src" href="https://support.google.com/adspolicy/answer/6008942?hl=en">[Policy index]</a></td></tr>
+      <tr><td>Is it a named <b>restricted</b> category?</td><td><b>No</b> dedicated astrology line exists. It is not in Healthcare, Financial, Gambling, etc. The catch-all is <b>"Other restricted businesses"</b> &mdash; Google may limit "businesses that pose unreasonable risk to user safety," reviewed case-by-case. <a class="src" href="https://support.google.com/adspolicy/answer/6368711?hl=en">[Other restricted businesses]</a></td></tr>
+      <tr><td>So why do astrology advertisers get <b>disapproved</b>?</td><td><b>Misrepresentation &amp; Unacceptable Business Practices</b> &mdash; "misleading or unrealistic claims," guaranteed outcomes, "miracle" fixes, and hidden billing. The <em>claims</em> get blocked, not the subject. <a class="src" href="https://support.google.com/adspolicy/answer/6020955?hl=en">[Misrepresentation]</a></td></tr>
+      <tr><td>Required to stay compliant</td><td>(1) Informational/entertainment framing, no guaranteed results; (2) visible <b>disclaimer</b> on site ("for guidance/entertainment; not professional advice"); (3) transparent pricing + clear billing (no hidden recurring charges &mdash; note Ziina one-time vs subscription clarity); (4) full business contact/refund/privacy pages.</td></tr>
+      <tr><td>Country bans?</td><td>No blanket astrology ban in India/US/UAE/UK/CA/SG. Always check <b>local legal requirements</b> per geo (Google requires advertiser compliance with local law). India is fully workable; diaspora geos fine with compliant copy. <a class="src" href="https://support.google.com/adspolicy/answer/6023676?hl=en">[Legal requirements]</a></td></tr>
+      <tr><td>Enforcement temperature 2026</td><td>Stricter, more automated/AI-reviewed across all categories. "Other restricted businesses" gives a <b>7-day warning before account suspension</b> &mdash; a first disapproval is recoverable. <a class="src" href="https://support.google.com/adspolicy/answer/6368711?hl=en">[7-day warning]</a></td></tr>
+    </tbody>
+  </table>
+  <div class="call good"><span class="tag">Bottom line &mdash; Google</span><b>Viable.</b> Compliant, informational, disclaimer-backed astrology Search ads run fine in 2026. The disapproval risk is entirely within your control: write no-promise copy and keep the site honest. Have a backup ad account/payment method ready in case of an over-zealous automated flag (&sect;11).</div>
+
+  <h3>8.2 Meta (Instagram / Facebook)</h3>
+  <table>
+    <thead><tr><th>Question</th><th>Finding (June 2026)</th></tr></thead>
+    <tbody>
+      <tr><td>Is astrology viable on Meta?</td><td><b>Yes</b> &mdash; astrology brands actively and successfully run Meta ads in 2026 (documented India case studies reaching 60k+ via FB/IG). It is not a blanket-banned category. <a class="src" href="https://dizispark.com/meta-ads-for-astrology-brand-india-case-study/">[Dizispark case study]</a></td></tr>
+      <tr><td>The 2026 catch</td><td>Meta tightened <b>sensitive categories</b> + personal-attributes rules; enforcement is stricter, broader, automated. Ads implying personal traits ("Are you Manglik?", "Struggling in your marriage?") can trip personal-attribute/health-claim filters. <a class="src" href="https://www.wetracked.io/post/meta-ads-new-sensitive-categories-restrictions">[wetracked]</a></td></tr>
+      <tr><td>How to run it</td><td>Use <b>"you"-neutral, curiosity</b> framing ("Discover what your Vedic birth chart reveals") rather than asserting the viewer's condition. Avoid health/financial outcome claims. Same disclaimer applies.</td></tr>
+    </tbody>
+  </table>
+  <div class="call warn"><span class="tag">Bottom line &mdash; Meta</span><b>Viable but not a Week-1 priority on $200.</b> Meta paid needs a learning budget and pixel data you don't yet have. <b>Use Meta organically</b> (Reels) in Week 1; reserve Meta <em>paid</em> for the "boost a winner" lever (&sect;6) and post-launch scaling once the pixel has fired on real purchases. Don't split your tiny paid budget across two ad platforms in week one.</div>
+</section>
+
+<hr class="div">
+
+<section id="s9" class="anchor">
+  <h2 class="sec"><span class="num">9</span><span class="txt">7-day launch calendar (Day 0 &rarr; Day 7)</span></h2>
+  <p class="lede">Tracks: <span class="track t-content">Content</span> <span class="track t-paid">Paid</span> <span class="track t-comm">Community</span> <span class="track t-pr">PR/Seeding</span> <span class="track t-ops">Ops/Setup</span>. Day 0 is the weekend build; days 1&ndash;7 are the live launch.</p>
+
+  <div class="day">
+    <div class="dh"><span><b>Day 0 &mdash; Pre-launch</b> (the weekend before)</span><span class="tag">Build everything</span></div>
+    <div class="db"><table style="font-size:12.8px">
+      <tr><td style="width:120px"><span class="track t-ops">Ops</span></td><td>Install GA4 + Google Ads conversion tags; verify Ziina success-URL fires Purchase; QA every product page (price, delivery, disclaimer, refund/privacy pages). Set up link-in-bio (Linktree/own page) &rarr; free Kundli.</td></tr>
+      <tr><td><span class="track t-content">Content</span></td><td>Run the &sect;5.3 weekend batch &mdash; <b>20 videos produced</b>, captions + hashtags pre-written, Mon&ndash;Wed queue scheduled. Keep 5 in reserve.</td></tr>
+      <tr><td><span class="track t-paid">Paid</span></td><td>Build C1&ndash;C4 in Google Ads (paused). Load keywords + negatives + 2 RSAs each. Build retargeting audience. <b>Do not enable yet.</b></td></tr>
+      <tr><td><span class="track t-comm">Community</span></td><td>Join/seed: r/vedicastrology, r/AskAstrologers, relevant Quora topics, 3&ndash;5 WhatsApp/diaspora groups. Set up Instagram comment-to-DM auto-reply.</td></tr>
+      <tr><td><span class="track t-pr">Seeding</span></td><td>Build a list of 20 micro astro-creators (5&ndash;50k). Draft the seeding DM + a discount-code affiliate offer.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="day">
+    <div class="dh"><span><b>Day 1 &mdash; Launch</b></span><span class="tag">Go live, seed hard</span></div>
+    <div class="db"><table style="font-size:12.8px">
+      <tr><td style="width:120px"><span class="track t-content">Content</span></td><td>Post 3&ndash;4 videos (lead with matchmaking #1 + #5). Seed each in WhatsApp + Stories within 60 min of going live. Pin CTA comment; reply to first 10 comments fast.</td></tr>
+      <tr><td><span class="track t-paid">Paid</span></td><td>Enable C1 + C2 at ~$25/day. <b>Check Policy manager at +1h and +4h.</b> Watch search-terms; add negatives.</td></tr>
+      <tr><td><span class="track t-pr">Seeding</span></td><td>Send all 20 creator DMs. Post launch announcement to your own socials + any founder network.</td></tr>
+      <tr><td><span class="track t-comm">Community</span></td><td>Answer 3&ndash;5 Reddit/Quora threads genuinely; link free tool only where it helps.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="day">
+    <div class="dh"><span><b>Day 2</b></span><span class="tag">Double down</span></div>
+    <div class="db"><table style="font-size:12.8px">
+      <tr><td style="width:120px"><span class="track t-content">Content</span></td><td>Post 3&ndash;4 more. Note early winners (views/taps at 24h). Re-share best Day-1 Reel to Stories.</td></tr>
+      <tr><td><span class="track t-paid">Paid</span></td><td>Enable C3 + C4 (diaspora). Confirm conversions firing. First negative-keyword sweep.</td></tr>
+      <tr><td><span class="track t-comm">Community</span></td><td>Follow up creator DMs; onboard any who said yes with their code. Continue Reddit/Quora.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="day">
+    <div class="dh"><span><b>Day 3</b></span><span class="tag">First optimisation</span></div>
+    <div class="db"><table style="font-size:12.8px">
+      <tr><td style="width:120px"><span class="track t-paid">Paid</span></td><td>Cut keywords/ad groups with spend &amp; zero conversions; shift budget to winners. If &ge;15 conversions, switch top ad group to Max Conversions.</td></tr>
+      <tr><td><span class="track t-content">Content</span></td><td>Post 3. Make 2 NEW videos riffing on whatever angle is winning (use reserve + fresh).</td></tr>
+      <tr><td><span class="track t-ops">Ops</span></td><td>Mid-week funnel read: views &rarr; sessions &rarr; leads &rarr; orders. Find the weakest stage and fix it (likely the upsell copy or capture rate).</td></tr>
+    </table></div>
+  </div>
+
+  <div class="day">
+    <div class="dh"><span><b>Day 4</b> &mdash; Analyse</span><span class="tag">Find the breakout</span></div>
+    <div class="db"><table style="font-size:12.8px">
+      <tr><td style="width:120px"><span class="track t-content">Content</span></td><td>Deep analytics pass: identify top 2&ndash;3 videos by views + completion + taps. Post 2; queue 3 variants of the winner for Fri&ndash;Sun.</td></tr>
+      <tr><td><span class="track t-paid">Paid</span></td><td><b>Boost-a-winner check:</b> any video &ge;10k organic views with strong watch-time &rarr; put $15&ndash;25 behind it / shift retargeting to its engagers.</td></tr>
+      <tr><td><span class="track t-comm">Community</span></td><td>Send 72h-sequence performance check: are leads converting? Tune subject lines / WhatsApp copy.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="day">
+    <div class="dh"><span><b>Day 5</b></span><span class="tag">Ride momentum</span></div>
+    <div class="db"><table style="font-size:12.8px">
+      <tr><td style="width:120px"><span class="track t-content">Content</span></td><td>Post 3, weighted to winning format. Turn best comments into next hooks.</td></tr>
+      <tr><td><span class="track t-paid">Paid</span></td><td>Scale retargeting (warmest, cheapest orders). Hold Search on proven keywords only. Tilt remaining budget to whatever ROAS is best.</td></tr>
+      <tr><td><span class="track t-pr">PR</span></td><td>If a video is breaking out, pitch it / cross-post to larger astrology meme/repost pages for reach.</td></tr>
+    </table></div>
+  </div>
+
+  <div class="day">
+    <div class="dh"><span><b>Day 6&ndash;7 &mdash; Weekend push</b></span><span class="tag">Convert the list</span></div>
+    <div class="db"><table style="font-size:12.8px">
+      <tr><td style="width:120px"><span class="track t-comm">Community</span></td><td><b>Monetise the list:</b> fire the week's accumulated free-Kundli leads a weekend offer (matchmaking + forecast bundle, soft urgency "launch-week pricing ends Sun"). WhatsApp first, email second.</td></tr>
+      <tr><td><span class="track t-content">Content</span></td><td>Post 2&ndash;3/day; weekend has the highest leisure scroll. Lead with shareable list formats.</td></tr>
+      <tr><td><span class="track t-paid">Paid</span></td><td>Spend down remaining budget on best performers + retargeting. Don't leave budget unspent &mdash; but don't chase new cold keywords late.</td></tr>
+      <tr><td><span class="track t-ops">Ops</span></td><td><b>Day 7 retro:</b> tally orders/revenue vs base+stretch, CAC by channel, top 3 videos, best keyword, list size. Decide Week-2 plan (almost certainly: more of whatever made the breakout).</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<hr class="div">
+
+<section id="s10" class="anchor">
+  <h2 class="sec"><span class="num">10</span><span class="txt">KPIs &amp; tracking dashboard</span></h2>
+  <p class="lede">Track daily. The two north-stars are <b>short-form views</b> (reach) and <b>free&rarr;paid conversion</b> (monetisation) &mdash; everything else is diagnostic.</p>
+
+  <table>
+    <caption>Daily dashboard &mdash; metrics, sources, targets</caption>
+    <thead><tr><th>Tier</th><th>Metric</th><th>Source</th><th>Day-1 watch</th><th>Wk-1 target (base&rarr;stretch)</th></tr></thead>
+    <tbody>
+      <tr><td rowspan="2"><span class="pill hi">North-star</span></td><td><b>Short-form views (all platforms)</b></td><td>IG/YT/TikTok analytics</td><td>&gt;3k</td><td>220k &rarr; 900k</td></tr>
+      <tr><td><b>Free-Kundli &rarr; paid CVR</b></td><td>GA4 funnel</td><td>baseline</td><td>6% &rarr; 5&ndash;6% (at scale)</td></tr>
+      <tr><td rowspan="4"><span class="pill nm">Funnel</span></td><td>Free-Kundli leads captured</td><td>CRM / email tool</td><td>&gt;120</td><td>1,600 &rarr; 7,600</td></tr>
+      <tr><td>Site sessions (by source)</td><td>GA4</td><td>&gt;350</td><td>~5k &rarr; ~19k</td></tr>
+      <tr><td>Orders (by channel)</td><td>Ziina + GA4</td><td>&gt;8</td><td>174 &rarr; 512</td></tr>
+      <tr><td>Revenue</td><td>Ziina</td><td>&gt;$80</td><td>$1.7k &rarr; $5.1k</td></tr>
+      <tr><td rowspan="3"><span class="pill md">Paid health</span></td><td>CPC / CTR (India &amp; diaspora)</td><td>Google Ads</td><td>CPC &lt;&#8377;25 / &lt;$1; CTR &gt;4%</td><td>maintain</td></tr>
+      <tr><td>Google Ads ROAS</td><td>Ads + GA4</td><td>track</td><td>&ge;1.5&times;, retargeting &ge;3&times;</td></tr>
+      <tr><td>Policy status</td><td>Ads Policy manager</td><td>0 disapprovals</td><td>0 (fix within 24h)</td></tr>
+      <tr><td rowspan="3"><span class="pill nm">Content</span></td><td>Videos shipped / day</td><td>Tracker</td><td>3&ndash;4</td><td>20&ndash;28 total</td></tr>
+      <tr><td>Avg view duration / completion</td><td>Platform</td><td>track</td><td>&gt;60% completion on winners</td></tr>
+      <tr><td>Link-in-bio tap rate</td><td>Linktree/UTM</td><td>track</td><td>2.5%+ of views</td></tr>
+      <tr><td><span class="pill lo">Quality</span></td><td>Payment failure / drop-off rate</td><td>Ziina</td><td>&lt;15%</td><td>&lt;10%</td></tr>
+    </tbody>
+  </table>
+  <p class="small"><b>Build it in:</b> a single Google Sheet with one row per day and these columns; UTM-tag every link (organic vs paid vs community) so source attribution is clean. 10 minutes each morning.</p>
+</section>
+
+<hr class="div">
+
+<section id="s11" class="anchor">
+  <h2 class="sec"><span class="num">11</span><span class="txt">Risks &amp; contingencies</span></h2>
+  <p class="lede">Ranked by Week-1 likelihood &times; impact. The single biggest risk isn't ad disapproval &mdash; it's that <b>no video breaks out</b>, which is the difference between base and stretch.</p>
+
+  <table>
+    <caption>Risk register</caption>
+    <thead><tr><th>#</th><th>Risk</th><th class="c">Likelihood</th><th class="c">Impact</th><th>Mitigation</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>No organic breakout</b> &rarr; stuck at base case, miss $5k</td><td class="c"><span class="pill md">High</span></td><td class="c"><span class="pill lo">High</span></td><td><b>Volume + iteration:</b> 20&ndash;28 shots, kill-and-double daily on what works, 3 variants of any winner. Maximise the list so base-case orders are still healthy. Reset expectation to base ($1.7k) and treat $5k as upside.</td></tr>
+      <tr><td>2</td><td><b>Low free&rarr;paid conversion</b> (list captured but won't buy)</td><td class="c"><span class="pill md">Med-Hi</span></td><td class="c"><span class="pill lo">High</span></td><td>Tighten on-results upsell (specific, chart-personalised); lead with matchmaking (highest pull); add launch-week urgency; prioritise WhatsApp (higher open than email in India); A/B the T+24h hook.</td></tr>
+      <tr><td>3</td><td><b>Google Ads disapproval / account flag</b></td><td class="c"><span class="pill md">Med</span></td><td class="c"><span class="pill md">Med</span></td><td>Compliant no-promise copy + site disclaimer from day 0 (&sect;7&ndash;8). "Other restricted businesses" gives <b>7-day warning</b> &mdash; fixable. Keep a backup ad account + alternate payment ready. If Search is blocked, reallocate to retargeting + "boost a winner" on Meta.</td></tr>
+      <tr><td>4</td><td><b>Payment friction</b> (Ziina checkout drop-off, currency confusion, trust)</td><td class="c"><span class="pill md">Med</span></td><td class="c"><span class="pill md">Med</span></td><td>Test full INR + USD + AED checkout before launch; show price in user's currency; add trust badges + refund policy on checkout; monitor failure rate KPI; have a fallback payment link ready.</td></tr>
+      <tr><td>5</td><td><b>Platform throttle / shadow-ban</b> for repetitive astrology + links</td><td class="c"><span class="pill nm">Low-Med</span></td><td class="c"><span class="pill md">Med</span></td><td>Vary hooks/formats; don't paste identical captions; put link in bio not in caption on IG; engage authentically; don't spam communities (fastest route to a ban).</td></tr>
+      <tr><td>6</td><td><b>Founder bandwidth</b> (solo, can't sustain post + reply + optimise)</td><td class="c"><span class="pill md">Med</span></td><td class="c"><span class="pill md">Med</span></td><td>Front-load production to Day 0 (everything pre-made/scheduled). Automate comment-to-DM. Batch community work into 2 fixed daily blocks. Protect the two north-star activities; let secondary tasks slip.</td></tr>
+      <tr><td>7</td><td><b>Misleading-claim creep</b> in viral content &rarr; policy/trust risk</td><td class="c"><span class="pill nm">Low</span></td><td class="c"><span class="pill md">Med</span></td><td>Bake the "informational/entertainment, no guarantees, no medical claims" rule into every script template; keep the site disclaimer prominent.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="call info"><span class="tag">If you're behind on Day 4</span>Triage in this order: (1) is the funnel leaking at <b>capture</b> or <b>upsell</b>? Fix that page first &mdash; it lifts every channel. (2) Is any video showing life? Pour reserve content + the $40 boost there. (3) Is paid ROAS positive? If yes and you have budget, lean into retargeting. Do <b>not</b> respond to a slow start by inventing new cold channels &mdash; concentrate force on what's already moving.</div>
+</section>
+
+<hr class="div">
+
+<section id="s12" class="anchor">
+  <h2 class="sec"><span class="num">12</span><span class="txt">Appendix &mdash; assumptions, benchmarks &amp; sources</span></h2>
+
+  <h4 class="mini">Key assumptions</h4>
+  <ul class="small">
+    <li>FX: $1 &asymp; &#8377;86. Blended AOV ~$10 / &#8377;899 (mix skews to the two $9.99 hero products + some $19.99/$49.99 forecasts).</li>
+    <li>Digital product &rarr; ~zero marginal COGS; the constraint is reach + conversion, not fulfilment cost.</li>
+    <li>India CPC &#8377;8&ndash;25 blended (astrology buyer-intent ~&#8377;10&ndash;30); diaspora $0.40&ndash;1.20. <a class="src" href="https://owlclaw.com/benchmarks/ppc-benchmarks-india/">[OwlClaw]</a></li>
+    <li>E-commerce LP CVR ~4.3% baseline; impulse spiritual offer can match/exceed with tight page. <a class="src" href="https://www.shopify.com/blog/landing-page-conversion-rate">[Shopify]</a></li>
+    <li>Short-form: ~71% decide in first seconds; 25&ndash;40s sweet spot; 70%+ completion &rarr; algo boost. <a class="src" href="https://joinbrands.com/blog/youtube-shorts-best-practices/">[JoinBrands]</a> <a class="src" href="https://virvid.ai/blog/ai-shorts-script-hook-ultimate-guide-2026">[VirVid]</a></li>
+    <li>Market validation: India astrology-app market ~$163M (2024), ~49% CAGR; Astrotalk ~&#8377;1,176 cr FY25. <a class="src" href="https://www.storyboard18.com/how-it-works/biz-of-belief-how-indias-astrology-apps-are-turning-faith-into-fortune-amid-rising-regulatory-concerns-83027.htm">[Storyboard18]</a></li>
+  </ul>
+
+  <h4 class="mini">Sources</h4>
+  <div class="src-list">
+    <a href="https://support.google.com/adspolicy/answer/6008942?hl=en">Google Ads policies &mdash; master index (2026)</a><br>
+    <a href="https://support.google.com/adspolicy/answer/6368711?hl=en">Google Ads &mdash; Other restricted businesses (7-day warning)</a><br>
+    <a href="https://support.google.com/adspolicy/answer/6020955?hl=en">Google Ads &mdash; Misrepresentation policy</a><br>
+    <a href="https://support.google.com/adspolicy/answer/6023676?hl=en">Google Ads &mdash; Legal requirements (per-geo)</a><br>
+    <a href="https://www.auditsocials.com/platforms/google-ads-policy-guide">Google Ads Policy 2026 &mdash; disapprovals &amp; fixes</a><br>
+    <a href="https://help.kliken.com/en/articles/11641503-understanding-google-ads-disapproval-for-misrepresentation">Kliken &mdash; Misrepresentation disapproval explained</a><br>
+    <a href="https://www.wetracked.io/post/meta-ads-new-sensitive-categories-restrictions">Meta Ads sensitive categories 2026 &mdash; what changed</a><br>
+    <a href="https://dizispark.com/meta-ads-for-astrology-brand-india-case-study/">Meta Ads for astrology brand &mdash; India case study 2026</a><br>
+    <a href="https://www.stackmatix.com/blog/meta-ads-policy">Meta Ads policy 2026 overview</a><br>
+    <a href="https://owlclaw.com/benchmarks/ppc-benchmarks-india/">OwlClaw &mdash; India PPC benchmarks 2026 (CPC/CTR/CPL)</a><br>
+    <a href="https://www.shopify.com/blog/landing-page-conversion-rate">Shopify &mdash; landing-page conversion benchmarks</a><br>
+    <a href="https://landerlab.io/blog/landing-page-conversion-rate">LanderLab &mdash; LP conversion benchmarks by industry 2026</a><br>
+    <a href="https://joinbrands.com/blog/youtube-shorts-best-practices/">JoinBrands &mdash; YouTube Shorts best practices 2026</a><br>
+    <a href="https://virvid.ai/blog/ai-shorts-script-hook-ultimate-guide-2026">VirVid &mdash; viral hook templates 2026</a><br>
+    <a href="https://www.gpt.social/blog/how-to-grow-on-youtube-shorts-2026">SocialGPT &mdash; grow on Shorts 2026</a><br>
+    <a href="https://www.influencers-time.com/instagram-reels-creative-brief-hook-shot-and-cta-guide/">Influencers-Time &mdash; Reels hook/CTA guide</a><br>
+    <a href="https://fluxnote.io/guides/ai-video-tools-comparison-pricing-2026">FluxNote &mdash; AI video tools pricing 2026</a><br>
+    <a href="https://fluxnote.io/guides/capcut-alternatives-ai-video-2026">FluxNote &mdash; CapCut &amp; faceless video tools 2026</a><br>
+    <a href="https://quso.ai/blog/submagic-ai-alternative">quso.ai &mdash; Submagic alternatives &amp; captions 2026</a><br>
+    <a href="https://www.storyboard18.com/how-it-works/biz-of-belief-how-indias-astrology-apps-are-turning-faith-into-fortune-amid-rising-regulatory-concerns-83027.htm">Storyboard18 &mdash; India astrology apps business 2025</a><br>
+    <a href="https://www.marknteladvisors.com/research-library/india-astrology-app-market.html">MarkNtel &mdash; India astrology app market size</a>
+  </div>
+
+  <p class="small" style="margin-top:22px; color:var(--slate);"><b>Disclaimer &amp; method note:</b> CPCs, CVRs and view assumptions are modelled from June-2026 public benchmarks and stated explicitly so they can be challenged and replaced with first-party data as it lands in Week 1. Treat every funnel number as a hypothesis to be confirmed against GA4/Ziina within 72 hours, not a forecast to defend. Astrology content/claims are positioned as informational and for entertainment/guidance only.</p>
+</section>
+
+<footer>
+  VedicHour &mdash; Week-1 Go-To-Market Plan &middot; Prepared 13 June 2026 &middot; Confidential. &nbsp;|&nbsp; North-stars: short-form views &amp; free&rarr;paid conversion. &nbsp;|&nbsp; Verdict: GO (base $1.7k, stretch $5k).
+</footer>
+
+</main>
+</div>
+</body>
+</html>

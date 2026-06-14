@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VedicHour — Launch Handoff</title>
+<style>
+  :root{--navy:#0f1a36;--ink:#1a2233;--slate:#42506b;--mute:#78849c;--gold:#b8862f;--gold2:#d8a94a;
+    --line:#e3e7ef;--bg:#f6f8fc;--card:#fff;--green:#1f8a55;--amber:#c8881a;--red:#c0392b}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.55;font-size:15px}
+  .wrap{max-width:900px;margin:0 auto;padding:0 28px}
+  header{background:linear-gradient(125deg,#0f1a36,#1d2f5e);color:#fff;padding:44px 0 38px}
+  .kicker{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold2);font-weight:700;margin-bottom:12px}
+  h1{font-size:30px;margin:0 0 10px;font-weight:760;letter-spacing:-.01em}
+  .sub{color:#c8d2e6;max-width:640px;font-size:15.5px}
+  section{padding:30px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:20px;margin:0 0 14px;color:var(--navy);font-weight:730}
+  h2 .n{color:var(--gold);margin-right:9px}
+  p{margin:0 0 12px}
+  .files{display:grid;gap:12px;grid-template-columns:repeat(2,1fr)}
+  .file{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,30,60,.04)}
+  .file h4{margin:0 0 4px;font-size:14.5px;color:var(--navy)}
+  .file .fn{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:var(--gold);margin-bottom:7px}
+  .file p{font-size:12.7px;color:var(--slate);margin:0}
+  code{background:#eef1f7;padding:1px 6px;border-radius:5px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.6px;color:#2a3a66}
+  .step{display:flex;gap:14px;margin-bottom:14px}
+  .step .num{flex:0 0 28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+  .step .body{flex:1}
+  .step h4{margin:2px 0 3px;font-size:15px;color:var(--navy)}
+  .step p{font-size:13.4px;color:var(--slate);margin:0}
+  .callout{border-left:3px solid var(--gold);background:#fff;border-radius:8px;padding:13px 17px;margin:14px 0;box-shadow:0 1px 2px rgba(16,30,60,.05)}
+  .callout.warn{border-left-color:var(--amber);background:#fffaf2}
+  .callout.good{border-left-color:var(--green);background:#f4fbf7}
+  ul.gate{list-style:none;padding:0;margin:8px 0}
+  ul.gate li{position:relative;padding-left:26px;margin-bottom:9px;font-size:13.8px}
+  ul.gate li::before{content:"☐";position:absolute;left:2px;top:-1px;color:var(--gold);font-size:15px}
+  .small{font-size:12px;color:var(--mute)}
+  b{color:var(--navy)}
+  @media(max-width:700px){.files{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="kicker">VedicHour · Three-Product Launch</div>
+  <h1>Launch Handoff</h1>
+  <div class="sub">Everything built this session, how to push it to GitHub with a one-command rollback, and the short checklist to go live safely.</div>
+</div></header>
+<div class="wrap">
+
+<section>
+  <h2><span class="n">1</span>Your three products — status</h2>
+  <p><b>Deep Kundali ($9.99 / ₹899)</b> — rebuilt from a high-level blurb into a multi-section birth report (life · career &amp; money · relationships · marriage &amp; intimacy · health · children · family) with a 5-year year-by-year outlook and Manglik / Kaal Sarpa / Sade Sati checks, on real Swiss-Ephemeris calculations + scripture (BPHS) grounding. <b>Built — needs a quick accuracy QA before charging.</b></p>
+  <p><b>Matchmaking ($9.99 / ₹899)</b> — Ashtakoot 36-point Gun Milan, "You / Your partner" form, free score then paid full breakdown. <b>Repriced, relabelled, live in the nav. Ready.</b></p>
+  <p><b>R/R Forecast</b> — your existing 7-day / Monthly / Annual engine. <b>Untouched — already ready.</b></p>
+</section>
+
+<section>
+  <h2><span class="n">2</span>What's in this folder</h2>
+  <div class="files">
+    <div class="file"><div class="fn">LAUNCH-AUDIT.html</div><h4>Launch-readiness audit</h4><p>Full platform audit, subsystem scorecard, P0/P1/P2 findings, the Kundali accuracy method, and the go-live runbook.</p></div>
+    <div class="file"><div class="fn">GTM-PLAN.html</div><h4>Go-to-market plan</h4><p>$200 + Google Ads → $5k/week plan: funnel math, YouTube Shorts playbook, video pipeline, Google Ads setup, 7-day calendar.</p></div>
+    <div class="file"><div class="fn">launch-vedichour.ps1</div><h4>Push to GitHub</h4><p>Build-gate → backup tag → stage launch files → commit → push. Run on your machine.</p></div>
+    <div class="file"><div class="fn">rollback-vedichour.ps1</div><h4>One-command rollback</h4><p>Restores the pre-launch version (the "not permanent" guarantee).</p></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="n">3</span>Push to GitHub (2 minutes, on your machine)</h2>
+  <div class="callout warn"><b>Why on your machine, not from the cloud session:</b> the cloud sandbox mounts your Windows folder over a network layer that intermittently truncates reads and can't safely write to <code>.git</code>. All the <b>code is written correctly to disk</b>; the commit/push just needs to run where git and your GitHub login already work. This also keeps your credentials on your machine.</div>
+  <div class="step"><div class="num">1</div><div class="body"><h4>Open PowerShell in this folder</h4><p>Then run: <code>powershell -ExecutionPolicy Bypass -File launch-vedichour.ps1</code></p></div></div>
+  <div class="step"><div class="num">2</div><div class="body"><h4>The script gates on a clean build</h4><p>It runs <code>npm run build</code> first and refuses to commit if the build fails — so you never push something broken. (This is also the real type-check the cloud sandbox couldn't run reliably.)</p></div></div>
+  <div class="step"><div class="num">3</div><div class="body"><h4>It creates a backup tag, then asks before pushing</h4><p>A <code>prelaunch-backup-&lt;timestamp&gt;</code> tag is set as your restore point. You type <code>YES</code> to commit + push to <code>origin/main</code>. If Vercel is connected, it auto-deploys.</p></div></div>
+</section>
+
+<section>
+  <h2><span class="n">4</span>Rollback — go back to the original anytime</h2>
+  <div class="callout good"><b>Two ways, both fast:</b></div>
+  <p><b>Code rollback:</b> <code>powershell -ExecutionPolicy Bypass -File rollback-vedichour.ps1</code> — resets to the backup tag and force-pushes. (Pass a specific tag as an argument if you want an older one.)</p>
+  <p><b>Live-site rollback (fastest, no rebuild):</b> Vercel → <b>Deployments</b> → pick the last good deployment → <b>"…" → Instant Rollback</b>. The site reverts in seconds while you sort out the code at your own pace. Nothing here is permanent.</p>
+</section>
+
+<section>
+  <h2><span class="n">5</span>Before you drive traffic — 4 gates</h2>
+  <ul class="gate">
+    <li><b>Cost caps:</b> set <code>UPSTASH_REDIS_REST_URL/TOKEN</code> in Vercel + monthly spend caps at Anthropic / OpenAI / Google. (Free reports run the full LLM pipeline — this prevents a runaway bill on a viral hit.)</li>
+    <li><b>Apply migrations:</b> run <code>20260613_kundali_standalone.sql</code> and <code>20260613_kundali_deep_report.sql</code> on production Supabase.</li>
+    <li><b>Accuracy QA:</b> generate the Kundali for 2–3 charts you trust; confirm lagna, Moon nakshatra, current dasha, Manglik &amp; Sade-Sati match a reference (AstroSage / Jagannatha Hora). The math is deterministic — once these match, all charts match.</li>
+    <li><b>Live payment test:</b> one real Ziina order in USD, INR and AED on production (all prior tests used the bypass path).</li>
+  </ul>
+  <p class="small">Full detail and the P1/P2 backlog are in LAUNCH-AUDIT.html · Marketing execution is in GTM-PLAN.html.</p>
+</section>
+
+<footer class="wrap" style="padding:24px 0 40px;color:var(--mute);font-size:12px">
+  These four files are internal and are not committed to your repository (the launch script only stages product code).
+</footer>
+</div>
+</body>
+</html>

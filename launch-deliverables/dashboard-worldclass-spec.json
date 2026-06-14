@@ -1,0 +1,195 @@
+{
+  "auditSummary": "The current admin dashboard is a competent CRUD shell wrapped around a near-blind analytics layer: it answers how-many-total and nothing else. Every metric across overview, funnel, users, and user-detail is a lifetime cumulative scalar — there is not a single time-series, chart, date-range picker, or week-over-week delta anywhere (confirmed: zero charting libs installed), so the founder cannot see whether anything is growing. The behavioral data model is hollow: the first-party track helper is dead-ended (only page_view and session_start ever fire), so there are no CTA, onboarding, report-lifecycle, signup/login, or purchase events; revenue is recoverable only by joining ziina_payments, and the declared upsell_shown/upsell_completed events are never emitted. Revenue is a per-currency blob with no FX normalization, no plan/product split, no MRR, no ARPU/LTV, and refunds are structurally invisible because the Ziina webhook explicitly discards refund.status.updated and ziina_payments has no refunded status. The two things the founder most asked for — where users come from (aggregate acquisition) and retention/repeat-usage/cohorts — do not exist at all. It also does not scale: auth.admin.listUsers perPage 1000 silently caps every user-derived count at 1000 and the funnel scans up to 50k events into JS memory. The genuinely strong asset is the per-user 360 view (acquisition, journey, reports with content, payments, click-to-call phone) — the seed to build the world-class dashboard around.",
+  "currentScore": 31,
+  "worldClassSpec": [
+    {
+      "title": "Metrics foundation: SQL rollup RPCs plus a typed analytics event layer (everything else depends on this)",
+      "priority": "P0",
+      "description": "Before any UI, fix the data plumbing. (1) Add Postgres RPCs/views so nothing is computed in JS over fetched rows: get_daily_metrics(from,to,bucket) for per-day signups, reports (free vs paid), paid orders, revenue; get_funnel(from,to,source); get_acquisition(from,to); get_retention_cohorts(). (2) Kill the listUsers 1000 cap by creating a public.profiles table (id, email, phone, created_at, last_seen_at, first_touch_referrer/utm/landing) via an auth trigger plus backfill, and base all counts/pagination on it. (3) Add typed columns plus a GIN index to analytics_events for product, plan, amount, currency, report_id. (4) Money normalization: store fx_rate at payment time on ziina_payments and a single normalized_amount so multi-currency sums to one headline number.",
+      "dataNeeded": "Have: auth.users, reports, ziina_payments, analytics_events, report_runs. New: profiles mirror table plus auth trigger; typed columns/GIN on analytics_events; normalized_amount/fx_rate on ziina_payments; RPC functions.",
+      "effort": "L"
+    },
+    {
+      "title": "Overview home: hero KPI strip plus global date range plus time-series charts plus North Star",
+      "priority": "P0",
+      "description": "Replace the 7 lifetime counters with a glanceable home. Hero row: 5-6 cards each with value plus WoW/MoM delta plus sparkline for the selected period — New signups, Activated (signed up AND generated free preview), Paid customers, Net revenue (one normalized currency), Repeat buyers. Pin a North Star: Paid reports per week with trend. Global date-range control (Today/7d/30d/90d/Custom plus day/week/month) scoping the whole page. Below: time-series area charts for signups/day, revenue/day (free vs paid report volume overlaid), paid conversions/day. Install one lightweight chart lib (recharts or tremor — none installed). All series from get_daily_metrics RPC, never JS over rows.",
+      "dataNeeded": "Have: created_at on every table. New: charting library; get_daily_metrics RPC; activation requires the free_preview_generated event (see tracking gaps).",
+      "effort": "M"
+    },
+    {
+      "title": "Real multi-step acquisition-to-paid funnel with drop-off, time-to-convert, and by-source/date segmentation",
+      "priority": "P0",
+      "description": "Rebuild /api/admin/funnel on a single coherent subject. Stages: visited, viewed pricing/product, signed up, generated free preview (activation), viewed paywall, paid. Show per-step count, step-conversion percent, percent of top, drop-off count, median time-to-convert; auto-highlight the worst step in a contrasting color. Respect the global date range; add segment toggles by channel (UTM/referrer) and device, plus per-product funnels (Forecast/Kundli/Gun Milan). Stop silently mixing session-basis with account-basis — stitch session_id to user_id at signup so stages share a basis, or clearly label the anonymous-to-account boundary. Make each step click-through to the underlying user list.",
+      "dataNeeded": "Have: page_view rows with session_id/path/utm. New: signed_up, free_preview_generated, paywall_viewed, purchase_completed events; session_id-to-user_id stitching at signup.",
+      "effort": "L"
+    },
+    {
+      "title": "Revenue analytics: normalized net revenue, by plan/product/currency, coupon cost, refunds, ARPU/LTV",
+      "priority": "P0",
+      "description": "New /api/admin/revenue plus a Revenue tab. Headline net revenue in one display currency (gross minus refunds, normalized via stored FX). Daily/weekly revenue chart. Break out revenue plus orders by plan_type (7day/monthly/annual) and product (Forecast/Kundli/Gun Milan via plan-to-product map) and raw currency (AED/USD/INR). Add ARPU, ARPPU, AOV, and free-preview-to-first-paid conversion rate as a headline. Coupon cost: join promo_codes to promo_redemptions to ziina_payments.promo_code_id for uses, discount cost, revenue per code (no endpoint reads redemptions today). Critical fix: stop discarding refund.status.updated in the Ziina webhook; add a refunded status plus refunded_amount to ziina_payments so refund rate and net revenue become real. Label headline net sales, not MRR, until forecast plans are true subscriptions.",
+      "dataNeeded": "Have: ziina_payments(amount,currency,plan_type,promo_code_id,upsell_of_intent_id), promo_codes/promo_redemptions. New: refund capture (webhook plus refunded status/amount); FX normalization; plan-to-product map; purchase_completed event.",
+      "effort": "L"
+    },
+    {
+      "title": "Cohort retention / repeat-usage grids (the founder explicitly requested, totally-missing view)",
+      "priority": "P0",
+      "description": "New /api/admin/retention plus a Retention tab. Two color-graded triangle heatmaps from signup-week and first-purchase-week cohorts: (a) signup cohort by weeks-since maps to percent who returned and generated/viewed a report; (b) first-purchase cohort by months-since maps to percent who bought again / renewed. Add D1/D7/D30 headline retention, DAU/WAU/MAU plus stickiness, and an Amplitude-style Lifecycle split (New/Current/Resurrected/Dormant/Churned) with Quick Ratio. Render PER PRODUCT since Forecast (high cadence) and Kundli (one-shot) retain very differently. Leading indicator of renewal revenue and the single biggest current blind spot.",
+      "dataNeeded": "Have: session_start events, reports.created_at, ziina_payments.created_at. New: report_viewed event for true engagement-based return; get_retention_cohorts RPC.",
+      "effort": "L"
+    },
+    {
+      "title": "Acquisition and channel/UTM/SEO-landing scoreboard tied to paid outcomes",
+      "priority": "P1",
+      "description": "New /api/admin/acquisition plus an Acquisition tab answering the founder number-one question. Aggregate referrer/utm into a normalized channel grouping (Direct, Organic Search, Organic Social/Instagram, Paid, Referral, WhatsApp/SMS, Email). Per channel AND per utm_source by medium by campaign: visitors, signups, activated, paid, revenue, with conversion rate and revenue-per-channel (ROAS input). Landing-page table ranking programmatic-SEO and free-tool pages (nakshatra/dasha/free-kundli) by entrances AND downstream signup/paid rate so the founder knows which SEO page earns revenue vs vanity traffic. Persist first-touch attribution to profiles at signup so paying-customer source is authoritative, not recomputed from fragile event ordering.",
+      "dataNeeded": "Have: referrer/utm/path per analytics_events row. New: first_touch snapshot on profiles at signup; purchase-to-first-touch join; channel-grouping function.",
+      "effort": "M"
+    },
+    {
+      "title": "Customer/CRM list plus enriched 360 profile for the founder phone-call workflow",
+      "priority": "P1",
+      "description": "Upgrade /admin/users into a searchable, sortable, server-paginated customer list (off the new profiles table — removes the 1000 cap). Columns: email, phone (click-to-call), first-touch channel, lifetime value (normalized), reports (free/paid), last-seen, lifecycle band. Quick filters: paid, has-phone, used-free-preview-but-never-paid (prime target), abandoned-checkout, dormant-high-value. Saved behavioral segments plus a who-to-call-today queue plus CSV export. Keep the strong per-user 360 (acquisition, journey, reports with content, payments) but add computed LTV, lifecycle stage, days-since-active, activation status, and a churn/high-intent flag, presented timeline-first. Turns analytics directly into the founder call list.",
+      "dataNeeded": "Have: user-detail already assembles journey plus report content plus payments plus phone. New: profiles table for scalable list/search; computed LTV/lifecycle/churn derivations; abandoned-checkout signal (intent created, never completed).",
+      "effort": "M"
+    },
+    {
+      "title": "Per-page / traffic analytics now that pageviews are captured",
+      "priority": "P1",
+      "description": "New site-wide traffic view (or Acquisition section): top pages by views, top landing/entry pages with bounce plus downstream conversion, top exit pages, and geography plus device breakdown with conversion rate per country (informs AED/USD/INR currency-feature and mobile-vs-desktop UX). Aggregate page_view path/properties in SQL with pagination, replacing the unbounded limit-50000 in-JS scan. Add universal click-to-filter so selecting a source/country/page/campaign re-scopes the whole dashboard.",
+      "dataNeeded": "Have: page_view rows with path/referrer. New: server-side IP-to-country plus device/UA enrichment on /api/track (none today); SQL aggregation replacing the in-memory scan.",
+      "effort": "M"
+    },
+    {
+      "title": "Ops/health: report-generation failures, stuck jobs, payment failures, and a Needs-attention panel",
+      "priority": "P1",
+      "description": "New /admin/reports list (none exists; only a per-id action route): paginated, all reports with status, payment_status, plan, user, duration, generation_error_code/at_phase, plus counts of failed and stuck-generating rows and a pipeline success-rate KPI (report_runs already tracks status/duration/error_class — surface it). Payment-health view: checkout success rate (intents created vs completed), failed/abandoned count plus value, refund rate, and a worklist of recent failed/abandoned payers with email plus phone for recovery calls. Pin a top-of-dashboard Needs-attention panel: stuck/errored reports, failed/abandoned payments, refund clusters, new high-value/repeat customers — a solo-founder to-do list.",
+      "dataNeeded": "Have: reports.status/generation_error_code/at_phase/generation_time_seconds, report_runs(status,duration_ms,error_class), ziina_payments status. New: abandoned-intent visibility; refund status from the webhook fix.",
+      "effort": "M"
+    },
+    {
+      "title": "Dashboard UX: layout hierarchy, drill-down, glanceability, realtime, alerts/digest",
+      "priority": "P2",
+      "description": "Enforce a strict top-down hierarchy: Needs-attention plus Hero KPIs, then Trends, then Funnel/Cohorts, then Acquisition, then Revenue, then Payment health, then tables. Make every aggregate number drillable to the underlying user/payment/report list. Consistent currency/date/number formatting; real empty/loading/error states; color reserved for semantics (green up, red down/alert). Add a realtime last-30-minutes panel (active visitors, live pages, live events) for launch days. Add a weekly email digest (north-star plus deltas plus needs-attention) and a new-paying-user plus payment-failure alert (Inngest cron / scheduled function) so a solo founder who will not log in daily still gets the pulse and a call trigger.",
+      "dataNeeded": "Have: analytics_events for realtime; existing brand theme. New: a scheduled job (Inngest/cron) for digest plus alerts; an email channel for delivery.",
+      "effort": "M"
+    }
+  ],
+  "trackingGapsToClose": [
+    {
+      "event": "signed_up",
+      "why": "Signups are inferred from auth.users count, so they cannot be windowed, attributed to a session, or tied to first-touch source. An explicit event makes the funnel signup stage attributable and time-bounded.",
+      "where": "Server-side in the Supabase auth callback / first-session handler (e.g. /auth/callback) — also snapshot first_touch referrer/utm/landing onto public.profiles here."
+    },
+    {
+      "event": "logged_in",
+      "why": "Logins are approximated by per-tab session_start, which is unreliable and conflated with visits. A true login event gives honest login frequency and visit-vs-login distinction.",
+      "where": "Server-side on successful auth sign-in (auth callback / session refresh), keyed to user_id."
+    },
+    {
+      "event": "free_preview_generated",
+      "why": "The exactly-one-free-preview is THE activation milestone gating the model, but no event isolates it, so activation rate and time-to-activation are uncomputable. Highest-ROI single event to add.",
+      "where": "Server-side when the free/preview report first reaches status complete (orchestrator completion / report finalize), with report_id and product."
+    },
+    {
+      "event": "report_started / report_completed / report_failed / report_viewed",
+      "why": "report_completed exists only as an internal SSE type, never persisted; generated-a-report is inferred from row existence, so time-to-activation, generation success rate, and engagement-based retention cannot be measured.",
+      "where": "Server-side in the orchestrator/pipeline lifecycle (start/complete/error) and client-side report_viewed on the /report/[id] mount, each with report_id, plan, product, duration."
+    },
+    {
+      "event": "purchase_completed",
+      "why": "No revenue event is written on payment success; revenue/funnel/cohort can only be reconstructed by joining ziina_payments. A canonical event gives one revenue stream for funnels and cohorts.",
+      "where": "Server-side inside finalizeCompletedZiinaIntent (src/lib/ziina/finalizeIntent.ts) on first successful completion, with product, plan, amount, currency, normalized_amount, report_id, intent_id, promo_code_id."
+    },
+    {
+      "event": "paywall_viewed / checkout_started / checkout_abandoned",
+      "why": "The most expensive funnel leak (paywall-to-pay) and recoverable abandoned-checkout revenue are invisible; checkout_started exists only for the upsell, the main purchase path fires nothing.",
+      "where": "Client on paywall/pricing render (paywall_viewed) and on the onboard/Ziina redirect (checkout_started); checkout_abandoned derived server-side from intents created but never completed."
+    },
+    {
+      "event": "upsell_shown and upsell_completed (actually emit them)",
+      "why": "Both are declared in the UpsellEventName union but NEVER emitted (only checkout_started and dismissed fire), so the already-built 7day-to-monthly upsell funnel is invisible in admin.",
+      "where": "Emit upsell_shown via emitUpsellEvent where reports.upsell_shown_at is set (ziina/verify), and upsell_completed on monthly_upgrade completion in finalizeCompletedZiinaIntent."
+    },
+    {
+      "event": "refund_recorded",
+      "why": "refund.status.updated is explicitly discarded and ziina_payments has no refunded state, making every revenue figure gross and refund rate impossible.",
+      "where": "Server-side in the Ziina webhook (src/app/api/ziina/webhook/route.ts) — stop skipping the event, write a refunded status plus refunded_amount, and emit the event."
+    },
+    {
+      "event": "onboarding step events (onboarding_started, birth_details_entered, plan_selected, phone_captured)",
+      "why": "The entire onboard flow fires zero first-party events, so the activation funnel most actionable middle steps are dark.",
+      "where": "Client in src/app/onboard/_OnboardForm.tsx at each step transition, via the existing track helper."
+    },
+    {
+      "event": "cta_clicked",
+      "why": "The track helper is never called by any CTA/pricing/Generate button; the only click data lives in PostHog cloud and never reaches the admin-visible analytics_events table.",
+      "where": "Client onClick of pricing CTAs, plan-select, and Generate buttons, with label, location, plan."
+    },
+    {
+      "event": "analytics_events enrichment: country/device plus typed product/plan/amount/currency/report_id columns",
+      "why": "properties is untyped JSONB with no enrichment, so geo/device breakdowns are impossible and funnel/cohort/revenue queries are slow and fragile; session-id semantics are inconsistent (visit vs session).",
+      "where": "Server-side in /api/track (IP-to-country, UA-to-device) and as dedicated indexed columns on analytics_events; standardize one session-id definition."
+    }
+  ],
+  "preemptRoadmap": [
+    {
+      "item": "Model the Forecast 7day/monthly/annual plans as real subscriptions (subscriptions table: started_at, renews_at, canceled_at, status)",
+      "category": "monetization/data-model",
+      "whyYoullWantIt": "Today these are sold as one-off Ziina intents, so true MRR/ARR, the MRR-movement waterfall, and renewal-based churn are impossible — building them on one-off intents produces confident, wrong numbers. The moment renewal volume exists you will want honest recurring-revenue metrics, and this is the prerequisite.",
+      "prereqs": "purchase_completed event plus the normalized revenue layer; a decision on whether Ziina supports recurring billing or renewals are re-purchases."
+    },
+    {
+      "item": "Lifecycle email/automation: welcome, free-preview-to-paid nudge, abandoned-checkout recovery, churn/win-back, renewal reminder",
+      "category": "lifecycle-email/automation",
+      "whyYoullWantIt": "The dashboard will surface who to act on (activated-but-unpaid, abandoned checkout, dormant high-value); the next want is to act automatically at scale instead of only manual calls. Triggered re-engagement typically cuts churn 15-25 percent.",
+      "prereqs": "the event stream (free_preview_generated, checkout_abandoned, purchase_completed), captured email plus phone, and a transactional email/SMS provider."
+    },
+    {
+      "item": "Founder weekly digest plus new-paying-user / payment-failure push alerts (and a daily realtime launch summary)",
+      "category": "ops/monitoring",
+      "whyYoullWantIt": "A solo founder will not open the dashboard daily; you will want the north-star delta and call-list pushed to you, and to be paged the moment a checkout breaks or a high-value payment fails (recoverable revenue plus the phone-call growth motion).",
+      "prereqs": "the metrics RPCs plus needs-attention panel; a scheduled job (Inngest/cron) and an email/Slack channel."
+    },
+    {
+      "item": "CAC / unit-economics input: an editable monthly-ad-spend-by-channel field feeding LTV-to-CAC and CAC-payback by channel",
+      "category": "analytics/growth",
+      "whyYoullWantIt": "Once the 5k launch budget flows, the next question is which channel returns LTV above CAC — the acquisition scoreboard already has revenue-per-channel; a spend input closes the loop and prevents scaling a money-losing channel. Keep it one input, do not over-engineer pre-spend.",
+      "prereqs": "the acquisition-to-paid attribution and per-channel revenue from the Acquisition scoreboard."
+    },
+    {
+      "item": "Activation/aha-moment discovery: instrument in-report depth signals (scrolled hourly grid, opened a focus area, generated a 2nd chart) and correlate with paid conversion",
+      "category": "retention/product",
+      "whyYoullWantIt": "After basic activation rate exists you will want to know WHICH early behavior predicts payment so you can engineer onboarding for it — the highest-ROI product insight, and it shows which in-report sections to invest in vs cut.",
+      "prereqs": "report_viewed plus granular in-report engagement events; a behavioral cohort builder."
+    },
+    {
+      "item": "Cross-product adoption and cross-sell matrix (bought X then later bought Y; which free tool graduates to paid)",
+      "category": "monetization/growth",
+      "whyYoullWantIt": "With three paid products plus free tools, you will want the best cross-sell path and which free surface feeds paid conversion — directs limited solo-founder build time to the gateway product.",
+      "prereqs": "a product dimension on purchase/report events; the cohort/segment layer."
+    },
+    {
+      "item": "Session replay surfacing for paywall/checkout droppers (lean on PostHog already wired) instead of rebuilding it",
+      "category": "analytics/support",
+      "whyYoullWantIt": "When the funnel shows WHERE users drop, you will want to see WHY without user interviews — PostHog already has replays plus autocapture; you will want a link from a dropped funnel step into the relevant replays rather than rebuilding heatmaps in-app.",
+      "prereqs": "PostHog API/HogQL access from admin; consistent user identification between first-party events and PostHog."
+    },
+    {
+      "item": "SEO content performance loop: tie programmatic page rankings/impressions (Search Console) to the landing-to-paid conversion data",
+      "category": "growth/SEO",
+      "whyYoullWantIt": "You are running programmatic nakshatra/dasha/predictions pages; once you see which landing page converts to revenue, you will want to merge that with Search Console impressions/position to double down on pages that both rank AND convert.",
+      "prereqs": "the landing-page conversion ranking; a Google Search Console API integration."
+    },
+    {
+      "item": "Trust/compliance and data-retention controls (PII handling, GDPR delete/export, consent surfacing, admin audit log)",
+      "category": "trust",
+      "whyYoullWantIt": "Once you centralize per-user journeys, phone numbers, report content, and revenue, you will want a defensible posture: data export/delete on request (you already capture consent), masking of sensitive report content in admin, and an audit log of which admin viewed which customer — important before adding admins or facing a data request.",
+      "prereqs": "the profiles plus event consolidation; admin_users table already exists for scoping; a documented retention policy."
+    },
+    {
+      "item": "Anomaly detection / forecasting on the north star (auto-flag a signup/revenue/conversion deviation; project runway)",
+      "category": "ops/monitoring",
+      "whyYoullWantIt": "Beyond static deltas, you will want the dashboard to proactively say conversion dropped 30 percent vs trend (likely a broken paywall) and to forecast MRR/runway for planning hiring and ad spend — the step from rear-view mirror to planning instrument.",
+      "prereqs": "a meaningful history of daily time-series (the get_daily_metrics rollup running for weeks) and the subscriptions model for revenue forecasting."
+    }
+  ]
+}

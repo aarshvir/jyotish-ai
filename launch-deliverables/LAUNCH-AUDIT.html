@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VedicHour — Launch-Readiness Audit & Build Report</title>
+<style>
+  :root{
+    --navy:#0f1a36; --navy2:#16244a; --ink:#1a2233; --slate:#42506b; --mute:#7а8499;
+    --gold:#b8862f; --gold2:#d8a94a; --line:#e3e7ef; --bg:#f6f8fc; --card:#ffffff;
+    --green:#1f8a55; --amber:#c8881a; --red:#c0392b; --paper:#fbfcfe;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:#1a2233;background:var(--bg);line-height:1.55;font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 28px}
+  header.hero{background:linear-gradient(125deg,#0f1a36 0%,#16244a 60%,#1d2f5e 100%);color:#fff;padding:54px 0 46px}
+  header.hero .wrap{padding-top:0}
+  .kicker{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold2);font-weight:700;margin-bottom:14px}
+  h1{font-size:33px;line-height:1.15;margin:0 0 12px;font-weight:760;letter-spacing:-.01em}
+  .sub{font-size:16px;color:#c8d2e6;max-width:680px}
+  .meta{margin-top:22px;display:flex;flex-wrap:wrap;gap:10px 26px;font-size:12.5px;color:#9fb0d0}
+  .meta b{color:#dfe7f5;font-weight:600}
+  .verdict{display:inline-flex;align-items:center;gap:10px;margin-top:24px;background:rgba(216,169,74,.13);
+    border:1px solid rgba(216,169,74,.5);color:#f0d9a4;padding:9px 18px;border-radius:30px;font-weight:650;font-size:14px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--gold2);box-shadow:0 0 0 4px rgba(216,169,74,.2)}
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:21px;margin:0 0 4px;font-weight:730;color:var(--navy);letter-spacing:-.01em}
+  h2 .n{color:var(--gold);font-weight:730;margin-right:10px}
+  .lead{color:var(--slate);margin:0 0 22px;font-size:14.5px}
+  h3{font-size:15.5px;margin:24px 0 8px;font-weight:680;color:var(--ink)}
+  p{margin:0 0 12px}
+  .grid{display:grid;gap:14px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 18px 16px;
+    box-shadow:0 1px 2px rgba(16,30,60,.04)}
+  .card h4{margin:0 0 6px;font-size:14.5px;font-weight:700;color:var(--navy)}
+  .card p{font-size:13px;color:var(--slate);margin:0}
+  .pill{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+    padding:3px 9px;border-radius:20px;margin-bottom:9px}
+  .pill.done{background:#e6f4ec;color:var(--green)}
+  .pill.new{background:#eef0fb;color:#3b4cc0}
+  .pill.fix{background:#fbf0e0;color:var(--amber)}
+  table{width:100%;border-collapse:collapse;font-size:13.3px;margin:6px 0 4px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);font-weight:700;background:var(--paper)}
+  td b{color:var(--navy)}
+  .st{font-weight:700;font-size:12px;white-space:nowrap}
+  .ready{color:var(--green)} .risk{color:var(--amber)} .block{color:var(--red)}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;margin-right:6px}
+  .p0{background:#fbe6e3;color:var(--red)} .p1{background:#fbf0e0;color:var(--amber)} .p2{background:#eef0fb;color:#3b4cc0}
+  .fixed{background:#e6f4ec;color:var(--green)}
+  ul.clean{margin:6px 0 14px;padding-left:0;list-style:none}
+  ul.clean li{position:relative;padding-left:22px;margin-bottom:8px;font-size:13.6px;color:var(--ink)}
+  ul.clean li::before{content:"";position:absolute;left:4px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  ol.gate{margin:6px 0;padding-left:20px}
+  ol.gate li{margin-bottom:9px;font-size:13.8px}
+  .callout{background:#fff;border-left:3px solid var(--gold);border-radius:8px;padding:14px 18px;margin:16px 0;
+    box-shadow:0 1px 2px rgba(16,30,60,.05)}
+  .callout.warn{border-left-color:var(--amber);background:#fffaf2}
+  .callout.good{border-left-color:var(--green);background:#f4fbf7}
+  .small{font-size:12px;color:var(--mute)}
+  code{background:#eef1f7;padding:1px 6px;border-radius:5px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:#2a3a66}
+  footer{padding:26px 0 40px;color:var(--mute);font-size:12px}
+  @media(max-width:760px){.g3,.g2{grid-template-columns:1fr}h1{font-size:26px}}
+  @media print{body{background:#fff}.card{box-shadow:none}section{break-inside:avoid}}
+  :root{--mute:#78849c}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">VedicHour · Jyotish AI — Launch Readiness</div>
+    <h1>End-to-End Platform Audit &amp; Build Report</h1>
+    <div class="sub">Pre-launch assessment of the three-product launch (Deep Kundali · Matchmaking · R/R Forecast), the work completed this session, and the operational gate to go live.</div>
+    <div class="verdict"><span class="dot"></span> Verdict: GO — with 4 operational gates to close before driving traffic</div>
+    <div class="meta">
+      <span><b>Prepared for</b> Aarsh</span>
+      <span><b>Stack</b> Next.js 14 · Supabase · Ziina · multi-LLM · Vercel</span>
+      <span><b>Production</b> www.vedichour.com</span>
+      <span><b>Date</b> 13 June 2026</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section>
+  <h2><span class="n">01</span>Executive summary</h2>
+  <p class="lead">The platform is materially launch-ready. The forecast product is mature; the two new products are now built, priced and wired. Remaining risk is concentrated in <b>operational setup</b> (cost controls, a live payment test) and an <b>accuracy QA pass</b> for the new Kundali report — not in architecture.</p>
+  <div class="grid g3">
+    <div class="card"><div class="pill done">Product 1 · Ready</div><h4>R/R Forecast</h4><p>7-day / Monthly / Annual hour-by-hour engine. Already live and priced. Untouched this session.</p></div>
+    <div class="card"><div class="pill done">Product 2 · Ready</div><h4>Matchmaking</h4><p>Ashtakoot 36-point Gun Milan, two-person form, free score + paid full breakdown. Repriced to $9.99 / ₹899, relabelled, discoverable.</p></div>
+    <div class="card"><div class="pill new">Product 3 · Built</div><h4>Deep Kundali</h4><p>Upgraded from a high-level blurb to a multi-section, dosha-aware, 5-year report on real calculations. Priced $9.99 / ₹899. Needs accuracy QA before charging.</p></div>
+  </div>
+  <div class="callout good"><b>Bottom line.</b> Ship-able this week once you (1) set LLM spend caps + Upstash, (2) run one real Ziina charge per currency, (3) apply the two new migrations, and (4) QA the Kundali report against 2–3 known charts. Everything else is done or documented below.</div>
+</section>
+
+<section>
+  <h2><span class="n">02</span>What was built &amp; fixed this session</h2>
+  <p class="lead">All changes are additive and isolated — the working forecast product was never modified, so blast radius is contained.</p>
+  <table>
+    <tr><th>Area</th><th>Change</th><th>Files</th></tr>
+    <tr><td><span class="tag fixed">FIX</span><b>Pricing</b></td><td>Added the missing <code>kundali</code> price plan (checkout would otherwise 500) and repriced <code>synastry</code> to <b>$9.99 / ₹899 / AED 37.99</b>. R/R tiers untouched.</td><td><code>lib/ziina/server.ts</code></td></tr>
+    <tr><td><span class="tag p2">NEW</span><b>Kundali engine</b></td><td>Deterministic Vedic math: D9 Navamsa, D7 Saptamsa, D10 Dasamsa; Manglik, Kaal Sarpa, Sade Sati detection; 5-year dasha seeds. 17 passing unit tests.</td><td><code>lib/kundli/varga.ts · doshas.ts · deepKundli.ts · kundli.test.ts</code></td></tr>
+    <tr><td><span class="tag p2">NEW</span><b>Kundali narrative</b></td><td>Scripture-grounded (BPHS RAG) commentary: overview + 7 life areas (life, career &amp; money, relationships, marriage &amp; intimacy, health, children, family) + year-by-year. 3 batched LLM calls, deterministic fallbacks so it never returns empty.</td><td><code>lib/kundli/kundliCommentary.ts</code></td></tr>
+    <tr><td><span class="tag p2">REWIRE</span><b>Kundali flow</b></td><td>Compute route now runs the deep engine and persists the full report; result page rebuilt to render every section + a dosha panel + 5-year cards + print-to-PDF; landing &amp; locked-list copy updated to the deep promise.</td><td><code>api/kundali/compute · kundali/[id] · kundali/page.tsx</code></td></tr>
+    <tr><td><span class="tag p2">DB</span><b>Schema</b></td><td>Additive migration adding deep columns (<code>overview, vargas, doshas, life_areas, year_outlook…</code>) to <code>kundali_charts</code>.</td><td><code>supabase/migrations/20260613_kundali_deep_report.sql</code></td></tr>
+    <tr><td><span class="tag fixed">FIX</span><b>Matchmaking</b></td><td>Form relabelled to <b>You / Your partner</b>; verified standalone unlock + free-teaser flow end-to-end.</td><td><code>synastry/SynastryForm.tsx</code></td></tr>
+    <tr><td><span class="tag fixed">P0 FIX</span><b>Payments recovery</b></td><td>Scheduled the dormant <code>reconcile-payments</code> cron (every 15 min) so paid-but-stranded checkouts auto-recover — closes audit blocker P0-1.</td><td><code>vercel.json</code></td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="n">03</span>Subsystem readiness scorecard</h2>
+  <p class="lead">Independent read-only audit of the live platform. None of the new work destabilises these.</p>
+  <table>
+    <tr><th>Subsystem</th><th>Status</th><th>Justification</th></tr>
+    <tr><td><b>Payments (Ziina)</b></td><td class="st risk">● Risk → improved</td><td>HMAC verify, replay table, ownership checks solid. Recovery cron now scheduled (P0-1 fixed). One residual: finalize CAS not fully atomic (P1).</td></tr>
+    <tr><td><b>Reports / generation</b></td><td class="st risk">● Risk</td><td>Per-phase Inngest DAG fits Vercel limits; stale-sweep works. No auto-refund on terminal failure (P1).</td></tr>
+    <tr><td><b>Auth</b></td><td class="st ready">● Ready</td><td>Middleware gating, layered <code>requireAuth</code>, RLS locks paid status.</td></tr>
+    <tr><td><b>Security</b></td><td class="st risk">● Risk</td><td>Strong headers/CSP, secrets server-side. One debug route reads a secret from the query string (P1); rate-limit fails open without Upstash (P0-op).</td></tr>
+    <tr><td><b>Cost control</b></td><td class="st block">● Blocker (op)</td><td>Free reports run the full LLM pipeline; rate-limit no-ops without Upstash. Must set Upstash + provider spend caps before traffic.</td></tr>
+    <tr><td><b>Legal</b></td><td class="st ready">● Ready</td><td>Privacy / Terms / Refund thorough; AI + astrology disclaimers present.</td></tr>
+    <tr><td><b>SEO</b></td><td class="st ready">● Ready</td><td>Dynamic sitemap, metadata, JSON-LD, programmatic pages. Add <code>/kundali</code> &amp; <code>/synastry</code> to sitemap (P2).</td></tr>
+    <tr><td><b>Observability</b></td><td class="st risk">● Risk</td><td>Health endpoint + run logs present; Sentry/PostHog not installed (P2).</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2><span class="n">04</span>Prioritised findings</h2>
+  <h3><span class="tag p0">P0</span> Must close before driving traffic</h3>
+  <ul class="clean">
+    <li><b>Cost guardrail</b> — set <code>UPSTASH_REDIS_REST_URL/TOKEN</code> in Vercel <i>and</i> hard monthly spend caps in Anthropic / OpenAI / Google consoles. Without this a viral free-Kundli wave is an uncapped LLM bill. <span class="small">(Operational.)</span></li>
+    <li><b>Payment recovery cron</b> — <span class="tag fixed">FIXED THIS SESSION</span> scheduled <code>/api/cron/reconcile-payments</code> every 15 min. Confirm <code>CRON_SECRET</code> is set in Vercel so it authenticates.</li>
+    <li><b>Live payment test</b> — run one real Ziina charge in USD, INR and AED. All prior testing used the bypass path; the live redirect→verify→unlock loop has not been exercised with real money.</li>
+    <li><b>Apply migrations</b> — run <code>20260613_kundali_standalone.sql</code> and <code>20260613_kundali_deep_report.sql</code> on the production database; the Kundali code assumes these tables/columns.</li>
+  </ul>
+  <h3><span class="tag p1">P1</span> Within 48 hours</h3>
+  <ul class="clean">
+    <li><b>Atomic finalize</b> — make the payment status flip a compare-and-swap (<code>.eq('status','pending')</code>) to fully eliminate any double-dispatch race.</li>
+    <li><b>Refund/alert on failure</b> — on terminal failure of a <i>paid</i> report, write to a review queue + alert ops (manual SOP exists but nothing pages you).</li>
+    <li><b>Debug route hygiene</b> — move <code>/api/debug/report-status</code> off the <code>?bypass=</code> query param to header-only (keeps the secret out of access logs).</li>
+    <li><b>PDF for the forecast product</b> — its "Download PDF" still calls <code>window.print()</code>; a real server renderer exists but is unwired. (The new Kundali report ships with a clean print-to-PDF view.)</li>
+  </ul>
+  <h3><span class="tag p2">P2</span> Post-launch</h3>
+  <ul class="clean">
+    <li>Install Sentry + PostHog; add a failed-job table; add <code>/kundali</code> &amp; <code>/synastry</code> to the sitemap; GC abandoned-checkout draft rows; run a ramp/load test before scaling spend.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="n">05</span>Kundali accuracy methodology — your "no 1% mismatch" bar</h2>
+  <p class="lead">Accuracy is engineered in two layers so the output is computed, not guessed, and grounded in classical sources rather than the open internet.</p>
+  <div class="grid g2">
+    <div class="card"><h4>1 · Deterministic astronomy</h4><p>All positions come from the <b>Swiss Ephemeris</b> (sidereal, Lahiri ayanamsa, whole-sign houses) via your Python service — the same engine behind the live forecast. Divisional charts (D9/D7/D10) and the Vimshottari dasha timeline are pure functions of those longitudes, unit-tested against known anchors (Aries 0°→Aries Navamsa, Taurus 0°→Capricorn, Gemini 0°→Libra).</p></div>
+    <div class="card"><h4>2 · Scripture-grounded interpretation</h4><p>Narrative is generated <b>from the computed facts</b> and grounded in <b>Brihat Parashara Hora Shastra</b> via your RAG index — not scraped web text. If the model is unavailable, deterministic fact-specific fallbacks fire, so a paying user never sees an empty or generic section.</p></div>
+  </div>
+  <div class="callout warn"><b>Required before charging:</b> run the QA harness on 2–3 charts whose readings you already trust (your own + one or two reference births). Verify the lagna, Moon nakshatra, current dasha, Manglik and Sade-Sati flags match a trusted source (e.g. AstroSage / Jagannatha Hora). The math is deterministic, so once these match, every chart matches — that is your "1% mismatch" sign-off. Note: Sade Sati needs the live Saturn transit; the compute route fetches it best-effort and degrades gracefully if the ephemeris is briefly unreachable.</div>
+</section>
+
+<section>
+  <h2><span class="n">06</span>Build verification — important caveat</h2>
+  <div class="callout warn"><b>The authoritative <code>npm run build</code> must be run on your machine.</b> The cloud sandbox mounts your Windows project folder over a network layer that intermittently truncates file reads, so its <code>tsc</code>/<code>build</code> output here is unreliable (it reported false syntax errors in files that are actually intact). The writes themselves are correct on disk. Treat a clean local build as the launch gate — it is <b>Step 1</b> of the launch script below.</div>
+  <p class="small">Engine unit tests (17) passed in-sandbox while I/O was healthy. Integration imports/types were verified by direct file inspection.</p>
+</section>
+
+<section>
+  <h2><span class="n">07</span>Go-live runbook</h2>
+  <ol class="gate">
+    <li>In your project folder, run <code>npm install</code> then <code>npm run build</code>. Resolve anything red before continuing.</li>
+    <li>Apply both Kundali migrations to the production Supabase database.</li>
+    <li>Set in Vercel: <code>UPSTASH_REDIS_REST_URL</code>, <code>UPSTASH_REDIS_REST_TOKEN</code>, confirm <code>CRON_SECRET</code>. Set monthly spend caps at Anthropic / OpenAI / Google.</li>
+    <li>QA the Kundali report on 2–3 known charts (Section 05).</li>
+    <li>Run the rollback-tagged deploy (see the handoff guide), then place one real Ziina order per currency on production.</li>
+    <li>Confirm <code>/api/health</code> returns <code>healthy</code>. Launch.</li>
+  </ol>
+  <p class="small">Rollback at any point: <code>powershell -File rollback-vedichour.ps1</code> (restores the pre-launch tag) or use Vercel → Deployments → Instant Rollback. Full detail in the handoff guide.</p>
+</section>
+
+<footer class="wrap">
+  VedicHour launch-readiness audit · generated 13 June 2026 · this document is internal and is not committed to the repository.
+</footer>
+</div>
+</body>
+</html>
