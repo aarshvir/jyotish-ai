@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/admin/guard';
 import { createServiceClient } from '@/lib/supabase/admin';
 
-const COLS = 'id, code, discount_pct, max_uses, used_count, allowlist_emails, active, expires_at';
+const COLS = 'id, code, discount_pct, max_uses, used_count, allowlist_emails, active, expires_at, once_per_user';
 
 export async function GET() {
   const admin = await requireAdminApi();
@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
     max_uses?: number | null;
     allowlist_emails?: string[] | null;
     expires_at?: string | null;
+    once_per_user?: boolean;
   };
   const code = (body.code ?? '').trim().toUpperCase();
   const pct = Number(body.discount_pct);
@@ -49,6 +50,7 @@ export async function POST(request: NextRequest) {
       allowlist_emails: allowlist,
       active: true,
       expires_at: body.expires_at ?? null,
+      once_per_user: body.once_per_user ?? true,
     },
     { onConflict: 'code' },
   );

@@ -16,6 +16,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <Link href="/admin" className="hover:text-star transition-colors">Overview</Link>
           <Link href="/admin/users" className="hover:text-star transition-colors">Users</Link>
           <Link href="/admin/coupons" className="hover:text-star transition-colors">Coupons</Link>
+          <Link href="/admin/admins" className="hover:text-star transition-colors">Admins</Link>
         </nav>
         <Link href="/" className="ml-auto font-body text-body-sm text-dust hover:text-star transition-colors">← Back to site</Link>
       </header>

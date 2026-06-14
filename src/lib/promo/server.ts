@@ -13,12 +13,15 @@ interface PromoRow {
   allowlist_emails: string[] | null;
   active: boolean;
   expires_at: string | null;
+  once_per_user: boolean | null;
 }
 
 export interface PromoResult {
   valid: boolean;
   discountPct: number;
   codeId?: string;
+  /** When true, a user (by id) may redeem this code only once. ADMIN100 is false. */
+  oncePerUser?: boolean;
   reason?: string;
 }
 
@@ -35,7 +38,7 @@ export async function getPromoDiscount(
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from('promo_codes')
-    .select('id, code, discount_pct, max_uses, used_count, allowlist_emails, active, expires_at')
+    .select('id, code, discount_pct, max_uses, used_count, allowlist_emails, active, expires_at, once_per_user')
     .eq('code', code.trim().toUpperCase())
     .single<PromoRow>();
 
@@ -58,7 +61,25 @@ export async function getPromoDiscount(
     }
   }
 
-  return { valid: true, discountPct: data.discount_pct, codeId: data.id };
+  return {
+    valid: true,
+    discountPct: data.discount_pct,
+    codeId: data.id,
+    oncePerUser: data.once_per_user !== false,
+  };
+}
+
+/** True if this user has already redeemed this code (for once-per-user enforcement). */
+export async function hasUserRedeemed(codeId: string, userId: string): Promise<boolean> {
+  const supabase = createServiceClient();
+  const { data } = await supabase
+    .from('promo_redemptions')
+    .select('id')
+    .eq('code_id', codeId)
+    .eq('user_id', userId)
+    .limit(1)
+    .maybeSingle();
+  return Boolean(data);
 }
 
 /** Increment used_count and record the redemption. Idempotent per order_id. */

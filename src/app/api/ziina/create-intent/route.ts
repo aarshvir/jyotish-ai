@@ -9,7 +9,7 @@ import {
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
-import { getPromoDiscount, redeemPromoCode } from '@/lib/promo/server';
+import { getPromoDiscount, redeemPromoCode, hasUserRedeemed } from '@/lib/promo/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 
 /**
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'reportId required for this plan' }, { status: 400 });
   }
 
-  const promoResult: { valid: boolean; discountPct: number; codeId?: string; reason?: string } = promoCode
+  const promoResult: { valid: boolean; discountPct: number; codeId?: string; oncePerUser?: boolean; reason?: string } = promoCode
     ? await getPromoDiscount(promoCode, auth.user.email ?? undefined)
     : { valid: false, discountPct: 0 };
 
@@ -67,6 +67,14 @@ export async function POST(request: NextRequest) {
   }
 
   const discountPct = promoResult.valid ? promoResult.discountPct : 0;
+
+  // Once-per-user enforcement: every code is single-use per account except those
+  // flagged unlimited (e.g. ADMIN100). Checked against recorded redemptions.
+  if (promoResult.valid && promoResult.oncePerUser && promoResult.codeId) {
+    if (await hasUserRedeemed(promoResult.codeId, auth.user.id)) {
+      return NextResponse.json({ error: 'You have already used this coupon.' }, { status: 400 });
+    }
+  }
 
   // Forecast: a 100% code is handled by the onboard flow (free generation), not here.
   if (!isStandaloneUnlock && discountPct >= 100) {
@@ -252,6 +260,7 @@ export async function POST(request: NextRequest) {
       currency: currency,
       plan_type: planType,
       status: 'pending',
+      promo_code_id: promoResult.codeId ?? null,
     });
     if (dbErr) {
       console.error('[ziina/create-intent] ziina_payments insert failed:', dbErr.message);
