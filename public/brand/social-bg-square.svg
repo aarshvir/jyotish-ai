@@ -1,0 +1,33 @@
+<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="sq" cx="78%" cy="12%" r="90%">
+      <stop offset="0%" stop-color="#1a2140"/>
+      <stop offset="45%" stop-color="#0c1226"/>
+      <stop offset="100%" stop-color="#06060f"/>
+    </radialGradient>
+    <radialGradient id="sqglow" cx="80%" cy="12%" r="40%">
+      <stop offset="0%" stop-color="#d4af37" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#d4af37" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1080" height="1080" fill="url(#sq)"/>
+  <rect width="1080" height="1080" fill="url(#sqglow)"/>
+  <!-- faint constellation dots -->
+  <g fill="#f5efe0" opacity="0.5">
+    <circle cx="140" cy="180" r="2.5"/><circle cx="260" cy="120" r="1.8"/><circle cx="380" cy="220" r="2"/>
+    <circle cx="900" cy="320" r="2.2"/><circle cx="980" cy="200" r="1.6"/><circle cx="160" cy="900" r="2"/>
+    <circle cx="300" cy="980" r="1.8"/><circle cx="820" cy="940" r="2.2"/><circle cx="960" cy="860" r="1.6"/>
+  </g>
+  <g stroke="#d4af37" stroke-width="1.2" opacity="0.25">
+    <line x1="140" y1="180" x2="260" y2="120"/><line x1="260" y1="120" x2="380" y2="220"/>
+    <line x1="900" y1="320" x2="980" y2="200"/>
+  </g>
+  <!-- small brand mark bottom-left -->
+  <g transform="translate(70,985)">
+    <circle cx="0" cy="0" r="14" fill="none" stroke="#d4af37" stroke-width="2" opacity="0.8"/>
+    <circle cx="0" cy="0" r="5" fill="#d4af37"/>
+    <text x="28" y="7" font-family="Georgia, serif" font-size="30" font-weight="600" fill="#f5efe0">VedicHour</text>
+  </g>
+  <!-- text-safe area note (remove in editor) -->
+  <text x="540" y="540" text-anchor="middle" font-family="'Courier New', monospace" font-size="26" fill="#f5efe0" opacity="0.18">— add your headline here —</text>
+</svg>
