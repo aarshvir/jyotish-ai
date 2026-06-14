@@ -107,6 +107,9 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  verification: {
+    google: 'bGPkSiG0SdtqqPHXPh0JeB44AnlvZxek7wkPRD8Ul2o',
+  },
   appleWebApp: {
     capable: true,
     title: SITE_NAME,
