@@ -7,6 +7,7 @@ import { StarField } from '@/components/ui/StarField';
 import { currencyFromHeader, getDisplayPrice } from '@/lib/pricing';
 import { SynastryForm } from './SynastryForm';
 import { JsonLd } from '@/components/seo/JsonLd';
+import SynastrySamplePreview from '@/components/landing/SynastrySamplePreview';
 import { SeoProse, FaqSection } from '@/components/seo/SeoSection';
 import { faqPageLd, breadcrumbLd, softwareAppLd, type Faq } from '@/lib/seo/jsonLd';
 
@@ -73,6 +74,8 @@ export default async function SynastryPage() {
         <Suspense fallback={<p className="text-center text-dust">Loading form…</p>}>
           <SynastryForm priceLabel={priceLabel} />
         </Suspense>
+
+        <SynastrySamplePreview />
 
         <SeoProse heading="How Gun Milan (Kundli Matching) works" id="gun-milan-explained">
           {SYNASTRY_SECTIONS.map((s) => (
