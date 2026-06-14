@@ -14,6 +14,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <span className="font-display text-lg text-amber">VedicHour Admin</span>
         <nav className="flex gap-5 font-body text-body-sm text-dust">
           <Link href="/admin" className="hover:text-star transition-colors">Overview</Link>
+          <Link href="/admin/revenue" className="hover:text-star transition-colors">Revenue</Link>
+          <Link href="/admin/retention" className="hover:text-star transition-colors">Retention</Link>
           <Link href="/admin/users" className="hover:text-star transition-colors">Users</Link>
           <Link href="/admin/coupons" className="hover:text-star transition-colors">Coupons</Link>
           <Link href="/admin/feedback" className="hover:text-star transition-colors">Feedback</Link>
