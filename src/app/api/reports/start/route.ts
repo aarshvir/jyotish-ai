@@ -18,6 +18,7 @@ import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { isAdmin } from '@/lib/admin/isAdmin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
 import { inngest } from '@/lib/inngest/client';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
@@ -375,6 +376,49 @@ export async function POST(request: NextRequest) {
     existing,
     auth.isAdmin === true,
   );
+
+  // ── Entitlement gate ────────────────────────────────────────────────
+  // Login is already enforced above. Policy: each user gets exactly ONE free
+  // report (the free preview); every paid plan requires a verified completed
+  // payment. Admins (owner) bypass. Client-claimed promo/bypass do NOT entitle
+  // here — only 'paid' (a real completed Ziina payment) passes.
+  const userIsAdmin = auth.isAdmin === true || (await isAdmin(auth.user.email));
+  const planNorm = (body.plan_type ?? existing?.plan_type ?? '7day').trim().toLowerCase();
+  const isFreePlan = planNorm === 'free' || planNorm === 'preview';
+
+  if (!isFreePlan && trustedPaymentStatus !== 'paid' && !userIsAdmin) {
+    await releaseLock(lockKey);
+    return NextResponse.json(
+      {
+        error: 'Payment is required to generate this report.',
+        code: 'PAYMENT_REQUIRED',
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 402 },
+    );
+  }
+
+  if (isFreePlan && !userIsAdmin) {
+    const { count: priorFree } = await db
+      .from('reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', auth.user.id)
+      .in('plan_type', ['free', 'preview'])
+      .neq('id', reportId);
+    if ((priorFree ?? 0) >= 1) {
+      await releaseLock(lockKey);
+      return NextResponse.json(
+        {
+          error: 'You have already used your one free report. Choose a plan to unlock more.',
+          code: 'FREE_LIMIT_REACHED',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 402 },
+      );
+    }
+  }
 
   // Guard: refuse to generate for unresolved birth coordinates. A geocode failure
   // that fell back to 0,0 (open ocean — no inhabited birth city resolves there)
