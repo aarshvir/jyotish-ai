@@ -9,6 +9,7 @@ import { inngest } from '@/lib/inngest/client';
 import type { PipelineInput } from '@/lib/reports/orchestrator';
 import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
 import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
+import { redeemPromoCode } from '@/lib/promo/server';
 import { BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
@@ -207,7 +208,7 @@ export async function finalizeCompletedZiinaIntent(
 
   const { data: payRow, error: payErr } = await db
     .from('ziina_payments')
-    .select('report_id, plan_type, status, user_id')
+    .select('report_id, plan_type, status, user_id, promo_code_id')
     .eq('ziina_intent_id', intentId)
     .maybeSingle();
 
@@ -215,13 +216,23 @@ export async function finalizeCompletedZiinaIntent(
     console.warn('[ziina/finalize] ziina_payments lookup:', payErr.message);
   }
 
-  const row = payRow as ZiinaPaymentRow | null;
+  const row = payRow as (ZiinaPaymentRow & { promo_code_id?: string | null }) | null;
   if (!row) {
     return { ok: true, action: 'no_binding' };
   }
 
   if (row.status === 'completed') {
     return { ok: true, action: 'already_done' };
+  }
+
+  // Book the coupon redemption on first successful finalize (once-per-user enforcement
+  // reads this). Past the already-completed guard, so it records exactly once.
+  if (row.promo_code_id && row.user_id) {
+    try {
+      await redeemPromoCode(row.promo_code_id, row.user_id, intentId);
+    } catch (e) {
+      console.warn('[ziina/finalize] promo redeem failed (non-fatal):', e);
+    }
   }
 
   const planType = row.plan_type ?? '';

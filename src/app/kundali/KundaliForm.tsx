@@ -19,6 +19,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
   const [paying, setPaying] = useState(false);
   const [p, setP] = useState<BirthDetails>({ ...DEFAULT });
   const [teaser, setTeaser] = useState<Teaser | null>(null);
+  const [promo, setPromo] = useState('');
 
   useEffect(() => {
     if (searchParams.get('unlocked') === '1') {
@@ -36,7 +37,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ planType: 'kundali' }),
+        body: JSON.stringify({ planType: 'kundali', promoCode: promo.trim() || undefined }),
       });
       if (res.status === 401) {
         window.location.href = `/login?next=${encodeURIComponent('/kundali')}`;
@@ -136,6 +137,15 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
                 <span className="font-mono text-mono-sm text-dust/40">🔒 locked</span>
               </div>
             ))}
+          </div>
+
+          <div className="max-w-xs mx-auto mb-4">
+            <input
+              value={promo}
+              onChange={(e) => setPromo(e.target.value.toUpperCase())}
+              placeholder="Coupon code (optional)"
+              className="w-full rounded-md bg-cosmos border border-horizon px-3 py-2 text-center font-mono text-mono-sm text-star placeholder:text-dust/40 focus:border-amber/60 focus:outline-none"
+            />
           </div>
 
           <button type="button" disabled={paying} onClick={() => void startCheckout()} className="btn-primary px-8 py-3 disabled:opacity-50">
