@@ -75,9 +75,11 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({})) as {
     partnerA?: BirthPayload;
     partnerB?: BirthPayload;
+    partner_a?: BirthPayload;
+    partner_b?: BirthPayload;
   };
-  const a = body.partnerA;
-  const b = body.partnerB;
+  const a = body.partnerA ?? body.partner_a;
+  const b = body.partnerB ?? body.partner_b;
   if (!a?.birth_date || !b?.birth_date) {
     return NextResponse.json({ error: 'partnerA and partnerB birth data required' }, { status: 400 });
   }

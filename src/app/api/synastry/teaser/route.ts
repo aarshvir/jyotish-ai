@@ -48,9 +48,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Too many requests. Try again in a minute.' }, { status: 429 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as { partnerA?: BirthPayload; partnerB?: BirthPayload };
-  const a = body.partnerA;
-  const b = body.partnerB;
+  const body = (await request.json().catch(() => ({}))) as {
+    partnerA?: BirthPayload;
+    partnerB?: BirthPayload;
+    partner_a?: BirthPayload;
+    partner_b?: BirthPayload;
+  };
+  const a = body.partnerA ?? body.partner_a;
+  const b = body.partnerB ?? body.partner_b;
   if (!a?.birth_date || !b?.birth_date || !a.birth_lat || !b.birth_lat) {
     return NextResponse.json({ error: 'Both birth dates and located cities are required.' }, { status: 400 });
   }

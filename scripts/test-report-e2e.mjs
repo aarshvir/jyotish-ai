@@ -47,7 +47,9 @@ if (existsSync(envPath)) {
 
 // ── Config ────────────────────────────────────────────────────────────────────
 const BASE_URL   = process.argv[2] || process.env.E2E_BASE_URL || 'http://localhost:3000';
-const BYPASS     = process.argv[3] || process.env.E2E_BYPASS   || process.env.BYPASS_SECRET || '';
+const BYPASS     = (process.argv[3] || process.env.E2E_BYPASS   || process.env.BYPASS_SECRET || '')
+  .trim()
+  .replace(/[\r\n"']/g, '');
 const REPORT_ID  = randomUUID();
 
 // Test natal data — a well-known chart (generic, not a real person)
