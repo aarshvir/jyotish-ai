@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
     // Birth fields — persisted as a draft report row BEFORE checkout so a completed
     // payment always has a row to mark paid + generate.
     name?: string;
+    phone?: string;
     birth_date?: string;
     birth_time?: string;
     birth_city?: string;
@@ -238,6 +239,22 @@ export async function POST(request: NextRequest) {
       );
       if (draftErr) {
         console.error('[ziina/create-intent] draft report upsert failed:', draftErr.message);
+      }
+
+      // Optional column: phone (migration 20260614_user_phone). Tolerant of older DBs;
+      // lets the owner call the seeker to discuss their reading.
+      if (typeof body.phone === 'string' && body.phone.trim()) {
+        const { error: phoneErr } = await db
+          .from('reports')
+          .update({ phone: body.phone.trim() })
+          .eq('id', reportId)
+          .eq('user_id', auth.user.id);
+        if (phoneErr) {
+          const m = phoneErr.message ?? '';
+          if (!m.includes('phone') && !m.includes('schema cache')) {
+            console.warn('[ziina/create-intent] phone update failed:', m);
+          }
+        }
       }
     }
 

@@ -111,6 +111,7 @@ function warnReportStartDispatchModeMismatch(
 interface StartRequestBody {
   reportId?: string;
   name?: string;
+  phone?: string;
   birth_date?: string;
   birth_time?: string;
   birth_city?: string;
@@ -522,6 +523,22 @@ export async function POST(request: NextRequest) {
         },
         { status: 500 },
       );
+    }
+  }
+
+  // Optional column: phone (migration 20260614_user_phone). Kept out of the upsert so older
+  // DBs without the column still generate; the owner uses it to call the seeker about their reading.
+  if (typeof body.phone === 'string' && body.phone.trim()) {
+    const { error: phoneErr } = await db
+      .from('reports')
+      .update({ phone: body.phone.trim(), updated_at: nowIso })
+      .eq('id', reportId)
+      .eq('user_id', auth.user.id);
+    if (phoneErr) {
+      const m = phoneErr.message ?? '';
+      if (!m.includes('phone') && !m.includes('schema cache')) {
+        console.warn('[reports/start] phone update failed:', m);
+      }
     }
   }
 
