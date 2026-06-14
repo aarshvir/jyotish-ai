@@ -14,7 +14,9 @@ import { post as vimshottariDasha } from './vimshottari-dasha-current-period';
 import { post as bestAiVedicApp } from "./best-ai-vedic-astrology-app-2026";
 import { post as bestTimeToStartBusiness } from './best-time-to-start-business-astrology';
 import { post as careerAstrology } from './career-astrology-10th-house';
+import { post as scienceOfTiming } from './science-of-timing-vedic-muhurta';
 export const POSTS: BlogPost[] = [
+  scienceOfTiming,
   careerAstrology,
   gunMilan,
   manglik,
