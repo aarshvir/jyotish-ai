@@ -123,10 +123,9 @@ export default function TransitSEOPage({ params }: Props) {
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Home', item: SITE_URL },
-      { '@type': 'ListItem', position: 2, name: 'Transit Reports', item: `${SITE_URL}/transit` },
       {
         '@type': 'ListItem',
-        position: 3,
+        position: 2,
         name: `${pName} in ${sName}`,
         item: `${SITE_URL}/transit/${planet}/${sign}`,
       },

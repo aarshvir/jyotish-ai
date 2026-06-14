@@ -19,9 +19,15 @@ const TOOLS = [
   { href: '/kaal-sarp-dosha-calculator', label: 'Kaal Sarp Dosha' },
 ];
 
+const LEARN = [
+  { href: '/blog', label: 'Blog' },
+  { href: '/nakshatra', label: 'The 27 Nakshatras' },
+  { href: '/dasha', label: 'Vimshottari Dasha' },
+  { href: '/predictions', label: 'Life Predictions' },
+];
+
 const COMPANY = [
   { href: '/#how-it-works', label: 'How It Works' },
-  { href: '/blog', label: 'Blog' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/refund', label: 'Refund Policy' },
   { href: '/privacy', label: 'Privacy' },
@@ -58,7 +64,7 @@ export default function Footer() {
           <NewsletterSignup source="footer" />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
             <span className="font-display font-semibold text-lg tracking-wide text-star/70">VedicHour</span>
             <p className="mt-2 font-body text-body-sm text-dust/60 max-w-[14rem]">
@@ -67,6 +73,7 @@ export default function Footer() {
           </div>
           <Col title="Readings" links={READINGS} />
           <Col title="Free Tools" links={TOOLS} />
+          <Col title="Learn" links={LEARN} />
           <Col title="Company" links={COMPANY} />
         </div>
 
