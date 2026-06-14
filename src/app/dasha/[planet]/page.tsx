@@ -21,7 +21,7 @@ export function generateMetadata({ params }: { params: { planet: string } }): Me
     description: d.description,
     keywords: d.keywords,
     alternates: { canonical: `/dasha/${d.slug}` },
-    openGraph: { title: d.title, description: d.description, type: 'article' },
+    openGraph: { title: d.title, description: d.description, type: 'article', images: ['/opengraph-image'] },
   };
 }
 

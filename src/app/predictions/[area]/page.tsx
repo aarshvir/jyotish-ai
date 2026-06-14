@@ -21,7 +21,7 @@ export function generateMetadata({ params }: { params: { area: string } }): Meta
     description: p.description,
     keywords: p.keywords,
     alternates: { canonical: `/predictions/${p.slug}` },
-    openGraph: { title: p.title, description: p.description, type: 'article' },
+    openGraph: { title: p.title, description: p.description, type: 'article', images: ['/opengraph-image'] },
   };
 }
 

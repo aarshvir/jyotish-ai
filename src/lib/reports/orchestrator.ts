@@ -33,6 +33,7 @@ import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { buildTransitQueryTerms, detectYogas } from '@/lib/rag/yogaDetector';
 import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
+import { notifyReportReady } from '@/lib/notify/reportReady';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
 
@@ -873,6 +874,9 @@ export async function generateReportPipeline(
         } catch {
           /* analytics must never break the pipeline */
         }
+        // Notify the seeker their report is ready (email + WhatsApp + upsell).
+        // Fire-and-forget; never throws; no-ops until RESEND_API_KEY / WHATSAPP_* are set.
+        await notifyReportReady(reportId);
         return; // success
       }
       lastError = new Error(`dbSaveFinal failed: ${error.message}`);
