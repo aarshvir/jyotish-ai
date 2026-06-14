@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { sendWelcomeEmail } from '@/lib/notify/welcome';
 
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
 const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
@@ -47,11 +48,17 @@ export async function GET(request: NextRequest) {
     const email = user.email ?? '';
     const meta = user.user_metadata as Record<string, string | undefined> | undefined;
     const displayName = meta?.full_name ?? meta?.name ?? meta?.given_name ?? email.split('@')[0] ?? 'User';
+    // Detect first-time sign-in so the welcome email is sent exactly once.
+    const { data: existingProfile } = await supabase.from('user_profiles').select('id').eq('id', user.id).maybeSingle();
     const { error: upsertErr } = await supabase.from('user_profiles').upsert(
       { id: user.id, email, display_name: displayName },
       { onConflict: 'id' }
     );
     if (upsertErr) console.error('user_profiles upsert:', upsertErr.message);
+    if (!existingProfile && email) {
+      // New account → one-time welcome email (gated on RESEND_API_KEY; never throws).
+      await sendWelcomeEmail(email, displayName);
+    }
   }
 
   return response;
