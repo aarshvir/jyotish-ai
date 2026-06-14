@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { getPaymentIntent } from '@/lib/ziina/server';
 import { finalizeCompletedZiinaIntent } from '@/lib/ziina/finalizeIntent';
 import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
+import { sendFounderDigest, runAbandonedCheckoutRecovery } from '@/lib/notify/lifecycle';
 
 /**
  * GET /api/cron/reconcile-payments
@@ -19,6 +20,12 @@ export async function GET(request: NextRequest) {
   if (!secret || auth !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Daily lifecycle work runs first so it fires even when there are no pending payments
+  // (folded in here because Vercel Hobby caps cron jobs at 2). Both no-op until
+  // RESEND_API_KEY / TWILIO_* are set, and never throw.
+  const recovery = await runAbandonedCheckoutRecovery();
+  const digest = await sendFounderDigest();
 
   const db = createServiceClient();
   const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -36,7 +43,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!pending || pending.length === 0) {
-    return NextResponse.json({ ok: true, reconciled: 0 });
+    return NextResponse.json({ ok: true, reconciled: 0, recovery, digest });
   }
 
   const dispatchOrigin = getCanonicalDispatchOrigin(request.nextUrl.origin);
@@ -61,5 +68,5 @@ export async function GET(request: NextRequest) {
   }
 
   console.log(`[cron/reconcile-payments] reconciled ${reconciled}/${pending.length}`);
-  return NextResponse.json({ ok: true, reconciled, total: pending.length, results });
+  return NextResponse.json({ ok: true, reconciled, total: pending.length, results, recovery, digest });
 }
