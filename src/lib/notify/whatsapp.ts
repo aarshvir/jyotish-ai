@@ -1,49 +1,60 @@
 /**
- * WhatsApp via Meta WhatsApp Cloud API (plain fetch). Activates only when
- * WHATSAPP_TOKEN + WHATSAPP_PHONE_ID are set; otherwise logs and no-ops.
+ * WhatsApp via Twilio (plain fetch — no SDK). Activates only when TWILIO_ACCOUNT_SID,
+ * TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_FROM are set; otherwise logs and no-ops.
  *
- * Note: free-form text only reaches users inside a 24h customer-service window.
- * For cold, business-initiated sends Meta requires a pre-approved template — pass
- * { template } to use one. The "report ready" send happens right after the user
- * acts on the site, so a text message is usually fine.
+ * TWILIO_WHATSAPP_FROM is your Twilio WhatsApp sender, e.g. "whatsapp:+14155238886"
+ * (the Twilio sandbox number while testing, or your approved Twilio WhatsApp number
+ * in production). Recipients must be in E.164 format (+countrycode...). Free-form
+ * text only reaches users inside the 24h session window or the sandbox; for cold
+ * business-initiated sends Twilio requires an approved template (contentSid).
  */
 export interface SendWhatsAppArgs {
   to: string;
   body?: string;
-  /** Optional approved template (name + language + body params) for cold sends. */
-  template?: { name: string; lang?: string; params?: string[] };
+  /** Optional Twilio Content template SID (HX...) + variables for cold/business-initiated sends. */
+  contentSid?: string;
+  contentVariables?: Record<string, string>;
 }
 
-export async function sendWhatsApp({ to, body, template }: SendWhatsAppArgs): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
-  const token = process.env.WHATSAPP_TOKEN?.trim();
-  const phoneId = process.env.WHATSAPP_PHONE_ID?.trim();
-  if (!token || !phoneId) {
-    console.log(`[notify/whatsapp] not configured — skipped → ${to}`);
+function toE164Whatsapp(raw: string): string {
+  const trimmed = (raw || '').trim();
+  const digits = trimmed.replace(/[^\d+]/g, '');
+  const e164 = digits.startsWith('+') ? `+${digits.replace(/\+/g, '')}` : `+${digits.replace(/\D/g, '')}`;
+  return `whatsapp:${e164}`;
+}
+
+export async function sendWhatsApp({ to, body, contentSid, contentVariables }: SendWhatsAppArgs): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+  const sid = process.env.TWILIO_ACCOUNT_SID?.trim();
+  const token = process.env.TWILIO_AUTH_TOKEN?.trim();
+  const fromRaw = process.env.TWILIO_WHATSAPP_FROM?.trim();
+  if (!sid || !token || !fromRaw) {
+    console.log(`[notify/whatsapp] Twilio not configured — skipped → ${to}`);
     return { ok: false, skipped: true };
   }
-  const num = (to || '').replace(/[^\d]/g, '');
-  if (num.length < 7) return { ok: false, error: 'invalid number' };
+  const digits = (to || '').replace(/\D/g, '');
+  if (digits.length < 7) return { ok: false, error: 'invalid number' };
 
-  const payload = template
-    ? {
-        messaging_product: 'whatsapp', to: num, type: 'template',
-        template: {
-          name: template.name,
-          language: { code: template.lang ?? 'en' },
-          ...(template.params?.length ? { components: [{ type: 'body', parameters: template.params.map((t) => ({ type: 'text', text: t })) }] } : {}),
-        },
-      }
-    : { messaging_product: 'whatsapp', to: num, type: 'text', text: { body: body ?? '', preview_url: true } };
+  const from = fromRaw.startsWith('whatsapp:') ? fromRaw : `whatsapp:${fromRaw}`;
+  const form = new URLSearchParams({ From: from, To: toE164Whatsapp(to) });
+  if (contentSid) {
+    form.set('ContentSid', contentSid);
+    if (contentVariables) form.set('ContentVariables', JSON.stringify(contentVariables));
+  } else {
+    form.set('Body', body ?? '');
+  }
 
   try {
-    const res = await fetch(`https://graph.facebook.com/v21.0/${phoneId}/messages`, {
+    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${sid}:${token}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: form.toString(),
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) {
-      console.error('[notify/whatsapp] error', res.status, (await res.text()).slice(0, 200));
+      console.error('[notify/whatsapp] Twilio error', res.status, (await res.text()).slice(0, 200));
       return { ok: false, error: String(res.status) };
     }
     return { ok: true };
