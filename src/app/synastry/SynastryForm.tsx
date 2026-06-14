@@ -22,6 +22,7 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
   const [a, setA] = useState<BirthDetails>({ ...DEFAULT_A });
   const [b, setB] = useState<BirthDetails>({ ...DEFAULT_A });
   const [teaser, setTeaser] = useState<Teaser | null>(null);
+  const [promo, setPromo] = useState('');
 
   useEffect(() => {
     if (searchParams.get('unlocked') === '1') {
@@ -43,7 +44,7 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ planType: 'synastry' }),
+        body: JSON.stringify({ planType: 'synastry', promoCode: promo.trim() || undefined }),
       });
       if (res.status === 401) {
         // Not signed in — send them to sign-in and bring them back here, don't dead-end on an error.
@@ -148,6 +149,15 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
                 <span className="font-mono text-mono-sm text-dust/40">🔒 locked</span>
               </div>
             ))}
+          </div>
+
+          <div className="max-w-xs mx-auto mb-4">
+            <input
+              value={promo}
+              onChange={(e) => setPromo(e.target.value.toUpperCase())}
+              placeholder="Coupon code (optional)"
+              className="w-full rounded-md bg-cosmos border border-horizon px-3 py-2 text-center font-mono text-mono-sm text-star placeholder:text-dust/40 focus:border-amber/60 focus:outline-none"
+            />
           </div>
 
           <button

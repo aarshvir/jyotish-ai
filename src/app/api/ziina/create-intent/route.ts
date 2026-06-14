@@ -9,7 +9,7 @@ import {
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
-import { getPromoDiscount } from '@/lib/promo/server';
+import { getPromoDiscount, redeemPromoCode } from '@/lib/promo/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 
 /**
@@ -57,15 +57,43 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'reportId required for this plan' }, { status: 400 });
   }
 
-  const promoResult =
-    !isStandaloneUnlock && promoCode
-      ? await getPromoDiscount(promoCode, auth.user.email ?? undefined)
-      : { valid: false, discountPct: 0 };
+  const promoResult: { valid: boolean; discountPct: number; codeId?: string; reason?: string } = promoCode
+    ? await getPromoDiscount(promoCode, auth.user.email ?? undefined)
+    : { valid: false, discountPct: 0 };
+
+  // If a code was entered but rejected, tell the buyer rather than silently charging full price.
+  if (promoCode && !promoResult.valid) {
+    return NextResponse.json({ error: promoResult.reason ?? 'Invalid coupon code' }, { status: 400 });
+  }
 
   const discountPct = promoResult.valid ? promoResult.discountPct : 0;
 
+  // Forecast: a 100% code is handled by the onboard flow (free generation), not here.
   if (!isStandaloneUnlock && discountPct >= 100) {
     return NextResponse.json({ error: 'Use a valid promo code — this report is free' }, { status: 400 });
+  }
+
+  // Standalone (Kundali / Matchmaking) + 100% code: grant the unlock directly and skip
+  // Ziina (a zero-amount intent is invalid). Mirrors finalizeIntent's standalone grant.
+  if (isStandaloneUnlock && discountPct >= 100) {
+    const dbFree = createServiceClient();
+    const unlockTable = planType === 'kundali' ? 'user_kundali_unlock' : 'user_synastry_unlock';
+    const { error: unlockErr } = await dbFree.from(unlockTable).upsert(
+      { user_id: auth.user.id, unlocked_at: new Date().toISOString() },
+      { onConflict: 'user_id' },
+    );
+    if (unlockErr) {
+      console.error('[ziina/create-intent] free-unlock upsert failed:', unlockErr.message);
+      return NextResponse.json({ error: 'Could not apply your code. Please try again.' }, { status: 500 });
+    }
+    if (promoResult.codeId) {
+      try {
+        await redeemPromoCode(promoResult.codeId, auth.user.id);
+      } catch (e) {
+        console.warn('[ziina/create-intent] promo redeem failed (non-fatal):', e);
+      }
+    }
+    return NextResponse.json({ redirectUrl: `/${planType}?unlocked=1`, freeUnlock: true, discountPct: 100 });
   }
 
   // Currency precedence (most-specific wins):
