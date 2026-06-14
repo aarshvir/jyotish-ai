@@ -1,6 +1,13 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
 import LoginForm from './_LoginForm';
+
+export const metadata: Metadata = {
+  title: 'Sign In to VedicHour — Your Vedic Astrology Account',
+  description: 'Sign in to VedicHour to access your Vedic astrology reports, hour-by-hour forecasts, Kundli and matchmaking readings.',
+  robots: { index: false, follow: true },
+};
 
 /** Static form shell rendered during SSR / by crawlers. */
 function LoginShell() {
