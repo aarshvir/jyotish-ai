@@ -4,9 +4,15 @@ import { createClient } from '@/lib/supabase/server';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
+import type { Metadata } from 'next';
 import { SynastryResultDisplay } from './SynastryResultDisplay';
 
 export const dynamic = 'force-dynamic';
+
+// Private user report rendered from personal birth data — never index.
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 interface Props {
   params: { id: string };

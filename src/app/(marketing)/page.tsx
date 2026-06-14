@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Hero from '@/components/landing/Hero';
+import Products from '@/components/landing/Products';
 import SocialProof from '@/components/landing/SocialProof';
 import HowItWorks from '@/components/landing/HowItWorks';
 import FreeKundli from '@/components/landing/FreeKundli';
@@ -99,6 +100,7 @@ export default async function LandingPage() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <Hero />
+      <Products />
       <SocialProof />
       <HowItWorks />
       <FreeKundli />

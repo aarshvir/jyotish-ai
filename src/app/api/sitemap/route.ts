@@ -11,11 +11,33 @@ const SIGNS = [
 
 const STATIC_ROUTES = [
   { path: '/',         changefreq: 'daily',   priority: '1.0'  },
+  { path: '/kundali',  changefreq: 'weekly',  priority: '0.9'  },  // Deep Kundali product landing
+  { path: '/synastry', changefreq: 'weekly',  priority: '0.9'  },  // Matchmaking / Gun Milan landing
   { path: '/pricing',  changefreq: 'weekly',  priority: '0.95' },
   { path: '/refund',   changefreq: 'monthly', priority: '0.5'  },
   { path: '/privacy',  changefreq: 'monthly', priority: '0.4'  },
   { path: '/terms',    changefreq: 'monthly', priority: '0.4'  },
 ];
+
+// Per-sign horoscope index pages (/horoscope/aries …). The dated leaves are added
+// by horoscopeRoutes(); these section indexes were previously missing from the sitemap.
+const SIGN_INDEX_ROUTES = SIGNS.map((sign) => ({
+  path: `/horoscope/${sign}`,
+  changefreq: 'daily',
+  priority: '0.7',
+}));
+
+// Free calculator tool pages — the highest-ROI SEO surface (the niche ranks tools).
+const TOOL_ROUTES = [
+  '/free-kundli',
+  '/manglik-dosha-calculator',
+  '/sade-sati-calculator',
+  '/vimshottari-dasha-calculator',
+  '/nakshatra-finder',
+  '/moon-sign-calculator',
+  '/lagna-calculator',
+  '/kaal-sarp-dosha-calculator',
+].map((path) => ({ path, changefreq: 'weekly', priority: path === '/free-kundli' ? '0.85' : '0.8' }));
 
 const TRANSIT_ROUTES = PLANETS.flatMap((planet) =>
   SIGNS.map((sign) => ({
@@ -49,7 +71,7 @@ function horoscopeRoutes(): { path: string; changefreq: string; priority: string
   return out;
 }
 
-const ALL_ROUTES = [...STATIC_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
+const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
 
 export function GET() {
   const lastmod = new Date().toISOString();

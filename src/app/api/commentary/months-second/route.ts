@@ -11,10 +11,11 @@ import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
+// Default to Claude so the 6-month forecast runs on the Anthropic-first fallback
+// chain (Anthropic → OpenAI → Grok → DeepSeek) with the key you already have.
+// Set REPORT_MONTHLY_MODEL=gpt-5.5 in Vercel to pin OpenAI instead.
 const DEFAULT_MONTHLY_MODEL =
-  process.env.REPORT_MONTHLY_MODEL?.trim() ||
-  process.env.LLM_FALLBACK_OPENAI_MODEL?.trim() ||
-  'gpt-5.5';
+  process.env.REPORT_MONTHLY_MODEL?.trim() || 'claude-sonnet-4-6';
 
 function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mahadasha?: string; antardasha?: string }): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; theme: string; key_transits: string[]; analysis: string }[] {
   const fallbackScores = [70, 73, 68, 62, 58, 52];

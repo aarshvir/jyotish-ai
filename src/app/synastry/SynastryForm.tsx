@@ -112,10 +112,10 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="card border border-horizon rounded-card p-6">
-          <BirthDetailsInput label="Person 1" value={a} onChange={setA} />
+          <BirthDetailsInput label="You" value={a} onChange={setA} />
         </div>
         <div className="card border border-horizon rounded-card p-6">
-          <BirthDetailsInput label="Person 2" value={b} onChange={setB} />
+          <BirthDetailsInput label="Your partner" value={b} onChange={setB} />
         </div>
       </div>
 
