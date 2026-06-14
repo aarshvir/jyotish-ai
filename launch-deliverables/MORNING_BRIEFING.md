@@ -2,6 +2,12 @@
 
 *Everything done overnight, every link you need, and your exact to-do list. Read top to bottom.*
 
+> ### 🆕 LATEST (this session)
+> - **THE master marketing playbook** (best-of-both: my plan 71/100 + GPT's 69/100, audited by 13 specialist agents, fact-checked, 4,000+ lines, foolproof, AI-generates-everything incl. video prompts): https://github.com/aarshvir/jyotish-ai/blob/main/launch-deliverables/VedicHour_MASTER_PLAYBOOK.md
+> - **SQL to run** (turns on attribution + referrals): https://github.com/aarshvir/jyotish-ai/blob/main/launch-deliverables/SQL_TO_RUN.md
+> - **New features shipped & live:** first-touch attribution (`/admin/attribution`), referral program (share link on `/account`), GDPR export + delete (`/account`).
+> - **Bug fixes verified live:** emails are clean (encoding fixed) + premium; OG/blog images render (were 0 bytes).
+
 ---
 
 ## 1. What I fixed overnight (the bugs you reported — both verified live)
