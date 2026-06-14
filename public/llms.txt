@@ -1,0 +1,26 @@
+# VedicHour — AI Jyotish, Free Kundli & Hour-by-Hour Vedic Forecasts
+
+> VedicHour generates a free Janam Kundli (Vedic birth chart) and AI-written Vedic astrology (Jyotish) readings grounded in classical calculations — Swiss Ephemeris, sidereal zodiac, Lahiri Ayanamsa, and Vimshottari Dasha. Its signature product is an hour-by-hour life forecast with 18 timing windows per day. The AI explains the computed chart in plain English and never invents planetary positions or claims to be a human astrologer.
+
+VedicHour serves global and Indian audiences (USD / INR / AED). Astrology content is for reflection and guidance — not medical, legal, or financial advice.
+
+## Products
+- [Free Kundli](https://www.vedichour.com/free-kundli): Free Janam Kundali / Vedic birth chart — ascendant (lagna), moon sign (rashi), nakshatra, current dasha, and Manglik/Kaal Sarpa/Sade Sati flags.
+- [Deep Kundali Analysis](https://www.vedichour.com/kundali): Full birth-chart reading — divisional charts (D9/D7/D10), doshas, seven life areas, and a five-year outlook.
+- [Kundli Matching — Gun Milan](https://www.vedichour.com/synastry): 36-point Ashtakoot Gun Milan compatibility for two birth charts, with the eight-koota breakdown and Manglik/Nadi checks.
+- [Hour-by-Hour Forecast & pricing](https://www.vedichour.com/pricing): 7-day, monthly, and annual hour-by-hour Vedic timing forecasts.
+
+## Free calculators
+- [Manglik Dosha Calculator](https://www.vedichour.com/manglik-dosha-calculator): Check Manglik / Mangal Dosha by date of birth.
+- [Sade Sati Calculator](https://www.vedichour.com/sade-sati-calculator): Current Shani Sade Sati status and phase.
+- [Kaal Sarp Dosha Calculator](https://www.vedichour.com/kaal-sarp-dosha-calculator): Kaal Sarp Dosha check and type.
+- [Vimshottari Dasha Calculator](https://www.vedichour.com/vimshottari-dasha-calculator): Current Mahadasha and Antardasha with the full timeline.
+- [Nakshatra Finder](https://www.vedichour.com/nakshatra-finder): Janma Nakshatra (birth star) and pada.
+- [Moon Sign Calculator](https://www.vedichour.com/moon-sign-calculator): Sidereal Vedic Moon sign (Rashi).
+- [Lagna Calculator](https://www.vedichour.com/lagna-calculator): Ascendant / rising sign.
+
+## Daily
+- [Daily Horoscope](https://www.vedichour.com/horoscope/aries): Per-sign daily Vedic horoscope (all 12 signs).
+
+## Methodology
+Charts are computed with the Swiss Ephemeris using the sidereal zodiac and the Lahiri Ayanamsa — the professional Jyotish standard. Timing uses Vimshottari Dasha, Hora, and Choghadiya. The AI explains calculated data only.
