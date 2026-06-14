@@ -420,6 +420,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Bind the report's plan to what was actually paid for — prevents paying for a
+  // 7-day plan then requesting 'annual' (the completed-payment check is plan-agnostic).
+  if (!isFreePlan && userIsAdmin !== true) {
+    const { data: paidRow } = await db
+      .from('ziina_payments')
+      .select('plan_type')
+      .eq('report_id', reportId)
+      .eq('user_id', auth.user.id)
+      .eq('status', 'completed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const paidPlan = (paidRow as { plan_type?: string } | null)?.plan_type;
+    if (paidPlan) body.plan_type = paidPlan;
+  }
+
   // Guard: refuse to generate for unresolved birth coordinates. A geocode failure
   // that fell back to 0,0 (open ocean — no inhabited birth city resolves there)
   // would otherwise produce a confident but astronomically wrong chart presented

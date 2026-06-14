@@ -209,10 +209,15 @@ function logStatusFetchFailure(
   });
 }
 
-function buildStatusPayload(reportId: string, data: Record<string, unknown>): ReportStatusCachePayload {
+function buildStatusPayload(reportId: string, data: Record<string, unknown>, userIsAdmin: boolean): ReportStatusCachePayload {
   const status = data?.status ?? 'unknown';
   const isComplete = status === 'complete';
   const reportData = data?.report_data as Record<string, unknown> | null;
+  // Read-side entitlement: only return the report payload to admins, free/preview
+  // plans, or genuinely paid reports — never a paid-plan row that isn't 'paid'.
+  const planType = String(data?.plan_type ?? '').toLowerCase();
+  const entitledToContent =
+    userIsAdmin || planType === 'free' || planType === 'preview' || data?.payment_status === 'paid';
 
   const serverProgress = typeof data?.generation_progress === 'number' ? data.generation_progress : null;
   const progress = isComplete
@@ -238,7 +243,7 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>): Re
     generation_error_code: data?.generation_error_code ?? null,
     generation_error_at_phase: data?.generation_error_at_phase ?? null,
     generation_error: generationError,
-    report: isComplete ? reportData : null,
+    report: isComplete && entitledToContent ? reportData : null,
     lagna_sign: data?.lagna_sign,
     dasha_mahadasha: data?.dasha_mahadasha,
     dasha_antardasha: data?.dasha_antardasha,
@@ -267,6 +272,7 @@ export async function GET(request: NextRequest, context: { params: { id: string 
 
   const { id: reportId } = context.params;
   const userId = auth.user.id;
+  const userIsAdmin = auth.isAdmin === true;
   const requestTraceId = randomUUID();
 
   const cached = peekReportStatusCache(reportId, userId);
@@ -313,7 +319,9 @@ export async function GET(request: NextRequest, context: { params: { id: string 
     );
   }
 
-  const restUrl = `${supabaseUrl}/rest/v1/reports?id=eq.${encodeURIComponent(reportId)}&user_id=eq.${encodeURIComponent(userId)}&limit=1`;
+  const restUrl = userIsAdmin
+    ? `${supabaseUrl}/rest/v1/reports?id=eq.${encodeURIComponent(reportId)}&limit=1`
+    : `${supabaseUrl}/rest/v1/reports?id=eq.${encodeURIComponent(reportId)}&user_id=eq.${encodeURIComponent(userId)}&limit=1`;
 
   const fresh = await runReportStatusSingleflight(reportId, userId, async (): Promise<FreshReadResult> => {
     const result = await fetchReportRowWithRetries({ restUrl, serviceKey, reportId, userId });
@@ -352,7 +360,7 @@ export async function GET(request: NextRequest, context: { params: { id: string 
       };
     }
 
-    const payload = buildStatusPayload(reportId, data);
+    const payload = buildStatusPayload(reportId, data, userIsAdmin);
     rememberReportStatusCache(reportId, userId, payload);
     return { tag: 'payload', payload };
   });

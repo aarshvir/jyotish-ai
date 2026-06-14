@@ -42,7 +42,7 @@ export async function GET(
   const db = createServiceClient();
   const { data: row, error } = await db
     .from('reports')
-    .select('report_data, user_id, native_name')
+    .select('report_data, user_id, native_name, plan_type, payment_status')
     .eq('id', params.id)
     .single();
 
@@ -53,6 +53,17 @@ export async function GET(
   // Auth: only the report owner can download
   if (row.user_id !== auth.user.id && !auth.isAdmin) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  // Entitlement: only admins, free/preview plans, or genuinely paid reports get the payload.
+  const planType = String((row as { plan_type?: string }).plan_type ?? '').toLowerCase();
+  const entitled =
+    auth.isAdmin === true ||
+    planType === 'free' ||
+    planType === 'preview' ||
+    (row as { payment_status?: string }).payment_status === 'paid';
+  if (!entitled) {
+    return NextResponse.json({ error: 'Payment required' }, { status: 402 });
   }
 
   const reportData = row.report_data as {
