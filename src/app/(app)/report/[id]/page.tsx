@@ -166,6 +166,9 @@ function ReportContent() {
   const [pdfStatus, setPdfStatus] = useState('Download PDF');
   /** True when the current user does not own this report (RLS denied the DB fetch). */
   const [notOwnerOrNotFound, setNotOwnerOrNotFound] = useState(false);
+  /** Admin viewing another user's report — unlock full content and use admin APIs. */
+  const [isAdminView, setIsAdminView] = useState(false);
+  const isAdminRef = useRef(false);
   const hasFetched = useRef(false);
   /** Cached Supabase user — set once in init(), reused to avoid repeated getUser() roundtrips. */
   const userRef = useRef<{ id: string; email?: string } | null>(null);
@@ -239,6 +242,36 @@ function ReportContent() {
     if (b) h['x-bypass-token'] = b;
     return h;
   }, [params]);
+
+  /** Load a report row — tries owner RLS first, then admin API for any other user's report. */
+  const fetchReportRow = useCallback(
+    async (reportId: string): Promise<Record<string, unknown> | null> => {
+      const uid = userRef.current?.id;
+      if (uid) {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('reports')
+          .select('*')
+          .eq('id', reportId)
+          .eq('user_id', uid)
+          .maybeSingle();
+        if (data) return data as Record<string, unknown>;
+      }
+
+      const res = await fetch(`/api/admin/reports/${encodeURIComponent(reportId)}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) return null;
+      const j = (await res.json()) as { report?: Record<string, unknown> };
+      if (j.report) {
+        isAdminRef.current = true;
+        setIsAdminView(true);
+        return j.report;
+      }
+      return null;
+    },
+    [],
+  );
 
   /** When generation fails, load the durable pipeline log (where each step is recorded on the report row). */
   useEffect(() => {
@@ -608,13 +641,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
 
           const uid = userRef.current?.id;
           if (uid) {
-            const sb = createClient();
-            const { data: row } = await sb
-              .from('reports')
-              .select('native_name, birth_date, birth_time, birth_city')
-              .eq('id', reportIdFromRoute)
-              .eq('user_id', uid)
-              .maybeSingle();
+            const row = await fetchReportRow(reportIdFromRoute);
             if (row) {
               setBirthDisplay(birthDisplayForUi(row, { name, date, time, city }));
             }
@@ -659,7 +686,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       }, nextDelay);
     };
     scheduleNext();
-  }, [reportIdFromRoute, authJsonHeaders, stopReportPolling, name, date, time, city]);
+  }, [reportIdFromRoute, authJsonHeaders, stopReportPolling, name, date, time, city, fetchReportRow]);
 
   /** Inserts row (if needed), POSTs /api/reports/start, then polls until complete. */
   const kickOffBackgroundGeneration = useCallback(async (opts?: { forceRestart?: boolean }) => {
@@ -760,22 +787,13 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       setGenerationTraceForUi(started.generation_trace_id);
     }
     if (started.status === 'complete' && started.skipped) {
-      const sb = createClient();
-      const uid = userRef.current?.id;
-      if (uid) {
-        const { data: row } = await sb
-          .from('reports')
-          .select('report_data, native_name, birth_date, birth_time, birth_city')
-          .eq('id', reportIdFromRoute)
-          .eq('user_id', uid)
-          .maybeSingle();
-        const rd = row?.report_data as ReportData | undefined;
-        if (rd && Array.isArray(rd.days) && rd.days.length > 0) {
-          setReportData(rd);
-          setBirthDisplay(birthDisplayForUi(row ?? undefined, { name, date, time, city }));
-          setIsGenerating(false);
-          return;
-        }
+      const row = await fetchReportRow(reportIdFromRoute);
+      const rd = row?.report_data as ReportData | undefined;
+      if (rd && Array.isArray(rd.days) && rd.days.length > 0) {
+        setReportData(rd);
+        setBirthDisplay(birthDisplayForUi(row ?? undefined, { name, date, time, city }));
+        setIsGenerating(false);
+        return;
       }
     }
 
@@ -798,6 +816,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
     currentTzOffset,
     type,
     forecastStartParam,
+    fetchReportRow,
   ]);
 
   const displayName = birthDisplay?.name ?? name;
@@ -909,13 +928,18 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       }
       userRef.current = { id: user.id, email: user.email ?? undefined };
 
+      const adminRes = await fetch('/api/user/is-admin', { credentials: 'include' });
+      const adminJson = (await adminRes.json().catch(() => ({}))) as { admin?: boolean };
+      const userIsAdmin = adminJson.admin === true;
+      isAdminRef.current = userIsAdmin;
+      if (!cancelled) setIsAdminView(userIsAdmin);
+
       if (isRouteUuid(reportIdFromRoute)) {
-        const { data: row } = await supabase
-          .from('reports')
-          .select('*')
-          .eq('id', reportIdFromRoute)
-          .eq('user_id', user.id)
-          .maybeSingle();
+        const row = await fetchReportRow(reportIdFromRoute);
+
+        const viewingOtherUser = Boolean(
+          row && typeof row.user_id === 'string' && row.user_id !== user.id,
+        );
 
         // Cache the authoritative birth data from the DB so retries can use it
         // (rather than relying on potentially missing/stale URL params).
@@ -947,6 +971,10 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           !isPlaceholderReportData(rd)
         ) {
           hasFetched.current = true;
+          if (viewingOtherUser || userIsAdmin) {
+            isAdminRef.current = true;
+            setIsAdminView(true);
+          }
           setBirthDisplay(birthDisplayForUi(row, { name, date, time, city }));
           setReportData(rd as unknown as ReportData);
           setIsGenerating(false);
@@ -958,14 +986,11 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         if (!cancelled && isRowGenerating) {
           hasFetched.current = true;
           setBirthDisplay(birthDisplayForUi(row ?? undefined, { name, date, time, city }));
-          // Check if the previous run is stale (older than the worst-case pipeline
-          // runtime). If so, force-restart; otherwise keep polling a healthy long job
-          // instead of throwing away a nearly-complete monthly/annual generation.
           const startedMs = row?.generation_started_at
             ? new Date(row.generation_started_at as string).getTime()
             : 0;
           const isStale = !Number.isNaN(startedMs) && startedMs > 0 && Date.now() - startedMs > CLIENT_GENERATING_TIMEOUT_MS;
-          if (isStale) {
+          if (isStale && !viewingOtherUser) {
             void kickOffBackgroundGeneration({ forceRestart: true });
           } else {
             startPollingForReport();
@@ -973,9 +998,6 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           return;
         }
 
-        // No row at all — or row exists with status=error.
-        // If we have URL params we can still kick off a fresh generation.
-        // Otherwise show a "not found / not owner" state.
         if (!row && !params.get('date')) {
           if (!cancelled) {
             setNotOwnerOrNotFound(true);
@@ -983,6 +1005,25 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             setIsInitializing(false);
           }
           hasFetched.current = true;
+          return;
+        }
+
+        // Complete row but empty/placeholder data — still show what we have for admins.
+        if (
+          !cancelled &&
+          row &&
+          row.status === 'complete' &&
+          (userIsAdmin || viewingOtherUser) &&
+          rd &&
+          typeof rd === 'object'
+        ) {
+          hasFetched.current = true;
+          isAdminRef.current = true;
+          setIsAdminView(true);
+          setBirthDisplay(birthDisplayForUi(row, { name, date, time, city }));
+          setReportData(rd as unknown as ReportData);
+          setIsGenerating(false);
+          setIsInitializing(false);
           return;
         }
 
@@ -999,6 +1040,12 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           hasFetched.current = true;
           return;
         }
+
+        if (viewingOtherUser) {
+          hasFetched.current = true;
+          startPollingForReport();
+          return;
+        }
       }
 
       hasFetched.current = true;
@@ -1011,7 +1058,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       stopReportPolling();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per route/query
-  }, [reportIdFromRoute, queryKey, kickOffBackgroundGeneration, startPollingForReport, stopReportPolling]);
+  }, [reportIdFromRoute, queryKey, kickOffBackgroundGeneration, startPollingForReport, stopReportPolling, fetchReportRow]);
 
   // Initializing: quick look-up against the DB (no "generating" flash for completed reports)
   if (isInitializing) {
@@ -1259,7 +1306,8 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
   // plans. plan_type is stored as 'free' (onboard) or normalised to 'preview' (kickoff).
   // Fail-open: an unknown/undefined plan renders fully (never hides content a paid user bought).
   const reportPlanType = dbBirthRef.current?.plan_type;
-  const isPreviewPlan = reportPlanType === 'free' || reportPlanType === 'preview';
+  const isPreviewPlan =
+    !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview');
 
   return (
     <motion.div
@@ -1272,6 +1320,17 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       <ReportSidebar reportLoaded={!!reportData} />
 
       <main className="lg:ml-[200px] px-6 pb-12 pt-6 lg:pt-12 max-w-4xl mx-auto relative z-10">
+        {isAdminView && (
+          <div
+            role="status"
+            className="pdf-exclude mb-4 px-4 py-3 rounded-card border border-amber/30 bg-amber/10 text-amber font-body text-sm flex items-center justify-between gap-3"
+          >
+            <span>Admin view — full report unlocked</span>
+            <Link href="/admin/users" className="font-mono text-xs hover:underline shrink-0">
+              ← Admin panel
+            </Link>
+          </div>
+        )}
         {/* Payment confirmation toast */}
         {paymentConfirmed && (
           <div

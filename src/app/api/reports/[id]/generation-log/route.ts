@@ -23,12 +23,14 @@ export async function GET(
   }
 
   const db = createServiceClient();
-  const { data, error } = await db
+  let query = db
     .from('reports')
     .select('id, user_id, generation_log')
-    .eq('id', reportId)
-    .eq('user_id', auth.user.id)
-    .maybeSingle();
+    .eq('id', reportId);
+  if (!auth.isAdmin) {
+    query = query.eq('user_id', auth.user.id);
+  }
+  const { data, error } = await query.maybeSingle();
 
   if (error) {
     const msg = error.message ?? '';

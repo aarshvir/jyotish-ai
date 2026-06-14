@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { verifyJobToken } from '@/lib/api/jobToken';
+import { isAdmin } from '@/lib/admin/isAdmin';
 
 // Trim to guard against env var stored with trailing \r\n (common in CI/Windows pipes)
 const _rawBypass = (process.env.BYPASS_SECRET ?? '').trim();
@@ -91,7 +92,10 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    return { user: { id: user.id, email: user.email } };
+    return {
+      user: { id: user.id, email: user.email },
+      isAdmin: await isAdmin(user.email),
+    };
   } catch {
     return NextResponse.json({ error: 'Auth check failed' }, { status: 500 });
   }

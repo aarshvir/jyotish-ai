@@ -31,6 +31,7 @@ export async function GET(
   const authResult = await requireAuth(request);
   if (authResult instanceof NextResponse) return authResult;
   const authedUserId = authResult.user.id;
+  const userIsAdmin = authResult.isAdmin === true;
 
   const { id: reportId } = context.params;
 
@@ -81,12 +82,14 @@ export async function GET(
           return;
         }
         try {
-          const { data, error } = await db
+          let query = db
             .from('reports')
             .select('status, generation_step, generation_progress')
-            .eq('id', reportId)
-            .eq('user_id', authedUserId)
-            .maybeSingle();
+            .eq('id', reportId);
+          if (!userIsAdmin) {
+            query = query.eq('user_id', authedUserId);
+          }
+          const { data, error } = await query.maybeSingle();
           if (error) {
             send('error', { message: error.message });
             return;
