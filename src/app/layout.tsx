@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
 import { PostHogProvider } from '@/components/analytics/PostHogProvider';
+import FirstTouch from '@/components/analytics/FirstTouch';
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 
 const cormorant = localFont({
@@ -145,6 +146,7 @@ export default function RootLayout({
           Skip to main content
         </a>
         <PostHogProvider>{children}</PostHogProvider>
+        <FirstTouch />
         <FeedbackWidget />
         {/* Global JSON-LD: Organization + WebSite + SoftwareApplication */}
         <script
