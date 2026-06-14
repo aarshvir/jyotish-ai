@@ -59,6 +59,28 @@ export async function GET(request: NextRequest) {
       // New account → one-time welcome email (gated on RESEND_API_KEY; never throws).
       await sendWelcomeEmail(email, displayName);
     }
+    // First-touch attribution: persist the channel that brought this user (from the
+    // vh_first_touch cookie). New users only; tolerant of DBs without the columns yet.
+    if (!existingProfile) {
+      try {
+        const raw = request.cookies.get('vh_first_touch')?.value;
+        if (raw) {
+          let ft: { s?: string; m?: string; c?: string; r?: string; l?: string; t?: string };
+          try { ft = JSON.parse(raw); } catch { ft = JSON.parse(decodeURIComponent(raw)); }
+          const { error: ftErr } = await supabase.from('user_profiles').update({
+            first_touch_source: ft.s ?? null,
+            first_touch_medium: ft.m ?? null,
+            first_touch_campaign: ft.c ?? null,
+            first_touch_referrer: ft.r ?? null,
+            first_touch_landing: ft.l ?? null,
+            first_touch_at: ft.t ?? null,
+          }).eq('id', user.id);
+          if (ftErr && !/(first_touch|column|schema cache)/.test(ftErr.message ?? '')) {
+            console.warn('first_touch persist:', ftErr.message);
+          }
+        }
+      } catch { /* never break auth */ }
+    }
   }
 
   return response;
