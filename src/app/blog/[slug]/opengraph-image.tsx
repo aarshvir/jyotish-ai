@@ -1,14 +1,11 @@
 import { ImageResponse } from 'next/og';
-import { POSTS, getPost } from '@/content/blog';
+import { getPost } from '@/content/blog';
+import { ogFont } from '@/lib/og/ogFont';
 
 export const alt = 'VedicHour blog';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-export const runtime = 'edge';
-
-export function generateStaticParams() {
-  return POSTS.map((p) => ({ slug: p.slug }));
-}
+export const dynamic = 'force-dynamic';
 
 export default function BlogOgImage({ params }: { params: { slug: string } }) {
   const post = getPost(params.slug);
@@ -25,7 +22,7 @@ export default function BlogOgImage({ params }: { params: { slug: string } }) {
           background:
             'radial-gradient(1200px 600px at 85% 5%, rgba(228,185,98,0.20), transparent 60%), linear-gradient(135deg, #080C18 0%, #0C1226 50%, #080C18 100%)',
           padding: 72,
-          fontFamily: 'serif',
+          fontFamily: 'Noto Sans',
           color: '#F5EFE0',
         }}
       >
@@ -35,7 +32,7 @@ export default function BlogOgImage({ params }: { params: { slug: string } }) {
             alignItems: 'center',
             gap: 14,
             fontSize: 28,
-            fontFamily: 'monospace',
+            fontFamily: 'Noto Sans',
             color: '#E4B962',
             letterSpacing: '0.2em',
             textTransform: 'uppercase',
@@ -63,7 +60,7 @@ export default function BlogOgImage({ params }: { params: { slug: string } }) {
             display: 'flex',
             alignItems: 'center',
             gap: 24,
-            fontFamily: 'monospace',
+            fontFamily: 'Noto Sans',
             fontSize: 22,
             color: 'rgba(245,239,224,0.62)',
           }}
@@ -74,6 +71,6 @@ export default function BlogOgImage({ params }: { params: { slug: string } }) {
         </div>
       </div>
     ),
-    { ...size },
+    { ...size, fonts: [{ name: 'Noto Sans', data: ogFont(), style: 'normal', weight: 400 }] },
   );
 }

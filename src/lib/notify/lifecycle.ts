@@ -7,6 +7,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { sendEmail } from './email';
 import { sendWhatsApp } from './whatsapp';
 import { toUsdCents, fetchAllAuthUsers, isFreePlan } from '@/lib/admin/analytics';
+import { emailShell, emailButton, plainText } from './emailLayout';
 
 const SITE = 'https://www.vedichour.com';
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL?.trim() || 'support@vedichour.com';
@@ -36,26 +37,29 @@ export async function sendFounderDigest(): Promise<{ ok: boolean; skipped?: bool
     const revenueUsd = (paymentsRes.data ?? []).reduce((s, p) => s + toUsdCents((p as { amount?: number }).amount ?? 0, (p as { currency?: string }).currency ?? 'USD'), 0);
 
     const row = (k: string, v: string) =>
-      `<tr><td style="padding:6px 0;color:#4a4658">${k}</td><td style="padding:6px 0;text-align:right;font-weight:700;color:#15131f">${v}</td></tr>`;
-    const html = `<!doctype html><html><body style="margin:0;background:#f4f1ea;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif">
-      <table width="100%" style="background:#f4f1ea;padding:24px 0"><tr><td align="center">
-        <table width="100%" style="max-width:480px;background:#fff;border-radius:14px;overflow:hidden">
-          <tr><td style="background:#0a0a1a;padding:18px;text-align:center"><span style="color:#d4af37;font-weight:700">VedicHour · Daily Digest</span></td></tr>
-          <tr><td style="padding:22px 24px"><p style="margin:0 0 14px;color:#4a4658">Last 24 hours:</p>
-            <table width="100%" style="font-size:15px">
-              ${row('New signups', String(signups))}
-              ${row('Reports started', String(reportsMade))}
-              ${row('Reports completed', String(completed))}
-              ${row('Paid reports', String(paidReports))}
-              ${row('Paid orders', String(orders))}
-              ${row('Revenue (USD)', '$' + Math.round(revenueUsd / 100).toLocaleString())}
-              ${row('Failed reports ⚠', String(failed))}
-            </table>
-            <a href="${SITE}/admin" style="display:inline-block;margin-top:18px;background:#d4af37;color:#1a1407;text-decoration:none;font-weight:700;padding:10px 20px;border-radius:9px">Open dashboard →</a>
-          </td></tr>
-        </table></td></tr></table></body></html>`;
+      `<tr><td style="padding:7px 0;border-bottom:1px solid #f0ece3;color:#6b6776;font-size:14px">${k}</td><td style="padding:7px 0;border-bottom:1px solid #f0ece3;text-align:right;font-weight:700;color:#15131f;font-size:15px">${v}</td></tr>`;
+    const content = `
+      <h1 style="margin:0 0 4px;font-size:20px;color:#15131f">Daily digest</h1>
+      <p style="margin:0 0 16px;font-size:13px;color:#6b6776">Last 24 hours</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${row('New signups', String(signups))}
+        ${row('Reports started', String(reportsMade))}
+        ${row('Reports completed', String(completed))}
+        ${row('Paid reports', String(paidReports))}
+        ${row('Paid orders', String(orders))}
+        ${row('Revenue (USD)', '$' + Math.round(revenueUsd / 100).toLocaleString())}
+        ${row('Failed reports', String(failed))}
+      </table>
+      <div style="margin-top:20px">${emailButton('Open dashboard', `${SITE}/admin`)}</div>`;
+    const html = emailShell({ preheader: `${signups} signups, $${Math.round(revenueUsd / 100)} revenue, ${orders} orders.`, contentHtml: content });
+    const text = plainText([
+      'VedicHour daily digest (last 24h):',
+      `Signups: ${signups}`, `Reports started: ${reportsMade}`, `Reports completed: ${completed}`,
+      `Paid reports: ${paidReports}`, `Paid orders: ${orders}`, `Revenue (USD): $${Math.round(revenueUsd / 100)}`,
+      `Failed reports: ${failed}`, '', `Dashboard: ${SITE}/admin`,
+    ]);
 
-    await sendEmail({ to: FOUNDER_EMAIL, subject: `VedicHour: ${signups} signups · $${Math.round(revenueUsd / 100)} · ${orders} orders (24h)`, html });
+    await sendEmail({ to: FOUNDER_EMAIL, subject: `VedicHour: ${signups} signups, $${Math.round(revenueUsd / 100)}, ${orders} orders (24h)`, html, text });
     return { ok: true };
   } catch (e) {
     console.error('[lifecycle/digest]', e);
@@ -65,17 +69,22 @@ export async function sendFounderDigest(): Promise<{ ok: boolean; skipped?: bool
 
 // ── Abandoned-checkout recovery ───────────────────────────────────────────
 function abandonedHtml(name: string): string {
-  return `<!doctype html><html><body style="margin:0;background:#f4f1ea;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif">
-    <table width="100%" style="background:#f4f1ea;padding:28px 0"><tr><td align="center">
-      <table width="100%" style="max-width:540px;background:#fff;border-radius:16px;overflow:hidden">
-        <tr><td style="background:#0a0a1a;padding:20px;text-align:center"><span style="color:#d4af37;font-size:20px;font-weight:700">VedicHour</span></td></tr>
-        <tr><td style="padding:26px 24px">
-          <h1 style="margin:0 0 10px;font-size:21px;color:#15131f">${name}, your reading is one step away ✨</h1>
-          <p style="margin:0 0 18px;font-size:15px;color:#4a4658;line-height:1.6">You started unlocking your VedicHour reading but didn't finish. Your chart is computed and ready — pick up where you left off, and use code <b>NEWUSER30</b> for 30% off.</p>
-          <a href="${SITE}/pricing?promo=NEWUSER30" style="display:inline-block;background:#d4af37;color:#1a1407;text-decoration:none;font-weight:700;padding:13px 26px;border-radius:10px;font-size:15px">Finish &amp; unlock →</a>
-          <p style="margin:18px 0 0;font-size:12px;color:#9a96a8">24-hour money-back guarantee. ${SITE}</p>
-        </td></tr>
-      </table></td></tr></table></body></html>`;
+  const content = `
+    <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#15131f">${name}, your reading is one step away</h1>
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#2a2730">You started unlocking your VedicHour reading but didn't finish. Your chart is already computed and ready &mdash; pick up where you left off, and use code <strong>NEWUSER30</strong> for 30% off.</p>
+    ${emailButton('Finish &amp; unlock', `${SITE}/pricing?promo=NEWUSER30`)}
+    <p style="margin:18px 0 0;font-size:13px;color:#6b6776">24-hour money-back guarantee.</p>`;
+  return emailShell({ preheader: `${name}, your reading is computed and ready to unlock.`, contentHtml: content });
+}
+function abandonedText(name: string): string {
+  return plainText([
+    `${name}, your VedicHour reading is one step away.`,
+    '',
+    `Your chart is computed and ready. Finish unlocking it and use code NEWUSER30 for 30% off:`,
+    `${SITE}/pricing?promo=NEWUSER30`,
+    '',
+    '24-hour money-back guarantee.',
+  ]);
 }
 
 export async function runAbandonedCheckoutRecovery(): Promise<{ ok: boolean; sent: number }> {
@@ -103,7 +112,7 @@ export async function runAbandonedCheckoutRecovery(): Promise<{ ok: boolean; sen
       if (!rep || rep.status === 'complete') continue;
       const email = (rep.user_email ?? '').trim();
       const name = ((rep.native_name ?? '').trim().split(' ')[0]) || 'there';
-      if (email) await sendEmail({ to: email, subject: `${name}, your VedicHour reading is one step away`, html: abandonedHtml(name) });
+      if (email) await sendEmail({ to: email, subject: `${name}, your VedicHour reading is one step away`, html: abandonedHtml(name), text: abandonedText(name) });
       const phone = (rep.phone ?? '').trim();
       if (phone) await sendWhatsApp({ to: phone, body: `Namaste ${name} 🙏 Your VedicHour reading is computed and ready to unlock — finish here: ${SITE}/pricing?promo=NEWUSER30 (NEWUSER30 = 30% off).` });
       sent++;

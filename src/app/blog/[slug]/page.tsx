@@ -53,15 +53,19 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         <h1 className="text-display-md font-display text-star mt-3 mb-2">{post.title}</h1>
         <p className="font-mono text-mono-sm text-dust/50 mb-8">{fmt(post.date)} · {post.readingTimeMin} min read</p>
 
-        {/* Branded title-card generated per post (not a static asset to optimize) */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`/blog/${post.slug}/opengraph-image`}
-          alt={post.title}
-          width={1200}
-          height={630}
-          className="w-full h-auto rounded-card border border-horizon/40 mb-8"
-        />
+        {/* Branded hero banner — pure CSS/SVG so it always renders (no dependency on
+            a serverless image route). The per-post OG image route is used only for
+            social/link previews via metadata. */}
+        <div
+          className="relative rounded-card border border-horizon/40 overflow-hidden mb-8 px-6 sm:px-10 py-12 sm:py-16"
+          style={{
+            background:
+              'radial-gradient(900px 400px at 85% 8%, rgba(212,175,55,0.18), transparent 60%), linear-gradient(135deg, #0a0a1a 0%, #0d1226 55%, #080610 100%)',
+          }}
+        >
+          <div className="font-mono text-mono-sm text-amber/80 uppercase tracking-[0.2em] mb-3">VedicHour &middot; Blog</div>
+          <div className="font-display text-2xl sm:text-4xl text-star leading-tight max-w-2xl">{post.title}</div>
+        </div>
 
         <article
           className="space-y-4 font-body text-body-md text-dust leading-relaxed [&_h2]:font-display [&_h2]:text-2xl [&_h2]:text-star [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:font-display [&_h3]:text-xl [&_h3]:text-amber [&_h3]:mt-7 [&_h3]:mb-2 [&_strong]:text-star [&_a]:text-amber [&_a]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-1 [&_p]:mb-4 [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_table]:text-body-sm [&_th]:text-left [&_th]:text-star [&_th]:font-display [&_th]:border-b [&_th]:border-horizon/50 [&_th]:py-2 [&_th]:px-3 [&_td]:border-b [&_td]:border-horizon/20 [&_td]:py-2 [&_td]:px-3 [&_td]:align-top"

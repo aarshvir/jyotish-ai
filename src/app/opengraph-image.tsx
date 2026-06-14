@@ -1,9 +1,10 @@
 import { ImageResponse } from 'next/og';
+import { ogFont } from '@/lib/og/ogFont';
 
 export const alt = 'VedicHour — Free Kundli & AI Jyotish Forecast';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 export default function OpengraphImage() {
   return new ImageResponse(
@@ -19,7 +20,7 @@ export default function OpengraphImage() {
           background:
             'radial-gradient(1200px 600px at 85% 10%, rgba(228,185,98,0.18), transparent 60%), linear-gradient(135deg, #080C18 0%, #0C1226 50%, #080C18 100%)',
           padding: 72,
-          fontFamily: 'serif',
+          fontFamily: 'Noto Sans',
           color: '#F5EFE0',
         }}
       >
@@ -29,7 +30,7 @@ export default function OpengraphImage() {
             alignItems: 'center',
             gap: 14,
             fontSize: 30,
-            fontFamily: 'monospace',
+            fontFamily: 'Noto Sans',
             color: '#E4B962',
             letterSpacing: '0.2em',
             textTransform: 'uppercase',
@@ -64,7 +65,7 @@ export default function OpengraphImage() {
             style={{
               fontSize: 32,
               color: 'rgba(245,239,224,0.72)',
-              fontFamily: 'sans-serif',
+              fontFamily: 'Noto Sans',
               maxWidth: 900,
               display: 'flex',
             }}
@@ -78,7 +79,7 @@ export default function OpengraphImage() {
             display: 'flex',
             alignItems: 'center',
             gap: 24,
-            fontFamily: 'monospace',
+            fontFamily: 'Noto Sans',
             fontSize: 22,
             color: 'rgba(245,239,224,0.6)',
           }}
@@ -91,6 +92,6 @@ export default function OpengraphImage() {
         </div>
       </div>
     ),
-    { ...size },
+    { ...size, fonts: [{ name: 'Noto Sans', data: ogFont(), style: 'normal', weight: 400 }] },
   );
 }
