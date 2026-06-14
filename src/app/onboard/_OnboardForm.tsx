@@ -17,6 +17,7 @@ interface GeoPrices { currency: string; prices: Record<string, GeoPrice>; }
 interface FormData {
   name: string;
   email: string;
+  phone: string;
   birthDate: string;
   birthTime: string;
   birthCity: string;
@@ -124,11 +125,16 @@ function Step1({ form, update, onNext }: Step1Props) {
   // RFC-5322 simplified: local@domain.tld, no spaces, at least one dot in domain
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const isValidEmail = (email: string) => EMAIL_RE.test(email.trim());
+  // Phone: digits, spaces, +, -, () allowed; require at least 7 digits.
+  const phoneDigits = (p: string) => p.replace(/\D/g, '');
+  const isValidPhone = (p: string) => phoneDigits(p).length >= 7;
   const [emailTouched, setEmailTouched] = useState(false);
   const [nameTouched, setNameTouched] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
   const emailInvalid = emailTouched && form.email.length > 0 && !isValidEmail(form.email);
   const nameInvalid = nameTouched && form.name.trim().length === 0;
-  const canProceed = form.name.trim().length > 0 && isValidEmail(form.email);
+  const phoneInvalid = phoneTouched && form.phone.length > 0 && !isValidPhone(form.phone);
+  const canProceed = form.name.trim().length > 0 && isValidEmail(form.email) && isValidPhone(form.phone);
 
   return (
     <>
@@ -178,6 +184,27 @@ function Step1({ form, update, onNext }: Step1Props) {
           {emailInvalid && (
             <p id="onboard-email-err" role="alert" className="text-caution text-xs mt-1.5">
               That doesn&apos;t look like a valid email — check for typos.
+            </p>
+          )}
+        </Field>
+        <Field label="Phone Number" htmlFor="onboard-phone" why="Our astrologer may call to discuss your reading. Never shared.">
+          <input
+            id="onboard-phone"
+            type="tel"
+            autoComplete="tel"
+            inputMode="tel"
+            className="cosmic-input"
+            placeholder="+91 98765 43210"
+            value={form.phone}
+            onChange={(e) => update('phone', e.target.value)}
+            onBlur={() => setPhoneTouched(true)}
+            aria-invalid={phoneInvalid || undefined}
+            aria-describedby={phoneInvalid ? 'onboard-phone-err' : undefined}
+            required
+          />
+          {phoneInvalid && (
+            <p id="onboard-phone-err" role="alert" className="text-caution text-xs mt-1.5">
+              Please enter a valid phone number with country code.
             </p>
           )}
         </Field>
@@ -541,7 +568,7 @@ function OnboardPageInner() {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
   const [form, setForm] = useState<FormData>({
-    name: '', email: '',
+    name: '', email: '', phone: '',
     birthDate: '', birthTime: '', birthCity: '',
     birthLat: null, birthLng: null,
     currentCity: '', currentLat: null, currentLng: null, currentTzOffset: null,
@@ -843,7 +870,7 @@ function OnboardPageInner() {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
         body: JSON.stringify({
           bypass: bypassToken, plan_type: paramsObj.plan_type ?? effectiveType,
-          name: form.name, birth_date: form.birthDate, birth_time: form.birthTime, birth_city: form.birthCity,
+          name: form.name, phone: form.phone, birth_date: form.birthDate, birth_time: form.birthTime, birth_city: form.birthCity,
         }),
       }).catch(() => {});
     }
@@ -892,6 +919,7 @@ function OnboardPageInner() {
             promoCode: promoCode || undefined,
             ...(preferredCurrency ? { currency: preferredCurrency } : {}),
             name: form.name,
+            phone: form.phone,
             birth_date: form.birthDate,
             birth_time: birthTimeNormPaid,
             birth_city: form.birthCity,
@@ -959,6 +987,7 @@ function OnboardPageInner() {
       const startPayload: Record<string, unknown> = {
         reportId,
         name: form.name,
+        phone: form.phone,
         birth_date: form.birthDate,
         birth_time: birthTimeNorm,
         birth_city: paramsObj.city,

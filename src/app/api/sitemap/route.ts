@@ -1,4 +1,7 @@
 import { POSTS } from '@/content/blog';
+import { NAKSHATRAS } from '@/content/nakshatras';
+import { DASHAS } from '@/content/dashas';
+import { PREDICTIONS } from '@/content/predictions';
 
 const SITE_URL = 'https://www.vedichour.com';
 
@@ -78,7 +81,17 @@ const BLOG_ROUTES = [
   ...POSTS.map((p) => ({ path: `/blog/${p.slug}`, changefreq: 'weekly', priority: '0.7' })),
 ];
 
-const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...BLOG_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
+// Programmatic reference hubs + leaves (nakshatras, dasha periods, life predictions).
+const REFERENCE_ROUTES = [
+  { path: '/nakshatra', changefreq: 'weekly', priority: '0.75' },
+  ...NAKSHATRAS.map((n) => ({ path: `/nakshatra/${n.slug}`, changefreq: 'monthly', priority: '0.7' })),
+  { path: '/dasha', changefreq: 'weekly', priority: '0.75' },
+  ...DASHAS.map((d) => ({ path: `/dasha/${d.slug}`, changefreq: 'monthly', priority: '0.7' })),
+  { path: '/predictions', changefreq: 'weekly', priority: '0.75' },
+  ...PREDICTIONS.map((p) => ({ path: `/predictions/${p.slug}`, changefreq: 'monthly', priority: '0.7' })),
+];
+
+const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...BLOG_ROUTES, ...REFERENCE_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
 
 export function GET() {
   const lastmod = new Date().toISOString();

@@ -67,6 +67,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Optional column: phone (migration 20260614_user_phone). Non-fatal on older DBs.
+    if (typeof body?.phone === 'string' && body.phone.trim() && data?.id) {
+      const { error: phoneErr } = await supabase
+        .from('reports')
+        .update({ phone: body.phone.trim() })
+        .eq('id', data.id);
+      if (phoneErr) console.warn('record-bypass-report phone update:', phoneErr.message);
+    }
+
     return NextResponse.json({ id: data?.id });
   } catch (e) {
     console.error('record-bypass-report:', e);

@@ -11,7 +11,7 @@ type Detail = {
   pageViewCount: number;
   pages: { path: string; count: number }[];
   journey: { name: string; path: string | null; at: string }[];
-  reports: { id: string; plan_type: string; status: string; payment_status: string; native_name: string; birth_date: string; created_at: string }[];
+  reports: { id: string; plan_type: string; status: string; payment_status: string; native_name: string; birth_date: string; phone?: string | null; created_at: string }[];
   kundalis: { id: string; person: Record<string, unknown>; overview: string; life_areas: Record<string, string>; year_outlook: { year: number; text: string }[]; doshas: Record<string, unknown>; created_at: string }[];
   synastries: { id: string; partner_a: Record<string, unknown>; partner_b: Record<string, unknown>; ashtakoot: Record<string, unknown>; commentary: string | null; created_at: string }[];
   payments: { plan_type: string; amount: number; currency: string; status: string; created_at: string }[];
@@ -54,6 +54,8 @@ export default function AdminUserDetail() {
   const totalPaid: Record<string, number> = {};
   for (const p of data.payments) if (p.status === 'completed') totalPaid[p.currency] = (totalPaid[p.currency] ?? 0) + p.amount;
 
+  const contactPhone = data.reports.find((r) => r.phone && r.phone.trim())?.phone?.trim() ?? null;
+
   return (
     <div className="space-y-8">
       <div>
@@ -62,6 +64,14 @@ export default function AdminUserDetail() {
         <p className="font-mono text-mono-sm text-dust/50 mt-1">
           Joined {d(data.user?.created_at)} · Last seen {d(data.user?.last_sign_in_at)}
         </p>
+        {contactPhone && (
+          <a
+            href={`tel:${contactPhone.replace(/[^\d+]/g, '')}`}
+            className="inline-flex items-center gap-2 mt-3 px-3.5 py-2 rounded-button border border-amber/40 bg-amber/10 text-amber font-mono text-mono-sm hover:bg-amber/20 transition-colors"
+          >
+            📞 Call {contactPhone}
+          </a>
+        )}
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -129,9 +139,22 @@ export default function AdminUserDetail() {
             </details>
           ))}
           {data.reports.map((r) => (
-            <div key={r.id} className="card border border-horizon/40 rounded-card p-4 flex items-center justify-between text-body-sm">
-              <span className="text-star">⏱ Forecast ({r.plan_type}) · {r.native_name} · {d(r.created_at)}</span>
-              <span className="font-mono text-mono-sm text-dust/60">{r.payment_status} · {r.status} · <Link href={`/report/${r.id}`} className="text-amber hover:underline">open ▸</Link></span>
+            <div key={r.id} className="card border border-horizon/40 rounded-card p-4 flex items-center justify-between text-body-sm gap-4">
+              <span className="text-star">
+                ⏱ Forecast ({r.plan_type}) · {r.native_name} · {d(r.created_at)}
+                {r.phone && r.phone.trim() && (
+                  <>
+                    {' · '}
+                    <a href={`tel:${r.phone.replace(/[^\d+]/g, '')}`} className="text-amber hover:underline">📞 {r.phone}</a>
+                  </>
+                )}
+              </span>
+              <span className="font-mono text-mono-sm text-dust/60 shrink-0">
+                {r.payment_status} · {r.status} ·{' '}
+                <Link href={`/report/${r.id}`} className="text-amber hover:underline">
+                  view full report ▸
+                </Link>
+              </span>
             </div>
           ))}
           {data.reports.length + data.kundalis.length + data.synastries.length === 0 && (
