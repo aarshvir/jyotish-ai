@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 export interface BirthDetails {
   name: string;
@@ -41,6 +41,11 @@ export function BirthDetailsInput({
   const [resolvedName, setResolvedName] = useState<string>('');
   const [unknownTime, setUnknownTime] = useState(false);
   const [lastExactTime, setLastExactTime] = useState<string | null>(null);
+  const timeInputRef = useRef<HTMLInputElement | null>(null);
+
+  function timeValueToStoredTime(timeValue: string): string {
+    return timeValue ? `${timeValue}:00` : '';
+  }
 
   async function geocodeCity(city: string) {
     const q = city.trim();
@@ -97,12 +102,13 @@ export function BirthDetailsInput({
         <label className="block text-body-sm text-dust">
           Birth time
           <input
+            ref={timeInputRef}
             type="time"
             disabled={unknownTime}
             className={`${inputCls} ${unknownTime ? 'opacity-50 cursor-not-allowed' : ''}`}
             value={value.birth_time?.slice(0, 5)}
             onChange={(e) => {
-              const nextTime = `${e.target.value}:00`;
+              const nextTime = timeValueToStoredTime(e.target.value);
               setLastExactTime(nextTime);
               onChange({ ...value, birth_time: nextTime });
             }}
@@ -121,7 +127,9 @@ export function BirthDetailsInput({
                 const checked = e.target.checked;
                 setUnknownTime(checked);
                 if (checked) {
-                  if (value.birth_time) setLastExactTime(value.birth_time);
+                  const displayedTime = timeValueToStoredTime(timeInputRef.current?.value ?? '');
+                  const exactTime = displayedTime || value.birth_time;
+                  if (exactTime) setLastExactTime(exactTime);
                   onChange({ ...value, birth_time: '12:00:00' });
                 } else {
                   onChange({ ...value, birth_time: lastExactTime ?? value.birth_time });
