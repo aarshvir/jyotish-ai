@@ -77,6 +77,12 @@ export const metadata: Metadata = {
   publisher: 'VedicHour',
   alternates: {
     canonical: '/',
+    // Serves one English site to global + India (₹) via geo currency; annotate locales.
+    languages: {
+      'en-IN': '/',
+      'en-US': '/',
+      'x-default': '/',
+    },
   },
   openGraph: {
     type: 'website',
@@ -166,11 +172,6 @@ export default function RootLayout({
                   description: SITE_DESCRIPTION,
                   publisher: { '@id': `${SITE_URL}#organization` },
                   inLanguage: 'en',
-                  potentialAction: {
-                    '@type': 'SearchAction',
-                    target: { '@type': 'EntryPoint', urlTemplate: `${SITE_URL}/onboard?q={search_term_string}` },
-                    'query-input': 'required name=search_term_string',
-                  },
                 },
                 {
                   '@type': 'SoftwareApplication',
