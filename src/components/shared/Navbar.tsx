@@ -17,9 +17,12 @@ const AuthButton = dynamic(() => import('@/components/shared/AuthButton'), {
 });
 
 const NAV_LINKS = [
-  { href: '/kundali', label: 'Kundali' },
+  { href: '/kundali', label: 'Kundli' },
   { href: '/synastry', label: 'Matchmaking' },
+  { href: '/#how-it-works', label: 'How it works' },
   { href: '/pricing', label: 'Pricing' },
+  { href: '/blog', label: 'Blog' },
+  { href: '/#faq', label: 'FAQ' },
 ] as const;
 
 export default function Navbar() {
@@ -91,7 +94,7 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop links */}
-          <div className="hidden items-center gap-7 font-body text-body-sm text-dust lg:flex">
+          <div className="hidden items-center gap-5 font-body text-body-sm text-dust lg:flex">
             {NAV_LINKS.map((l) => (
               <Link
                 key={l.href}
