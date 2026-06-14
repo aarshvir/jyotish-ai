@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 type Row = {
   id: string;
@@ -60,7 +61,7 @@ export default function AdminUsers() {
           <tbody>
             {users.map((u) => (
               <tr key={u.id} className="border-t border-horizon/30">
-                <td className="py-2 pr-4 text-star">{u.email}</td>
+                <td className="py-2 pr-4"><Link href={`/admin/users/${u.id}`} className="text-amber hover:underline">{u.email}</Link></td>
                 <td className="pr-4 text-dust/60">{u.created_at ? u.created_at.slice(0, 10) : '—'}</td>
                 <td className="pr-4">{u.reports}</td>
                 <td className="pr-4">{u.paidReports}</td>

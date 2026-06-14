@@ -70,6 +70,47 @@ export default function AdminOverview() {
           </div>
         )}
       </div>
+
+      <FunnelSection />
+    </div>
+  );
+}
+
+type Stage = { key: string; label: string; count: number; basis: string };
+
+function FunnelSection() {
+  const [stages, setStages] = useState<Stage[] | null>(null);
+  const [note, setNote] = useState('');
+  useEffect(() => {
+    fetch('/api/admin/funnel')
+      .then((r) => r.json())
+      .then((j) => { if (!j.error) { setStages(j.stages); setNote(j.note ?? ''); } })
+      .catch(() => {});
+  }, []);
+  if (!stages) return null;
+  const top = stages[0]?.count || 0;
+  return (
+    <div className="card border border-horizon/40 rounded-card p-5 mt-8">
+      <h2 className="font-display text-xl text-star mb-1">Conversion funnel</h2>
+      <p className="font-mono text-mono-sm text-dust/40 mb-5">{note}</p>
+      <div className="space-y-4">
+        {stages.map((s, i) => {
+          const pctOfTop = top ? Math.round((s.count / top) * 100) : 0;
+          const prev = i > 0 ? stages[i - 1].count : s.count;
+          const stepPct = prev ? Math.round((s.count / prev) * 100) : 100;
+          return (
+            <div key={s.key}>
+              <div className="flex justify-between font-body text-body-sm mb-1">
+                <span className="text-star">{s.label} <span className="text-dust/40 font-mono text-mono-sm">({s.basis})</span></span>
+                <span className="text-amber">{s.count} · {pctOfTop}%{i > 0 ? <span className="text-dust/50"> · {stepPct}% step</span> : null}</span>
+              </div>
+              <div className="h-3 rounded-full bg-bg-3/40 overflow-hidden">
+                <div className="h-full bg-amber/70 rounded-full" style={{ width: `${pctOfTop}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
