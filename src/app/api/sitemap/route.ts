@@ -1,3 +1,5 @@
+import { POSTS } from '@/content/blog';
+
 const SITE_URL = 'https://www.vedichour.com';
 
 const PLANETS = [
@@ -71,7 +73,12 @@ function horoscopeRoutes(): { path: string; changefreq: string; priority: string
   return out;
 }
 
-const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
+const BLOG_ROUTES = [
+  { path: '/blog', changefreq: 'daily', priority: '0.7' },
+  ...POSTS.map((p) => ({ path: `/blog/${p.slug}`, changefreq: 'weekly', priority: '0.7' })),
+];
+
+const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...BLOG_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
 
 export function GET() {
   const lastmod = new Date().toISOString();

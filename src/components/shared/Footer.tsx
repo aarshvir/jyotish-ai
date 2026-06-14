@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { NewsletterSignup } from '@/components/newsletter/NewsletterSignup';
 
 const READINGS = [
   { href: '/pricing', label: 'Hour-by-Hour Forecast' },
@@ -20,6 +21,7 @@ const TOOLS = [
 
 const COMPANY = [
   { href: '/#how-it-works', label: 'How It Works' },
+  { href: '/blog', label: 'Blog' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/refund', label: 'Refund Policy' },
   { href: '/privacy', label: 'Privacy' },
@@ -50,6 +52,12 @@ export default function Footer() {
   return (
     <footer className="border-t border-horizon/40 py-12 md:py-14">
       <div className="max-w-6xl mx-auto px-6">
+        <div className="mb-10 pb-8 border-b border-horizon/30">
+          <h3 className="font-display text-headline-sm text-star mb-1">Weekly Vedic timing tips</h3>
+          <p className="font-body text-body-sm text-dust/70 mb-3">Hour-by-hour guidance, new tools, and seasonal forecasts — no spam.</p>
+          <NewsletterSignup source="footer" />
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
             <span className="font-display font-semibold text-lg tracking-wide text-star/70">VedicHour</span>
