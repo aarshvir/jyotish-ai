@@ -344,9 +344,16 @@ export async function finalizeCompletedZiinaIntent(
   }
 
   if (reportForPayment && boundUserId) {
+    // Bind the report's plan to what was actually PAID for (the ziina_payments row),
+    // not whatever plan the draft row was created with — closes the pay-7day-get-annual
+    // escalation on the finalize auto-dispatch path (which reads reports.plan_type).
     await db
       .from('reports')
-      .update({ payment_status: 'paid', payment_provider: 'ziina' })
+      .update({
+        payment_status: 'paid',
+        payment_provider: 'ziina',
+        ...(planType ? { plan_type: planType } : {}),
+      })
       .eq('id', reportId)
       .eq('user_id', boundUserId);
   }
