@@ -82,6 +82,8 @@ const nextConfig = {
     ],
     outputFileTracingIncludes: {
       '/api/**/*': ['./data/scriptures/**/*'],
+      '/opengraph-image': ['./assets/og-noto-sans.ttf'],
+      '/blog/[slug]/opengraph-image': ['./assets/og-noto-sans.ttf'],
     },
   },
 };
