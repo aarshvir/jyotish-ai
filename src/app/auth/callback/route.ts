@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { sendWelcomeEmail } from '@/lib/notify/welcome';
+import { createServiceClient } from '@/lib/supabase/admin';
+import { referralCodeFor } from '@/lib/referral';
 
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
 const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
@@ -77,6 +79,20 @@ export async function GET(request: NextRequest) {
           }).eq('id', user.id);
           if (ftErr && !/(first_touch|column|schema cache)/.test(ftErr.message ?? '')) {
             console.warn('first_touch persist:', ftErr.message);
+          }
+        }
+      } catch { /* never break auth */ }
+
+      // Referral: give this user a code, and record who referred them (service client —
+      // referrals/other-profile reads are service-only). Tolerant of pre-migration DBs.
+      try {
+        const svc = createServiceClient();
+        await svc.from('user_profiles').update({ referral_code: referralCodeFor(user.id) }).eq('id', user.id);
+        const refCode = request.cookies.get('vh_ref')?.value?.trim();
+        if (refCode) {
+          const { data: referrer } = await svc.from('user_profiles').select('id').eq('referral_code', refCode).maybeSingle();
+          if (referrer?.id && referrer.id !== user.id) {
+            await svc.from('referrals').insert({ referrer_id: referrer.id, referee_id: user.id, code: refCode });
           }
         }
       } catch { /* never break auth */ }

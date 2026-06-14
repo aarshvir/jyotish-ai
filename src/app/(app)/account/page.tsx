@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Footer from '@/components/shared/Footer';
@@ -10,6 +10,20 @@ export default function AccountPage() {
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [ref, setRef] = useState<{ link: string; count: number } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/account/referral', { credentials: 'include' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => j && setRef({ link: j.link, count: j.count }))
+      .catch(() => {});
+  }, []);
+
+  function copyRef() {
+    if (!ref) return;
+    navigator.clipboard?.writeText(ref.link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {});
+  }
 
   async function deleteAccount() {
     setErr(null);
@@ -40,6 +54,17 @@ export default function AccountPage() {
       <main className="flex-1 max-w-2xl mx-auto px-5 sm:px-8 py-16 w-full">
         <h1 className="font-display text-3xl text-star mb-2">Your account &amp; privacy</h1>
         <p className="font-body text-body-md text-dust mb-10">Manage your personal data. VedicHour stores your birth details to compute your charts — you control them here.</p>
+
+        {ref && (
+          <section className="card border border-amber/30 rounded-card p-6 mb-6 bg-amber/[0.03]">
+            <h2 className="font-display text-xl text-star mb-2">Refer friends</h2>
+            <p className="font-body text-body-sm text-dust mb-4">Share your link. When friends sign up through it, you&apos;ll be credited.{ref.count > 0 ? ` You've referred ${ref.count} so far.` : ''}</p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input readOnly value={ref.link} className="cosmic-input flex-1 font-mono text-mono-sm" onFocus={(e) => e.currentTarget.select()} />
+              <button type="button" onClick={copyRef} className="btn-primary px-5 py-2.5 shrink-0">{copied ? 'Copied ✓' : 'Copy link'}</button>
+            </div>
+          </section>
+        )}
 
         <section className="card border border-horizon/40 rounded-card p-6 mb-6">
           <h2 className="font-display text-xl text-star mb-2">Export your data</h2>
