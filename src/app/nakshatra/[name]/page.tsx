@@ -21,7 +21,7 @@ export function generateMetadata({ params }: { params: { name: string } }): Meta
     description: n.description,
     keywords: n.keywords,
     alternates: { canonical: `/nakshatra/${n.slug}` },
-    openGraph: { title: n.title, description: n.description, type: 'article' },
+    openGraph: { title: n.title, description: n.description, type: 'article', images: ['/opengraph-image'] },
   };
 }
 

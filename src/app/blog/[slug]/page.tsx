@@ -22,7 +22,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
     description: post.description,
     keywords: post.keywords,
     alternates: { canonical: `/blog/${post.slug}` },
-    openGraph: { title: post.title, description: post.description, type: 'article' },
+    openGraph: { title: post.title, description: post.description, type: 'article', images: ['/opengraph-image'] },
   };
 }
 
@@ -30,9 +30,19 @@ function fmt(date: string) {
   return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function relatedPosts(slug: string, keywords: string[], n = 3) {
+  const kw = new Set(keywords.map((k) => k.toLowerCase()));
+  return POSTS.filter((p) => p.slug !== slug)
+    .map((p) => ({ p, overlap: p.keywords.filter((k) => kw.has(k.toLowerCase())).length }))
+    .sort((a, b) => b.overlap - a.overlap || b.p.date.localeCompare(a.p.date))
+    .slice(0, n)
+    .map((x) => x.p);
+}
+
 export default function BlogPostPage({ params }: { params: { slug: string } }) {
   const post = getPost(params.slug);
   if (!post) notFound();
+  const related = relatedPosts(post.slug, post.keywords);
 
   return (
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
@@ -49,6 +59,20 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         />
 
         {post.faqs && post.faqs.length > 0 && <FaqSection faqs={post.faqs} heading="Frequently asked" />}
+
+        {related.length > 0 && (
+          <div className="mt-14">
+            <h2 className="font-display text-xl text-star mb-4">Keep reading</h2>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {related.map((r) => (
+                <Link key={r.slug} href={`/blog/${r.slug}`} className="group card-interactive p-4 block">
+                  <div className="font-display text-base text-star group-hover:text-amber-light transition-colors leading-snug">{r.title}</div>
+                  <div className="font-mono text-mono-sm text-dust/50 mt-1">{r.readingTimeMin} min read</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mt-14 card border border-amber/30 rounded-card p-6 text-center">
           <p className="font-display text-headline-sm text-star mb-3">Get weekly Vedic timing tips</p>
