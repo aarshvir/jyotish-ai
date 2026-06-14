@@ -22,7 +22,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
     description: post.description,
     keywords: post.keywords,
     alternates: { canonical: `/blog/${post.slug}` },
-    openGraph: { title: post.title, description: post.description, type: 'article', images: ['/opengraph-image'] },
+    openGraph: { title: post.title, description: post.description, type: 'article', images: [`/blog/${post.slug}/opengraph-image`] },
   };
 }
 
@@ -53,8 +53,18 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         <h1 className="text-display-md font-display text-star mt-3 mb-2">{post.title}</h1>
         <p className="font-mono text-mono-sm text-dust/50 mb-8">{fmt(post.date)} · {post.readingTimeMin} min read</p>
 
+        {/* Branded title-card generated per post (not a static asset to optimize) */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/blog/${post.slug}/opengraph-image`}
+          alt={post.title}
+          width={1200}
+          height={630}
+          className="w-full h-auto rounded-card border border-horizon/40 mb-8"
+        />
+
         <article
-          className="space-y-4 font-body text-body-md text-dust leading-relaxed [&_h2]:font-display [&_h2]:text-2xl [&_h2]:text-star [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:font-display [&_h3]:text-xl [&_h3]:text-amber [&_h3]:mt-7 [&_h3]:mb-2 [&_strong]:text-star [&_a]:text-amber [&_a]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-1 [&_p]:mb-4"
+          className="space-y-4 font-body text-body-md text-dust leading-relaxed [&_h2]:font-display [&_h2]:text-2xl [&_h2]:text-star [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:font-display [&_h3]:text-xl [&_h3]:text-amber [&_h3]:mt-7 [&_h3]:mb-2 [&_strong]:text-star [&_a]:text-amber [&_a]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-1 [&_p]:mb-4 [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_table]:text-body-sm [&_th]:text-left [&_th]:text-star [&_th]:font-display [&_th]:border-b [&_th]:border-horizon/50 [&_th]:py-2 [&_th]:px-3 [&_td]:border-b [&_td]:border-horizon/20 [&_td]:py-2 [&_td]:px-3 [&_td]:align-top"
           dangerouslySetInnerHTML={{ __html: post.html }}
         />
 

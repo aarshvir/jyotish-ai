@@ -15,7 +15,9 @@ import { post as bestAiVedicApp } from "./best-ai-vedic-astrology-app-2026";
 import { post as bestTimeToStartBusiness } from './best-time-to-start-business-astrology';
 import { post as careerAstrology } from './career-astrology-10th-house';
 import { post as scienceOfTiming } from './science-of-timing-vedic-muhurta';
+import { post as bestPlatforms } from './best-vedic-astrology-platforms-2026';
 export const POSTS: BlogPost[] = [
+  bestPlatforms,
   scienceOfTiming,
   careerAstrology,
   gunMilan,
