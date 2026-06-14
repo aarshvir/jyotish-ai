@@ -18,6 +18,8 @@ interface BirthDetailsInputProps {
   label?: string;
   /** Show the display-name field (default true). */
   showName?: boolean;
+  /** Show the noon fallback toggle for users who do not know an exact birth time. */
+  allowUnknownTime?: boolean;
 }
 
 /**
@@ -26,12 +28,19 @@ interface BirthDetailsInputProps {
  * so they never have to enter latitude/longitude by hand. Shared by the
  * Matchmaking and Kundali forms.
  */
-export function BirthDetailsInput({ value, onChange, label, showName = true }: BirthDetailsInputProps) {
+export function BirthDetailsInput({
+  value,
+  onChange,
+  label,
+  showName = true,
+  allowUnknownTime = true,
+}: BirthDetailsInputProps) {
   const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>(
     value.birth_lat && value.birth_lng ? 'ok' : 'idle',
   );
   const [resolvedName, setResolvedName] = useState<string>('');
   const [unknownTime, setUnknownTime] = useState(false);
+  const [lastExactTime, setLastExactTime] = useState<string | null>(null);
 
   async function geocodeCity(city: string) {
     const q = city.trim();
@@ -92,28 +101,42 @@ export function BirthDetailsInput({ value, onChange, label, showName = true }: B
             disabled={unknownTime}
             className={`${inputCls} ${unknownTime ? 'opacity-50 cursor-not-allowed' : ''}`}
             value={value.birth_time?.slice(0, 5)}
-            onChange={(e) => onChange({ ...value, birth_time: `${e.target.value}:00` })}
+            onChange={(e) => {
+              const nextTime = `${e.target.value}:00`;
+              setLastExactTime(nextTime);
+              onChange({ ...value, birth_time: nextTime });
+            }}
           />
         </label>
       </div>
 
-      <label className="flex items-center gap-2 text-body-sm text-dust/80 cursor-pointer -mt-1">
-        <input
-          type="checkbox"
-          className="accent-amber"
-          checked={unknownTime}
-          onChange={(e) => {
-            const checked = e.target.checked;
-            setUnknownTime(checked);
-            if (checked) onChange({ ...value, birth_time: '12:00:00' });
-          }}
-        />
-        Don&apos;t know the exact birth time? We&apos;ll use noon.
-      </label>
-      {unknownTime && (
-        <p className="font-mono text-mono-sm text-dust/50 -mt-1">
-          Noon (12:00) is the standard astrological default — your Moon sign, nakshatra and Gun Milan stay accurate; only the rising sign (Lagna) needs an exact time.
-        </p>
+      {allowUnknownTime && (
+        <>
+          <label className="flex items-center gap-2 text-body-sm text-dust/80 cursor-pointer -mt-1">
+            <input
+              type="checkbox"
+              className="accent-amber"
+              checked={unknownTime}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setUnknownTime(checked);
+                if (checked) {
+                  if (value.birth_time) setLastExactTime(value.birth_time);
+                  onChange({ ...value, birth_time: '12:00:00' });
+                } else {
+                  onChange({ ...value, birth_time: lastExactTime ?? value.birth_time });
+                }
+              }}
+            />
+            Don&apos;t know the exact birth time? We&apos;ll use noon.
+          </label>
+          {unknownTime && (
+            <p className="font-mono text-mono-sm text-dust/50 -mt-1">
+              Noon (12:00) is the standard fallback when birth time is unknown. Exact Lagna,
+              Moon nakshatra timing, and Gun Milan details can change with the true time.
+            </p>
+          )}
+        </>
       )}
 
       <label className="block text-body-sm text-dust">

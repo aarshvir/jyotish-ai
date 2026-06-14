@@ -27,6 +27,8 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
+import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/server';
+import { resolveReportPlanForStart } from '@/lib/reports/startEntitlements';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -123,6 +125,7 @@ interface StartRequestBody {
   timezone_offset?: string | number | null;
   plan_type?: string;
   payment_status?: string;
+  promoCode?: string;
   forecast_start?: string;
   forceRestart?: boolean;
   testOptions?: { disableRag?: boolean };
@@ -171,50 +174,61 @@ function safeNonPaidPaymentStatus(
   requested: string | null | undefined,
   planType: string | null | undefined,
 ): string {
-  if (requested === 'promo' || requested === 'free' || requested === 'bypass') return requested;
+  if (requested === 'free' || requested === 'bypass') return requested;
   const normalizedPlan = (planType ?? '').trim();
   return normalizedPlan === 'free' || normalizedPlan === 'preview' ? 'free' : 'unpaid';
 }
 
-async function hasCompletedZiinaPayment(
+type ZiinaPaymentBinding = {
+  completedPlanType: string | null;
+  pendingPlanType: string | null;
+};
+
+async function getZiinaPaymentBinding(
   db: ReturnType<typeof createServiceClient>,
   reportId: string,
   userId: string,
-): Promise<boolean> {
+): Promise<ZiinaPaymentBinding> {
   const { data, error } = await db
     .from('ziina_payments')
-    .select('ziina_intent_id')
+    .select('plan_type, status')
     .eq('report_id', reportId)
     .eq('user_id', userId)
-    .eq('status', 'completed')
-    .limit(1)
-    .maybeSingle();
+    .in('status', ['completed', 'pending'])
+    .order('created_at', { ascending: false })
+    .limit(10);
 
   if (error) {
-    console.warn('[reports/start] completed payment lookup failed:', error.message);
-    return false;
+    console.warn('[reports/start] payment binding lookup failed:', error.message);
+    return { completedPlanType: null, pendingPlanType: null };
   }
-  return !!data;
+
+  const rows = (Array.isArray(data) ? data : []) as Array<{ plan_type?: string | null; status?: string | null }>;
+  return {
+    completedPlanType: rows.find((row) => row.status === 'completed')?.plan_type ?? null,
+    pendingPlanType: rows.find((row) => row.status === 'pending')?.plan_type ?? null,
+  };
 }
 
-async function resolveTrustedPaymentStatus(
-  db: ReturnType<typeof createServiceClient>,
-  reportId: string,
-  userId: string,
+function resolveTrustedPaymentStatus(
   body: StartRequestBody,
   existing: ExistingReportForStart | null,
   isAdmin: boolean,
-): Promise<string> {
+  hasCompletedPayment: boolean,
+): string {
   if (isAdmin && typeof body.payment_status === 'string' && body.payment_status.trim() !== '') {
     return body.payment_status.trim();
   }
 
-  if (await hasCompletedZiinaPayment(db, reportId, userId)) {
+  if (hasCompletedPayment) {
     return 'paid';
   }
 
+  if (existing?.payment_status === 'promo') return 'promo';
+  if (existing?.payment_status === 'bypass') return 'bypass';
+
   return safeNonPaidPaymentStatus(
-    typeof body.payment_status === 'string' ? body.payment_status : existing?.payment_status,
+    typeof body.payment_status === 'string' ? body.payment_status : undefined,
     body.plan_type ?? existing?.plan_type,
   );
 }
@@ -369,25 +383,84 @@ export async function POST(request: NextRequest) {
         : 0;
 
   const nowIso = new Date().toISOString();
-  const trustedPaymentStatus = await resolveTrustedPaymentStatus(
-    db,
-    reportId,
-    auth.user.id,
+  const paymentBinding = await getZiinaPaymentBinding(db, reportId, auth.user.id);
+  const planEntitlement = resolveReportPlanForStart({
+    requestedPlanType: body.plan_type,
+    existingPlanType: existing?.plan_type,
+    completedPaymentPlanType: paymentBinding.completedPlanType,
+    pendingPaymentPlanType: paymentBinding.pendingPlanType,
+  });
+  body.plan_type = planEntitlement.effectivePlanType;
+  let trustedPaymentStatus = resolveTrustedPaymentStatus(
     body,
     existing,
     auth.isAdmin === true,
+    paymentBinding.completedPlanType != null,
   );
 
   // ── Entitlement gate ────────────────────────────────────────────────
   // Login is already enforced above. Policy: each user gets exactly ONE free
   // report (the free preview); every paid plan requires a verified completed
-  // payment. Admins (owner) bypass. Client-claimed promo/bypass do NOT entitle
-  // here — only 'paid' (a real completed Ziina payment) passes.
+  // payment, a server-validated 100% promo redemption, or admin owner bypass.
   const userIsAdmin = auth.isAdmin === true || (await isAdmin(auth.user.email));
-  const planNorm = (body.plan_type ?? existing?.plan_type ?? '7day').trim().toLowerCase();
-  const isFreePlan = planNorm === 'free' || planNorm === 'preview';
+  const isFreePlan = planEntitlement.isFreePlan;
+  let promoCodeIdToRedeem: string | null = null;
 
-  if (!isFreePlan && trustedPaymentStatus !== 'paid' && !userIsAdmin) {
+  if (
+    !isFreePlan &&
+    trustedPaymentStatus !== 'paid' &&
+    trustedPaymentStatus !== 'promo' &&
+    !userIsAdmin &&
+    typeof body.promoCode === 'string' &&
+    body.promoCode.trim() !== ''
+  ) {
+    const promo = await getPromoDiscount(body.promoCode, auth.user.email);
+    if (!promo.valid) {
+      await releaseLock(lockKey);
+      return NextResponse.json(
+        {
+          error: promo.reason ?? 'Invalid coupon code',
+          code: 'INVALID_PROMO',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 400 },
+      );
+    }
+    if (promo.discountPct < 100) {
+      await releaseLock(lockKey);
+      return NextResponse.json(
+        {
+          error: 'Payment is required to generate this report.',
+          code: 'PAYMENT_REQUIRED',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 402 },
+      );
+    }
+    if (promo.oncePerUser && promo.codeId && (await hasUserRedeemed(promo.codeId, auth.user.id))) {
+      await releaseLock(lockKey);
+      return NextResponse.json(
+        {
+          error: 'You have already used this coupon.',
+          code: 'PROMO_ALREADY_USED',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 400 },
+      );
+    }
+    trustedPaymentStatus = 'promo';
+    promoCodeIdToRedeem = promo.codeId ?? null;
+  }
+
+  if (
+    !isFreePlan &&
+    trustedPaymentStatus !== 'paid' &&
+    trustedPaymentStatus !== 'promo' &&
+    !userIsAdmin
+  ) {
     await releaseLock(lockKey);
     return NextResponse.json(
       {
@@ -419,22 +492,6 @@ export async function POST(request: NextRequest) {
         { status: 402 },
       );
     }
-  }
-
-  // Bind the report's plan to what was actually paid for — prevents paying for a
-  // 7-day plan then requesting 'annual' (the completed-payment check is plan-agnostic).
-  if (!isFreePlan && userIsAdmin !== true) {
-    const { data: paidRow } = await db
-      .from('ziina_payments')
-      .select('plan_type')
-      .eq('report_id', reportId)
-      .eq('user_id', auth.user.id)
-      .eq('status', 'completed')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const paidPlan = (paidRow as { plan_type?: string } | null)?.plan_type;
-    if (paidPlan) body.plan_type = paidPlan;
   }
 
   // Guard: refuse to generate for unresolved birth coordinates. A geocode failure
@@ -502,6 +559,14 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 },
     );
+  }
+
+  if (promoCodeIdToRedeem) {
+    try {
+      await redeemPromoCode(promoCodeIdToRedeem, auth.user.id, reportId);
+    } catch (e) {
+      console.warn('[reports/start] promo redeem failed after entitlement:', e);
+    }
   }
 
   // Optional columns (see migrations 20260426 / 20260427) — omit from upsert so older DBs work.
