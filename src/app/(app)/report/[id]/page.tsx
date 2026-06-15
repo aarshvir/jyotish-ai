@@ -19,6 +19,7 @@ import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 import { DailyAnalysis } from '@/components/report/DailyAnalysis';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { Glossary } from '@/components/report/Glossary';
+import { AskQuestion } from '@/components/report/AskQuestion';
 import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
 import { reportDataToMarkdown } from '@/lib/pdf/reportDataToMarkdown';
@@ -1310,6 +1311,20 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
   const isPreviewPlan =
     !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview');
 
+  // Compact, bounded context for the paid "ask your report" box.
+  const askContext = [
+    natalChart?.lagna ? `Rising sign (Lagna): ${natalChart.lagna}` : '',
+    reportData?.synthesis ? `Overview synthesis: ${reportData.synthesis}` : '',
+    Array.isArray(reportData?.months) && reportData.months.length
+      ? `Monthly outlook: ${(reportData.months as Array<{ month?: string; theme?: string; commentary?: string }>)
+          .map((m) => `${m.month ?? ''} — ${m.theme || m.commentary || ''}`)
+          .join(' || ')}`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+    .slice(0, 6000);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1526,6 +1541,12 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
                 dailyScores={mergedDays.map((d) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
                 onDayClick={handleDaySelectFromCalendar}
               />
+            </ReportErrorBoundary>
+          )}
+
+          {!isPreviewPlan && (
+            <ReportErrorBoundary fallbackTitle="Ask a question">
+              <AskQuestion reportId={reportIdFromRoute} context={askContext} headers={authJsonHeaders()} />
             </ReportErrorBoundary>
           )}
 
