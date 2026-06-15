@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
     // payment always has a row to mark paid + generate.
     name?: string;
     phone?: string;
+    personal_context?: string;
     birth_date?: string;
     birth_time?: string;
     birth_city?: string;
@@ -269,6 +270,23 @@ export async function POST(request: NextRequest) {
           const m = phoneErr.message ?? '';
           if (!m.includes('phone') && !m.includes('schema cache')) {
             console.warn('[ziina/create-intent] phone update failed:', m);
+          }
+        }
+      }
+
+      // Optional column: personal_context (migration 20260617). Tolerant of older DBs;
+      // personalizes the LLM commentary. Persisted via a separate update because the draft
+      // upsert above uses ignoreDuplicates (no-op on an existing row).
+      if (typeof body.personal_context === 'string' && body.personal_context.trim()) {
+        const { error: pcErr } = await db
+          .from('reports')
+          .update({ personal_context: body.personal_context.trim().slice(0, 1200) })
+          .eq('id', reportId)
+          .eq('user_id', auth.user.id);
+        if (pcErr) {
+          const m = pcErr.message ?? '';
+          if (!m.includes('personal_context') && !m.includes('schema cache')) {
+            console.warn('[ziina/create-intent] personal_context update failed:', m);
           }
         }
       }

@@ -42,6 +42,7 @@ export async function POST(req: NextRequest) {
     jyotishRagMode?: string;
     jyotish_rag_mode?: string;
     require_scripture_grounding?: boolean;
+    personal_context_block?: string;
   };
 
   try {
@@ -61,6 +62,8 @@ export async function POST(req: NextRequest) {
   const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
   const mahadasha = sanitizePlanetName(body.mahadasha);
   const antardasha = sanitizePlanetName(body.antardasha);
+  // Pre-sanitized seeker context block, built once in the orchestrator ('' if none).
+  const personalContextBlock = typeof body.personal_context_block === 'string' ? body.personal_context_block : '';
   if (!lagnaSign) {
     return NextResponse.json({ error: 'lagnaSign required' }, { status: 400 });
   }
@@ -93,7 +96,7 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const systemPrompt = `You are an experienced Vedic astrologer who explains things in warm, plain English to someone with NO astrology background. Write in flowing paragraphs (no bullets). You may mention a planet, sign, or house when it genuinely adds meaning — but in the SAME sentence, translate what it means for the person's real life in everyday words. Never leave a Sanskrit or technical term unexplained. Prioritise what the chart says about their personality, strengths, challenges, and the current chapter of their life over technical detail.
+  const systemPrompt = `You are an experienced Vedic astrologer who explains things in warm, plain English to someone with NO astrology background. Write in flowing paragraphs (no bullets). You may mention a planet, sign, or house when it genuinely adds meaning — but in the SAME sentence, translate what it means for the person's real life in everyday words. Never leave a Sanskrit or technical term unexplained. Prioritise what the chart says about their personality, strengths, challenges, and the current chapter of their life over technical detail.${personalContextBlock}
 
 Return ONLY valid JSON with two keys: lagna_analysis, dasha_interpretation. No markdown, no backticks.`;
 

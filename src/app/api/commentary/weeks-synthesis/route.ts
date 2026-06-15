@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
     planet_positions_by_date?: DayAnchorInput[];
     scripture_context?: string;
     require_scripture_grounding?: boolean;
+    personal_context_block?: string;
   };
 
   try {
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest) {
   const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
   const mahadasha = sanitizePlanetName(body.mahadasha);
   const antardasha = sanitizePlanetName(body.antardasha);
+  const personalContextBlock = typeof body.personal_context_block === 'string' ? body.personal_context_block : '';
   const { weeks, synthesis_context, planet_positions_by_date } = body;
   if (!lagnaSign || !weeks?.length) {
     return NextResponse.json({ error: 'lagnaSign and weeks required' }, { status: 400 });
@@ -114,7 +116,7 @@ LANGUAGE RULES:
 - Mars hora = action and career energy. Jupiter hora = wisdom, planning, expansion. Venus hora = relationships, creativity, money. Saturn hora = discipline, slow steady progress. Mercury hora = communication, writing, learning.
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
-${horaBlock}
+${horaBlock}${personalContextBlock}
 
 Return ONLY valid JSON. No markdown, no backticks.`;
 

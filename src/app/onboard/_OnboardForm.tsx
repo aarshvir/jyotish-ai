@@ -29,6 +29,7 @@ interface FormData {
   currentTzOffset: number | null;
   reportType: ReportPlanId;
   forecastStartDate: string;
+  personalContext: string;
 }
 
 interface GeoResult {
@@ -367,6 +368,22 @@ function Step2({ form, update, geo, geoLoading, geoError, onGeocode,
             />
           </Field>
         </div>
+
+        <div className="pt-3 border-t border-horizon/30">
+          <Field label="What's on your mind?" hint="Optional" htmlFor="onboard-personal-context"
+                 why="Tell us what matters to you right now — goals, worries, or anything about your life. We use it to make your reading more specific to you.">
+            <textarea
+              id="onboard-personal-context"
+              className="cosmic-input min-h-[88px] resize-y"
+              rows={3}
+              maxLength={1200}
+              placeholder="e.g. I'm weighing a career change and worried about money and my relationship…"
+              value={form.personalContext}
+              onChange={(e) => update('personalContext', e.target.value.slice(0, 1200))}
+            />
+            <span className="mt-1 block font-mono text-mono-sm text-dust/40">{form.personalContext.length}/1200</span>
+          </Field>
+        </div>
       </div>
 
       <div className="flex gap-3 mt-7">
@@ -574,6 +591,7 @@ function OnboardPageInner() {
     currentCity: '', currentLat: null, currentLng: null, currentTzOffset: null,
     reportType: 'free',
     forecastStartDate: '',
+    personalContext: '',
   });
   const [geo, setGeo] = useState<GeoResult | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -932,6 +950,7 @@ function OnboardPageInner() {
               current_lng: form.currentLng,
             } : {}),
             ...(form.forecastStartDate ? { forecast_start: form.forecastStartDate } : {}),
+            ...(form.personalContext.trim() ? { personal_context: form.personalContext.trim() } : {}),
           }),
         });
         if (!intentRes.ok) {
@@ -1000,6 +1019,7 @@ function OnboardPageInner() {
         payment_status: isPaidPlan ? 'promo' : 'free',
         timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
         ...(form.forecastStartDate ? { forecast_start: form.forecastStartDate } : {}),
+        ...(form.personalContext.trim() ? { personal_context: form.personalContext.trim() } : {}),
         ...(useCurrent ? {
           current_city: form.currentCity,
           current_lat: form.currentLat ?? 0,
