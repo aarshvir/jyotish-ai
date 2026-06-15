@@ -113,6 +113,7 @@ interface StartRequestBody {
   reportId?: string;
   name?: string;
   phone?: string;
+  personal_context?: string;
   birth_date?: string;
   birth_time?: string;
   birth_city?: string;
@@ -619,6 +620,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Optional column: personal_context (migration 20260617_reports_personal_context). Kept out of
+  // the upsert so older DBs still generate; personalizes the LLM commentary.
+  if (typeof body.personal_context === 'string' && body.personal_context.trim()) {
+    const { error: pcErr } = await db
+      .from('reports')
+      .update({ personal_context: body.personal_context.trim().slice(0, 1200), updated_at: nowIso })
+      .eq('id', reportId)
+      .eq('user_id', auth.user.id);
+    if (pcErr) {
+      const m = pcErr.message ?? '';
+      if (!m.includes('personal_context') && !m.includes('schema cache')) {
+        console.warn('[reports/start] personal_context update failed:', m);
+      }
+    }
+  }
+
   // Reset append-only log when the column exists (migration). Omitted from upsert so older
   // DBs without `reports.generation_log` still accept the row; clears stale log on restart.
   await clearReportGenerationLog(reportId, auth.user.id);
@@ -665,6 +682,7 @@ export async function POST(request: NextRequest) {
     forecastStart: body.forecast_start ?? undefined,
     planType: body.plan_type ?? '7day',
     paymentStatus: trustedPaymentStatus,
+    ...(body.personal_context?.trim() ? { personalContext: body.personal_context.trim().slice(0, 1200) } : {}),
     ...(ragRaw != null && String(ragRaw).trim() !== ''
       ? { jyotishRagMode: String(ragRaw).trim() }
       : {}),

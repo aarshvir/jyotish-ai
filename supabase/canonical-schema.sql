@@ -83,6 +83,7 @@ CREATE TABLE IF NOT EXISTS reports (
   plan_type TEXT NOT NULL DEFAULT '7day',
   report_start_date DATE,
   report_end_date DATE,
+  personal_context TEXT,
   lagna_sign TEXT,
   moon_sign TEXT,
   moon_nakshatra TEXT,

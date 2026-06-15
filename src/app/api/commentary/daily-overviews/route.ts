@@ -112,6 +112,7 @@ export async function POST(req: NextRequest) {
     }>;
     scripture_context?: string;
     require_scripture_grounding?: boolean;
+    personal_context_block?: string;
   };
 
     try {
@@ -128,6 +129,7 @@ export async function POST(req: NextRequest) {
     const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
     const mahadasha = sanitizePlanetName(body.mahadasha);
     const antardasha = sanitizePlanetName(body.antardasha);
+    const personalContextBlock = typeof body.personal_context_block === 'string' ? body.personal_context_block : '';
     const { days } = body;
     if (!lagnaSign) {
       return NextResponse.json({ days: [] }, { status: 200 });
@@ -165,7 +167,7 @@ LANGUAGE RULES:
 - Never write "H-notation" in the output. Say "your career zone", "your relationship house", "your money area" instead.
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA (use these exactly):
-${horaBlock}
+${horaBlock}${personalContextBlock}
 
 Return ONLY valid JSON. No markdown, no backticks.`;
 
