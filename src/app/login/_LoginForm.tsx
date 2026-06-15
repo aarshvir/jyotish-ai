@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { safeInternalPath } from '@/lib/url/safeInternalPath';
 
 function humanizeAuthError(raw: string | null | undefined): string {
   if (!raw) return '';
@@ -63,7 +64,7 @@ function LoginInner() {
     setError('');
     setInfo('');
     const supabase = createClient();
-    const next = new URLSearchParams(window.location.search).get('next') ?? '/dashboard';
+    const next = safeInternalPath(new URLSearchParams(window.location.search).get('next'));
     const { error: oauthErr } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -109,7 +110,7 @@ function LoginInner() {
       );
     }
 
-    const next = searchParams.get('next') ?? '/dashboard';
+    const next = safeInternalPath(searchParams.get('next'));
     router.push(next);
     router.refresh();
   }
