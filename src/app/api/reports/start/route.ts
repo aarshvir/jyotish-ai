@@ -27,6 +27,7 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
+import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/server';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -123,6 +124,7 @@ interface StartRequestBody {
   timezone_offset?: string | number | null;
   plan_type?: string;
   payment_status?: string;
+  promoCode?: string;
   forecast_start?: string;
   forceRestart?: boolean;
   testOptions?: { disableRag?: boolean };
@@ -171,7 +173,9 @@ function safeNonPaidPaymentStatus(
   requested: string | null | undefined,
   planType: string | null | undefined,
 ): string {
-  if (requested === 'promo' || requested === 'free' || requested === 'bypass') return requested;
+  // A client-claimed 'promo'/'bypass' no longer entitles by itself — only a real
+  // completed payment ('paid') or a server-validated promo (see POST handler) does.
+  if (requested === 'free') return 'free';
   const normalizedPlan = (planType ?? '').trim();
   return normalizedPlan === 'free' || normalizedPlan === 'preview' ? 'free' : 'unpaid';
 }
@@ -406,7 +410,51 @@ export async function POST(request: NextRequest) {
   const planNorm = (body.plan_type ?? existing?.plan_type ?? '7day').trim().toLowerCase();
   const isFreePlan = planNorm === 'free' || planNorm === 'preview';
 
-  if (!isFreePlan && trustedPaymentStatus !== 'paid' && !userIsAdmin) {
+  // Server-validated 100%-off promo entitlement. A non-admin who supplies a valid
+  // full-discount code (e.g. ADMIN100, opened to everyone) may generate a paid-forecast
+  // report without payment. The code is validated against the DB here — a client-claimed
+  // 'promo' alone never passes (safeNonPaidPaymentStatus no longer echoes it). Anything
+  // less than 100% still requires real payment.
+  let promoCodeIdToRedeem: string | null = null;
+  const requestedPromo =
+    typeof body.payment_status === 'string' && body.payment_status.trim() === 'promo';
+  const isPaidForecastPlan = planNorm === '7day' || planNorm === 'monthly' || planNorm === 'annual';
+  if (
+    !isFreePlan &&
+    isPaidForecastPlan &&
+    requestedPromo &&
+    trustedPaymentStatus !== 'paid' &&
+    !userIsAdmin &&
+    typeof body.promoCode === 'string' &&
+    body.promoCode.trim() !== ''
+  ) {
+    const promo = await getPromoDiscount(body.promoCode, auth.user.email);
+    if (!promo.valid) {
+      await releaseLock(lockKey);
+      return NextResponse.json(
+        { error: promo.reason ?? 'Invalid coupon code', code: 'INVALID_PROMO', engine: 'none' as ReportStartEngine, dispatch_mode: 'blocked' as ReportStartDispatchMode },
+        { status: 400 },
+      );
+    }
+    if (promo.discountPct < 100) {
+      await releaseLock(lockKey);
+      return NextResponse.json(
+        { error: 'Payment is required to generate this report.', code: 'PAYMENT_REQUIRED', engine: 'none' as ReportStartEngine, dispatch_mode: 'blocked' as ReportStartDispatchMode },
+        { status: 402 },
+      );
+    }
+    if (promo.oncePerUser && promo.codeId && (await hasUserRedeemed(promo.codeId, auth.user.id))) {
+      await releaseLock(lockKey);
+      return NextResponse.json(
+        { error: 'You have already used this coupon.', code: 'PROMO_ALREADY_USED', engine: 'none' as ReportStartEngine, dispatch_mode: 'blocked' as ReportStartDispatchMode },
+        { status: 400 },
+      );
+    }
+    trustedPaymentStatus = 'promo';
+    promoCodeIdToRedeem = promo.codeId ?? null;
+  }
+
+  if (!isFreePlan && trustedPaymentStatus !== 'paid' && trustedPaymentStatus !== 'promo' && !userIsAdmin) {
     await releaseLock(lockKey);
     return NextResponse.json(
       {
@@ -521,6 +569,16 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 },
     );
+  }
+
+  // Book the server-validated promo redemption now that the report row exists.
+  // Idempotent per report (order_id = reportId) so a retry/forceRestart never double-counts.
+  if (promoCodeIdToRedeem) {
+    try {
+      await redeemPromoCode(promoCodeIdToRedeem, auth.user.id, reportId);
+    } catch (e) {
+      console.warn('[reports/start] promo redeem failed (non-fatal):', e);
+    }
   }
 
   // Optional columns (see migrations 20260426 / 20260427) — omit from upsert so older DBs work.

@@ -82,13 +82,34 @@ export async function hasUserRedeemed(codeId: string, userId: string): Promise<b
   return Boolean(data);
 }
 
-/** Increment used_count and record the redemption. Idempotent per order_id. */
+/**
+ * Record a promo redemption and bump used_count — atomically + idempotently per order_id.
+ * Returns true when a NEW redemption was booked, false when it was a duplicate (no-op).
+ * Prefers the `redeem_promo_code` RPC (insert-then-conditional-increment in one DB call);
+ * falls back to the legacy non-atomic path only when that function isn't deployed yet.
+ */
 export async function redeemPromoCode(
   codeId: string,
   userId: string,
   orderId?: string,
-): Promise<void> {
+): Promise<boolean> {
   const supabase = createServiceClient();
+
+  if (orderId) {
+    const { data, error } = await supabase.rpc('redeem_promo_code', {
+      p_code_id: codeId,
+      p_user_id: userId,
+      p_order_id: orderId,
+    });
+    if (!error) return data === true;
+    // Only fall back when the function isn't migrated yet; otherwise surface the error.
+    const msg = error.message ?? '';
+    if (!/function|does not exist|schema cache|could not find/i.test(msg)) {
+      throw new Error(`redeem_promo_code: ${msg}`);
+    }
+  }
+
+  // Legacy fallback (no order_id, or RPC not yet applied): best-effort, non-atomic.
   await Promise.all([
     supabase.rpc('increment_promo_used_count', { p_code_id: codeId }),
     supabase.from('promo_redemptions').insert({
@@ -97,4 +118,5 @@ export async function redeemPromoCode(
       order_id: orderId ?? null,
     }),
   ]);
+  return true;
 }
