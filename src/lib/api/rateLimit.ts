@@ -108,4 +108,6 @@ export const RATE_LIMITS = {
   ephemeris: { limit: 30, windowMs: 60_000 },
   /** Validation: 5 per 60s (each triggers multiple LLM calls) */
   validation: { limit: 5, windowMs: 60_000 },
+  /** Ask-a-question: user-initiated LLM call on the report — 6 per 5 min per user */
+  ask: { limit: 6, windowMs: 5 * 60_000 },
 } as const;
