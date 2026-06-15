@@ -148,6 +148,7 @@ type ExistingReportForStart = {
   user_id: string | null;
   status: string | null;
   report_data: unknown;
+  personal_context: string | null;
   generation_started_at: string | null;
   plan_type: string | null;
   payment_status: string | null;
@@ -280,7 +281,7 @@ export async function POST(request: NextRequest) {
   const db = createServiceClient();
   const { data: existingRaw, error: existingErr } = await db
     .from('reports')
-    .select('user_id, status, report_data, generation_started_at, plan_type, payment_status, payment_provider')
+    .select('user_id, status, report_data, personal_context, generation_started_at, plan_type, payment_status, payment_provider')
     .eq('id', reportId)
     .maybeSingle();
 
@@ -682,7 +683,11 @@ export async function POST(request: NextRequest) {
     forecastStart: body.forecast_start ?? undefined,
     planType: body.plan_type ?? '7day',
     paymentStatus: trustedPaymentStatus,
-    ...(body.personal_context?.trim() ? { personalContext: body.personal_context.trim().slice(0, 1200) } : {}),
+    // Prefer the freshly-submitted context; fall back to the persisted column so a
+    // report-page retry / "Try Again" (which omits the field) stays personalized.
+    ...(((body.personal_context?.trim()) || existing?.personal_context?.trim())
+      ? { personalContext: ((body.personal_context?.trim() || existing?.personal_context || '').slice(0, 1200)) }
+      : {}),
     ...(ragRaw != null && String(ragRaw).trim() !== ''
       ? { jyotishRagMode: String(ragRaw).trim() }
       : {}),

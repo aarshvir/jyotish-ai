@@ -1676,6 +1676,7 @@ export async function generateReportPipeline(
         startMonth: forecastDays[0].date.substring(0, 7),
         scripture_context: monthlyScriptureContext,
         require_scripture_grounding: requireScriptureGrounding,
+        personal_context_block: personalContextBlock,
         reference_planet_positions: forecastDays[0]?.planet_positions,
         reference_planet_positions_date: forecastDays[0]?.date,
         reference_panchang: forecastDays[0]?.panchang,

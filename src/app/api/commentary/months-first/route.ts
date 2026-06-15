@@ -83,6 +83,7 @@ export async function POST(req: NextRequest) {
     reference_rahu_kaal?: { start?: string; end?: string };
     scripture_context?: string;
     require_scripture_grounding?: boolean;
+    personal_context_block?: string;
   };
 
   try {
@@ -102,6 +103,7 @@ export async function POST(req: NextRequest) {
   const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
   const mahadasha = sanitizePlanetName(body.mahadasha);
   const antardasha = sanitizePlanetName(body.antardasha);
+  const personalContextBlock = typeof body.personal_context_block === 'string' ? body.personal_context_block : '';
   const {
     months,
     reference_planet_positions,
@@ -152,7 +154,7 @@ LANGUAGE RULES:
 - Key transit ingress hints (if provided) are real planetary movements — reference them as plain-English events: "Jupiter enters [sign] in [month] — this shifts focus to [plain meaning]."
 
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA:
-${horaBlock}
+${horaBlock}${personalContextBlock}
 
 Return ONLY valid JSON. No markdown, no backticks.`;
 
