@@ -18,6 +18,7 @@ import { MonthlyAnalysis } from '@/components/report/MonthlyAnalysis';
 import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 import { DailyAnalysis } from '@/components/report/DailyAnalysis';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
+import { Glossary } from '@/components/report/Glossary';
 import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
 import { reportDataToMarkdown } from '@/lib/pdf/reportDataToMarkdown';
@@ -1666,6 +1667,10 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             medical, legal, or financial decisions, consult a qualified professional.
           </p>
         </section>
+
+        <div className="mt-10">
+          <Glossary />
+        </div>
 
         {/* In-report upsell — preview plan only; excluded from PDF */}
         {isPreviewPlan && (
