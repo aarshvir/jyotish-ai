@@ -153,17 +153,30 @@ export interface ZiinaPaymentIntent {
   currency_code: string;
 }
 
+/**
+ * Resolve the charge amount (base units) for a plan in a currency after an optional
+ * percentage discount. Single source of truth shared by createPaymentIntent and the
+ * pending-intent reuse check, so an "expected amount" can never drift from what was
+ * actually charged.
+ */
+export function computeIntentAmount(
+  planType: string,
+  currency: SupportedCurrency,
+  discountPct?: number,
+): number {
+  const baseAmount = getPlanAmount(planType, currency);
+  if (planType === 'monthly_upgrade') {
+    return applyDiscount(baseAmount, UPGRADE_DELTA_DISCOUNT_PCT, currency);
+  }
+  if (discountPct && discountPct > 0) {
+    return applyDiscount(baseAmount, discountPct, currency);
+  }
+  return baseAmount;
+}
+
 export async function createPaymentIntent(input: CreatePaymentIntentInput): Promise<ZiinaPaymentIntent> {
   const token = getApiToken();
-  const baseAmount = getPlanAmount(input.planType, input.currency);
-  let amount: number;
-  if (input.planType === 'monthly_upgrade') {
-    amount = applyDiscount(baseAmount, UPGRADE_DELTA_DISCOUNT_PCT, input.currency);
-  } else if (input.discountPct && input.discountPct > 0) {
-    amount = applyDiscount(baseAmount, input.discountPct, input.currency);
-  } else {
-    amount = baseAmount;
-  }
+  const amount = computeIntentAmount(input.planType, input.currency, input.discountPct);
   const plan = ZIINA_PLANS[input.planType]!;
 
   const body = {

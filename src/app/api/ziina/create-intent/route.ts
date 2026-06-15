@@ -6,10 +6,12 @@ import {
   createPaymentIntent,
   countryToCurrency,
   getPaymentIntent,
+  computeIntentAmount,
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
 import { getPromoDiscount, redeemPromoCode, hasUserRedeemed } from '@/lib/promo/server';
+import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
 import { createServiceClient } from '@/lib/supabase/admin';
 
 /**
@@ -192,13 +194,21 @@ export async function POST(request: NextRequest) {
         );
       } else if (existingPayment?.ziina_intent_id) {
         const existingIntent = await getPaymentIntent(existingPayment.ziina_intent_id);
-        return NextResponse.json({
-          intentId: existingIntent.id,
-          redirectUrl: existingIntent.redirect_url,
-          currency,
-          amount: existingIntent.amount,
-          discountPct,
-        });
+        // Only reuse the recent pending intent if it still matches the buyer's current
+        // currency + amount (and is still awaiting payment). If they switched currency or
+        // applied/changed a promo since, fall through and create a FRESH intent so they
+        // aren't redirected to a stale intent with the wrong amount.
+        const expectedAmount = computeIntentAmount(planType, currency, discountPct);
+        const reusable = getReusablePendingZiinaIntent(existingIntent, { currency, expectedAmount });
+        if (reusable) {
+          return NextResponse.json({
+            intentId: reusable.id,
+            redirectUrl: reusable.redirect_url,
+            currency,
+            amount: reusable.amount,
+            discountPct,
+          });
+        }
       }
     }
 
