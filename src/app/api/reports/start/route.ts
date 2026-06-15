@@ -191,8 +191,10 @@ async function hasCompletedZiinaPayment(
     .maybeSingle();
 
   if (error) {
+    // Throw (not return false) so the caller surfaces a retryable 503 instead of
+    // silently downgrading a genuinely-paid user to 'unpaid' and showing a misleading 402.
     console.warn('[reports/start] completed payment lookup failed:', error.message);
-    return false;
+    throw new Error('completed payment lookup failed');
   }
   return !!data;
 }
@@ -369,14 +371,31 @@ export async function POST(request: NextRequest) {
         : 0;
 
   const nowIso = new Date().toISOString();
-  const trustedPaymentStatus = await resolveTrustedPaymentStatus(
-    db,
-    reportId,
-    auth.user.id,
-    body,
-    existing,
-    auth.isAdmin === true,
-  );
+  let trustedPaymentStatus: string;
+  try {
+    trustedPaymentStatus = await resolveTrustedPaymentStatus(
+      db,
+      reportId,
+      auth.user.id,
+      body,
+      existing,
+      auth.isAdmin === true,
+    );
+  } catch (e) {
+    // Transient payment-verification failure (e.g. DB lookup error). Fail closed, but
+    // tell the client it's retryable (503) rather than a misleading 402 "payment required".
+    console.warn('[reports/start] payment verification unavailable:', e);
+    await releaseLock(lockKey);
+    return NextResponse.json(
+      {
+        error: 'Unable to verify payment status right now. Please retry in a moment.',
+        code: 'PAYMENT_VERIFY_UNAVAILABLE',
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 503 },
+    );
+  }
 
   // ── Entitlement gate ────────────────────────────────────────────────
   // Login is already enforced above. Policy: each user gets exactly ONE free

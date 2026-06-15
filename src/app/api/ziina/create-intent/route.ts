@@ -232,6 +232,12 @@ export async function POST(request: NextRequest) {
               ? body.timezone_offset
               : parseInt(String(body.timezone_offset ?? '0'), 10) || 0,
           plan_type: planType,
+          // Persist the buyer's chosen forecast start date so the post-payment
+          // auto-dispatch (finalizeIntent) generates from it instead of defaulting to today.
+          report_start_date:
+            typeof body.forecast_start === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.forecast_start)
+              ? body.forecast_start
+              : null,
           status: 'pending',
           payment_status: 'unpaid',
         },
