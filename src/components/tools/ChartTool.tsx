@@ -51,6 +51,9 @@ export function ChartTool({
   const [res, setRes] = useState<ChartResult | null>(null);
 
   const valid = !!(d.birth_date && d.birth_lat && d.birth_lng);
+  // Lagna (ascendant) and the full chart depend on an exact birth time, so the
+  // "use noon" shortcut would defeat the calculation — hide it for those views.
+  const requiresExactBirthTime = view === 'lagna' || view === 'fullchart';
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -85,9 +88,9 @@ export function ChartTool({
   return (
     <div className="max-w-xl mx-auto">
       <form onSubmit={onSubmit} className="card border border-horizon rounded-card p-6 space-y-4">
-        <BirthDetailsInput value={d} onChange={setD} showName={false} />
-        {view === 'lagna' && (
-          <p className="font-mono text-mono-sm text-dust/60">An exact birth time is required for an accurate ascendant.</p>
+        <BirthDetailsInput value={d} onChange={setD} showName={false} allowUnknownTime={!requiresExactBirthTime} />
+        {requiresExactBirthTime && (
+          <p className="font-mono text-mono-sm text-dust/60">An exact birth time is required for an accurate {view === 'lagna' ? 'ascendant' : 'chart'}.</p>
         )}
         {err && <p className="text-caution text-body-sm">{err}</p>}
         <button type="submit" disabled={loading} className="btn-primary w-full py-3 disabled:opacity-50">
