@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
+import { requireAuth } from '@/lib/api/requireAuth';
 
 const styles = StyleSheet.create({
   page: { padding: 40, fontSize: 10, fontFamily: 'Helvetica' },
@@ -176,6 +177,9 @@ function ReportPdfDocument({ payload }: { payload: PdfReportPayload }) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireAuth(request);
+    if (auth instanceof NextResponse) return auth;
+
     const payload: PdfReportPayload = await request.json();
 
     if (!payload?.name) {
