@@ -6,6 +6,7 @@ import {
   createPaymentIntent,
   countryToCurrency,
   getPaymentIntent,
+  computeIntentAmount,
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
@@ -194,10 +195,11 @@ export async function POST(request: NextRequest) {
       } else if (existingPayment?.ziina_intent_id) {
         const existingIntent = await getPaymentIntent(existingPayment.ziina_intent_id);
         // Only reuse the recent pending intent if it still matches the buyer's current
-        // currency + amount (and isn't dead). If they switched currency or applied a
-        // promo since, fall through and create a FRESH intent so they aren't charged
-        // the stale amount.
-        const reusable = getReusablePendingZiinaIntent(existingIntent, { planType, currency, discountPct });
+        // currency + amount (and is still awaiting payment). If they switched currency or
+        // applied/changed a promo since, fall through and create a FRESH intent so they
+        // aren't redirected to a stale intent with the wrong amount.
+        const expectedAmount = computeIntentAmount(planType, currency, discountPct);
+        const reusable = getReusablePendingZiinaIntent(existingIntent, { currency, expectedAmount });
         if (reusable) {
           return NextResponse.json({
             intentId: reusable.id,
@@ -207,7 +209,6 @@ export async function POST(request: NextRequest) {
             discountPct,
           });
         }
-        console.log('[ziina/create-intent] not reusing stale pending intent (currency/amount/status changed); creating fresh');
       }
     }
 

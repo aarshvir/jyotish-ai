@@ -5,51 +5,41 @@
  * The create-intent route reuses a recent pending intent (within 90s) to avoid
  * spawning duplicates. But it must NOT reuse one whose currency or amount no longer
  * matches what the buyer now wants — otherwise a user who switched currency or applied
- * a promo between attempts would be charged the STALE amount. This validates that.
+ * a promo between attempts would be redirected to the STALE intent and charged the
+ * wrong amount. This validates the existing intent against the buyer's current request.
  */
-import {
-  applyDiscount,
-  getPlanAmount,
-  type SupportedCurrency,
-  type ZiinaPaymentIntent,
-} from '@/lib/ziina/server';
+import type { SupportedCurrency, ZiinaPaymentIntent } from '@/lib/ziina/server';
 
-/** Ziina statuses where the intent is still payable (a fresh redirect would charge). */
+/** Ziina statuses where the intent is still pending/awaiting payment (a fresh redirect would charge). */
 const PAYABLE_STATUSES: ReadonlySet<ZiinaPaymentIntent['status']> = new Set<ZiinaPaymentIntent['status']>([
   'requires_payment_instrument',
   'requires_user_action',
   'pending',
 ]);
 
-/** The amount (base units) a plan should cost in a currency after an optional % discount. */
-export function expectedIntentAmount(
-  planType: string,
-  currency: SupportedCurrency,
-  discountPct: number,
-): number {
-  const base = getPlanAmount(planType, currency);
-  return discountPct > 0 ? applyDiscount(base, discountPct, currency) : base;
+export interface ReusableIntentRequest {
+  /** The currency the buyer is checking out in now. */
+  currency: SupportedCurrency;
+  /** The amount (base units) this checkout should cost now — see computeIntentAmount. */
+  expectedAmount: number;
 }
 
 /**
- * Return the existing intent if it should be reused, or null if the caller must
- * create a fresh one.
+ * Return the existing intent only if it is still pending/awaiting AND its currency and
+ * amount match the buyer's current selection; otherwise return null so the caller
+ * creates a fresh intent.
  *
- * - completed  → reuse (the buyer already paid; never spawn a new chargeable intent)
- * - payable + same currency + same amount → reuse (the normal abandon-and-return case)
- * - payable but currency/amount changed   → null (buyer switched currency or applied a
- *                                            promo; the stale intent would charge wrong)
- * - failed / canceled / missing           → null (dead intent — make a fresh one)
+ * - pending/awaiting + same currency + same amount → reuse (normal abandon-and-return)
+ * - currency or amount changed (currency switch / promo applied) → null (stale → fresh)
+ * - completed / failed / canceled / missing → null (not pending → fresh)
  */
 export function getReusablePendingZiinaIntent(
-  intent: ZiinaPaymentIntent | null | undefined,
-  want: { planType: string; currency: SupportedCurrency; discountPct: number },
+  existingIntent: ZiinaPaymentIntent | null | undefined,
+  { currency, expectedAmount }: ReusableIntentRequest,
 ): ZiinaPaymentIntent | null {
-  if (!intent) return null;
-  // Never create a fresh chargeable intent over one that's already paid.
-  if (intent.status === 'completed') return intent;
-  if (!PAYABLE_STATUSES.has(intent.status)) return null;
-  if (intent.currency_code !== want.currency) return null;
-  if (intent.amount !== expectedIntentAmount(want.planType, want.currency, want.discountPct)) return null;
-  return intent;
+  if (!existingIntent) return null;
+  if (!PAYABLE_STATUSES.has(existingIntent.status)) return null;
+  if (existingIntent.currency_code !== currency) return null;
+  if (existingIntent.amount !== expectedAmount) return null;
+  return existingIntent;
 }
