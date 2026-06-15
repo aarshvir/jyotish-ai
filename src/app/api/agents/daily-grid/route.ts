@@ -22,14 +22,19 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
 
-  const { date, currentLat, currentLng, timezoneOffset, natal_lagna_sign_index } =
-    await request.json() as {
-      date: string;
-      currentLat: number;
-      currentLng: number;
-      timezoneOffset: number;
-      natal_lagna_sign_index: number;
-    };
+  let body: {
+    date: string;
+    currentLat: number;
+    currentLng: number;
+    timezoneOffset: number;
+    natal_lagna_sign_index: number;
+  };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+  const { date, currentLat, currentLng, timezoneOffset, natal_lagna_sign_index } = body;
 
   if (!date || natal_lagna_sign_index === undefined) {
     return NextResponse.json(

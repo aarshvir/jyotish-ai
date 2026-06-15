@@ -75,6 +75,8 @@ export async function GET(
       // Initial hello so the client knows the connection is live.
       send('hello', { reportId, t: Date.now() });
 
+      // Stop polling after repeated DB errors so a persistent failure can't loop for 15 min.
+      let consecutiveErrors = 0;
       async function pollOnce() {
         if (Date.now() - startedAt > MAX_STREAM_MS) {
           send('timeout', { reason: 'stream_max_duration' });
@@ -91,9 +93,12 @@ export async function GET(
           }
           const { data, error } = await query.maybeSingle();
           if (error) {
+            consecutiveErrors += 1;
             send('error', { message: error.message });
+            if (consecutiveErrors >= 3) closeStream();
             return;
           }
+          consecutiveErrors = 0;
           if (!data) {
             send('error', { message: 'not_found' });
             closeStream();

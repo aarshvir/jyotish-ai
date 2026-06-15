@@ -154,7 +154,7 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
 
       {/* Tab strip — one tab per day */}
       <div className="overflow-x-auto scrollbar-thin">
-        <div className="flex gap-2 min-w-max pb-2">
+        <div className="flex gap-2 min-w-max pb-2" role="tablist" aria-label="Forecast days">
           {(days ?? []).map((day, i) => (
             <button
               key={day?.date || i}

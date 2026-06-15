@@ -32,8 +32,10 @@ export async function POST(req: NextRequest) {
   await db.from('analytics_events').delete().eq('user_id', uid);
   // De-identify financial + feedback records (retained for legal/tax, no PII link).
   await db.from('ziina_payments').update({ user_id: null }).eq('user_id', uid);
-  await db.from('feedback').update({ user_id: null }).eq('user_id', uid);
+  await db.from('feedback').update({ user_id: null, email: null }).eq('user_id', uid);
   if (email) await db.from('newsletter_subscribers').delete().eq('email', email);
+  // Legacy promo usage table keyed on email (tolerant: missing-table error is ignored).
+  if (email) await db.from('promo_usage').delete().eq('user_email', email);
   await db.from('user_profiles').delete().eq('id', uid);
 
   const { error } = await db.auth.admin.deleteUser(uid);

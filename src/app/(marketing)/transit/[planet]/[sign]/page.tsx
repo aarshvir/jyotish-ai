@@ -1,5 +1,6 @@
 import { StarField } from '@/components/ui/StarField';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 
 export const revalidate = 86400;
@@ -110,6 +111,10 @@ export async function generateStaticParams() {
 
 export default function TransitSEOPage({ params }: Props) {
   const { planet, sign } = params;
+  // Invalid combos → real 404 (not a thin soft-404). All valid combos are pre-generated.
+  if (!(PLANETS as readonly string[]).includes(planet) || !(SIGNS as readonly string[]).includes(sign)) {
+    notFound();
+  }
 
   const pName = planet.charAt(0).toUpperCase() + planet.slice(1);
   const sName = sign.charAt(0).toUpperCase() + sign.slice(1);
@@ -204,7 +209,7 @@ export default function TransitSEOPage({ params }: Props) {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-8">
             <Link
-              href={`/onboard?transit=${planet}_${sign}`}
+              href={`/onboard?plan=free&transit=${planet}_${sign}`}
               className="btn-primary w-full sm:w-auto px-8 py-3"
             >
               Generate My Personalised Jyotish Report

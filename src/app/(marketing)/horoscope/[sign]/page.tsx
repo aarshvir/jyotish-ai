@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { StarField } from '@/components/ui/StarField';
 import { HOROSCOPE_SIGNS } from '@/lib/seo/horoscopeContent';
 
@@ -21,11 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default function HoroscopeSignIndex({ params }: Props) {
   const sign = params.sign?.toLowerCase() ?? '';
   if (!HOROSCOPE_SIGNS.includes(sign as (typeof HOROSCOPE_SIGNS)[number])) {
-    return (
-      <div className="min-h-screen bg-space text-star p-8">
-        <Link href="/" className="text-amber">Home</Link>
-      </div>
-    );
+    notFound();
   }
 
   const dates: string[] = [];

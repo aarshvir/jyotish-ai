@@ -87,13 +87,13 @@ export default function CurrencySwitcher({
     [current, onChange]
   );
 
-  const padding = size === 'md' ? 'px-4 py-2 text-sm' : 'px-3 py-2.5 text-xs';
+  const padding = size === 'md' ? 'px-4 py-2 text-sm' : 'px-3 py-2.5 text-xs min-h-[44px]';
 
   return (
     <div
       role="radiogroup"
       aria-label="Currency"
-      className={`inline-flex items-center gap-0.5 p-0.5 rounded-pill bg-bg-3 border border-horizon/30 ${className}`}
+      className={`inline-flex items-center gap-0.5 p-0.5 rounded-pill bg-cosmos border border-horizon/30 ${className}`}
     >
       {CURRENCIES.map((c) => {
         const active = c.code === current;

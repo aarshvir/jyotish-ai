@@ -464,10 +464,13 @@ function Step3({
         One-time payment. Instant delivery. No subscriptions.
       </p>
 
-      <div className="space-y-3 mb-6">
+      <div className="space-y-3 mb-6" role="radiogroup" aria-label="Report plan">
         {REPORT_TYPES.map((rt) => (
           <button
             key={rt.id}
+            type="button"
+            role="radio"
+            aria-checked={form.reportType === rt.id}
             className={`w-full text-left px-4 py-3.5 rounded-card border transition-all duration-200 ${
               form.reportType === rt.id
                 ? 'border-amber bg-amber/[0.06] shadow-glow-amber'
