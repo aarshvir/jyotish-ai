@@ -1333,7 +1333,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       className="min-h-screen bg-space relative"
     >
       <StarField />
-      <ReportSidebar reportLoaded={!!reportData} />
+      <ReportSidebar reportLoaded={!!reportData} preview={isPreviewPlan} />
 
       <main className="lg:ml-[200px] px-6 pb-12 pt-6 lg:pt-12 max-w-4xl mx-auto relative z-10">
         {isAdminView && (

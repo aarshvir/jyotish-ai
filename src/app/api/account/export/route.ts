@@ -11,12 +11,15 @@ export async function GET(req: NextRequest) {
   const db = createServiceClient();
   const uid = auth.user.id;
 
-  const [profile, reports, kundalis, synastries, payments] = await Promise.all([
+  const [profile, reports, kundalis, synastries, payments, feedback, referrals, newsletter] = await Promise.all([
     db.from('user_profiles').select('*').eq('id', uid).maybeSingle(),
     db.from('reports').select('*').eq('user_id', uid),
     db.from('kundali_charts').select('*').eq('user_id', uid),
     db.from('synastry_charts').select('*').eq('user_id', uid),
     db.from('ziina_payments').select('id, amount, currency, plan_type, status, created_at').eq('user_id', uid),
+    db.from('feedback').select('*').eq('user_id', uid),
+    db.from('referrals').select('*').or(`referrer_id.eq.${uid},referee_id.eq.${uid}`),
+    db.from('newsletter_subscribers').select('*').eq('email', auth.user.email ?? ''),
   ]);
 
   const payload = {
@@ -27,6 +30,9 @@ export async function GET(req: NextRequest) {
     kundali_charts: kundalis.data ?? [],
     synastry_charts: synastries.data ?? [],
     payments: payments.data ?? [],
+    feedback: feedback.data ?? [],
+    referrals: referrals.data ?? [],
+    newsletter: newsletter.data ?? [],
   };
 
   return new NextResponse(JSON.stringify(payload, null, 2), {

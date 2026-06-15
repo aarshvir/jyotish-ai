@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Ephemeris route error:', error);
     return NextResponse.json(
-      { success: false, error: String(error) },
+      { success: false, error: 'Ephemeris request failed' },
       { status: 500 }
     );
   }

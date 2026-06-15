@@ -63,6 +63,7 @@ export function AskQuestion({
       </p>
 
       <textarea
+        aria-label="Your question about the report"
         className="cosmic-input min-h-[80px] resize-y w-full"
         rows={2}
         maxLength={500}

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { StarField } from '@/components/ui/StarField';
 import {
   buildHoroscopeCopy,
@@ -49,12 +50,7 @@ export default function HoroscopeDayPage({ params }: Props) {
   const sign = params.sign?.toLowerCase() ?? '';
   const date = params.date ?? '';
   if (!isValidHoroscopeSign(sign) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return (
-      <div className="min-h-screen bg-space text-star p-8">
-        <p>Invalid horoscope URL.</p>
-        <Link href="/" className="text-amber underline">Home</Link>
-      </div>
-    );
+    notFound();
   }
 
   const { title, body } = buildHoroscopeCopy(sign, date);

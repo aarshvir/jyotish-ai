@@ -15,7 +15,11 @@ const NAV_ITEMS = [
   { id: 'glossary', label: 'Glossary' },
 ];
 
-export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean }) {
+// Sections that only render on paid plans — hide their nav entries on free/preview reports.
+const PREVIEW_HIDDEN = new Set(['decide', 'monthly', 'weekly', 'synthesis']);
+
+export function ReportSidebar({ reportLoaded = false, preview = false }: { reportLoaded?: boolean; preview?: boolean }) {
+  const items = preview ? NAV_ITEMS.filter((i) => !PREVIEW_HIDDEN.has(i.id)) : NAV_ITEMS;
   const [activeSection, setActiveSection] = useState('snapshot');
 
   useEffect(() => {
@@ -50,7 +54,7 @@ export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean
         aria-label="Report sections"
       >
         <div className="space-y-0.5 px-4 pt-6">
-          {NAV_ITEMS.map((item) => (
+          {items.map((item) => (
             <button
               key={item.id}
               onClick={() => scrollToSection(item.id)}
@@ -69,14 +73,13 @@ export function ReportSidebar({ reportLoaded = false }: { reportLoaded?: boolean
 
       {/* Mobile/Tablet tabs */}
       <div className="pdf-exclude lg:hidden sticky top-[var(--header-height,var(--nav-height))] z-40 bg-space/95 backdrop-blur-sm border-b border-horizon/40">
-        <div className="overflow-x-auto scrollbar-thin" role="tablist" aria-label="Report sections">
+        <div className="overflow-x-auto scrollbar-thin" aria-label="Report sections">
           <div className="flex gap-1.5 px-5 py-3 min-w-max">
-            {NAV_ITEMS.map((item) => (
+            {items.map((item) => (
               <button
                 key={item.id}
                 onClick={() => scrollToSection(item.id)}
-                role="tab"
-                aria-selected={activeSection === item.id}
+                aria-current={activeSection === item.id ? 'location' : undefined}
                 className={`px-3.5 py-2 rounded-button font-mono text-label-sm uppercase tracking-wider whitespace-nowrap transition-all min-h-[44px] ${
                   activeSection === item.id
                     ? 'bg-amber text-space'

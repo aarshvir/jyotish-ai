@@ -16,8 +16,10 @@ import { post as bestTimeToStartBusiness } from './best-time-to-start-business-a
 import { post as careerAstrology } from './career-astrology-10th-house';
 import { post as scienceOfTiming } from './science-of-timing-vedic-muhurta';
 import { post as bestPlatforms } from './best-vedic-astrology-platforms-2026';
+import { post as twelveHouses } from './twelve-houses-vedic-astrology';
 export const POSTS: BlogPost[] = [
   bestPlatforms,
+  twelveHouses,
   scienceOfTiming,
   careerAstrology,
   gunMilan,
