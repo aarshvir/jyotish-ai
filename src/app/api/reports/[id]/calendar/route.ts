@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { canReadFullReportContent } from '@/lib/reports/entitlements';
 
 interface StrategicWindow {
   date?: string;
@@ -55,13 +56,12 @@ export async function GET(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Entitlement: only admins, free/preview plans, or genuinely paid reports get the payload.
-  const planType = String((row as { plan_type?: string }).plan_type ?? '').toLowerCase();
-  const entitled =
-    auth.isAdmin === true ||
-    planType === 'free' ||
-    planType === 'preview' ||
-    (row as { payment_status?: string }).payment_status === 'paid';
+  // Entitlement: only admins, free/preview plans, or server-issued full-report payment states.
+  const entitled = canReadFullReportContent({
+    isAdmin: auth.isAdmin === true,
+    planType: (row as { plan_type?: string }).plan_type,
+    paymentStatus: (row as { payment_status?: string }).payment_status,
+  });
   if (!entitled) {
     return NextResponse.json({ error: 'Payment required' }, { status: 402 });
   }

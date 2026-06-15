@@ -6,6 +6,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import type { NatalChartData } from '@/lib/agents/types';
 import { computeAshtakoot, NAKSHATRA_NAMES } from '@/lib/synastry/ashtakoot';
 import { buildSynastryCommentary } from '@/lib/synastry/synastryCommentary';
+import { FULL_REPORT_PAYMENT_STATUSES } from '@/lib/reports/entitlements';
 
 const SIGNS = [
   'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     .from('reports')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', auth.user.id)
-    .eq('payment_status', 'paid');
+    .in('payment_status', [...FULL_REPORT_PAYMENT_STATUSES]);
 
   if (cntErr) {
     return NextResponse.json({ error: 'Database error' }, { status: 500 });

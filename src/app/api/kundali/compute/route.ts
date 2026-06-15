@@ -8,6 +8,7 @@ import type { NatalChartData } from '@/lib/agents/types';
 import { plainify } from '@/lib/utils/plainify';
 import { buildDeepKundli } from '@/lib/kundli/deepKundli';
 import { buildKundliCommentary, type KundliSections } from '@/lib/kundli/kundliCommentary';
+import { FULL_REPORT_PAYMENT_STATUSES } from '@/lib/reports/entitlements';
 
 type BirthPayload = {
   name?: string;
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     .from('reports')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', auth.user.id)
-    .eq('payment_status', 'paid');
+    .in('payment_status', [...FULL_REPORT_PAYMENT_STATUSES]);
 
   let hasKundaliUnlock = false;
   const { data: unlockRow } = await db

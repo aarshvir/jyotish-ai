@@ -14,6 +14,7 @@ import {
   takeReportStatusRateLimit,
   type ReportStatusCachePayload,
 } from '@/lib/reports/reportStatusPoll';
+import { canReadFullReportContent } from '@/lib/reports/entitlements';
 
 /** Per-attempt PostgREST read timeouts (ms). Total worst-case fits within `maxDuration`. */
 const READ_TIMEOUTS_MS = [12_000, 20_000, 30_000] as const;
@@ -214,10 +215,12 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
   const isComplete = status === 'complete';
   const reportData = data?.report_data as Record<string, unknown> | null;
   // Read-side entitlement: only return the report payload to admins, free/preview
-  // plans, or genuinely paid reports — never a paid-plan row that isn't 'paid'.
-  const planType = String(data?.plan_type ?? '').toLowerCase();
-  const entitledToContent =
-    userIsAdmin || planType === 'free' || planType === 'preview' || data?.payment_status === 'paid';
+  // plans, or server-issued full-report payment states.
+  const entitledToContent = canReadFullReportContent({
+    isAdmin: userIsAdmin,
+    planType: data?.plan_type,
+    paymentStatus: data?.payment_status,
+  });
 
   const serverProgress = typeof data?.generation_progress === 'number' ? data.generation_progress : null;
   const progress = isComplete
