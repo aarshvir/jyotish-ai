@@ -25,7 +25,7 @@ describe('blog index <-> module files stay in sync', () => {
     const indexSrc = readFileSync(join(BLOG_DIR, 'index.ts'), 'utf8');
     // Match both single- and double-quoted relative imports: from './x' | from "./x"
     const imported = new Set(
-      [...indexSrc.matchAll(/from\s+['"]\.\/([a-z0-9-]+)['"]/g)].map((m) => m[1]),
+      Array.from(indexSrc.matchAll(/from\s+['"]\.\/([a-z0-9-]+)['"]/g), (m) => m[1]),
     );
     const moduleFiles = readdirSync(BLOG_DIR)
       .filter((f) => f.endsWith('.ts') && f !== 'index.ts' && f !== 'types.ts')
