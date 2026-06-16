@@ -55,7 +55,6 @@ type ReportRow = {
   timezone_offset: number | null;
   plan_type: string | null;
   report_start_date: string | null;
-  personal_context: string | null;
   status: string | null;
   generation_started_at: string | null;
   report_data: unknown;
@@ -96,7 +95,7 @@ async function maybeDispatchReportGenerate(
   const { data: row, error } = await db
     .from('reports')
     .select(
-      'id, user_id, user_email, native_name, birth_date, birth_time, birth_city, birth_lat, birth_lng, current_city, current_lat, current_lng, timezone_offset, plan_type, report_start_date, personal_context, status, generation_started_at, report_data',
+      'id, user_id, user_email, native_name, birth_date, birth_time, birth_city, birth_lat, birth_lng, current_city, current_lat, current_lng, timezone_offset, plan_type, report_start_date, status, generation_started_at, report_data',
     )
     .eq('id', reportId)
     .maybeSingle();
@@ -104,6 +103,27 @@ async function maybeDispatchReportGenerate(
   if (error || !row) {
     console.warn('[ziina/finalize] maybeDispatchReportGenerate: no report row', reportId, error?.message);
     return;
+  }
+
+  // personal_context lives behind migration 20260617. Read it tolerantly in a separate
+  // query so an unapplied migration can NEVER block the post-payment auto-dispatch
+  // (a batched SELECT would 400 on the unknown column and silently skip generation for
+  // every paying customer). Mirrors reports/start + admin/user-detail. null when absent.
+  let personalContext: string | null = null;
+  {
+    const { data: pcRow, error: pcErr } = await db
+      .from('reports')
+      .select('personal_context')
+      .eq('id', reportId)
+      .maybeSingle();
+    if (pcErr) {
+      const m = pcErr.message ?? '';
+      if (!m.includes('personal_context') && !m.includes('schema cache')) {
+        console.warn('[ziina/finalize] personal_context read failed:', m);
+      }
+    } else {
+      personalContext = (pcRow as { personal_context?: string | null } | null)?.personal_context ?? null;
+    }
   }
 
   const r = row as ReportRow;
@@ -136,7 +156,7 @@ async function maybeDispatchReportGenerate(
     // instead of silently defaulting to today on the post-payment auto-dispatch.
     forecastStart: r.report_start_date ?? undefined,
     // Personalize commentary from the seeker's own words, persisted at create-intent.
-    ...(r.personal_context?.trim() ? { personalContext: r.personal_context.trim() } : {}),
+    ...(personalContext?.trim() ? { personalContext: personalContext.trim() } : {}),
     paymentStatus: 'paid',
   };
 
@@ -324,7 +344,12 @@ export async function finalizeCompletedZiinaIntent(
       currency: intent.currency_code,
     })
     .eq('ziina_intent_id', intentId)
-    .eq('status', 'pending')
+    // Claim any not-yet-completed row (NOT just 'pending'): create-intent supersedes
+    // older intents to 'cancelled' when a buyer re-checks out, but Ziina can still
+    // confirm payment on that older intent (live redirect tab / browser back). Strict
+    // 'pending' would skip the grant and strand a charged buyer. .neq('completed')
+    // stays atomic — exactly one caller flips it to 'completed'.
+    .neq('status', 'completed')
     .select('ziina_intent_id')
     .maybeSingle();
   if (!claimedRow) {
