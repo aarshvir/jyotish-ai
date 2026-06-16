@@ -227,8 +227,9 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
           </div>
         )}
 
-        {/* Full picture (expand) */}
-        {synthesis?.opening_paragraph && (
+        {/* Full picture (expand) — the paid period-synthesis narrative; gate on !preview
+            to match the rest of the component + the paywalled PeriodSynthesis section. */}
+        {!preview && synthesis?.opening_paragraph && (
           <div className="mt-2">
             <button
               type="button"
