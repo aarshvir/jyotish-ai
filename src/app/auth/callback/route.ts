@@ -59,7 +59,9 @@ export async function GET(request: NextRequest) {
     if (upsertErr) console.error('user_profiles upsert:', upsertErr.message);
     if (!existingProfile && email) {
       // New account → one-time welcome email (gated on RESEND_API_KEY; never throws).
-      await sendWelcomeEmail(email, displayName);
+      // Fire-and-forget: do NOT await — a slow Resend call would otherwise delay the
+      // user's post-login redirect by up to its full timeout. The email is best-effort.
+      void sendWelcomeEmail(email, displayName);
     }
     // First-touch attribution: persist the channel that brought this user (from the
     // vh_first_touch cookie). New users only; tolerant of DBs without the columns yet.

@@ -390,6 +390,9 @@ export async function finalizeCompletedZiinaIntent(
     if (hasInngest) {
       try {
         await inngest.send({
+          // Idempotency id (matches the report/generate pattern) so a webhook retry /
+          // double-finalize doesn't enqueue a second extend within Inngest's dedupe window.
+          id: `report-extend:${reportId}`,
           name: 'report/extend',
           data: { reportId, baseUrl },
         });
