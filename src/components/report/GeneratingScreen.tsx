@@ -54,6 +54,10 @@ export function GeneratingScreen({
   const lastSlugRef = useRef<string | null>(null);
   /** Defense-in-depth: never let displayed progress go backwards. */
   const highWaterMarkRef = useRef(0);
+  // GeneratingScreen unmounts the moment the report completes; guard post-await
+  // setState in the feedback submit so an in-flight POST can't update an unmounted tree.
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   // Elapsed timer
   useEffect(() => {
@@ -112,6 +116,7 @@ export function GeneratingScreen({
         }),
       });
       const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!mountedRef.current) return;
       if (!res.ok) {
         setFeedbackErr(body.error ?? 'Could not save your feedback.');
         return;
@@ -119,9 +124,9 @@ export function GeneratingScreen({
       setFeedbackDone(true);
       setFeedbackMessage('');
     } catch {
-      setFeedbackErr('Network error.');
+      if (mountedRef.current) setFeedbackErr('Network error.');
     } finally {
-      setFeedbackBusy(false);
+      if (mountedRef.current) setFeedbackBusy(false);
     }
   }
 

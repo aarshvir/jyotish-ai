@@ -20,13 +20,17 @@ export function ScoreBadge({ score: rawScore, size = 'md', showLabel = false, an
     const increment = score / steps;
     let current = 0;
     let frame = 0;
+    let raf = 0;
     const counter = () => {
       frame++;
       current = Math.min(score, increment * frame);
       setDisplayScore(Math.round(current));
-      if (current < score) requestAnimationFrame(counter);
+      if (current < score) raf = requestAnimationFrame(counter);
     };
-    requestAnimationFrame(counter);
+    raf = requestAnimationFrame(counter);
+    // Cancel on unmount / score change so a queued frame can't setState after unmount
+    // and a stale loop can't race a new one.
+    return () => cancelAnimationFrame(raf);
   }, [score, animate]);
 
   const getColor = (s: number) => {
