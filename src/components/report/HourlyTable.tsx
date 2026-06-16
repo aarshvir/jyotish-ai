@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import {
   getCanonicalScoreLabel,
   getLabelColor,
@@ -232,18 +232,15 @@ export function HourlyTable({ hours }: HourlyTableProps) {
               const timeLabel = hour.display_label ?? hour.time?.slice(0, 5) ?? '—';
 
               return (
-                <>
+                <Fragment key={`hr-${hour.slot_index ?? i}`}>
+                  {/* Row stays a real <tr> (role unchanged) so its cells keep their
+                      table semantics. onClick is a mouse-only convenience; the real
+                      accessible/keyboard control is the <button> in the last cell. */}
                   <tr
-                    key={`row-${hour.slot_index ?? i}`}
-                    className={`hover:bg-nebula/40 transition-colors cursor-pointer focus-within:outline-none focus-within:ring-1 focus-within:ring-amber/60 ${
+                    className={`hover:bg-nebula/40 transition-colors cursor-pointer ${
                       hour.is_rahu_kaal ? 'bg-caution/5' : ''
                     } ${isExpanded ? 'bg-nebula/20' : ''}`}
                     onClick={() => setExpandedIndex(isExpanded ? null : i)}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedIndex(isExpanded ? null : i); } }}
-                    tabIndex={0}
-                    role="button"
-                    aria-expanded={isExpanded}
-                    aria-label={`${timeLabel} — ${scoreInfo.label}. Press Enter to ${isExpanded ? 'close' : 'expand'}.`}
                   >
                     {/* Time */}
                     <td className="font-mono text-sm text-star py-3 px-3 whitespace-nowrap">
@@ -296,17 +293,23 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                       </span>
                     </td>
 
-                    {/* Commentary preview */}
+                    {/* Commentary preview — the real toggle control (proper button). */}
                     <td className="py-3 px-3">
-                      <span className={`pdf-exclude font-mono text-mono-sm transition-colors ${isExpanded ? 'text-amber' : 'text-dust/60 hover:text-amber'}`}>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setExpandedIndex(isExpanded ? null : i); }}
+                        aria-expanded={isExpanded}
+                        aria-label={`${timeLabel} — ${scoreInfo.label}. ${isExpanded ? 'Close' : 'Read'} analysis.`}
+                        className={`pdf-exclude font-mono text-mono-sm transition-colors rounded-sm focus:outline-none focus-visible:ring-1 focus-visible:ring-amber/60 ${isExpanded ? 'text-amber' : 'text-dust/60 hover:text-amber'}`}
+                      >
                         {isExpanded ? '↑ Close' : 'Read analysis →'}
-                      </span>
+                      </button>
                     </td>
                   </tr>
 
                   {/* Expanded commentary row */}
                   {isExpanded && (
-                    <tr key={`expanded-${hour.slot_index ?? i}`} className="bg-nebula/10 border-b border-horizon/20">
+                    <tr className="bg-nebula/10 border-b border-horizon/20">
                       <td colSpan={6} className="px-4 py-4">
                         <div className="max-w-3xl">
                           <div className="flex items-center gap-3 mb-3">
@@ -332,7 +335,7 @@ export function HourlyTable({ hours }: HourlyTableProps) {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>

@@ -91,7 +91,7 @@ export default function CurrencySwitcher({
 
   return (
     <div
-      role="radiogroup"
+      role="group"
       aria-label="Currency"
       className={`inline-flex items-center gap-0.5 p-0.5 rounded-pill bg-cosmos border border-horizon/30 ${className}`}
     >
@@ -101,8 +101,7 @@ export default function CurrencySwitcher({
           <button
             key={c.code}
             type="button"
-            role="radio"
-            aria-checked={active}
+            aria-pressed={active}
             onClick={() => handlePick(c.code)}
             className={`inline-flex items-center gap-1 ${padding} rounded-pill font-mono tracking-wider transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber ${
               active

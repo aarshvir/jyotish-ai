@@ -154,14 +154,13 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
 
       {/* Tab strip — one tab per day */}
       <div className="overflow-x-auto scrollbar-thin">
-        <div className="flex gap-2 min-w-max pb-2" role="tablist" aria-label="Forecast days">
+        <div className="flex gap-2 min-w-max pb-2" role="group" aria-label="Forecast days">
           {(days ?? []).map((day, i) => (
             <button
               key={day?.date || i}
               onClick={() => setSelectedDay(i)}
-              aria-selected={selectedDay === i}
+              aria-pressed={selectedDay === i}
               aria-label={`${day?.date ?? ''} forecast`}
-              role="tab"
               className={`px-4 py-3 rounded-sm font-mono uppercase tracking-wider transition-all whitespace-pre-line leading-tight min-h-[44px] ${
                 selectedDay === i
                   ? 'border-b-2 border-amber text-star bg-nebula/40 text-sm'

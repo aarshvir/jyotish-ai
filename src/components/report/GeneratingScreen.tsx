@@ -250,12 +250,13 @@ export function GeneratingScreen({
                       key={n}
                       type="button"
                       onClick={() => setFeedbackRating(n)}
-                      aria-label={`${n} star`}
+                      aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                      aria-pressed={n <= feedbackRating}
                       className={`text-2xl leading-none transition-colors ${
                         n <= feedbackRating ? 'text-amber' : 'text-dust/30 hover:text-amber/60'
                       }`}
                     >
-                      *
+                      {n <= feedbackRating ? '★' : '☆'}
                     </button>
                   ))}
                 </div>
