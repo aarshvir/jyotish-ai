@@ -12,6 +12,7 @@
 
 import { searchScripturesHybrid } from '@/lib/rag/vectorSearch';
 import { completeLlmChat } from '@/lib/llm/routeCompletion';
+import { sanitizePersonalContext } from '@/lib/utils/sanitize';
 import type { NatalChartData } from '@/lib/agents/types';
 import type { DeepKundliData, YearOutlookSeed } from './deepKundli';
 import type { DoshaFlag } from './doshas';
@@ -441,7 +442,10 @@ export async function buildKundliCommentary(
   deep: DeepKundliData,
   personName: string,
 ): Promise<KundliSections> {
-  const name = (personName ?? '').trim() || 'This person';
+  // Sanitize + cap the seeker's free-text name before it enters delimiter-parsed LLM
+  // prompts. sanitizePersonalContext collapses newlines to spaces, so a forged
+  // "\n### career_finances" / "\n### YEAR n" can't inject or overwrite a report section.
+  const name = sanitizePersonalContext(personName, 80) || 'This person';
   const brief = buildBaseBrief(chart, deep, name);
 
   // Run the three calls in parallel; each self-contains its fallback.

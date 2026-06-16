@@ -7,7 +7,7 @@ import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaCo
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
-import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     }>;
     scripture_context?: string;
     require_scripture_grounding?: boolean;
-    personal_context_block?: string;
+    personal_context?: string;
   };
 
     try {
@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
     const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
     const mahadasha = sanitizePlanetName(body.mahadasha);
     const antardasha = sanitizePlanetName(body.antardasha);
-    const personalContextBlock = typeof body.personal_context_block === 'string' ? body.personal_context_block : '';
+    const personalContextBlock = buildPersonalContextBlock(body.personal_context);
     const { days } = body;
     if (!lagnaSign) {
       return NextResponse.json({ days: [] }, { status: 200 });

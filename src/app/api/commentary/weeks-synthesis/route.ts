@@ -11,7 +11,7 @@ import {
 } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
-import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock } from '@/lib/utils/sanitize';
 import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
 export async function POST(req: NextRequest) {
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     planet_positions_by_date?: DayAnchorInput[];
     scripture_context?: string;
     require_scripture_grounding?: boolean;
-    personal_context_block?: string;
+    personal_context?: string;
   };
 
   try {
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
   const mahadasha = sanitizePlanetName(body.mahadasha);
   const antardasha = sanitizePlanetName(body.antardasha);
-  const personalContextBlock = typeof body.personal_context_block === 'string' ? body.personal_context_block : '';
+  const personalContextBlock = buildPersonalContextBlock(body.personal_context);
   const { weeks, synthesis_context, planet_positions_by_date } = body;
   if (!lagnaSign || !weeks?.length) {
     return NextResponse.json({ error: 'lagnaSign and weeks required' }, { status: 400 });

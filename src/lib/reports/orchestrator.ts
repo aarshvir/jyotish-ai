@@ -34,7 +34,6 @@ import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { buildTransitQueryTerms, detectYogas } from '@/lib/rag/yogaDetector';
 import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
 import { notifyReportReady } from '@/lib/notify/reportReady';
-import { buildPersonalContextBlock } from '@/lib/utils/sanitize';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
 
@@ -549,9 +548,10 @@ export async function generateReportPipeline(
       ? { jyotishRagMode: String(input.jyotishRagMode).trim() }
       : ({} as Record<string, string>);
   const requireScriptureGrounding = requireScriptureGroundingForPlan(input);
-  // Optional seeker-written context, sanitized + wrapped as a data-only block ('' if none).
-  // Injected into narrative commentary steps to personalize tone/emphasis (never scores/JSON).
-  const personalContextBlock = buildPersonalContextBlock(input.personalContext);
+  // Send the RAW seeker-written context to commentary routes; each route builds (and
+  // thus sanitizes) its own data-only block via buildPersonalContextBlock. Routes must
+  // not trust a pre-assembled block from the caller — a direct POST could inject text.
+  const rawPersonalContext = typeof input.personalContext === 'string' ? input.personalContext : '';
 
   const db = createServiceClient();
   /** Latest `generation_step` written via dbSetProgress; used when persisting error metadata. */
@@ -1357,7 +1357,7 @@ export async function generateReportPipeline(
             antardasha,
             scripture_context: dailyScriptureContext,
             require_scripture_grounding: requireScriptureGrounding,
-            personal_context_block: personalContextBlock,
+            personal_context: rawPersonalContext,
             days: forecastDays.map((d) => ({
               date: d.date,
               panchang: d.panchang,
@@ -1394,7 +1394,7 @@ export async function generateReportPipeline(
             ad_end: dasha.end_date,
             planets: ephemerisData.planets ?? {},
             require_scripture_grounding: requireScriptureGrounding,
-            personal_context_block: personalContextBlock,
+            personal_context: rawPersonalContext,
             ...ragModePayload,
           });
 
@@ -1681,7 +1681,7 @@ export async function generateReportPipeline(
         startMonth: forecastDays[0].date.substring(0, 7),
         scripture_context: monthlyScriptureContext,
         require_scripture_grounding: requireScriptureGrounding,
-        personal_context_block: personalContextBlock,
+        personal_context: rawPersonalContext,
         reference_planet_positions: forecastDays[0]?.planet_positions,
         reference_planet_positions_date: forecastDays[0]?.date,
         reference_panchang: forecastDays[0]?.panchang,
@@ -1786,7 +1786,7 @@ export async function generateReportPipeline(
               antardasha: antardasha ?? 'Mercury',
               scripture_context: monthlyScriptureContext,
               require_scripture_grounding: requireScriptureGrounding,
-              personal_context_block: personalContextBlock,
+              personal_context: rawPersonalContext,
               reportStartDate: forecastDays[0].date,
               weeks: weeksPayload,
               planet_positions_by_date: forecastDays.map((d) => ({
