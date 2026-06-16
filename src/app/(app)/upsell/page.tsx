@@ -37,7 +37,7 @@ export default async function UpsellPage({ searchParams }: Props) {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (!rep || rep.payment_status !== 'paid') {
+  if (!rep || (rep.payment_status !== 'paid' && rep.payment_status !== 'promo')) {
     redirect('/onboard');
   }
   if (rep.plan_type !== '7day') {

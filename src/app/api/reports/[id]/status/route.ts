@@ -213,11 +213,16 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
   const status = data?.status ?? 'unknown';
   const isComplete = status === 'complete';
   const reportData = data?.report_data as Record<string, unknown> | null;
-  // Read-side entitlement: only return the report payload to admins, free/preview
-  // plans, or genuinely paid reports — never a paid-plan row that isn't 'paid'.
+  // Read-side entitlement: return the report payload to admins, free/preview plans,
+  // genuinely paid reports, or server-validated 100%-promo reports (payment_status
+  // 'promo' — e.g. ADMIN100). Never a paid-plan row that is merely 'unpaid'.
   const planType = String(data?.plan_type ?? '').toLowerCase();
   const entitledToContent =
-    userIsAdmin || planType === 'free' || planType === 'preview' || data?.payment_status === 'paid';
+    userIsAdmin ||
+    planType === 'free' ||
+    planType === 'preview' ||
+    data?.payment_status === 'paid' ||
+    data?.payment_status === 'promo';
 
   const serverProgress = typeof data?.generation_progress === 'number' ? data.generation_progress : null;
   const progress = isComplete

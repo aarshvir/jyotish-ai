@@ -24,12 +24,12 @@ export async function POST(request: NextRequest) {
 
   const db = createServiceClient();
 
-  // Access gate: any paid forecast OR a standalone Kundali unlock.
+  // Access gate: any paid/promo forecast OR a standalone Kundali unlock.
   const { count } = await db
     .from('reports')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', auth.user.id)
-    .eq('payment_status', 'paid');
+    .in('payment_status', ['paid', 'promo']);
 
   let hasKundaliUnlock = false;
   const { data: unlockRow } = await db
