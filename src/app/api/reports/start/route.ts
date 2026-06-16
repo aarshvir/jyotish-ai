@@ -730,6 +730,13 @@ export async function POST(request: NextRequest) {
 
   if (useInngest) {
     try {
+      // Strip the global bypass secret AND the user's session cookie before the
+      // headers are persisted into the Inngest event store (dashboard/logs). The
+      // scoped 6h-TTL x-job-token authenticates every internal pipeline callback
+      // (all internal routes accept it via requireAuth), so neither broad secret
+      // needs to travel through — or be retained by — the third-party queue.
+      const { ['x-bypass-token']: _omitBypass, ['cookie']: _omitCookie, ...dispatchAuthHeaders } =
+        authHeaders;
       await inngest.send({
         id: `report-generate:${reportId}`,
         name: 'report/generate',
@@ -739,7 +746,7 @@ export async function POST(request: NextRequest) {
           userEmail: auth.user.email ?? '',
           input,
           base,
-          authHeaders,
+          authHeaders: dispatchAuthHeaders,
           correlationId: generationTraceId,
           generation_trace_id: generationTraceId,
         },

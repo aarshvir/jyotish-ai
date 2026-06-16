@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { createServiceClient } from '@/lib/supabase/admin';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { sanitizePersonalContext } from '@/lib/utils/sanitize';
@@ -13,10 +14,39 @@ import { sanitizePersonalContext } from '@/lib/utils/sanitize';
  * report context the client passes (the user's own report). Free-text in + out, so
  * it reuses the personal-context sanitizer for injection defense and runs under a
  * tight per-user rate limit. Non-streaming v1.
+ *
+ * Q&A is a PAID feature, so before spending any LLM tokens we verify the caller
+ * owns report :id AND it is genuinely entitled (paid / 100%-promo / admin).
+ * Without this, any signed-in user could call the endpoint for any report id and
+ * burn LLM credits, bypassing the paid-only UI gate.
  */
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+
+  const reportId = params?.id;
+  if (!reportId) {
+    return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+  }
+  const db = createServiceClient();
+  const { data: reportRow } = await db
+    .from('reports')
+    .select('user_id, payment_status')
+    .eq('id', reportId)
+    .maybeSingle();
+
+  // Ownership: don't reveal existence of other users' reports.
+  if (!reportRow || (reportRow.user_id !== auth.user.id && auth.isAdmin !== true)) {
+    return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+  }
+  // Entitlement: paid Q&A — paid purchase, 100%-promo grant, or admin.
+  const entitled =
+    auth.isAdmin === true ||
+    reportRow.payment_status === 'paid' ||
+    reportRow.payment_status === 'promo';
+  if (!entitled) {
+    return NextResponse.json({ error: 'This feature is part of a paid report.' }, { status: 402 });
+  }
 
   if (shouldRateLimitLlmForUser(auth)) {
     const rlKey = getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined);
