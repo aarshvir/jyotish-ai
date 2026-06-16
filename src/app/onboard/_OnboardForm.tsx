@@ -836,9 +836,12 @@ function OnboardPageInner() {
     // Falling back to 0,0 silently produces a chart anchored near the Gulf of
     // Guinea, which contradicts the marketing promise of "sub-degree precision".
     if (form.birthLat == null || form.birthLng == null) {
+      // Geocoding otherwise only fires on blur, so a prefilled (returning-user) city can reach
+      // here unresolved. Auto-resolve it now so the user can simply retry instead of re-typing.
+      if (form.birthCity.trim()) void geocodeCity(form.birthCity);
       setPaymentReturnBanner({
         type: 'error',
-        message: `We could not pin "${form.birthCity || 'your birth city'}" to a precise location. Please go back and re-enter your birth city — try adding the country (e.g. "Lucknow, India").`,
+        message: `We're pinning "${form.birthCity || 'your birth city'}" to a precise location — give it a moment, then tap continue again. If it persists, add the country (e.g. "Lucknow, India").`,
       });
       setStep(1);
       return;
@@ -1012,7 +1015,8 @@ function OnboardPageInner() {
         phone: form.phone,
         birth_date: form.birthDate,
         birth_time: birthTimeNorm,
-        birth_city: paramsObj.city,
+        // Store the true birth city (not the "Current (born: X)" display string) — mirrors the paid path.
+        birth_city: form.birthCity,
         // Non-null asserted: the gate at the top of goToReportGeneration() refuses
         // to proceed without resolved coordinates.
         birth_lat: form.birthLat as number,

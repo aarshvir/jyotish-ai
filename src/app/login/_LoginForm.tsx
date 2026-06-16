@@ -87,7 +87,15 @@ function LoginInner() {
 
     let result;
     if (mode === 'signup') {
-      result = await supabase.auth.signUp({ email, password });
+      // Preserve the post-login redirect even if Supabase "Confirm email" is ON
+      // (the confirmation link routes through /auth/callback, which honors ?next).
+      result = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeInternalPath(searchParams.get('next')))}`,
+        },
+      });
       if (!result.error) {
         result = await supabase.auth.signInWithPassword({ email, password });
       }
