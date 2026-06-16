@@ -35,7 +35,7 @@ export function loadScriptureChunks(): ScriptureChunk[] {
 
 export async function runScriptureEmbedRefresh(
   maxProcess = 200,
-): Promise<{ embedded: number; skipped: number; error?: string }> {
+): Promise<{ embedded: number; skipped: number; failed?: number; error?: string }> {
   const chunks = loadScriptureChunks();
   if (!chunks.length) {
     return { embedded: 0, skipped: 0, error: 'no_chunks_file' };
@@ -44,6 +44,8 @@ export async function runScriptureEmbedRefresh(
   const db = createServiceClient();
   let embedded = 0;
   let skipped = 0;
+  let failed = 0;
+  let lastError: string | undefined;
 
   for (const ch of chunks.slice(0, maxProcess)) {
     const { data: existing } = await db
@@ -79,11 +81,15 @@ export async function runScriptureEmbedRefresh(
     );
 
     if (error) {
+      // Continue past a single bad/transient upsert instead of aborting the whole
+      // refresh — otherwise one stuck row starves every chunk after it in the array.
       console.error('[embedChunksJob] upsert failed', ch.id, error.message);
-      return { embedded, skipped, error: error.message };
+      failed++;
+      lastError = error.message;
+      continue;
     }
     embedded++;
   }
 
-  return { embedded, skipped };
+  return { embedded, skipped, failed, ...(lastError ? { error: lastError } : {}) };
 }
