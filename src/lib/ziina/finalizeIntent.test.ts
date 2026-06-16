@@ -14,6 +14,7 @@ type Tables = Record<string, Row[]>;
 
 class MockQuery {
   private filters: Array<[string, unknown]> = [];
+  private notFilters: Array<[string, unknown]> = [];
   private updatePayload: Row | null = null;
   private upsertPayload: Row | null = null;
 
@@ -28,6 +29,11 @@ class MockQuery {
 
   eq(column: string, value: unknown) {
     this.filters.push([column, value]);
+    return this;
+  }
+
+  neq(column: string, value: unknown) {
+    this.notFilters.push([column, value]);
     return this;
   }
 
@@ -63,8 +69,10 @@ class MockQuery {
   }
 
   private rows() {
-    return (this.tables[this.table] ?? []).filter((row) =>
-      this.filters.every(([column, value]) => row[column] === value),
+    return (this.tables[this.table] ?? []).filter(
+      (row) =>
+        this.filters.every(([column, value]) => row[column] === value) &&
+        this.notFilters.every(([column, value]) => row[column] !== value),
     );
   }
 
