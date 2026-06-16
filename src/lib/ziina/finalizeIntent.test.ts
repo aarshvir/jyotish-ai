@@ -37,6 +37,11 @@ class MockQuery {
 
   async maybeSingle() {
     const rows = this.rows();
+    // Model Supabase's .update(...).select().maybeSingle(): apply the pending update
+    // to the matched row(s) and return the (now updated) first row.
+    if (this.updatePayload) {
+      for (const row of rows) Object.assign(row, this.updatePayload);
+    }
     return { data: rows[0] ?? null, error: null };
   }
 
