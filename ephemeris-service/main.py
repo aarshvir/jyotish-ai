@@ -161,7 +161,10 @@ def get_planet_position(jd: float, planet: int) -> Dict[str, Any]:
 
 def local_to_utc(birth_date: str, birth_time: str, lat: float, lng: float) -> datetime:
     """Convert local birth time to UTC using lat/lng for timezone detection"""
-    tz_name = _tf.timezone_at(lat=lat, lng=lng)
+    # timezone_at returns None for points no polygon covers (open ocean / bad input).
+    # ZoneInfo(None) raises TypeError -> 500. Fall back to nearest tz, else UTC, so a
+    # stray coordinate degrades gracefully instead of crashing /natal-chart.
+    tz_name = _tf.timezone_at(lat=lat, lng=lng) or _tf.closest_timezone_at(lat=lat, lng=lng) or "UTC"
     local_tz = ZoneInfo(tz_name)
     local_dt = datetime.strptime(f"{birth_date} {birth_time}", "%Y-%m-%d %H:%M:%S")
     local_dt = local_dt.replace(tzinfo=local_tz)
@@ -316,19 +319,19 @@ def calculate_yoga(sun_long: float, moon_long: float) -> str:
 
 
 def calculate_karana(sun_long: float, moon_long: float) -> str:
-    """Calculate Karana"""
-    karanas = [
-        "Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti",
-        "Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti",
-        "Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti",
-        "Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti",
-        "Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti",
-        "Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti",
-        "Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti",
-        "Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti",
-        "Shakuni", "Chatushpada", "Naga", "Kimstughna"
-    ]
-    
+    """Calculate Karana.
+
+    Standard panchang sequence over the 60 half-tithis (index = int(diff/6)):
+    the fixed karana Kimstughna is the FIRST half-tithi (index 0), the 7 movable
+    karanas (Bava..Vishti) repeat 8x to fill indices 1-56, and the remaining three
+    fixed karanas (Shakuni, Chatushpada, Naga) occupy indices 57-59.
+    """
+    karanas = (
+        ["Kimstughna"]
+        + ["Bava", "Balava", "Kaulava", "Taitila", "Garaja", "Vanija", "Vishti"] * 8
+        + ["Shakuni", "Chatushpada", "Naga"]
+    )
+
     diff = (moon_long - sun_long) % 360
     karana_num = int(diff / 6)
     return karanas[min(karana_num, 59)]
@@ -917,7 +920,7 @@ YOGA_MOD = {
     "Atiganda": -18,    # Great obstacle — devastatingly negative (was -5)
     "Sukarma": 3,       # Good deeds — mild positive
     "Dhriti": 5,        # Steadfastness — solid positive (was 3)
-    "Shoola": -8,       # Spear/piercing — strongly negative (was -5)
+    "Shula": -8,        # Spear/piercing — strongly negative (key must match calculate_yoga spelling "Shula")
     "Ganda": -14,       # Knot/danger — very negative (was -5)
     "Vriddhi": 10,      # Growth — very strong positive (was 6)
     "Dhruva": 8,        # Fixed/permanent — strong positive (was 6)
@@ -957,7 +960,7 @@ NAKSHATRA_MOD = {
     "Vishakha": 2,             # Determination
     "Anuradha": 4,             # Devotion/friendship (was 3)
     "Jyeshtha": -2,            # Chief but aggressive (was -1)
-    "Moola": -6,               # Root destruction — ganda moola (was -3)
+    "Mula": -6,                # Root destruction — ganda moola (key must match NAKSHATRAS spelling "Mula")
     "Purva Ashadha": 2,        # Invincible
     "Uttara Ashadha": 5,       # Victory (was 4)
     "Shravana": 5,             # Listening/learning (was 4)
@@ -1042,7 +1045,7 @@ SPECIAL_EVENT_MOD = {
 # Verified DrikPanchang-aligned values for Dubai (25.2°N, 55.3°E).
 # Overrides Swiss-Ephemeris sunrise snapshot when the civil date matches.
 PANCHANG_OVERRIDES: Dict[str, Dict[str, Any]] = {
-    "2026-03-06": {"nakshatra": "Chitra", "yoga": "Shoola", "tithi": "Krishna Chaturthi"},
+    "2026-03-06": {"nakshatra": "Chitra", "yoga": "Shula", "tithi": "Krishna Chaturthi"},
     "2026-03-07": {"nakshatra": "Swati", "yoga": "Ganda", "tithi": "Krishna Panchami"},
     "2026-03-08": {"nakshatra": "Vishakha", "yoga": "Vriddhi", "tithi": "Krishna Shashthi"},
     "2026-03-09": {"nakshatra": "Anuradha", "yoga": "Vyaghata", "tithi": "Krishna Saptami"},
@@ -1063,7 +1066,7 @@ PANCHANG_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "2026-03-26": {"nakshatra": "Ardra", "yoga": "Saubhagya", "tithi": "Shukla Ashtami"},
     "2026-03-27": {"nakshatra": "Pushya", "yoga": "Sukarma", "tithi": "Shukla Navami"},
     "2026-03-28": {"nakshatra": "Ashlesha", "yoga": "Dhriti", "tithi": "Shukla Dashami"},
-    "2026-03-29": {"nakshatra": "Magha", "yoga": "Shoola", "tithi": "Shukla Ekadashi"},
+    "2026-03-29": {"nakshatra": "Magha", "yoga": "Shula", "tithi": "Shukla Ekadashi"},
     "2026-03-30": {"nakshatra": "Purva Phalguni", "yoga": "Ganda", "tithi": "Shukla Dwadashi"},
     "2026-03-31": {"nakshatra": "Uttara Phalguni", "yoga": "Vriddhi", "tithi": "Shukla Trayodashi"},
     # April 2026 — DrikPanchang-aligned for Dubai (25.2°N, 55.3°E, UTC+4)
