@@ -46,6 +46,11 @@ export function GeneratingScreen({
   connectionHint = null,
 }: GeneratingScreenProps) {
   const [telemetryLines, setTelemetryLines] = useState<TelemetryLine[]>([]);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackBusy, setFeedbackBusy] = useState(false);
+  const [feedbackDone, setFeedbackDone] = useState(false);
+  const [feedbackErr, setFeedbackErr] = useState<string | null>(null);
   const lastSlugRef = useRef<string | null>(null);
   /** Defense-in-depth: never let displayed progress go backwards. */
   const highWaterMarkRef = useRef(0);
@@ -84,6 +89,41 @@ export function GeneratingScreen({
   const displayProgress = Math.max(rawDisplay, highWaterMarkRef.current);
   highWaterMarkRef.current = displayProgress;
   const currentSlug = lastSlugRef.current ?? serverPoll?.generation_step ?? null;
+
+  async function submitWaitingFeedback(e: React.FormEvent) {
+    e.preventDefault();
+    const message = feedbackMessage.trim();
+    if (!message) {
+      setFeedbackErr('Please share a little feedback first.');
+      return;
+    }
+
+    setFeedbackBusy(true);
+    setFeedbackErr(null);
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message,
+          rating: feedbackRating || undefined,
+          brought_by: 'Report generation waiting screen',
+          path: typeof window !== 'undefined' ? window.location.pathname : '/report',
+        }),
+      });
+      const body = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setFeedbackErr(body.error ?? 'Could not save your feedback.');
+        return;
+      }
+      setFeedbackDone(true);
+      setFeedbackMessage('');
+    } catch {
+      setFeedbackErr('Network error.');
+    } finally {
+      setFeedbackBusy(false);
+    }
+  }
 
   // Elapsed label
   const mins = Math.floor(elapsedSeconds / 60);
@@ -157,6 +197,91 @@ export function GeneratingScreen({
 
         {/* Live telemetry terminal */}
         <LiveTelemetry lines={telemetryLines} maxVisible={6} className="w-full" />
+
+        {/* Strong in-flow feedback prompt while the user is already waiting. */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            boxShadow: [
+              '0 0 0 rgba(212,168,83,0)',
+              '0 0 28px rgba(212,168,83,0.32)',
+              '0 0 0 rgba(212,168,83,0)',
+            ],
+          }}
+          transition={{
+            opacity: { duration: 0.4 },
+            y: { duration: 0.4 },
+            boxShadow: { duration: 1.8, repeat: Infinity, ease: 'easeInOut' },
+          }}
+          className="mt-6 w-full rounded-card border border-amber/50 bg-amber/10 p-4 text-left"
+          role="complementary"
+          aria-labelledby="waiting-feedback-title"
+        >
+          {feedbackDone ? (
+            <div className="text-center py-3">
+              <h2 id="waiting-feedback-title" className="font-display text-xl text-amber mb-1">
+                Thank you
+              </h2>
+              <p className="font-body text-body-sm text-dust/75">
+                Your note helps us improve the report experience.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={submitWaitingFeedback} className="space-y-3">
+              <div>
+                <p className="font-mono text-mono-sm text-amber uppercase tracking-wider mb-1 animate-pulse">
+                  Quick feedback while you wait
+                </p>
+                <h2 id="waiting-feedback-title" className="font-display text-xl text-star">
+                  What made you try VedicHour today?
+                </h2>
+                <p className="font-body text-body-sm text-dust/70 mt-1">
+                  Your report keeps generating either way. A short note helps us understand what people need most.
+                </p>
+              </div>
+
+              <div>
+                <span className="block font-body text-body-sm text-dust mb-1">How is the experience so far?</span>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setFeedbackRating(n)}
+                      aria-label={`${n} star`}
+                      className={`text-2xl leading-none transition-colors ${
+                        n <= feedbackRating ? 'text-amber' : 'text-dust/30 hover:text-amber/60'
+                      }`}
+                    >
+                      *
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <textarea
+                className="w-full min-h-[88px] resize-y rounded-md bg-cosmos border border-amber/35 px-3 py-2 text-star text-body-sm placeholder:text-dust/40 focus:border-amber/70 focus:outline-none"
+                value={feedbackMessage}
+                onChange={(e) => setFeedbackMessage(e.target.value)}
+                maxLength={1000}
+                placeholder="Tell us what you came for, what is confusing, or what you wish this report answered..."
+              />
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-mono text-mono-sm text-dust/40">{feedbackMessage.length}/1000</span>
+                <button
+                  type="submit"
+                  disabled={feedbackBusy}
+                  className="btn-primary px-5 py-2 disabled:opacity-50"
+                >
+                  {feedbackBusy ? 'Sending...' : 'Send feedback'}
+                </button>
+              </div>
+              {feedbackErr && <p className="text-caution text-body-sm">{feedbackErr}</p>}
+            </form>
+          )}
+        </motion.div>
 
         {/* 60s escape hatch — shown only after a minute of waiting */}
         {elapsedSeconds >= 60 && (
