@@ -89,11 +89,14 @@ const STRONG_ACTION_WORDS = /\b(act decisively|seize|bold move|go all.?in|maximu
 const GENERATED_PLACEHOLDER_RE =
   /commentary is generating|weekly narrative is generating|refresh in 30 seconds|until full commentary is available/i;
 
-// Signature of the deterministic buildFallbackDay() template emitted by
-// daily-overviews when LLM output is unusable. Real LLM output never opens this
-// way (the system prompt forbids "Day score: N/100" jargon openings), so this is
-// a safe, specific guard against template copy slipping into a paid daily section.
-const DAILY_TEMPLATE_RE = /Day score:\s*\d+\/100\.\s*This is a (?:productive|moderate|careful) day overall\./i;
+// Signatures of the deterministic templates daily-overviews emits when LLM output is
+// unusable: buildFallbackDay() ("...This is a X day overall.") AND the per-batch
+// JSON-parse-failure stub ("...Review timing carefully before major actions."). Both
+// open with "Day score: N/100", which real LLM output never does (the system prompt
+// forbids that jargon), so this is a safe, specific guard against template copy
+// slipping into a paid daily section (the parse-failure path returns HTTP 200 and so
+// escapes the route's 206 guard — this validator is its only net).
+const DAILY_TEMPLATE_RE = /Day score:\s*\d+\/100\.\s*(?:This is a (?:productive|moderate|careful) day overall|Review timing carefully)/i;
 
 function hasGeneratedPlaceholderText(value: string | undefined | null): boolean {
   return GENERATED_PLACEHOLDER_RE.test(value ?? '');
