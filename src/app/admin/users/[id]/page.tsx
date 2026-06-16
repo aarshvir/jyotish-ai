@@ -11,7 +11,17 @@ type Detail = {
   pageViewCount: number;
   pages: { path: string; count: number }[];
   journey: { name: string; path: string | null; at: string }[];
-  reports: { id: string; plan_type: string; status: string; payment_status: string; native_name: string; birth_date: string; phone?: string | null; created_at: string }[];
+  reports: {
+    id: string;
+    plan_type: string;
+    status: string;
+    payment_status: string;
+    native_name: string;
+    birth_date: string;
+    phone?: string | null;
+    personal_context?: string | null;
+    created_at: string;
+  }[];
   kundalis: { id: string; person: Record<string, unknown>; overview: string; life_areas: Record<string, string>; year_outlook: { year: number; text: string }[]; doshas: Record<string, unknown>; created_at: string }[];
   synastries: { id: string; partner_a: Record<string, unknown>; partner_b: Record<string, unknown>; ashtakoot: Record<string, unknown>; commentary: string | null; created_at: string }[];
   payments: { plan_type: string; amount: number; currency: string; status: string; created_at: string }[];
@@ -138,25 +148,40 @@ export default function AdminUserDetail() {
               </div>
             </details>
           ))}
-          {data.reports.map((r) => (
-            <div key={r.id} className="card border border-horizon/40 rounded-card p-4 flex items-center justify-between text-body-sm gap-4">
-              <span className="text-star">
-                ⏱ Forecast ({r.plan_type}) · {r.native_name} · {d(r.created_at)}
-                {r.phone && r.phone.trim() && (
-                  <>
-                    {' · '}
-                    <a href={`tel:${r.phone.replace(/[^\d+]/g, '')}`} className="text-amber hover:underline">📞 {r.phone}</a>
-                  </>
-                )}
-              </span>
-              <span className="font-mono text-mono-sm text-dust/60 shrink-0">
-                {r.payment_status} · {r.status} ·{' '}
-                <Link href={`/report/${r.id}`} className="text-amber hover:underline">
-                  view full report ▸
-                </Link>
-              </span>
-            </div>
-          ))}
+          {data.reports.map((r) => {
+            const personalContext = r.personal_context?.trim();
+            return (
+              <div key={r.id} className="card border border-horizon/40 rounded-card p-4 text-body-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="text-star">
+                    ⏱ Forecast ({r.plan_type}) · {r.native_name} · {d(r.created_at)}
+                    {r.phone && r.phone.trim() && (
+                      <>
+                        {' · '}
+                        <a href={`tel:${r.phone.replace(/[^\d+]/g, '')}`} className="text-amber hover:underline">📞 {r.phone}</a>
+                      </>
+                    )}
+                  </span>
+                  <span className="font-mono text-mono-sm text-dust/60 shrink-0">
+                    {r.payment_status} · {r.status} ·{' '}
+                    <Link href={`/report/${r.id}`} className="text-amber hover:underline">
+                      view full report ▸
+                    </Link>
+                  </span>
+                </div>
+                <div className="mt-3 rounded-card border border-horizon/30 bg-space/40 p-3">
+                  <div className="font-mono text-mono-sm text-amber/70 uppercase tracking-wider mb-1">
+                    What they wrote
+                  </div>
+                  {personalContext ? (
+                    <p className="text-dust leading-relaxed whitespace-pre-wrap">{personalContext}</p>
+                  ) : (
+                    <p className="text-dust/50 italic">No question or life concern submitted.</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
           {data.reports.length + data.kundalis.length + data.synastries.length === 0 && (
             <p className="text-dust/60 text-body-sm">No reports generated yet.</p>
           )}

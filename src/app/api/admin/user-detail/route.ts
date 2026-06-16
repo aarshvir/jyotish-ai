@@ -22,7 +22,11 @@ export async function GET(req: NextRequest) {
   const [userRes, eventsRes, reportsRes, kundaliRes, synastryRes, paymentsRes] = await Promise.all([
     db.auth.admin.getUserById(id),
     db.from('analytics_events').select('event_name, properties, created_at').eq('user_id', id).order('created_at', { ascending: true }).limit(1000),
-    db.from('reports').select('id, plan_type, status, payment_status, native_name, birth_date, phone, created_at').eq('user_id', id).order('created_at', { ascending: false }),
+    db
+      .from('reports')
+      .select('id, plan_type, status, payment_status, native_name, birth_date, phone, personal_context, created_at')
+      .eq('user_id', id)
+      .order('created_at', { ascending: false }),
     db.from('kundali_charts').select('id, person, overview, life_areas, year_outlook, doshas, created_at').eq('user_id', id).order('created_at', { ascending: false }),
     db.from('synastry_charts').select('id, partner_a, partner_b, ashtakoot, commentary, created_at').eq('user_id', id).order('created_at', { ascending: false }),
     db.from('ziina_payments').select('plan_type, amount, currency, status, created_at').eq('user_id', id).order('created_at', { ascending: false }),
