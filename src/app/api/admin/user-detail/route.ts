@@ -24,13 +24,29 @@ export async function GET(req: NextRequest) {
     db.from('analytics_events').select('event_name, properties, created_at').eq('user_id', id).order('created_at', { ascending: true }).limit(1000),
     db
       .from('reports')
-      .select('id, plan_type, status, payment_status, native_name, birth_date, phone, personal_context, created_at')
+      .select('id, plan_type, status, payment_status, native_name, birth_date, phone, created_at')
       .eq('user_id', id)
       .order('created_at', { ascending: false }),
     db.from('kundali_charts').select('id, person, overview, life_areas, year_outlook, doshas, created_at').eq('user_id', id).order('created_at', { ascending: false }),
     db.from('synastry_charts').select('id, partner_a, partner_b, ashtakoot, commentary, created_at').eq('user_id', id).order('created_at', { ascending: false }),
     db.from('ziina_payments').select('plan_type, amount, currency, status, created_at').eq('user_id', id).order('created_at', { ascending: false }),
   ]);
+
+  // personal_context lives behind migration 20260617. Fetch it tolerantly and merge
+  // by id, so an unapplied migration degrades to "no questions shown" instead of
+  // silently dropping EVERY report from the admin view (a missing column fails the
+  // whole select). When present, admins see the seeker's submitted context.
+  const reports = (reportsRes.data ?? []) as Array<Record<string, unknown> & { id: string }>;
+  {
+    const { data: pcRows, error: pcErr } = await db
+      .from('reports')
+      .select('id, personal_context')
+      .eq('user_id', id);
+    if (!pcErr && Array.isArray(pcRows)) {
+      const byId = new Map(pcRows.map((r) => [(r as { id: string }).id, (r as { personal_context?: string | null }).personal_context ?? null]));
+      for (const r of reports) r.personal_context = byId.get(r.id) ?? null;
+    }
+  }
 
   const u = userRes.data?.user;
   const events = eventsRes.data ?? [];
@@ -62,7 +78,7 @@ export async function GET(req: NextRequest) {
     pageViewCount: pageViews.length,
     pages: Object.entries(pathCounts).map(([path, count]) => ({ path, count })).sort((a, b) => b.count - a.count),
     journey: events.slice(-120).map((e) => ({ name: e.event_name, path: propsOf(e).path ?? null, at: e.created_at })),
-    reports: reportsRes.data ?? [],
+    reports,
     kundalis: kundaliRes.data ?? [],
     synastries: synastryRes.data ?? [],
     payments: paymentsRes.data ?? [],
