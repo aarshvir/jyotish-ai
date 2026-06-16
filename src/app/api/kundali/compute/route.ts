@@ -25,11 +25,16 @@ export async function POST(request: NextRequest) {
   const db = createServiceClient();
 
   // Access gate: any paid/promo forecast OR a standalone Kundali unlock.
-  const { count } = await db
+  // Surface a count-query error as a retryable 500 (mirrors synastry/compute) so a
+  // transient DB failure can't masquerade as count=0 and wrongly 402 a paid user.
+  const { count, error: cntErr } = await db
     .from('reports')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', auth.user.id)
     .in('payment_status', ['paid', 'promo']);
+  if (cntErr) {
+    return NextResponse.json({ error: 'Database error' }, { status: 500 });
+  }
 
   let hasKundaliUnlock = false;
   const { data: unlockRow } = await db

@@ -148,7 +148,6 @@ type ExistingReportForStart = {
   user_id: string | null;
   status: string | null;
   report_data: unknown;
-  personal_context: string | null;
   generation_started_at: string | null;
   plan_type: string | null;
   payment_status: string | null;
@@ -281,7 +280,7 @@ export async function POST(request: NextRequest) {
   const db = createServiceClient();
   const { data: existingRaw, error: existingErr } = await db
     .from('reports')
-    .select('user_id, status, report_data, personal_context, generation_started_at, plan_type, payment_status, payment_provider')
+    .select('user_id, status, report_data, generation_started_at, plan_type, payment_status, payment_provider')
     .eq('id', reportId)
     .maybeSingle();
 
@@ -306,6 +305,26 @@ export async function POST(request: NextRequest) {
       },
       { status: 404 },
     );
+  }
+
+  // personal_context lives behind migration 20260617. Read it tolerantly (separate
+  // query) so a not-yet-applied migration can never 500 the core report-start flow —
+  // mirrors the deliberately tolerant WRITE further below. null when absent.
+  let existingPersonalContext: string | null = null;
+  if (existing) {
+    const { data: pcRow, error: pcErr } = await db
+      .from('reports')
+      .select('personal_context')
+      .eq('id', reportId)
+      .maybeSingle();
+    if (pcErr) {
+      const m = pcErr.message ?? '';
+      if (!m.includes('personal_context') && !m.includes('schema cache')) {
+        console.warn('[reports/start] personal_context read failed:', m);
+      }
+    } else {
+      existingPersonalContext = (pcRow as { personal_context?: string | null } | null)?.personal_context ?? null;
+    }
   }
 
   const rd = existing?.report_data as { days?: unknown[] } | null | undefined;
@@ -685,8 +704,8 @@ export async function POST(request: NextRequest) {
     paymentStatus: trustedPaymentStatus,
     // Prefer the freshly-submitted context; fall back to the persisted column so a
     // report-page retry / "Try Again" (which omits the field) stays personalized.
-    ...(((body.personal_context?.trim()) || existing?.personal_context?.trim())
-      ? { personalContext: ((body.personal_context?.trim() || existing?.personal_context || '').slice(0, 1200)) }
+    ...(((body.personal_context?.trim()) || existingPersonalContext?.trim())
+      ? { personalContext: ((body.personal_context?.trim() || existingPersonalContext || '').slice(0, 1200)) }
       : {}),
     ...(ragRaw != null && String(ragRaw).trim() !== ''
       ? { jyotishRagMode: String(ragRaw).trim() }
