@@ -17,7 +17,13 @@ import { post as careerAstrology } from './career-astrology-10th-house';
 import { post as scienceOfTiming } from './science-of-timing-vedic-muhurta';
 import { post as bestPlatforms } from './best-vedic-astrology-platforms-2026';
 import { post as twelveHouses } from './twelve-houses-vedic-astrology';
+import { post as moonSignVsSunSignVedic } from './moon-sign-vs-sun-sign-vedic';
+import { post as kaalSarpDoshaExplained } from './kaal-sarp-dosha-explained';
+import { post as panchangExplainedBeginners } from './panchang-explained-beginners';
 export const POSTS: BlogPost[] = [
+  panchangExplainedBeginners,
+  kaalSarpDoshaExplained,
+  moonSignVsSunSignVedic,
   bestPlatforms,
   twelveHouses,
   scienceOfTiming,
