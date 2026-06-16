@@ -36,7 +36,7 @@ export default function HoroscopeSignIndex({ params }: Props) {
   return (
     <div className="min-h-screen bg-space text-star relative overflow-hidden">
       <StarField />
-      <main className="max-w-lg mx-auto px-5 py-16 relative z-10">
+      <div className="max-w-lg mx-auto px-5 py-16 relative z-10">
         <h1 className="text-display-sm font-display text-amber mb-6 capitalize">{sign} — pick a date</h1>
         <ul className="space-y-2">
           {dates.map((d) => (
@@ -50,7 +50,7 @@ export default function HoroscopeSignIndex({ params }: Props) {
             </li>
           ))}
         </ul>
-      </main>
+      </div>
     </div>
   );
 }

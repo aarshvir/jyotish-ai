@@ -113,6 +113,7 @@ export function DecideSection({ months, strategicWindows, days }: DecideSectionP
               key={d.key}
               type="button"
               onClick={() => setSelected(d.key)}
+              aria-pressed={isSelected}
               className={`rounded-card border p-4 text-left transition-all ${
                 isSelected
                   ? 'border-amber bg-amber/10'

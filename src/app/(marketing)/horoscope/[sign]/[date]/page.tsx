@@ -58,7 +58,7 @@ export default function HoroscopeDayPage({ params }: Props) {
   return (
     <div className="min-h-screen bg-space text-star relative overflow-hidden">
       <StarField />
-      <main className="max-w-2xl mx-auto px-5 py-16 relative z-10">
+      <div className="max-w-2xl mx-auto px-5 py-16 relative z-10">
         <p className="text-mono-sm text-dust mb-2">VedicHour · Programmatic daily</p>
         <h1 className="text-display-sm font-display text-amber mb-6">{title}</h1>
         <div className="space-y-4 text-dust leading-relaxed">
@@ -74,7 +74,7 @@ export default function HoroscopeDayPage({ params }: Props) {
             More dates
           </Link>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
