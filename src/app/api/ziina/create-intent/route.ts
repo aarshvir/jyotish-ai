@@ -56,6 +56,14 @@ export async function POST(request: NextRequest) {
   if (!planType) {
     return NextResponse.json({ error: 'planType required' }, { status: 400 });
   }
+  // Only DIRECT-checkout plans may be minted here. 'monthly_upgrade' has its own
+  // route (/api/ziina/upgrade) that verifies a PAID 7-day report before charging
+  // only the delta — accepting it here would let a buyer pay the cheaper upgrade
+  // delta without ever owning a paid 7-day report.
+  const DIRECT_CHECKOUT_PLANS = new Set(['7day', 'monthly', 'annual', 'synastry', 'kundali']);
+  if (!DIRECT_CHECKOUT_PLANS.has(planType)) {
+    return NextResponse.json({ error: 'Unsupported plan for checkout' }, { status: 400 });
+  }
   const isStandaloneUnlock = (planType === 'synastry' || planType === 'kundali') && !reportId;
   if (!reportId && !isStandaloneUnlock) {
     return NextResponse.json({ error: 'reportId required for this plan' }, { status: 400 });

@@ -10,7 +10,6 @@ import type { PipelineInput } from '@/lib/reports/orchestrator';
 import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
 import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { redeemPromoCode } from '@/lib/promo/server';
-import { BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
 const YOUNG_GENERATING_MS = 10 * 60 * 1000;
@@ -73,7 +72,10 @@ function buildAuthHeaders(reportId: string, userId: string, correlationId: strin
   });
   authHeaders['x-report-id'] = reportId;
   authHeaders['x-correlation-id'] = correlationId;
-  if (BYPASS_SECRET) authHeaders['x-bypass-token'] = BYPASS_SECRET;
+  // NB: deliberately NOT attaching the global x-bypass-token here. These headers are
+  // persisted into the Inngest event store, so a global admin secret would leak into
+  // Inngest's dashboard/logs. The scoped 6h-TTL x-job-token above authenticates every
+  // internal pipeline callback (all internal routes accept it via requireAuth).
   return authHeaders;
 }
 
