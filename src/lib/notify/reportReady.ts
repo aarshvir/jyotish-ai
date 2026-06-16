@@ -50,6 +50,24 @@ function whatsappText(name: string, url: string, free: boolean): string {
 export async function notifyReportReady(reportId: string): Promise<void> {
   try {
     const db = createServiceClient();
+
+    // Idempotency claim: this runs inside a retryable Inngest finalize step, so a retry
+    // would otherwise re-send the email + WhatsApp (real cost / spam). Atomically claim
+    // notify_sent_at; only the first caller (it was NULL) proceeds. Tolerant of an
+    // unapplied migration (20260617_reports_notify_sent_at) — if the column is missing
+    // the claim errors and we fall through to send (status-quo at-least-once) rather than
+    // block notifications entirely.
+    const { data: claim, error: claimErr } = await db
+      .from('reports')
+      .update({ notify_sent_at: new Date().toISOString() })
+      .eq('id', reportId)
+      .is('notify_sent_at', null)
+      .select('id')
+      .maybeSingle();
+    if (!claimErr && !claim) {
+      return; // already notified by an earlier finalize
+    }
+
     const { data } = await db
       .from('reports')
       .select('user_email, native_name, phone, plan_type')
