@@ -1378,6 +1378,11 @@ export async function generateReportPipeline(
             })),
           });
 
+          // current_dasha.end_date is the ANTARDASHA end (months–2y). The mahadasha
+          // (6–20y) ends much later, so source md_end from the matching dasha_sequence
+          // entry; only ad_end uses current_dasha.end_date. Avoids telling the seeker
+          // their main life period ends years too early.
+          const mdEntry = ephemerisData.dasha_sequence?.find((d) => d.planet === mahadasha);
           const natTextBody = JSON.stringify({
             lagnaSign: ephemerisData.lagna,
             lagnaDegreee: ephemerisData.lagna_degree,
@@ -1385,7 +1390,7 @@ export async function generateReportPipeline(
             moonNakshatra: ephemerisData.planets?.Moon?.nakshatra ?? ephemerisData.moon_nakshatra,
             mahadasha,
             antardasha,
-            md_end: dasha.end_date,
+            md_end: mdEntry?.end_date ?? dasha.end_date,
             ad_end: dasha.end_date,
             planets: ephemerisData.planets ?? {},
             require_scripture_grounding: requireScriptureGrounding,

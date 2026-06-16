@@ -40,9 +40,11 @@ function finalizeHourlyCommentary(raw: string | undefined, slot: SlotShape): str
   // Fallback: produce a minimal 3-paragraph stub when LLM returned nothing meaningful
   const hora = String(slot?.dominant_hora ?? 'Sun');
   const chog = String(slot?.dominant_choghadiya ?? 'Shubh');
-  const th = typeof slot?.transit_lagna_house === 'number' ? slot.transit_lagna_house : 1;
-  const rkPrefix = slot?.is_rahu_kaal ? 'RAHU KAAL ACTIVE — ' : '';
-  return `${rkPrefix}${hora} hora governs this window for this lagna. Check its functional role — whether yogakaraka, maraka, or badhaka — and direct activity accordingly.\n\nTransit Lagna = H${th} house activation. Focus energy on the matters this house governs for your lagna sign.\n\n${chog.toUpperCase()} — ${slot?.is_rahu_kaal ? 'Avoid new initiations entirely during this Rahu Kaal window.' : 'Match your activity type to this choghadiya quality.'}`;
+  const rkPrefix = slot?.is_rahu_kaal ? 'Rahu Kaal is active — ' : '';
+  // Plain-English fallback: NO Sanskrit functional-role jargon (yogakaraka/maraka/
+  // badhaka) and NO "H{n}" house notation — both are forbidden by this route's own
+  // LANGUAGE RULES and can otherwise surface untranslated in paid reports.
+  return `${rkPrefix}The ${hora} planetary hour shapes the tone of this window for you. Lean into the kind of work it naturally supports.\n\nThis hour highlights a specific area of your life — check your strongest windows in the hourly table and put your important work there.\n\n${chog} window — ${slot?.is_rahu_kaal ? 'avoid starting anything new during this Rahu Kaal window; finish existing work only.' : 'match your activity to the quality of this window.'}`;
 }
 
 function buildFallbackSlot(slot: SlotShape): { slot_index: number; commentary: string } {

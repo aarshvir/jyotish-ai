@@ -277,9 +277,15 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
       }
     }
 
-    // Ensure exact day count is preserved.
+    // Ensure exact day count is preserved. A count mismatch means the LLM output is
+    // unusable, so we fall back to deterministic template days — but flag it 206 +
+    // partial (like the catch below) so assertNoPartialLlmForPaid throws for paid
+    // plans instead of silently shipping template copy in a paid report.
     if (out.length !== days.length) {
-      return NextResponse.json({ days: days.map((d) => buildFallbackDay(d, lagnaSign)) });
+      return NextResponse.json(
+        { days: days.map((d) => buildFallbackDay(d, lagnaSign)), partial: true },
+        { status: 206 },
+      );
     }
 
     return NextResponse.json({ days: out });

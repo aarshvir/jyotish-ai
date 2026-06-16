@@ -89,6 +89,12 @@ const STRONG_ACTION_WORDS = /\b(act decisively|seize|bold move|go all.?in|maximu
 const GENERATED_PLACEHOLDER_RE =
   /commentary is generating|weekly narrative is generating|refresh in 30 seconds|until full commentary is available/i;
 
+// Signature of the deterministic buildFallbackDay() template emitted by
+// daily-overviews when LLM output is unusable. Real LLM output never opens this
+// way (the system prompt forbids "Day score: N/100" jargon openings), so this is
+// a safe, specific guard against template copy slipping into a paid daily section.
+const DAILY_TEMPLATE_RE = /Day score:\s*\d+\/100\.\s*This is a (?:productive|moderate|careful) day overall\./i;
+
 function hasGeneratedPlaceholderText(value: string | undefined | null): boolean {
   return GENERATED_PLACEHOLDER_RE.test(value ?? '');
 }
@@ -225,6 +231,8 @@ function validateDay(day: DayForecast): string[] {
 
   if (!day.overview?.trim()) {
     errs.push(`${prefix}: overview is empty`);
+  } else if (DAILY_TEMPLATE_RE.test(day.overview)) {
+    errs.push(`${prefix}: overview is deterministic template text (LLM generation failed)`);
   }
 
   errs.push(...validateSlots(day.slots ?? [], day.date));
