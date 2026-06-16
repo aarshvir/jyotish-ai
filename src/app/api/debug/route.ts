@@ -25,11 +25,14 @@ export async function GET(request: NextRequest) {
     return `SET (${v.length} chars)`;
   };
 
-  // Anthropic connectivity tests
+  // Anthropic connectivity tests — billable, so opt-in only (?probe=1). The default
+  // diagnostic just reports env-var presence and never spends tokens, removing the
+  // cost-abuse surface of two paid API calls on every authorized hit.
   let anthropicPingHaiku = 'not_tested';
   let anthropicPingSonnet = 'not_tested';
+  const runProbe = request.nextUrl.searchParams.get('probe') === '1';
   const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (anthropicKey && !anthropicKey.startsWith('your_')) {
+  if (runProbe && anthropicKey && !anthropicKey.startsWith('your_')) {
     // Test 1: haiku with tiny prompt
     try {
       const ctrl = new AbortController();
