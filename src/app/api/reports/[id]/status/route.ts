@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { extractUserVisibleReportError } from '@/lib/reports/reportErrors';
+import { canReadReportContent } from '@/lib/reports/entitlement';
 import {
   finalizeReportStatusResponse,
   nextPollAfterMsForPayload,
@@ -213,11 +214,13 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
   const status = data?.status ?? 'unknown';
   const isComplete = status === 'complete';
   const reportData = data?.report_data as Record<string, unknown> | null;
-  // Read-side entitlement: only return the report payload to admins, free/preview
-  // plans, or genuinely paid reports — never a paid-plan row that isn't 'paid'.
-  const planType = String(data?.plan_type ?? '').toLowerCase();
-  const entitledToContent =
-    userIsAdmin || planType === 'free' || planType === 'preview' || data?.payment_status === 'paid';
+  // Read-side entitlement: return payloads only to admins, free previews, Ziina-paid
+  // reports, or server-validated 100%-off promo reports.
+  const entitledToContent = canReadReportContent({
+    planType: data?.plan_type as string | null | undefined,
+    paymentStatus: data?.payment_status as string | null | undefined,
+    isAdmin: userIsAdmin,
+  });
 
   const serverProgress = typeof data?.generation_progress === 'number' ? data.generation_progress : null;
   const progress = isComplete

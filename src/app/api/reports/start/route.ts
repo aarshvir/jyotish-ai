@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
+import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { isAdmin } from '@/lib/admin/isAdmin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
@@ -704,12 +704,6 @@ export async function POST(request: NextRequest) {
   });
   authHeaders['x-report-id'] = reportId;
   authHeaders['x-correlation-id'] = generationTraceId;
-  if (BYPASS_SECRET) {
-    authHeaders['x-bypass-token'] = BYPASS_SECRET;
-  } else {
-    const cookie = request.headers.get('cookie');
-    if (cookie) authHeaders['cookie'] = cookie;
-  }
 
   // ── Inngest background execution (production) ─────────────────────────────
   // Only block if REPORT_START_REQUIRE_INNGEST is explicitly set.

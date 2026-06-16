@@ -6,6 +6,8 @@ import { requireAuth } from '@/lib/api/requireAuth';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { sanitizePersonalContext } from '@/lib/utils/sanitize';
+import { createServiceClient } from '@/lib/supabase/admin';
+import { canAskReportQuestion } from '@/lib/reports/entitlement';
 
 /**
  * POST /api/reports/[id]/ask
@@ -14,9 +16,37 @@ import { sanitizePersonalContext } from '@/lib/utils/sanitize';
  * it reuses the personal-context sanitizer for injection defense and runs under a
  * tight per-user rate limit. Non-streaming v1.
  */
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
+
+  const reportId = params.id?.trim();
+  if (!reportId) {
+    return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+  }
+
+  const db = createServiceClient();
+  const { data: report, error: reportErr } = await db
+    .from('reports')
+    .select('user_id, payment_status')
+    .eq('id', reportId)
+    .maybeSingle();
+
+  if (reportErr) {
+    console.error('[reports/ask] report lookup failed:', reportErr.message);
+    return NextResponse.json({ error: 'Could not verify report access' }, { status: 500 });
+  }
+  if (!report || (report.user_id !== auth.user.id && auth.isAdmin !== true)) {
+    return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+  }
+  if (
+    !canAskReportQuestion({
+      paymentStatus: (report as { payment_status?: string | null }).payment_status,
+      isAdmin: auth.isAdmin === true,
+    })
+  ) {
+    return NextResponse.json({ error: 'Payment required' }, { status: 402 });
+  }
 
   if (shouldRateLimitLlmForUser(auth)) {
     const rlKey = getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined);

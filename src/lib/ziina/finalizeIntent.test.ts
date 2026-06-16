@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { finalizeCompletedZiinaIntent } from './finalizeIntent';
+import { inngest } from '@/lib/inngest/client';
 
 vi.mock('@/lib/ziina/server', () => ({
   getPaymentIntent: vi.fn(),
@@ -147,5 +148,70 @@ describe('finalizeCompletedZiinaIntent', () => {
     expect(result).toEqual({ ok: true, action: 'processed' });
     expect(tables.ziina_payments[0].status).toBe('completed');
     expect(tables.reports).toEqual([]);
+  });
+
+  it('dispatches paid report generation with a scoped job token, not the global bypass secret', async () => {
+    const originalInngestKey = process.env.INNGEST_EVENT_KEY;
+    const originalJobSecret = process.env.JOB_TOKEN_SECRET;
+    const originalBypassSecret = process.env.BYPASS_SECRET;
+    process.env.INNGEST_EVENT_KEY = 'inngest-test-key';
+    process.env.JOB_TOKEN_SECRET = 'job-token-secret';
+    process.env.BYPASS_SECRET = 'global-bypass-secret';
+    vi.mocked(inngest.send).mockClear();
+
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'paid_report',
+          plan_type: '7day',
+          status: 'pending',
+          user_id: 'buyer_user',
+        },
+      ],
+      reports: [
+        {
+          id: 'paid_report',
+          user_id: 'buyer_user',
+          user_email: 'buyer@example.test',
+          native_name: 'Buyer',
+          birth_date: '1990-01-01',
+          birth_time: '08:30:00',
+          birth_city: 'Dubai',
+          birth_lat: 25.2048,
+          birth_lng: 55.2708,
+          current_city: 'Dubai',
+          current_lat: 25.2048,
+          current_lng: 55.2708,
+          timezone_offset: 240,
+          plan_type: '7day',
+          report_start_date: '2026-06-16',
+          personal_context: null,
+          status: 'pending',
+          generation_started_at: null,
+          report_data: null,
+        },
+      ],
+    };
+
+    try {
+      const result = await finalizeCompletedZiinaIntent(
+        createMockDb(tables) as never,
+        'intent_1',
+        'https://example.test',
+        { intent: completedIntent as never },
+      );
+
+      expect(result).toEqual({ ok: true, action: 'processed' });
+      const event = vi.mocked(inngest.send).mock.calls[0]?.[0] as {
+        data?: { authHeaders?: Record<string, string> };
+      };
+      expect(event?.data?.authHeaders?.['x-job-token']).toEqual(expect.any(String));
+      expect(event?.data?.authHeaders?.['x-bypass-token']).toBeUndefined();
+    } finally {
+      process.env.INNGEST_EVENT_KEY = originalInngestKey;
+      process.env.JOB_TOKEN_SECRET = originalJobSecret;
+      process.env.BYPASS_SECRET = originalBypassSecret;
+    }
   });
 });

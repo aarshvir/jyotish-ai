@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getReusablePendingZiinaIntent } from './pendingIntentReuse';
-import { computeIntentAmount } from './server';
+import { computeIntentAmount, isDirectCheckoutPlan } from './server';
 import type { ZiinaPaymentIntent } from './server';
 
 function intent(over: Partial<ZiinaPaymentIntent>): ZiinaPaymentIntent {
@@ -66,5 +66,16 @@ describe('getReusablePendingZiinaIntent', () => {
 
   it('creates fresh when there is no existing intent', () => {
     expect(getReusablePendingZiinaIntent(null, { currency: 'USD', expectedAmount: usdAmount })).toBeNull();
+  });
+});
+
+describe('isDirectCheckoutPlan', () => {
+  it('excludes monthly_upgrade from the generic create-intent route', () => {
+    expect(isDirectCheckoutPlan('7day')).toBe(true);
+    expect(isDirectCheckoutPlan('monthly')).toBe(true);
+    expect(isDirectCheckoutPlan('annual')).toBe(true);
+    expect(isDirectCheckoutPlan('synastry')).toBe(true);
+    expect(isDirectCheckoutPlan('kundali')).toBe(true);
+    expect(isDirectCheckoutPlan('monthly_upgrade')).toBe(false);
   });
 });

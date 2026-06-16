@@ -7,6 +7,7 @@ import {
   countryToCurrency,
   getPaymentIntent,
   computeIntentAmount,
+  isDirectCheckoutPlan,
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
@@ -55,6 +56,12 @@ export async function POST(request: NextRequest) {
   const { planType, reportId, promoCode, testMode } = body;
   if (!planType) {
     return NextResponse.json({ error: 'planType required' }, { status: 400 });
+  }
+  if (!isDirectCheckoutPlan(planType)) {
+    return NextResponse.json(
+      { error: planType === 'monthly_upgrade' ? 'Use the upgrade checkout for this plan.' : 'Unknown plan type' },
+      { status: 400 },
+    );
   }
   const isStandaloneUnlock = (planType === 'synastry' || planType === 'kundali') && !reportId;
   if (!reportId && !isStandaloneUnlock) {

@@ -10,7 +10,6 @@ import type { PipelineInput } from '@/lib/reports/orchestrator';
 import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
 import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { redeemPromoCode } from '@/lib/promo/server';
-import { BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
 const YOUNG_GENERATING_MS = 10 * 60 * 1000;
@@ -73,7 +72,6 @@ function buildAuthHeaders(reportId: string, userId: string, correlationId: strin
   });
   authHeaders['x-report-id'] = reportId;
   authHeaders['x-correlation-id'] = correlationId;
-  if (BYPASS_SECRET) authHeaders['x-bypass-token'] = BYPASS_SECRET;
   return authHeaders;
 }
 

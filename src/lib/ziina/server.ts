@@ -50,6 +50,12 @@ export const ZIINA_PLANS: Record<string, ZiinaPlan> = {
   },
 };
 
+const DIRECT_CHECKOUT_PLAN_TYPES = new Set(['7day', 'monthly', 'annual', 'synastry', 'kundali']);
+
+export function isDirectCheckoutPlan(planType: string): boolean {
+  return DIRECT_CHECKOUT_PLAN_TYPES.has(planType);
+}
+
 /** 10% off the upgrade delta vs paying full monthly after already owning 7-day */
 export const UPGRADE_DELTA_DISCOUNT_PCT = 10;
 
