@@ -78,7 +78,7 @@ function horoscopeRoutes(): { path: string; changefreq: string; priority: string
 
 const BLOG_ROUTES = [
   { path: '/blog', changefreq: 'daily', priority: '0.7' },
-  ...POSTS.map((p) => ({ path: `/blog/${p.slug}`, changefreq: 'weekly', priority: '0.7' })),
+  ...POSTS.map((p) => ({ path: `/blog/${p.slug}`, changefreq: 'weekly', priority: '0.7', lastmod: p.date })),
 ];
 
 // Programmatic reference hubs + leaves (nakshatras, dasha periods, life predictions).
@@ -94,11 +94,14 @@ const REFERENCE_ROUTES = [
 const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...BLOG_ROUTES, ...REFERENCE_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
 
 export function GET() {
-  const lastmod = new Date().toISOString();
-  const urls = ALL_ROUTES.map(
-    (r) =>
-      `  <url>\n    <loc>${SITE_URL}${r.path}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>${r.changefreq}</changefreq>\n    <priority>${r.priority}</priority>\n  </url>`,
-  ).join('\n');
+  // Only emit <lastmod> where we have a REAL date (blog posts carry p.date). Stamping
+  // every URL with request-time "now" is inaccurate and Google ignores unreliable
+  // lastmod, so omit it for static/reference routes rather than fake a fresh date.
+  const urls = ALL_ROUTES.map((r) => {
+    const lm = (r as { lastmod?: string }).lastmod;
+    const lastmodTag = lm ? `\n    <lastmod>${lm}</lastmod>` : '';
+    return `  <url>\n    <loc>${SITE_URL}${r.path}</loc>${lastmodTag}\n    <changefreq>${r.changefreq}</changefreq>\n    <priority>${r.priority}</priority>\n  </url>`;
+  }).join('\n');
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
 
