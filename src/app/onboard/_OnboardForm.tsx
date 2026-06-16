@@ -450,7 +450,9 @@ function Step3({
     const majorPretty = pretty / 100;
     let discounted: string;
     if (currency === 'AED') discounted = `AED ${majorPretty.toFixed(2)}`;
-    else if (currency === 'INR') discounted = `₹${majorPretty.toFixed(0)}`;
+    // Indian grouping so the discounted price matches the struck-through original
+    // (formatAmount uses toLocaleString('en-IN')) — e.g. ₹1,048 not ₹1048.
+    else if (currency === 'INR') discounted = `₹${Math.round(majorPretty).toLocaleString('en-IN')}`;
     else discounted = `$${majorPretty.toFixed(2)}`;
     return { original, discounted };
   }
@@ -831,7 +833,7 @@ function OnboardPageInner() {
     }
   }
 
-  async function goToReportGeneration(opts?: { forcePaidPlan?: boolean }) {
+  async function goToReportGeneration(opts?: { forcePaidPlan?: boolean; adminFree?: boolean }) {
     // Gate: refuse to dispatch a report when geocoding did not resolve.
     // Falling back to 0,0 silently produces a chart anchored near the Gulf of
     // Guinea, which contradicts the marketing promise of "sub-degree precision".
@@ -910,7 +912,11 @@ function OnboardPageInner() {
 
     const reportId = crypto.randomUUID();
     const isPaidPlan = effectiveType !== 'free';
-    const needsPayment = isPaidPlan && !hasBypass && promoDiscount < 100;
+    // adminFree: the admin "Generate Free Report" button wants a full paid-tier report
+    // without payment. /api/reports/start authorizes admins for free generation, so skip
+    // the Ziina popup here (the server still enforces actual admin — a non-admin who
+    // forged this flag would not be granted a free paid report).
+    const needsPayment = isPaidPlan && !hasBypass && !opts?.adminFree && promoDiscount < 100;
     const params = new URLSearchParams(paramsObj);
     if (needsPayment) params.set('payment_status', 'paid');
     const finalUrl = `/report/${reportId}?${params.toString()}`;
@@ -1063,7 +1069,7 @@ function OnboardPageInner() {
   }
 
   function handleSubmit() { void goToReportGeneration(); }
-  function handleAdminFreeSubmit() { void goToReportGeneration({ forcePaidPlan: true }); }
+  function handleAdminFreeSubmit() { void goToReportGeneration({ forcePaidPlan: true, adminFree: true }); }
 
   const vars = slideVariants(dir);
 

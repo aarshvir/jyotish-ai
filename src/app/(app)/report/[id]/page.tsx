@@ -1306,8 +1306,12 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
   // are presented as a preview: natal chart + one sample day. The multi-day forecast,
   // weekly/monthly synthesis, print-all, and PDF/Markdown exports are reserved for paid
   // plans. plan_type is stored as 'free' (onboard) or normalised to 'preview' (kickoff).
-  // Fail-open: an unknown/undefined plan renders fully (never hides content a paid user bought).
-  const reportPlanType = dbBirthRef.current?.plan_type;
+  // Plan source: prefer the authoritative DB row; when it's absent (fresh-generation
+  // branch never fetched a row, e.g. the onboard /api/reports/start call failed and
+  // navigated anyway), fall back to the URL `type` param so a free-origin load still
+  // gates. type defaults to 'free' (line ~141), so unknown free-origin loads fail CLOSED
+  // (preview) rather than leaking the paid report; a paid `type` keeps fail-open.
+  const reportPlanType = dbBirthRef.current?.plan_type ?? (type === 'free' ? 'preview' : type);
   const isPreviewPlan =
     !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview');
 
