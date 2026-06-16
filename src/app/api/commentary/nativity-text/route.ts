@@ -6,7 +6,7 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
-import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock } from '@/lib/utils/sanitize';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { detectYogas, buildTransitQueryTerms } from '@/lib/rag/yogaDetector';
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     jyotishRagMode?: string;
     jyotish_rag_mode?: string;
     require_scripture_grounding?: boolean;
-    personal_context_block?: string;
+    personal_context?: string;
   };
 
   try {
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
   const mahadasha = sanitizePlanetName(body.mahadasha);
   const antardasha = sanitizePlanetName(body.antardasha);
   // Pre-sanitized seeker context block, built once in the orchestrator ('' if none).
-  const personalContextBlock = typeof body.personal_context_block === 'string' ? body.personal_context_block : '';
+  const personalContextBlock = buildPersonalContextBlock(body.personal_context);
   if (!lagnaSign) {
     return NextResponse.json({ error: 'lagnaSign required' }, { status: 400 });
   }
