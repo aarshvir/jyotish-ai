@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
     .from('reports')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', auth.user.id)
-    .eq('payment_status', 'paid');
+    .in('payment_status', ['paid', 'promo']);
 
   if (cntErr) {
     return NextResponse.json({ error: 'Database error' }, { status: 500 });

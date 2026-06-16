@@ -55,13 +55,16 @@ export async function GET(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Entitlement: only admins, free/preview plans, or genuinely paid reports get the payload.
+  // Entitlement: admins, free/preview plans, genuinely paid reports, or server-validated
+  // 100%-promo reports (payment_status 'promo', e.g. ADMIN100) get the payload.
   const planType = String((row as { plan_type?: string }).plan_type ?? '').toLowerCase();
+  const payStatus = (row as { payment_status?: string }).payment_status;
   const entitled =
     auth.isAdmin === true ||
     planType === 'free' ||
     planType === 'preview' ||
-    (row as { payment_status?: string }).payment_status === 'paid';
+    payStatus === 'paid' ||
+    payStatus === 'promo';
   if (!entitled) {
     return NextResponse.json({ error: 'Payment required' }, { status: 402 });
   }
