@@ -310,14 +310,27 @@ export async function finalizeCompletedZiinaIntent(
     return { ok: false, error: 'Upgrade payment is missing a report owner binding' };
   }
 
-  await db
+  // Atomically CLAIM completion: only the caller whose UPDATE flips a still-'pending'
+  // row proceeds to the one-time side effects below. The line-233 read guard is racy
+  // (concurrent verify GET + webhook both see 'pending'); without this, both would
+  // insert a duplicate purchase_completed analytics row (inflating revenue metrics),
+  // re-grant, and re-dispatch. The conditional .eq('status','pending') makes exactly
+  // one win.
+  const { data: claimedRow } = await db
     .from('ziina_payments')
     .update({
       status: 'completed',
       amount: intent.amount,
       currency: intent.currency_code,
     })
-    .eq('ziina_intent_id', intentId);
+    .eq('ziina_intent_id', intentId)
+    .eq('status', 'pending')
+    .select('ziina_intent_id')
+    .maybeSingle();
+  if (!claimedRow) {
+    // Another concurrent verify/webhook already finalized this payment.
+    return { ok: true, action: 'already_done' };
+  }
 
   // Behavioral event: reliable revenue signal for the analytics dashboard. Never throw.
   try {

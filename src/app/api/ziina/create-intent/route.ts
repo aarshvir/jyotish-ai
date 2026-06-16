@@ -110,7 +110,11 @@ export async function POST(request: NextRequest) {
     }
     if (promoResult.codeId) {
       try {
-        await redeemPromoCode(promoResult.codeId, auth.user.id);
+        // Pass a stable order_id so the atomic redeem RPC + its partial-unique index
+        // dedupe concurrent / refreshed unlock POSTs (one redemption per user per
+        // standalone product). Without it, redeemPromoCode falls to the legacy
+        // non-atomic path (order_id NULL is never deduped) → double-counted used_count.
+        await redeemPromoCode(promoResult.codeId, auth.user.id, `unlock:${planType}:${auth.user.id}`);
       } catch (e) {
         console.warn('[ziina/create-intent] promo redeem failed (non-fatal):', e);
       }
@@ -172,7 +176,7 @@ export async function POST(request: NextRequest) {
     if (reportId && !isStandaloneUnlock) {
       const { data: reportRow, error: reportErr } = await db
         .from('reports')
-        .select('user_id')
+        .select('user_id, payment_status')
         .eq('id', reportId)
         .maybeSingle();
 
@@ -181,6 +185,15 @@ export async function POST(request: NextRequest) {
       }
       if (reportRow && reportRow.user_id !== auth.user.id) {
         return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+      }
+      // Already paid: don't mint a fresh payable intent for a report the user already
+      // bought — a stale/duplicated client redirect would otherwise charge them twice
+      // (finalize is idempotent on the grant, so the 2nd charge buys nothing).
+      if (reportRow && (reportRow.payment_status === 'paid' || reportRow.payment_status === 'promo')) {
+        return NextResponse.json({
+          alreadyPaid: true,
+          redirectUrl: `/report/${reportId}?payment_status=paid`,
+        });
       }
 
       const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();
@@ -310,6 +323,21 @@ export async function POST(request: NextRequest) {
       discountPct: discountPct > 0 ? discountPct : undefined,
       test: allowTestMode,
     });
+
+    // Supersede any older still-'pending' rows for this (user, report, plan) before
+    // inserting the fresh one. Otherwise repeated currency switches / abandons leave a
+    // pile of pending rows, and the 90s reuse lookup (orders by created_at desc) could
+    // surface a just-created stale row over a genuinely reusable older intent. finalize
+    // keys on ziina_intent_id, so cancelling pending rows never affects a completed one.
+    if (reportId && !isStandaloneUnlock) {
+      await db
+        .from('ziina_payments')
+        .update({ status: 'cancelled' })
+        .eq('user_id', auth.user.id)
+        .eq('report_id', reportId)
+        .eq('plan_type', planType)
+        .eq('status', 'pending');
+    }
 
     // Store intentId -> reportId binding server-side so verification never
     // trusts redirect URL parameters for payment/report ownership.
