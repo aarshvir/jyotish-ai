@@ -20,6 +20,7 @@ export default function robots(): MetadataRoute.Robots {
           '/upsell',
           '/kundali/',   // private report pages /kundali/{id} (NOT the /kundali landing page)
           '/synastry/',  // private report pages /synastry/{id} (NOT the /synastry landing page)
+          '/chart-preview', // dev-only mock-data preview
         ],
       },
     ],

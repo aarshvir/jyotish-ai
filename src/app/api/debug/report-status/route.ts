@@ -5,9 +5,11 @@ import { BYPASS_SECRET } from '@/lib/api/requireAuth';
 import { cleanEnv } from '@/lib/env';
 
 export async function GET(request: NextRequest) {
-  const bypass = new URL(request.url).searchParams.get('bypass');
-  // Reject if secret is unset/empty, or if bypass param is absent/empty, or if they don't match.
-  // This mirrors the safe isBypassToken() pattern in src/lib/bypass.ts.
+  // Read the secret from a header, NOT the query string — query params land in
+  // Vercel/CDN access logs, browser history, and the Referer sent to third parties.
+  // Matches the sibling /api/debug route and requireAuth's documented preference.
+  const bypass = request.headers.get('x-bypass-token');
+  // Reject if secret is unset/empty, or if the header is absent/empty, or if they don't match.
   const secretOk = !!BYPASS_SECRET && !!bypass && bypass === BYPASS_SECRET;
   if (!secretOk) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });

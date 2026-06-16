@@ -30,6 +30,10 @@ const nextConfig = {
       {
         source: '/(.*)',
         headers: [
+          // Force HTTPS for 2 years incl. subdomains — blocks SSL-stripping / downgrade
+          // MITM that could intercept Supabase session cookies or the Ziina payment
+          // redirect. No 'preload' (that's a hard-to-reverse preload-list commitment).
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' },
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

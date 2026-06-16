@@ -540,10 +540,10 @@ export async function generateReportPipeline(
   const terr = (...args: unknown[]) => console.error(traceTag, ...args);
   const dailyGridLimit = createConcurrencyLimiter(5);
   const commentaryLimit = createConcurrencyLimiter(3);
-  // Use SKIP_REPORT_VALIDATION (server-only). NEXT_PUBLIC_SKIP_VALIDATION kept as legacy alias.
-  const skipValidation =
-    process.env.SKIP_REPORT_VALIDATION === 'true' ||
-    process.env.NEXT_PUBLIC_SKIP_VALIDATION === 'true';
+  // SKIP_REPORT_VALIDATION is server-only by design. The NEXT_PUBLIC_ alias was
+  // dropped: a NEXT_PUBLIC_ flag is inlined into the client bundle, so a misconfig
+  // would both disable the report safety validator AND advertise that in shipped JS.
+  const skipValidation = process.env.SKIP_REPORT_VALIDATION === 'true';
   const ragModePayload =
     input.jyotishRagMode != null && String(input.jyotishRagMode).trim() !== ''
       ? { jyotishRagMode: String(input.jyotishRagMode).trim() }
