@@ -157,8 +157,8 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
           {thesis}
         </p>
 
-        {/* What's shifting — 3 plain lines */}
-        {shifts.length > 0 && (
+        {/* What's shifting — 3 plain lines (paid: derived from the full 12-month domain copy) */}
+        {!preview && shifts.length > 0 && (
           <div className="grid sm:grid-cols-3 gap-3 mb-6">
             {shifts.map((s) => (
               <div key={s.tag} className="rounded-md bg-bg-3/60 border border-horizon/30 p-4">
@@ -169,8 +169,8 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
           </div>
         )}
 
-        {/* Timing chips — best opening / go slower */}
-        {(best[0] || watch[0]) && (
+        {/* Timing chips — best opening / go slower (paid: from the full year's windows) */}
+        {!preview && (best[0] || watch[0]) && (
           <div className="flex flex-wrap gap-3 mb-6">
             {best[0] && (
               <div className="inline-flex items-center gap-2 rounded-pill bg-success/10 border border-success/30 px-4 py-2">
@@ -187,21 +187,24 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
           </div>
         )}
 
-        {/* Four domain cards — driven by real chart domain_scores */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {domains.map((d) => {
-            const t = trendWord(d.score);
-            return (
-              <div key={d.label} className="rounded-md bg-bg-3/40 border border-horizon/30 p-4 flex flex-col">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="font-body text-body-sm text-star font-semibold">{d.label}</span>
-                  <span className={`font-mono text-mono-sm ${toneClass(t.tone)}`}>{t.word}</span>
+        {/* Four domain cards — the paid 12-month Career/Money/Love/Health scores.
+            Hidden for preview so the year-ahead value stays behind the paywall. */}
+        {!preview && (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            {domains.map((d) => {
+              const t = trendWord(d.score);
+              return (
+                <div key={d.label} className="rounded-md bg-bg-3/40 border border-horizon/30 p-4 flex flex-col">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-body text-body-sm text-star font-semibold">{d.label}</span>
+                    <span className={`font-mono text-mono-sm ${toneClass(t.tone)}`}>{t.word}</span>
+                  </div>
+                  <p className="font-body text-mono-sm text-dust/80 leading-snug">{d.line || 'A steady area this period — no major swings expected.'}</p>
                 </div>
-                <p className="font-body text-mono-sm text-dust/80 leading-snug">{d.line || 'A steady area this period — no major swings expected.'}</p>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         {/* Moments that matter */}
         {(best.length > 0 || watch.length > 0) && !preview && (
