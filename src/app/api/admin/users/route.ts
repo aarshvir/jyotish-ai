@@ -17,8 +17,19 @@ export async function GET() {
   if (admin instanceof NextResponse) return admin;
 
   const db = createServiceClient();
-  const [usersRes, reportsRes, kundaliRes, synastryRes, paymentsRes] = await Promise.all([
-    db.auth.admin.listUsers({ perPage: 1000 }),
+
+  // Page through ALL auth users. listUsers returns one page at a time; without looping,
+  // every signup past the first page silently never appears in the admin list.
+  const authUsers: Array<{ id: string; email?: string | null; created_at?: string }> = [];
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 });
+    if (error) break;
+    const batch = data?.users ?? [];
+    authUsers.push(...batch);
+    if (batch.length < 1000) break; // last page
+  }
+
+  const [reportsRes, kundaliRes, synastryRes, paymentsRes] = await Promise.all([
     db.from('reports').select('user_id, payment_status'),
     db.from('kundali_charts').select('user_id'),
     db.from('synastry_charts').select('user_id'),
@@ -53,7 +64,7 @@ export async function GET() {
     }
   }
 
-  const users = (usersRes.data?.users ?? [])
+  const users = authUsers
     .map((u) => ({
       id: u.id,
       email: u.email ?? '(no email)',
@@ -62,5 +73,7 @@ export async function GET() {
     }))
     .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
 
-  return NextResponse.json({ users });
+  // no-store: the admin must always see the live list, never a browser/CDN-cached copy
+  // (this is what made new signups appear missing even after a page refresh).
+  return NextResponse.json({ users }, { headers: { 'Cache-Control': 'no-store' } });
 }
