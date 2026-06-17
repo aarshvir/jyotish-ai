@@ -21,20 +21,22 @@ interface DecideSectionProps {
   days?: Array<{ date: string; day_score: number }>;
 }
 
-type Domain = 'career' | 'money' | 'love' | 'health';
+type Domain = 'career' | 'money' | 'love' | 'health' | 'intimacy';
 
 const DOMAINS: { key: Domain; label: string; icon: string; description: string }[] = [
-  { key: 'career',  label: 'Career',        icon: '🎯', description: 'Decisions, proposals, launches, negotiations' },
-  { key: 'money',   label: 'Money',          icon: '💰', description: 'Investments, contracts, financial commitments' },
-  { key: 'love',    label: 'Relationships',  icon: '❤️', description: 'Important conversations, commitments, connection' },
-  { key: 'health',  label: 'Health',         icon: '🌿', description: 'Treatments, routines, rest, new health habits' },
+  { key: 'career',   label: 'Career',         icon: '🎯', description: 'Decisions, proposals, launches, negotiations' },
+  { key: 'money',    label: 'Money',          icon: '💰', description: 'Investments, contracts, financial commitments' },
+  { key: 'love',     label: 'Relationships',  icon: '❤️', description: 'Important conversations, commitments, connection' },
+  { key: 'health',   label: 'Health',         icon: '🌿', description: 'Treatments, routines, rest, new health habits' },
+  { key: 'intimacy', label: 'Intimacy',       icon: '🔥', description: 'Romance, passion, and physical closeness' },
 ];
 
-const DOMAIN_SCORE_KEY: Record<Domain, 'career' | 'money' | 'relationships' | 'health'> = {
+const DOMAIN_SCORE_KEY: Record<Domain, 'career' | 'money' | 'relationships' | 'health' | 'intimacy'> = {
   career: 'career',
   money: 'money',
   love: 'relationships',
   health: 'health',
+  intimacy: 'intimacy',
 };
 
 const STRENGTH_WORD = (score: number) =>

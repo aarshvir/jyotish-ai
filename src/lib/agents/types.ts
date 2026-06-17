@@ -233,6 +233,8 @@ export interface DomainScores {
   money: number;
   health: number;
   relationships: number;
+  /** Sex / physical intimacy / passion — 8th-house + Venus/Mars signals. */
+  intimacy: number;
 }
 
 /**
@@ -458,6 +460,8 @@ export interface PeriodSynthesis {
     money: string;
     health: string;
     relationships: string;
+    /** Sex / passion / closeness. Optional so older saved reports stay valid. */
+    intimacy?: string;
   };
 
   /**

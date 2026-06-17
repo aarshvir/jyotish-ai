@@ -7,7 +7,7 @@ interface SynthesisStructured {
   opening_paragraph?: string;
   strategic_windows?: Array<{ date: string; nakshatra: string; score: number; reason: string }>;
   caution_dates?: Array<{ date: string; nakshatra: string; score: number; reason: string }>;
-  domain_priorities?: { career?: string; money?: string; health?: string; relationships?: string };
+  domain_priorities?: { career?: string; money?: string; health?: string; relationships?: string; intimacy?: string };
   closing_paragraph?: string;
 }
 
@@ -58,6 +58,7 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
     money: 'Best financial timing falls on high-score days — align larger decisions with your peak windows. Avoid new financial commitments during low-score stretches and challenging windows.',
     health: 'Rest and recovery are most effective on low-score days. Protect your energy during the most demanding stretches and prioritise consistent routines over bursts of effort.',
     relationships: 'Important conversations land best on high-score days with favourable hourly windows. Avoid pressing sensitive topics during low-score periods or challenging windows.',
+    intimacy: 'Passion and closeness flow most easily on your higher-scoring days — lean into connection then. Lower-energy stretches call for warmth and rest, not pressure.',
   };
 
   return (
@@ -122,7 +123,7 @@ export function PeriodSynthesis({ synthesis, dailyScores, onDayClick }: PeriodSy
             </ul>
           </div>
           <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(['career', 'money', 'health', 'relationships'] as const).map((key) => (
+            {(['career', 'money', 'health', 'relationships', 'intimacy'] as const).map((key) => (
               <div key={key} className="py-2 px-3 rounded-sm bg-cosmos border border-horizon/60">
                 <p className="font-mono text-mono-sm text-dust uppercase mb-1">{key}</p>
                 <p className="font-display text-star text-body-sm leading-[1.6]">

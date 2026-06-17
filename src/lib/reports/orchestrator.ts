@@ -98,6 +98,7 @@ interface MonthApiResult {
   money_score?: number;
   health_score?: number;
   love_score?: number;
+  intimacy_score?: number;
   theme?: string;
   key_transits?: string[];
   analysis?: string;
@@ -393,7 +394,8 @@ function isUniform65PlaceholderRow(m: MonthSummary): boolean {
     m.domain_scores.career === 65 &&
     m.domain_scores.money === 65 &&
     m.domain_scores.health === 65 &&
-    m.domain_scores.relationships === 65
+    m.domain_scores.relationships === 65 &&
+    m.domain_scores.intimacy === 65
   );
 }
 
@@ -1697,7 +1699,7 @@ export async function generateReportPipeline(
           month: label, score: overall, overall_score: overall, theme: (m.theme ?? '').trim() || '',
           key_transits: m.key_transits ?? [], commentary: rawComment || monthlyFallback(label || 'This month', overall),
           weekly_scores: m.weekly_scores ?? [65, 65, 65, 65],
-          domain_scores: { career: m.career_score ?? 65, money: m.money_score ?? 65, health: m.health_score ?? 65, relationships: m.love_score ?? 65 },
+          domain_scores: { career: m.career_score ?? 65, money: m.money_score ?? 65, health: m.health_score ?? 65, relationships: m.love_score ?? 65, intimacy: m.intimacy_score ?? 65 },
         } satisfies MonthSummary;
       };
 
@@ -1723,7 +1725,7 @@ export async function generateReportPipeline(
             months1Data = Array.from({ length: 6 }, (_, i) => {
               const m = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
               const ml = m.toLocaleString('default', { month: 'long', year: 'numeric' });
-              return { month: ml, score: 65, overall_score: 65, theme: '', key_transits: [], commentary: monthlyFallback(ml, 65), weekly_scores: [65, 65, 65, 65], domain_scores: { career: 65, money: 65, health: 65, relationships: 65 } };
+              return { month: ml, score: 65, overall_score: 65, theme: '', key_transits: [], commentary: monthlyFallback(ml, 65), weekly_scores: [65, 65, 65, 65], domain_scores: { career: 65, money: 65, health: 65, relationships: 65, intimacy: 65 } };
             });
           }
         })();
@@ -1754,7 +1756,7 @@ export async function generateReportPipeline(
             months2Data = Array.from({ length: 6 }, (_, i) => {
               const m = new Date(startDate.getFullYear(), startDate.getMonth() + 6 + i, 1);
               const ml = m.toLocaleString('default', { month: 'long', year: 'numeric' });
-              return { month: ml, score: 65, overall_score: 65, theme: '', key_transits: [], commentary: monthlyFallback(ml, 65), weekly_scores: [65, 65, 65, 65], domain_scores: { career: 65, money: 65, health: 65, relationships: 65 } };
+              return { month: ml, score: 65, overall_score: 65, theme: '', key_transits: [], commentary: monthlyFallback(ml, 65), weekly_scores: [65, 65, 65, 65], domain_scores: { career: 65, money: 65, health: 65, relationships: 65, intimacy: 65 } };
             });
           }
           
@@ -1762,7 +1764,7 @@ export async function generateReportPipeline(
           while (allMonthsData.length < 12) {
             const m = new Date(startDate.getFullYear(), startDate.getMonth() + allMonthsData.length, 1);
             const ml = m.toLocaleString('default', { month: 'long', year: 'numeric' });
-            allMonthsData.push({ month: ml, score: 65, overall_score: 65, theme: '', key_transits: [], commentary: monthlyFallback(ml, 65), weekly_scores: [65, 65, 65, 65], domain_scores: { career: 65, money: 65, health: 65, relationships: 65 } });
+            allMonthsData.push({ month: ml, score: 65, overall_score: 65, theme: '', key_transits: [], commentary: monthlyFallback(ml, 65), weekly_scores: [65, 65, 65, 65], domain_scores: { career: 65, money: 65, health: 65, relationships: 65, intimacy: 65 } });
           }
           onStep({ type: 'partial_report_updated', field: 'months' });
         })();
@@ -2089,6 +2091,7 @@ export async function generateReportPipeline(
           money: 'Best financial timing falls on high-score days. Avoid new financial commitments during Rahu Kaal or low-score periods.',
           health: 'Rest and recovery are most effective on low-score days. Protect your energy during the most demanding stretches.',
           relationships: 'Important conversations land best on high-score days. Avoid pressing sensitive topics during low-score periods or Rahu Kaal.',
+          intimacy: 'Passion and closeness come easiest on your higher-scoring days — lean into connection then. Lower-energy stretches are for warmth and rest, not pressure.',
         },
         closing_paragraph: 'Align your key moves with your highest-scoring days and best hourly windows. Small timing adjustments compound into meaningful results over the forecast period.',
       },

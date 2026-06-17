@@ -139,6 +139,7 @@ MANDATORY RULES (enforce strictly — a user paid $100 for this):
    money: Best timing for financial decisions, one opportunity, one risk to avoid.
    health: Most demanding period for energy, one specific wellness directive.
    relationships: Best timing for important conversations, one friction period to handle gently.
+   intimacy: Best window for sex, passion, and physical/romantic closeness; one period when desire or energy dips. Tasteful, warm, non-explicit — never clinical or crude.
 5. weeks array: EXACTLY 6 week objects. Each week analysis: 120-160 words. One plain-English sentence about the week → practical guidance → BEST: and WORST: lines at the end.
 6. Never use: H-notation, yogakaraka, dusthana, badhaka, trikona, kendra, generally, may, could, might, perhaps, various, often, sometimes. Never use ALL-CAPS.
 
@@ -167,7 +168,8 @@ Return JSON (no placeholder text — write real analysis):
       "career": "50-60 words: specific guidance on career timing this period, what to push on, what to avoid.",
       "money": "50-60 words: specific financial timing guidance, best window, key risk.",
       "health": "50-60 words: energy peaks and troughs, specific wellness directive.",
-      "relationships": "50-60 words: best timing for important conversations, friction period to handle gently."
+      "relationships": "50-60 words: best timing for important conversations, friction period to handle gently.",
+      "intimacy": "50-60 words: best window for sex, passion, and closeness; one low-desire/low-energy period. Tasteful and warm, never explicit."
     },
     "closing_paragraph": "50-70 words: One specific action recommendation that captures the highest-leverage move for this person right now."
   }
@@ -241,6 +243,7 @@ Start with { and end with }. No markdown.`;
           money: 'Align larger financial decisions with your peak-scoring days. Low-score stretches are better for budgeting and reviewing than for new commitments.',
           health: 'Rest and recovery land best on lower-score days. Protect your energy during demanding stretches and keep consistent routines.',
           relationships: 'Important conversations land well on high-score days. Avoid pressing sensitive topics during challenging periods.',
+          intimacy: 'Passion and closeness flow most easily on your higher-scoring days — lean into connection then. Lower-energy stretches are for warmth and rest, not pressure.',
         },
         closing_paragraph: bestDate
           ? `Make the most of your strongest windows — small timing adjustments compound into meaningful results over the forecast period. Your best opening is around ${bestDate}.`

@@ -18,7 +18,7 @@ import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/l
 const DEFAULT_MONTHLY_MODEL =
   process.env.REPORT_MONTHLY_MODEL?.trim() || 'claude-sonnet-4-6';
 
-function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mahadasha?: string; antardasha?: string }): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; theme: string; key_transits: string[]; analysis: string }[] {
+function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mahadasha?: string; antardasha?: string }): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; intimacy_score: number; theme: string; key_transits: string[]; analysis: string }[] {
   const fallbackScores = [48, 52, 58, 70, 73, 65];
   const inputMonths = Array.isArray(body?.months) ? body.months : [];
   const lagnaSign = body?.lagnaSign ?? 'the native\'s lagna';
@@ -47,6 +47,7 @@ function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mah
       money_score: overall_score,
       health_score: overall_score,
       love_score: overall_score,
+      intimacy_score: overall_score,
       theme: `A ${strengthWord} month (${overall_score}/100).`,
       key_transits: [],
       analysis,
@@ -176,12 +177,13 @@ MANDATORY RULES FOR analysis FIELD (a user is paying $100 — write with depth a
 
 overall_score RULE (enforce strictly): Only month_index 0 MUST score 42-48. Later months can be 50-75. Jupiter enters Cancer mid-2026: June=70, July=73, August=75. Across the full six-month section, the intended spread between max and min MUST be at least 30. Do NOT start at 55.
 
-DOMAIN SCORE RULES (critical — do NOT set all four the same):
+DOMAIN SCORE RULES (critical — do NOT set all five the same):
 - career_score: strength for professional moves, visibility, authority. Driven by 10th zone transits, Sun/Mars/Jupiter influence.
 - money_score: financial stability and growth. Driven by 2nd/11th zone transits, Venus/Jupiter/Mercury influence.
 - health_score: physical energy and wellbeing. Driven by 6th zone and Sun/Mars influence.
 - love_score: relationships, partnership, emotional connection. Driven by 7th zone transits, Venus/Moon influence.
-- All four MUST differ meaningfully from each other. A month where career=72 might have money=55, health=60, love=45. Never assign the same score to all four domains — this is the most common error and makes the report useless.
+- intimacy_score: sex, physical passion, and deep bonding (distinct from love_score, which is partnership/emotional connection). Driven by 8th zone transits and Venus/Mars influence. Keep it tasteful and non-explicit.
+- All five MUST differ meaningfully from each other. A month where career=72 might have money=55, health=60, love=45, intimacy=58. Never assign the same score to all five domains — this is the most common error and makes the report useless.
 
 theme RULE: Write as a plain-English outcome sentence (not "Aries lagna with Jupiter in H9"). Example: "A strong month for career visibility — bold proposals land well" or "Steady rebuilding — prioritise health and finances over bold new moves."
 
@@ -198,6 +200,7 @@ Return exactly ${monthBatch.length} month object${monthBatch.length === 1 ? '' :
       "money_score": 42,
       "health_score": 55,
       "love_score": 38,
+      "intimacy_score": 58,
       "theme": "Career doors open — push forward professionally, but protect finances and relationships",
       "key_transits": ["Jupiter moves through your creative zone — good for new ventures and teaching", "Mercury favours contracts and negotiations mid-month"],
       "analysis": "300-350 words structured as above, ending with BEST: WORST: Rating: lines"
