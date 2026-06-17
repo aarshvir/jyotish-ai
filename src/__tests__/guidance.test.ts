@@ -366,7 +366,7 @@ function makeMinimalReport(): ReportData {
       month: `Month ${i + 1}`,
       score: 60,
       overall_score: 60,
-      domain_scores: { career: 60, money: 55, health: 65, relationships: 58 },
+      domain_scores: { career: 60, money: 55, health: 65, relationships: 58, intimacy: 57 },
       theme: 'Test month theme.',
       commentary: 'Test month commentary.',
       key_transits: ['Jupiter in Cancer'],

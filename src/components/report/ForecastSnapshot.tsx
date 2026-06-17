@@ -121,6 +121,7 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
     { label: 'Money', line: oneLine(dp?.money), score: domainAverage(months, 'money') },
     { label: 'Love', line: oneLine(dp?.relationships), score: domainAverage(months, 'relationships') },
     { label: 'Health', line: oneLine(dp?.health), score: domainAverage(months, 'health') },
+    { label: 'Intimacy', line: oneLine(dp?.intimacy), score: domainAverage(months, 'intimacy') },
   ];
 
   const best = (synthesis?.strategic_windows ?? []).filter((w) => w?.date).slice(0, 3);
@@ -190,7 +191,7 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
         {/* Four domain cards — the paid 12-month Career/Money/Love/Health scores.
             Hidden for preview so the year-ahead value stays behind the paywall. */}
         {!preview && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
             {domains.map((d) => {
               const t = trendWord(d.score);
               return (
