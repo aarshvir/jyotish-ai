@@ -30,7 +30,7 @@ export default function AdminUsers() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetch('/api/admin/users')
+    fetch('/api/admin/users', { cache: 'no-store' })
       .then((r) => r.json())
       .then((j) => (j.error ? setErr(j.error) : setUsers(j.users)))
       .catch(() => setErr('Failed to load'))
