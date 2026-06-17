@@ -10,6 +10,17 @@ import { isFreePlan } from '@/lib/admin/analytics';
 import { emailShell, emailButton, plainText } from './emailLayout';
 
 const SITE = 'https://www.vedichour.com';
+type NotificationDb = ReturnType<typeof createServiceClient>;
+
+async function clearNotificationClaim(db: NotificationDb, reportId: string): Promise<void> {
+  const { error } = await db
+    .from('reports')
+    .update({ notify_sent_at: null })
+    .eq('id', reportId);
+  if (error) {
+    console.error('[notify/reportReady] failed to clear notification claim', error.message);
+  }
+}
 
 function emailHtml(name: string, url: string, free: boolean): string {
   // Kept clean + transactional (one CTA, a single subtle upsell line) so it lands
@@ -48,8 +59,10 @@ function whatsappText(name: string, url: string, free: boolean): string {
 }
 
 export async function notifyReportReady(reportId: string): Promise<void> {
+  let db: NotificationDb | null = null;
+  let claimed = false;
   try {
-    const db = createServiceClient();
+    db = createServiceClient();
 
     // Idempotency claim: this runs inside a retryable Inngest finalize step, so a retry
     // would otherwise re-send the email + WhatsApp (real cost / spam). Atomically claim
@@ -67,31 +80,51 @@ export async function notifyReportReady(reportId: string): Promise<void> {
     if (!claimErr && !claim) {
       return; // already notified by an earlier finalize
     }
+    claimed = !claimErr && Boolean(claim);
 
     const { data } = await db
       .from('reports')
       .select('user_email, native_name, phone, plan_type')
       .eq('id', reportId)
       .maybeSingle();
-    if (!data) return;
+    if (!data) {
+      if (claimed) await clearNotificationClaim(db, reportId);
+      return;
+    }
     const email = (data.user_email ?? '').trim();
     const name = ((data.native_name ?? '').trim().split(' ')[0]) || 'there';
     const free = isFreePlan(data.plan_type);
     const url = `${SITE}/report/${reportId}`;
 
+    let attempted = false;
+    let delivered = false;
     if (email) {
-      await sendEmail({
+      attempted = true;
+      const emailResult = await sendEmail({
         to: email,
         subject: `${name}, your VedicHour reading is ready`,
         html: emailHtml(name, url, free),
         text: emailText(name, url, free),
       });
+      delivered ||= emailResult.ok;
     }
     const phone = (data.phone ?? '').trim();
     if (phone) {
-      await sendWhatsApp({ to: phone, body: whatsappText(name, url, free) });
+      attempted = true;
+      const whatsappResult = await sendWhatsApp({ to: phone, body: whatsappText(name, url, free) });
+      delivered ||= whatsappResult.ok;
+    }
+
+    // The pre-send claim protects users from duplicate notifications during finalize
+    // retries. If no channel actually delivered, release the claim so a later retry
+    // can notify the user instead of suppressing the message forever.
+    if (attempted && !delivered && claimed) {
+      await clearNotificationClaim(db, reportId);
     }
   } catch (e) {
     console.error('[notify/reportReady]', e);
+    if (claimed && db) {
+      await clearNotificationClaim(db, reportId);
+    }
   }
 }
