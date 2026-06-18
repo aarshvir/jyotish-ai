@@ -25,6 +25,15 @@ export async function GET(request: NextRequest) {
   const dispatchOrigin = getCanonicalDispatchOrigin(origin);
 
   if (status === 'cancel') {
+    // Route the cancel back to where the checkout STARTED, not always /onboard:
+    // monthly_upgrade → the report; standalone kundali/synastry → their landing page.
+    const cancelReportId = searchParams.get('reportId') ?? '';
+    if (planType === 'monthly_upgrade' && cancelReportId) {
+      return NextResponse.redirect(`${origin}/report/${cancelReportId}?payment=cancelled`);
+    }
+    if (planType === 'synastry' || planType === 'kundali') {
+      return NextResponse.redirect(`${origin}/${planType}?payment=cancelled`);
+    }
     return NextResponse.redirect(`${origin}/onboard?plan=${planType}&payment=cancelled`);
   }
 
