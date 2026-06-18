@@ -179,6 +179,12 @@ export async function POST(request: NextRequest) {
   try {
     const auth = await requireAuth(request);
     if (auth instanceof NextResponse) return auth;
+    // This server-side PDF route is currently UNUSED (the live report uses window.print()
+    // via generateReportPDF). It renders whatever payload is posted with no plan gating,
+    // so to prevent it ever becoming a preview-paywall bypass, restrict it to admins.
+    if (auth.isAdmin !== true) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
 
     const payload: PdfReportPayload = await request.json();
 

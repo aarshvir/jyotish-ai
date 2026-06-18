@@ -55,14 +55,13 @@ export async function GET(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Entitlement: admins, free/preview plans, genuinely paid reports, or server-validated
-  // 100%-promo reports (payment_status 'promo', e.g. ADMIN100) get the payload.
-  const planType = String((row as { plan_type?: string }).plan_type ?? '').toLowerCase();
+  // Entitlement: the .ics export contains the PAID strategic/caution timing windows, so
+  // it's a paid-only feature (the UI gates it the same way). Only admins, genuinely paid
+  // reports, or server-validated 100%-promo reports get it — NOT free/preview (which
+  // would otherwise leak the paid year's windows via the export endpoint).
   const payStatus = (row as { payment_status?: string }).payment_status;
   const entitled =
     auth.isAdmin === true ||
-    planType === 'free' ||
-    planType === 'preview' ||
     payStatus === 'paid' ||
     payStatus === 'promo';
   if (!entitled) {

@@ -224,6 +224,23 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
     data?.payment_status === 'paid' ||
     data?.payment_status === 'promo';
 
+  // Server-side paywall: free/preview reports are generated in full (same pipeline as
+  // paid), but only the advertised preview — natal chart + ONE sample day — may cross
+  // the wire. Without this, a free user could read the entire paid product (12-month
+  // outlook, weekly synthesis, all 7 days of hourly windows) straight from the Network
+  // tab, since the paywall was otherwise client-side presentation only.
+  const isPreviewPlan = !userIsAdmin && (planType === 'free' || planType === 'preview');
+  const stripForPreview = (rd: Record<string, unknown> | null): Record<string, unknown> | null => {
+    if (!rd || !isPreviewPlan) return rd;
+    return {
+      ...rd,
+      months: [],
+      weeks: [],
+      synthesis: null,
+      days: Array.isArray(rd.days) ? (rd.days as unknown[]).slice(0, 1) : rd.days,
+    };
+  };
+
   const serverProgress = typeof data?.generation_progress === 'number' ? data.generation_progress : null;
   const progress = isComplete
     ? 100
@@ -248,7 +265,7 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
     generation_error_code: data?.generation_error_code ?? null,
     generation_error_at_phase: data?.generation_error_at_phase ?? null,
     generation_error: generationError,
-    report: isComplete && entitledToContent ? reportData : null,
+    report: isComplete && entitledToContent ? stripForPreview(reportData) : null,
     lagna_sign: data?.lagna_sign,
     dasha_mahadasha: data?.dasha_mahadasha,
     dasha_antardasha: data?.dasha_antardasha,
