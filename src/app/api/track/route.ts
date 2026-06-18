@@ -34,16 +34,31 @@ export async function POST(req: NextRequest) {
     /* anonymous */
   }
 
-  const utm = body.utm && typeof body.utm === 'object' ? body.utm : null;
+  // Bound the untrusted client object: cap key count + per-value length so this
+  // unauthenticated, service-role insert can't be abused to write multi-MB rows into
+  // analytics_events (DB/storage bloat + cost). Applied to both props and utm.
+  const boundObject = (raw: unknown, maxKeys: number, maxLen: number): Record<string, unknown> => {
+    if (!raw || typeof raw !== 'object') return {};
+    const out: Record<string, unknown> = {};
+    let n = 0;
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (n >= maxKeys) break;
+      out[String(k).slice(0, 64)] =
+        typeof v === 'number' || typeof v === 'boolean' ? v : String(v ?? '').slice(0, maxLen);
+      n++;
+    }
+    return out;
+  };
+  const utm = body.utm && typeof body.utm === 'object' ? boundObject(body.utm, 12, 256) : null;
   try {
     const db = createServiceClient();
     await db.from('analytics_events').insert({
       user_id: userId,
       event_name: name,
       properties: {
-        // Spread untrusted props FIRST so the sanitized fields below always win
-        // (prevents a client from overriding path/referrer/session/user attribution).
-        ...(body.props && typeof body.props === 'object' ? body.props : {}),
+        // Spread untrusted (now bounded) props FIRST so the sanitized fields below always
+        // win (prevents a client from overriding path/referrer/session/user attribution).
+        ...boundObject(body.props, 20, 512),
         path: typeof body.path === 'string' ? body.path.slice(0, 256) : null,
         referrer: typeof body.referrer === 'string' ? body.referrer.slice(0, 256) : null,
         utm: utm && Object.keys(utm).length ? utm : null,

@@ -368,7 +368,15 @@ export async function POST(request: NextRequest) {
   }
 
   const lockKey = `report:${reportId}:generation`;
-  const gotLock = forceRestart || await acquireLock(lockKey, 10 * 60);
+  // Track REAL ownership: forceRestart proceeds without holding the lock, so it must
+  // never release it — otherwise it would delete a concurrent normal request's lock and
+  // let a third request dispatch a SECOND pipeline for the same report. Only the request
+  // that actually acquired the lock may release it.
+  const lockAcquired = forceRestart ? false : await acquireLock(lockKey, 10 * 60);
+  const gotLock = forceRestart || lockAcquired;
+  const releaseOwnedLock = async () => {
+    if (lockAcquired) await releaseLock(lockKey);
+  };
   if (!gotLock) {
     return NextResponse.json(
       {
@@ -410,7 +418,7 @@ export async function POST(request: NextRequest) {
     // Transient payment-verification failure (e.g. DB lookup error). Fail closed, but
     // tell the client it's retryable (503) rather than a misleading 402 "payment required".
     console.warn('[reports/start] payment verification unavailable:', e);
-    await releaseLock(lockKey);
+    await releaseOwnedLock();
     return NextResponse.json(
       {
         error: 'Unable to verify payment status right now. Please retry in a moment.',
@@ -452,21 +460,21 @@ export async function POST(request: NextRequest) {
   ) {
     const promo = await getPromoDiscount(body.promoCode, auth.user.email);
     if (!promo.valid) {
-      await releaseLock(lockKey);
+      await releaseOwnedLock();
       return NextResponse.json(
         { error: promo.reason ?? 'Invalid coupon code', code: 'INVALID_PROMO', engine: 'none' as ReportStartEngine, dispatch_mode: 'blocked' as ReportStartDispatchMode },
         { status: 400 },
       );
     }
     if (promo.discountPct < 100) {
-      await releaseLock(lockKey);
+      await releaseOwnedLock();
       return NextResponse.json(
         { error: 'Payment is required to generate this report.', code: 'PAYMENT_REQUIRED', engine: 'none' as ReportStartEngine, dispatch_mode: 'blocked' as ReportStartDispatchMode },
         { status: 402 },
       );
     }
     if (promo.oncePerUser && promo.codeId && (await hasUserRedeemed(promo.codeId, auth.user.id))) {
-      await releaseLock(lockKey);
+      await releaseOwnedLock();
       return NextResponse.json(
         { error: 'You have already used this coupon.', code: 'PROMO_ALREADY_USED', engine: 'none' as ReportStartEngine, dispatch_mode: 'blocked' as ReportStartDispatchMode },
         { status: 400 },
@@ -478,7 +486,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (!isFreePlan && trustedPaymentStatus !== 'paid' && trustedPaymentStatus !== 'promo' && !userIsAdmin) {
-    await releaseLock(lockKey);
+    await releaseOwnedLock();
     return NextResponse.json(
       {
         error: 'Payment is required to generate this report.',
@@ -498,7 +506,7 @@ export async function POST(request: NextRequest) {
       .in('plan_type', ['free', 'preview'])
       .neq('id', reportId);
     if ((priorFree ?? 0) >= 1) {
-      await releaseLock(lockKey);
+      await releaseOwnedLock();
       return NextResponse.json(
         {
           error: 'You have already used your one free report. Choose a plan to unlock more.',
@@ -538,7 +546,7 @@ export async function POST(request: NextRequest) {
     !Number.isFinite(guardLng) ||
     (Math.abs(guardLat) < 0.01 && Math.abs(guardLng) < 0.01)
   ) {
-    await releaseLock(lockKey);
+    await releaseOwnedLock();
     return NextResponse.json(
       {
         error:
@@ -582,7 +590,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (upsertError) {
-    await releaseLock(lockKey);
+    await releaseOwnedLock();
     return NextResponse.json(
       {
         error: upsertError.message,
@@ -619,7 +627,7 @@ export async function POST(request: NextRequest) {
   if (traceErr) {
     const m = traceErr.message ?? '';
     if (!m.includes('generation_trace_id') && !m.includes('schema cache')) {
-      await releaseLock(lockKey);
+      await releaseOwnedLock();
       return NextResponse.json(
         {
           error: traceErr.message,
@@ -742,7 +750,7 @@ export async function POST(request: NextRequest) {
   // Only block if REPORT_START_REQUIRE_INNGEST is explicitly set.
   // Otherwise, always fall through to inline execution to avoid 100% failure on Hobby plan.
   if (!useInngest && requireStrictInngest) {
-    await releaseLock(lockKey);
+    await releaseOwnedLock();
     return NextResponse.json(
       {
         error: 'Background job queue is required but INNGEST_EVENT_KEY is not set.',
@@ -807,7 +815,7 @@ export async function POST(request: NextRequest) {
             generation_trace_id: generationTraceId,
           },
         });
-        await releaseLock(lockKey);
+        await releaseOwnedLock();
         return NextResponse.json(
           {
             error: 'Background queue unavailable, please retry in a minute.',
@@ -868,7 +876,7 @@ export async function POST(request: NextRequest) {
       errorStep: 'start_route_inline_pipeline',
       generationErrorCode: inferReportGenerationErrorCode(errMsg, 'start_route_inline_pipeline'),
     });
-    await releaseLock(lockKey);
+    await releaseOwnedLock();
     return NextResponse.json(
       {
         error: String(err),
@@ -890,7 +898,7 @@ export async function POST(request: NextRequest) {
     console.error(
       `[trace:${generationTraceId}] [reports/start] pipeline returned but DB status is '${finalRow?.status}' for ${reportId}`,
     );
-    await releaseLock(lockKey);
+    await releaseOwnedLock();
     return NextResponse.json(
       {
         error: 'Report pipeline did not complete — please retry.',
@@ -902,7 +910,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await releaseLock(lockKey);
+  await releaseOwnedLock();
   return NextResponse.json({
     reportId,
     ok: true,
