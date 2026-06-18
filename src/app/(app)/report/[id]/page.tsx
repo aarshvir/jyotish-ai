@@ -1339,7 +1339,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       <StarField />
       <ReportSidebar reportLoaded={!!reportData} preview={isPreviewPlan} />
 
-      <main className="lg:ml-[200px] px-6 pb-12 pt-6 lg:pt-12 max-w-4xl mx-auto relative z-10">
+      <div className="lg:ml-[200px] px-6 pb-12 pt-6 lg:pt-12 max-w-4xl mx-auto relative z-10">
         {isAdminView && (
           <div
             role="status"
@@ -1730,7 +1730,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             </div>
           </div>
         )}
-      </main>
+      </div>
     </motion.div>
   );
 }
