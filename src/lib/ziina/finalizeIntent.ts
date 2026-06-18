@@ -258,7 +258,19 @@ export async function finalizeCompletedZiinaIntent(
   // reads this). Past the already-completed guard, so it records exactly once.
   if (row.promo_code_id && row.user_id) {
     try {
-      await redeemPromoCode(row.promo_code_id, row.user_id, intentId);
+      // Once-per-user codes dedup the redemption on (code, user) via a STABLE order_id,
+      // so the same user can't redeem the same code across multiple reports — the
+      // existing unique index on order_id makes this race-safe. Unlimited codes
+      // (once_per_user = false, e.g. ADMIN100) keep the per-intent id so repeat use is
+      // allowed. Default to once-per-user when the flag is missing (matches getPromoDiscount).
+      const { data: codeRow } = await db
+        .from('promo_codes')
+        .select('once_per_user')
+        .eq('id', row.promo_code_id)
+        .maybeSingle();
+      const oncePerUser = (codeRow as { once_per_user?: boolean } | null)?.once_per_user !== false;
+      const orderId = oncePerUser ? `promo:${row.promo_code_id}:${row.user_id}` : intentId;
+      await redeemPromoCode(row.promo_code_id, row.user_id, orderId);
     } catch (e) {
       console.warn('[ziina/finalize] promo redeem failed (non-fatal):', e);
     }
