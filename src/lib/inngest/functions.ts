@@ -122,16 +122,29 @@ export const generateReportJob = inngest.createFunction(
       const tracePrefix = failTrace ? `[trace:${failTrace}] ` : '';
       console.error(`${tracePrefix}[inngest] onFailure reportId=${original.reportId}`, error);
       const db = createServiceClient();
-      const { data: row } = await db
+      const { data: row, error: rowErr } = await db
         .from('reports')
         .select('status')
         .eq('id', original.reportId)
         .eq('user_id', original.userId)
         .maybeSingle();
+      const errMsg = error instanceof Error ? error.message : String(error);
+      // A transient read error (or read-replica miss) previously no-op'd here, leaving the
+      // report stuck in 'generating' for up to ~2h until the orphan-cleanup cron. This is
+      // the LAST chance to surface the failure after retries, so still mark it failed
+      // (markReportAsFailed is guarded against overwriting a 'complete' row).
+      if (rowErr) {
+        await markReportAsFailed(db, original.reportId, original.userId, {
+          message: `Background job failed after retries (status read errored): ${errMsg}`.slice(0, 4000),
+          errorStep: 'inngest_on_failure',
+          errorCode: 'INNGEST_FAILURE',
+          generationErrorCode: inferReportGenerationErrorCode(errMsg, 'inngest_on_failure'),
+        });
+        return;
+      }
       if (!row) return;
       if (row.status === 'complete') return;
       if (row.status !== 'generating') return;
-      const errMsg = error instanceof Error ? error.message : String(error);
       await markReportAsFailed(db, original.reportId, original.userId, {
         message: `Background job failed after retries: ${errMsg}`.slice(0, 4000),
         errorStep: 'inngest_on_failure',
