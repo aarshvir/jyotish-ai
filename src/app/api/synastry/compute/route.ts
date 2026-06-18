@@ -115,7 +115,10 @@ export async function POST(request: NextRequest) {
       }),
     });
     if (!res.ok) return null;
-    const j = await res.json();
+    // Guard the parse: a 200 with a non-JSON body (HTML error page / truncated response)
+    // would otherwise reject unhandled → framework 500. Null flows into the 502 below.
+    const j = await res.json().catch(() => null);
+    if (!j) return null;
     return (j.data ?? j) as NatalChartData;
   }
 

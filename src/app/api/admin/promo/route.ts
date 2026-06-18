@@ -10,9 +10,22 @@ export async function GET() {
   const admin = await requireAdminApi();
   if (admin instanceof NextResponse) return admin;
   const db = createServiceClient();
-  const { data, error } = await db.from('promo_codes').select(COLS).order('code');
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ codes: data ?? [] });
+  const first = await db.from('promo_codes').select(COLS).order('code');
+  // Tolerant of an unapplied 20260614 migration: once_per_user may not exist yet. Retry
+  // without it and default to true so the admin Coupons page never hard-500s on a pending
+  // migration (mirrors the tolerant reads elsewhere in the codebase).
+  if (first.error && /once_per_user|schema cache/i.test(first.error.message)) {
+    const COLS_FALLBACK = 'id, code, discount_pct, max_uses, used_count, allowlist_emails, active, expires_at';
+    const fb = await db.from('promo_codes').select(COLS_FALLBACK).order('code');
+    if (fb.error) return NextResponse.json({ error: fb.error.message }, { status: 500 });
+    const codes = ((fb.data ?? []) as unknown as Record<string, unknown>[]).map((r) => ({
+      ...r,
+      once_per_user: true,
+    }));
+    return NextResponse.json({ codes });
+  }
+  if (first.error) return NextResponse.json({ error: first.error.message }, { status: 500 });
+  return NextResponse.json({ codes: first.data ?? [] });
 }
 
 /** Create or update a coupon. */
