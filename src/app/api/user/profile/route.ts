@@ -44,12 +44,14 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 });
     }
 
+    // Upsert (not update+single): a user with no user_profiles row yet — legacy/pre-trigger
+    // accounts, or a signup path that skipped profile creation — would otherwise hit a
+    // "no rows" error → 500 and could never save their defaults. Self-healing.
     const { data: profile, error } = await supabase
       .from('user_profiles')
-      .update(updates)
-      .eq('id', user.id)
+      .upsert({ id: user.id, email: user.email, ...updates }, { onConflict: 'id' })
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return NextResponse.json({ success: true, data: profile });

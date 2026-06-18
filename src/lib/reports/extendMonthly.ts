@@ -112,10 +112,14 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
     return { ok: false, message: 'Report has fewer than 7 days — cannot extend' };
   }
 
-  const lastDayStr = existingDays[6]?.date as string;
+  // Anchor on the ACTUAL last existing day and append exactly enough to reach 30 — not a
+  // hardcoded index-6 + 23. For any 7..29 starting length this stays correct (and a true
+  // no-op edge) instead of producing duplicate/overlapping dates.
+  const lastDayStr = existingDays[existingDays.length - 1]?.date as string;
   const start = new Date(lastDayStr + 'T12:00:00');
+  const need = 30 - existingDays.length;
   const dateRange: string[] = [];
-  for (let i = 1; i <= 23; i++) {
+  for (let i = 1; i <= need; i++) {
     const d = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
     dateRange.push(d.toISOString().split('T')[0]);
   }
