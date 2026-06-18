@@ -51,7 +51,7 @@ export default function AccountPage() {
 
   return (
     <div className="min-h-screen bg-space text-star flex flex-col">
-      <main className="flex-1 max-w-2xl mx-auto px-5 sm:px-8 py-16 w-full">
+      <div className="flex-1 max-w-2xl mx-auto px-5 sm:px-8 py-16 w-full">
         <h1 className="font-display text-3xl text-star mb-2">Your account &amp; privacy</h1>
         <p className="font-body text-body-md text-dust mb-10">Manage your personal data. VedicHour stores your birth details to compute your charts — you control them here.</p>
 
@@ -97,7 +97,7 @@ export default function AccountPage() {
             {busy ? 'Deleting…' : 'Permanently delete my account'}
           </button>
         </section>
-      </main>
+      </div>
       <Footer />
     </div>
   );
