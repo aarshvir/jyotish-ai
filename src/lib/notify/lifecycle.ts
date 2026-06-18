@@ -24,7 +24,7 @@ export async function sendFounderDigest(): Promise<{ ok: boolean; skipped?: bool
       fetchAllAuthUsers(db),
       db.from('reports').select('plan_type, status, created_at').gte('created_at', sinceIso).limit(50000),
       db.from('ziina_payments').select('amount, currency, status, created_at').eq('status', 'completed').gte('created_at', sinceIso).limit(50000),
-      db.from('reports').select('id').eq('status', 'failed').gte('created_at', sinceIso).limit(50000),
+      db.from('reports').select('id').eq('status', 'error').gte('created_at', sinceIso).limit(50000),
     ]);
 
     const signups = users.filter((u) => fresh(u.created_at)).length;
