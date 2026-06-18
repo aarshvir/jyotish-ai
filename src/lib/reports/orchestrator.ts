@@ -1460,6 +1460,9 @@ export async function generateReportPipeline(
           void dbSetProgress(PHASE.DAILY_BATCH_3, 50);
           onStep({ type: 'partial_report_updated', field: 'daily_overviews' });
         } catch (e) {
+          // Fail CLOSED for paid plans (mirrors months/weeks) — a paid report must not be
+          // completed with deterministic template daily overviews. Free/preview degrade.
+          if (!allowPartialLlmFallbackForPlan(input)) throw e instanceof Error ? e : new Error(String(e));
           terr('[orchestrator][STEP-4+5] failed:', e instanceof Error ? e.message : String(e));
           const fallback =
             'Your hourly timing is ready — use the highest-scoring slots in the table below for your most important work. The challenging window (Rahu Kaal) is shown: keep it for routine and review tasks only.';
@@ -1590,6 +1593,8 @@ export async function generateReportPipeline(
             }
             onStep({ type: 'partial_report_updated', field: 'hourly_commentary' });
           } catch (err) {
+            // Fail CLOSED for paid plans — don't ship template hourly commentary in a paid report.
+            if (!allowPartialLlmFallbackForPlan(input)) throw err instanceof Error ? err : new Error(String(err));
             terr('[orchestrator][STEP-6] failed:', err instanceof Error ? err.message : String(err));
           }
         }
