@@ -476,12 +476,16 @@ function DashboardInner() {
   const completeReports = reports.filter(r => r.status === 'complete');
   const latestCompleteReport = completeReports[0] ?? null;
 
-  // Stats
-  const totalReports = reports.length;
-  const totalPayments = payments.length;
+  // Stats. Exclude pre-payment draft rows (pending+unpaid) so counts match the visible
+  // list, and count only COMPLETED payments so an abandoned checkout's pending draft
+  // never shows as a real charge on the overview.
+  const visibleReports = reports.filter(r => !(r.status === 'pending' && r.payment_status === 'unpaid'));
+  const totalReports = visibleReports.length;
+  const completedPayments = payments.filter(p => p.status === 'completed');
+  const totalPayments = completedPayments.length;
 
-  // Most recent payment for overview tab
-  const latestPayment = payments[0] ?? null;
+  // Most recent COMPLETED payment for overview tab
+  const latestPayment = completedPayments[0] ?? null;
 
   // Filtered reports
   const filteredReports = reports.filter(r => {
@@ -611,7 +615,7 @@ function DashboardInner() {
                   : 'text-dust hover:text-star hover:bg-horizon/30'
               }`}
             >
-              {tab === 'overview' ? 'Overview' : tab === 'reports' ? `Reports${reports.length > 0 ? ` (${reports.length})` : ''}` : tab === 'payments' ? 'Payments' : 'Settings'}
+              {tab === 'overview' ? 'Overview' : tab === 'reports' ? `Reports${visibleReports.length > 0 ? ` (${visibleReports.length})` : ''}` : tab === 'payments' ? 'Payments' : 'Settings'}
             </button>
           ))}
         </div>
@@ -740,7 +744,7 @@ function DashboardInner() {
                       : 'text-dust/70 border-horizon/30 hover:border-horizon/60 hover:text-star'
                   }`}
                 >
-                  {f === 'all' ? `All (${reports.length})` : f === 'complete' ? `Complete (${completeReports.length})` : f === 'generating' ? `Generating (${reports.filter(r => r.status === 'generating' && !isStale(r)).length})` : `Failed (${reports.filter(r => r.status === 'error' || isStale(r)).length})`}
+                  {f === 'all' ? `All (${visibleReports.length})` : f === 'complete' ? `Complete (${completeReports.length})` : f === 'generating' ? `Generating (${reports.filter(r => r.status === 'generating' && !isStale(r)).length})` : `Failed (${reports.filter(r => r.status === 'error' || isStale(r)).length})`}
                 </button>
               ))}
             </div>

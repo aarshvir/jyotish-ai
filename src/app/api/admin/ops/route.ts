@@ -24,7 +24,9 @@ export async function GET() {
   const reports = reportsRes.data ?? [];
   const payments = paymentsRes.data ?? [];
 
-  const failedReports = reports.filter((r) => r.status === 'failed');
+  // Terminal report failures are written as status 'error' (markReportAsFailed + the
+  // Inngest paths) — NOT 'failed' (no code ever writes that), so this panel showed 0.
+  const failedReports = reports.filter((r) => r.status === 'error');
   const stuck = reports.filter((r) => {
     if (r.status !== 'generating') return false;
     const t = r.generation_started_at ?? r.created_at;
