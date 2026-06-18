@@ -181,11 +181,13 @@ Start with { and end with }. No markdown.`;
   const worstDate = body.synthesis_context?.worst_date ?? '2026-03-13';
 
   try {
+    // Token budget: 6 weeks × ~150 words + period_synthesis (~600 words) ≈ 1500 tokens total.
+    // 4000 provides comfortable headroom (was 8000 — 50% saving).
     const text = await completeLlmChat({
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: 8000,
+      maxTokens: 4000,
     });
     const parsed = safeParseJson<{
       weeks: Array<{ week_label?: string; score?: number; overall_score?: number; theme?: string; analysis?: string; commentary?: string; daily_scores?: number[]; moon_journey?: string[]; peak_days_count?: number; caution_days_count?: number }>;

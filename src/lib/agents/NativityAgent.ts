@@ -190,9 +190,12 @@ export class NativityAgent {
       // failure that defeats the comparison). The SDK timeout:110s is the hard stop.
       try {
         console.log(`NativityAgent attempt 1/1 (RAG mode=${mode})`);
+        // Token budget: lagna_analysis (~280w) + yogas (~200w) + planetary_positions 9×4 sentences (~720w)
+        // + dasha interpretation (~175w) + other fields (~200w) ≈ 1575w ≈ 2100 tokens.
+        // 6000 provides comfortable headroom for complex charts (was 8000 — 25% saving).
         const response = await this.client.messages.create({
           model: 'claude-sonnet-4-6',
-          max_tokens: 8000,
+          max_tokens: 6000,
           messages: [
             {
               role: 'user',
@@ -235,7 +238,7 @@ export class NativityAgent {
         const text = await runChatFallbackChain({
           systemPrompt: SYSTEM_PROMPT,
           userPrompt: buildUserPrompt(natalChart, ragContext, detectedYogas),
-          maxTokens: 16000,
+          maxTokens: 6000,
           auditStage: 'nativity',
         });
         return safeParseJson<NativityProfile>(text);
