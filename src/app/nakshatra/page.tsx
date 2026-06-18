@@ -17,7 +17,7 @@ export default function NakshatraIndex() {
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
       <Navbar />
-      <main className="flex-1 max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
+      <main id="main-content" className="flex-1 max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
         <div className="text-center mb-10">
           <p className="section-eyebrow mb-3">The 27 Nakshatras</p>
           <h1 className="text-display-md font-display text-star mb-4">Vedic Birth Stars (<span className="text-amber">Nakshatras</span>)</h1>

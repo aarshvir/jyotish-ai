@@ -17,7 +17,7 @@ export default function DashaIndex() {
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
       <Navbar />
-      <main className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
+      <main id="main-content" className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
         <div className="text-center mb-10">
           <p className="section-eyebrow mb-3">Vimshottari Dasha</p>
           <h1 className="text-display-md font-display text-star mb-4">The 9 <span className="text-amber">Mahadasha</span> Periods</h1>

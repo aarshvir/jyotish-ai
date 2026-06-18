@@ -33,7 +33,7 @@ export default function PredictionPage({ params }: { params: { area: string } })
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
       <Navbar />
-      <main className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
+      <main id="main-content" className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
         <Link href="/predictions" className="font-body text-body-sm text-dust hover:text-star transition-colors">← All life-area readings</Link>
         <h1 className="text-display-md font-display text-star mt-3 mb-6">{p.title}</h1>
 
