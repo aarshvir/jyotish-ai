@@ -297,7 +297,10 @@ def calculate_tithi(sun_long: float, moon_long: float) -> str:
     
     if tithi_num == 15 and paksha == "Shukla":
         return "Purnima (Full Moon)"
-    elif tithi_num == 15 and paksha == "Krishna":
+    elif tithi_num == 30 or (tithi_num == 15 and paksha == "Krishna"):
+        # New moon is tithi 30 (diff in [348,360)); the old `== 15 and Krishna` never
+        # fired, so Amavasya fell through to "Krishna Purnima/Amavasya" → normalized to
+        # Purnima (+5) instead of Amavasya (-25). Fire correctly on tithi 30.
         return "Amavasya (New Moon)"
     else:
         return f"{paksha} {tithi_name}"
@@ -1142,6 +1145,11 @@ def normalize_tithi(tithi_raw: str) -> str:
         return tithi_raw
 
     # When two tithis straddle a day (e.g. "Purnima/Amavasya" or "Shukla Tritiya/Chaturthi"),
+    # A new-moon compound like "Krishna Purnima/Amavasya" must resolve to Amavasya
+    # (-25), NOT the Purnima half (+5) — check it BEFORE the '/' split below.
+    if "Amavasya" in tithi_raw:
+        return "Amavasya"
+
     # take the FIRST (primary) tithi — the one active at sunrise.
     if "/" in tithi_raw:
         first = tithi_raw.split("/")[0].strip()
