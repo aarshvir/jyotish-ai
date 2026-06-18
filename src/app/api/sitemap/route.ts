@@ -61,7 +61,9 @@ const TRANSIT_ROUTES = PLANETS.flatMap((planet) =>
 function horoscopeRoutes(): { path: string; changefreq: string; priority: string }[] {
   const out: { path: string; changefreq: string; priority: string }[] = [];
   const today = new Date();
-  for (let d = 0; d < 21; d++) {
+  // Match the page's generateStaticParams window (8 days) so every advertised horoscope
+  // URL is actually pre-rendered — otherwise the extra days were cold-SSR on first crawl.
+  for (let d = 0; d < 8; d++) {
     const dt = new Date(today);
     dt.setUTCDate(dt.getUTCDate() + d);
     const iso = dt.toISOString().split('T')[0];

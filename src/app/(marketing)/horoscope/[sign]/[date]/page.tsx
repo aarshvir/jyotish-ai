@@ -52,6 +52,12 @@ export default function HoroscopeDayPage({ params }: Props) {
   if (!isValidHoroscopeSign(sign) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     notFound();
   }
+  // The shape regex passes impossible dates (2026-13-45). Require a REAL date that
+  // round-trips, so crafted URLs 404 instead of rendering indexable thin pages.
+  const parsedDate = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) {
+    notFound();
+  }
 
   const { title, body } = buildHoroscopeCopy(sign, date);
 

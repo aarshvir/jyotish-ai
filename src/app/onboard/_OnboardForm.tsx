@@ -874,7 +874,14 @@ function OnboardPageInner() {
       clearInterval(stageTimer.current!);
     }
 
-    const useCurrent = form.currentCity.trim() && form.currentLat != null && form.currentLng != null;
+    // Require current city to genuinely DIFFER from birth city (matches the success-badge
+    // condition). Otherwise, if the user typed a different city, geocoded it, then edited
+    // the field back to the birth city, the stale coords would be used for the wrong place.
+    const useCurrent =
+      form.currentCity.trim() &&
+      form.currentCity.trim() !== form.birthCity.trim() &&
+      form.currentLat != null &&
+      form.currentLng != null;
     const displayCity = useCurrent ? `${form.currentCity} (born: ${form.birthCity})` : form.birthCity;
 
     let effectiveType: ReportPlanId = form.reportType;

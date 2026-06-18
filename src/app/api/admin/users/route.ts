@@ -26,7 +26,10 @@ export async function GET() {
     if (error) break;
     const batch = data?.users ?? [];
     authUsers.push(...batch);
-    if (batch.length < 1000) break; // last page
+    // Terminate on an EMPTY page, not "< 1000": GoTrue may cap per_page below 1000, in
+    // which case a full first page is < 1000 and "< 1000" would stop after page 1, hiding
+    // the rest of the users (the very #88 bug this loop fixes).
+    if (batch.length === 0) break;
   }
 
   // Page through each aggregation table: PostgREST caps a select at 1000 rows, so once
