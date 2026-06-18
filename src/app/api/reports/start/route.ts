@@ -473,12 +473,25 @@ export async function POST(request: NextRequest) {
         { status: 402 },
       );
     }
-    if (promo.oncePerUser && promo.codeId && (await hasUserRedeemed(promo.codeId, auth.user.id))) {
-      await releaseOwnedLock();
-      return NextResponse.json(
-        { error: 'You have already used this coupon.', code: 'PROMO_ALREADY_USED', engine: 'none' as ReportStartEngine, dispatch_mode: 'blocked' as ReportStartDispatchMode },
-        { status: 400 },
-      );
+    if (promo.oncePerUser && promo.codeId) {
+      let alreadyRedeemed: boolean;
+      try {
+        alreadyRedeemed = await hasUserRedeemed(promo.codeId, auth.user.id);
+      } catch {
+        // Fail closed on a transient lookup error — retryable, not a silent free grant.
+        await releaseOwnedLock();
+        return NextResponse.json(
+          { error: 'Could not verify your coupon — please try again.', code: 'PROMO_CHECK_FAILED', engine: 'none' as ReportStartEngine, dispatch_mode: 'blocked' as ReportStartDispatchMode },
+          { status: 503 },
+        );
+      }
+      if (alreadyRedeemed) {
+        await releaseOwnedLock();
+        return NextResponse.json(
+          { error: 'You have already used this coupon.', code: 'PROMO_ALREADY_USED', engine: 'none' as ReportStartEngine, dispatch_mode: 'blocked' as ReportStartDispatchMode },
+          { status: 400 },
+        );
+      }
     }
     trustedPaymentStatus = 'promo';
     promoCodeIdToRedeem = promo.codeId ?? null;

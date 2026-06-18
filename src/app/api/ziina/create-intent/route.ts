@@ -83,7 +83,14 @@ export async function POST(request: NextRequest) {
   // Once-per-user enforcement: every code is single-use per account except those
   // flagged unlimited (e.g. ADMIN100). Checked against recorded redemptions.
   if (promoResult.valid && promoResult.oncePerUser && promoResult.codeId) {
-    if (await hasUserRedeemed(promoResult.codeId, auth.user.id)) {
+    let alreadyRedeemed: boolean;
+    try {
+      alreadyRedeemed = await hasUserRedeemed(promoResult.codeId, auth.user.id);
+    } catch {
+      // Fail closed on a transient lookup error (retryable), never silently allow reuse.
+      return NextResponse.json({ error: 'Could not verify your coupon — please try again.' }, { status: 503 });
+    }
+    if (alreadyRedeemed) {
       return NextResponse.json({ error: 'You have already used this coupon.' }, { status: 400 });
     }
   }
