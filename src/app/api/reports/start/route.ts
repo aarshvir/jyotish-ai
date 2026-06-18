@@ -437,6 +437,7 @@ export async function POST(request: NextRequest) {
   // 'promo' alone never passes (safeNonPaidPaymentStatus no longer echoes it). Anything
   // less than 100% still requires real payment.
   let promoCodeIdToRedeem: string | null = null;
+  let promoOncePerUser = false;
   const requestedPromo =
     typeof body.payment_status === 'string' && body.payment_status.trim() === 'promo';
   const isPaidForecastPlan = planNorm === '7day' || planNorm === 'monthly' || planNorm === 'annual';
@@ -473,6 +474,7 @@ export async function POST(request: NextRequest) {
     }
     trustedPaymentStatus = 'promo';
     promoCodeIdToRedeem = promo.codeId ?? null;
+    promoOncePerUser = promo.oncePerUser === true;
   }
 
   if (!isFreePlan && trustedPaymentStatus !== 'paid' && trustedPaymentStatus !== 'promo' && !userIsAdmin) {
@@ -593,10 +595,16 @@ export async function POST(request: NextRequest) {
   }
 
   // Book the server-validated promo redemption now that the report row exists.
-  // Idempotent per report (order_id = reportId) so a retry/forceRestart never double-counts.
+  // Once-per-user codes use the SAME stable order_id as the checkout/finalize path
+  // (promo:{codeId}:{userId}) so the existing order_id UNIQUE index enforces once-per-user
+  // race-safely across reports AND across the free + checkout paths. Unlimited codes keep
+  // the per-report id so legitimate repeat use is allowed.
   if (promoCodeIdToRedeem) {
     try {
-      await redeemPromoCode(promoCodeIdToRedeem, auth.user.id, reportId);
+      const orderId = promoOncePerUser
+        ? `promo:${promoCodeIdToRedeem}:${auth.user.id}`
+        : reportId;
+      await redeemPromoCode(promoCodeIdToRedeem, auth.user.id, orderId);
     } catch (e) {
       console.warn('[reports/start] promo redeem failed (non-fatal):', e);
     }

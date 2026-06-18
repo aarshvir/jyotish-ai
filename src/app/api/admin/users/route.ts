@@ -29,12 +29,31 @@ export async function GET() {
     if (batch.length < 1000) break; // last page
   }
 
-  const [reportsRes, kundaliRes, synastryRes, paymentsRes] = await Promise.all([
-    db.from('reports').select('user_id, payment_status'),
-    db.from('kundali_charts').select('user_id'),
-    db.from('synastry_charts').select('user_id'),
-    db.from('ziina_payments').select('user_id, amount, currency, status'),
+  // Page through each aggregation table: PostgREST caps a select at 1000 rows, so once
+  // the platform passes 1000 reports/payments/charts the stats (Forecasts/Paid/Spent)
+  // would silently undercount — the same 1000-row trap #88 fixed for the user list.
+  const fetchAll = async (table: string, cols: string): Promise<Record<string, unknown>[]> => {
+    const rows: Record<string, unknown>[] = [];
+    for (let offset = 0; offset < 100_000; offset += 1000) {
+      const { data, error } = await db.from(table).select(cols).range(offset, offset + 999);
+      if (error) break;
+      const batch = (data ?? []) as unknown as Record<string, unknown>[];
+      rows.push(...batch);
+      if (batch.length < 1000) break; // last page
+    }
+    return rows;
+  };
+
+  const [reportsRows, kundaliRows, synastryRows, paymentsRows] = await Promise.all([
+    fetchAll('reports', 'user_id, payment_status'),
+    fetchAll('kundali_charts', 'user_id'),
+    fetchAll('synastry_charts', 'user_id'),
+    fetchAll('ziina_payments', 'user_id, amount, currency, status'),
   ]);
+  const reportsRes = { data: reportsRows };
+  const kundaliRes = { data: kundaliRows };
+  const synastryRes = { data: synastryRows };
+  const paymentsRes = { data: paymentsRows };
 
   const byUser: Record<string, Agg> = {};
   const ensure = (id: string): Agg =>
