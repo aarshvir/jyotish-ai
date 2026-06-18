@@ -51,45 +51,75 @@ export async function notifyReportReady(reportId: string): Promise<void> {
   try {
     const db = createServiceClient();
 
-    // Idempotency claim: this runs inside a retryable Inngest finalize step, so a retry
-    // would otherwise re-send the email + WhatsApp (real cost / spam). Atomically claim
-    // notify_sent_at; only the first caller (it was NULL) proceeds. Tolerant of an
-    // unapplied migration (20260617_reports_notify_sent_at) — if the column is missing
-    // the claim errors and we fall through to send (status-quo at-least-once) rather than
-    // block notifications entirely.
-    const { data: claim, error: claimErr } = await db
+    const { data, error } = await db
       .from('reports')
-      .update({ notify_sent_at: new Date().toISOString() })
+      .select('user_email, native_name, phone, plan_type, notify_sent_at')
       .eq('id', reportId)
-      .is('notify_sent_at', null)
-      .select('id')
       .maybeSingle();
-    if (!claimErr && !claim) {
-      return; // already notified by an earlier finalize
+
+    let report = data as
+      | {
+          user_email?: string | null;
+          native_name?: string | null;
+          phone?: string | null;
+          plan_type?: string | null;
+          notify_sent_at?: string | null;
+        }
+      | null;
+    const missingNotifyColumn =
+      !!error && ((error.message ?? '').includes('notify_sent_at') || (error.message ?? '').includes('schema cache'));
+
+    // Tolerant of an unapplied migration (20260617_reports_notify_sent_at). If the
+    // column is missing, fall back to the pre-migration at-least-once behavior instead
+    // of blocking notifications entirely.
+    if (missingNotifyColumn) {
+      const fallback = await db
+        .from('reports')
+        .select('user_email, native_name, phone, plan_type')
+        .eq('id', reportId)
+        .maybeSingle();
+      report = fallback.data as typeof report;
+    } else if (error) {
+      console.warn('[notify/reportReady] report lookup failed:', error.message);
+      return;
     }
 
-    const { data } = await db
-      .from('reports')
-      .select('user_email, native_name, phone, plan_type')
-      .eq('id', reportId)
-      .maybeSingle();
-    if (!data) return;
-    const email = (data.user_email ?? '').trim();
-    const name = ((data.native_name ?? '').trim().split(' ')[0]) || 'there';
-    const free = isFreePlan(data.plan_type);
+    if (!report || report.notify_sent_at) return;
+    const email = (report.user_email ?? '').trim();
+    const name = ((report.native_name ?? '').trim().split(' ')[0]) || 'there';
+    const free = isFreePlan(report.plan_type);
     const url = `${SITE}/report/${reportId}`;
 
+    let delivered = false;
     if (email) {
-      await sendEmail({
+      const result = await sendEmail({
         to: email,
         subject: `${name}, your VedicHour reading is ready`,
         html: emailHtml(name, url, free),
         text: emailText(name, url, free),
       });
+      delivered = delivered || result.ok;
     }
-    const phone = (data.phone ?? '').trim();
+    const phone = (report.phone ?? '').trim();
     if (phone) {
-      await sendWhatsApp({ to: phone, body: whatsappText(name, url, free) });
+      const result = await sendWhatsApp({ to: phone, body: whatsappText(name, url, free) });
+      delivered = delivered || result.ok;
+    }
+
+    // notify_sent_at means at least one configured channel actually accepted the
+    // message. Failed/skipped sends stay NULL so a future finalize/recovery run can
+    // try again instead of silently suppressing the user's ready notification.
+    if (delivered && !missingNotifyColumn) {
+      const { error: markErr } = await db
+        .from('reports')
+        .update({ notify_sent_at: new Date().toISOString() })
+        .eq('id', reportId)
+        .is('notify_sent_at', null);
+      if (markErr) {
+        console.warn('[notify/reportReady] notify_sent_at mark failed:', markErr.message);
+      }
+    } else if ((email || phone) && !delivered) {
+      console.warn('[notify/reportReady] no delivery channel succeeded for report', reportId);
     }
   } catch (e) {
     console.error('[notify/reportReady]', e);
