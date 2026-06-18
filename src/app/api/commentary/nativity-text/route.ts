@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   let body: {
     lagnaSign: string;
-    lagnaDegreee?: number;
+    lagnaDegreee?: number; // typo preserved: orchestrator sends `lagnaDegreee` (3 e's) — do not rename without updating orchestrator
     moonSign: string;
     moonNakshatra: string;
     mahadasha: string;

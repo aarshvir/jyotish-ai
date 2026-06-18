@@ -187,13 +187,13 @@ Return ONLY valid JSON. No markdown, no backticks.`;
       )
       .join('\n\n');
 
+    // Build a compact dates summary (just date + scores) to anchor the response order
+    // without duplicating the full grahaBlocks data that was already sent above.
+    const dateSummary = batchDays.map((d) => `${d.date} (score=${d.day_score})`).join(', ');
     const userPrompt = `${grahaBlocks}
 
-Generate day_theme and day_overview for EACH of the following ${nDays} days. You MUST return exactly ${nDays} entr${nDays === 1 ? 'y' : 'ies'} in the "days" array — one per day in the same order. Current dasha: ${mahadasha}/${antardasha}.
-For each day, graha signs and whole-sign houses MUST match the ACTUAL PLANETARY POSITIONS block for that date above. The yoga meaning and BEST ACTION WINDOW lines are authoritative for that date.
-
-Days data:
-${JSON.stringify(batchDays, null, 2)}
+Generate day_theme and day_overview for EACH of the ${nDays} days above (${dateSummary}). Return exactly ${nDays} entr${nDays === 1 ? 'y' : 'ies'} in the "days" array — one per day in the order shown. Current dasha: ${mahadasha}/${antardasha}.
+Graha signs and houses MUST match the ACTUAL PLANETARY POSITIONS block for each date. The yoga meaning and BEST ACTION WINDOW lines are authoritative.
 
 MANDATORY RULES for day_overview (enforce all — a user is paying $100 for this analysis):
 1. First line: a single compelling sentence in normal sentence case (8-12 words, ends with a period). Make it feel like a personal advisor's opening — warm, energetic, and direct. Example: "A focused day — your peak window falls early and career moves land well." or "A quieter day to restore energy and wrap up loose ends." Do NOT use ALL-CAPS.
@@ -222,11 +222,14 @@ Return this exact JSON structure (no extra fields):
 
 Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start with { and end with }.`;
 
+    // cacheSystemPrompt: 30-day reports split into 2 batches — caching saves ~90% on the
+    // system prompt (~1000 tokens) for the second batch call.
     const text = await completeLlmChat({
       modelOverride: override,
       systemPrompt,
       userPrompt,
       maxTokens: max_tokens,
+      cacheSystemPrompt: true,
     });
     let parsed: { days: Array<{ date: string; day_theme: string; day_overview: string }> } | null = null;
     try {
@@ -255,8 +258,13 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
     // Longer horizons: keep 4+remainder to avoid output truncation.
     let out: Array<{ date: string; day_theme: string; day_overview: string }> = [];
 
+    // Token budget: each day needs ~250 words overview + ~15 word theme ≈ 350 tokens.
+    // 8 days × 350 = 2800 tokens. Cap at 4000 to allow variance without over-allocating.
+    // Longer batches split into 4+remainder at 2800 each (was 6000 — 57% saving).
     if (days.length > 0 && days.length <= 8) {
-      const r = await callBatches(days, 10_000, modelOverride);
+      const perDayTokens = 400;
+      const batchTokens = Math.min(4000, Math.max(1500, days.length * perDayTokens));
+      const r = await callBatches(days, batchTokens, modelOverride);
       out = (r.length ? r : days.map((d) => buildFallbackDay(d, lagnaSign))).map((d) => ({
         ...d,
         day_overview: normalizeDayOverview(d.day_overview),
@@ -266,12 +274,12 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
       const batch2 = days.slice(4);
 
       if (batch1.length) {
-        const r1 = await callBatches(batch1, 6_000, modelOverride);
+        const r1 = await callBatches(batch1, 2800, modelOverride);
         out.push(...(r1.length ? r1 : batch1.map((d) => buildFallbackDay(d, lagnaSign))));
         out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
       }
       if (batch2.length) {
-        const r2 = await callBatches(batch2, 6_000, modelOverride);
+        const r2 = await callBatches(batch2, 2800, modelOverride);
         out.push(...(r2.length ? r2 : batch2.map((d) => buildFallbackDay(d, lagnaSign))));
         out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
       }

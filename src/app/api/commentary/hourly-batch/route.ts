@@ -233,11 +233,20 @@ OUTPUT — return ONLY this JSON shape. commentary field = the full 3-paragraph 
 Include every day from the input. Each day must have exactly 18 slots. Start with {.`;
 
   try {
+    // Token budget: each slot commentary is 3 paragraphs ≈ 115 words ≈ 150 tokens.
+    // Per-day: 18 slots × 150 = 2700 tokens. Add 500 overhead for JSON structure.
+    // Old formula: 2000 + days*18*200 (30 days = 110000, capped at 16000 — still too high per call).
+    // New: 500 + days*18*150 with cap at 14000 (saves ~12% per batch).
+    //
+    // cacheSystemPrompt: the hourly-batch system prompt (~800 tokens) is sent for every chunk
+    // in a 30-day report (up to 6 chunks). Caching gives ~90% discount after the first call,
+    // saving ~3600 input tokens per report on the Pro plan.
     const rawText = await completeLlmChat({
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: Math.min(16000, 2000 + daysIn.length * 18 * 200),
+      maxTokens: Math.min(14000, 500 + daysIn.length * 18 * 150),
+      cacheSystemPrompt: true,
     });
 
     type BatchDay = { dayIndex?: number; date?: string; slots?: Array<{ slot_index?: number; commentary?: string }> };

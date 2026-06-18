@@ -216,11 +216,13 @@ Start with { and end with }.`;
       chunks.push({ index: i / 3 + 1, monthBatch: months.slice(i, i + 3) });
     }
     const chunkResults = await Promise.all(chunks.map(async ({ index, monthBatch }) => {
+      // Token budget: each month needs ~350 words analysis + ~50 words for other fields ≈ 550 tokens.
+      // 3-month chunk × 550 = 1650. 3000 provides headroom (was 6000 — 50% saving).
       const text = await completeLlmChat({
         modelOverride,
         systemPrompt,
         userPrompt: buildUserPrompt(monthBatch),
-        maxTokens: 6000,
+        maxTokens: 3000,
       });
       const parsed = safeParseJson<{ months: unknown[] }>(text);
       if (!parsed?.months?.length || parsed.months.length !== monthBatch.length) {

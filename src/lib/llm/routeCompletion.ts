@@ -230,6 +230,10 @@ export async function completeLlmChat(opts: {
   systemPrompt: string;
   userPrompt: string;
   maxTokens: number;
+  /** When true, wrap the system prompt in Anthropic's cache_control block so repeated calls
+   *  across chunks in the same report pipeline get ~90% token discount on the system prompt.
+   *  Only effective on Anthropic claude-* models; silently ignored for other providers. */
+  cacheSystemPrompt?: boolean;
 }): Promise<string> {
   const raw = (opts.modelOverride ?? '').trim();
   const modelId = raw || 'claude-sonnet-4-6';
@@ -237,12 +241,17 @@ export async function completeLlmChat(opts: {
   // Anthropic (default or explicit claude-*)
   if (!raw || modelId.startsWith('claude-')) {
     if (anthropicClient) {
-      console.log(`[LLM] Using Anthropic model: ${modelId}`);
+      console.log(`[LLM] Using Anthropic model: ${modelId}${opts.cacheSystemPrompt ? ' (prompt-cache)' : ''}`);
       try {
+        // Build system parameter: use cache_control for large repeated system prompts to save
+        // ~90% on system prompt tokens after the first call in a multi-chunk pipeline.
+        const systemParam: string | Anthropic.TextBlockParam[] = opts.cacheSystemPrompt
+          ? [{ type: 'text', text: opts.systemPrompt, cache_control: { type: 'ephemeral' } }]
+          : opts.systemPrompt;
         const response = await anthropicClient.messages.create({
           model: modelId.startsWith('claude-') ? modelId : 'claude-sonnet-4-6',
           max_tokens: opts.maxTokens,
-          system: opts.systemPrompt,
+          system: systemParam,
           messages: [{ role: 'user', content: opts.userPrompt }],
         });
         return extractAnthropicText(response);
