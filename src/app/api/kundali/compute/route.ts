@@ -3,6 +3,7 @@ export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { checkRateLimit, RATE_LIMITS } from '@/lib/api/rateLimit';
 import { createServiceClient } from '@/lib/supabase/admin';
 import type { NatalChartData } from '@/lib/agents/types';
 import { plainify } from '@/lib/utils/plainify';
@@ -21,6 +22,16 @@ type BirthPayload = {
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
+
+  // One entitlement shouldn't be replayable into unbounded LLM spend (the deep compute
+  // runs Anthropic/OpenAI calls with maxDuration=300). Per-user sliding-window cap.
+  const rl = await checkRateLimit(`compute:${auth.user.id}`, RATE_LIMITS.compute.limit, RATE_LIMITS.compute.windowMs);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Too many deep-report requests — please wait a few minutes and try again.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+    );
+  }
 
   const db = createServiceClient();
 

@@ -110,4 +110,7 @@ export const RATE_LIMITS = {
   validation: { limit: 5, windowMs: 60_000 },
   /** Ask-a-question: user-initiated LLM call on the report — 6 per 5 min per user */
   ask: { limit: 6, windowMs: 5 * 60_000 },
+  /** Deep compute (Kundali/Synastry): LLM-heavy, one entitlement shouldn't replay into
+   *  unbounded spend — 8 per 10 min per user. */
+  compute: { limit: 8, windowMs: 10 * 60_000 },
 } as const;

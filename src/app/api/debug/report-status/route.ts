@@ -67,9 +67,14 @@ export async function GET(request: NextRequest) {
     grok_key_present: !!cleanEnv(process.env.GROK_API_KEY),
   };
 
+  // Live LLM probes are billable, so opt-in only (?probe=1) — matches /api/debug. The
+  // default diagnostic reports key presence + ephemeris/supabase connectivity and spends
+  // no tokens, so an uptime monitor hitting this route can't run up API cost.
+  const runProbe = new URL(request.url).searchParams.get('probe') === '1';
+
   // Live probe Anthropic — does the key actually work?
   const anthropicKey = cleanEnv(process.env.ANTHROPIC_API_KEY);
-  if (anthropicKey) {
+  if (runProbe && anthropicKey) {
     try {
       const probeRes = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
@@ -98,9 +103,9 @@ export async function GET(request: NextRequest) {
     status.llm_probe_anthropic = { ok: false, error: 'ANTHROPIC_API_KEY not set' };
   }
 
-  // Live probe OpenAI — does the key actually work?
+  // Live probe OpenAI — does the key actually work? (opt-in via ?probe=1)
   const openaiKey = cleanEnv(process.env.OPENAI_API_KEY);
-  if (openaiKey) {
+  if (runProbe && openaiKey) {
     try {
       const probeRes = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',

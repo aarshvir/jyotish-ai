@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { isAdminEmail } from '@/lib/bypass';
+import { isAdmin } from '@/lib/admin/isAdmin';
 import {
   inferReportFailureBucket,
   inferReportFailureBucketFromCode,
@@ -37,7 +37,9 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user?.email || !isAdminEmail(user.email)) {
+  // DB-first admin check (admin_users table + ADMIN_EMAILS fallback) — same source of
+  // truth as every other admin route, so portal-provisioned admins aren't locked out.
+  if (!user?.email || !(await isAdmin(user.email))) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
