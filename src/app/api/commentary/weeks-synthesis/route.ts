@@ -200,6 +200,19 @@ Start with { and end with }. No markdown.`;
       if (wc < 50) {
         synthesis.opening_paragraph = `You are in your ${mahadasha} period${antardasha && antardasha !== 'Unknown' ? `, with ${antardasha} as the current sub-period` : ''} — a chapter that brings ${mahadasha}'s qualities and themes to the foreground of your experience. For ${lagnaSign} rising, this period activates specific areas of your life that are ready for growth and attention. The defining quality of this chapter is movement: things that have been building are now ready to be acted on. Use your highest-scoring windows for decisions that require commitment, and treat the lower-scoring stretches as preparation time. Your best opening this period falls around ${bestDate} — use it for your most important move. Around ${worstDate}, ease off and let things settle.`;
       }
+
+      // Tone guard for the intimacy paragraph — the one domain where an off-chain model
+      // could return crude/explicit wording. The prompt asks for tasteful copy; this is
+      // the deterministic backstop: on any explicit term, swap in the warm fallback.
+      const dp = synthesis.domain_priorities as Record<string, string> | undefined;
+      if (dp && typeof dp.intimacy === 'string') {
+        // Only unambiguously crude/explicit terms — NOT "sex"/"sexual"/"intimacy"/
+        // "passion"/"desire", which are normal, tasteful words for this domain.
+        const EXPLICIT_RE = /\b(porn\w*|orgasm\w*|genital\w*|erotica?|masturbat\w*|fuck\w*|horny|penis|vagina|nipples?|blowjob|cunt|cum\b)\b/i;
+        if (EXPLICIT_RE.test(dp.intimacy)) {
+          dp.intimacy = 'Passion and closeness flow most easily on your higher-scoring days — lean into connection then. Lower-energy stretches are for warmth and rest, not pressure.';
+        }
+      }
     }
 
     // If the model returned synthesis but no/empty weeks, mark it partial (206) so the

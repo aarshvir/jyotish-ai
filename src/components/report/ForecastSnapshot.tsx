@@ -130,7 +130,11 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
   // Thesis: a clean current-year theme if we have one, otherwise a guaranteed-plain
   // line built from structured data. Never surface raw jargon as the headline.
   const cleanTheme = plainify(leadSentences(currentYearTheme, 2));
-  const thesis = cleanTheme.length > 40 ? cleanTheme : constructedThesis(domains, best[0], watch[0]);
+  // The thesis line is the one un-gated headline a free visitor sees. Keep Intimacy out
+  // of the free teaser so a non-paying visitor never gets sex/intimacy foregrounded;
+  // the paid card grid still shows all five domains.
+  const thesisDomains = preview ? domains.filter((d) => d.label !== 'Intimacy') : domains;
+  const thesis = cleanTheme.length > 40 ? cleanTheme : constructedThesis(thesisDomains, best[0], watch[0]);
 
   // Three "what's shifting" lines (plain). Reuse the strongest domain copy.
   const shifts = [

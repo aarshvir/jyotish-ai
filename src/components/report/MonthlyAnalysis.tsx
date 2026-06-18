@@ -12,8 +12,9 @@ interface MonthData {
   money_score?: number;
   health_score?: number;
   love_score?: number;
+  intimacy_score?: number;
   /** Canonical shape from the pipeline (MonthSummary). love maps to relationships. */
-  domain_scores?: { career?: number; money?: number; health?: number; relationships?: number };
+  domain_scores?: { career?: number; money?: number; health?: number; relationships?: number; intimacy?: number };
   theme: string;
   key_transits?: string[];
   commentary: string;
@@ -42,6 +43,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       money_score: ex?.domain_scores?.money ?? ex?.money_score,
       health_score: ex?.domain_scores?.health ?? ex?.health_score,
       love_score: ex?.domain_scores?.relationships ?? ex?.love_score,
+      intimacy_score: ex?.domain_scores?.intimacy ?? ex?.intimacy_score,
       theme: (() => {
         const t = (ex?.theme ?? '').trim();
         // Suppress literal template placeholder
@@ -173,6 +175,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
           { label: 'Money', score: m.money_score, key: 'money' },
           { label: 'Health', score: m.health_score, key: 'health' },
           { label: 'Love', score: m.love_score, key: 'love' },
+          { label: 'Intimacy', score: m.intimacy_score, key: 'intimacy' },
         ].filter((d) => d.score != null) as { label: string; score: number; key: string }[];
         const best = [...scores].sort((a, b) => b.score - a.score)[0];
         const worst = [...scores].sort((a, b) => a.score - b.score)[0];
@@ -261,8 +264,8 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
             )}
 
             {/* Multi-domain scores with progress bars */}
-            {(month.career_score ?? month.money_score ?? month.health_score ?? month.love_score) != null && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
+            {(month.career_score ?? month.money_score ?? month.health_score ?? month.love_score ?? month.intimacy_score) != null && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6">
                 <div className="text-center">
                   <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">Overall</p>
                   <p className={`font-mono text-xl font-bold ${getScoreColor(month.overall_score ?? 50)}`}>
@@ -308,6 +311,15 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
                     <p className={`font-mono text-xl font-bold ${getScoreColor(month.love_score)}`}>{month.love_score}</p>
                     <div className="h-1 bg-horizon/40 rounded-full mt-1 overflow-hidden">
                       <div className={`h-full rounded-full ${getColor(month.love_score)}`} style={{ width: `${Math.min(100, month.love_score)}%` }} />
+                    </div>
+                  </div>
+                )}
+                {month.intimacy_score != null && (
+                  <div className="text-center">
+                    <p className="font-mono text-[10px] text-dust tracking-wider uppercase mb-1">Intimacy</p>
+                    <p className={`font-mono text-xl font-bold ${getScoreColor(month.intimacy_score)}`}>{month.intimacy_score}</p>
+                    <div className="h-1 bg-horizon/40 rounded-full mt-1 overflow-hidden">
+                      <div className={`h-full rounded-full ${getColor(month.intimacy_score)}`} style={{ width: `${Math.min(100, month.intimacy_score)}%` }} />
                     </div>
                   </div>
                 )}
