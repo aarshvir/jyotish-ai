@@ -72,13 +72,17 @@ export async function getPromoDiscount(
 /** True if this user has already redeemed this code (for once-per-user enforcement). */
 export async function hasUserRedeemed(codeId: string, userId: string): Promise<boolean> {
   const supabase = createServiceClient();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('promo_redemptions')
     .select('id')
     .eq('code_id', codeId)
     .eq('user_id', userId)
     .limit(1)
     .maybeSingle();
+  // Fail CLOSED: on a transient lookup error, throw so the caller returns a retryable
+  // error instead of silently treating it as "not redeemed" and granting a second
+  // once-per-user discount/free report.
+  if (error) throw new Error(`promo redemption lookup failed: ${error.message}`);
   return Boolean(data);
 }
 
