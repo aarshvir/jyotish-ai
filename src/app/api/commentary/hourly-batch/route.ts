@@ -248,6 +248,13 @@ Include every day from the input. Each day must have exactly 18 slots. Start wit
       parsed = parseBatchJson(rawText);
     }
 
+    // Unparseable LLM output → every slot would silently get the template stub at HTTP
+    // 200, bypassing assertNoPartialLlmForPaid (paid users get all-template hours).
+    // Throw so the catch below returns 206 + partial and the paid guard rejects it.
+    if (!parsed?.days?.length) {
+      throw new Error('hourly-batch: unparseable LLM output');
+    }
+
     const outDays: Array<{ dayIndex: number; slots: Array<{ slot_index: number; commentary: string; commentary_short?: string }> }> = [];
 
     for (const d of daysIn) {

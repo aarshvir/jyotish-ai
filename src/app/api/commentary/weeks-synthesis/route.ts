@@ -202,10 +202,18 @@ Start with { and end with }. No markdown.`;
       }
     }
 
-    return NextResponse.json({
-      weeks: parsed.weeks ?? [],
-      period_synthesis: synthesis,
-    });
+    // If the model returned synthesis but no/empty weeks, mark it partial (206) so the
+    // paid guard (assertNoPartialLlmForPaid) handles it consistently with the months
+    // routes — rather than shipping a 200 that downstream padding then has to reject.
+    const okWeeks = Array.isArray(parsed?.weeks) && parsed.weeks.length > 0;
+    return NextResponse.json(
+      {
+        weeks: parsed?.weeks ?? [],
+        period_synthesis: synthesis,
+        ...(okWeeks ? {} : { partial: true }),
+      },
+      { status: okWeeks ? 200 : 206 },
+    );
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[weeks-synthesis]', msg.slice(0, 200));

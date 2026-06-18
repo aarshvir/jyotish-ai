@@ -235,13 +235,13 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
       parsed = parseClaudeJsonDefensively(text) as typeof parsed;
     }
     if (!parsed) {
-      console.error('[DAILY-OVERVIEWS] All JSON parse attempts failed, using fallback');
+      console.error('[DAILY-OVERVIEWS] All JSON parse attempts failed');
       console.error('[DAILY-OVERVIEWS] Raw text sample:', text.slice(0, 200));
-      return batchDays.map((day) => ({
-        date: day?.date ?? '',
-        day_theme: 'Planetary energies active today.',
-        day_overview: `${day?.panchang?.yoga || 'Mixed'} yoga with Moon in house ${day?.panchang?.moon_sign || 'transit'}. Day score: ${day?.day_score ?? 50}/100. Review timing carefully before major actions.`,
-      }));
+      // Do NOT silently return template days here — that produced a full-count array that
+      // the route shipped at HTTP 200, bypassing assertNoPartialLlmForPaid (paid users
+      // got template copy). Throw so the route's catch returns 206 + partial, exactly
+      // like the count-mismatch branch and the months-* routes.
+      throw new Error('daily-overviews: unparseable LLM output');
     }
     const normalized = parsed?.days ?? [];
     return normalized.map((d) => ({
