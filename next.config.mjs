@@ -43,11 +43,14 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://maps.googleapis.com https://pay.ziina.com https://eu-assets.i.posthog.com",
+              // maps.googleapis.com / api.opencagedata.com removed — geocoding + LLM calls
+              // run server-side, no client code calls these origins. Tightens the
+              // script-injection surface (script-src) with no functional loss.
+              "script-src 'self' 'unsafe-inline' https://pay.ziina.com https://eu-assets.i.posthog.com",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://maps.googleapis.com https://api.opencagedata.com https://api-v2.ziina.com https://pay.ziina.com https://eu.i.posthog.com https://eu-assets.i.posthog.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api-v2.ziina.com https://pay.ziina.com https://eu.i.posthog.com https://eu-assets.i.posthog.com",
               "worker-src 'self' blob:",
               "frame-src https://pay.ziina.com",
               "object-src 'none'",

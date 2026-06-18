@@ -33,7 +33,7 @@ export default function DashaPage({ params }: { params: { planet: string } }) {
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
       <Navbar />
-      <main className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
+      <main id="main-content" className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
         <Link href="/dasha" className="font-body text-body-sm text-dust hover:text-star transition-colors">← All dasha periods</Link>
         <p className="section-eyebrow mt-3 mb-2">Vimshottari Mahadasha · {d.years} years</p>
         <h1 className="text-display-md font-display text-star mb-6">{d.planet} Mahadasha</h1>
