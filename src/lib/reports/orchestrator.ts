@@ -2106,19 +2106,33 @@ export async function generateReportPipeline(
       }
     }
 
+    // PAYWALL AT THE SOURCE: free/preview reports are generated in full but must NOT be
+    // STORED with the paid sections. report_data is readable by the owner via the direct
+    // Supabase client (select *) AND Supabase Realtime (replica identity full) — both
+    // bypass any API-layer strip, so the only durable fix is to never persist paid content
+    // for a preview plan. Keep natal chart + ONE sample day (the advertised preview).
+    const previewPlan = (() => {
+      const p = String(input.planType ?? input.type ?? '').toLowerCase();
+      return p === 'free' || p === 'preview';
+    })();
+    const finalReportToSave = previewPlan
+      ? { ...finalReport, months: [], weeks: [], synthesis: null, days: finalReport.days.slice(0, 1) }
+      : finalReport;
+
     // Save to DB
-    const payloadBytes = JSON.stringify(finalReport).length;
+    const payloadBytes = JSON.stringify(finalReportToSave).length;
     tlog(`[orchestrator] report payload size: ${(payloadBytes / 1024).toFixed(0)} KB for ${reportId}`);
     void dbSetProgress(PHASE.FINALIZE_PERSIST, 97);
-    await dbSaveFinal(finalReport as unknown as Record<string, unknown>);
+    await dbSaveFinal(finalReportToSave as unknown as Record<string, unknown>);
     onStep({ type: 'step_completed', step: 10 });
     logStep('report_saved_complete');
 
     // Clear checkpoint state now that the report is fully saved.
     void clearPipelineCheckpoint(db, reportId, userId);
 
-    // Emit completion
-    onStep({ type: 'report_completed', reportData: finalReportTyped });
+    // Emit completion — use the SAME preview-stripped payload as the DB save so the SSE
+    // report_completed event never ships paid sections to a free/preview client either.
+    onStep({ type: 'report_completed', reportData: finalReportToSave as unknown as ReportData });
   } catch (err) {
     // Pillar 1 DAG: intentional phase stop — surface to caller, don't mark error.
     if (err instanceof PipelinePhaseStopSignal) {
