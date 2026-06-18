@@ -8,6 +8,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { NatalChartData, NativityProfile } from './types';
 import { safeParseJson } from '@/lib/utils/safeJson';
+import { sanitizeForPrompt, sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { anthropicErrorWarrantsProviderFallback, hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 import { logLlmAudit } from '@/lib/llm/audit';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
@@ -39,9 +40,19 @@ ABSOLUTE RULES:
 - All string values must be grammatically complete sentences.`;
 
 function buildUserPrompt(chart: NatalChartData, ragContext: string, detectedYogas?: string[]): string {
+  // Sanitize every chart-derived field before it enters the prompt / JSON template. This
+  // route accepts a client-posted natalChart, so unsanitized values could inject prompt
+  // instructions or forge the JSON shape (e.g. lagna = 'Aries"}'). Mirrors the commentary
+  // routes' contract.
+  const lagna = sanitizeLagnaSign(chart.lagna);
+  const moonNak = sanitizeForPrompt(chart.moon_nakshatra) || 'Unknown';
+  const mdLord = sanitizePlanetName(chart.current_dasha?.mahadasha) || 'unknown';
+  const adLord = sanitizePlanetName(chart.current_dasha?.antardasha) || 'unknown';
+  const mdStart = sanitizeForPrompt(chart.current_dasha?.start_date) || '?';
+  const mdEnd = sanitizeForPrompt(chart.current_dasha?.end_date) || '?';
   const planets = Object.entries(chart.planets ?? {})
     .map(([name, p]) =>
-      `  ${name}: ${p?.sign ?? '?'} ${(p?.degree ?? 0).toFixed(2)}° | house ${p?.house ?? '?'} | ${p?.nakshatra ?? '?'} pada ${p?.nakshatra_pada ?? '?'}${p?.is_retrograde ? ' (R)' : ''}`
+      `  ${sanitizePlanetName(name) || 'Planet'}: ${sanitizeForPrompt(p?.sign) || '?'} ${(p?.degree ?? 0).toFixed(2)}° | house ${typeof p?.house === 'number' ? p.house : '?'} | ${sanitizeForPrompt(p?.nakshatra) || '?'} pada ${typeof p?.nakshatra_pada === 'number' ? p.nakshatra_pada : '?'}${p?.is_retrograde ? ' (R)' : ''}`
     )
     .join('\n');
 
@@ -56,15 +67,15 @@ function buildUserPrompt(chart: NatalChartData, ragContext: string, detectedYoga
   return `Analyze this natal chart and return a JSON NativityProfile. Write with the depth and specificity of a paid expert — every sentence must name a planet, house, or nakshatra and provide actionable insight.
 
 NATAL CHART
-Lagna: ${chart.lagna ?? 'Unknown'} ${(chart.lagna_degree ?? 0).toFixed(2)}°
+Lagna: ${lagna} ${(chart.lagna_degree ?? 0).toFixed(2)}°
 Planets:
 ${planets}
-Moon nakshatra: ${chart.moon_nakshatra ?? 'Unknown'}
-Current dasha: ${chart.current_dasha?.mahadasha ?? 'unknown'} MD / ${chart.current_dasha?.antardasha ?? 'unknown'} AD
-  (${chart.current_dasha?.start_date ?? '?'} → ${chart.current_dasha?.end_date ?? '?'})
+Moon nakshatra: ${moonNak}
+Current dasha: ${mdLord} MD / ${adLord} AD
+  (${mdStart} → ${mdEnd})
 ${engineFn ?? ''}${yogaHint}
 ${ragContext ? `CLASSICAL SCRIPTURE REFERENCES — cite inline using the MOST SPECIFIC form the chunk supports (full: [[BPHS:34:12]], chapter-only: [[BPHS:34]], or source-only: [[BPHS]]). Do NOT invent verse numbers:\n${ragContext}\n` : ''}
-INSTRUCTIONS — analyze for ${chart.lagna ?? 'Unknown'} Lagna:
+INSTRUCTIONS — analyze for ${lagna} Lagna:
 1. Supportive planets: which planets in this chart act as allies — name them and explain what areas of life they open up (career, money, relationships, health, creativity).
 2. Challenging planets: which planets create friction or delays — name them and explain the specific life domain affected and how to navigate it.
 3. Power planet: the single most important functional planet for this lagna — explain what it empowers.
@@ -74,7 +85,7 @@ INSTRUCTIONS — analyze for ${chart.lagna ?? 'Unknown'} Lagna:
 
 Return ONLY this JSON (no extra fields, no markdown):
 {
-  "lagna_sign": "${chart.lagna ?? 'Unknown'}",
+  "lagna_sign": "${lagna}",
   "lagna_analysis": "250-300 words. Open with: who is this person at their best — what drives them, what they're here to build. Then explain the current planetary period's theme in plain terms. Name the single most powerful combination in this chart and what it promises. Close with two sentences of direct life direction the person can act on.",
   "yogas": [
     { "name": "Yoga Name", "description": "2-3 sentences: open with the real-world outcome this combination delivers, then briefly name the astrological basis. Cite a classical source if scripture is provided — use the most specific form the chunk supports: [[BPHS:34:12]], [[BPHS:34]], or [[BPHS]]. Never invent verse numbers.", "strength": "strong|moderate|weak" }
@@ -193,10 +204,14 @@ export class NativityAgent {
         const response = await this.client.messages.create({
           model: 'claude-sonnet-4-6',
           max_tokens: 8000,
+          // Rules go in the dedicated system field (Anthropic weights it more strongly)
+          // rather than folded into the user turn — hardens the JSON-only + safety
+          // guardrails against injection in the chart fields. Matches the fallback path.
+          system: SYSTEM_PROMPT,
           messages: [
             {
               role: 'user',
-              content: `${SYSTEM_PROMPT}\n\n---\n\n${buildUserPrompt(natalChart, ragContext, detectedYogas)}`,
+              content: buildUserPrompt(natalChart, ragContext, detectedYogas),
             },
           ],
         });

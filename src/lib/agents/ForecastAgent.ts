@@ -6,6 +6,7 @@
 
 import Anthropic from '@anthropic-ai/sdk';
 import { safeParseJson } from '@/lib/utils/safeJson';
+import { sanitizeForPrompt, sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { anthropicErrorWarrantsProviderFallback, hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
 import { logLlmAudit } from '@/lib/llm/audit';
 import { EphemerisAgent } from './EphemerisAgent';
@@ -66,9 +67,9 @@ function buildForecastPrompt(
   return `You are a Vedic astrologer writing a personalised daily forecast.
 ${ragContext}
 NATIVE
-  Lagna: ${natalChart?.lagna ?? '?'}
-  Moon nakshatra: ${natalChart?.moon_nakshatra ?? '?'}
-  Current dasha: ${natalChart?.current_dasha?.mahadasha ?? '?'} MD / ${natalChart?.current_dasha?.antardasha ?? '?'} AD (ends ${natalChart?.current_dasha?.end_date ?? '?'})
+  Lagna: ${sanitizeLagnaSign(natalChart?.lagna)}
+  Moon nakshatra: ${sanitizeForPrompt(natalChart?.moon_nakshatra) || '?'}
+  Current dasha: ${sanitizePlanetName(natalChart?.current_dasha?.mahadasha) || '?'} MD / ${sanitizePlanetName(natalChart?.current_dasha?.antardasha) || '?'} AD (ends ${sanitizeForPrompt(natalChart?.current_dasha?.end_date) || '?'})
 
 DAILY DATA (${dates[0]} to ${dates[dates.length - 1]})
 ${dayBlocks}
