@@ -86,6 +86,7 @@ function LoginInner() {
     const supabase = createClient();
 
     let result;
+    let justSignedUp = false;
     if (mode === 'signup') {
       // Preserve the post-login redirect even if Supabase "Confirm email" is ON
       // (the confirmation link routes through /auth/callback, which honors ?next).
@@ -97,6 +98,7 @@ function LoginInner() {
         },
       });
       if (!result.error) {
+        justSignedUp = true;
         result = await supabase.auth.signInWithPassword({ email, password });
       }
     } else {
@@ -105,6 +107,15 @@ function LoginInner() {
 
     const { error: authErr } = result;
     if (authErr) {
+      const m = (authErr.message || '').toLowerCase();
+      // Signup succeeded but auto-login couldn't because "Confirm email" is ON — the
+      // account WAS created, so this is success, not a failure. Guide them to confirm
+      // (a green info message) instead of a scary red error.
+      if (justSignedUp && (m.includes('email not confirmed') || m.includes('confirm'))) {
+        setInfo('Account created! Check your inbox for a confirmation link, then sign in.');
+        setLoading(false);
+        return;
+      }
       setError(humanizeAuthError(authErr.message));
       setLoading(false);
       return;
