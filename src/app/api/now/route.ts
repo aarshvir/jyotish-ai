@@ -181,6 +181,13 @@ export async function GET(request: NextRequest) {
         );
       }
       const body = await res.json();
+      // Validate BEFORE caching — a malformed grid (slots !== 18) used to be cached for a
+      // full hour, turning one transient bad upstream response into a sticky 1-hour 502
+      // for that user. Only valid grids are cached; bad ones force a re-fetch next poll.
+      const candidateSlots = (body as { slots?: unknown[] })?.slots;
+      if (!Array.isArray(candidateSlots) || candidateSlots.length !== 18) {
+        return NextResponse.json({ error: 'Invalid grid from ephemeris', retry_after: 30 }, { status: 502 });
+      }
       entry = { expires: Date.now() + CACHE_MS, body };
       gridCache.set(cacheKey, entry);
     } catch {
