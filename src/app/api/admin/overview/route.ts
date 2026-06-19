@@ -3,22 +3,26 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/admin/guard';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { fetchAllAuthUsers } from '@/lib/admin/analytics';
 
 export async function GET() {
   const admin = await requireAdminApi();
   if (admin instanceof NextResponse) return admin;
 
   const db = createServiceClient();
-  const [usersRes, reports, paidPayments, kundalis, synastries, promo] = await Promise.all([
-    db.auth.admin.listUsers({ perPage: 1000 }),
+  const [users, reports, paidPayments, kundalis, synastries, promo] = await Promise.all([
+    // Paginate all signups — a single listUsers page caps at 1000 (and GoTrue may
+    // cap lower), which undercounted total + last-7-day signups (the #88 class).
+    fetchAllAuthUsers(db),
     db.from('reports').select('id', { count: 'exact', head: true }),
-    db.from('ziina_payments').select('amount, currency', { count: 'exact' }).eq('status', 'completed'),
+    // count:'exact' gives the true paidOrders, but the rows used to sum revenue
+    // must not be capped at PostgREST's default 1000 or revenue undercounts.
+    db.from('ziina_payments').select('amount, currency', { count: 'exact' }).eq('status', 'completed').limit(50000),
     db.from('kundali_charts').select('id', { count: 'exact', head: true }),
     db.from('synastry_charts').select('id', { count: 'exact', head: true }),
     db.from('promo_codes').select('id', { count: 'exact', head: true }).eq('active', true),
   ]);
 
-  const users = usersRes.data?.users ?? [];
   const now = Date.now();
   const signupsLast7 = users.filter(
     (u) => u.created_at && now - new Date(u.created_at).getTime() < 7 * 86_400_000,
