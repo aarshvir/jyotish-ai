@@ -65,8 +65,8 @@ export const CHOGHADIYA_SCORE: Record<string, number> = {
 
 // ── Transit Lagna House modifiers (Methodology Bible Step 3) ─────────────────
 export const TRANSIT_HOUSE_MOD: Record<number, number> = {
-  1:  +6,   // Self, identity — always powerful
-  2:  +3,   // Wealth, family, speech
+  1:  +7,   // Self, identity — always powerful (= Python HOUSE_MOD)
+  2:  +4,   // Wealth, family, speech (= Python HOUSE_MOD)
   3:   0,   // Communication, neutral
   4:  +1,   // Home, property
   5:  +4,   // Creativity, romance, children (trikona)
@@ -95,43 +95,73 @@ function getHouseFromLagna(transitSign: string, lagna: string): number {
 // the grandmaster forecast document. The Bible states: yoga -8 to +8, tithi -10
 // to +5, nakshatra -3 to +10, moon house -5 to +8, weekday -2 to +3.
 
-// Yoga quality — Bible range -8 to +8; anchor points: Siddhi/Brahma=+8, Vyaghata/Vyatipata=-8
-// Rankings follow classical Vedic texts (Muhurta Chintamani, Brihat Samhita).
+// IMPORTANT: these tables are SYNCED VERBATIM to the Python engine's *_MOD tables
+// (ephemeris-service/main.py YOGA_MOD / TITHI_MOD / NAKSHATRA_MOD / MOON_HOUSE_MOD).
+// The Python service is the primary scorer; this TS copy runs in the fallback /
+// ForecastAgent path. Any drift means the same chart on the same day scores
+// differently depending on whether Python was reachable — so panchangParity.test.ts
+// asserts these EQUAL the Python values. Update both engines together.
+
+// Yoga quality — = Python YOGA_MOD
 const YOGA_QUALITY: Record<string, number> = {
-  Vishkambha: -5, Priti: +5, Ayushman: +6, Saubhagya: +6, Shobhana: +5,
-  Atiganda:   -6, Sukarma: +5, Dhriti:  +5, Shula:    -6, Ganda:    -6,
-  Vriddhi:    +6, Dhruva:  +6, Vyaghata:-8, Harshana: +5, Vajra:    -5,
-  Siddhi:     +8, Vyatipata:-8, Variyan: +3, Parigha:  -7, Shiva:    +4,
-  Siddha:     +7, Sadhya:  +5, Shubha:  +7, Shukla:   +4, Brahma:   +8,
-  Indra:      +8, Vaidhriti:-7,
+  Vishkambha: -4, Priti: 4, Ayushman: 6, Saubhagya: 10, Shobhana: 5,
+  Atiganda:  -18, Sukarma: 3, Dhriti:  5, Shula:    -8, Ganda:   -14,
+  Vriddhi:    10, Dhruva:  8, Vyaghata:-16, Harshana: 8, Vajra:    2,
+  Siddhi:     10, Vyatipata:-14, Variyan: 2, Parigha:  -8, Shiva:   6,
+  Siddha:      8, Sadhya:  4, Shubha:  4, Shukla:    4, Brahma:   12,
+  Indra:      12, Vaidhriti:-10,
 };
 
-// Tithi quality — Bible range -10 to +5; anchor: Amavasya=-10, Rikta=-3, Jaya=+3, Nanda=+5
-// Tithi groups: Nanda(1,6,11)=+5, Bhadra(2,7,12)=+4, Jaya(3,8,13)=+3,
-//   Rikta(4,9,14)=-3, Poorna(5,10,15)=+5. Chaturdashi and Ashtami extra-malefic.
+// Tithi quality — = Python TITHI_MOD (30 distinct Shukla/Krishna keys + Purnima/Amavasya).
+// Matched via normalizeTithi() against the FULL tithi string (not bare-name substring),
+// so Krishna days are no longer scored as their Shukla namesakes.
 const TITHI_QUALITY: Record<string, number> = {
-  Pratipada: +5, Dwitiya: +4, Tritiya: +3, Chaturthi: -3, Panchami: +5,
-  Shashthi:  +5, Saptami: +4, Ashtami:  -5, Navami:   -3, Dashami:  +5,
-  Ekadashi:  +5, Dwadashi:+4, Trayodashi:+3, Chaturdashi:-8,
+  'Shukla Pratipada': 2, 'Shukla Dwitiya': 3, 'Shukla Tritiya': 5, 'Shukla Chaturthi': 1,
+  'Shukla Panchami': 3, 'Shukla Shashthi': 2, 'Shukla Saptami': 3, 'Shukla Ashtami': 0,
+  'Shukla Navami': 4, 'Shukla Dashami': 3, 'Shukla Ekadashi': 6, 'Shukla Dwadashi': 3,
+  'Shukla Trayodashi': 3, 'Shukla Chaturdashi': 2, Purnima: 5,
+  'Krishna Pratipada': 0, 'Krishna Dwitiya': 0, 'Krishna Tritiya': 0, 'Krishna Chaturthi': -1,
+  'Krishna Panchami': -1, 'Krishna Shashthi': 0, 'Krishna Saptami': -1, 'Krishna Ashtami': -3,
+  'Krishna Navami': -3, 'Krishna Dashami': -1, 'Krishna Ekadashi': 5, 'Krishna Dwadashi': 1,
+  'Krishna Trayodashi': -2, 'Krishna Chaturdashi': -5, Amavasya: -25,
 };
 
-// Nakshatra quality — Bible anchor points: Pushya=+10, Rohini/Hasta=+5, Moola=-3
-// Full 27-nakshatra ranking from standard Muhurta texts.
+// Mirror of Python normalize_tithi(): map a raw tithi string to a TITHI_QUALITY key.
+function normalizeTithi(raw: string): string {
+  const t = (raw || '').trim();
+  if (!t) return '';
+  if (t in TITHI_QUALITY) return t;
+  if (t.includes('Amavasya')) return 'Amavasya';
+  if (t.includes('/')) {
+    const first = normalizeTithi(t.split('/')[0].trim());
+    if (first) return first;
+  }
+  if (t.includes('Purnima')) return 'Purnima';
+  const base = t.split('→')[0].trim().replace(/-/g, ' ');
+  if (base in TITHI_QUALITY) return base;
+  if (!base.includes('Shukla') && !base.includes('Krishna')) {
+    if (base.includes('Chaturdashi')) return 'Krishna Chaturdashi';
+    if (base.includes('Ekadashi')) return 'Krishna Ekadashi';
+  }
+  return base;
+}
+
+// Nakshatra quality — = Python NAKSHATRA_MOD
 const NAKSHATRA_QUALITY: Record<string, number> = {
-  Ashwini:  +5, Bharani:  -3, Krittika: +3, Rohini:    +8, Mrigashira:  +5,
-  Ardra:    -5, Punarvasu:+8, Pushya:  +10, Ashlesha:  -3,
-  Magha:    +3, 'Purva Phalguni': +3, 'Uttara Phalguni': +5, Hasta: +8,
-  Chitra:   +5, Swati:    +4, Vishakha: +5, Anuradha:  +6, Jyeshtha: -3,
-  Mula:     -3, 'Purva Ashadha': +4, 'Uttara Ashadha': +6, Shravana: +6,
-  Dhanishta:+5, Shatabhisha:+3, 'Purva Bhadrapada': -3,
-  'Uttara Bhadrapada': +6, Revati: +5,
+  Ashwini: 4, Bharani: -4, Krittika: 3, Rohini: 8, Mrigashira: 3,
+  Ardra: -8, Punarvasu: 4, Pushya: 15, Ashlesha: -6,
+  Magha: 4, 'Purva Phalguni': 4, 'Uttara Phalguni': 3, Hasta: 6,
+  Chitra: 3, Swati: 0, Vishakha: 2, Anuradha: 4, Jyeshtha: -2,
+  Mula: -6, 'Purva Ashadha': 2, 'Uttara Ashadha': 5, Shravana: 5,
+  Dhanishta: 3, Shatabhisha: -2, 'Purva Bhadrapada': -3,
+  'Uttara Bhadrapada': 4, Revati: 3,
 };
 
-// Moon house position — Bible: 1st/10th/11th = +5 to +8, 6th/8th/12th = -3 to -5
+// Moon house position — = Python MOON_HOUSE_MOD
 const MOON_HOUSE_MOD: Record<number, number> = {
-  1: +8, 2: +3, 3:  0, 4: +3, 5: +6,
-  6: -3, 7: +2, 8: -5, 9: +5, 10: +8,
-  11: +8, 12: -4,
+  1: 6, 2: 3, 3: -2, 4: 3, 5: 5,
+  6: -6, 7: 1, 8: -12, 9: 6, 10: 8,
+  11: 5, 12: -8,
 };
 
 // Weekday ruler alignment, lagna-aware — mirrors the Python compute_weekday_mod.
@@ -160,13 +190,8 @@ export function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'C
   const yoga = panchang.yoga || '';
   adj += YOGA_QUALITY[yoga] ?? 0;
 
-  // Tithi quality
-  const tithi = panchang.tithi || '';
-  for (const [key, val] of Object.entries(TITHI_QUALITY)) {
-    if (tithi.includes(key)) { adj += val; break; }
-  }
-  if (tithi.includes('Amavasya')) adj -= 15;
-  if (tithi.includes('Purnima')) adj += 5;
+  // Tithi quality — exact lookup on the normalized full tithi string (paksha-aware)
+  adj += TITHI_QUALITY[normalizeTithi(panchang.tithi || '')] ?? 0;
 
   // Nakshatra quality
   const nakshatra = panchang.nakshatra || '';
@@ -185,7 +210,8 @@ export function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'C
   const lagnaIdx = LAGNA_SIGNS_ORDER.indexOf(lagna as (typeof LAGNA_SIGNS_ORDER)[number]);
   adj += weekdayModForLagna(panchang.day_ruler, lagnaIdx >= 0 ? lagnaIdx : 3);
 
-  return adj;
+  // Clamp the day-level adjustment to match Python compute_dq's max(-40, min(45, dq)).
+  return Math.max(-40, Math.min(45, adj));
 }
 
 // ── Rahu Kaal penalty (Methodology Bible Step 5) ─────────────────────────────
