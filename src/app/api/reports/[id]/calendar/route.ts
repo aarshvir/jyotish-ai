@@ -40,11 +40,14 @@ export async function GET(
   if (auth instanceof NextResponse) return auth;
 
   const db = createServiceClient();
-  const { data: row, error } = await db
+  // Defense-in-depth: scope the query to the owner for non-admins so a non-owner's
+  // row is never even fetched (the explicit 403 below stays as a second layer).
+  let query = db
     .from('reports')
     .select('report_data, user_id, native_name, plan_type, payment_status')
-    .eq('id', params.id)
-    .single();
+    .eq('id', params.id);
+  if (!auth.isAdmin) query = query.eq('user_id', auth.user.id);
+  const { data: row, error } = await query.single();
 
   if (error || !row) {
     return NextResponse.json({ error: 'Report not found' }, { status: 404 });

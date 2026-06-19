@@ -105,6 +105,10 @@ Return ONLY valid JSON with two keys: lagna_analysis, dasha_interpretation. No m
   // chart field can't carry injection text into the system/user prompt.
   const safeMoonSign = sanitizeForPrompt(moonSign) || '?';
   const safeMoonNakshatra = sanitizeForPrompt(moonNakshatra) || '?';
+  // md_end/ad_end are dasha end-dates from the body — sanitize before interpolation
+  // (same contract as the other chart fields; they were going in raw).
+  const safeMdEnd = sanitizeForPrompt(md_end) || '?';
+  const safeAdEnd = sanitizeForPrompt(ad_end) || '?';
 
   const planetLines = Object.entries(planets ?? {})
     .map(([p, d]) => {
@@ -132,7 +136,7 @@ ${planetBlock}
 
 Lagna: ${lagnaSign} ${(lagnaDegreee ?? 0).toFixed(2)}°
 Moon: ${safeMoonSign} / ${safeMoonNakshatra}
-Current dasha: ${mahadasha} MD (until ${md_end ?? '?'}) / ${antardasha} AD (until ${ad_end ?? '?'})
+Current dasha: ${mahadasha} MD (until ${safeMdEnd}) / ${antardasha} AD (until ${safeAdEnd})
 
 Return this exact JSON:
 {

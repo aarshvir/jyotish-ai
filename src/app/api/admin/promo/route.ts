@@ -17,14 +17,20 @@ export async function GET() {
   if (first.error && /once_per_user|schema cache/i.test(first.error.message)) {
     const COLS_FALLBACK = 'id, code, discount_pct, max_uses, used_count, allowlist_emails, active, expires_at';
     const fb = await db.from('promo_codes').select(COLS_FALLBACK).order('code');
-    if (fb.error) return NextResponse.json({ error: fb.error.message }, { status: 500 });
+    if (fb.error) {
+      console.error('[admin/promo] GET fallback:', fb.error.message);
+      return NextResponse.json({ error: 'Could not load coupons' }, { status: 500 });
+    }
     const codes = ((fb.data ?? []) as unknown as Record<string, unknown>[]).map((r) => ({
       ...r,
       once_per_user: true,
     }));
     return NextResponse.json({ codes });
   }
-  if (first.error) return NextResponse.json({ error: first.error.message }, { status: 500 });
+  if (first.error) {
+    console.error('[admin/promo] GET:', first.error.message);
+    return NextResponse.json({ error: 'Could not load coupons' }, { status: 500 });
+  }
   return NextResponse.json({ codes: first.data ?? [] });
 }
 
@@ -67,7 +73,10 @@ export async function POST(request: NextRequest) {
     },
     { onConflict: 'code' },
   );
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[admin/promo] POST:', error.message);
+    return NextResponse.json({ error: 'Could not save coupon' }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -83,6 +92,9 @@ export async function PATCH(request: NextRequest) {
   }
   const db = createServiceClient();
   const { error } = await db.from('promo_codes').update({ active: body.active }).eq('code', code);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    console.error('[admin/promo] PATCH:', error.message);
+    return NextResponse.json({ error: 'Could not update coupon' }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

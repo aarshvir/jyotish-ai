@@ -83,7 +83,8 @@ export async function GET(request: NextRequest) {
     .limit(20);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[report-by-trace]', error.message);
+    return NextResponse.json({ error: 'Lookup failed' }, { status: 500 });
   }
 
   const reports = (rows ?? []).map((r) => {
