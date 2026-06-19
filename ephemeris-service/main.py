@@ -1627,6 +1627,11 @@ def generate_daily_grid(data: DailyGridInput):
             special_events.append("ekadashi")
         if normalized_tithi == "Purnima" and "purnima" not in special_events:
             special_events.append("purnima")
+        # Pushya (supreme nakshatra) on a Shukla (waxing) day gets an extra boost in
+        # compute_dq, but nothing ever appended the flag, so the bonus was dead. Detect it.
+        if nakshatra_str == "Pushya" and normalized_tithi.startswith("Shukla") \
+                and "pushya_shukla_bonus" not in special_events:
+            special_events.append("pushya_shukla_bonus")
         dq = compute_dq(
             yoga=yoga_str,
             nakshatra=nakshatra_str,
