@@ -24,7 +24,8 @@ export async function POST(request: NextRequest) {
     .eq('user_id', auth.user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[upsell/dismiss]', error.message);
+    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 
   await emitUpsellEvent(auth.user.id, 'upsell_dismissed', { reportId });

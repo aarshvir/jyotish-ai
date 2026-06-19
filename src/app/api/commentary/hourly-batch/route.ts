@@ -296,6 +296,6 @@ Include every day from the input. Each day must have exactly 18 slots. Start wit
         };
       }),
     }));
-    return NextResponse.json({ days: fallbackDays, partial: true, error: msg.slice(0, 200) }, { status: 206 });
+    return NextResponse.json({ days: fallbackDays, partial: true }, { status: 206 });
   }
 }

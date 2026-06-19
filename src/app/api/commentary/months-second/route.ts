@@ -234,7 +234,7 @@ Start with { and end with }.`;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[months-second]', msg.slice(0, 500));
-    return NextResponse.json({ months: buildFallbackMonths(body), partial: true, error: msg.slice(0, 300) }, { status: 206 });
+    return NextResponse.json({ months: buildFallbackMonths(body), partial: true }, { status: 206 });
   }
 }
 
