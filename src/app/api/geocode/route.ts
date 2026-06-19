@@ -11,7 +11,9 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const city = req.nextUrl.searchParams.get('city');
+    // Cap length before it's URL-encoded into the external Nominatim query and
+    // used as a Redis cache key; no real city name needs more than this.
+    const city = (req.nextUrl.searchParams.get('city') ?? '').trim().slice(0, 120);
 
     if (!city) {
       return NextResponse.json(
@@ -57,8 +59,10 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Geocoding failed';
+    const msg = error instanceof Error ? error.message : String(error);
+    // Log the real cause server-side, but never leak internals (Redis/host/DNS
+    // details) to this public, unauthenticated route.
     console.error('Geocode API error:', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: 'Geocoding failed' }, { status: 500 });
   }
 }

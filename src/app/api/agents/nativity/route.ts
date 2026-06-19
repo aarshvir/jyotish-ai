@@ -80,9 +80,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: profile });
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error);
+    // Log detail server-side; return a generic message so provider/internal
+    // details (model, request IDs) don't reach the client.
     console.error('Nativity route error:', msg.slice(0, 200));
     return NextResponse.json(
-      { success: false, error: msg },
+      { success: false, error: 'Nativity analysis failed' },
       { status: 500 }
     );
   }
