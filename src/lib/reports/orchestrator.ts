@@ -358,9 +358,15 @@ function assertNoPartialLlmForPaid(
   input: PipelineInput,
 ): void {
   if (allowPartialLlmFallbackForPlan(input)) return;
-  if (res.status === 206) {
+  // Fail closed for paid on 206 AND any other non-ok status (400/429/500/503).
+  // A 206 means template fallback; a non-ok status means the apply guard
+  // (`res.ok || res.status === 206`) silently skips the LLM body and the
+  // deterministic template fills in — both ship template copy in a paid report.
+  // Throwing lets Inngest retry the step (onFailure marks failed if exhausted)
+  // instead of delivering a paid buyer a template-filled report.
+  if (res.status === 206 || !res.ok) {
     throw new Error(
-      `${routeLabel}: HTTP 206 (LLM unavailable, key missing, or model error). ` +
+      `${routeLabel}: HTTP ${res.status} (LLM unavailable, key missing, or model error). ` +
         'Check ANTHROPIC_API_KEY and Vercel logs. Paid reports cannot be completed with template text.',
     );
   }
