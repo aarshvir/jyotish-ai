@@ -34,6 +34,7 @@ import { runScriptureEmbedRefresh } from '@/lib/rag/embedChunksJob';
 import { createReportRun, updateReportRun } from '@/lib/observability/reportRuns';
 import { withReportRunContext } from '@/lib/observability/context';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { releaseLock } from '@/lib/redis/locks';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { getStaleOrphanUpdatedAtMs } from '@/lib/reports/staleGeneratingConstants';
 
@@ -129,6 +130,15 @@ export const generateReportJob = inngest.createFunction(
         .eq('user_id', original.userId)
         .maybeSingle();
       const errMsg = error instanceof Error ? error.message : String(error);
+      // Free the start-route generation lock now that this run is terminally failed.
+      // The lock is held (not released on the 202 success path) to suppress duplicate
+      // dispatch for the generation window; without releasing it on terminal failure,
+      // a plain (non-forceRestart) retry on the now-'error' row is blocked for the rest
+      // of the 10-min TTL and gets a misleading "already generating" 202.
+      const releaseGenerationLock = async () => {
+        try { await releaseLock(`report:${original.reportId}:generation`); }
+        catch (e) { console.warn('[inngest] onFailure releaseLock failed:', e); }
+      };
       // A transient read error (or read-replica miss) previously no-op'd here, leaving the
       // report stuck in 'generating' for up to ~2h until the orphan-cleanup cron. This is
       // the LAST chance to surface the failure after retries, so still mark it failed
@@ -140,6 +150,7 @@ export const generateReportJob = inngest.createFunction(
           errorCode: 'INNGEST_FAILURE',
           generationErrorCode: inferReportGenerationErrorCode(errMsg, 'inngest_on_failure'),
         });
+        await releaseGenerationLock();
         return;
       }
       if (!row) return;
@@ -151,6 +162,7 @@ export const generateReportJob = inngest.createFunction(
         errorCode: 'INNGEST_FAILURE',
         generationErrorCode: inferReportGenerationErrorCode(errMsg, 'inngest_on_failure'),
       });
+      await releaseGenerationLock();
     },
   },
   async ({ event, step, attempt }: { event: unknown; step: { run: <T>(id: string, fn: () => Promise<T>) => Promise<T> }; attempt: number }) => {
