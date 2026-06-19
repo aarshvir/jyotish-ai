@@ -280,7 +280,31 @@ export async function markReportAsFailed(
     .eq('user_id', userId)
     .neq('status', 'complete');
 
-  if (upErr) console.error('[markReportAsFailed] update failed:', upErr.message);
+  if (upErr) {
+    // The RCA columns (generation_error_code / generation_error_at_phase) are optional
+    // telemetry. If the schema lags (column not migrated yet), the WHOLE update is
+    // rejected and the report is left permanently stuck 'generating' — a far worse
+    // outcome than missing telemetry. Retry with the essential fields only so a report
+    // can ALWAYS be marked failed regardless of schema drift.
+    const isMissingCol = /generation_error_code|generation_error_at_phase|does not exist|schema cache/i.test(upErr.message);
+    if (isMissingCol) {
+      const { generation_error_code: _c, generation_error_at_phase: _p, ...essentialPatch } = rowPatch;
+      void _c; void _p;
+      const { error: retryErr } = await db
+        .from('reports')
+        .update(essentialPatch)
+        .eq('id', reportId)
+        .eq('user_id', userId)
+        .neq('status', 'complete');
+      if (retryErr) {
+        console.error('[markReportAsFailed] retry (without RCA columns) failed:', retryErr.message);
+      } else {
+        console.warn('[markReportAsFailed] marked failed WITHOUT RCA columns — apply the generation_error_code/at_phase migration:', upErr.message);
+      }
+    } else {
+      console.error('[markReportAsFailed] update failed:', upErr.message);
+    }
+  }
 }
 
 /** Same as `markReportAsFailed` but for cron / ops paths that only have report ids (uses service client + id-only filter). */
