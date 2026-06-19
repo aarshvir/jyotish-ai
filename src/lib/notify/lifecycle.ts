@@ -6,7 +6,7 @@
 import { createServiceClient } from '@/lib/supabase/admin';
 import { sendEmail } from './email';
 import { sendWhatsApp } from './whatsapp';
-import { toUsdCents, fetchAllAuthUsers, isFreePlan } from '@/lib/admin/analytics';
+import { toUsdCents, fetchAllAuthUsers } from '@/lib/admin/analytics';
 import { emailShell, emailButton, plainText } from './emailLayout';
 
 const SITE = 'https://www.vedichour.com';
@@ -22,7 +22,7 @@ export async function sendFounderDigest(): Promise<{ ok: boolean; skipped?: bool
 
     const [users, reportsRes, paymentsRes, pendingRes] = await Promise.all([
       fetchAllAuthUsers(db),
-      db.from('reports').select('plan_type, status, created_at').gte('created_at', sinceIso).limit(50000),
+      db.from('reports').select('plan_type, status, created_at, payment_status').gte('created_at', sinceIso).limit(50000),
       db.from('ziina_payments').select('amount, currency, status, created_at').eq('status', 'completed').gte('created_at', sinceIso).limit(50000),
       db.from('reports').select('id').eq('status', 'error').gte('created_at', sinceIso).limit(50000),
     ]);
@@ -31,7 +31,12 @@ export async function sendFounderDigest(): Promise<{ ok: boolean; skipped?: bool
     const reports = reportsRes.data ?? [];
     const reportsMade = reports.length;
     const completed = reports.filter((r) => r.status === 'complete').length;
-    const paidReports = reports.filter((r) => !isFreePlan(r.plan_type)).length;
+    // Count real paid reports by payment, matching the admin Users/Ops views.
+    // Plan-based (!isFreePlan) over-counted bypass/promo paid-plan rows that never
+    // produced a charge, so the digest disagreed with those screens.
+    const paidReports = reports.filter(
+      (r) => (r as { payment_status?: string }).payment_status === 'paid',
+    ).length;
     const failed = (pendingRes.data ?? []).length;
     const orders = (paymentsRes.data ?? []).length;
     const revenueUsd = (paymentsRes.data ?? []).reduce((s, p) => s + toUsdCents((p as { amount?: number }).amount ?? 0, (p as { currency?: string }).currency ?? 'USD'), 0);

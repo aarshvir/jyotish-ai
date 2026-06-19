@@ -80,7 +80,7 @@ export default function AdminOverview() {
             <KpiCard label="Paid customers" display={String(m.kpis.paidCustomers.value)} delta={m.kpis.paidCustomers.delta} />
             <KpiCard label="Net revenue" display={`$${Math.round(m.kpis.revenueUsd.value / 100).toLocaleString()}`} delta={m.kpis.revenueUsd.delta} spark={m.series.revenue.map((p) => p.value)} sparkColor="var(--amber)" />
             <KpiCard label="Free→paid conv." display={`${m.kpis.paidConversion.value}%`} delta={m.kpis.paidConversion.delta} />
-            <KpiCard label="Repeat buyers" display={String(m.kpis.repeatBuyers.value)} delta={m.kpis.repeatBuyers.delta} />
+            <KpiCard label="Repeat buyers (all-time)" display={String(m.kpis.repeatBuyers.value)} delta={m.kpis.repeatBuyers.delta} />
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6 mb-8">
