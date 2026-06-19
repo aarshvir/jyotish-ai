@@ -79,8 +79,17 @@ export async function checkRateLimit(
  */
 export function getRateLimitKey(req: Request, userId?: string): string {
   if (userId) return `user:${userId}`;
-  const forwarded = req.headers.get('x-forwarded-for');
-  const ip = forwarded ? forwarded.split(',')[0].trim() : 'unknown';
+  // The LEFTMOST x-forwarded-for entry is client-supplied and spoofable on Vercel
+  // (an attacker rotates it to get a fresh bucket per request, defeating the IP
+  // throttle on every public route). Prefer Vercel's edge-set headers, which the
+  // client cannot forge; fall back to the rightmost (proxy-appended) XFF hop, then
+  // the leftmost only as a last resort (local/dev).
+  const xff = req.headers.get('x-forwarded-for');
+  const ip =
+    req.headers.get('x-vercel-forwarded-for')?.split(',')[0].trim() ||
+    req.headers.get('x-real-ip')?.trim() ||
+    (xff ? xff.split(',').pop()!.trim() : '') ||
+    'unknown';
   return `ip:${ip}`;
 }
 
