@@ -573,6 +573,52 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Book the server-validated promo redemption BEFORE creating the 'generating' row,
+  // so a code that hit its max_uses cap blocks generation instead of granting a free
+  // report past the cap (the read-time check in getPromoDiscount is racy at the
+  // boundary; the RPC enforces the cap atomically). The RPC returns FALSE for BOTH a
+  // genuine cap-reached AND an idempotent duplicate (same order_id) — disambiguate by
+  // re-reading the cap, so only a full cap blocks; a duplicate (race/retry) proceeds.
+  // Once-per-user codes use the stable promo:{codeId}:{userId} order_id (the unique
+  // index enforces once-per-user across the free + checkout paths); unlimited codes
+  // use the per-report id so legitimate repeat use is allowed.
+  if (promoCodeIdToRedeem) {
+    const orderId = promoOncePerUser
+      ? `promo:${promoCodeIdToRedeem}:${auth.user.id}`
+      : reportId;
+    let booked = true;
+    try {
+      booked = await redeemPromoCode(promoCodeIdToRedeem, auth.user.id, orderId);
+    } catch (e) {
+      // Redemption bookkeeping hiccup: don't fail the report over it; the atomic cap
+      // still held in the RPC. (Matches prior fail-open-on-bookkeeping behavior.)
+      console.warn('[reports/start] promo redeem failed (non-fatal):', e);
+      booked = true;
+    }
+    if (!booked) {
+      const { data: capRow } = await db
+        .from('promo_codes')
+        .select('used_count, max_uses')
+        .eq('id', promoCodeIdToRedeem)
+        .maybeSingle();
+      const cap = capRow as { used_count?: number; max_uses?: number | null } | null;
+      const capReached = cap?.max_uses != null && (cap.used_count ?? 0) >= cap.max_uses;
+      if (capReached) {
+        await releaseOwnedLock();
+        return NextResponse.json(
+          {
+            error: 'This code has reached its usage limit.',
+            code: 'PROMO_LIMIT_REACHED',
+            engine: 'none' as ReportStartEngine,
+            dispatch_mode: 'blocked' as ReportStartDispatchMode,
+          },
+          { status: 409 },
+        );
+      }
+      // else: idempotent duplicate (concurrent retry / replay) — proceed to generate.
+    }
+  }
+
   const { error: upsertError } = await db.from('reports').upsert(
     {
       id: reportId,
@@ -613,22 +659,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 },
     );
-  }
-
-  // Book the server-validated promo redemption now that the report row exists.
-  // Once-per-user codes use the SAME stable order_id as the checkout/finalize path
-  // (promo:{codeId}:{userId}) so the existing order_id UNIQUE index enforces once-per-user
-  // race-safely across reports AND across the free + checkout paths. Unlimited codes keep
-  // the per-report id so legitimate repeat use is allowed.
-  if (promoCodeIdToRedeem) {
-    try {
-      const orderId = promoOncePerUser
-        ? `promo:${promoCodeIdToRedeem}:${auth.user.id}`
-        : reportId;
-      await redeemPromoCode(promoCodeIdToRedeem, auth.user.id, orderId);
-    } catch (e) {
-      console.warn('[reports/start] promo redeem failed (non-fatal):', e);
-    }
   }
 
   // Optional columns (see migrations 20260426 / 20260427) — omit from upsert so older DBs work.
