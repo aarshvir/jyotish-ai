@@ -878,6 +878,13 @@ export async function generateReportPipeline(
           day_scores: dayScores,
           report_data: reportPayload,
           status: 'complete',
+          // Clear the resumable checkpoint blob ATOMICALLY with completion. It holds
+          // the fully-populated paid sections (months/weeks/all-day commentary) and
+          // is owner-readable on this row, so it must never sit on a 'complete' row —
+          // even briefly — alongside a preview-stripped report_data. (Was previously
+          // a best-effort, fire-and-forget clear AFTER status=complete.)
+          pipeline_state: null,
+          pipeline_checkpoint: null,
           generation_completed_at: new Date().toISOString(),
           generation_time_seconds: generationTimeSec,
           updated_at: new Date().toISOString(),

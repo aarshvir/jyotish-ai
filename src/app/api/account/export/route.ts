@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
 
   const [profile, reports, kundalis, synastries, payments, feedback, referrals, newsletter] = await Promise.all([
     db.from('user_profiles').select('*').eq('id', uid).maybeSingle(),
-    db.from('reports').select('*').eq('user_id', uid),
+    // Exclude pipeline_state/pipeline_checkpoint — internal resumable-generation
+    // blobs that hold the full paid product mid-run; not user-facing export data.
+    db.from('reports').select('id, native_name, birth_date, birth_time, birth_city, birth_lat, birth_lng, current_city, current_lat, current_lng, timezone_offset, plan_type, payment_status, status, lagna_sign, moon_sign, moon_nakshatra, dasha_mahadasha, dasha_antardasha, report_data, day_scores, created_at, updated_at, generation_completed_at').eq('user_id', uid),
     db.from('kundali_charts').select('*').eq('user_id', uid),
     db.from('synastry_charts').select('*').eq('user_id', uid),
     db.from('ziina_payments').select('id, amount, currency, plan_type, status, created_at').eq('user_id', uid),
