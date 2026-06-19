@@ -54,6 +54,15 @@ const config: Config = {
           bg:      'rgba(199, 91, 58, 0.10)',
         },
 
+        // Semantic: error / destructive (alias of the crimson caution hue).
+        // Several error/empty-state surfaces use `*-error*` utilities; without
+        // this they generated no CSS (e.g. an invisible "delete account" button).
+        error: {
+          DEFAULT: '#C75B3A',
+          light:   '#E07A5C',
+          bg:      'rgba(199, 91, 58, 0.10)',
+        },
+
         // Text layers
         star:    '#E8EAF0',
         dust:    '#8892A4',
