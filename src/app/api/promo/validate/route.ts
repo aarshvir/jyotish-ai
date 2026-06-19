@@ -22,9 +22,14 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = request.nextUrl;
   const code = searchParams.get('code') ?? '';
-  const email = searchParams.get('email') ?? undefined;
 
-  const result = await getPromoDiscount(code, email);
+  // Deliberately ignore any client-supplied `email`: passing an attacker-chosen
+  // email to getPromoDiscount turned this unauthenticated endpoint into an
+  // allowlist-membership oracle (distinct "not available for your account" vs
+  // "requires sign-in" reasons). Allowlist codes are still enforced for real at
+  // redeem time against the authenticated session email. The legit onboard caller
+  // never sends email, so this is a no-op for the product.
+  const result = await getPromoDiscount(code);
 
   return NextResponse.json(result, {
     headers: { 'X-RateLimit-Remaining': String(remaining) },

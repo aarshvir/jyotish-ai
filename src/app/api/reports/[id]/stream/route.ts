@@ -94,7 +94,10 @@ export async function GET(
           const { data, error } = await query.maybeSingle();
           if (error) {
             consecutiveErrors += 1;
-            send('error', { message: error.message });
+            // Generic message to the client; the raw Supabase/PostgREST error
+            // (can disclose schema/column/constraint detail) stays in the log.
+            console.error('[reports/stream] db read error:', error.message);
+            send('error', { message: 'db_read_failed' });
             if (consecutiveErrors >= 3) closeStream();
             return;
           }
