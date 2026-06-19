@@ -1315,10 +1315,23 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
   const isPreviewPlan =
     !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview');
 
+  // `synthesis` is a PeriodSynthesis OBJECT, not a string — interpolating it
+  // directly yielded "[object Object]" and dropped the richest report context
+  // from every Ask-your-report answer. Build the line from its text members.
+  const synthesisLine = (() => {
+    const syn = reportData?.synthesis as unknown;
+    if (syn && typeof syn === 'object') {
+      const o = syn as { opening_paragraph?: string; closing_paragraph?: string };
+      const parts = [o.opening_paragraph, o.closing_paragraph].filter(Boolean);
+      return parts.length ? `Overview synthesis: ${parts.join(' ')}` : '';
+    }
+    return typeof syn === 'string' && syn ? `Overview synthesis: ${syn}` : '';
+  })();
+
   // Compact, bounded context for the paid "ask your report" box.
   const askContext = [
     natalChart?.lagna ? `Rising sign (Lagna): ${natalChart.lagna}` : '',
-    reportData?.synthesis ? `Overview synthesis: ${reportData.synthesis}` : '',
+    synthesisLine,
     Array.isArray(reportData?.months) && reportData.months.length
       ? `Monthly outlook: ${(reportData.months as Array<{ month?: string; theme?: string; commentary?: string }>)
           .map((m) => `${m.month ?? ''} — ${m.theme || m.commentary || ''}`)

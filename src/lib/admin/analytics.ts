@@ -57,7 +57,10 @@ export async function fetchAllAuthUsers(db: DB): Promise<{ id: string; email?: s
     if (error) break;
     const users = data?.users ?? [];
     for (const u of users) all.push({ id: u.id, email: u.email, created_at: u.created_at, last_sign_in_at: u.last_sign_in_at });
-    if (users.length < 1000) break;
+    // Terminate on an empty page, not `< perPage`: GoTrue may cap perPage below
+    // 1000, which would make the old `< 1000` check stop after page 1 and
+    // undercount signups (the #88 bug — fixed in admin/users, mirror it here).
+    if (users.length === 0) break;
   }
   return all;
 }
