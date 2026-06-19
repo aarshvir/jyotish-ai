@@ -759,6 +759,17 @@ export async function generateReportPipeline(
 
   // Helper: upsert report row
   async function dbInsertGenerating() {
+    // Never downgrade a row that already finished. Every Inngest step re-invokes
+    // the orchestrator from the top, so a finalize-step re-run would otherwise
+    // flip a committed 'complete' back to 'generating'. (We still allow resetting
+    // an 'error' row so an inline / forced retry can recover.)
+    const { data: existingRow } = await db
+      .from('reports')
+      .select('status')
+      .eq('id', reportId)
+      .maybeSingle();
+    if ((existingRow as { status?: string } | null)?.status === 'complete') return;
+
     const planRaw = input.planType ?? input.type;
     const planType = planRaw === 'free' ? 'preview' : planRaw;
     const birthTimeNorm =
@@ -990,18 +1001,24 @@ export async function generateReportPipeline(
       terr('[orchestrator][STEP-1] failed:', msg);
       const userMsg = `Birth chart calculation failed: ${msg}. Please try again.`;
       onStep({ type: 'error', message: userMsg });
-      try {
-        await markReportAsFailed(db, reportId, userId, {
-          message: userMsg,
-          errorStep: 'ephemeris',
-          generationErrorCode: 'EPHEMERIS_DOWN',
-          generationErrorAtPhase: PHASE.EPHEMERIS_FETCHING,
-        });
-      } catch (e) {
-        terr('[orchestrator] mark error after ephemeris fail:', e);
+      // Only write a TERMINAL 'error' on the inline path. On the Inngest path this
+      // catch runs on EVERY retry attempt; the client stops polling the instant it
+      // sees 'error', so a transient ephemeris blip that Inngest then retries and
+      // recovers would show a false hard failure. onFailure marks failed once,
+      // after retries are exhausted. (Matches the outer pipeline_fatal catch.)
+      if (!isRunningInInngestStep) {
+        try {
+          await markReportAsFailed(db, reportId, userId, {
+            message: userMsg,
+            errorStep: 'ephemeris',
+            generationErrorCode: 'EPHEMERIS_DOWN',
+            generationErrorAtPhase: PHASE.EPHEMERIS_FETCHING,
+          });
+        } catch (e) {
+          terr('[orchestrator] mark error after ephemeris fail:', e);
+        }
       }
-      // Throw so the outer catch in start/route.ts receives the error, sets status 500,
-      // and the frontend polling sees the report row as 'error' rather than a false 'complete'.
+      // Throw so Inngest retries the step (or the inline caller sees the failure).
       throw err;
     }
 
