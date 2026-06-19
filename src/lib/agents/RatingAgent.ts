@@ -101,6 +101,11 @@ function getHouseFromLagna(transitSign: string, lagna: string): number {
 // ForecastAgent path. Any drift means the same chart on the same day scores
 // differently depending on whether Python was reachable — so panchangParity.test.ts
 // asserts these EQUAL the Python values. Update both engines together.
+//
+// SCOPE: parity holds for these per-modifier TABLE VALUES only. The TS fallback does
+// NOT replicate Python's SPECIAL_EVENT_MOD (eclipses/festivals/ekadashi/Pushya-bonus
+// + tier stacking), so on special dates the degraded-fallback day score (Python down)
+// can still diverge from the primary engine. Accepted fallback limitation, not table drift.
 
 // Yoga quality — = Python YOGA_MOD
 const YOGA_QUALITY: Record<string, number> = {

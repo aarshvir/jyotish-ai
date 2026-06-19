@@ -204,8 +204,8 @@ function choghadiyaAt(ms: number, prevSunset: Date, sunrise: Date, sunset: Date,
  * rotation per sidereal day (~23h 56m).  Each sign rises for ~2 hours on average
  * (more accurate at equator, varies with latitude and season).
  *
- * We estimate the sign rising at sunrise as (sun's approximate sign − 6 signs)
- * then advance by 1 sign per ~2 hours.
+ * We estimate the sign rising at sunrise as the sun's own sign (the Sun sits on
+ * the eastern horizon at sunrise) then advance by 1 sign per ~2 hours.
  *
  * This is NOT astronomically accurate but gives a plausible cycle rather than
  * a constant, so transit-house modifiers vary across the day.
@@ -224,9 +224,10 @@ function approximateTransitLagna(
   const daysSinceCapricorn = ((dayOfYear - 14) + 365) % 365;
   const sunSignIdx = Math.floor(daysSinceCapricorn / 30.44) % 12; // Capricorn=9
 
-  // Ascendant at sunrise is approximately (sunSignIdx - 6 + 12) % 12
-  // (eastern horizon is roughly opposite the sun at sunrise)
-  const lagnaAtSunriseIdx = (sunSignIdx - 6 + 12) % 12;
+  // Ascendant at sunrise ≈ the Sun's own sign (the Sun is on the eastern horizon
+  // at sunrise). Matches RatingAgent.getApproxTransitLagnaSign; the prior -6 offset
+  // put the rising sign opposite the Sun, shifting every slot's transit house.
+  const lagnaAtSunriseIdx = sunSignIdx;
 
   // Each sign rises for ~2 hours (rough average)
   const hoursAfterSunrise = (slotMidpointMs - sunriseMs) / 3_600_000;
@@ -323,8 +324,6 @@ export function computeFallbackDayData(
   const rkPart = RAHU_KAAL_PARTS[jsDay];
   const rkStartMs = sunrise.getTime() + (rkPart - 1) * (daySec / 8) * 1000;
   const rkEndMs   = sunrise.getTime() + rkPart * (daySec / 8) * 1000;
-  const rkStart = new Date(rkStartMs);
-  const rkEnd   = new Date(rkEndMs);
 
   // Local midnight in UTC (for building slot timestamps)
   const localMidnightUtc = new Date(dateUtc.getTime() - timezoneOffsetMinutes * 60_000);
@@ -381,8 +380,11 @@ export function computeFallbackDayData(
     date: dateStr,
     panchang,
     rahu_kaal: {
-      start: rkStart.toISOString(),
-      end:   rkEnd.toISOString(),
+      // Emit local civil HH:MM:SS to match the Python service shape — every consumer
+      // does .slice(0,5) on it and the LLM prompt embeds it. Returning a full ISO
+      // string here produced "2026-" in the UI and "2026-…Z" in the prompt.
+      start: new Date(rkStartMs + timezoneOffsetMinutes * 60_000).toISOString().slice(11, 19),
+      end:   new Date(rkEndMs + timezoneOffsetMinutes * 60_000).toISOString().slice(11, 19),
     },
     day_score: dayScore,
     slots,

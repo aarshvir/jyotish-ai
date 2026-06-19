@@ -616,8 +616,9 @@ export async function generateReportPipeline(
   }
 
   /** Hard-kill fires shortly after budget: must be > budgetMs (so assertWithinBudget runs first)
-   *  and < Vercel's actual function timeout. */
-  const hardKillMs = Math.min(budgetMs + (isHobbyBudget ? 8_000 : 30_000), isHobbyBudget ? 58_000 : 295_000);
+   *  and < Vercel's actual function timeout. Cap is 298s (not 295s) so it stays strictly
+   *  above the 295s budget that an injected VERCEL_FUNCTION_MAX_DURATION=300 produces. */
+  const hardKillMs = Math.min(budgetMs + (isHobbyBudget ? 8_000 : 30_000), isHobbyBudget ? 58_000 : 298_000);
 
   /**
    * Shared abort controller wired into every commentary fetch.
