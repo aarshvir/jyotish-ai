@@ -140,6 +140,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ days: [] }, { status: 200 });
     }
 
+    // Bound the horizon: the only real caller (orchestrator) sends ≤31 days; an
+    // arbitrarily large array would fan out into many concurrent paid LLM calls.
+    if (days.length > 40) {
+      return NextResponse.json({ error: 'Too many days requested', days: [] }, { status: 400 });
+    }
+
   const ctx = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
   const scriptureBlock = buildScripturePromptBlock(body.scripture_context);
@@ -254,9 +260,18 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
     // 7-day (and short) reports: one LLM round-trip to halve latency vs 4+remainder.
     // Longer horizons: keep 4+remainder to avoid output truncation.
     let out: Array<{ date: string; day_theme: string; day_overview: string }> = [];
+    // True if ANY day's overview came from the deterministic template (LLM returned
+    // empty/zero days for it) rather than real LLM output. We then return 206+partial
+    // so a PAID report fails the orchestrator's assertNoPartialLlmForPaid (and Inngest
+    // retries) instead of silently shipping template copy at HTTP 200; free/preview
+    // still degrade gracefully. (callBatches only throws on UNPARSEABLE output; a
+    // parseable {"days":[]} or bare-array drift returns [] and was leaking template
+    // days through at 200.)
+    let usedFallback = false;
 
     if (days.length > 0 && days.length <= 8) {
       const r = await callBatches(days, 10_000, modelOverride);
+      if (!r.length) usedFallback = true;
       out = (r.length ? r : days.map((d) => buildFallbackDay(d, lagnaSign))).map((d) => ({
         ...d,
         day_overview: normalizeDayOverview(d.day_overview),
@@ -278,9 +293,10 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
         const wave = chunks.slice(i, i + CONCURRENCY);
         const waveOut = await Promise.all(
           wave.map((c) =>
-            callBatches(c, 8_000, modelOverride).then((r) =>
-              r.length ? r : c.map((d) => buildFallbackDay(d, lagnaSign)),
-            ),
+            callBatches(c, 8_000, modelOverride).then((r) => {
+              if (!r.length) usedFallback = true;
+              return r.length ? r : c.map((d) => buildFallbackDay(d, lagnaSign));
+            }),
           ),
         );
         waveOut.forEach((r, j) => { chunkResults[i + j] = r; });
@@ -299,6 +315,12 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
         { days: days.map((d) => buildFallbackDay(d, lagnaSign)), partial: true },
         { status: 206 },
       );
+    }
+
+    // Some days are real LLM output but others fell back to template — flag partial +
+    // 206 so a paid report fails closed (retries) rather than shipping template at 200.
+    if (usedFallback) {
+      return NextResponse.json({ days: out, partial: true }, { status: 206 });
     }
 
     return NextResponse.json({ days: out });
