@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 type Ops = {
-  summary: { failedReports: number; stuckReports: number; paidNotDelivered: number; failedPayments: number; stalePending: number };
+  summary: { failedReports: number; stuckReports: number; paidNotDelivered: number; stalePending: number };
   paidNotDelivered: { id: string; email: string; plan: string; status: string; at: string }[];
   failedReports: { id: string; email: string; plan: string; at: string }[];
   stuckReports: { id: string; email: string; plan: string; since: string }[];
-  failedPayments: { id: string; plan: string; amount: number; currency: string; at: string }[];
+  stalePending: { id: string; plan: string; amount: number; currency: string; at: string }[];
 };
 
 const d = (s?: string) => (s ? new Date(s).toLocaleString() : '—');
@@ -42,7 +42,7 @@ export default function OpsPage() {
   if (err) return <p className="text-caution">{err}</p>;
   if (!d2) return <p className="text-dust">Loading…</p>;
   const s = d2.summary;
-  const allClear = s.failedReports + s.stuckReports + s.paidNotDelivered + s.failedPayments + s.stalePending === 0;
+  const allClear = s.failedReports + s.stuckReports + s.paidNotDelivered + s.stalePending === 0;
 
   return (
     <div className="space-y-6">
@@ -53,7 +53,6 @@ export default function OpsPage() {
         <Stat label="Paid, not delivered" value={s.paidNotDelivered} danger />
         <Stat label="Failed reports" value={s.failedReports} danger />
         <Stat label="Stuck >15m" value={s.stuckReports} danger />
-        <Stat label="Failed payments" value={s.failedPayments} />
         <Stat label="Stale pending" value={s.stalePending} />
       </div>
 
@@ -81,8 +80,8 @@ export default function OpsPage() {
           </div>
         )} />
 
-      <List title="Failed payments" rows={d2.failedPayments}
-        render={(r: Ops['failedPayments'][number]) => (
+      <List title="Stale pending checkouts (>60m)" rows={d2.stalePending}
+        render={(r: Ops['stalePending'][number]) => (
           <div className="flex justify-between gap-3">
             <span className="text-star">{r.plan} · {r.currency} {(r.amount / 100).toFixed(0)}</span>
             <span className="font-mono text-mono-sm text-dust/50">{d(r.at)}</span>
