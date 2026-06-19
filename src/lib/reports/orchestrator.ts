@@ -610,7 +610,7 @@ export async function generateReportPipeline(
 
   /** Hard-kill fires shortly after budget: must be > budgetMs (so assertWithinBudget runs first)
    *  and < Vercel's actual function timeout. */
-  const hardKillMs = Math.min(budgetMs + (isHobbyBudget ? 8_000 : 30_000), isHobbyBudget ? 58_000 : 285_000);
+  const hardKillMs = Math.min(budgetMs + (isHobbyBudget ? 8_000 : 30_000), isHobbyBudget ? 58_000 : 295_000);
 
   /**
    * Shared abort controller wired into every commentary fetch.
@@ -641,19 +641,26 @@ export async function generateReportPipeline(
         detail: { pipeline_run: pipelineRunLabel, hardKillMs, generation_trace_id: correlationId },
       },
     });
-    onStep({ type: 'error', message: 'Report generation timed out — please try again.' });
     // Abort all in-flight commentary fetches so Promise.all unwinds immediately.
     budgetAbortController.abort(new Error('Pipeline budget exceeded'));
-    // Guard with neq('status','complete') inside markReportAsFailed
-    const killMsg = `Report generation timed out after ${Math.round(hardKillMs / 1000)}s (server budget). Please try again.`;
-    void markReportAsFailed(db, reportId, userId, {
-      message: killMsg,
-      errorStep: 'hard_kill_timeout',
-      generationErrorCode: 'BUDGET_EXCEEDED',
-      generationErrorAtPhase: lastGenerationStep,
-    }).then(() => {
-      tlog('[orchestrator] hard-kill markReportAsFailed done for', reportId);
-    });
+    // Only write a TERMINAL 'error' on the INLINE path. On the Inngest path this
+    // timer fires per-phase-step; writing status='error' makes the client stop
+    // polling permanently even though Inngest retries the step and usually
+    // recovers — the same false-fail the catch blocks were gated against (#107/
+    // #111). onFailure owns the single terminal write after retries are exhausted.
+    if (!isRunningInInngestStep) {
+      onStep({ type: 'error', message: 'Report generation timed out — please try again.' });
+      // Guard with neq('status','complete') inside markReportAsFailed
+      const killMsg = `Report generation timed out after ${Math.round(hardKillMs / 1000)}s (server budget). Please try again.`;
+      void markReportAsFailed(db, reportId, userId, {
+        message: killMsg,
+        errorStep: 'hard_kill_timeout',
+        generationErrorCode: 'BUDGET_EXCEEDED',
+        generationErrorAtPhase: lastGenerationStep,
+      }).then(() => {
+        tlog('[orchestrator] hard-kill markReportAsFailed done for', reportId);
+      });
+    }
   }, hardKillMs);
 
   function logStep(step: string, extra?: Record<string, unknown>) {
@@ -686,15 +693,20 @@ export async function generateReportPipeline(
     const elapsed = Date.now() - pipelineT0;
     if (elapsed > budgetMs) {
       logStep('budget_exceeded', { phase, budgetMs });
-      try {
-        await markReportAsFailed(db, reportId, userId, {
-          message: `Pipeline time budget exceeded (${phase})`,
-          errorStep: 'budget_exceeded',
-          generationErrorCode: 'BUDGET_EXCEEDED',
-          generationErrorAtPhase: lastGenerationStep,
-        });
-      } catch (e) {
-        terr('[orchestrator] budget mark error failed:', e);
+      // Inline path only: writing terminal 'error' on the Inngest path false-fails
+      // the report mid-retry (see the hard-kill timer + #107/#111). On Inngest just
+      // throw so the step retries; onFailure writes the terminal error if exhausted.
+      if (!isRunningInInngestStep) {
+        try {
+          await markReportAsFailed(db, reportId, userId, {
+            message: `Pipeline time budget exceeded (${phase})`,
+            errorStep: 'budget_exceeded',
+            generationErrorCode: 'BUDGET_EXCEEDED',
+            generationErrorAtPhase: lastGenerationStep,
+          });
+        } catch (e) {
+          terr('[orchestrator] budget mark error failed:', e);
+        }
       }
       throw new Error(`Pipeline time budget exceeded (${phase})`);
     }
