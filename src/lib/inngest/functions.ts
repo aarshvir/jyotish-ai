@@ -153,9 +153,13 @@ export const generateReportJob = inngest.createFunction(
         await releaseGenerationLock();
         return;
       }
-      if (!row) return;
-      if (row.status === 'complete') return;
-      if (row.status !== 'generating') return;
+      // onFailure only runs after all retries are exhausted — the run is dead
+      // regardless of the row's current status, so always free the lock so a retry
+      // isn't blocked for the rest of the 10-min TTL (incl. when the orchestrator's
+      // inline/hard-kill path already marked the row 'error' before onFailure ran).
+      if (!row) { await releaseGenerationLock(); return; }
+      if (row.status === 'complete') { await releaseGenerationLock(); return; }
+      if (row.status !== 'generating') { await releaseGenerationLock(); return; }
       await markReportAsFailed(db, original.reportId, original.userId, {
         message: `Background job failed after retries: ${errMsg}`.slice(0, 4000),
         errorStep: 'inngest_on_failure',
