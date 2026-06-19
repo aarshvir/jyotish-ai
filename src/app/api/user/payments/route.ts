@@ -27,13 +27,17 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const userId = auth.user.id;
 
-  // ziina_payments has no user_id — join via reports
+  // ziina_payments has no user_id — join via reports.
+  // Only return real charges: each re-checkout supersedes prior intents to
+  // 'cancelled' and inserts a fresh 'pending' row, so without this filter the
+  // history shows phantom transactions and an inflated count.
   const { data, error } = await supabase
     .from('ziina_payments')
     .select(
       'id, ziina_intent_id, amount, currency, plan_type, status, created_at, report_id, reports!inner(user_id)',
     )
     .eq('reports.user_id', userId)
+    .in('status', ['completed', 'refunded'])
     .order('created_at', { ascending: false })
     .limit(50);
 
