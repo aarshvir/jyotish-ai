@@ -202,9 +202,11 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
     };
   });
 
-  // Hourly commentary in batches (max 8 days per LLM call to stay within latency)
-  for (let off = 0; off < forecastNew.length; off += 8) {
-    const slice = forecastNew.slice(off, off + 8);
+  // Hourly commentary in batches of 5 days (90 slots). 8 days = 144 slots × ~3
+  // paragraphs each blows hourly-batch's 16k-token cap → truncation → template
+  // fallback on the appended days. Match the orchestrator's primary path (CHUNK_SIZE=5).
+  for (let off = 0; off < forecastNew.length; off += 5) {
+    const slice = forecastNew.slice(off, off + 5);
     const payload = {
       lagnaSign: lagna,
       mahadasha: md,
