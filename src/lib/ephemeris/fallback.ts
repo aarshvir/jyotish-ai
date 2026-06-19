@@ -61,7 +61,7 @@ const CHOGHADIYA_DAY: Record<number, string[]> = {
 // Panchang overrides: exact tithi/nakshatra/yoga for known dates.
 // Copied from the Python service's PANCHANG_OVERRIDES table.
 const PANCHANG_OVERRIDES: Record<string, { nakshatra?: string; yoga?: string; tithi?: string; moon_house?: number }> = {
-  '2026-03-06': { nakshatra: 'Chitra',           yoga: 'Shoola',      tithi: 'Krishna Chaturthi' },
+  '2026-03-06': { nakshatra: 'Chitra',           yoga: 'Shula',      tithi: 'Krishna Chaturthi' },
   '2026-03-07': { nakshatra: 'Swati',             yoga: 'Ganda',       tithi: 'Krishna Panchami' },
   '2026-03-08': { nakshatra: 'Vishakha',          yoga: 'Vriddhi',     tithi: 'Krishna Shashthi' },
   '2026-03-09': { nakshatra: 'Anuradha',          yoga: 'Vyaghata',    tithi: 'Krishna Saptami' },
@@ -77,7 +77,7 @@ const PANCHANG_OVERRIDES: Record<string, { nakshatra?: string; yoga?: string; ti
   '2026-03-26': { nakshatra: 'Ardra',             yoga: 'Saubhagya',   tithi: 'Shukla Ashtami' },
   '2026-03-27': { nakshatra: 'Pushya',            yoga: 'Sukarma',     tithi: 'Shukla Navami' },
   '2026-03-28': { nakshatra: 'Ashlesha',          yoga: 'Dhriti',      tithi: 'Shukla Dashami' },
-  '2026-03-29': { nakshatra: 'Magha',             yoga: 'Shoola',      tithi: 'Shukla Ekadashi' },
+  '2026-03-29': { nakshatra: 'Magha',             yoga: 'Shula',      tithi: 'Shukla Ekadashi' },
   '2026-03-30': { nakshatra: 'Purva Phalguni',    yoga: 'Ganda',       tithi: 'Shukla Dwadashi' },
   '2026-03-31': { nakshatra: 'Uttara Phalguni',   yoga: 'Vriddhi',     tithi: 'Shukla Trayodashi' },
   '2026-04-01': { nakshatra: 'Hasta',             yoga: 'Dhruva',      tithi: 'Shukla Chaturdashi' },
