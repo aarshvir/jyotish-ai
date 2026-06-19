@@ -107,35 +107,13 @@ export async function POST(request: NextRequest) {
     // by owner's explicit choice. Manage/disable in /admin → Coupons.
     const dbFree = createServiceClient();
 
-    // Redeem BEFORE granting, so a code that hit its max_uses cap blocks the unlock
-    // instead of granting it for free past the cap. The RPC returns FALSE for BOTH a
-    // genuine cap-reached AND an idempotent duplicate (same stable order_id) — only a
-    // full cap blocks; a duplicate means this user already unlocked, so proceed.
-    if (promoResult.codeId) {
-      let booked = true;
-      try {
-        // Stable order_id so the atomic RPC + its partial-unique index dedupe concurrent
-        // / refreshed unlock POSTs (one redemption per user per standalone product).
-        booked = await redeemPromoCode(promoResult.codeId, auth.user.id, `unlock:${planType}:${auth.user.id}`);
-      } catch (e) {
-        console.warn('[ziina/create-intent] promo redeem failed (non-fatal):', e);
-        booked = true;
-      }
-      if (!booked) {
-        const { data: capRow } = await dbFree
-          .from('promo_codes')
-          .select('used_count, max_uses')
-          .eq('id', promoResult.codeId)
-          .maybeSingle();
-        const cap = capRow as { used_count?: number; max_uses?: number | null } | null;
-        const capReached = cap?.max_uses != null && (cap.used_count ?? 0) >= cap.max_uses;
-        if (capReached) {
-          return NextResponse.json({ error: 'This code has reached its usage limit.' }, { status: 409 });
-        }
-        // else: idempotent duplicate — this user already unlocked; confirm below.
-      }
-    }
-
+    // Grant the unlock FIRST, redeem the coupon AFTER it commits (mirrors
+    // finalizeIntent's bookPromoRedemption ordering). Redeeming first would burn a
+    // once-per-user code's STABLE order_id if the unlock write then failed, locking
+    // the real user out forever. The read-time max_uses check in getPromoDiscount
+    // (above) plus the atomic redeem RPC below keep used_count within the cap; at
+    // worst one extra free unlock is granted at the exact cap boundary, which is an
+    // acceptable trade for never stranding a paying-with-coupon user.
     const unlockTable = planType === 'kundali' ? 'user_kundali_unlock' : 'user_synastry_unlock';
     const { error: unlockErr } = await dbFree.from(unlockTable).upsert(
       { user_id: auth.user.id, unlocked_at: new Date().toISOString() },
@@ -144,6 +122,16 @@ export async function POST(request: NextRequest) {
     if (unlockErr) {
       console.error('[ziina/create-intent] free-unlock upsert failed:', unlockErr.message);
       return NextResponse.json({ error: 'Could not apply your code. Please try again.' }, { status: 500 });
+    }
+
+    if (promoResult.codeId) {
+      try {
+        // Stable order_id so the atomic RPC + its partial-unique index dedupe concurrent
+        // / refreshed unlock POSTs (one redemption per user per standalone product).
+        await redeemPromoCode(promoResult.codeId, auth.user.id, `unlock:${planType}:${auth.user.id}`);
+      } catch (e) {
+        console.warn('[ziina/create-intent] promo redeem failed (non-fatal):', e);
+      }
     }
     return NextResponse.json({ redirectUrl: `/${planType}?unlocked=1`, freeUnlock: true, discountPct: 100 });
   }

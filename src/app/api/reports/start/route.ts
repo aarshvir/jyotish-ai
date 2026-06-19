@@ -220,6 +220,17 @@ async function resolveTrustedPaymentStatus(
     return 'paid';
   }
 
+  // A report already granted 'promo' on its first attempt (server-validated, with the
+  // once-per-user redemption already booked) stays entitled on a same-owner retry.
+  // The retry / forceRestart path does NOT resend the promo code, and the code can't
+  // be re-redeemed (hasUserRedeemed → PROMO_ALREADY_USED), so without this a transient
+  // first-attempt failure would 402 the promo buyer permanently. `existing` is
+  // ownership-checked at the call site, so its persisted status is trustworthy; the
+  // client's body.payment_status is NOT trusted here.
+  if (existing?.payment_status === 'promo') {
+    return 'promo';
+  }
+
   return safeNonPaidPaymentStatus(
     typeof body.payment_status === 'string' ? body.payment_status : existing?.payment_status,
     body.plan_type ?? existing?.plan_type,
