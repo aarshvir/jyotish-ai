@@ -43,7 +43,8 @@ export async function GET(
         logAvailable: false,
       });
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[generation-log]', error.message);
+    return NextResponse.json({ error: 'Could not load log' }, { status: 500 });
   }
   if (!data) {
     return NextResponse.json({ error: 'Report not found' }, { status: 404 });

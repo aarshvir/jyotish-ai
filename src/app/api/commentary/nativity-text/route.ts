@@ -6,7 +6,7 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
-import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock } from '@/lib/utils/sanitize';
+import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock, sanitizeForPrompt } from '@/lib/utils/sanitize';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { detectYogas, buildTransitQueryTerms } from '@/lib/rag/yogaDetector';
@@ -100,10 +100,19 @@ export async function POST(req: NextRequest) {
 
 Return ONLY valid JSON with two keys: lagna_analysis, dasha_interpretation. No markdown, no backticks.`;
 
+  // moonSign/moonNakshatra and planets[].sign come straight from the request body.
+  // Sanitize before they enter the prompt (mirrors NativityAgent), so a crafted
+  // chart field can't carry injection text into the system/user prompt.
+  const safeMoonSign = sanitizeForPrompt(moonSign) || '?';
+  const safeMoonNakshatra = sanitizeForPrompt(moonNakshatra) || '?';
+
   const planetLines = Object.entries(planets ?? {})
     .map(([p, d]) => {
       const row = d as { sign?: string; house?: number };
-      return `${p} in ${row.sign ?? '?'} (house ${row.house ?? '?'})`;
+      const safeName = sanitizePlanetName(p) || 'Planet';
+      const safeSign = sanitizeForPrompt(row.sign) || '?';
+      const safeHouse = typeof row.house === 'number' ? row.house : '?';
+      return `${safeName} in ${safeSign} (house ${safeHouse})`;
     })
     .join('\n');
 
@@ -122,7 +131,7 @@ ${ragContext}
 ${planetBlock}
 
 Lagna: ${lagnaSign} ${(lagnaDegreee ?? 0).toFixed(2)}°
-Moon: ${moonSign} / ${moonNakshatra}
+Moon: ${safeMoonSign} / ${safeMoonNakshatra}
 Current dasha: ${mahadasha} MD (until ${md_end ?? '?'}) / ${antardasha} AD (until ${ad_end ?? '?'})
 
 Return this exact JSON:
@@ -149,6 +158,7 @@ Start with { and end with }. No markdown.`;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[nativity-text]', msg);
-    return NextResponse.json({ error: msg || 'Commentary failed' }, { status: 500 });
+    // Generic message — don't leak raw LLM provider/internal error text to the client.
+    return NextResponse.json({ error: 'Commentary failed' }, { status: 500 });
   }
 }

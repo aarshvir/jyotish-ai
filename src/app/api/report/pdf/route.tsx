@@ -208,9 +208,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err: unknown) {
     console.error('PDF generation error:', err);
-    const message = err instanceof Error ? err.message : 'PDF generation failed';
+    // Generic message to the client; details stay in the server log.
     return NextResponse.json(
-      { error: message },
+      { error: 'PDF generation failed' },
       { status: 500 }
     );
   }

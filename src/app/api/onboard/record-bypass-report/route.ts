@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('record-bypass-report insert:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: 'Could not record report' }, { status: 500 });
     }
 
     // Optional column: phone (migration 20260614_user_phone). Non-fatal on older DBs.
