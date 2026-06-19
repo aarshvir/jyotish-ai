@@ -3,6 +3,7 @@ export const maxDuration = 60;
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { NatalChartData } from '@/lib/agents/types';
+import { hasValidBirthCoords } from '@/lib/utils/coords';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 import { detectDoshas } from '@/lib/kundli/doshas';
 
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as { person?: BirthPayload };
   const p = body.person;
-  if (!p?.birth_date || !p.birth_lat || !p.birth_lng) {
+  if (!p?.birth_date || !hasValidBirthCoords(p)) {
     return NextResponse.json({ error: 'Birth date and a located city are required.' }, { status: 400 });
   }
 

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
+import { isValidLat, isValidLng } from '@/lib/utils/coords';
 
 export type ToolView =
   | 'manglik'
@@ -50,7 +51,7 @@ export function ChartTool({
   const [err, setErr] = useState<string | null>(null);
   const [res, setRes] = useState<ChartResult | null>(null);
 
-  const valid = !!(d.birth_date && d.birth_lat && d.birth_lng);
+  const valid = !!d.birth_date && isValidLat(d.birth_lat) && isValidLng(d.birth_lng);
   // Lagna (ascendant) and the full chart depend on an exact birth time, so the
   // "use noon" shortcut would defeat the calculation — hide it for those views.
   const requiresExactBirthTime = view === 'lagna' || view === 'fullchart';
