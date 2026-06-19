@@ -583,6 +583,13 @@ export async function generateReportPipeline(
   const vercelMaxDuration = Number(process.env.VERCEL_FUNCTION_MAX_DURATION || '0');
   const explicitBudget = Number(String(process.env.REPORT_PIPELINE_BUDGET_MS ?? '').trim()) || 0;
   const isRunningInInngestStep = stopAfter != null; // Inngest phases set stopAfterPhase
+  // Free/preview reports are generated in full but only ONE sample day + no
+  // months/weeks/synthesis may be persisted (the rest is paid). Hoisted so every
+  // save (incl. the intermediate day_scores write) can narrow consistently.
+  const previewPlan = (() => {
+    const p = String(input.planType ?? input.type ?? '').toLowerCase();
+    return p === 'free' || p === 'preview';
+  })();
   const defaultBudgetMs = (() => {
     if (explicitBudget > 0) return explicitBudget;
     // Inside Inngest step: each phase gets its own function invocation
@@ -841,8 +848,14 @@ export async function generateReportPipeline(
   }
 
   async function dbSaveDayScores(forecastDays: ForecastDayIntermediate[]) {
+    // For free/preview persist only the first day's score: the multi-day score
+    // curve is paid content. dbSaveFinal already narrows it (it derives day_scores
+    // from the sliced preview days), but this intermediate write previously stored
+    // ALL days on the owner-readable row mid-generation (select * / Realtime) and
+    // left the full curve behind if the report failed before dbSaveFinal.
+    const daysToScore = previewPlan ? forecastDays.slice(0, 1) : forecastDays;
     const dayScores: Record<string, number> = {};
-    forecastDays.forEach((d) => {
+    daysToScore.forEach((d) => {
       if (d.date && typeof d.day_score === 'number') dayScores[d.date] = d.day_score;
     });
     const { error } = await db
@@ -2158,10 +2171,7 @@ export async function generateReportPipeline(
     // Supabase client (select *) AND Supabase Realtime (replica identity full) — both
     // bypass any API-layer strip, so the only durable fix is to never persist paid content
     // for a preview plan. Keep natal chart + ONE sample day (the advertised preview).
-    const previewPlan = (() => {
-      const p = String(input.planType ?? input.type ?? '').toLowerCase();
-      return p === 'free' || p === 'preview';
-    })();
+    // (previewPlan is hoisted near the top of the pipeline.)
     const finalReportToSave = previewPlan
       ? { ...finalReport, months: [], weeks: [], synthesis: null, days: finalReport.days.slice(0, 1) }
       : finalReport;
