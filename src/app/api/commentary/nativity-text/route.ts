@@ -155,6 +155,13 @@ Start with { and end with }. No markdown.`;
     });
 
     const parsed = safeParseJson<{ lagna_analysis?: string; dasha_interpretation?: string }>(rawText);
+    // INTENTIONAL (audit cycle-13 deferral): unlike daily-overviews/months/weeks, an
+    // empty/unparseable result here returns 200-with-empty rather than 206+partial. The
+    // orchestrator GUARANTEES a coherent deterministic nativity backstop for this small
+    // 2-paragraph section (orchestrator "nativity text is never blank"), so failing the
+    // whole paid report (206 → assertNoPartialLlmForPaid → Inngest retry/fail) over a
+    // minor section that already has a good fallback would be worse UX. Accepted
+    // best-effort: ship the LLM version when present, else the deterministic one.
     return NextResponse.json({
       lagna_analysis: parsed?.lagna_analysis ?? '',
       dasha_interpretation: parsed?.dasha_interpretation ?? '',
