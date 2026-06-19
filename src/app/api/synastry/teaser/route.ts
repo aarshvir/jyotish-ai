@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { NatalChartData } from '@/lib/agents/types';
+import { hasValidBirthCoords } from '@/lib/utils/coords';
 import { computeAshtakoot, NAKSHATRA_NAMES } from '@/lib/synastry/ashtakoot';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
   };
   const a = body.partnerA ?? body.partner_a;
   const b = body.partnerB ?? body.partner_b;
-  if (!a?.birth_date || !b?.birth_date || !a.birth_lat || !b.birth_lat) {
+  if (!a?.birth_date || !b?.birth_date || !hasValidBirthCoords(a) || !hasValidBirthCoords(b)) {
     return NextResponse.json({ error: 'Both birth dates and located cities are required.' }, { status: 400 });
   }
 

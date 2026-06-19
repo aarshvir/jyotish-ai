@@ -3,6 +3,7 @@ export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { hasValidBirthCoords } from '@/lib/utils/coords';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/api/rateLimit';
 import { createServiceClient } from '@/lib/supabase/admin';
 import type { NatalChartData } from '@/lib/agents/types';
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as { person?: BirthPayload };
   const p = body.person;
-  if (!p?.birth_date || !p.birth_lat || !p.birth_lng) {
+  if (!p?.birth_date || !hasValidBirthCoords(p)) {
     return NextResponse.json({ error: 'Birth date and a located birth city are required.' }, { status: 400 });
   }
 
