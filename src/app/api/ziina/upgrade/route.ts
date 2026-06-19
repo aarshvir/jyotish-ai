@@ -5,12 +5,14 @@ import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import {
   createPaymentIntent,
+  getPaymentIntent,
   countryToCurrency,
   formatAmount,
   getMonthlyUpgradeAmount,
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
+import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
 import { emitUpsellEvent } from '@/lib/analytics/upsellEvents';
 
 /**
@@ -79,6 +81,52 @@ export async function POST(request: NextRequest) {
   const currency = cookieCurrency ?? countryToCurrency(country);
   const amount = getMonthlyUpgradeAmount(currency);
 
+  // Duplicate-charge guards (mirror create-intent). Without these a double-submit /
+  // back-button while the report is still 7day mints two monthly_upgrade intents and
+  // the buyer can pay BOTH for one upgrade.
+  // 1) Already upgraded (a prior monthly_upgrade completed): nothing to charge.
+  const { data: completedUpgrade } = await db
+    .from('ziina_payments')
+    .select('ziina_intent_id')
+    .eq('report_id', reportId)
+    .eq('plan_type', 'monthly_upgrade')
+    .eq('status', 'completed')
+    .limit(1)
+    .maybeSingle();
+  if (completedUpgrade) {
+    return NextResponse.json({ alreadyUpgraded: true, redirectUrl: `/report/${reportId}?payment_status=paid` });
+  }
+  // 2) Reuse a recent (<90s) still-payable pending upgrade intent at the same currency/amount.
+  const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();
+  const { data: pendingUpgrade } = await db
+    .from('ziina_payments')
+    .select('ziina_intent_id')
+    .eq('user_id', auth.user.id)
+    .eq('report_id', reportId)
+    .eq('plan_type', 'monthly_upgrade')
+    .eq('status', 'pending')
+    .gte('created_at', pendingCutoff)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (pendingUpgrade?.ziina_intent_id) {
+    try {
+      const existingIntent = await getPaymentIntent(pendingUpgrade.ziina_intent_id);
+      const reusable = getReusablePendingZiinaIntent(existingIntent, { currency, expectedAmount: amount });
+      if (reusable) {
+        return NextResponse.json({
+          intentId: reusable.id,
+          redirectUrl: reusable.redirect_url,
+          currency,
+          amount: reusable.amount,
+          amountLabel: formatAmount(amount, currency),
+        });
+      }
+    } catch (e) {
+      console.warn('[ziina/upgrade] pending intent lookup failed (continuing with new intent):', e);
+    }
+  }
+
   const origin = request.nextUrl.origin;
   const successUrl = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&reportId=${reportId}&planType=monthly_upgrade&status=success`;
   const cancelUrl = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&reportId=${reportId}&planType=monthly_upgrade&status=cancel`;
@@ -107,6 +155,16 @@ export async function POST(request: NextRequest) {
     if (parentIntentId) {
       insertPayload.upsell_of_intent_id = parentIntentId;
     }
+
+    // Supersede older still-pending upgrade rows for this (user, report) so repeated
+    // attempts don't leave a pile of payable pending intents.
+    await db
+      .from('ziina_payments')
+      .update({ status: 'cancelled' })
+      .eq('user_id', auth.user.id)
+      .eq('report_id', reportId)
+      .eq('plan_type', 'monthly_upgrade')
+      .eq('status', 'pending');
 
     await db.from('ziina_payments').insert(insertPayload);
 
