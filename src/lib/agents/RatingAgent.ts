@@ -122,8 +122,8 @@ const NAKSHATRA_QUALITY: Record<string, number> = {
   Ardra:    -5, Punarvasu:+8, Pushya:  +10, Ashlesha:  -3,
   Magha:    +3, 'Purva Phalguni': +3, 'Uttara Phalguni': +5, Hasta: +8,
   Chitra:   +5, Swati:    +4, Vishakha: +5, Anuradha:  +6, Jyeshtha: -3,
-  Moola:    -3, 'Purva Ashadha': +4, 'Uttara Ashadha': +6, Shravana: +6,
-  Dhanishtha:+5, Shatabhisha:+3, 'Purva Bhadrapada': -3,
+  Mula:     -3, 'Purva Ashadha': +4, 'Uttara Ashadha': +6, Shravana: +6,
+  Dhanishta:+5, Shatabhisha:+3, 'Purva Bhadrapada': -3,
   'Uttara Bhadrapada': +6, Revati: +5,
 };
 
@@ -134,16 +134,22 @@ const MOON_HOUSE_MOD: Record<number, number> = {
   11: +8, 12: -4,
 };
 
-// Weekday ruler alignment — Bible: benefic ruler's day +2, malefic ruler's day -1, range -2 to +3
-const WEEKDAY_RULER_MOD: Record<string, number> = {
-  Monday:    +2,  // Moon (Lagna lord — maximum benefic for Cancer)
-  Thursday:  +3,  // Jupiter (chart guardian, closest to Bible's +3 ceiling)
-  Wednesday: +1,  // Mercury (mixed — Antardasha lord but functional malefic)
-  Friday:    -1,  // Venus (Badhaka lord)
-  Saturday:  -2,  // Saturn (Maraka — worst malefic)
-  Sunday:    +1,  // Sun (moderate benefic for Cancer — rules 2nd)
-  Tuesday:   +2,  // Mars (Yogakaraka — strong benefic)
-};
+// Weekday ruler alignment, lagna-aware — mirrors the Python compute_weekday_mod.
+// `panchang.day_ruler` is the day's ruling PLANET ("Sun".."Saturn"), so we derive
+// the modifier from that planet's functional strength (HORA_BASE) for the native's
+// actual lagna instead of a fixed Cancer-only table (which, being keyed by weekday
+// names, never even matched the planet-named day_ruler — it was silently always 0).
+function weekdayModForLagna(dayRulerPlanet: string, lagnaIdx: number): number {
+  if (!dayRulerPlanet) return 0;
+  const base = computeHoraBaseForLagna(lagnaIdx)[dayRulerPlanet] ?? 44;
+  if (base >= 60) return 6;
+  if (base >= 54) return 4;
+  if (base >= 48) return 2;
+  if (base >= 44) return 0;
+  if (base >= 38) return -2;
+  if (base >= 32) return -4;
+  return -5;
+}
 
 /** Day-level panchang adjustment (same for all slots that day). Exported for TS ephemeris fallback parity. */
 export function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'Cancer'): number {
@@ -175,8 +181,9 @@ export function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'C
     if (moonHouse > 0) adj += MOON_HOUSE_MOD[moonHouse] ?? 0;
   }
 
-  // Weekday ruler alignment
-  adj += WEEKDAY_RULER_MOD[panchang.day_ruler] ?? 0;
+  // Weekday ruler alignment (lagna-aware; day_ruler is a planet name)
+  const lagnaIdx = LAGNA_SIGNS_ORDER.indexOf(lagna as (typeof LAGNA_SIGNS_ORDER)[number]);
+  adj += weekdayModForLagna(panchang.day_ruler, lagnaIdx >= 0 ? lagnaIdx : 3);
 
   return adj;
 }
