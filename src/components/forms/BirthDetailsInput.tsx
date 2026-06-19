@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { hasValidBirthCoords } from '@/lib/utils/coords';
 
 export interface BirthDetails {
   name: string;
@@ -31,7 +32,7 @@ interface BirthDetailsInputProps {
  */
 export function BirthDetailsInput({ value, onChange, label, showName = true, allowUnknownTime = true }: BirthDetailsInputProps) {
   const [geoStatus, setGeoStatus] = useState<'idle' | 'loading' | 'ok' | 'error'>(
-    value.birth_lat && value.birth_lng ? 'ok' : 'idle',
+    hasValidBirthCoords(value) ? 'ok' : 'idle',
   );
   const [resolvedName, setResolvedName] = useState<string>('');
   const [unknownTime, setUnknownTime] = useState(false);
