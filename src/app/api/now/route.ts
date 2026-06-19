@@ -126,6 +126,13 @@ function isNowInRahuWindow(
 }
 
 export async function GET(request: NextRequest) {
+  // Entitlement: intentionally available to any authenticated user (no paid gate).
+  // This powers the dashboard "right now" widget, which is a deliberately LIMITED
+  // free teaser — only the current hourly window + the single next peak, with no
+  // full 18-slot grid, no multi-day forecast, and no LLM commentary (materially
+  // less than the paid product, like the kundali/synastry teasers). If this should
+  // become paid-only, add an admin-OR-payment_status-in-('paid','promo') check here
+  // (mirroring the calendar/ask routes) and return 402 otherwise.
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
 
