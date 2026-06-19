@@ -296,9 +296,10 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (existingErr) {
+    console.error('[reports/start] existing-row read failed:', existingErr.message);
     return NextResponse.json(
       {
-        error: existingErr.message,
+        error: 'Could not start generation',
         engine: 'none' as ReportStartEngine,
         dispatch_mode: 'blocked' as ReportStartDispatchMode,
       },
@@ -661,9 +662,10 @@ export async function POST(request: NextRequest) {
 
   if (upsertError) {
     await releaseOwnedLock();
+    console.error('[reports/start] report upsert failed:', upsertError.message);
     return NextResponse.json(
       {
-        error: upsertError.message,
+        error: 'Could not start generation',
         generation_trace_id: generationTraceId,
         engine: 'none' as ReportStartEngine,
         dispatch_mode: 'blocked' as ReportStartDispatchMode,
@@ -682,9 +684,10 @@ export async function POST(request: NextRequest) {
     const m = traceErr.message ?? '';
     if (!m.includes('generation_trace_id') && !m.includes('schema cache')) {
       await releaseOwnedLock();
+      console.error('[reports/start] trace-id update failed:', m);
       return NextResponse.json(
         {
-          error: traceErr.message,
+          error: 'Could not start generation',
           generation_trace_id: generationTraceId,
           engine: 'none' as ReportStartEngine,
           dispatch_mode: 'blocked' as ReportStartDispatchMode,
