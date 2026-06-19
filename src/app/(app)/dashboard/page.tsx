@@ -696,7 +696,7 @@ function DashboardInner() {
                       </div>
                       <p className="text-amber font-mono font-semibold text-base">{formatPaymentAmount(latestPayment.amount, latestPayment.currency)}</p>
                     </div>
-                    <p className="text-dust/50 text-mono-sm font-mono">{payments.length} transaction{payments.length !== 1 ? 's' : ''} total</p>
+                    <p className="text-dust/50 text-mono-sm font-mono">{completedPayments.length} payment{completedPayments.length !== 1 ? 's' : ''} total</p>
                   </div>
                 ) : (
                   <div className="text-center py-6">
