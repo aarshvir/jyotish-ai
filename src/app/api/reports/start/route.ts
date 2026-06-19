@@ -786,7 +786,15 @@ export async function POST(request: NextRequest) {
       const { ['x-bypass-token']: _omitBypass, ['cookie']: _omitCookie, ...dispatchAuthHeaders } =
         authHeaders;
       await inngest.send({
-        id: `report-generate:${reportId}`,
+        // Static id deduplicates accidental double-dispatches within Inngest's
+        // window. But on an explicit forceRestart (the "Try Again" button / stale
+        // auto-retry) we just wiped the checkpoints and need a FRESH run — a
+        // static id would be deduped against the original event and silently
+        // dropped, leaving the row pinned 'generating'. Make the id unique per
+        // forced attempt (the per-request trace id) so the retry always runs.
+        id: forceRestart
+          ? `report-generate:${reportId}:${generationTraceId}`
+          : `report-generate:${reportId}`,
         name: 'report/generate',
         data: {
           reportId,
