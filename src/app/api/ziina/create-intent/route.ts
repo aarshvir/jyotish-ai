@@ -195,7 +195,8 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (reportErr) {
-        return NextResponse.json({ error: reportErr.message }, { status: 500 });
+        console.error('[ziina/create-intent] report lookup failed:', reportErr.message);
+        return NextResponse.json({ error: 'Could not start checkout' }, { status: 500 });
       }
       if (reportRow && reportRow.user_id !== auth.user.id) {
         return NextResponse.json({ error: 'Report not found' }, { status: 404 });
