@@ -262,19 +262,32 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
         day_overview: normalizeDayOverview(d.day_overview),
       }));
     } else {
-      const batch1 = days.slice(0, 4);
-      const batch2 = days.slice(4);
-
-      if (batch1.length) {
-        const r1 = await callBatches(batch1, 6_000, modelOverride);
-        out.push(...(r1.length ? r1 : batch1.map((d) => buildFallbackDay(d, lagnaSign))));
-        out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
+      // Long horizons (monthly ~30 days): split into SMALL chunks and run them
+      // CONCURRENTLY. The old 4 + remainder approach put ~26 days in a single LLM
+      // call, which was both too slow (>140s → the orchestrator's fetch timeout
+      // aborted it → the whole report got stuck) and token-starved (truncation →
+      // count mismatch → template fallback). Small parallel chunks finish in the
+      // time of the slowest single chunk (~tens of seconds), well under budget.
+      const CHUNK = 6;
+      const CONCURRENCY = 5;
+      const chunks: (typeof days)[] = [];
+      for (let i = 0; i < days.length; i += CHUNK) chunks.push(days.slice(i, i + CHUNK));
+      const chunkResults: Array<Array<{ date: string; day_theme: string; day_overview: string }>> =
+        new Array(chunks.length);
+      for (let i = 0; i < chunks.length; i += CONCURRENCY) {
+        const wave = chunks.slice(i, i + CONCURRENCY);
+        const waveOut = await Promise.all(
+          wave.map((c) =>
+            callBatches(c, 8_000, modelOverride).then((r) =>
+              r.length ? r : c.map((d) => buildFallbackDay(d, lagnaSign)),
+            ),
+          ),
+        );
+        waveOut.forEach((r, j) => { chunkResults[i + j] = r; });
       }
-      if (batch2.length) {
-        const r2 = await callBatches(batch2, 6_000, modelOverride);
-        out.push(...(r2.length ? r2 : batch2.map((d) => buildFallbackDay(d, lagnaSign))));
-        out = out.map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
-      }
+      out = chunkResults
+        .flat()
+        .map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
     }
 
     // Ensure exact day count is preserved. A count mismatch means the LLM output is
