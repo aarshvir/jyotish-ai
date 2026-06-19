@@ -263,7 +263,7 @@ function buildPanchangForDay(
     day_ruler: DAY_RULERS[jsDay],
   };
 
-  const panchangAdj = getPanchangDayAdj(full, lagnaStr);
+  const panchangAdj = getPanchangDayAdj(full, lagnaStr, dateStr);
   return {
     panchang: {
       yoga: full.yoga,

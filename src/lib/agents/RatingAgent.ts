@@ -25,6 +25,7 @@ import type {
   PanchangData,
 } from './types';
 import { computeHoraBaseForLagna, LAGNA_SIGNS_ORDER } from '@/lib/engine/horaBase';
+import { getSpecialEventsForDate, specialEventAdj } from './specialEvents';
 
 // ── Per-lagna hora adjustments ────────────────────────────────────────────────
 // Zeroed: the grandmaster formula uses the same base scores for all lagnas.
@@ -187,16 +188,23 @@ function weekdayModForLagna(dayRulerPlanet: string, lagnaIdx: number): number {
 }
 
 /** Day-level panchang adjustment (same for all slots that day). Exported for TS ephemeris fallback parity. */
-export function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'Cancer'): number {
+export function getPanchangDayAdj(
+  panchang: PanchangData | undefined,
+  lagna = 'Cancer',
+  dateStr?: string,
+): number {
   if (!panchang) return 0;
   let adj = 0;
 
   // Yoga quality
   const yoga = panchang.yoga || '';
-  adj += YOGA_QUALITY[yoga] ?? 0;
+  const yogaVal = YOGA_QUALITY[yoga] ?? 0;
+  adj += yogaVal;
 
   // Tithi quality — exact lookup on the normalized full tithi string (paksha-aware)
-  adj += TITHI_QUALITY[normalizeTithi(panchang.tithi || '')] ?? 0;
+  const normTithi = normalizeTithi(panchang.tithi || '');
+  const tithiVal = TITHI_QUALITY[normTithi] ?? 0;
+  adj += tithiVal;
 
   // Nakshatra quality
   const nakshatra = panchang.nakshatra || '';
@@ -214,6 +222,19 @@ export function getPanchangDayAdj(panchang: PanchangData | undefined, lagna = 'C
   // Weekday ruler alignment (lagna-aware; day_ruler is a planet name)
   const lagnaIdx = LAGNA_SIGNS_ORDER.indexOf(lagna as (typeof LAGNA_SIGNS_ORDER)[number]);
   adj += weekdayModForLagna(panchang.day_ruler, lagnaIdx >= 0 ? lagnaIdx : 3);
+
+  // Special events (eclipses / festivals / ekadashi / Pushya + tier stacking) — only
+  // when a date is supplied. Mirrors Python compute_dq + generate_daily_grid: the
+  // calendar events PLUS the tithi/nakshatra-derived ekadashi/purnima/pushya flags.
+  if (dateStr) {
+    const events = getSpecialEventsForDate(dateStr);
+    if (normTithi.includes('Ekadashi') && !events.includes('ekadashi')) events.push('ekadashi');
+    if (normTithi === 'Purnima' && !events.includes('purnima')) events.push('purnima');
+    if (nakshatra === 'Pushya' && normTithi.startsWith('Shukla') && !events.includes('pushya_shukla_bonus')) {
+      events.push('pushya_shukla_bonus');
+    }
+    adj += specialEventAdj(events, yogaVal, tithiVal, nakshatra);
+  }
 
   // Clamp the day-level adjustment to match Python compute_dq's max(-40, min(45, dq)).
   return Math.max(-40, Math.min(45, adj));
@@ -468,7 +489,7 @@ export class RatingAgent {
   }
 
   rateDay(date: string, data: FullDayData, lagna: string): DayRating {
-    const panchangAdj = getPanchangDayAdj(data.panchang, lagna);
+    const panchangAdj = getPanchangDayAdj(data.panchang, lagna, date);
     const sunSignIdx = getSunSignIndex(date);
     const sunriseTime = data.panchang?.sunrise || '06:00:00';
 
