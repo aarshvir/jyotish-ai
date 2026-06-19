@@ -293,8 +293,13 @@ def calculate_tithi(sun_long: float, moon_long: float) -> str:
     ]
     
     paksha = "Shukla" if diff < 180 else "Krishna"
-    tithi_name = tithis[min(tithi_num - 1, 14)]
-    
+    # tithi_num is 1..30 across the whole month; the names repeat each paksha, so
+    # Krishna days (16..29) must map back into the 1..14 name range. Without this
+    # `- 15` offset every Krishna day clamped to index 14 ("Purnima/Amavasya"),
+    # which then normalized to Amavasya (-25) and mislabeled ~half of each month.
+    local_num = tithi_num if tithi_num <= 15 else tithi_num - 15
+    tithi_name = tithis[min(local_num - 1, 14)]
+
     if tithi_num == 15 and paksha == "Shukla":
         return "Purnima (Full Moon)"
     elif tithi_num == 30 or (tithi_num == 15 and paksha == "Krishna"):
