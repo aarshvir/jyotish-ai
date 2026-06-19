@@ -16,7 +16,10 @@ const anthropicClient = anthropicApiKey
       apiKey: anthropicApiKey,
       /** Commentary routes use maxDuration 300s and large max_tokens; 55s caused premature SDK timeouts. */
       timeout: 180_000,
-      maxRetries: 0,
+      // Retry transient blips (429/500/529 overloaded, network) at the SDK level with
+      // backoff, so a single hiccup doesn't surface as a 206 — which now fails paid
+      // reports closed (#107). Bounded so it stays within the 300s phase budget.
+      maxRetries: 2,
     })
   : null;
 

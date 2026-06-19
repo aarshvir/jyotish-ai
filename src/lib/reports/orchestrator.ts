@@ -2164,18 +2164,26 @@ export async function generateReportPipeline(
       },
     });
     onStep({ type: 'error', message });
-    try {
-      await markReportAsFailed(db, reportId, userId, {
-        message,
-        errorStep: 'pipeline_fatal',
-        generationErrorCode: inferReportGenerationErrorCode(message, 'pipeline_fatal'),
-        generationErrorAtPhase: lastGenerationStep,
-      });
-    } catch (markErr) {
-      terr('[orchestrator] failed to mark report as error:', markErr);
+    // Only write a TERMINAL 'error' on the inline path. On the Inngest path this catch runs
+    // on EVERY retry attempt, so writing 'error' here flips the report to a failure the
+    // client treats as permanent (it stops polling) even though Inngest will retry the
+    // phase and usually recover. The Inngest onFailure handler marks the report failed
+    // exactly once, AFTER all retries are exhausted. (Fixes the #107 fail-closed regression
+    // where a transient commentary 206 showed paid buyers a false hard failure mid-retry.)
+    if (!isRunningInInngestStep) {
+      try {
+        await markReportAsFailed(db, reportId, userId, {
+          message,
+          errorStep: 'pipeline_fatal',
+          generationErrorCode: inferReportGenerationErrorCode(message, 'pipeline_fatal'),
+          generationErrorAtPhase: lastGenerationStep,
+        });
+      } catch (markErr) {
+        terr('[orchestrator] failed to mark report as error:', markErr);
+      }
     }
-    // Re-throw so callers (start/route.ts) can return HTTP 500 and the frontend
-    // knows the pipeline failed rather than falsely receiving a 200 "complete".
+    // Re-throw so the inline caller returns HTTP 500 AND so Inngest sees the step fail and
+    // retries it (the retry re-runs the failed phase from the last checkpoint).
     throw err;
   } finally {
     // Always cancel the hard-kill timer so it doesn't fire after a clean finish.
