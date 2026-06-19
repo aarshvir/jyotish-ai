@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createClient } from '@/lib/supabase/server';
+import { isValidLat, isValidLng } from '@/lib/utils/coords';
 import { getDayOutcomeTier } from '@/lib/guidance/labels';
 import type { NowResponse } from '@/lib/api/nowTypes';
 
@@ -157,8 +158,12 @@ export async function GET(request: NextRequest) {
 
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10);
-  const lat = Number(row.current_lat ?? row.birth_lat ?? DUBAI_LAT) || DUBAI_LAT;
-  const lng = Number(row.current_lng ?? row.birth_lng ?? DUBAI_LNG) || DUBAI_LNG;
+  // Finite checks, not truthiness: a real equator (lat 0) / prime-meridian (lng 0)
+  // location must NOT fall back to Dubai and show the wrong timing intelligence.
+  const rawLat = Number(row.current_lat ?? row.birth_lat);
+  const rawLng = Number(row.current_lng ?? row.birth_lng);
+  const lat = isValidLat(rawLat) ? rawLat : DUBAI_LAT;
+  const lng = isValidLng(rawLng) ? rawLng : DUBAI_LNG;
   const tz =
     typeof row.timezone_offset === 'number' && Number.isFinite(row.timezone_offset)
       ? row.timezone_offset
