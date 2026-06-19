@@ -9,6 +9,8 @@ from main import (
     get_whole_sign_house,
     compute_hora_base_for_lagna,
     detect_yogas,
+    calculate_tithi,
+    normalize_tithi,
     SIGNS,
 )
 
@@ -154,7 +156,42 @@ def test_fix_4_yoga_detection():
             all_pass = False
     
     print(f"\n  All detected yogas: {yogas}")
-    
+
+    return all_pass
+
+
+def test_fix_tithi_krishna_paksha():
+    """Krishna-paksha (waning) days must get their real tithi name, not be
+    mislabeled 'Purnima/Amavasya' and scored as Amavasya (-25)."""
+    print("\n" + "="*70)
+    print("FIX: Tithi — Krishna paksha within-paksha index")
+    print("="*70)
+
+    # diff = (moon_long - sun_long) % 360. Build cases as (sun=0, moon=diff).
+    cases = {
+        5:   "Shukla Pratipada",
+        179: "Purnima (Full Moon)",
+        181: "Krishna Pratipada",
+        200: "Krishna Dwitiya",
+        300: "Krishna Ekadashi",
+        347: "Krishna Chaturdashi",
+        348: "Amavasya (New Moon)",
+        355: "Amavasya (New Moon)",
+    }
+    all_pass = True
+    for diff, expected in cases.items():
+        got = calculate_tithi(0.0, float(diff))
+        ok = got == expected
+        all_pass = all_pass and ok
+        print(f"  {'✅' if ok else '❌'} diff={diff:>3}: {got!r} (expected {expected!r})")
+
+    # The core regression: a Krishna non-new-moon day must NOT normalize to Amavasya.
+    for diff in (200, 300, 347):
+        norm = normalize_tithi(calculate_tithi(0.0, float(diff)))
+        ok = norm != "Amavasya"
+        all_pass = all_pass and ok
+        print(f"  {'✅' if ok else '❌'} normalize(diff={diff}) = {norm!r} (must not be 'Amavasya')")
+
     return all_pass
 
 
@@ -182,6 +219,12 @@ def main():
     except Exception as e:
         print(f"  ❌ ERROR: {e}")
         results.append(("FIX 4: Yoga Detection", False))
+
+    try:
+        results.append(("FIX: Tithi Krishna paksha", test_fix_tithi_krishna_paksha()))
+    except Exception as e:
+        print(f"  ❌ ERROR: {e}")
+        results.append(("FIX: Tithi Krishna paksha", False))
     
     print("\n" + "="*70)
     print("SUMMARY")
