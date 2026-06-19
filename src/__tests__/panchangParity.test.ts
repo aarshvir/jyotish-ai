@@ -70,3 +70,30 @@ describe('panchang cross-engine value parity (TS == Python)', () => {
     }
   });
 });
+
+describe('special-events parity (mirrors Python compute_dq)', () => {
+  it('adds nothing when no date is supplied', () => {
+    expect(getPanchangDayAdj({ ...blank })).toBe(0);
+    expect(getPanchangDayAdj({ ...blank }, 'Cancer', '2026-01-15')).toBe(0); // a no-event date
+  });
+
+  it('applies a Tier-1 festival once (Akshaya Tritiya = +18 mod + 15 stacking)', () => {
+    // 2026-04-19 is a clean single-event date (akshaya_tritiya only).
+    expect(getPanchangDayAdj({ ...blank }, 'Cancer', '2026-04-19')).toBe(33);
+  });
+
+  it('applies an eclipse penalty', () => {
+    // 2026-08-12 solar eclipse (-20), no tier stacking.
+    expect(getPanchangDayAdj({ ...blank }, 'Cancer', '2026-08-12')).toBe(-20);
+  });
+
+  it('applies the Pushya-on-Shukla bonus exactly ONCE (no double-count)', () => {
+    // No-date baseline: nakshatra Pushya (+15) + Shukla Navami (+4) = 19.
+    expect(getPanchangDayAdj({ ...blank, nakshatra: 'Pushya', tithi: 'Shukla Navami' })).toBe(19);
+    // With a (no-calendar-event) date the Pushya+Shukla flag fires: +13 (benefic tithi), ONCE.
+    // 19 + 13 = 32 (NOT 40, which the double-count regression would produce).
+    expect(
+      getPanchangDayAdj({ ...blank, nakshatra: 'Pushya', tithi: 'Shukla Navami' }, 'Cancer', '2026-01-15'),
+    ).toBe(32);
+  });
+});

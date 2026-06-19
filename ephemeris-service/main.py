@@ -1042,7 +1042,10 @@ SPECIAL_EVENT_MOD = {
     "akshaya_tritiya": 18,          # SUPREME day of year — imperishable (was 10)
     "diwali": 10,                   # Festival of lights (was 6)
     "dhan_teras": 8,                # Wealth worship day (was 5)
-    "pushya_shukla_bonus": 8,       # Supreme nakshatra (was 5)
+    # NOTE: 'pushya_shukla_bonus' intentionally NOT here — it is applied once via the
+    # bespoke block in compute_dq (8, +5 on a benefic tithi). Listing it here too made
+    # the generic special-events loop double-apply it (+16/+21 instead of +8/+13) once
+    # generate_daily_grid started appending the flag.
     "eclipse": -25,                 # Eclipses are devastating (was -20)
     "solar_eclipse": -20,           # Solar eclipse — authority under shadow (was -15)
     "lunar_eclipse": -18,           # Lunar eclipse — emotions/Moon afflicted (was -12)
