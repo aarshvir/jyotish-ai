@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/api/rateLimit';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { hasValidBirthCoords } from '@/lib/utils/coords';
 import type { NatalChartData } from '@/lib/agents/types';
 import { computeAshtakoot, NAKSHATRA_NAMES } from '@/lib/synastry/ashtakoot';
 import { buildSynastryCommentary } from '@/lib/synastry/synastryCommentary';
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
   };
   const a = body.partnerA ?? body.partner_a;
   const b = body.partnerB ?? body.partner_b;
-  if (!a?.birth_date || !b?.birth_date) {
+  if (!a?.birth_date || !b?.birth_date || !hasValidBirthCoords(a) || !hasValidBirthCoords(b)) {
     return NextResponse.json({ error: 'partnerA and partnerB birth data required' }, { status: 400 });
   }
 
