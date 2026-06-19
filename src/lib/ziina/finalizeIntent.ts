@@ -254,9 +254,12 @@ export async function finalizeCompletedZiinaIntent(
     return { ok: true, action: 'already_done' };
   }
 
-  // Book the coupon redemption on first successful finalize (once-per-user enforcement
-  // reads this). Past the already-completed guard, so it records exactly once.
-  if (row.promo_code_id && row.user_id) {
+  // Book the coupon redemption ONLY after this call commits the grant (owner-mismatch
+  // guard + atomic claim below). Booking it before those guards burned the coupon —
+  // and, for once-per-user codes, blocked the legitimate owner forever — on a payment
+  // that ultimately granted nothing. Defined here (row is known); called at each grant.
+  const bookPromoRedemption = async () => {
+    if (!row.promo_code_id || !row.user_id) return;
     try {
       // Once-per-user codes dedup the redemption on (code, user) via a STABLE order_id,
       // so the same user can't redeem the same code across multiple reports — the
@@ -274,7 +277,7 @@ export async function finalizeCompletedZiinaIntent(
     } catch (e) {
       console.warn('[ziina/finalize] promo redeem failed (non-fatal):', e);
     }
-  }
+  };
 
   const planType = row.plan_type ?? '';
   const reportId = row.report_id;
@@ -308,6 +311,9 @@ export async function finalizeCompletedZiinaIntent(
         currency: intent.currency_code,
       })
       .eq('ziina_intent_id', intentId);
+
+    // Grant committed → book the coupon.
+    await bookPromoRedemption();
 
     return { ok: true, action: 'processed' };
   }
@@ -368,6 +374,9 @@ export async function finalizeCompletedZiinaIntent(
     // Another concurrent verify/webhook already finalized this payment.
     return { ok: true, action: 'already_done' };
   }
+
+  // This caller won the atomic claim and passed the owner check → book the coupon now.
+  await bookPromoRedemption();
 
   // Behavioral event: reliable revenue signal for the analytics dashboard. Never throw.
   try {
