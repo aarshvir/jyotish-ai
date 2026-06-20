@@ -115,7 +115,7 @@ export async function GET() {
   }
 
   const sessions: SessionRow[] = [];
-  for (const row of bySid.values()) {
+  for (const row of Array.from(bySid.values())) {
     if (row.userId) {
       row.signedUp = true;
       row.email = emailById.get(row.userId) ?? null;
