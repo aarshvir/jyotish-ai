@@ -20,7 +20,35 @@ import { post as twelveHouses } from './twelve-houses-vedic-astrology';
 import { post as moonSignVsSunSignVedic } from './moon-sign-vs-sun-sign-vedic';
 import { post as kaalSarpDoshaExplained } from './kaal-sarp-dosha-explained';
 import { post as panchangExplainedBeginners } from './panchang-explained-beginners';
+import { post as atmakarakaSoulPlanetJaimini } from './atmakaraka-soul-planet-jaimini';
+import { post as ayanamsaLahiriExplained } from './ayanamsa-lahiri-explained';
+import { post as bhakootDoshaExplained } from './bhakoot-dosha-explained';
+import { post as birthTimeRectificationGuide } from './birth-time-rectification-guide';
+import { post as brahmaMuhuratGuide } from './brahma-muhurat-guide';
+import { post as choghadiyaVsHoraTiming } from './choghadiya-vs-hora-timing';
+import { post as lagnaAscendantGuide } from './lagna-ascendant-guide';
+import { post as nadiDoshaKundliMatching } from './nadi-dosha-kundli-matching';
+import { post as rajaYogaDhanaYogaKundli } from './raja-yoga-dhana-yoga-kundli';
+import { post as retrogradePlanetsVakriKundli } from './retrograde-planets-vakri-kundli';
+import { post as saturnReturnVsSadeSati } from './saturn-return-vs-sade-sati';
+import { post as shaniDhaiyaExplained } from './shani-dhaiya-explained';
+import { post as vivahMuhuratMarriageTiming } from './vivah-muhurat-marriage-timing';
+import { post as yamagandaGulikaKaalGuide } from './yamaganda-gulika-kaal-guide';
 export const POSTS: BlogPost[] = [
+  yamagandaGulikaKaalGuide,
+  vivahMuhuratMarriageTiming,
+  shaniDhaiyaExplained,
+  saturnReturnVsSadeSati,
+  retrogradePlanetsVakriKundli,
+  rajaYogaDhanaYogaKundli,
+  nadiDoshaKundliMatching,
+  lagnaAscendantGuide,
+  choghadiyaVsHoraTiming,
+  brahmaMuhuratGuide,
+  birthTimeRectificationGuide,
+  bhakootDoshaExplained,
+  ayanamsaLahiriExplained,
+  atmakarakaSoulPlanetJaimini,
   panchangExplainedBeginners,
   kaalSarpDoshaExplained,
   moonSignVsSunSignVedic,
