@@ -1,0 +1,25 @@
+-- CRITICAL FIX: reports table cannot be UPDATEd at all (Postgres error 42P10:
+-- "cannot update table reports — Column list used by the publication does not
+-- cover the replica identity"). This froze EVERY report at status='generating':
+-- no status transitions, no incremental saves, and markReportAsFailed could not
+-- even mark a failed run failed.
+--
+-- ROOT CAUSE: two earlier migrations are individually fine but mutually illegal:
+--   * 20260419_reports_realtime.sql set `REPLICA IDENTITY FULL` (replica
+--     identity = ALL columns).
+--   * 20260619_protect_pipeline_state_columns.sql (#126) made the reports
+--     Realtime publication a COLUMN-LIST publication that excludes the paid
+--     blobs (pipeline_state, pipeline_checkpoint).
+-- Postgres forbids a column-list publication whose list does not cover every
+-- replica-identity column. With REPLICA IDENTITY FULL that means ALL columns —
+-- which the allow-list intentionally does not, so Postgres rejects all UPDATEs.
+--
+-- FIX: switch replica identity to DEFAULT (the primary key `id`). The column
+-- list already includes `id`, so it now legally covers the replica identity —
+-- UPDATEs work again, and the column-list publication still strips the paid
+-- blobs from Realtime payloads (paywall protection preserved). Safe for the app:
+-- subscribeToReport() reads only payload.new (filtered by the column list on
+-- PG15+), never payload.old, so dropping FULL changes nothing the client sees.
+-- Idempotent.
+
+ALTER TABLE public.reports REPLICA IDENTITY DEFAULT;
