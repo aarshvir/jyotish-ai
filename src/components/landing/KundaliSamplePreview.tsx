@@ -45,11 +45,11 @@ export default function KundaliSamplePreview() {
         {/* Planet placements */}
         <div>
           <h3 className="font-mono text-mono-sm text-dust/60 uppercase tracking-wider mb-3">Planetary placements</h3>
-          <div className="grid grid-cols-3 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {SAMPLE_KUNDLI.placements.map((p) => (
-              <div key={p.planet} className="flex items-baseline justify-between rounded-md bg-bg-3/60 border border-horizon/20 px-3 py-2">
-                <span className="font-body text-body-sm text-star">{p.planet}</span>
-                <span className="font-mono text-mono-sm text-dust/70">{p.sign} · H{p.house}</span>
+              <div key={p.planet} className="flex items-baseline justify-between gap-1 rounded-md bg-bg-3/60 border border-horizon/20 px-3 py-2">
+                <span className="font-body text-body-sm text-star shrink-0">{p.planet}</span>
+                <span className="font-mono text-mono-sm text-dust/70 text-right truncate">{p.sign} · H{p.house}</span>
               </div>
             ))}
           </div>
