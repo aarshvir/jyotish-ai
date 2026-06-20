@@ -21,10 +21,6 @@ export default function SocialProof() {
       value: '★ 4.8',
       label: '340+ verified reviews',
     },
-    {
-      value: '99.7%',
-      label: 'paid report success rate',
-    },
   ];
 
   return (
@@ -33,7 +29,7 @@ export default function SocialProof() {
       className="py-12 md:py-14 bg-cosmos border-y border-horizon/30 relative"
     >
       <div className="max-w-6xl mx-auto px-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 text-center">
+        <div className="grid grid-cols-3 gap-6 md:gap-8 text-center">
           {STATS.map((s, i) => (
             <div
               key={i}
@@ -47,22 +43,6 @@ export default function SocialProof() {
               </span>
             </div>
           ))}
-        </div>
-
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-5 md:gap-8 text-dust">
-          <p className="w-full text-center font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-2">
-            Featured in
-          </p>
-          {['YourStory', 'IndiaSpirit', 'Vedic Times', 'AstroToday', 'Founders Bay'].map(
-            (name) => (
-              <span
-                key={name}
-                className="font-display text-base md:text-lg tracking-wide text-star/70 hover:text-star/60 transition-colors"
-              >
-                {name}
-              </span>
-            )
-          )}
         </div>
       </div>
     </section>
