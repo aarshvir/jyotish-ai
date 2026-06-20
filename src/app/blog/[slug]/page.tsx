@@ -17,17 +17,53 @@ export function generateStaticParams() {
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const post = getPost(params.slug);
   if (!post) return {};
+  const ogImage = `/blog/${post.slug}/opengraph-image`;
   return {
     title: `${post.title} | VedicHour`,
     description: post.description,
     keywords: post.keywords,
     alternates: { canonical: `/blog/${post.slug}` },
-    openGraph: { title: post.title, description: post.description, type: 'article', images: [`/blog/${post.slug}/opengraph-image`] },
+    openGraph: {
+      title: post.title,
+      description: post.description,
+      type: 'article',
+      images: [ogImage],
+      publishedTime: post.date,
+      modifiedTime: post.date,
+      authors: ['VedicHour'],
+      tags: post.keywords,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.description,
+      images: [ogImage],
+    },
   };
 }
 
 function fmt(date: string) {
   return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function htmlToText(html: string) {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Internal link-backs to the relevant free tools / products for each post. */
+function relatedTools(keywords: string[]) {
+  const kw = keywords.join(' ');
+  const tools: { href: string; label: string }[] = [
+    { href: '/free-kundli', label: 'Free Kundli generator — your birth chart in seconds' },
+    { href: '/pricing', label: 'See report plans & pricing' },
+  ];
+  if (/match|milan|compat|marriage|synastry/i.test(kw)) {
+    tools.push({ href: '/synastry', label: 'Kundli matching (Gun Milan) — check compatibility' });
+  }
+  if (/kundli|kundali|chart|birth/i.test(kw)) {
+    tools.push({ href: '/kundali', label: 'Deep Kundali report — your full birth chart, decoded' });
+  }
+  return tools;
 }
 
 function relatedPosts(slug: string, keywords: string[], n = 3) {
@@ -43,6 +79,9 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
   const post = getPost(params.slug);
   if (!post) notFound();
   const related = relatedPosts(post.slug, post.keywords);
+  const tools = relatedTools(post.keywords);
+  const articleBody = htmlToText(post.html);
+  const wordCount = articleBody ? articleBody.split(' ').length : 0;
 
   return (
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
@@ -51,7 +90,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
       <main className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
         <Link href="/blog" className="font-body text-body-sm text-dust hover:text-star transition-colors">← All articles</Link>
         <h1 className="text-display-md font-display text-star mt-3 mb-2">{post.title}</h1>
-        <p className="font-mono text-mono-sm text-dust/50 mb-8">{fmt(post.date)} · {post.readingTimeMin} min read</p>
+        <p className="font-mono text-mono-sm text-dust/50 mb-8"><time dateTime={post.date}>{fmt(post.date)}</time> · {post.readingTimeMin} min read</p>
 
         {/* Branded hero banner — pure CSS/SVG so it always renders (no dependency on
             a serverless image route). The per-post OG image route is used only for
@@ -73,6 +112,27 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         />
 
         {post.faqs && post.faqs.length > 0 && <FaqSection faqs={post.faqs} heading="Frequently asked" />}
+
+        <div className="mt-14 card border border-amber/30 rounded-card p-6 text-center">
+          <p className="font-display text-headline-sm text-star mb-3">Ready to decode your own chart?</p>
+          <div className="flex justify-center">
+            <Link href="/free-kundli" className="btn-primary">Get your free Kundli →</Link>
+          </div>
+          <p className="font-body text-body-sm text-dust mt-4">
+            Use code NEWUSER30 for <Link href="/pricing" className="text-amber underline">30% off</Link> <Link href="/pricing" className="text-amber underline">your first report</Link>.
+          </p>
+        </div>
+
+        <div className="mt-10">
+          <h2 className="font-display text-xl text-star mb-4">Related tools</h2>
+          <ul className="list-disc pl-6 space-y-1.5 font-body text-body-md text-dust">
+            {tools.map((t) => (
+              <li key={t.href}>
+                <Link href={t.href} className="text-amber underline">{t.label}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
 
         {related.length > 0 && (
           <div className="mt-14">
@@ -107,6 +167,9 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
             publisher: { '@type': 'Organization', name: 'VedicHour' },
             mainEntityOfPage: absUrl(`/blog/${post.slug}`),
             keywords: post.keywords.join(', '),
+            articleBody,
+            wordCount,
+            inLanguage: 'en',
           },
           ...(post.faqs && post.faqs.length ? [faqPageLd(post.faqs)] : []),
           breadcrumbLd([

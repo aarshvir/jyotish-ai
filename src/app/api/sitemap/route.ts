@@ -79,7 +79,7 @@ function horoscopeRoutes(): { path: string; changefreq: string; priority: string
 }
 
 const BLOG_ROUTES = [
-  { path: '/blog', changefreq: 'daily', priority: '0.7' },
+  { path: '/blog', changefreq: 'daily', priority: '0.7', lastmod: POSTS[0]?.date },
   ...POSTS.map((p) => ({ path: `/blog/${p.slug}`, changefreq: 'weekly', priority: '0.7', lastmod: p.date })),
 ];
 

@@ -5,7 +5,7 @@ import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
 import { POSTS } from '@/content/blog';
 import { JsonLd } from '@/components/seo/JsonLd';
-import { absUrl } from '@/lib/seo/jsonLd';
+import { absUrl, breadcrumbLd } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
   title: 'Jyotish Blog — Vedic Astrology Guides | VedicHour',
@@ -43,19 +43,39 @@ export default function BlogIndex() {
         </div>
       </main>
       <JsonLd
-        data={{
-          '@context': 'https://schema.org',
-          '@type': 'Blog',
-          '@id': `${absUrl('/blog')}#blog`,
-          url: absUrl('/blog'),
-          name: 'VedicHour Jyotish Blog',
-          blogPost: POSTS.map((p) => ({
-            '@type': 'BlogPosting',
-            headline: p.title,
-            url: absUrl(`/blog/${p.slug}`),
-            datePublished: p.date,
-          })),
-        }}
+        data={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Blog',
+            '@id': `${absUrl('/blog')}#blog`,
+            url: absUrl('/blog'),
+            name: 'VedicHour Jyotish Blog',
+            blogPost: POSTS.map((p) => ({
+              '@type': 'BlogPosting',
+              headline: p.title,
+              url: absUrl(`/blog/${p.slug}`),
+              datePublished: p.date,
+            })),
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            '@id': `${absUrl('/blog')}#collection`,
+            url: absUrl('/blog'),
+            name: 'Jyotish Blog — Vedic Astrology Guides',
+            isPartOf: { '@id': `${absUrl('/blog')}#blog` },
+            hasPart: POSTS.map((p) => ({
+              '@type': 'BlogPosting',
+              headline: p.title,
+              url: absUrl(`/blog/${p.slug}`),
+              datePublished: p.date,
+            })),
+          },
+          breadcrumbLd([
+            { name: 'Home', path: '/' },
+            { name: 'Blog', path: '/blog' },
+          ]),
+        ]}
       />
       <Footer />
     </div>
