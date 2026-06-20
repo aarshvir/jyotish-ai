@@ -1424,6 +1424,17 @@ class DailyGridInput(BaseModel):
     timezone_offset_minutes: Optional[int] = None
 
 
+class DailyGridBatchInput(BaseModel):
+    # Same as DailyGridInput but a LIST of dates, computed in ONE process call.
+    # Eliminates the per-day HTTP round-trip that makes long horizons slow:
+    # the deterministic compute is ~3-4ms/day, so 730 days runs in a few seconds.
+    dates: List[str]
+    current_lat: float
+    current_lng: float
+    natal_lagna_sign_index: int
+    timezone_offset_minutes: Optional[int] = None
+
+
 class PlanetPositionsInput(BaseModel):
     date: str
     current_lat: float = 25.2048
@@ -1746,6 +1757,44 @@ def generate_daily_grid(data: DailyGridInput):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=_err_detail(e))
+
+
+@app.post("/generate-daily-grid-batch")
+def generate_daily_grid_batch(data: DailyGridBatchInput):
+    """Compute the daily grid for MANY dates in one process call.
+
+    The per-day deterministic compute is cheap (~3-4ms/day); the real cost in the
+    old one-date-per-HTTP-call flow was the network round-trip times N days. This
+    collapses N round-trips into one. swisseph ayanamsa + TimezoneFinder are
+    process-global module state set once at import — safe for a SEQUENTIAL loop in
+    one request (do NOT parallelize with threads; pyswisseph is not thread-safe).
+
+    Resilient per-date: a single bad date does not abort the whole batch — it is
+    returned as {"date": ..., "error": ...} so callers can detect partial results.
+    """
+    if not data.dates:
+        return {"days": [], "errors": [], "count": 0}
+    # Bound the batch so a runaway request can't pin the service.
+    if len(data.dates) > 800:
+        raise HTTPException(status_code=400, detail="Too many dates (max 800)")
+
+    days = []
+    errors = []
+    for d in data.dates:
+        try:
+            days.append(generate_daily_grid(DailyGridInput(
+                date=d,
+                current_lat=data.current_lat,
+                current_lng=data.current_lng,
+                natal_lagna_sign_index=data.natal_lagna_sign_index,
+                timezone_offset_minutes=data.timezone_offset_minutes,
+            )))
+        except HTTPException as he:
+            errors.append({"date": d, "error": str(he.detail)})
+        except Exception as e:
+            errors.append({"date": d, "error": _err_detail(e)})
+
+    return {"days": days, "errors": errors, "count": len(days)}
 
 
 @app.post("/get-planet-positions")
