@@ -101,6 +101,38 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
   }, []);
 
+  // First-party click capture → /api/track, so the admin journey timeline can show
+  // WHICH element each visitor clicked (autocapture only feeds PostHog, not our DB).
+  // Delegated, capture-phase, passive; never throws into the page.
+  useEffect(() => {
+    const onClick = (ev: MouseEvent) => {
+      try {
+        const start = ev.target as HTMLElement | null;
+        const el = start?.closest?.('a, button, [role="button"], [data-track]') as HTMLElement | null;
+        if (!el) return;
+        const label = (
+          el.getAttribute('aria-label') ||
+          el.getAttribute('data-track') ||
+          el.textContent ||
+          el.getAttribute('title') ||
+          ''
+        ).replace(/\s+/g, ' ').trim().slice(0, 80);
+        const a = el.closest('a') as HTMLAnchorElement | null;
+        let href: string | null = null;
+        if (a) {
+          try {
+            const u = new URL(a.href, window.location.origin);
+            href = u.origin === window.location.origin ? u.pathname : `${u.host}${u.pathname}`;
+          } catch { href = a.getAttribute('href'); }
+        }
+        if (!label && !href) return;
+        track('click', { text: label || (href ?? 'element'), href });
+      } catch { /* analytics must never break the page */ }
+    };
+    document.addEventListener('click', onClick, { capture: true, passive: true });
+    return () => document.removeEventListener('click', onClick, { capture: true });
+  }, []);
+
   return (
     <>
       <Suspense fallback={null}>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 
-type Event = { name: string; path: string | null; at: string; identified: boolean };
+type Event = { name: string; path: string | null; label?: string | null; href?: string | null; at: string; identified: boolean };
 type Data = {
   sid: string;
   userId: string | null;
@@ -82,14 +82,23 @@ export default function JourneyDetail() {
           <p className="text-dust/60 text-body-sm">No events for this session.</p>
         ) : (
           <ol className="space-y-1 font-mono text-mono-sm">
-            {data.events.map((e, i) => (
-              <li key={i} className="flex gap-3 items-baseline">
-                <span className="text-dust/40 w-44 shrink-0">{when(e.at)}</span>
-                <span className="text-amber w-28 shrink-0">{e.name}</span>
-                <span className="text-dust/80 break-all">{e.path ?? ''}</span>
-                {e.identified && <span className="text-success/70 text-[10px] uppercase">signed in</span>}
-              </li>
-            ))}
+            {data.events.map((e, i) => {
+              const isClick = e.name === 'click';
+              return (
+                <li key={i} className="flex gap-3 items-baseline">
+                  <span className="text-dust/40 w-44 shrink-0">{when(e.at)}</span>
+                  <span className={`${isClick ? 'text-dust/60' : 'text-amber'} w-28 shrink-0`}>{isClick ? 'click' : e.name}</span>
+                  <span className="text-dust/80 break-all">
+                    {isClick ? (
+                      <>“{e.label || 'element'}”{e.href ? <span className="text-dust/40"> → {e.href}</span> : null}</>
+                    ) : (
+                      e.path ?? ''
+                    )}
+                  </span>
+                  {e.identified && <span className="text-success/70 text-[10px] uppercase">signed in</span>}
+                </li>
+              );
+            })}
           </ol>
         )}
       </section>

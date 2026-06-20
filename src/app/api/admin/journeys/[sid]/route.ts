@@ -15,6 +15,9 @@ type Props = {
   referrer?: string | null;
   utm?: Record<string, string> | null;
   session_id?: string | null;
+  text?: string | null;
+  label?: string | null;
+  href?: string | null;
 };
 
 function hostOf(ref?: string | null): string {
@@ -64,12 +67,18 @@ export async function GET(_req: NextRequest, { params }: { params: { sid: string
   });
   const refProps = firstWithRef ? propsOf(firstWithRef) : null;
 
-  const events = rows.map((e) => ({
-    name: e.event_name,
-    path: propsOf(e).path ?? null,
-    at: e.created_at as string,
-    identified: Boolean(e.user_id),
-  }));
+  const events = rows.map((e) => {
+    const p = propsOf(e);
+    const isClick = e.event_name === 'click';
+    return {
+      name: e.event_name,
+      path: p.path ?? null,
+      label: isClick ? (p.text ?? p.label ?? null) : null,
+      href: isClick ? (p.href ?? null) : null,
+      at: e.created_at as string,
+      identified: Boolean(e.user_id),
+    };
+  });
 
   return NextResponse.json({
     sid,
