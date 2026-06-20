@@ -425,3 +425,11 @@ CREATE POLICY "Users can view own ziina payments"
     user_id = auth.uid()
     OR report_id IN (SELECT id FROM public.reports WHERE user_id = auth.uid())
   );
+
+-- 20260620_analytics_session_index.sql — per-visitor journey analytics.
+-- Indexes analytics_events by session_id (inside JSONB properties) so the admin
+-- /admin/journeys list + /admin/journeys/[sid] timeline scan one visitor fast.
+-- Additive, backward-compatible. The pages work without it; this is perf only.
+CREATE INDEX IF NOT EXISTS idx_analytics_events_session_created
+  ON public.analytics_events ((properties->>'session_id'), created_at)
+  WHERE properties ? 'session_id';
