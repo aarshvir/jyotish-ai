@@ -3,7 +3,7 @@ import { CalculatorPage } from '@/components/tools/CalculatorPage';
 import { faqPageLd, breadcrumbLd, softwareAppLd, howToLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Nakshatra Finder — Free Birth Star (Janma Nakshatra) Calculator by DOB | VedicHour',
+  title: 'Nakshatra Finder — Free Birth Star (Janma Nakshatra) Calculator by DOB',
   description:
     'Find your Janma Nakshatra (birth star) free in seconds. Enter your date, time and place of birth and we locate the Moon among the 27 nakshatras, plus your pada — no signup.',
   alternates: { canonical: '/nakshatra-finder' },

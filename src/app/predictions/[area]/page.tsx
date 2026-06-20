@@ -17,7 +17,7 @@ export function generateMetadata({ params }: { params: { area: string } }): Meta
   const p = getPrediction(params.area);
   if (!p) return {};
   return {
-    title: `${p.title} | VedicHour`,
+    title: p.title,
     description: p.description,
     keywords: p.keywords,
     alternates: { canonical: `/predictions/${p.slug}` },

@@ -58,6 +58,7 @@ function StarRow() {
   return (
     <div
       className="flex items-center gap-1 text-amber"
+      role="img"
       aria-label="5 out of 5 stars"
     >
       {Array.from({ length: 5 }).map((_, i) => (
@@ -112,7 +113,7 @@ export default function Testimonials() {
                 <div className="font-body text-body-sm text-star font-semibold">
                   {t.name}
                 </div>
-                <div className="font-mono text-mono-sm text-dust/60 mt-0.5">
+                <div className="font-mono text-mono-sm text-dust mt-0.5">
                   {t.role} · <span className="text-amber/70">{t.lagna}</span>
                 </div>
               </figcaption>
@@ -120,7 +121,7 @@ export default function Testimonials() {
           ))}
         </div>
 
-        <p className="text-center mt-12 font-mono text-mono-sm text-dust/50 tracking-wider">
+        <p className="text-center mt-12 font-mono text-mono-sm text-dust tracking-wider">
           Experiences shared by real users · birth charts independently verified.
         </p>
       </div>

@@ -92,6 +92,7 @@ export function LiveTelemetry({ lines, maxVisible = 6, className = '' }: LiveTel
   return (
     <div
       className={`w-full bg-[#0D1426]/80 backdrop-blur-md border border-horizon/60 rounded-card p-5 text-left h-40 flex flex-col justify-end overflow-hidden relative shadow-inner-light ${className}`}
+      role="log"
       aria-live="polite"
       aria-label="Generation progress log"
     >

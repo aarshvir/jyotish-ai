@@ -242,7 +242,7 @@ export default function Pricing() {
 
         {/* Trust bar */}
         <div className="mt-12 md:mt-14 text-center">
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-dust/60">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-dust">
             <div className="flex items-center gap-2">
               <ShieldCheckIcon className="w-3.5 h-3.5 text-success" />
               <span className="font-mono text-mono-sm">Encrypted & secure</span>

@@ -109,7 +109,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
           <button type="submit" disabled={loading} className="btn-primary px-10 py-3 disabled:opacity-50">
             {loading ? 'Reading your chart…' : 'See my chart — free'}
           </button>
-          <p className="mt-3 font-mono text-mono-sm text-dust/50">Free chart summary. No card needed.</p>
+          <p className="mt-3 font-mono text-mono-sm text-dust">Free chart summary. No card needed.</p>
         </div>
       )}
 
@@ -125,7 +125,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
               ['Life period', `${teaser.mahadasha}${teaser.antardasha && teaser.antardasha !== 'Unknown' ? ` · ${teaser.antardasha}` : ''}`],
             ].map(([label, val]) => (
               <div key={label} className="rounded-md bg-bg-3/40 border border-horizon/30 p-3">
-                <div className="font-mono text-mono-sm text-dust/50 uppercase tracking-wider">{label}</div>
+                <div className="font-mono text-mono-sm text-dust uppercase tracking-wider">{label}</div>
                 <div className="font-display text-lg text-amber">{val}</div>
               </div>
             ))}
@@ -135,7 +135,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
             {['Life, career & money, marriage, health, kids, family', 'Your year-by-year outlook (next 5 years)', 'Manglik, Kaal Sarpa & Sade Sati checks'].map((k) => (
               <div key={k} className="flex items-center justify-between rounded-md bg-bg-3/40 border border-horizon/30 px-3 py-2">
                 <span className="font-body text-body-sm text-dust/80">{k}</span>
-                <span className="font-mono text-mono-sm text-dust/40">🔒 locked</span>
+                <span className="font-mono text-mono-sm text-dust">🔒 locked</span>
               </div>
             ))}
           </div>
@@ -145,14 +145,14 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
               value={promo}
               onChange={(e) => setPromo(e.target.value.toUpperCase())}
               placeholder="Coupon code (optional)"
-              className="w-full rounded-md bg-cosmos border border-horizon px-3 py-2 text-center font-mono text-mono-sm text-star placeholder:text-dust/40 focus:border-amber/60 focus:outline-none"
+              className="w-full rounded-md bg-cosmos border border-horizon px-3 py-2 text-center font-mono text-mono-sm text-star placeholder:text-dust focus:border-amber/60 focus:outline-none"
             />
           </div>
 
           <button type="button" disabled={paying} onClick={() => void startCheckout()} className="btn-primary px-8 py-3 disabled:opacity-50">
             {paying ? 'Redirecting…' : `Unlock your full reading — ${priceLabel}`}
           </button>
-          <p className="mt-3 font-mono text-mono-sm text-dust/50">
+          <p className="mt-3 font-mono text-mono-sm text-dust">
             One-time. 24-hour money-back guarantee. Already bought any VedicHour forecast? It&apos;s included — sign in.
           </p>
         </div>

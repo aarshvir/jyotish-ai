@@ -8,7 +8,7 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { absUrl, breadcrumbLd } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Jyotish Blog — Vedic Astrology Guides | VedicHour',
+  title: 'Jyotish Blog — Vedic Astrology Guides',
   description:
     'In-depth, plain-English Vedic astrology guides: kundli matching, Manglik & Sade Sati, reading your birth chart, Vedic vs Western astrology, and more.',
   alternates: { canonical: '/blog' },
@@ -37,7 +37,7 @@ export default function BlogIndex() {
             <Link key={p.slug} href={`/blog/${p.slug}`} className="group card-interactive p-6 block">
               <h2 className="font-display text-2xl text-star group-hover:text-amber-light transition-colors mb-1.5">{p.title}</h2>
               <p className="font-body text-body-sm text-dust leading-relaxed mb-2">{p.description}</p>
-              <span className="font-mono text-mono-sm text-dust/50">{fmt(p.date)} · {p.readingTimeMin} min read</span>
+              <span className="font-mono text-mono-sm text-dust">{fmt(p.date)} · {p.readingTimeMin} min read</span>
             </Link>
           ))}
         </div>

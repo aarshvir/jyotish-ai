@@ -28,7 +28,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -62,7 +62,7 @@ export default function Navbar() {
   }, [mobileOpen]);
 
   return (
-    <div ref={wrapperRef} className="sticky top-0 z-50">
+    <header ref={wrapperRef} className="sticky top-0 z-50">
       <LaunchBanner />
       <nav
         className={`pdf-exclude transition-all duration-250 ${
@@ -161,6 +161,6 @@ export default function Navbar() {
           </div>
         )}
       </nav>
-    </div>
+    </header>
   );
 }

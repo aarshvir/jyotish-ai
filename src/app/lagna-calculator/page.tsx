@@ -3,7 +3,7 @@ import { CalculatorPage } from '@/components/tools/CalculatorPage';
 import { faqPageLd, breadcrumbLd, softwareAppLd, howToLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Lagna Calculator — Free Ascendant / Rising Sign by Date & Time of Birth | VedicHour',
+  title: 'Lagna Calculator — Free Ascendant / Rising Sign by Date & Time of Birth',
   description:
     'Find your Lagna (ascendant / rising sign) free. Enter your exact date, time and place of birth and we calculate the sign rising on the eastern horizon — the anchor of your Vedic chart. No signup.',
   alternates: { canonical: '/lagna-calculator' },

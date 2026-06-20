@@ -68,16 +68,16 @@ export default function Hero() {
 
         {/* Primary CTA — single high-contrast action */}
         <div className="animate-fade-up-2 flex flex-col items-center gap-3 mb-4">
-          <Link href="/onboard?plan=free" className="btn-primary text-base px-10 py-4 w-full max-w-xs sm:max-w-none sm:w-auto group">
+          <Link href="/onboard?plan=free" rel="nofollow" className="btn-primary text-base px-10 py-4 w-full max-w-xs sm:max-w-none sm:w-auto group">
             <span>Get Your Free Kundli</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="group-hover:translate-x-0.5 transition-transform" aria-hidden>
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </Link>
-          <Link href="#sample-report" className="font-body text-body-sm text-dust/60 hover:text-dust underline-offset-2 hover:underline transition-colors">
+          <Link href="#sample-report" className="font-body text-body-sm text-dust hover:text-dust underline-offset-2 hover:underline transition-colors">
             Or preview a sample report →
           </Link>
-          <p className="font-mono text-mono-sm text-dust/40 tracking-wider">
+          <p className="font-mono text-mono-sm text-dust tracking-wider">
             Free account in 20 seconds · no card required
           </p>
         </div>
@@ -87,7 +87,7 @@ export default function Hero() {
           {TRUST_STATS.map((s) => (
             <div key={s.value} className="flex items-center gap-1.5">
               <span className="font-mono text-mono-md text-amber font-medium tracking-wider">{s.value}</span>
-              <span className="font-body text-body-sm text-dust/60">{s.label}</span>
+              <span className="font-body text-body-sm text-dust">{s.label}</span>
             </div>
           ))}
         </div>

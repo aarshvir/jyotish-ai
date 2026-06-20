@@ -12,7 +12,7 @@ import { SeoProse, FaqSection } from '@/components/seo/SeoSection';
 import { faqPageLd, breadcrumbLd, softwareAppLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Deep Kundali Report — Your Full Vedic Birth Chart | VedicHour',
+  title: 'Deep Kundali Report — Your Full Vedic Birth Chart',
   description:
     'A deep, personalized Vedic birth report — your full chart read across career & money, marriage & intimacy, health, children and family, a year-by-year outlook for the next 5 years, and the classical checks (Manglik, Kaal Sarpa, Sade Sati). Computed with the Swiss Ephemeris. $9.99 / ₹899.',
   alternates: { canonical: '/kundali' },

@@ -89,7 +89,7 @@ export function KundaliResultDisplay({
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center">
         <p className="section-eyebrow mb-3">Deep Kundali · Birth Chart Report</p>
         <h1 className="font-display text-display-md text-star mb-2">{possessive} birth chart, read in full</h1>
-        <p className="font-mono text-mono-sm text-dust/60">
+        <p className="font-mono text-mono-sm text-dust">
           {lagna} rising · Moon in {moonSign}{moonNakshatra ? ` (${moonNakshatra})` : ''}
         </p>
         <div className="mt-5 no-print">
@@ -106,7 +106,7 @@ export function KundaliResultDisplay({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {facts.map((f) => (
           <div key={f.label} className="rounded-card border border-horizon/40 bg-cosmos p-4 text-center">
-            <div className="font-mono text-mono-sm text-dust/50 uppercase tracking-wider mb-1">{f.label}</div>
+            <div className="font-mono text-mono-sm text-dust uppercase tracking-wider mb-1">{f.label}</div>
             <div className="font-display text-lg text-amber">{f.value}</div>
           </div>
         ))}
@@ -132,7 +132,7 @@ export function KundaliResultDisplay({
           <DoshaRow title="Mangal Dosha (Manglik)" flag={doshas?.manglik} />
           <DoshaRow title="Kaal Sarpa" flag={doshas?.kaalSarpa} />
           <DoshaRow title="Sade Sati" flag={doshas?.sadeSati} />
-          <p className="font-body text-mono-sm text-dust/40 leading-relaxed">
+          <p className="font-body text-mono-sm text-dust leading-relaxed">
             These traditional markers describe tendencies, not destiny — read them as areas to be conscious of, never as verdicts.
           </p>
         </div>
@@ -197,7 +197,7 @@ export function KundaliResultDisplay({
         </div>
       </div>
 
-      <p className="text-center font-mono text-mono-sm text-dust/30">
+      <p className="text-center font-mono text-mono-sm text-dust">
         Computed with the Swiss Ephemeris (Lahiri ayanamsa){createdAt ? ` · ${new Date(createdAt).toLocaleDateString()}` : ''}
       </p>
 

@@ -17,7 +17,7 @@ export function generateMetadata({ params }: { params: { planet: string } }): Me
   const d = getDasha(params.planet);
   if (!d) return {};
   return {
-    title: `${d.title} | VedicHour`,
+    title: d.title,
     description: d.description,
     keywords: d.keywords,
     alternates: { canonical: `/dasha/${d.slug}` },

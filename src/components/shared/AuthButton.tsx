@@ -43,6 +43,7 @@ export default function AuthButton() {
     return (
       <div
         className="h-9 w-28 shrink-0 rounded-button bg-nebula/60 skeleton"
+        role="status"
         aria-busy="true"
         aria-label="Loading account"
       />

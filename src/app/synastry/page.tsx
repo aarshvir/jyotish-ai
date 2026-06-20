@@ -66,7 +66,7 @@ export default async function SynastryPage() {
             {STEPS.map((s) => (
               <div key={s.label} className="text-center">
                 <div className="font-display text-2xl sm:text-3xl text-amber">{s.n}</div>
-                <div className="font-mono text-mono-sm text-dust/60 max-w-[8rem]">{s.label}</div>
+                <div className="font-mono text-mono-sm text-dust max-w-[8rem]">{s.label}</div>
               </div>
             ))}
           </div>

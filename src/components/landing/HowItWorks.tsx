@@ -71,7 +71,7 @@ export default function HowItWorks() {
             >
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-amber scale-x-0 group-hover:scale-x-100 transition-transform duration-350 origin-left rounded-t-card" />
 
-              <span className="font-mono text-mono-sm text-dust/40 tracking-[0.15em] mb-5 block">
+              <span className="font-mono text-mono-sm text-dust tracking-[0.15em] mb-5 block">
                 {step.number}
               </span>
 

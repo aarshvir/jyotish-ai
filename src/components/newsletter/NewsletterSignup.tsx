@@ -38,7 +38,7 @@ export function NewsletterSignup({ source = 'footer' }: { source?: string }) {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Your email for weekly Vedic timing tips"
-        className="flex-1 rounded-md bg-cosmos border border-horizon px-3 py-2 text-star text-body-sm placeholder:text-dust/40 focus:border-amber/60 focus:outline-none"
+        className="flex-1 rounded-md bg-cosmos border border-horizon px-3 py-2 text-star text-body-sm placeholder:text-dust focus:border-amber/60 focus:outline-none"
       />
       <button type="submit" disabled={busy} className="btn-primary px-5 py-2 text-body-sm disabled:opacity-50 shrink-0">
         {busy ? '…' : 'Subscribe'}

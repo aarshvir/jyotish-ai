@@ -19,7 +19,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   if (!post) return {};
   const ogImage = `/blog/${post.slug}/opengraph-image`;
   return {
-    title: `${post.title} | VedicHour`,
+    title: post.title,
     description: post.description,
     keywords: post.keywords,
     alternates: { canonical: `/blog/${post.slug}` },
@@ -90,7 +90,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
       <main className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
         <Link href="/blog" className="font-body text-body-sm text-dust hover:text-star transition-colors">← All articles</Link>
         <h1 className="text-display-md font-display text-star mt-3 mb-2">{post.title}</h1>
-        <p className="font-mono text-mono-sm text-dust/50 mb-8"><time dateTime={post.date}>{fmt(post.date)}</time> · {post.readingTimeMin} min read</p>
+        <p className="font-mono text-mono-sm text-dust mb-8"><time dateTime={post.date}>{fmt(post.date)}</time> · {post.readingTimeMin} min read</p>
 
         {/* Branded hero banner — pure CSS/SVG so it always renders (no dependency on
             a serverless image route). The per-post OG image route is used only for
@@ -110,6 +110,26 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
           className="space-y-4 font-body text-body-md text-dust leading-relaxed [&_h2]:font-display [&_h2]:text-2xl [&_h2]:text-star [&_h2]:mt-10 [&_h2]:mb-3 [&_h3]:font-display [&_h3]:text-xl [&_h3]:text-amber [&_h3]:mt-7 [&_h3]:mb-2 [&_strong]:text-star [&_a]:text-amber [&_a]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:space-y-1 [&_p]:mb-4 [&_table]:w-full [&_table]:my-6 [&_table]:border-collapse [&_table]:text-body-sm [&_th]:text-left [&_th]:text-star [&_th]:font-display [&_th]:border-b [&_th]:border-horizon/50 [&_th]:py-2 [&_th]:px-3 [&_td]:border-b [&_td]:border-horizon/20 [&_td]:py-2 [&_td]:px-3 [&_td]:align-top"
           dangerouslySetInnerHTML={{ __html: post.html }}
         />
+
+        <div className="mt-10 flex flex-wrap items-center gap-3 font-body text-body-sm text-dust">
+          <span>Share:</span>
+          <a
+            href={`https://x.com/intent/tweet?url=${encodeURIComponent(absUrl(`/blog/${post.slug}`))}&text=${encodeURIComponent(post.title)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-amber underline hover:text-amber-light transition-colors"
+          >
+            Share on X
+          </a>
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(`${post.title} ${absUrl(`/blog/${post.slug}`)}`)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-amber underline hover:text-amber-light transition-colors"
+          >
+            Share on WhatsApp
+          </a>
+        </div>
 
         {post.faqs && post.faqs.length > 0 && <FaqSection faqs={post.faqs} heading="Frequently asked" />}
 
@@ -141,7 +161,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
               {related.map((r) => (
                 <Link key={r.slug} href={`/blog/${r.slug}`} className="group card-interactive p-4 block">
                   <div className="font-display text-base text-star group-hover:text-amber-light transition-colors leading-snug">{r.title}</div>
-                  <div className="font-mono text-mono-sm text-dust/50 mt-1">{r.readingTimeMin} min read</div>
+                  <div className="font-mono text-mono-sm text-dust mt-1">{r.readingTimeMin} min read</div>
                 </Link>
               ))}
             </div>

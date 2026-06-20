@@ -42,22 +42,22 @@ export default function SocialProof() {
               <span className="font-display text-3xl md:text-display-sm text-amber tabular-nums leading-tight">
                 {s.value}
               </span>
-              <span className="font-mono text-mono-sm text-dust/60 tracking-[0.12em] uppercase mt-2">
+              <span className="font-mono text-mono-sm text-dust tracking-[0.12em] uppercase mt-2">
                 {s.label}
               </span>
             </div>
           ))}
         </div>
 
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-5 md:gap-8 text-dust/40">
-          <p className="w-full text-center font-mono text-mono-sm text-dust/40 tracking-[0.15em] uppercase mb-2">
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-5 md:gap-8 text-dust">
+          <p className="w-full text-center font-mono text-mono-sm text-dust tracking-[0.15em] uppercase mb-2">
             Featured in
           </p>
           {['YourStory', 'IndiaSpirit', 'Vedic Times', 'AstroToday', 'Founders Bay'].map(
             (name) => (
               <span
                 key={name}
-                className="font-display text-base md:text-lg tracking-wide text-star/40 hover:text-star/60 transition-colors"
+                className="font-display text-base md:text-lg tracking-wide text-star/70 hover:text-star/60 transition-colors"
               >
                 {name}
               </span>
