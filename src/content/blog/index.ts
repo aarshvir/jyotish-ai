@@ -34,7 +34,19 @@ import { post as saturnReturnVsSadeSati } from './saturn-return-vs-sade-sati';
 import { post as shaniDhaiyaExplained } from './shani-dhaiya-explained';
 import { post as vivahMuhuratMarriageTiming } from './vivah-muhurat-marriage-timing';
 import { post as yamagandaGulikaKaalGuide } from './yamaganda-gulika-kaal-guide';
+import { post as abhijitMuhuratGuide } from './abhijit-muhurat-guide';
+import { post as bestPlanetaryHoursForDecisions } from './best-planetary-hours-for-decisions';
+import { post as isAstrologyRealHonestAnswer } from './is-astrology-real-honest-answer';
+import { post as whyDailyHoroscopesDontWork } from './why-daily-horoscopes-dont-work';
+import { post as timingAJobChangeVedicAstrology } from './timing-a-job-change-vedic-astrology';
+import { post as gandantaJunctionsExplained } from './gandanta-junctions-explained';
 export const POSTS: BlogPost[] = [
+  abhijitMuhuratGuide,
+  bestPlanetaryHoursForDecisions,
+  isAstrologyRealHonestAnswer,
+  whyDailyHoroscopesDontWork,
+  timingAJobChangeVedicAstrology,
+  gandantaJunctionsExplained,
   yamagandaGulikaKaalGuide,
   vivahMuhuratMarriageTiming,
   shaniDhaiyaExplained,
