@@ -51,6 +51,9 @@ export function GeneratingScreen({
   const [feedbackBusy, setFeedbackBusy] = useState(false);
   const [feedbackDone, setFeedbackDone] = useState(false);
   const [feedbackErr, setFeedbackErr] = useState<string | null>(null);
+  // Skip the waiting-feedback prompt entirely for someone who has already given
+  // feedback before (any report, this device) — and let anyone skip it manually.
+  const [feedbackSkipped, setFeedbackSkipped] = useState(false);
   const lastSlugRef = useRef<string | null>(null);
   /** Defense-in-depth: never let displayed progress go backwards. */
   const highWaterMarkRef = useRef(0);
@@ -58,6 +61,14 @@ export function GeneratingScreen({
   // setState in the feedback submit so an in-flight POST can't update an unmounted tree.
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
+
+  // If the user has already filled feedback once (here or via the global widget),
+  // don't ask again — start the prompt collapsed/skipped.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('vh_feedback_given') === '1') setFeedbackSkipped(true);
+    } catch { /* localStorage unavailable (private mode / SSR) — show the prompt */ }
+  }, []);
 
   // Elapsed timer
   useEffect(() => {
@@ -123,6 +134,7 @@ export function GeneratingScreen({
       }
       setFeedbackDone(true);
       setFeedbackMessage('');
+      try { localStorage.setItem('vh_feedback_given', '1'); } catch { /* ignore */ }
     } catch {
       if (mountedRef.current) setFeedbackErr('Network error.');
     } finally {
@@ -233,6 +245,19 @@ export function GeneratingScreen({
                 Your note helps us improve the report experience.
               </p>
             </div>
+          ) : feedbackSkipped ? (
+            <div className="text-center py-3">
+              <p id="waiting-feedback-title" className="font-body text-body-sm text-dust/75">
+                Thanks for your earlier feedback 🙏
+              </p>
+              <button
+                type="button"
+                onClick={() => setFeedbackSkipped(false)}
+                className="mt-1 text-amber/80 hover:text-amber text-mono-sm font-mono underline underline-offset-4"
+              >
+                Share more feedback
+              </button>
+            </div>
           ) : (
             <form onSubmit={submitWaitingFeedback} className="space-y-3">
               <div>
@@ -276,13 +301,22 @@ export function GeneratingScreen({
               />
               <div className="flex items-center justify-between gap-3">
                 <span className="font-mono text-mono-sm text-dust/40">{feedbackMessage.length}/1000</span>
-                <button
-                  type="submit"
-                  disabled={feedbackBusy}
-                  className="btn-primary px-5 py-2 disabled:opacity-50"
-                >
-                  {feedbackBusy ? 'Sending...' : 'Send feedback'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFeedbackSkipped(true)}
+                    className="px-3 py-2 text-dust/70 hover:text-star text-body-sm transition-colors"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={feedbackBusy}
+                    className="btn-primary px-5 py-2 disabled:opacity-50"
+                  >
+                    {feedbackBusy ? 'Sending...' : 'Send feedback'}
+                  </button>
+                </div>
               </div>
               {feedbackErr && <p className="text-caution text-body-sm">{feedbackErr}</p>}
             </form>

@@ -31,6 +31,8 @@ export function FeedbackWidget() {
       const j = await res.json().catch(() => ({}));
       if (!res.ok) { setErr(j.error ?? 'Something went wrong.'); return; }
       setDone(true);
+      // Mark feedback given so the report-generation waiting prompt auto-skips for this user.
+      try { localStorage.setItem('vh_feedback_given', '1'); } catch { /* ignore */ }
     } catch {
       setErr('Network error.');
     } finally {
