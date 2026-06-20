@@ -36,7 +36,7 @@ export default function KundaliSamplePreview() {
             { k: 'Current period', v: `${CURRENT_MD.lord} Mahadasha` },
           ].map((x) => (
             <div key={x.k} className="rounded-md bg-bg-3 border border-horizon/30 py-3 px-2">
-              <div className="font-mono text-mono-sm text-dust/50 uppercase tracking-wider">{x.k}</div>
+              <div className="font-mono text-mono-sm text-dust uppercase tracking-wider">{x.k}</div>
               <div className="font-display text-base text-amber mt-1">{x.v}</div>
             </div>
           ))}
@@ -44,7 +44,7 @@ export default function KundaliSamplePreview() {
 
         {/* Planet placements */}
         <div>
-          <h3 className="font-mono text-mono-sm text-dust/60 uppercase tracking-wider mb-3">Planetary placements</h3>
+          <h3 className="font-mono text-mono-sm text-dust uppercase tracking-wider mb-3">Planetary placements</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {SAMPLE_KUNDLI.placements.map((p) => (
               <div key={p.planet} className="flex items-baseline justify-between gap-1 rounded-md bg-bg-3/60 border border-horizon/20 px-3 py-2">
@@ -57,7 +57,7 @@ export default function KundaliSamplePreview() {
 
         {/* Dosha checks */}
         <div>
-          <h3 className="font-mono text-mono-sm text-dust/60 uppercase tracking-wider mb-3">Classical checks</h3>
+          <h3 className="font-mono text-mono-sm text-dust uppercase tracking-wider mb-3">Classical checks</h3>
           <div className="space-y-2">
             {SAMPLE_KUNDLI.doshas.map((d) => (
               <div key={d.name} className="flex items-start gap-3 rounded-md bg-bg-3/60 border border-horizon/20 px-3 py-2.5">
@@ -73,7 +73,7 @@ export default function KundaliSamplePreview() {
           </div>
         </div>
 
-        <p className="font-mono text-mono-sm text-dust/40 italic text-center">
+        <p className="font-mono text-mono-sm text-dust italic text-center">
           Swiss Ephemeris · Lahiri Ayanamsa · Parashari principles — the full report explains every placement across seven life areas.
         </p>
       </div>

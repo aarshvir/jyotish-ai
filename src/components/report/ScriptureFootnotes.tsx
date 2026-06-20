@@ -27,6 +27,7 @@ export function ScriptureFootnotes({ citations, className = '' }: ScriptureFootn
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
       className={`mt-6 pt-4 border-t border-horizon/20 ${className}`}
+      role="group"
       aria-label="Classical scripture references"
     >
       <p className="font-mono text-mono-sm text-dust/60 tracking-[0.12em] uppercase mb-3">

@@ -3,7 +3,7 @@ import { CalculatorPage } from '@/components/tools/CalculatorPage';
 import { faqPageLd, breadcrumbLd, softwareAppLd, howToLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Vimshottari Dasha Calculator — Free Current Mahadasha & Antardasha by DOB | VedicHour',
+  title: 'Vimshottari Dasha Calculator — Free Current Mahadasha & Antardasha by DOB',
   description:
     'Find your current Vimshottari Mahadasha and Antardasha in seconds. Enter your date, time and place of birth to see the running planetary period and your full 120-year dasha timeline — no signup.',
   alternates: { canonical: '/vimshottari-dasha-calculator' },

@@ -23,6 +23,7 @@ export default function FinalCTA() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           <Link
             href="/onboard?plan=free"
+            rel="nofollow"
             className="btn-primary text-base px-8 py-3.5 group"
           >
             <span>See today&#39;s windows — free</span>
@@ -51,7 +52,7 @@ export default function FinalCTA() {
           </Link>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-10 text-dust/60 font-mono text-mono-sm">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-10 text-dust font-mono text-mono-sm">
           <span className="flex items-center gap-2">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-success" aria-hidden>
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

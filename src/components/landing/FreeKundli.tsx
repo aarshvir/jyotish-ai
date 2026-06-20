@@ -65,6 +65,7 @@ export default function FreeKundli() {
             <div className="flex flex-col sm:flex-row gap-3">
               <Link
                 href="/onboard?plan=free"
+                rel="nofollow"
                 className="btn-primary text-base px-8 py-3.5"
               >
                 Get Free Kundli →
@@ -77,7 +78,7 @@ export default function FreeKundli() {
               </Link>
             </div>
 
-            <p className="mt-4 font-mono text-mono-sm text-dust/50">
+            <p className="mt-4 font-mono text-mono-sm text-dust">
               Swiss Ephemeris · Lahiri Ayanamsa · Vimshottari Dasha · 100% free
             </p>
           </div>
@@ -130,8 +131,7 @@ export default function FreeKundli() {
                 engine used by professional Jyotish astrologers worldwide), then use AI to turn
                 those calculations into readable, actionable{' '}
                 <strong className="text-star">Vedic astrology reports</strong> — from a free
-                Kundli preview to a full 30-day{' '}
-                <strong className="text-star">Jyotish forecast</strong> with a 12-month outlook.
+                Kundli preview to a full 30-day Jyotish forecast with a 12-month outlook.
               </p>
             </div>
           </div>

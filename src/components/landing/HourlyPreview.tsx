@@ -60,7 +60,7 @@ export default function HourlyPreview() {
                 <span className="font-mono text-mono-sm text-dust">{l.label}</span>
               </div>
             ))}
-            <div className="ml-auto font-mono text-mono-sm text-dust/60 tracking-wide">
+            <div className="ml-auto font-mono text-mono-sm text-dust tracking-wide">
               Sample · {SAMPLE_SEEKER.lagna} Lagna · {CURRENT_MD} MD
             </div>
           </div>
@@ -103,7 +103,7 @@ export default function HourlyPreview() {
                     </div>
                   </div>
 
-                  <span className="font-mono text-[9px] text-dust/50 mt-1 tracking-wide">
+                  <span className="font-mono text-[9px] text-dust mt-1 tracking-wide">
                     {h.time}
                   </span>
                 </div>
@@ -113,10 +113,10 @@ export default function HourlyPreview() {
 
           {/* Footer */}
           <div className="flex items-center justify-between mt-5 pt-4 border-t border-[var(--color-border)]/40">
-            <span className="font-mono text-mono-sm text-dust/40">
+            <span className="font-mono text-mono-sm text-dust">
               18 windows · {SAMPLE_SEEKER.sampleDayLabel} · day score {SAMPLE_DAY_SCORE}
             </span>
-            <span className="font-mono text-mono-sm text-dust/40">
+            <span className="font-mono text-mono-sm text-dust">
               Peak: {PEAK_LABEL} · avoid {LOW.label.slice(0, 5)}
             </span>
           </div>

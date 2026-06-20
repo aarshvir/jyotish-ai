@@ -80,7 +80,7 @@ export default function FAQ() {
           })}
         </div>
 
-        <p className="text-center mt-10 text-dust/60 text-body-sm">
+        <p className="text-center mt-10 text-dust text-body-sm">
           Something not answered? Email{' '}
           <a
             href="mailto:support@vedichour.com"

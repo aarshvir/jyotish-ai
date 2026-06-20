@@ -60,7 +60,7 @@ export function SynastryResultDisplay({ score, breakdown, commentary, partnerA, 
             <span className="text-mono-sm text-dust uppercase tracking-[0.2em] mb-2">Guna Score</span>
             <div className="flex items-baseline gap-1">
               <span className={`text-7xl font-display font-bold ${isExcellent ? 'text-success' : isGood ? 'text-amber' : 'text-caution'}`}>{score}</span>
-              <span className="text-2xl text-dust/40">/ 36</span>
+              <span className="text-2xl text-dust">/ 36</span>
             </div>
           </div>
         </motion.div>
@@ -96,7 +96,7 @@ export function SynastryResultDisplay({ score, breakdown, commentary, partnerA, 
                 <div className="h-1.5 w-full bg-horizon/10 rounded-full mb-3 overflow-hidden">
                   <div className={`h-full ${k.score === k.max ? 'bg-success' : 'bg-amber'}`} style={{ width: `${(k.score / k.max) * 100}%` }} />
                 </div>
-                <p className="text-xs text-dust/60 leading-relaxed">{k.note}</p>
+                <p className="text-xs text-dust leading-relaxed">{k.note}</p>
               </div>
             ))}
           </div>
@@ -121,7 +121,7 @@ export function SynastryResultDisplay({ score, breakdown, commentary, partnerA, 
         </div>
       </div>
 
-      <p className="text-mono-xs text-dust/30 text-center">
+      <p className="text-mono-xs text-dust text-center">
         Ashtakoot Guna Milan computed with Parashari standards · {createdAt ? new Date(createdAt).toLocaleDateString() : 'Recent'}
       </p>
     </>

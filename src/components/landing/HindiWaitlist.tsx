@@ -54,7 +54,7 @@ export default function HindiWaitlist() {
           Notify me at launch
           <span aria-hidden="true">→</span>
         </Link>
-        <p className="mt-4 font-mono text-mono-sm text-dust/50">
+        <p className="mt-4 font-mono text-mono-sm text-dust">
           We won&apos;t spam — one email when Hindi reports ship.
         </p>
       </div>

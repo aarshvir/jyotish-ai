@@ -128,7 +128,7 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
           <button type="submit" disabled={loading} className="btn-primary px-10 py-3 disabled:opacity-50">
             {loading ? 'Calculating your score…' : 'See our compatibility — free'}
           </button>
-          <p className="mt-3 font-mono text-mono-sm text-dust/50">Free 36-point score. No card needed.</p>
+          <p className="mt-3 font-mono text-mono-sm text-dust">Free 36-point score. No card needed.</p>
         </div>
       )}
 
@@ -138,16 +138,16 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
           <p className="section-eyebrow mb-2">Your Gun Milan score</p>
           <div className="flex items-baseline justify-center gap-1 mb-1">
             <span className={`font-display font-bold text-6xl ${toneColor}`}>{teaser.total}</span>
-            <span className="text-2xl text-dust/40">/ 36</span>
+            <span className="text-2xl text-dust">/ 36</span>
           </div>
           <p className={`font-display text-headline-sm ${toneColor} mb-6`}>{teaser.label}</p>
 
           <div className="max-w-sm mx-auto mb-6 space-y-1.5">
-            <p className="font-mono text-mono-sm text-dust/60 uppercase tracking-wider mb-2">The full 8-fold breakdown</p>
+            <p className="font-mono text-mono-sm text-dust uppercase tracking-wider mb-2">The full 8-fold breakdown</p>
             {KOOTAS.map((k) => (
               <div key={k} className="flex items-center justify-between rounded-md bg-bg-3/40 border border-horizon/30 px-3 py-2">
                 <span className="font-body text-body-sm text-dust/80">{k}</span>
-                <span className="font-mono text-mono-sm text-dust/40">🔒 locked</span>
+                <span className="font-mono text-mono-sm text-dust">🔒 locked</span>
               </div>
             ))}
           </div>
@@ -157,7 +157,7 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
               value={promo}
               onChange={(e) => setPromo(e.target.value.toUpperCase())}
               placeholder="Coupon code (optional)"
-              className="w-full rounded-md bg-cosmos border border-horizon px-3 py-2 text-center font-mono text-mono-sm text-star placeholder:text-dust/40 focus:border-amber/60 focus:outline-none"
+              className="w-full rounded-md bg-cosmos border border-horizon px-3 py-2 text-center font-mono text-mono-sm text-star placeholder:text-dust focus:border-amber/60 focus:outline-none"
             />
           </div>
 
@@ -169,7 +169,7 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
           >
             {paying ? 'Redirecting…' : `Unlock the full breakdown + reading — ${priceLabel}`}
           </button>
-          <p className="mt-3 font-mono text-mono-sm text-dust/50">
+          <p className="mt-3 font-mono text-mono-sm text-dust">
             One-time. 24-hour money-back guarantee. Already bought any VedicHour forecast? It&apos;s included — sign in.
           </p>
         </div>

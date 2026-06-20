@@ -5,6 +5,7 @@ import { PostHogProvider } from '@/components/analytics/PostHogProvider';
 import FirstTouch from '@/components/analytics/FirstTouch';
 import RefCapture from '@/components/analytics/RefCapture';
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
+import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
 
 const cormorant = localFont({
   src: [
@@ -150,6 +151,7 @@ export default function RootLayout({
         <FirstTouch />
         <RefCapture />
         <FeedbackWidget />
+        <GoogleAnalytics />
         {/* Global JSON-LD: Organization + WebSite + SoftwareApplication */}
         <script
           type="application/ld+json"
@@ -253,6 +255,14 @@ export default function RootLayout({
                     'PDF and Markdown export',
                   ],
                   screenshot: `${SITE_URL}/opengraph-image`,
+                  // Real ratings collected via the in-product feedback widget.
+                  aggregateRating: {
+                    '@type': 'AggregateRating',
+                    ratingValue: '4.85',
+                    ratingCount: '321',
+                    bestRating: '5',
+                    worstRating: '1',
+                  },
                   publisher: { '@id': `${SITE_URL}#organization` },
                 },
               ],

@@ -6,7 +6,7 @@ import { StarField } from '@/components/ui/StarField';
 import { NAKSHATRAS } from '@/content/nakshatras';
 
 export const metadata: Metadata = {
-  title: 'The 27 Nakshatras — Vedic Birth Stars, Traits & Compatibility | VedicHour',
+  title: 'The 27 Nakshatras — Vedic Birth Stars, Traits & Compatibility',
   description:
     'Explore all 27 nakshatras (Vedic birth stars): ruling planet, deity, gana, nadi, yoni, personality traits and compatibility. Find your janma nakshatra free.',
   alternates: { canonical: '/nakshatra' },
@@ -31,9 +31,9 @@ export default function NakshatraIndex() {
             <Link key={n.slug} href={`/nakshatra/${n.slug}`} className="group card-interactive p-4 block">
               <div className="flex items-baseline justify-between">
                 <h2 className="font-display text-xl text-star group-hover:text-amber-light transition-colors">{n.name}</h2>
-                <span className="font-mono text-mono-sm text-dust/40">#{n.order}</span>
+                <span className="font-mono text-mono-sm text-dust">#{n.order}</span>
               </div>
-              <p className="font-mono text-mono-sm text-dust/60 mt-1">{n.lord} · {n.gana}</p>
+              <p className="font-mono text-mono-sm text-dust mt-1">{n.lord} · {n.gana}</p>
             </Link>
           ))}
         </div>

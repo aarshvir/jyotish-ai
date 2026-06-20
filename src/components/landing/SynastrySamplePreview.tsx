@@ -24,18 +24,18 @@ export default function SynastrySamplePreview() {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-5 mb-7">
           <div className="text-center sm:text-left">
             <div className="font-display text-lg text-star">{s.partnerA.name}</div>
-            <div className="font-mono text-mono-sm text-dust/60">{s.partnerA.detail}</div>
+            <div className="font-mono text-mono-sm text-dust">{s.partnerA.detail}</div>
             <div className="font-mono text-mono-sm text-amber/70">{s.partnerA.moon}</div>
           </div>
 
           <div className="text-center shrink-0">
-            <div className="font-display text-4xl text-amber">{s.total}<span className="text-dust/40 text-2xl">/{s.max}</span></div>
+            <div className="font-display text-4xl text-amber">{s.total}<span className="text-dust text-2xl">/{s.max}</span></div>
             <div className="font-mono text-mono-sm text-success uppercase tracking-wider mt-1">{s.verdict} · {pct}%</div>
           </div>
 
           <div className="text-center sm:text-right">
             <div className="font-display text-lg text-star">{s.partnerB.name}</div>
-            <div className="font-mono text-mono-sm text-dust/60">{s.partnerB.detail}</div>
+            <div className="font-mono text-mono-sm text-dust">{s.partnerB.detail}</div>
             <div className="font-mono text-mono-sm text-amber/70">{s.partnerB.moon}</div>
           </div>
         </div>
@@ -53,13 +53,13 @@ export default function SynastrySamplePreview() {
                   <div className={`h-full ${bar} rounded-full`} style={{ width: `${(k.score / k.max) * 100}%` }} />
                 </div>
                 <div className="font-mono text-mono-sm tabular-nums text-star/80 w-12 text-right shrink-0">{k.score}/{k.max}</div>
-                <div className="font-body text-body-sm text-dust/60 w-44 shrink-0 hidden md:block">{k.note}</div>
+                <div className="font-body text-body-sm text-dust w-44 shrink-0 hidden md:block">{k.note}</div>
               </div>
             );
           })}
         </div>
 
-        <p className="font-mono text-mono-sm text-dust/40 italic text-center mt-6">
+        <p className="font-mono text-mono-sm text-dust italic text-center mt-6">
           All eight kootas scored from real Moon nakshatra &amp; sign positions — your report adds the full interpretation and remedies.
         </p>
       </div>

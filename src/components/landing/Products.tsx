@@ -100,7 +100,7 @@ export default function Products() {
               <p className="font-body text-body-sm text-dust leading-relaxed mb-5">{p.body}</p>
 
               <div className="flex items-center justify-between">
-                <span className="font-mono text-mono-sm text-dust/50">{p.tag}</span>
+                <span className="font-mono text-mono-sm text-dust">{p.tag}</span>
                 <span className="font-body text-body-sm text-amber group-hover:text-amber-light transition-colors">
                   {p.cta} →
                 </span>

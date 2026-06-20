@@ -91,13 +91,13 @@ export function ChartTool({
       <form onSubmit={onSubmit} className="card border border-horizon rounded-card p-6 space-y-4">
         <BirthDetailsInput value={d} onChange={setD} showName={false} allowUnknownTime={!requiresExactBirthTime} />
         {requiresExactBirthTime && (
-          <p className="font-mono text-mono-sm text-dust/60">An exact birth time is required for an accurate {view === 'lagna' ? 'ascendant' : 'chart'}.</p>
+          <p className="font-mono text-mono-sm text-dust">An exact birth time is required for an accurate {view === 'lagna' ? 'ascendant' : 'chart'}.</p>
         )}
         {err && <p className="text-caution text-body-sm">{err}</p>}
         <button type="submit" disabled={loading} className="btn-primary w-full py-3 disabled:opacity-50">
           {loading ? 'Calculating…' : 'Calculate — free'}
         </button>
-        <p className="text-center font-mono text-mono-sm text-dust/50">Free · no login · no card</p>
+        <p className="text-center font-mono text-mono-sm text-dust">Free · no login · no card</p>
       </form>
 
       {res && (
@@ -135,7 +135,7 @@ function Fact({ label, value, sub }: { label: string; value: string; sub?: strin
     <>
       <Eyebrow>{label}</Eyebrow>
       <p className="font-display font-bold text-5xl text-amber mb-1">{value}</p>
-      {sub ? <p className="font-mono text-mono-sm text-dust/60">{sub}</p> : null}
+      {sub ? <p className="font-mono text-mono-sm text-dust">{sub}</p> : null}
     </>
   );
 }
@@ -147,13 +147,13 @@ function DashaView({ res }: { res: ChartResult }) {
       <Eyebrow>Your current Mahadasha</Eyebrow>
       <p className="font-display font-bold text-4xl text-amber mb-1">{cd?.mahadasha ?? '—'}</p>
       {cd && (
-        <p className="font-mono text-mono-sm text-dust/60 mb-5">
+        <p className="font-mono text-mono-sm text-dust mb-5">
           {cd.mahadasha} / {cd.antardasha} · {fmt(cd.start_date)} → {fmt(cd.end_date)}
         </p>
       )}
       {res.dasha_sequence.length > 0 && (
         <div className="max-w-sm mx-auto text-left space-y-1.5">
-          <p className="font-mono text-mono-sm text-dust/60 uppercase tracking-wider mb-2 text-center">Mahadasha timeline</p>
+          <p className="font-mono text-mono-sm text-dust uppercase tracking-wider mb-2 text-center">Mahadasha timeline</p>
           {res.dasha_sequence.map((d) => {
             const active = cd?.mahadasha === d.planet && fmt(cd.start_date) === fmt(d.start_date);
             return (
@@ -162,7 +162,7 @@ function DashaView({ res }: { res: ChartResult }) {
                 className={`flex items-center justify-between rounded-md border px-3 py-1.5 ${active ? 'border-amber/50 bg-amber/10' : 'border-horizon/30 bg-bg-3/40'}`}
               >
                 <span className={`font-body text-body-sm ${active ? 'text-amber' : 'text-dust/80'}`}>{d.planet}</span>
-                <span className="font-mono text-mono-sm text-dust/50">{fmt(d.start_date)} – {fmt(d.end_date)}</span>
+                <span className="font-mono text-mono-sm text-dust">{fmt(d.start_date)} – {fmt(d.end_date)}</span>
               </div>
             );
           })}
@@ -192,7 +192,7 @@ function FullChart({ res }: { res: ChartResult }) {
           </div>
         ))}
       </div>
-      <p className="font-mono text-mono-sm text-dust/60">
+      <p className="font-mono text-mono-sm text-dust">
         {doshaLine('Manglik', res.doshas.manglik)} · {doshaLine('Kaal Sarpa', res.doshas.kaalSarpa)} · {doshaLine('Sade Sati', res.doshas.sadeSati)}
       </p>
     </>

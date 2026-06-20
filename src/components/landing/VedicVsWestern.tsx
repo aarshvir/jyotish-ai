@@ -76,11 +76,11 @@ export default function VedicVsWestern() {
           <table className="w-full text-left">
             <thead className="bg-bg-3">
               <tr>
-                <th className="p-4 font-mono text-mono-sm text-dust/60 uppercase tracking-wider w-1/5">Dimension</th>
+                <th className="p-4 font-mono text-mono-sm text-dust uppercase tracking-wider w-1/5">Dimension</th>
                 <th className="p-4 font-body text-headline-sm text-amber w-2/5 border-l border-horizon/30">
                   Vedic Jyotish (us)
                 </th>
-                <th className="p-4 font-body text-headline-sm text-dust/60 w-2/5 border-l border-horizon/30">
+                <th className="p-4 font-body text-headline-sm text-dust w-2/5 border-l border-horizon/30">
                   Western Astrology
                 </th>
               </tr>
@@ -125,7 +125,7 @@ export default function VedicVsWestern() {
                   <p className="font-body text-body-sm text-star/85">{r.vedic}</p>
                 </div>
                 <div>
-                  <p className="font-body text-body-sm text-dust/60 font-semibold mb-1">Western</p>
+                  <p className="font-body text-body-sm text-dust font-semibold mb-1">Western</p>
                   <p className="font-body text-body-sm text-dust/70">{r.western}</p>
                 </div>
                 <p className="font-mono text-mono-sm text-amber/60 italic pt-2 border-t border-horizon/20">

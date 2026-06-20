@@ -24,11 +24,11 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    // The rewrite /sitemap.xml → /api/sitemap is in next.config.mjs.
-    // robots.txt also points directly to the API route so crawlers can
-    // always reach the sitemap (per Google spec, Sitemap directives are
-    // exempt from Disallow rules, so /api/ blocking doesn't affect this).
-    sitemap: `${SITE_URL}/api/sitemap`,
+    // Point crawlers at the canonical /sitemap.xml (Next.js' default sitemap
+    // location). next.config.mjs rewrites /sitemap.xml → /api/sitemap, and
+    // /sitemap.xml sits OUTSIDE the Disallow: /api/ rule — so stricter crawlers
+    // (Seobility/Siteliner) see no "sitemap inside a disallowed path" warning.
+    sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
   };
 }

@@ -44,11 +44,15 @@ export const metadata: Metadata = {
     description: PAGE_DESCRIPTION,
     url: '/',
     type: 'website',
+    // Re-declared here because a page-level openGraph REPLACES (not merges
+    // with) the root layout's openGraph, which would otherwise drop the image.
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'VedicHour — Free Kundli & AI Jyotish Forecast' }],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Free Kundli & AI Jyotish Forecast | VedicHour',
     description: PAGE_DESCRIPTION,
+    images: ['/opengraph-image'],
   },
 };
 

@@ -3,7 +3,7 @@ import { CalculatorPage } from '@/components/tools/CalculatorPage';
 import { faqPageLd, breadcrumbLd, softwareAppLd, howToLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Sade Sati Calculator — Free Shani Sade Sati Check by Date of Birth | VedicHour',
+  title: 'Sade Sati Calculator — Free Shani Sade Sati Check by Date of Birth',
   description:
     'Check your Shani Sade Sati in seconds. Enter your date, time and place of birth to see whether Saturn is transiting near your natal Moon, which of the three phases you are in, and what it really means — no signup.',
   alternates: { canonical: '/sade-sati-calculator' },

@@ -62,7 +62,7 @@ const PLANS = [
 function Cell({ value }: { value: string | boolean }) {
   if (value === true) {
     return (
-      <span className="inline-flex items-center justify-center text-success" aria-label="Included">
+      <span className="inline-flex items-center justify-center text-success" role="img" aria-label="Included">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1" opacity="0.4" />
           <path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -72,7 +72,7 @@ function Cell({ value }: { value: string | boolean }) {
   }
   if (value === false) {
     return (
-      <span className="inline-flex items-center justify-center text-dust/30" aria-label="Not included">
+      <span className="inline-flex items-center justify-center text-dust/30" role="img" aria-label="Not included">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
           <line x1="4" y1="4" x2="12" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           <line x1="12" y1="4" x2="4" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -107,7 +107,7 @@ export default function PricingComparison() {
           <table className="w-full">
             <thead className="bg-bg-3">
               <tr>
-                <th className="text-left p-4 font-mono text-mono-sm text-dust/60 uppercase tracking-wider w-1/3">
+                <th className="text-left p-4 font-mono text-mono-sm text-dust uppercase tracking-wider w-1/3">
                   Feature
                 </th>
                 {PLANS.map((p) => (
@@ -120,7 +120,7 @@ export default function PricingComparison() {
                     <div className={`font-body text-headline-sm ${'highlight' in p && p.highlight ? 'text-amber' : 'text-star'}`}>
                       {p.label}
                     </div>
-                    <div className="font-mono text-mono-sm text-dust/60 mt-0.5">{p.sub}</div>
+                    <div className="font-mono text-mono-sm text-dust mt-0.5">{p.sub}</div>
                   </th>
                 ))}
               </tr>
@@ -161,7 +161,7 @@ export default function PricingComparison() {
                 <div className={`font-body text-headline-sm ${'highlight' in p && p.highlight ? 'text-amber' : 'text-star'}`}>
                   {p.label}
                 </div>
-                <div className="font-mono text-mono-sm text-dust/60 mt-0.5">{p.sub}</div>
+                <div className="font-mono text-mono-sm text-dust mt-0.5">{p.sub}</div>
               </div>
               <ul className="space-y-2">
                 {FEATURES.flatMap((g) =>

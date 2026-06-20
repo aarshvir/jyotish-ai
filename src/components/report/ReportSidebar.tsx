@@ -73,7 +73,7 @@ export function ReportSidebar({ reportLoaded = false, preview = false }: { repor
 
       {/* Mobile/Tablet tabs */}
       <div className="pdf-exclude lg:hidden sticky top-[var(--header-height,var(--nav-height))] z-40 bg-space/95 backdrop-blur-sm border-b border-horizon/40">
-        <div className="overflow-x-auto scrollbar-thin" aria-label="Report sections">
+        <div className="overflow-x-auto scrollbar-thin" role="group" aria-label="Report sections">
           <div className="flex gap-1.5 px-5 py-3 min-w-max">
             {items.map((item) => (
               <button

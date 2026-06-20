@@ -6,7 +6,7 @@ import { StarField } from '@/components/ui/StarField';
 import { DASHAS } from '@/content/dashas';
 
 export const metadata: Metadata = {
-  title: 'Vimshottari Mahadasha — All 9 Planetary Periods Explained | VedicHour',
+  title: 'Vimshottari Mahadasha — All 9 Planetary Periods Explained',
   description:
     'The 9 Vimshottari Mahadashas explained — each planet’s period length, effects, sub-periods and remedies. Find your current mahadasha free by date of birth.',
   alternates: { canonical: '/dasha' },
@@ -30,7 +30,7 @@ export default function DashaIndex() {
           {DASHAS.map((d) => (
             <Link key={d.slug} href={`/dasha/${d.slug}`} className="group card-interactive p-4 block flex items-baseline justify-between">
               <h2 className="font-display text-xl text-star group-hover:text-amber-light transition-colors">{d.planet} Mahadasha</h2>
-              <span className="font-mono text-mono-sm text-dust/50">{d.years} yrs</span>
+              <span className="font-mono text-mono-sm text-dust">{d.years} yrs</span>
             </Link>
           ))}
         </div>

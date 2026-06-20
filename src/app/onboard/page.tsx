@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import OnboardForm from './_OnboardForm';
 
 export const metadata: Metadata = {
-  title: 'Generate Your Jyotish Forecast | VedicHour',
+  title: 'Generate Your Jyotish Forecast',
   description:
     'Enter your birth details to generate a personalised AI-powered Vedic astrology forecast with 18 hourly windows per day. Free Kundli included.',
   robots: { index: false, follow: true },

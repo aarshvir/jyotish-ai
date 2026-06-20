@@ -3,7 +3,7 @@ import { CalculatorPage } from '@/components/tools/CalculatorPage';
 import { faqPageLd, breadcrumbLd, softwareAppLd, howToLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Kaal Sarp Dosha Calculator — Free Check by Date of Birth | VedicHour',
+  title: 'Kaal Sarp Dosha Calculator — Free Check by Date of Birth',
   description:
     'Check Kaal Sarp Dosha free in seconds. Enter your date, time and place of birth to see if all seven planets sit on one side of the Rahu–Ketu axis, the type, and what it means — no signup.',
   alternates: { canonical: '/kaal-sarp-dosha-calculator' },

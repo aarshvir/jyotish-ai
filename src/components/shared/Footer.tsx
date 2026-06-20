@@ -41,7 +41,7 @@ const linkCls =
 function Col({ title, links }: { title: string; links: { href: string; label: string }[] }) {
   return (
     <div>
-      <h3 className="font-mono text-mono-sm uppercase tracking-wider text-dust/50 mb-3">{title}</h3>
+      <h3 className="font-mono text-mono-sm uppercase tracking-wider text-dust mb-3">{title}</h3>
       <ul className="space-y-2 font-body text-body-sm text-dust">
         {links.map((l) => (
           <li key={l.href + l.label}>
@@ -65,24 +65,33 @@ export default function Footer() {
           <NewsletterSignup source="footer" />
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
+        <nav aria-label="Footer" className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
             <span className="font-display font-semibold text-lg tracking-wide text-star/70">VedicHour</span>
-            <p className="mt-2 font-body text-body-sm text-dust/60 max-w-[14rem]">
-              Your life, decoded hour by hour — Vedic astrology with Swiss Ephemeris precision.
+            <p className="mt-2 font-body text-body-sm text-dust max-w-[14rem]">
+              Your life, decoded hour by hour — Vedic astrology with{' '}
+              <a
+                href="https://www.astro.com/swisseph/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-star transition-colors"
+              >
+                Swiss Ephemeris
+              </a>{' '}
+              precision.
             </p>
           </div>
           <Col title="Readings" links={READINGS} />
           <Col title="Free Tools" links={TOOLS} />
           <Col title="Learn" links={LEARN} />
           <Col title="Company" links={COMPANY} />
-        </div>
+        </nav>
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-horizon/30 pt-6">
           <a href="mailto:support@vedichour.com" className={`font-body text-body-sm text-dust ${linkCls}`}>
             support@vedichour.com
           </a>
-          <p className="font-mono text-mono-sm text-dust/50 tracking-wider">© {new Date().getFullYear()} VedicHour</p>
+          <p className="font-mono text-mono-sm text-dust tracking-wider">© {new Date().getFullYear()} VedicHour</p>
         </div>
       </div>
     </footer>

@@ -17,7 +17,7 @@ export function generateMetadata({ params }: { params: { name: string } }): Meta
   const n = getNakshatra(params.name);
   if (!n) return {};
   return {
-    title: `${n.title} | VedicHour`,
+    title: n.title,
     description: n.description,
     keywords: n.keywords,
     alternates: { canonical: `/nakshatra/${n.slug}` },
@@ -51,7 +51,7 @@ export default function NakshatraPage({ params }: { params: { name: string } }) 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
           {facts.map(([k, v]) => (
             <div key={k} className="rounded-md bg-cosmos border border-horizon/40 p-3">
-              <div className="font-mono text-mono-sm text-dust/50 uppercase tracking-wider">{k}</div>
+              <div className="font-mono text-mono-sm text-dust uppercase tracking-wider">{k}</div>
               <div className="font-display text-lg text-amber">{v}</div>
             </div>
           ))}

@@ -89,11 +89,13 @@ export function generateMetadata({ params }: Props): Metadata {
       description,
       url: `/transit/${planet}/${sign}`,
       type: 'article',
+      images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: `${pName} transit in ${sName} — Vedic Jyotish` }],
     },
     twitter: {
       card: 'summary_large_image',
       title: `${title} | VedicHour`,
       description,
+      images: ['/opengraph-image'],
     },
   };
 }
@@ -215,12 +217,12 @@ export default function TransitSEOPage({ params }: Props) {
               Generate My Personalised Jyotish Report
             </Link>
           </div>
-          <p className="text-dust/60 text-xs text-center mt-4">
+          <p className="text-dust text-xs text-center mt-4">
             Free Kundli • 30-day hourly forecast • Swiss Ephemeris accuracy
           </p>
 
           <div className="mt-10 pt-6 border-t border-horizon/30 text-center">
-            <p className="font-mono text-xs text-dust/50 uppercase tracking-wider mb-3">Explore more</p>
+            <p className="font-mono text-xs text-dust uppercase tracking-wider mb-3">Explore more</p>
             <div className="flex flex-wrap gap-x-5 gap-y-2 justify-center text-sm">
               <Link href="/free-kundli" className="text-amber hover:underline">Free Kundli</Link>
               <Link href="/kundali" className="text-amber hover:underline">Deep Kundli report</Link>

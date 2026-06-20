@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { StarField } from '@/components/ui/StarField';
 import { HOROSCOPE_SIGNS } from '@/lib/seo/horoscopeContent';
+import { JsonLd } from '@/components/seo/JsonLd';
+import { breadcrumbLd } from '@/lib/seo/jsonLd';
 
 export const revalidate = 3600;
 
@@ -24,6 +26,7 @@ export default function HoroscopeSignIndex({ params }: Props) {
   if (!HOROSCOPE_SIGNS.includes(sign as (typeof HOROSCOPE_SIGNS)[number])) {
     notFound();
   }
+  const signName = sign.charAt(0).toUpperCase() + sign.slice(1);
 
   const dates: string[] = [];
   const today = new Date();
@@ -36,6 +39,12 @@ export default function HoroscopeSignIndex({ params }: Props) {
   return (
     <div className="min-h-screen bg-space text-star relative overflow-hidden">
       <StarField />
+      <JsonLd
+        data={breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: `${signName} Horoscope`, path: `/horoscope/${sign}` },
+        ])}
+      />
       <div className="max-w-lg mx-auto px-5 py-16 relative z-10">
         <h1 className="text-display-sm font-display text-amber mb-6 capitalize">{sign} — pick a date</h1>
         <ul className="space-y-2">

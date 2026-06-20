@@ -121,7 +121,7 @@ export default async function PricingPage() {
           Generate your free Kundli (Janam Kundali) in minutes — no card needed. Upgrade for a full
           AI Jyotish forecast with 18 hourly Vedic windows per day. One-time payments. No subscriptions.
         </p>
-        <p className="mt-4 font-mono text-mono-sm text-dust/50">
+        <p className="mt-4 font-mono text-mono-sm text-dust">
           Prices shown in {currency}. All plans are one-time — no subscription.
         </p>
       </section>
@@ -152,7 +152,7 @@ export default async function PricingPage() {
             <span className="font-mono text-mono-sm text-amber group-hover:underline">Check compatibility →</span>
           </Link>
         </div>
-        <p className="text-center font-mono text-mono-sm text-dust/40 mt-5">
+        <p className="text-center font-mono text-mono-sm text-dust mt-5">
           Or get the hour-by-hour timing forecast below ⌄
         </p>
       </section>
@@ -187,7 +187,7 @@ export default async function PricingPage() {
                 <span className={`text-3xl font-bold font-mono tabular-nums ${plan.price === 'Free' ? 'text-success' : 'text-star'}`}>
                   {plan.price}
                 </span>
-                <p className="font-mono text-mono-sm text-dust/50 mt-1">{plan.priceNote}</p>
+                <p className="font-mono text-mono-sm text-dust mt-1">{plan.priceNote}</p>
                 {plan.id === 'annual' && (
                   <p className="font-mono text-mono-sm text-success/80 mt-1">Best value · our deepest reading</p>
                 )}

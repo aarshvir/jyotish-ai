@@ -6,7 +6,7 @@ import { StarField } from '@/components/ui/StarField';
 import { PREDICTIONS } from '@/content/predictions';
 
 export const metadata: Metadata = {
-  title: 'Life Predictions by Date of Birth — Career, Marriage, Wealth, Health | VedicHour',
+  title: 'Life Predictions by Date of Birth — Career, Marriage, Wealth, Health',
   description:
     'Free Vedic life predictions by date of birth: what your chart says about career, marriage, wealth, health and education, with timing from your dasha.',
   alternates: { canonical: '/predictions' },

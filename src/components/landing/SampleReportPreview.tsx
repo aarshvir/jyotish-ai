@@ -51,7 +51,7 @@ function NativityPanel() {
           { label: 'Current period', value: CURRENT_MD.lord },
         ].map((kv) => (
           <div key={kv.label} className="bg-bg-3 rounded-md py-3 px-2 border border-horizon/30">
-            <div className="font-mono text-mono-sm text-dust/50 uppercase tracking-wider">{kv.label}</div>
+            <div className="font-mono text-mono-sm text-dust uppercase tracking-wider">{kv.label}</div>
             <div className="font-body text-base text-amber mt-1">{kv.value}</div>
           </div>
         ))}
@@ -77,7 +77,7 @@ function NativityPanel() {
       </div>
 
       <div className="border-t border-horizon/30 pt-3">
-        <p className="font-mono text-mono-sm text-dust/40 italic">
+        <p className="font-mono text-mono-sm text-dust italic">
           Computed from a real birth chart ({s.birthLabel}). Your report is generated from your own birth details.
         </p>
       </div>
@@ -117,7 +117,7 @@ function HourlyPanel() {
             <div key={s.label} className="flex items-center gap-3">
               <div className="font-mono text-mono-sm text-dust/70 w-24 shrink-0">{s.label}</div>
               <div className="font-body text-body-sm text-star/80 w-20 shrink-0">{labelFor(s.score)}</div>
-              <div className="font-mono text-mono-sm text-dust/50 w-16 shrink-0">{s.hora}</div>
+              <div className="font-mono text-mono-sm text-dust w-16 shrink-0">{s.hora}</div>
               <div className="flex-1 h-2 bg-bg-3 rounded-full overflow-hidden">
                 <div className={`h-full ${bar} rounded-full`} style={{ width: `${s.score}%` }} />
               </div>
@@ -165,7 +165,7 @@ function DashaPanel() {
                   : 'bg-bg-3 border border-horizon/20'
               }`}
             >
-              <div className="font-mono text-mono-sm text-dust/60 w-28 shrink-0 mt-0.5">
+              <div className="font-mono text-mono-sm text-dust w-28 shrink-0 mt-0.5">
                 {yr(d.start)} – {yr(d.end)}
               </div>
               <div className="flex-1">
@@ -186,7 +186,7 @@ function DashaPanel() {
         })}
       </ol>
 
-      <p className="font-mono text-mono-sm text-dust/40 italic mt-4">
+      <p className="font-mono text-mono-sm text-dust italic mt-4">
         Periods computed from the Moon&apos;s birth-star position using the classical Vimshottari system.
       </p>
     </div>
@@ -245,7 +245,7 @@ export default function SampleReportPreview() {
                 >
                   {t.label}
                 </div>
-                <div className="font-mono text-mono-sm text-dust/50 mt-0.5">{t.sublabel}</div>
+                <div className="font-mono text-mono-sm text-dust mt-0.5">{t.sublabel}</div>
               </button>
             );
           })}
@@ -262,7 +262,7 @@ export default function SampleReportPreview() {
           {active === 'dasha' && <DashaPanel />}
         </div>
 
-        <p className="text-center mt-7 font-mono text-mono-sm text-dust/50 tracking-wider">
+        <p className="text-center mt-7 font-mono text-mono-sm text-dust tracking-wider">
           Generate your own in minutes.
         </p>
       </div>
