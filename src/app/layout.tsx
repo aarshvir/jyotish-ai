@@ -255,14 +255,9 @@ export default function RootLayout({
                     'PDF and Markdown export',
                   ],
                   screenshot: `${SITE_URL}/opengraph-image`,
-                  // Real ratings collected via the in-product feedback widget.
-                  aggregateRating: {
-                    '@type': 'AggregateRating',
-                    ratingValue: '4.85',
-                    ratingCount: '321',
-                    bestRating: '5',
-                    worstRating: '1',
-                  },
+                  // NOTE: aggregateRating intentionally omitted. Google disallows
+                  // self-asserted ratings without a genuine, visible on-page review
+                  // mechanism — re-add only when wired to a real review source.
                   publisher: { '@id': `${SITE_URL}#organization` },
                 },
               ],

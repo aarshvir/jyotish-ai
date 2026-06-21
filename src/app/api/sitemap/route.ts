@@ -2,6 +2,7 @@ import { POSTS } from '@/content/blog';
 import { NAKSHATRAS } from '@/content/nakshatras';
 import { DASHAS } from '@/content/dashas';
 import { PREDICTIONS } from '@/content/predictions';
+import { COMPARISONS } from '@/content/comparisons';
 
 const SITE_URL = 'https://www.vedichour.com';
 
@@ -93,7 +94,14 @@ const REFERENCE_ROUTES = [
   ...PREDICTIONS.map((p) => ({ path: `/predictions/${p.slug}`, changefreq: 'monthly', priority: '0.7' })),
 ];
 
-const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...BLOG_ROUTES, ...REFERENCE_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
+// Comparison / "alternative" pages — mid-tail commercial-intent SEO surface.
+const COMPARE_ROUTES = COMPARISONS.map((c) => ({
+  path: `/compare/${c.slug}`,
+  changefreq: 'monthly',
+  priority: '0.65',
+}));
+
+const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...BLOG_ROUTES, ...REFERENCE_ROUTES, ...COMPARE_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
 
 export function GET() {
   // Only emit <lastmod> where we have a REAL date (blog posts carry p.date). Stamping

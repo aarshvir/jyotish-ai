@@ -24,6 +24,7 @@ const LEARN = [
   { href: '/nakshatra', label: 'The 27 Nakshatras' },
   { href: '/dasha', label: 'Vimshottari Dasha' },
   { href: '/predictions', label: 'Life Predictions' },
+  { href: '/compare/best-free-ai-kundli', label: 'Compare alternatives' },
 ];
 
 const COMPANY = [
