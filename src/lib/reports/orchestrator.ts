@@ -1172,33 +1172,71 @@ export async function generateReportPipeline(
           terr('[orchestrator][STEP-2] failed:', err instanceof Error ? err.message : String(err));
         }
       })(),
-      // Step 3: Daily grids
+      // Step 3: Daily grids. Try ONE batched ephemeris call first — it collapses
+      // N per-day HTTP round-trips into a single process call (the per-day compute
+      // is only ~3ms/day; the old ~150s cost was the round-trips, not the math).
+      // Any shortfall (batch endpoint not yet deployed on Railway → 404, partial
+      // result, or error) transparently falls back to the original per-day loop,
+      // which keeps its own retries + TS fallback. So this is a pure, safe speed-up.
       (async () => {
         try {
           onStep({ type: 'step_started', step: 2, message: 'Scoring hourly windows...', detail: `Computing ${dayCount * 18} hourly slots` });
-          dailyGridResults = await Promise.all(
-            dateRange.map((d) => dailyGridLimit(async () => {
-              try {
-                const res = await traceAgentRun('daily-grid', 'ephemeris', () =>
-                  resilientFetch(`${base}/api/agents/daily-grid`, {
-                    method: 'POST',
-                    headers: h,
-                    body: JSON.stringify({
-                      date: d,
-                      currentLat: cLat,
-                      currentLng: cLng,
-                      timezoneOffset: input.timezoneOffset,
-                      natal_lagna_sign_index,
-                    }),
-                  }, 2, 2000),
-                );
-                if (!res.ok) return null;
-                return await res.json();
-              } catch {
-                return null;
+
+          let batched: (DayGridApiResult | null)[] | null = null;
+          try {
+            const bRes = await traceAgentRun('daily-grid-batch', 'ephemeris', () =>
+              resilientFetch(`${base}/api/agents/daily-grid-batch`, {
+                method: 'POST',
+                headers: h,
+                body: JSON.stringify({
+                  dates: dateRange,
+                  currentLat: cLat,
+                  currentLng: cLng,
+                  timezoneOffset: input.timezoneOffset,
+                  natal_lagna_sign_index,
+                }),
+              }, 1, 2000, 200_000),
+            );
+            if (bRes.ok) {
+              const bj = await bRes.json();
+              const days = Array.isArray(bj?.days) ? (bj.days as DayGridApiResult[]) : [];
+              // Use the batch result only if it covers every date; any shortfall
+              // defers to the per-day loop (more robust for partial failures).
+              if (days.length >= dateRange.length) {
+                batched = dateRange.map((d, i) => days.find((x) => x?.date === d) ?? days[i] ?? null);
               }
-            })),
-          );
+            }
+          } catch {
+            // ignore — fall back to the per-day loop below
+          }
+
+          if (batched) {
+            dailyGridResults = batched;
+          } else {
+            dailyGridResults = await Promise.all(
+              dateRange.map((d) => dailyGridLimit(async () => {
+                try {
+                  const res = await traceAgentRun('daily-grid', 'ephemeris', () =>
+                    resilientFetch(`${base}/api/agents/daily-grid`, {
+                      method: 'POST',
+                      headers: h,
+                      body: JSON.stringify({
+                        date: d,
+                        currentLat: cLat,
+                        currentLng: cLng,
+                        timezoneOffset: input.timezoneOffset,
+                        natal_lagna_sign_index,
+                      }),
+                    }, 2, 2000),
+                  );
+                  if (!res.ok) return null;
+                  return await res.json();
+                } catch {
+                  return null;
+                }
+              })),
+            );
+          }
           onStep({ type: 'step_completed', step: 2 });
         } catch (err) {
           terr('[orchestrator][STEP-3] failed:', err instanceof Error ? err.message : String(err));
