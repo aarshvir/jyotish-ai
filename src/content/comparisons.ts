@@ -247,6 +247,205 @@ export const COMPARISONS: Comparison[] = [
       },
     ],
   },
+  {
+    slug: 'astrosage-vs-prokerala',
+    title: 'AstroSage vs Prokerala vs VedicHour — Free Kundli Compared',
+    h1: 'AstroSage vs Prokerala vs VedicHour',
+    description:
+      'AstroSage vs Prokerala vs VedicHour for a free Kundli. All three cast a sidereal chart; we compare breadth, readability and timing — and where each one fits. Honest, no hype.',
+    keywords: [
+      'astrosage vs prokerala',
+      'prokerala vs astrosage',
+      'astrosage vs vedichour',
+      'best free kundli site comparison',
+      'kundli site comparison',
+    ],
+    intro:
+      'All three compute a sidereal Vedic chart, so for the raw numbers you will get broadly consistent results. The real difference is what each is built for: breadth of tools, clean calculation, or a readable reading with day-by-day timing. Here is an honest, like-for-like comparison.',
+    html:
+      '<h2>The short version</h2>' +
+      '<p>AstroSage is the broadest toolbox. Prokerala is the cleanest quick calculator. VedicHour is the one that explains your chart in plain English and adds an hour-by-hour timing grid. None is "best" in the abstract — it depends on what you want.</p>' +
+      '<h2>Side by side</h2>' +
+      '<table>' +
+      '<tr><th>&nbsp;</th><th>AstroSage</th><th>Prokerala</th><th>VedicHour</th></tr>' +
+      '<tr><td>Free Kundli</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>' +
+      '<tr><td>Breadth of free tools</td><td>Very broad</td><td>Broad</td><td>Focused (8 calculators)</td></tr>' +
+      '<tr><td>Plain-English AI report</td><td>Limited</td><td>No</td><td>Core focus</td></tr>' +
+      '<tr><td>Hour-by-hour timing grid</td><td>Panchang tables</td><td>Panchang tables</td><td>All 18 horas scored clearer / heavier</td></tr>' +
+      '<tr><td>Engine</td><td>Sidereal Vedic</td><td>Sidereal Vedic</td><td>Swiss Ephemeris + Lahiri</td></tr>' +
+      '<tr><td>Pricing</td><td>Free + consultations</td><td>Free + reports</td><td>Free preview, one-time reports</td></tr>' +
+      '</table>' +
+      '<h2>Which should you pick?</h2>' +
+      '<ul>' +
+      '<li><strong>Want one place for everything?</strong> AstroSage.</li>' +
+      '<li><strong>Want a fast, clean calculation?</strong> Prokerala.</li>' +
+      '<li><strong>Want your chart explained and your day broken into clearer and heavier windows?</strong> VedicHour — try the <a href="/free-kundli">free Kundli</a> first.</li>' +
+      '</ul>' +
+      '<p>A quick sanity check for any free site: generate the same birth details on two of them and confirm the Lagna and nakshatra match. If they do, the astronomy is sound and the rest comes down to how the chart is presented to you.</p>' +
+      CTA +
+      DISCLAIMER,
+    faqs: [
+      {
+        q: 'Which is more accurate, AstroSage or Prokerala?',
+        a: 'Both use the sidereal Vedic zodiac and produce consistent core placements; accuracy depends mostly on your birth-time precision. VedicHour computes with the Swiss Ephemeris and Lahiri ayanamsa, so its chart lines up with both.',
+      },
+      {
+        q: 'What does VedicHour add over AstroSage and Prokerala?',
+        a: 'A plain-English AI reading of your chart and an hour-by-hour grid that rates all 18 planetary hours as clearer or heavier windows — timing awareness rather than a static panchang.',
+      },
+      {
+        q: 'Are all three free?',
+        a: 'All three offer free Kundli generation. AstroSage and Prokerala add paid consultations or reports; VedicHour offers a free preview and one-time reports with no subscription.',
+      },
+      {
+        q: 'Can I use more than one?',
+        a: 'Yes — many people use a broad portal for reference and VedicHour for a readable reading and daily timing. The underlying astronomy is the same.',
+      },
+    ],
+  },
+  {
+    slug: 'best-ai-astrology-app',
+    title: 'Best AI Astrology Apps That Explain Your Chart (Honest Guide)',
+    h1: 'Best AI astrology apps that explain your chart',
+    description:
+      'Most "AI astrology" is just generic horoscope text. Here is how to spot apps that actually read your birth chart — and where VedicHour fits, with an hour-by-hour timing grid on Swiss Ephemeris.',
+    keywords: [
+      'best ai astrology app',
+      'ai astrology app',
+      'ai kundli app',
+      'best ai jyotish app',
+      'ai vedic astrology',
+    ],
+    intro:
+      'There is a lot of "AI astrology" now, and most of it is the same generic horoscope text dressed up — written for a Sun sign, not for you. A genuinely useful AI astrology app reads your actual birth chart and explains it. Here is how to tell the difference, and where VedicHour fits.',
+    html:
+      '<h2>Two kinds of "AI astrology"</h2>' +
+      '<p>The first kind generates broad daily horoscope copy from your Sun sign — quick, but no more personal than a newspaper column. The second kind computes your real chart and uses AI to <em>explain</em> it: your Lagna, your nakshatra, your running dasha, in plain English. Only the second is worth your time.</p>' +
+      '<h2>How to judge an AI astrology app</h2>' +
+      '<ul>' +
+      '<li><strong>Does it use your full birth details?</strong> Date, exact time and place — not just your Sun sign.</li>' +
+      '<li><strong>Does it state its engine?</strong> Look for the Swiss Ephemeris and, for Vedic work, the Lahiri ayanamsa.</li>' +
+      '<li><strong>Does it explain, or just label?</strong> A good report tells you what a placement tends to mean, not just that it exists.</li>' +
+      '<li><strong>Is it honest about uncertainty?</strong> Reflection and planning, never guarantees or "lucky" claims.</li>' +
+      '</ul>' +
+      '<h2>Where VedicHour fits</h2>' +
+      '<p>VedicHour is built for the second kind. It casts your chart with the Swiss Ephemeris and Lahiri ayanamsa, writes a plain-English reading, and adds the piece most apps skip: an hour-by-hour grid that rates all 18 planetary hours (horas) of your day as clearer or heavier windows. It is framed as timing awareness — a structured second lens — not a prediction engine.</p>' +
+      '<p>You can generate your <a href="/free-kundli">free Kundli</a> and see a sample reading and timing grid before paying for anything.</p>' +
+      CTA +
+      DISCLAIMER,
+    faqs: [
+      {
+        q: 'Is AI astrology accurate?',
+        a: 'The chart is only as accurate as the astronomy and your birth details. VedicHour uses the Swiss Ephemeris and Lahiri ayanamsa for the calculation; the AI then explains the chart in plain English. Treat any reading as a reflective second lens, not certainty.',
+      },
+      {
+        q: 'What makes a good AI Kundli app?',
+        a: 'It should use your full birth details (not just your Sun sign), state its ephemeris and ayanamsa, explain placements in plain language, and frame everything as awareness rather than guaranteed outcomes.',
+      },
+      {
+        q: 'Does VedicHour use real Vedic calculations or just AI text?',
+        a: 'Both. The chart and the 18-hora timing grid are computed with the Swiss Ephemeris and Lahiri ayanamsa; the AI is used only to turn those real calculations into a readable report.',
+      },
+      {
+        q: 'Is there a free AI astrology app?',
+        a: 'VedicHour offers a free Kundli and a sample plain-English reading with no card. Full reports across a 7-day, monthly or annual horizon are a one-time payment, not a subscription.',
+      },
+    ],
+  },
+  {
+    slug: 'best-kundli-matching',
+    title: 'Best Kundli Matching for 36-Point Gun Milan (Free)',
+    h1: 'Kundli matching (Gun Milan), explained',
+    description:
+      'How 36-point Gun Milan Kundli matching actually works, what each koota measures, and what to look for in a free matching tool. Try VedicHour’s free 36-point score on a sidereal chart.',
+    keywords: [
+      'best kundli matching online',
+      'kundli matching free',
+      'gun milan calculator',
+      'ashtakoot matching',
+      '36 point matching',
+    ],
+    intro:
+      'Kundli matching, or Gun Milan, scores the compatibility of two birth charts across eight factors (kootas) for a maximum of 36 points. It is one input into a marriage decision, not a verdict. Here is what the 36 points actually measure, and what makes a matching tool trustworthy.',
+    html:
+      '<h2>What the 36 points measure</h2>' +
+      '<p>The Ashtakoot system weighs eight kootas — Varna, Vashya, Tara, Yoni, Graha Maitri, Gana, Bhakoot and Nadi — each carrying a set number of points. Together they look at temperament, mutual influence, mental and emotional fit, and biological compatibility, mostly from the Moon sign and birth nakshatra of each person.</p>' +
+      '<h2>What to look for in a matching tool</h2>' +
+      '<ul>' +
+      '<li><strong>Sidereal chart with Lahiri ayanamsa</strong> — Gun Milan depends on the Moon and nakshatra, so the engine matters.</li>' +
+      '<li><strong>A clear koota-by-koota breakdown</strong> — a single score hides where a match is strong or weak.</li>' +
+      '<li><strong>Honest framing</strong> — a low score is a prompt for a fuller reading, not a prohibition. A high score is reassurance, not a guarantee.</li>' +
+      '</ul>' +
+      '<h2>VedicHour’s free matching</h2>' +
+      '<p>VedicHour computes a <a href="/synastry">free 36-point Gun Milan score</a> for two birth charts, with the full eight-fold breakdown and a Manglik check, on a Swiss Ephemeris chart. It is written plainly and framed as one lens among several — the goal is understanding, never a final verdict on a relationship.</p>' +
+      CTA +
+      DISCLAIMER,
+    faqs: [
+      {
+        q: 'What is a good Gun Milan score out of 36?',
+        a: 'As a rough guide, many practitioners treat 18 and above as workable and higher scores as more comfortable, but the koota breakdown and the full charts matter more than the number alone. Treat any score as one input, not a verdict.',
+      },
+      {
+        q: 'Is online Kundli matching reliable?',
+        a: 'A good tool computes the Ashtakoot points accurately from a sidereal chart. It is reliable for the score itself, but a full compatibility reading also weighs Manglik status, the 7th house and the wider charts — so use the score as a starting point.',
+      },
+      {
+        q: 'Does a low score mean we should not marry?',
+        a: 'No. A low score is a prompt to look deeper, not a prohibition. Many factors outside Gun Milan shape a relationship, and classical astrology also lists mitigating placements. It is guidance for reflection, not a decision.',
+      },
+      {
+        q: 'Is VedicHour’s Kundli matching free?',
+        a: 'Yes — the 36-point Gun Milan score and the eight-fold breakdown are free. A deeper written compatibility reading is a one-time report.',
+      },
+    ],
+  },
+  {
+    slug: 'best-dosha-calculators',
+    title: 'Best Free Dosha Calculators — Sade Sati, Manglik, Kaal Sarp',
+    h1: 'Best free dosha calculators',
+    description:
+      'Free Sade Sati, Manglik and Kaal Sarp dosha calculators on a Swiss Ephemeris chart — what each dosha means for reflection, not fear, and how to check yours in seconds. No signup.',
+    keywords: [
+      'dosha calculator',
+      'manglik dosha calculator',
+      'sade sati calculator',
+      'kaal sarp dosha calculator',
+      'free dosha check',
+    ],
+    intro:
+      'The three doshas people ask about most — Sade Sati, Manglik (Mangal) and Kaal Sarp — are chart patterns, not curses. Understood calmly, they are useful signals for awareness and timing. Here is what each means and how to check yours free, computed from a real sidereal chart.',
+    html:
+      '<h2>The three most-asked doshas</h2>' +
+      '<ul>' +
+      '<li><strong>Manglik (Mangal) Dosha</strong> — Mars in certain houses from the ascendant, Moon and Venus. Weighed in marriage matching, with many classical cancellations. <a href="/manglik-dosha-calculator">Check yours</a>.</li>' +
+      '<li><strong>Sade Sati</strong> — roughly seven and a half years of Saturn transiting around your natal Moon, in three phases. A maturing period, not a sentence. <a href="/sade-sati-calculator">Check yours</a>.</li>' +
+      '<li><strong>Kaal Sarp</strong> — all seven classical planets on one side of the Rahu–Ketu axis. Common, and not a barrier to a good life. <a href="/kaal-sarp-dosha-calculator">Check yours</a>.</li>' +
+      '</ul>' +
+      '<h2>Reflection, not fear</h2>' +
+      '<p>Classical Jyotish treats these patterns as tendencies to understand, never as guarantees of misfortune. A dosha flag is a prompt to plan with awareness — to be patient through a Sade Sati, or to read a Manglik match in full context — not a reason to worry. Any tool that sells fear or "remedies to avoid disaster" is reading the tradition wrong.</p>' +
+      '<h2>How to check yours</h2>' +
+      '<p>VedicHour’s calculators compute each dosha from your exact birth details on a Swiss Ephemeris chart, with a plain-English explanation and no fear-mongering. They are free with no signup. For all three in the context of your whole chart, generate your <a href="/free-kundli">free Kundli</a> or open a <a href="/kundali">deep report</a>.</p>' +
+      CTA +
+      DISCLAIMER,
+    faqs: [
+      {
+        q: 'Are dosha calculators accurate?',
+        a: 'They are as accurate as the astronomy and your birth time. VedicHour computes each dosha from a Swiss Ephemeris sidereal chart, so the flags match a traditional reading. An exact birth time matters most for house-based doshas like Manglik.',
+      },
+      {
+        q: 'Is having a dosha bad?',
+        a: 'No. Doshas are common chart patterns, not curses. They describe tendencies and timing to understand calmly, and classical texts list many cancellations. Treat any flag as a prompt for awareness, not a verdict.',
+      },
+      {
+        q: 'Which doshas can I check for free?',
+        a: 'VedicHour offers free calculators for Manglik (Mangal) Dosha, Shani Sade Sati and Kaal Sarp Dosha, each computed from your birth details with no signup.',
+      },
+      {
+        q: 'Do I need my exact birth time?',
+        a: 'For house-based doshas like Manglik, yes — the ascendant and houses depend on birth time. Sade Sati and Kaal Sarp are more forgiving, though an exact time always gives the most reliable result.',
+      },
+    ],
+  },
 ];
 
 export function getComparison(slug: string): Comparison | undefined {
