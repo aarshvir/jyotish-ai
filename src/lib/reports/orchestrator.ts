@@ -1588,7 +1588,21 @@ export async function generateReportPipeline(
       type BatchSlot = { slot_index: number; commentary?: string; commentary_short?: string };
       type BatchDay = { dayIndex: number; slots?: BatchSlot[] };
       const CHUNK_SIZE = 5;
-      const allDaysInput = forecastDays.map((day, i) => ({
+      // BOUNDED WINDOW: generate full AI hourly prose up-front only for the first N
+      // days (default 10). Far days keep their deterministic guidance_v2 text and are
+      // written on-demand via /api/reports/[id]/hourly-day when the user opens them.
+      // This is what brings a monthly report from ~27min to under 10min: 6 sequential
+      // hourly LLM batches → 2, which also slashes exposure to provider throttling.
+      // REPORT_HOURLY_PROSE_DAYS=0 restores the old generate-everything behavior.
+      const HOURLY_PROSE_DAYS = (() => {
+        const raw = (process.env.REPORT_HOURLY_PROSE_DAYS ?? '').trim();
+        if (raw === '') return 10; // default: bounded to 10 days
+        const n = parseInt(raw, 10);
+        return Number.isFinite(n) && n >= 0 ? n : 10;
+      })();
+      const proseDayCount =
+        HOURLY_PROSE_DAYS > 0 ? Math.min(HOURLY_PROSE_DAYS, forecastDays.length) : forecastDays.length;
+      const allDaysInput = forecastDays.slice(0, proseDayCount).map((day, i) => ({
         dayIndex: i,
         date: day.date,
         planet_positions: day.planet_positions,
@@ -2097,6 +2111,10 @@ export async function generateReportPipeline(
     const v2Enabled = isV2GuidanceEnabled();
 
     const daysForReport = forecastDays.map((d) => {
+      // True when this day received real LLM hourly prose (bounded near-window);
+      // false = deterministic guidance only, generated on-demand when opened.
+      // Computed BEFORE the fallback fill below masks the distinction.
+      const hasAiProse = (d.slots ?? []).some((s) => ((s.commentary ?? '').trim().length >= 80));
       const mappedSlots = (d.slots ?? []).map((s) => {
         const slotScore = s.score ?? 50;
         const isRk = s.is_rahu_kaal ?? false;
@@ -2164,6 +2182,7 @@ export async function generateReportPipeline(
           ? { start: d.rahu_kaal.start.slice(0, 5), end: d.rahu_kaal.end.slice(0, 5) }
           : null,
         slots: mappedSlots,
+        ai_prose: hasAiProse,
         peak_count: mappedSlots.filter((s) => s.score >= 75 && !s.is_rahu_kaal).length,
         caution_count: mappedSlots.filter((s) => s.score < 45 || s.is_rahu_kaal).length,
         ...(briefingV2 ? { briefing_v2: briefingV2 } : {}),
