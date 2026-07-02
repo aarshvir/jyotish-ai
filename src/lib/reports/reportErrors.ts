@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { sendEmail } from '@/lib/notify/email';
 
 /** Stored in `reports.generation_error_code` and returned by `/status`. */
 export const REPORT_GENERATION_ERROR_CODES = [
@@ -217,6 +218,36 @@ export function generationErrorCtaKind(
   }
 }
 
+// ── admin failure alert ──────────────────────────────────────────────────────
+
+/**
+ * Fire-and-forget ops alert: email the admin the moment a report transitions to
+ * 'error' so a paying customer's failure is never discovered by the customer
+ * first. Sent only on the transition (not on repeated marks), never throws.
+ */
+function notifyAdminReportFailed(reportId: string, meta: ReportFailureMeta): void {
+  const to = (process.env.ADMIN_ALERT_EMAIL ?? 'aarshvir@gmail.com').trim();
+  if (!to) return;
+  const phase = meta.generationErrorAtPhase ?? meta.errorStep ?? 'unknown phase';
+  const code = meta.generationErrorCode ?? meta.errorCode ?? 'unknown code';
+  void sendEmail({
+    to,
+    subject: `⚠ VedicHour report FAILED — ${code} @ ${phase}`,
+    text: [
+      `Report ${reportId} just failed.`,
+      `Phase: ${phase}`,
+      `Code: ${code}`,
+      `Message: ${meta.message}`,
+      '',
+      `Inspect: https://www.vedichour.com/admin/ops`,
+      `Reset for retry: node scripts/reset-stuck-report.mjs ${reportId}`,
+    ].join('\n'),
+    html: `<p><strong>Report <code>${reportId}</code> just failed.</strong></p>
+<p>Phase: <code>${phase}</code><br/>Code: <code>${code}</code><br/>Message: ${String(meta.message ?? '').slice(0, 500)}</p>
+<p><a href="https://www.vedichour.com/admin/ops">Open admin ops</a></p>`,
+  }).catch((e) => console.error('[notifyAdminReportFailed]', e instanceof Error ? e.message : String(e)));
+}
+
 // ── markReportAsFailed ───────────────────────────────────────────────────────
 
 /**
@@ -245,6 +276,9 @@ export async function markReportAsFailed(
     return;
   }
   if (!row || row.status === 'complete') return;
+  // Alert the admin only on the transition INTO 'error' (not on repeated marks
+  // from Inngest retries or the stale-reports sweep re-marking the same row).
+  if (row.status !== 'error') notifyAdminReportFailed(reportId, meta);
 
   const existing =
     row.report_data && typeof row.report_data === 'object' && !Array.isArray(row.report_data)
