@@ -1277,6 +1277,9 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       // Plain-language day briefing (best-for / not-ideal / why) — generated but
       // previously dropped here, so it never reached the UI. Now plumbed through.
       briefing_v2: (day as unknown as { briefing_v2?: DayBriefingV2 }).briefing_v2,
+      // Bounded-window marker: false = AI hourly prose not yet written for this
+      // day (loads on demand when the user opens it). Undefined on old reports.
+      ai_prose: (day as unknown as { ai_prose?: boolean }).ai_prose,
       hours: null,
       hourlySlots: slots.map((s) => {
         const slotTimes = resolveLocalSlotTimes(s, reportTimezoneOffset);
@@ -1547,6 +1550,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
                 activeDayIndex={isPreviewPlan ? 0 : activeDayIndex}
                 onDayChange={setActiveDayIndex}
                 lagna={natalChart?.lagna}
+                reportId={isPreviewPlan ? undefined : reportIdFromRoute}
               />
             </ReportErrorBoundary>
           )}

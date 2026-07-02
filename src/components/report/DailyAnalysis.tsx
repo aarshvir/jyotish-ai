@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HourlyAnalysis } from './HourlyAnalysis';
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
@@ -56,6 +56,8 @@ interface DayData {
   hourlySlots?: HourSlot[];
   slots?: HourSlot[];
   briefing_v2?: DayBriefingV2;
+  /** false = deterministic guidance only (bounded window) — AI prose loads on open. */
+  ai_prose?: boolean;
 }
 
 interface DailyAnalysisProps {
@@ -63,6 +65,8 @@ interface DailyAnalysisProps {
   activeDayIndex?: number;
   onDayChange?: (index: number) => void;
   lagna?: string;
+  /** Enables on-demand hourly prose for far-window days (paid reports). */
+  reportId?: string;
 }
 
 const PLANET_SYMBOLS: Record<string, string> = {
@@ -70,11 +74,20 @@ const PLANET_SYMBOLS: Record<string, string> = {
   Jupiter: '♃', Venus: '♀', Saturn: '♄',
 };
 
-export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: DailyAnalysisProps) {
+export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna, reportId }: DailyAnalysisProps) {
   const [internalActive, setInternalActive] = useState(0);
   const [showPanchang, setShowPanchang] = useState(false);
   const selectedDay = onDayChange ? activeDayIndex : internalActive;
   const setSelectedDay = onDayChange ? onDayChange : setInternalActive;
+
+  // On-demand hourly prose (bounded-window report-gen): far-window days ship with
+  // deterministic guidance and get their AI commentary written the first time the
+  // user opens them. Keyed by date; commentary merged over slots by slot_index.
+  const [dayProse, setDayProse] = useState<Record<string, Record<number, string>>>({});
+  const [proseLoading, setProseLoading] = useState(false);
+  const [proseError, setProseError] = useState<string | null>(null);
+  const [proseRetryTick, setProseRetryTick] = useState(0);
+  const proseAttempted = useRef<Set<string>>(new Set());
 
   const formatTabLabel = (dateStr: string) => {
     try {
@@ -117,12 +130,67 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
     return { peak, second, rk, theme };
   }, [currentDay, slotsForSummary]);
 
+  // Fetch AI prose for the selected day when it shipped without it (ai_prose===false).
+  // One attempt per date (retry button bumps proseRetryTick to re-arm).
+  const currentDate = currentDay?.date ?? '';
+  const currentNeedsProse =
+    Boolean(reportId) && currentDay?.ai_prose === false && !dayProse[currentDate];
+  useEffect(() => {
+    if (!reportId || !currentDate || !currentNeedsProse) return;
+    if (proseAttempted.current.has(currentDate)) return;
+    proseAttempted.current.add(currentDate);
+    let cancelled = false;
+    (async () => {
+      setProseLoading(true);
+      setProseError(null);
+      try {
+        const res = await fetch(`/api/reports/${reportId}/hourly-day`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: currentDate }),
+        });
+        const j = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          slots?: Array<{ slot_index?: number; commentary?: string }>;
+        };
+        if (cancelled) return;
+        if (!res.ok) {
+          setProseError(j.error ?? 'Could not write this day yet.');
+          return;
+        }
+        const map: Record<number, string> = {};
+        (j.slots ?? []).forEach((s) => {
+          if (typeof s.slot_index === 'number' && s.commentary?.trim()) map[s.slot_index] = s.commentary;
+        });
+        setDayProse((p) => ({ ...p, [currentDate]: map }));
+      } catch {
+        if (!cancelled) setProseError('Network hiccup — tap retry.');
+      } finally {
+        if (!cancelled) setProseLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportId, currentDate, currentNeedsProse, proseRetryTick]);
+
+  // Hourly slots for the active day, with any on-demand prose merged in.
+  const hourlyData: HourSlot[] = useMemo(() => {
+    const base = currentDay?.hours ?? currentDay?.hourlySlots ?? [];
+    const prose = dayProse[currentDate];
+    if (!prose) return base;
+    return base.map((s) =>
+      typeof s.slot_index === 'number' && prose[s.slot_index]
+        ? { ...s, commentary: prose[s.slot_index] }
+        : s,
+    );
+  }, [currentDay, currentDate, dayProse]);
+
   if (!currentDay) return null;
 
   const score = currentDay.day_score ?? 50;
   const scoreColor = score >= 65 ? 'text-success' : score >= 45 ? 'text-amber' : 'text-caution';
-
-  const hourlyData: HourSlot[] = currentDay.hours ?? currentDay.hourlySlots ?? [];
 
   const peakCount =
     currentDay.peak_count ??
@@ -414,6 +482,31 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna }: 
           </div>
         </motion.div>
       </AnimatePresence>
+
+      {/* On-demand prose status for far-window days */}
+      {currentNeedsProse && proseLoading && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-sm bg-amber/5 border border-amber/20 animate-pulse">
+          <span className="text-amber" aria-hidden>✍️</span>
+          <span className="font-body text-body-sm text-dust">
+            Writing this day&apos;s hour-by-hour commentary just for you… the scores below are already exact.
+          </span>
+        </div>
+      )}
+      {currentNeedsProse && !proseLoading && proseError && (
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 rounded-sm bg-caution/5 border border-caution/20">
+          <span className="font-body text-body-sm text-dust">{proseError}</span>
+          <button
+            type="button"
+            className="font-mono text-mono-sm text-amber underline underline-offset-2 hover:text-amber-light"
+            onClick={() => {
+              proseAttempted.current.delete(currentDate);
+              setProseRetryTick((t) => t + 1);
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Hourly analysis for the active day — rendered inline */}
       {hourlyData.length > 0 && (
