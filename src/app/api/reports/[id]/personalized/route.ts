@@ -6,7 +6,8 @@ import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { safeParseJson } from '@/lib/utils/safeJson';
-import { sanitizePersonalContext, sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { sanitizePersonalContext, sanitizeLagnaSign, sanitizePlanetName, sanitizeForPrompt } from '@/lib/utils/sanitize';
+import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 
 /**
  * POST /api/reports/[id]/personalized
@@ -65,6 +66,22 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ personalized: projectForTier(cached, wantTier) });
   }
 
+  // Rate-limit the (uncached) LLM path so an owner can't fan out parallel POSTs and
+  // burn arbitrary completions — mirrors /ask. Cache hits above stay free.
+  if (shouldRateLimitLlmForUser(auth)) {
+    const rl = await checkRateLimit(
+      `personalized:${getRateLimitKey(req, 'user' in auth ? auth.user.id : undefined)}`,
+      RATE_LIMITS.ask.limit,
+      RATE_LIMITS.ask.windowMs,
+    );
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { personalized: null },
+        { status: 429, headers: { 'Retry-After': String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } },
+      );
+    }
+  }
+
   if (!hasLlmCredentials()) {
     return NextResponse.json({ personalized: null });
   }
@@ -73,13 +90,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const moon = sanitizePlanetName(row.moon_sign) || row.moon_sign || 'Unknown';
   const md = sanitizePlanetName(row.dasha_mahadasha) || 'Unknown';
   const ad = sanitizePlanetName(row.dasha_antardasha) || 'Unknown';
-  const firstName = String(row.native_name ?? '').trim().split(' ')[0] || 'friend';
+  // Sanitize the name before it enters the prompt (defense-in-depth vs injection
+  // via a crafted native_name), matching how question/lagna/dasha are handled.
+  const firstName = (sanitizeForPrompt(row.native_name).split(' ')[0]) || 'friend';
 
   // A compact, bounded slice of the report for grounding (top upcoming day + synthesis line).
   const rd = (row.report_data ?? {}) as {
     synthesis?: { opening_paragraph?: string; strategic_windows?: unknown[] };
     days?: Array<{ date?: string; day_score?: number }>;
-    months?: Array<{ month_label?: string; score?: number }>;
+    // Stored MonthSummary uses `month` (a label string), not `month_label`.
+    months?: Array<{ month?: string; score?: number }>;
   };
   const bestDay = (rd.days ?? [])
     .filter((d) => typeof d.day_score === 'number')
@@ -90,7 +110,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const groundingLines = [
     `Lagna: ${lagna}. Moon: ${moon}. Current period: ${md} maha / ${ad} antar.`,
     bestDay?.date ? `Strongest upcoming day in the forecast: ${bestDay.date} (score ${bestDay.day_score}).` : '',
-    bestMonth?.month_label ? `Strongest month ahead: ${bestMonth.month_label}.` : '',
+    bestMonth?.month ? `Strongest month ahead: ${bestMonth.month}.` : '',
     rd.synthesis?.opening_paragraph ? `Overview: ${String(rd.synthesis.opening_paragraph).slice(0, 400)}` : '',
   ].filter(Boolean).join('\n');
 
