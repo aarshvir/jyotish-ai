@@ -92,6 +92,128 @@ function abandonedText(name: string): string {
   ]);
 }
 
+// ── Preview → paid nurture drip ───────────────────────────────────────────
+// Free/preview readers who got their sample report but never started checkout get
+// nothing from the abandoned-checkout job (which only targets pending payments).
+// This nudges them 3× over their first week, each email referencing THEIR question.
+// Window-based dedup: the daily cron catches each report once per stage (mirrors
+// runAbandonedCheckoutRecovery), so no per-report marker column is needed.
+
+const NURTURE_STAGES = [
+  { key: 's1', fromH: 20, toH: 44 }, //  ~day 1
+  { key: 's2', fromH: 68, toH: 92 }, //  ~day 3
+  { key: 's3', fromH: 164, toH: 188 }, // ~day 7
+] as const;
+
+function firstQuestionClause(personalContext: string | null | undefined): string {
+  const q = (personalContext ?? '').trim().replace(/\s+/g, ' ').slice(0, 140);
+  return q ? `you asked about <em>&ldquo;${escapeHtml(q)}&rdquo;</em>` : 'you came to VedicHour with a real question';
+}
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function nurtureEmail(stage: 's1' | 's2' | 's3', name: string, personalContext: string | null): { subject: string; html: string; text: string } {
+  const qClause = firstQuestionClause(personalContext);
+  const qPlain = (personalContext ?? '').trim().slice(0, 140);
+  const unlockUrl = `${SITE}/onboard?plan=7day&promo=NEWUSER30`;
+  const bullets = [
+    'The exact hours and days ahead that favour your decision — hour by hour.',
+    'Your 12-month timeline, so you act with the tide instead of against it.',
+    'A direct, written answer to your question, grounded in your own chart.',
+  ];
+  const bulletHtml = bullets
+    .map((b) => `<tr><td style="padding:4px 0;font-size:15px;line-height:1.5;color:#2a2730">&#10022;&nbsp; ${b}</td></tr>`)
+    .join('');
+
+  const copy = {
+    s1: {
+      subject: `${name}, the rest of your answer is ready`,
+      lead: `Your VedicHour reading only scratched the surface — ${qClause}. Your full report answers it directly and shows the timing that matters.`,
+      cta: 'See my full answer',
+      ps: 'Use code NEWUSER30 for 30% off your first report — 24-hour money-back guarantee.',
+    },
+    s2: {
+      subject: `${name}, here's exactly what you're missing`,
+      lead: `Still weighing it up? Since ${qClause}, here's what the full report puts in your hands:`,
+      cta: 'Unlock the full report',
+      ps: 'NEWUSER30 still gets you 30% off. Most readers say the hour-by-hour timing alone was worth it.',
+    },
+    s3: {
+      subject: `${name}, your 30% off is about to expire`,
+      lead: `This is the last nudge — your personalized answer is one click away, and your NEWUSER30 discount won't stay forever. ${qClause[0].toUpperCase()}${qClause.slice(1)}: don't leave it unanswered.`,
+      cta: 'Claim my report (30% off)',
+      ps: '24-hour money-back guarantee — if it doesn\'t resonate, you pay nothing.',
+    },
+  }[stage];
+
+  const content = `
+    <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#15131f">${copy.subject}</h1>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.6;color:#2a2730">${copy.lead}</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 18px">${bulletHtml}</table>
+    ${emailButton(copy.cta, unlockUrl)}
+    <p style="margin:18px 0 0;font-size:13px;color:#6b6776">${copy.ps}</p>`;
+  const html = emailShell({ preheader: copy.lead.replace(/<[^>]+>/g, '').slice(0, 120), contentHtml: content });
+  const text = plainText([
+    copy.subject,
+    '',
+    copy.lead.replace(/<[^>]+>/g, ''),
+    '',
+    ...bullets.map((b) => `- ${b}`),
+    qPlain ? '' : '',
+    `${copy.cta}: ${unlockUrl}`,
+    '',
+    copy.ps,
+  ]);
+  return { subject: copy.subject, html, text };
+}
+
+export async function runPreviewNurture(): Promise<{ ok: boolean; sent: number }> {
+  let sent = 0;
+  try {
+    const db = createServiceClient();
+    // Emails that already have a paid report — never nurture an existing customer.
+    const { data: paidRows } = await db
+      .from('reports')
+      .select('user_email')
+      .eq('payment_status', 'paid')
+      .limit(50000);
+    const paidEmails = new Set((paidRows ?? []).map((r) => (r as { user_email?: string }).user_email?.trim().toLowerCase()).filter(Boolean));
+
+    for (const stage of NURTURE_STAGES) {
+      const from = new Date(Date.now() - stage.toH * 3600_000).toISOString();
+      const to = new Date(Date.now() - stage.fromH * 3600_000).toISOString();
+      const { data: reports } = await db
+        .from('reports')
+        .select('id, user_email, native_name, personal_context, plan_type, payment_status, status, created_at')
+        .in('plan_type', ['free', 'preview'])
+        .eq('status', 'complete')
+        .gte('created_at', from)
+        .lte('created_at', to)
+        .limit(2000);
+
+      const seen = new Set<string>();
+      for (const r of reports ?? []) {
+        const rr = r as { user_email?: string; native_name?: string; personal_context?: string | null; payment_status?: string };
+        const email = (rr.user_email ?? '').trim();
+        const key = email.toLowerCase();
+        if (!email || seen.has(key)) continue;
+        if (rr.payment_status === 'paid' || rr.payment_status === 'promo') continue;
+        if (paidEmails.has(key)) continue;
+        seen.add(key);
+        const name = ((rr.native_name ?? '').trim().split(' ')[0]) || 'there';
+        const { subject, html, text } = nurtureEmail(stage.key, name, rr.personal_context ?? null);
+        await sendEmail({ to: email, subject, html, text });
+        sent++;
+      }
+    }
+    return { ok: true, sent };
+  } catch (e) {
+    console.error('[lifecycle/nurture]', e);
+    return { ok: false, sent };
+  }
+}
+
 export async function runAbandonedCheckoutRecovery(): Promise<{ ok: boolean; sent: number }> {
   let sent = 0;
   try {
