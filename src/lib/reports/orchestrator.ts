@@ -969,7 +969,13 @@ export async function generateReportPipeline(
       logStep('resume_from_checkpoint', { checkpoint: existingCheckpoint });
     }
 
-    const dayCount = input.type === 'monthly' || input.type === 'annual' ? 30 : 7;
+    // Preview economics: free/preview only ever PERSISTS one sample day (see
+    // finalReportToSave + dbSaveDayScores narrowing), so generating 7 days of
+    // grids + hourly LLM prose was pure discarded spend AND made the free
+    // funnel's time-to-first-value equal a paid report (~11 min). Generate
+    // exactly what the preview shows: 1 day.
+    const dayCount =
+      input.type === 'monthly' || input.type === 'annual' ? 30 : previewPlan ? 1 : 7;
     const cLat = input.currentLat || input.lat;
     const cLng = input.currentLng || input.lng;
 
@@ -1820,6 +1826,13 @@ export async function generateReportPipeline(
       if (phaseAtOrAfter(cp, 'commentary_months_1') && pipelineState.commentary_months_1?.months1Data) {
         tlog('[orchestrator] Restoring months1Data from checkpoint (skipping LLM)');
         months1Data = pipelineState.commentary_months_1.months1Data as MonthSummary[];
+      } else if (previewPlan) {
+        // Preview strips months at save (finalReportToSave) — skip the LLM spend
+        // entirely but still write the checkpoint so Inngest phases advance.
+        tlog('[orchestrator] preview plan: skipping months-first LLM (stripped at save)');
+        months1Data = [];
+        await savePipelineCheckpoint(db, reportId, userId, 'commentary_months_1', { commentary_months_1: { months1Data } }, pipelineState);
+        pipelineState = { ...pipelineState, commentary_months_1: { months1Data } };
       } else {
         await (async () => {
           onStep({ type: 'step_started', step: 5, message: 'Building monthly forecast...', detail: 'Generating months 1-6' });
@@ -1850,6 +1863,12 @@ export async function generateReportPipeline(
       // ── commentary_months_2 ─────────────────────────────────────────────────────
       if (phaseAtOrAfter(cp, 'commentary_months_2') && pipelineState.commentary_months_2?.allMonthsData) {
         allMonthsData = pipelineState.commentary_months_2.allMonthsData as MonthSummary[];
+      } else if (previewPlan) {
+        tlog('[orchestrator] preview plan: skipping months-second LLM (stripped at save)');
+        allMonthsData = [];
+        onStep({ type: 'step_completed', step: 5 });
+        await savePipelineCheckpoint(db, reportId, userId, 'commentary_months_2', { commentary_months_2: { allMonthsData } }, pipelineState);
+        pipelineState = { ...pipelineState, commentary_months_2: { allMonthsData } };
       } else {
         await (async () => {
           onStep({ type: 'step_started', step: 5, message: 'Building monthly forecast...', detail: 'Generating months 7-12' });
@@ -1887,7 +1906,16 @@ export async function generateReportPipeline(
       maybeStopAfter('commentary_months_2');
 
       // ── commentary_weeks ────────────────────────────────────────────────────────
-      if (!(phaseAtOrAfter(cp, 'commentary_weeks') && pipelineState.commentary_weeks)) {
+      if (previewPlan && !(phaseAtOrAfter(cp, 'commentary_weeks') && pipelineState.commentary_weeks)) {
+        // Preview strips weeks/synthesis at save — keep the default empty
+        // weeksSynthData, skip the LLM call, checkpoint so phases advance.
+        tlog('[orchestrator] preview plan: skipping weeks-synthesis LLM (stripped at save)');
+        onStep({ type: 'step_completed', step: 6 });
+        await savePipelineCheckpoint(db, reportId, userId, 'commentary_weeks', {
+          commentary_weeks: { weeksSynthData },
+        }, pipelineState);
+        pipelineState = { ...pipelineState, commentary_weeks: { weeksSynthData } };
+      } else if (!(phaseAtOrAfter(cp, 'commentary_weeks') && pipelineState.commentary_weeks)) {
         await (async () => {
         onStep({ type: 'step_started', step: 6, message: 'Writing period synthesis...', detail: '6 weekly summaries + strategic windows' });
         try {

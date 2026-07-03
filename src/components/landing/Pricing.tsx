@@ -2,87 +2,17 @@
 
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
-import type { SupportedCurrency } from '@/lib/pricing';
+import { PLAN_CARDS, STANDALONE_PRODUCTS, type SupportedCurrency } from '@/lib/pricing';
 import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 import CurrencySwitcher, { type Currency } from './CurrencySwitcher';
 
 const PRICE_DISPLAY: Record<Currency, Record<string, string>> = {
-  USD: { '7day': '$9.99', monthly: '$19.99', annual: '$49.99' },
-  INR: { '7day': '₹799', monthly: '₹1,499', annual: '₹3,999' },
-  AED: { '7day': 'AED 37.99', monthly: 'AED 69.99', annual: 'AED 184.99' },
+  USD: { '7day': '$9.99', monthly: '$19.99', annual: '$49.99', kundali: '$9.99', synastry: '$9.99' },
+  INR: { '7day': '₹799', monthly: '₹1,499', annual: '₹3,999', kundali: '₹899', synastry: '₹899' },
+  AED: { '7day': 'AED 37.99', monthly: 'AED 69.99', annual: 'AED 184.99', kundali: 'AED 36.99', synastry: 'AED 36.99' },
 };
 
 const USD_PRICES = PRICE_DISPLAY.USD;
-
-const ANNUAL_PLAN = {
-  id: 'annual',
-  name: 'Annual Oracle',
-  description: 'Our deepest annual reading',
-  features: [
-    'Everything in Monthly Oracle',
-    '30-day hour-by-hour forecast',
-    'Full 12-month thematic outlook',
-    'Life-period transitions across the year',
-    'Priority email support',
-    '1-year report access + PDF',
-  ],
-  cta: 'Get Annual Oracle',
-  href: '/onboard?plan=annual',
-  featured: false,
-  isPaid: true,
-  badge: 'Best Value',
-} as const;
-
-const PLANS = [
-  {
-    id: 'free',
-    name: 'Free Kundli',
-    description: 'Free Janam Kundali & birth chart',
-    features: [
-      'Free birth chart (Kundli)',
-      'Complete natal chart with all planets',
-      'Rising sign + Moon sign analysis',
-      'Current life-period (Dasha)',
-      'Sample hourly timing windows',
-    ],
-    cta: 'Get Free Kundli',
-    href: '/onboard?plan=free',
-    featured: false,
-    isPaid: false,
-  },
-  {
-    id: '7day',
-    name: '7-Day Forecast',
-    description: 'Full week of hourly precision',
-    features: [
-      '126 hourly ratings (0–100)',
-      'Hourly timing quality overlay',
-      'Challenging window alerts',
-      'AI narrative per day',
-      'Best & avoid windows',
-    ],
-    cta: 'Get 7-Day Forecast',
-    href: '/onboard?plan=7day',
-    featured: false,
-    isPaid: true,
-  },
-  {
-    id: 'monthly',
-    name: 'Monthly Oracle',
-    description: '30 days of precision guidance',
-    features: [
-      'Everything in 7-Day',
-      '30-day hourly calendar',
-      'Full birth chart narrative',
-      'Monthly + weekly synthesis',
-      'PDF export',
-    ],
-    cta: 'Get Monthly Oracle',
-    href: '/onboard?plan=monthly',
-    featured: true,
-    isPaid: true,
-  },
-] as const;
 
 
 const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
@@ -160,9 +90,28 @@ export default function Pricing() {
           </div>
         </div>
 
+        {/* Standalone one-time readings — same two-card block as /pricing so the
+            surfaces never diverge (both render from STANDALONE_PRODUCTS). */}
+        <div className="grid sm:grid-cols-2 gap-4 max-w-3xl mx-auto mb-10">
+          {STANDALONE_PRODUCTS.map((p) => (
+            <div key={p.id} className="card p-6 flex flex-col">
+              <div className="flex items-baseline justify-between gap-3 mb-2">
+                <h3 className="font-body font-semibold text-star text-title-lg">{p.name}</h3>
+                <span className="font-body font-semibold text-xl text-star tabular-nums shrink-0">
+                  {priceFor(p.id)}
+                </span>
+              </div>
+              <p className="font-body text-body-sm text-dust leading-relaxed mb-4 flex-1">{p.description}</p>
+              <Link href={p.href} className="btn-secondary justify-center w-full text-body-sm py-2.5">
+                {p.cta}
+              </Link>
+            </div>
+          ))}
+        </div>
+
         {/* Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
-          {[...PLANS, ANNUAL_PLAN].map((plan) => (
+          {PLAN_CARDS.map((plan) => (
             <div
               key={plan.name}
               className={`relative flex flex-col rounded-card transition-all duration-250 ${
@@ -181,7 +130,7 @@ export default function Pricing() {
                   </span>
                 </div>
               )}
-              {!plan.featured && 'badge' in plan && plan.badge && (
+              {!plan.featured && plan.badge && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                   <span className="inline-flex items-center px-3.5 py-1 rounded-pill bg-amber/15 text-amber text-label-sm font-mono font-medium tracking-[0.12em] uppercase whitespace-nowrap">
                     {plan.badge}
@@ -226,7 +175,7 @@ export default function Pricing() {
                     {plan.cta}
                   </Link>
 
-                  {plan.isPaid && (
+                  {plan.id !== 'free' && (
                     <div className="flex items-center justify-center gap-2">
                       <ShieldCheckIcon className="w-3.5 h-3.5 text-success shrink-0" />
                       <Link href="/refund" className="font-mono text-mono-sm text-success/80 hover:underline">

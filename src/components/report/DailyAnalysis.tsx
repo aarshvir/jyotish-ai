@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HourlyAnalysis } from './HourlyAnalysis';
+import { DayRating } from './DayRating';
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
 import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
 import { plainify, choghadiyaLabel, PANCHANG_FIELD_LABELS, stripTemplateSections, isDevFallback } from '@/lib/utils/plainify';
@@ -480,6 +481,14 @@ export function DailyAnalysis({ days, activeDayIndex = 0, onDayChange, lagna, re
               </div>
             )}
           </div>
+
+          {/* Reflection — one-tap rating for lived days (renders null for future dates) */}
+          <DayRating
+            date={currentDay.date}
+            predictedScore={typeof currentDay.day_score === 'number' ? currentDay.day_score : undefined}
+            reportId={reportId}
+            className="mt-8 pt-5 border-t border-horizon/30"
+          />
         </motion.div>
       </AnimatePresence>
 

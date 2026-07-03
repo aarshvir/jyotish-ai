@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { RightNowCard } from '@/components/dashboard/RightNowCard';
+import { DayRating } from '@/components/report/DayRating';
 import { SynastryTeaser } from '@/components/marketing/SynastryTeaser';
 import CurrencySwitcher from '@/components/landing/CurrencySwitcher';
 import type { PaymentRecord } from '@/app/api/user/payments/route';
@@ -337,6 +338,74 @@ function PaymentRow({ payment }: { payment: PaymentRecord }) {
   );
 }
 
+/**
+ * Resonance loop prompt: "How did yesterday feel?" — shown only when yesterday
+ * (UTC) is unrated. Once the user has 5+ rated days, adds one calm alignment
+ * line. Renders nothing on 401/fetch failure (zero-noise degradation).
+ */
+function YesterdayFeelCard({ reports }: { reports: Report[] }) {
+  const [state, setState] = useState<{
+    yesterdayRated: boolean;
+    stats: { n: number; aligned: number } | null;
+  } | null>(null);
+
+  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/day-rating', { credentials: 'include' });
+        if (!res.ok) return; // signed out / table not live yet → render nothing
+        const j = (await res.json()) as {
+          ratings?: Array<{ rated_date?: string }>;
+          stats?: { n?: number; aligned?: number } | null;
+        };
+        if (cancelled) return;
+        const rated = (j.ratings ?? []).some(r => r.rated_date === yesterday);
+        const stats =
+          j.stats && typeof j.stats.n === 'number' && typeof j.stats.aligned === 'number'
+            ? { n: j.stats.n, aligned: j.stats.aligned }
+            : null;
+        setState({ yesterdayRated: rated, stats });
+      } catch {
+        // zero-noise degradation
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!state) return null;
+  const showPrompt = !state.yesterdayRated;
+  const showStats = state.stats != null && state.stats.n >= 5;
+  if (!showPrompt && !showStats) return null;
+
+  // Predicted score for yesterday if a completed report covers it (cheap — the
+  // dashboard already loads day_scores); omitted otherwise.
+  const source = reports.find(
+    r => r.status === 'complete' && r.day_scores && typeof r.day_scores[yesterday] === 'number'
+  );
+
+  return (
+    <div className="w-full max-w-xl mx-auto card p-5 sm:p-6">
+      {showPrompt && (
+        <DayRating
+          date={yesterday}
+          predictedScore={source?.day_scores?.[yesterday]}
+          reportId={source?.id}
+          question="How did yesterday actually feel?"
+        />
+      )}
+      {showStats && (
+        <p className={`font-mono text-mono-sm text-dust/60 ${showPrompt ? 'mt-4 pt-4 border-t border-horizon/20' : ''}`}>
+          Your clearer windows aligned on {state.stats!.aligned} of {state.stats!.n} rated days.
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 function DashboardInner() {
@@ -637,6 +706,9 @@ function DashboardInner() {
           <div className="space-y-6">
             {/* Live score card */}
             <RightNowCard />
+
+            {/* Resonance loop — how did yesterday feel? */}
+            <YesterdayFeelCard reports={reports} />
 
             <SynastryTeaser />
 

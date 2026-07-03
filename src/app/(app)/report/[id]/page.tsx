@@ -1492,14 +1492,15 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           </div>
         )}
         {/* Post-purchase upsell strip — shown only to 7-day plan users, nudges toward Monthly.
-            Placed at the top of the report while intent is high, before any content. */}
+            Links to the one-click DELTA upgrade (/upsell appends days 8–30 to THIS report at a
+            loyalty price) — never to /onboard, which would re-charge full price and regenerate. */}
         {reportPlanType === '7day' && !isPreviewPlan && (
           <div className="pdf-exclude mb-6 rounded-card border border-amber/25 bg-amber/[0.04] px-5 py-3 flex flex-wrap items-center justify-between gap-3" data-print-hide>
             <p className="font-body text-body-sm text-dust">
-              <span className="text-amber font-semibold">7-day report</span> — want 30 days, the full year, and weekly synthesis?
+              <span className="text-amber font-semibold">7-day report</span> — extend this exact report to a full 30-day timeline at a loyalty price.
             </p>
-            <Link href="/onboard?plan=monthly" className="btn-primary text-xs px-4 py-2 shrink-0">
-              Upgrade to Monthly →
+            <Link href={`/upsell?reportId=${reportIdFromRoute}&src=report`} className="btn-primary text-xs px-4 py-2 shrink-0">
+              Extend to 30 days →
             </Link>
           </div>
         )}

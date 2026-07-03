@@ -433,3 +433,32 @@ CREATE POLICY "Users can view own ziina payments"
 CREATE INDEX IF NOT EXISTS idx_analytics_events_session_created
   ON public.analytics_events ((properties->>'session_id'), created_at)
   WHERE properties ? 'session_id';
+
+-- ============================================================================
+-- 2026-07-02: Resonance loop (day_ratings) — one-tap "how did the day feel"
+-- vs predicted score. Powers user alignment view + admin correlations.
+-- Additive + idempotent. REQUIRED before the resonance-loop feature works.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.day_ratings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  report_id UUID REFERENCES public.reports(id) ON DELETE SET NULL,
+  rated_date DATE NOT NULL,
+  rating SMALLINT NOT NULL CHECK (rating IN (-1, 0, 1)),
+  predicted_score NUMERIC,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT uniq_day_rating_per_user_day UNIQUE (user_id, rated_date)
+);
+CREATE INDEX IF NOT EXISTS idx_day_ratings_user ON public.day_ratings (user_id, rated_date DESC);
+CREATE INDEX IF NOT EXISTS idx_day_ratings_created ON public.day_ratings (created_at DESC);
+ALTER TABLE public.day_ratings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "day_ratings_select_own" ON public.day_ratings;
+CREATE POLICY "day_ratings_select_own" ON public.day_ratings
+  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "day_ratings_insert_own" ON public.day_ratings;
+CREATE POLICY "day_ratings_insert_own" ON public.day_ratings
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+DROP POLICY IF EXISTS "day_ratings_update_own" ON public.day_ratings;
+CREATE POLICY "day_ratings_update_own" ON public.day_ratings
+  FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
