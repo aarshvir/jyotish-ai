@@ -8,6 +8,7 @@ import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { sanitizePersonalContext, sanitizeLagnaSign, sanitizePlanetName, sanitizeForPrompt } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
+import { type Personalized, wantedTier, cacheSatisfies, projectForTier } from '@/lib/reports/personalizedTier';
 
 /**
  * POST /api/reports/[id]/personalized
@@ -24,15 +25,6 @@ import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser
  * returned from cache on subsequent loads. Fail-soft: any error returns 204-shaped
  * `{ personalized: null }` so the report renders fine without it.
  */
-
-interface Personalized {
-  tier: 'preview' | 'full';
-  question_echo: string;
-  teaser?: string;
-  unlock_points?: string[];
-  full_answer?: string;
-  key_windows?: string[];
-}
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const auth = await requireAuth(req);
@@ -53,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   const entitled =
     auth.isAdmin === true || row.payment_status === 'paid' || row.payment_status === 'promo';
-  const wantTier: 'preview' | 'full' = entitled ? 'full' : 'preview';
+  const wantTier = wantedTier(entitled);
 
   // No question on file → nothing to personalize (common; render nothing).
   const question = sanitizePersonalContext(row.personal_context, 600);
@@ -62,7 +54,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   // Cache: return stored personalization if it already covers the requested tier.
   const reportData = (row.report_data ?? {}) as { personalized?: Personalized };
   const cached = reportData.personalized;
-  if (cached && (cached.tier === wantTier || (cached.tier === 'full' && wantTier === 'preview'))) {
+  if (cached && cacheSatisfies(cached.tier, wantTier)) {
     return NextResponse.json({ personalized: projectForTier(cached, wantTier) });
   }
 
@@ -178,10 +170,4 @@ Start with { and end with }.`;
     console.error('[personalized] failed:', e instanceof Error ? e.message.slice(0, 200) : String(e));
     return NextResponse.json({ personalized: null });
   }
-}
-
-/** Never hand a preview client the full answer, even if a fuller object is cached. */
-function projectForTier(p: Personalized, tier: 'preview' | 'full'): Personalized {
-  if (tier === 'full') return p;
-  return { tier: 'preview', question_echo: p.question_echo, teaser: p.teaser, unlock_points: p.unlock_points };
 }
