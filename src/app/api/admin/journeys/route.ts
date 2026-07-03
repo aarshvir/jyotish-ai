@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/admin/guard';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { fetchAllAuthUsers } from '@/lib/admin/analytics';
@@ -53,19 +53,25 @@ type SessionRow = {
   paid: boolean;
 };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const admin = await requireAdminApi();
   if (admin instanceof NextResponse) return admin;
 
+  const daysRaw = parseInt(req.nextUrl.searchParams.get('days') ?? '30', 10);
+  const days = Math.min(90, Math.max(1, Number.isFinite(daysRaw) ? daysRaw : 30));
+  const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
+
   const db = createServiceClient();
 
-  // Ascending so the first event per session = entry, last = drop-off. limit(50000)
-  // mirrors the other admin aggregations (PostgREST caps at 1000 by default).
+  // Windowed + newest-first so recent sessions always win the 50k cap (the old
+  // oldest-first fetch froze this view at the first 50k rows ever written).
+  // limit(50000) mirrors the other admin aggregations (PostgREST caps at 1000).
   const [eventsRes, users, payments] = await Promise.all([
     db
       .from('analytics_events')
       .select('user_id, event_name, properties, created_at')
-      .order('created_at', { ascending: true })
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
       .limit(50000),
     fetchAllAuthUsers(db),
     db.from('ziina_payments').select('user_id, status').limit(50000),
@@ -78,8 +84,11 @@ export async function GET() {
     if (row.status === 'completed' && row.user_id) paidUserIds.add(row.user_id);
   }
 
+  // Re-ascend so the first event per session = entry and the last = drop-off.
+  const eventRows = (eventsRes.data ?? []).slice().reverse();
+
   const bySid = new Map<string, SessionRow>();
-  for (const e of eventsRes.data ?? []) {
+  for (const e of eventRows) {
     const p = (e.properties ?? {}) as Props;
     const sid = p.session_id;
     if (!sid) continue;
@@ -132,9 +141,10 @@ export async function GET() {
     totalSessions: sessions.length,
     anonymousSessions: anonymous,
     convertedSessions: sessions.filter((s) => s.paid).length,
+    range: { days },
     // Cap the payload; the list view shows the most recent. The per-session
     // timeline (/admin/journeys/[sid]) loads any single session on demand.
     sessions: sessions.slice(0, 500),
-    note: 'One row per browser session (anonymous + identified). Entry = first page, drop-off = last page. Conversion is derived from a signed-in user_id seen during the session.',
+    note: `Last ${days} days — one row per browser session (anonymous + identified). Entry = first page, drop-off = last page. Conversion is derived from a signed-in user_id seen during the session.`,
   });
 }

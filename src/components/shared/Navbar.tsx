@@ -16,6 +16,16 @@ const AuthButton = dynamic(() => import('@/components/shared/AuthButton'), {
   ),
 });
 
+const MobileAuthLinks = dynamic(
+  () => import('@/components/shared/AuthButton').then((m) => m.MobileAuthLinks),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-11 w-full rounded-button bg-nebula/60 skeleton" aria-hidden />
+    ),
+  }
+);
+
 const NAV_LINKS = [
   { href: '/kundali', label: 'Kundli' },
   { href: '/synastry', label: 'Matchmaking' },
@@ -155,7 +165,7 @@ export default function Navbar() {
                 </Link>
               ))}
               <div className="pt-3 border-t border-horizon/30">
-                <AuthButton />
+                <MobileAuthLinks onNavigate={() => setMobileOpen(false)} />
               </div>
             </div>
           </div>

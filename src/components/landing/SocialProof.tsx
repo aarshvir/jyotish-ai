@@ -1,31 +1,31 @@
 /**
- * SocialProof — narrow horizontal bar showing trust signals between sections.
+ * SocialProof — narrow horizontal bar of verifiable engine facts between sections.
  *
- * Indicative stats shown until real production data replaces them.
- * Differs from Testimonials: this is a 3-second-scan, not a read. Numbers,
- * city names, and a couple of brand-style icons. Designed to break up the
- * landing flow with a quiet validation cue.
+ * Every value is a product fact (engine capability), never a popularity claim —
+ * no invented counters, reviews or ratings. Currently not rendered on the
+ * landing page (the hero trust bar carries these facts); kept for reuse on
+ * other surfaces. This is a 3-second-scan, not a read.
  */
 
 export default function SocialProof() {
   const STATS = [
     {
-      value: '12,000+',
-      label: 'Kundlis generated',
+      value: '18',
+      label: 'rated windows per day',
     },
     {
-      value: '46',
-      label: 'cities, 9 countries',
+      value: '12',
+      label: 'lagnas covered',
     },
     {
-      value: '★ 4.8',
-      label: '340+ verified reviews',
+      value: 'Sidereal',
+      label: 'Swiss Ephemeris · Lahiri Ayanamsa',
     },
   ];
 
   return (
     <section
-      aria-label="Trust and adoption statistics"
+      aria-label="Engine facts"
       className="py-12 md:py-14 bg-cosmos border-y border-horizon/30 relative"
     >
       <div className="max-w-6xl mx-auto px-6">

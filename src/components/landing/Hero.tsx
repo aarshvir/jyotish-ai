@@ -2,10 +2,11 @@ import Link from 'next/link';
 import { StarField } from '@/components/ui/StarField';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 
+// Verifiable product facts only — no invented counters or ratings.
 const TRUST_STATS = [
-  { value: '12,000+', label: 'charts generated' },
-  { value: '★ 4.8', label: 'from 340+ seekers' },
   { value: '18', label: 'hourly Vedic windows/day' },
+  { value: 'Swiss Ephemeris', label: 'Lahiri Ayanamsa' },
+  { value: 'One-time', label: 'payment · no subscription' },
   { value: '24h', label: 'no-questions refund' },
 ];
 
@@ -82,7 +83,7 @@ export default function Hero() {
           </p>
         </div>
 
-        {/* Trust bar — social proof */}
+        {/* Trust bar — verifiable product facts */}
         <div className="animate-fade-in-1 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-10 md:mb-12">
           {TRUST_STATS.map((s) => (
             <div key={s.value} className="flex items-center gap-1.5">

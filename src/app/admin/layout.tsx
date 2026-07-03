@@ -13,12 +13,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <header className="border-b border-horizon/40 px-6 py-4 flex items-center gap-6 flex-wrap">
         <span className="font-display text-lg text-amber">VedicHour Admin</span>
         <nav className="flex gap-5 font-body text-body-sm text-dust">
+          <Link href="/admin/today" className="hover:text-star transition-colors">Today</Link>
           <Link href="/admin" className="hover:text-star transition-colors">Overview</Link>
           <Link href="/admin/revenue" className="hover:text-star transition-colors">Revenue</Link>
           <Link href="/admin/retention" className="hover:text-star transition-colors">Retention</Link>
+          <Link href="/admin/insights" className="hover:text-star transition-colors">Insights</Link>
           <Link href="/admin/acquisition" className="hover:text-star transition-colors">Acquisition</Link>
+          <Link href="/admin/content" className="hover:text-star transition-colors">Content</Link>
           <Link href="/admin/attribution" className="hover:text-star transition-colors">Attribution</Link>
           <Link href="/admin/marketing" className="hover:text-star transition-colors">Marketing</Link>
+          <Link href="/admin/campaigns" className="hover:text-star transition-colors">Campaigns</Link>
           <Link href="/admin/journeys" className="hover:text-star transition-colors">Journeys</Link>
           <Link href="/admin/crm" className="hover:text-star transition-colors">Call list</Link>
           <Link href="/admin/ops" className="hover:text-star transition-colors">Ops</Link>

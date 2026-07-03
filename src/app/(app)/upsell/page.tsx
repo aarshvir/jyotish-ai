@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import { StarField } from '@/components/ui/StarField';
 import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 import { UpsellButton } from './_UpsellButton';
-import { UpsellCountdown } from './_UpsellCountdown';
 import { DismissToReport } from './_DismissToReport';
 import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
@@ -13,7 +12,7 @@ import { getMonthlyUpgradeAmount, formatAmount } from '@/lib/ziina/server';
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  searchParams: { reportId?: string; offerType?: string };
+  searchParams: { reportId?: string; offerType?: string; src?: string };
 }
 
 export default async function UpsellPage({ searchParams }: Props) {
@@ -43,7 +42,10 @@ export default async function UpsellPage({ searchParams }: Props) {
   if (rep.plan_type !== '7day') {
     redirect(`/report/${reportId}`);
   }
-  if (rep.upsell_dismissed_at) {
+  // The dismissed flag only suppresses the AUTOMATIC post-payment interstitial.
+  // An intentional visit from the in-report "Extend to 30 days" strip (?src=report)
+  // must always work — this is the highest-intent repeat-revenue moment.
+  if (rep.upsell_dismissed_at && searchParams.src !== 'report') {
     redirect(`/report/${reportId}`);
   }
 
@@ -74,8 +76,8 @@ export default async function UpsellPage({ searchParams }: Props) {
           </p>
         </div>
 
-        <UpsellCountdown />
-
+        {/* No countdown: a fake client-side timer is manufactured urgency — the calm,
+            credible brand sells timing awareness, not pressure. */}
         <div className="bg-nebula border border-horizon rounded-lg p-6 mb-8 relative z-10 text-left">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -83,8 +85,8 @@ export default async function UpsellPage({ searchParams }: Props) {
               <p className="text-dust/70 text-sm">Upgrade delta ({upgradeLabel} after loyalty discount)</p>
             </div>
             <div className="text-right">
-              <span className="text-2xl font-bold text-success">+Δ</span>
-              <p className="text-xs text-dust/60">Ziina checkout</p>
+              <span className="text-2xl font-bold text-success">+{upgradeLabel}</span>
+              <p className="text-xs text-dust/60">one-time · Ziina checkout</p>
             </div>
           </div>
           <ul className="space-y-3 mb-6">
