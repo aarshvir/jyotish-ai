@@ -17,6 +17,9 @@ import { DecideSection } from '@/components/report/DecideSection';
 import { MonthlyAnalysis } from '@/components/report/MonthlyAnalysis';
 import { WeeklyAnalysis } from '@/components/report/WeeklyAnalysis';
 import { DailyAnalysis } from '@/components/report/DailyAnalysis';
+import { TodayCard } from '@/components/report/TodayCard';
+import { CorrelationsPanel } from '@/components/report/CorrelationsPanel';
+import { MobileSectionNav } from '@/components/report/MobileSectionNav';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { Glossary } from '@/components/report/Glossary';
 import { AskQuestion } from '@/components/report/AskQuestion';
@@ -1492,19 +1495,35 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           </div>
         )}
         {/* Post-purchase upsell strip — shown only to 7-day plan users, nudges toward Monthly.
-            Placed at the top of the report while intent is high, before any content. */}
+            Links to the one-click DELTA upgrade (/upsell appends days 8–30 to THIS report at a
+            loyalty price) — never to /onboard, which would re-charge full price and regenerate. */}
         {reportPlanType === '7day' && !isPreviewPlan && (
           <div className="pdf-exclude mb-6 rounded-card border border-amber/25 bg-amber/[0.04] px-5 py-3 flex flex-wrap items-center justify-between gap-3" data-print-hide>
             <p className="font-body text-body-sm text-dust">
-              <span className="text-amber font-semibold">7-day report</span> — want 30 days, the full year, and weekly synthesis?
+              <span className="text-amber font-semibold">7-day report</span> — extend this exact report to a full 30-day timeline at a loyalty price.
             </p>
-            <Link href="/onboard?plan=monthly" className="btn-primary text-xs px-4 py-2 shrink-0">
-              Upgrade to Monthly →
+            <Link href={`/upsell?reportId=${reportIdFromRoute}&src=report`} className="btn-primary text-xs px-4 py-2 shrink-0">
+              Extend to 30 days →
             </Link>
           </div>
         )}
 
         <div id="report-content">
+          {/* Mobile section nav — sticky scroll-spy tabs (desktop uses ReportSidebar). */}
+          <MobileSectionNav preview={isPreviewPlan} />
+
+          {/* Today anchor — grounds the report in the current day (paid only; preview
+              shows a single sample day so "today" framing would mislead). */}
+          {!isPreviewPlan && mergedDays.length > 0 && (
+            <ReportErrorBoundary fallbackTitle="Today">
+              <TodayCard
+                days={mergedDays}
+                timezoneOffset={reportTimezoneOffset ?? undefined}
+                onJumpToDay={handleDaySelectFromCalendar}
+              />
+            </ReportErrorBoundary>
+          )}
+
           {/* Summary-first hero — the plain-language "what's ahead" brief. */}
           <ReportErrorBoundary fallbackTitle="Your forecast at a glance">
             <ForecastSnapshot
@@ -1552,6 +1571,13 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
                 lagna={natalChart?.lagna}
                 reportId={isPreviewPlan ? undefined : reportIdFromRoute}
               />
+            </ReportErrorBoundary>
+          )}
+
+          {/* Personal rhythm — correlations computed from the full forecast (paid). */}
+          {!isPreviewPlan && mergedDays.length >= 3 && (
+            <ReportErrorBoundary fallbackTitle="Your personal rhythm">
+              <CorrelationsPanel days={mergedDays} dashaLabel={natalChart?.current_dasha?.mahadasha} />
             </ReportErrorBoundary>
           )}
 
