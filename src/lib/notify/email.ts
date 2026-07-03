@@ -10,9 +10,16 @@ export interface SendEmailArgs {
   /** Plain-text alternative — strongly improves deliverability + Primary-tab placement. */
   text?: string;
   replyTo?: string;
+  /**
+   * HTTPS one-click unsubscribe URL for MARKETING mail (nurture/recovery/digest to
+   * users). When set, adds RFC 8058 List-Unsubscribe + List-Unsubscribe-Post headers
+   * that Gmail/Yahoo now require from bulk senders. Omit for transactional mail
+   * (report-ready, admin alerts) which is exempt.
+   */
+  listUnsubscribeUrl?: string;
 }
 
-export async function sendEmail({ to, subject, html, text, replyTo }: SendEmailArgs): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+export async function sendEmail({ to, subject, html, text, replyTo, listUnsubscribeUrl }: SendEmailArgs): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
   const key = process.env.RESEND_API_KEY?.trim();
   const from = process.env.EMAIL_FROM?.trim() || 'VedicHour <support@vedichour.com>';
   if (!key) {
@@ -31,7 +38,13 @@ export async function sendEmail({ to, subject, html, text, replyTo }: SendEmailA
         html,
         ...(text ? { text } : {}),
         reply_to: replyTo ?? 'support@vedichour.com',
-        headers: { 'List-Unsubscribe': '<mailto:support@vedichour.com?subject=unsubscribe>' },
+        headers: listUnsubscribeUrl
+          ? {
+              // One-click (RFC 8058) — required by Gmail/Yahoo for bulk marketing mail.
+              'List-Unsubscribe': `<${listUnsubscribeUrl}>, <mailto:support@vedichour.com?subject=unsubscribe>`,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            }
+          : { 'List-Unsubscribe': '<mailto:support@vedichour.com?subject=unsubscribe>' },
       }),
       signal: AbortSignal.timeout(15000),
     });

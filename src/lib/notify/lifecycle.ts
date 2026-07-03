@@ -8,6 +8,7 @@ import { sendEmail } from './email';
 import { sendWhatsApp } from './whatsapp';
 import { toUsdCents, fetchAllAuthUsers } from '@/lib/admin/analytics';
 import { emailShell, emailButton, plainText } from './emailLayout';
+import { fetchSuppressedSet, unsubscribeUrl } from './suppression';
 
 const SITE = 'https://www.vedichour.com';
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL?.trim() || 'support@vedichour.com';
@@ -179,6 +180,7 @@ export async function runPreviewNurture(): Promise<{ ok: boolean; sent: number }
       .eq('payment_status', 'paid')
       .limit(50000);
     const paidEmails = new Set((paidRows ?? []).map((r) => (r as { user_email?: string }).user_email?.trim().toLowerCase()).filter(Boolean));
+    const suppressed = await fetchSuppressedSet(db);
 
     for (const stage of NURTURE_STAGES) {
       const from = new Date(Date.now() - stage.toH * 3600_000).toISOString();
@@ -199,12 +201,12 @@ export async function runPreviewNurture(): Promise<{ ok: boolean; sent: number }
         const key = email.toLowerCase();
         if (!email || seen.has(key)) continue;
         if (rr.payment_status === 'paid' || rr.payment_status === 'promo') continue;
-        if (paidEmails.has(key)) continue;
+        if (paidEmails.has(key) || suppressed.has(key)) continue;
         seen.add(key);
         const name = ((rr.native_name ?? '').trim().split(' ')[0]) || 'there';
         const { subject, html, text } = nurtureEmail(stage.key, name, rr.personal_context ?? null);
-        await sendEmail({ to: email, subject, html, text });
-        sent++;
+        const res = await sendEmail({ to: email, subject, html, text, listUnsubscribeUrl: unsubscribeUrl(email) });
+        if (res.ok) sent++;
       }
     }
     return { ok: true, sent };
@@ -228,6 +230,7 @@ export async function runAbandonedCheckoutRecovery(): Promise<{ ok: boolean; sen
       .gte('created_at', from)
       .lte('created_at', to)
       .limit(2000);
+    const suppressed = await fetchSuppressedSet(db);
 
     for (const p of pending ?? []) {
       const reportId = (p as { report_id?: string }).report_id;
@@ -239,7 +242,7 @@ export async function runAbandonedCheckoutRecovery(): Promise<{ ok: boolean; sen
       if (!rep || rep.status === 'complete') continue;
       const email = (rep.user_email ?? '').trim();
       const name = ((rep.native_name ?? '').trim().split(' ')[0]) || 'there';
-      if (email) await sendEmail({ to: email, subject: `${name}, your VedicHour reading is one step away`, html: abandonedHtml(name), text: abandonedText(name) });
+      if (email && !suppressed.has(email.toLowerCase())) await sendEmail({ to: email, subject: `${name}, your VedicHour reading is one step away`, html: abandonedHtml(name), text: abandonedText(name), listUnsubscribeUrl: unsubscribeUrl(email) });
       const phone = (rep.phone ?? '').trim();
       if (phone) await sendWhatsApp({ to: phone, body: `Namaste ${name} 🙏 Your VedicHour reading is computed and ready to unlock — finish here: ${SITE}/pricing?promo=NEWUSER30 (NEWUSER30 = 30% off).` });
       sent++;

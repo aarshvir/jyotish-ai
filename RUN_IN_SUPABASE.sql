@@ -462,3 +462,15 @@ CREATE POLICY "day_ratings_insert_own" ON public.day_ratings
 DROP POLICY IF EXISTS "day_ratings_update_own" ON public.day_ratings;
 CREATE POLICY "day_ratings_update_own" ON public.day_ratings
   FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ---------------------------------------------------------------------
+-- 20260703_email_suppressions.sql  (one-click unsubscribe + CAN-SPAM)
+-- ---------------------------------------------------------------------
+-- Suppression list checked before every marketing/nurture send; /api/unsubscribe
+-- writes to it. Service-role only (RLS on, no client policies). Idempotent.
+CREATE TABLE IF NOT EXISTS public.email_suppressions (
+  email      TEXT PRIMARY KEY,
+  reason     TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE public.email_suppressions ENABLE ROW LEVEL SECURITY;
