@@ -7,56 +7,20 @@
  */
 
 import { Fragment } from 'react';
+import { FEATURE_MATRIX, type PlanId } from '@/lib/pricing';
 
-const FEATURES: { group: string; rows: Array<{ label: string; free: string | boolean; week: string | boolean; month: string | boolean; year: string | boolean }> }[] = [
-  {
-    group: 'Birth chart',
-    rows: [
-      { label: 'Free Kundli (Janam Kundali)', free: true, week: true, month: true, year: true },
-      { label: 'Rising sign + Moon sign + birth star', free: true, week: true, month: true, year: true },
-      { label: 'Current main period + sub-period', free: true, week: true, month: true, year: true },
-      { label: 'Full birth chart narrative (personalised)', free: false, week: false, month: true, year: true },
-      { label: 'All 9 planets with dignities', free: 'summary', week: true, month: true, year: true },
-      { label: 'Yogas detected + scripture citations', free: false, week: true, month: true, year: true },
-    ],
-  },
-  {
-    group: 'Daily timing',
-    rows: [
-      { label: 'Planetary hours schedule (18/day)', free: 'sample', week: true, month: true, year: true },
-      { label: 'Timing quality overlay (8 periods/day)', free: false, week: true, month: true, year: true },
-      { label: 'Challenging window alerts', free: false, week: true, month: true, year: true },
-      { label: 'Hourly Vedic windows (18/day)', free: 'sample', week: true, month: true, year: true },
-      { label: 'AI narrative per day', free: false, week: true, month: true, year: true },
-      { label: 'Peak / avoid window highlights', free: false, week: true, month: true, year: true },
-    ],
-  },
-  {
-    group: 'Forecast horizon',
-    rows: [
-      { label: '7-day hour-level forecast', free: false, week: true, month: true, year: true },
-      { label: '30-day hour-level forecast', free: false, week: false, month: true, year: true },
-      { label: 'Weekly synthesis (next 4 weeks)', free: false, week: true, month: true, year: true },
-      { label: '12-month thematic outlook', free: false, week: true, month: true, year: true },
-      { label: 'Priority support + 12-month access', free: false, week: false, month: false, year: true },
-    ],
-  },
-  {
-    group: 'Exports & access',
-    rows: [
-      { label: 'PDF report', free: false, week: true, month: true, year: true },
-      { label: 'Markdown export', free: false, week: true, month: true, year: true },
-      { label: 'Re-generate any time', free: 'unlimited', week: 'within plan', month: 'within plan', year: 'within plan' },
-      { label: '24h no-questions refund', free: 'n/a', week: true, month: true, year: true },
-    ],
-  },
-];
+// Single source of truth: the table renders from FEATURE_MATRIX (imported from
+// '@/lib/pricing'), the SAME data the landing Pricing cards and /pricing use, so
+// the three surfaces can never contradict each other.
+const FEATURES = FEATURE_MATRIX;
 
-const PLANS = [
+// Plan columns keyed to FeatureRow (free / '7day' / monthly / annual). Sub-labels
+// and the Monthly highlight mirror PLAN_CARDS' badges without re-stating prices.
+const PLANS: readonly { key: PlanId; label: string; sub: string; highlight?: boolean }[] = [
   { key: 'free', label: 'Free Kundli', sub: 'Free' },
-  { key: 'week', label: '7-Day Forecast', sub: '7 days' },
-  { key: 'month', label: 'Monthly Oracle', sub: '30 days · Recommended', highlight: true },
-  { key: 'year', label: 'Annual Oracle', sub: '12-mo + 30-day · Best Value' },
+  { key: '7day', label: '7-Day Forecast', sub: '7 days' },
+  { key: 'monthly', label: 'Monthly Oracle', sub: '30 days · Recommended', highlight: true },
+  { key: 'annual', label: 'Annual Oracle', sub: '1-year access · Best Value' },
 ] as const;
 
 function Cell({ value }: { value: string | boolean }) {
@@ -137,9 +101,9 @@ export default function PricingComparison() {
                     <tr key={`${group.group}-${r.label}`} className="border-t border-horizon/20">
                       <td className="p-4 font-body text-body-sm text-star/85">{r.label}</td>
                       <td className="p-4 text-center border-l border-horizon/20"><Cell value={r.free} /></td>
-                      <td className="p-4 text-center border-l border-horizon/20"><Cell value={r.week} /></td>
-                      <td className="p-4 text-center border-l border-horizon/20 bg-amber/[0.03]"><Cell value={r.month} /></td>
-                      <td className="p-4 text-center border-l border-horizon/20"><Cell value={r.year} /></td>
+                      <td className="p-4 text-center border-l border-horizon/20"><Cell value={r['7day']} /></td>
+                      <td className="p-4 text-center border-l border-horizon/20 bg-amber/[0.03]"><Cell value={r.monthly} /></td>
+                      <td className="p-4 text-center border-l border-horizon/20"><Cell value={r.annual} /></td>
                     </tr>
                   ))}
                 </Fragment>
@@ -166,9 +130,9 @@ export default function PricingComparison() {
               <ul className="space-y-2">
                 {FEATURES.flatMap((g) =>
                   g.rows
-                    .filter((r) => (r as Record<string, unknown>)[p.key] !== false)
+                    .filter((r) => r[p.key] !== false)
                     .map((r) => {
-                      const v = (r as Record<string, unknown>)[p.key];
+                      const v = r[p.key];
                       return (
                         <li key={`${p.key}-${r.label}`} className="flex items-start gap-2.5">
                           <span className="text-success mt-1 shrink-0">

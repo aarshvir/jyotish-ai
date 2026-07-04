@@ -9,14 +9,38 @@ import { StarField } from '@/components/ui/StarField';
 function UpsellSuccessContent() {
   const searchParams = useSearchParams();
   const reportId = searchParams.get('reportId');
-  const [progress, setProgress] = useState(0);
+  // Real generation state polled from the report status endpoint (no fabricated progress).
+  const [progress, setProgress] = useState<number | null>(null);
+  const [isComplete, setIsComplete] = useState(false);
 
+  // Poll the real report status while the extra days are appended. Stops on completion,
+  // on error, or after a bounded number of attempts (the notify email is the backstop).
   useEffect(() => {
-    const interval = setInterval(() => {
-      setProgress((p) => (p < 95 ? p + Math.random() * 5 : p));
-    }, 800);
-    return () => clearInterval(interval);
-  }, []);
+    if (!reportId) return;
+    let cancelled = false;
+    let attempts = 0;
+    const MAX_ATTEMPTS = 120; // ~120 * 5s = 10 min ceiling on polling
+
+    async function poll() {
+      if (cancelled) return;
+      attempts += 1;
+      try {
+        const res = await fetch(`/api/reports/${reportId}/status`, { credentials: 'include', cache: 'no-store' });
+        const data = (await res.json().catch(() => ({}))) as { status?: string; isComplete?: boolean; progress?: number };
+        if (cancelled) return;
+        if (res.ok) {
+          if (typeof data.progress === 'number') setProgress(data.progress);
+          if (data.isComplete || data.status === 'complete') { setIsComplete(true); return; }
+          if (data.status === 'error') return; // stop; the report page surfaces the error
+        }
+      } catch { /* transient — keep polling */ }
+      if (!cancelled && attempts < MAX_ATTEMPTS) {
+        setTimeout(() => void poll(), 5000);
+      }
+    }
+    void poll();
+    return () => { cancelled = true; };
+  }, [reportId]);
 
   return (
     <div className="min-h-screen bg-space text-star flex flex-col items-center justify-center p-6 relative overflow-hidden">
@@ -32,24 +56,34 @@ function UpsellSuccessContent() {
           <span className="text-4xl text-success">✓</span>
         </motion.div>
 
-        <h1 className="text-display-sm font-display mb-4">Upgrade Successful</h1>
+        <h1 className="text-display-sm font-display mb-4">Upgrade Confirmed</h1>
         <p className="text-dust text-lg mb-8">
-          The stars are aligning. We are currently extending your 7-day outlook into a full <strong className="text-success">30-Day Monthly Oracle</strong>.
+          {isComplete ? (
+            <>Your full <strong className="text-success">30-Day Monthly Oracle</strong> is ready. Open it below.</>
+          ) : (
+            <>Your upgrade is confirmed — we&apos;re adding days 8&ndash;30 to your <strong className="text-success">30-Day Monthly Oracle</strong> now. You can wait here or open your report; we&apos;ll email you the moment it&apos;s ready.</>
+          )}
         </p>
 
-        <div className="mb-8">
-          <div className="flex justify-between text-xs font-mono text-dust mb-2">
-            <span>APPENDING DAYS 8–30</span>
-            <span>{Math.round(progress)}%</span>
+        {reportId && !isComplete && (
+          <div className="mb-8">
+            <div className="flex justify-between text-xs font-mono text-dust mb-2">
+              <span>APPENDING DAYS 8–30</span>
+              {typeof progress === 'number' ? <span>{Math.round(progress)}%</span> : <span className="animate-pulse">WORKING…</span>}
+            </div>
+            <div className="h-2 w-full bg-horizon/20 rounded-full overflow-hidden border border-horizon/30">
+              {typeof progress === 'number' ? (
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(2, progress)}%` }}
+                  className="h-full bg-success shadow-glow-success"
+                />
+              ) : (
+                <div className="h-full w-1/3 bg-success/70 shadow-glow-success animate-pulse" />
+              )}
+            </div>
           </div>
-          <div className="h-2 w-full bg-horizon/20 rounded-full overflow-hidden border border-horizon/30">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              className="h-full bg-success shadow-glow-success"
-            />
-          </div>
-        </div>
+        )}
 
         <div className="p-4 rounded-sm bg-nebula border border-horizon/40 text-left mb-8">
           <p className="text-sm text-dust/80 leading-relaxed italic">
@@ -61,7 +95,7 @@ function UpsellSuccessContent() {
           href={reportId ? `/report/${reportId}` : '/dashboard'}
           className="btn-primary w-full py-4 text-base font-semibold"
         >
-          Return to your Cosmic Report
+          Open your report
         </Link>
       </div>
     </div>

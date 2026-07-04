@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { DashaTimeline } from '@/components/report/DashaTimeline';
+import { ShareResult } from '@/components/shared/ShareResult';
 
 interface DoshaFlag {
   present?: boolean;
@@ -99,6 +100,15 @@ export function KundaliResultDisplay({
           >
             Download / print PDF
           </button>
+        </div>
+        <div className="mt-5 no-print">
+          <ShareResult
+            title="My Kundli snapshot · VedicHour"
+            text={`My Kundli: ${lagna} rising, Moon in ${moonSign}${moonNakshatra ? ` (${moonNakshatra})` : ''} — read free on VedicHour.`}
+            url={typeof window !== 'undefined' ? `${window.location.origin}/kundali` : undefined}
+            surface="kundli"
+            utmCampaign="kundli_share"
+          />
         </div>
       </motion.div>
 

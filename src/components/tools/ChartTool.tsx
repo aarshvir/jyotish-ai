@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
 import { isValidLat, isValidLng } from '@/lib/utils/coords';
+import { ShareResult } from '@/components/shared/ShareResult';
 
 export type ToolView =
   | 'manglik'
@@ -36,6 +37,32 @@ const DEFAULT: BirthDetails = {
 };
 
 const fmt = (iso: string) => (iso ? iso.slice(0, 10) : '');
+
+// A factual, outcome-neutral one-liner describing the computed result — no claims, no luck.
+function shareTextFor(view: ToolView, res: ChartResult): string {
+  const doshaLine = (label: string, dosha: Dosha) =>
+    `${label}: ${dosha.present ? `present (${dosha.severity})` : 'not present'}`;
+  switch (view) {
+    case 'manglik':
+      return `${doshaLine('Manglik (Mangal) Dosha', res.doshas.manglik)} — computed free on VedicHour.`;
+    case 'kaalsarp':
+      return `${doshaLine('Kaal Sarpa Dosha', res.doshas.kaalSarpa)} — computed free on VedicHour.`;
+    case 'sadesati':
+      return `${doshaLine('Sade Sati', res.doshas.sadeSati)} — computed free on VedicHour.`;
+    case 'dasha':
+      return `My current Mahadasha is ${res.current_dasha?.mahadasha ?? '—'} — computed free on VedicHour.`;
+    case 'nakshatra':
+      return `My birth star (Nakshatra) is ${res.moon_nakshatra ?? '—'}${res.moon_nakshatra_pada ? ` pada ${res.moon_nakshatra_pada}` : ''} — computed free on VedicHour.`;
+    case 'moonsign':
+      return `My Moon sign (Rashi) is ${res.moon_sign ?? '—'} — computed free on VedicHour.`;
+    case 'lagna':
+      return `My Lagna (Ascendant) is ${res.lagna ?? '—'} — computed free on VedicHour.`;
+    case 'fullchart':
+      return `My Kundli: ${res.lagna ?? '—'} rising, Moon in ${res.moon_sign ?? '—'}${res.moon_nakshatra ? ` (${res.moon_nakshatra})` : ''} — computed free on VedicHour.`;
+    default:
+      return 'Computed free on VedicHour.';
+  }
+}
 
 export function ChartTool({
   view,
@@ -103,7 +130,14 @@ export function ChartTool({
       {res && (
         <div className="mt-6 rounded-card border border-amber/30 bg-gradient-to-br from-amber/[0.07] via-cosmos to-cosmos p-6 sm:p-8 text-center">
           <ResultView view={view} res={res} />
-          <Link href={ctaHref} className="btn-primary inline-block mt-7 px-7 py-2.5">{ctaLabel} →</Link>
+          <ShareResult
+            title="My Vedic chart · VedicHour"
+            text={shareTextFor(view, res)}
+            surface="calculator"
+            utmCampaign="calculator_share"
+            className="mt-7"
+          />
+          <Link href={ctaHref} className="btn-primary inline-block mt-6 px-7 py-2.5">{ctaLabel} →</Link>
         </div>
       )}
     </div>

@@ -87,7 +87,24 @@ const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
   AED: 'AED',
 };
 
-export default async function PricingPage() {
+/** Validate a recovery-email/blog promo code: uppercase alphanumerics plus
+ *  dash/underscore, ≤32 chars. Returns '' if the shape is invalid so a bad
+ *  ?promo= is silently ignored rather than propagated into checkout links. */
+function sanitizePromo(raw: string | string[] | undefined): string {
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  if (!v) return '';
+  const code = v.toUpperCase();
+  return /^[A-Z0-9_-]{1,32}$/.test(code) ? code : '';
+}
+
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: { promo?: string | string[] };
+}) {
+  const { promo: rawPromo } = searchParams;
+  const promo = sanitizePromo(rawPromo);
+
   const h = await headers();
   const currency = currencyFromHeader(h.get('x-currency'));
   const prices = getPricesForCurrency(currency);
@@ -103,6 +120,9 @@ export default async function PricingPage() {
 
   const plans = BASE_PLANS.map((p) => ({
     ...p,
+    // Carry a valid recovery-email/blog promo through the click so /onboard
+    // (which auto-applies ?promo=) doesn't drop the discount that drew the visit.
+    href: promo ? `${p.href}&promo=${promo}` : p.href,
     price: p.id === 'free' ? 'Free' : (prices[p.id] ?? usdPrices[p.id] ?? ''),
     priceNote: p.id === 'free' ? 'No credit card required' : `One-time · ${CURRENCY_LABELS[currency]}`,
   }));
@@ -124,6 +144,11 @@ export default async function PricingPage() {
         <p className="mt-4 font-mono text-mono-sm text-dust">
           Prices shown in {currency}. All plans are one-time — no subscription.
         </p>
+        {promo && (
+          <p className="mt-4 inline-flex items-center gap-2 rounded-pill border border-amber/30 bg-amber/[0.06] px-4 py-1.5 font-mono text-mono-sm text-amber">
+            Code <span className="font-semibold tracking-wide">{promo}</span> applied at checkout
+          </p>
+        )}
       </section>
 
       {/* Three standalone readings */}
