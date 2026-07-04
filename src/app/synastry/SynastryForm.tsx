@@ -4,10 +4,21 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
 import { isValidLat, isValidLng } from '@/lib/utils/coords';
+import { track } from '@/components/analytics/PostHogProvider';
 
 const DEFAULT_A: BirthDetails = {
   name: '', birth_date: '', birth_time: '12:00:00', birth_city: '', birth_lat: 0, birth_lng: 0,
 };
+
+// Stash both partners' details before a Ziina redirect so a cancelled/declined payment
+// restores them instead of two blank forms on return.
+const DRAFT_KEY = 'vh_synastry_draft';
+function readSynastryDraft(): { a: BirthDetails; b: BirthDetails } | null {
+  try {
+    const raw = typeof window !== 'undefined' ? sessionStorage.getItem(DRAFT_KEY) : null;
+    return raw ? (JSON.parse(raw) as { a: BirthDetails; b: BirthDetails }) : null;
+  } catch { return null; }
+}
 
 const KOOTAS = ['Varna', 'Vashya', 'Tara', 'Yoni', 'Graha Maitri', 'Gana', 'Bhakoot', 'Nadi'];
 
@@ -26,9 +37,28 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
   const [promo, setPromo] = useState('');
 
   useEffect(() => {
+    const payment = searchParams.get('payment');
     if (searchParams.get('unlocked') === '1') {
       setOkMsg('Your Matchmaking unlock is active — enter both birth details and tap "See our compatibility" for the full breakdown.');
-    } else if (searchParams.get('payment') === 'error') {
+      return;
+    }
+    if (!payment) return;
+
+    // Restore both partners' details (wiped by the full-page Ziina redirect) so the user
+    // returns to a filled form, not blanks. Only fills fields that are still empty.
+    const draft = readSynastryDraft();
+    if (draft) {
+      setA((prev) => (prev.birth_date ? prev : draft.a));
+      setB((prev) => (prev.birth_date ? prev : draft.b));
+    }
+
+    if (payment === 'cancelled') {
+      setErr('Your payment didn’t complete — nothing was charged. Your details are saved below; tap "Unlock" to try again.');
+    } else if (payment === 'failed') {
+      setErr('Payment failed — nothing was charged. Please try again or use a different card.');
+    } else if (payment === 'pending' || payment === 'incomplete') {
+      setOkMsg('Your payment is still processing — you have not been charged twice. If your unlock doesn’t appear, refresh this page in a minute.');
+    } else if (payment === 'error') {
       setErr('Something went wrong finishing your payment. If you were charged, refresh this page in a minute — your unlock should appear.');
     }
   }, [searchParams]);
@@ -54,7 +84,11 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
       }
       const data = (await res.json().catch(() => ({}))) as { redirectUrl?: string; error?: string };
       if (!res.ok) { setErr(data.error ?? 'Checkout failed'); return; }
-      if (data.redirectUrl) window.location.href = data.redirectUrl;
+      if (data.redirectUrl) {
+        try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ a, b })); } catch { /* private mode/quota */ }
+        track('checkout_started', { plan: 'synastry', product: 'synastry' });
+        window.location.href = data.redirectUrl;
+      }
     } catch {
       setErr('Network error');
     } finally {

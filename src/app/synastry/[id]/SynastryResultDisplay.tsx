@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { MandalaRing } from '@/components/ui/MandalaRing';
+import { ShareResult } from '@/components/shared/ShareResult';
 
 const NAKSHATRA_NATURES: Record<string, string> = {
   Ashwini: 'Dynamic & Healing', Bharani: 'Creative & Intense', Krittika: 'Sharp & Purifying',
@@ -67,6 +68,13 @@ export function SynastryResultDisplay({ score, breakdown, commentary, partnerA, 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="max-w-2xl">
           <h1 className="text-display-md font-display mb-4 text-star">{guidance.title}</h1>
           <p className="text-lg text-dust/80 leading-relaxed italic">&quot;{commentary}&quot;</p>
+          <ShareResult
+            title="Our Gun Milan score · VedicHour"
+            text={`Our Gun Milan (Ashtakoot) score is ${score}/36 — matched free on VedicHour.`}
+            surface="gun_milan"
+            utmCampaign="gun_milan_share"
+            className="mt-8"
+          />
         </motion.div>
       </div>
 

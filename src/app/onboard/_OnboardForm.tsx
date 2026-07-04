@@ -6,6 +6,32 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { createClient } from '@/lib/supabase/client';
+import { track } from '@/components/analytics/PostHogProvider';
+
+// Draft of the birth details + chosen plan, stashed to sessionStorage before a Ziina
+// redirect so a cancelled/declined payment can restore the form instead of a blank slate.
+const DRAFT_KEY = 'vh_onboard_draft';
+interface OnboardDraft {
+  name: string;
+  birthDate: string;
+  birthTime: string;
+  birthCity: string;
+  reportType: ReportPlanId;
+  promoCode: string;
+}
+function readDraft(): OnboardDraft | null {
+  try {
+    const raw = typeof window !== 'undefined' ? sessionStorage.getItem(DRAFT_KEY) : null;
+    if (!raw) return null;
+    return JSON.parse(raw) as OnboardDraft;
+  } catch { return null; }
+}
+function writeDraft(d: OnboardDraft) {
+  try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch { /* private mode/quota */ }
+}
+function clearDraft() {
+  try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -135,7 +161,8 @@ function Step1({ form, update, onNext }: Step1Props) {
   const emailInvalid = emailTouched && form.email.length > 0 && !isValidEmail(form.email);
   const nameInvalid = nameTouched && form.name.trim().length === 0;
   const phoneInvalid = phoneTouched && form.phone.length > 0 && !isValidPhone(form.phone);
-  const canProceed = form.name.trim().length > 0 && isValidEmail(form.email) && isValidPhone(form.phone);
+  // Phone is optional — only validated when the user actually typed something.
+  const canProceed = form.name.trim().length > 0 && isValidEmail(form.email) && (form.phone === '' || isValidPhone(form.phone));
 
   return (
     <>
@@ -188,7 +215,7 @@ function Step1({ form, update, onNext }: Step1Props) {
             </p>
           )}
         </Field>
-        <Field label="Phone Number" htmlFor="onboard-phone" why="Our astrologer may call to discuss your reading. Never shared.">
+        <Field label="Phone Number" hint="Optional" htmlFor="onboard-phone" why="Optional — get your report link on WhatsApp when it's ready. Never shared.">
           <input
             id="onboard-phone"
             type="tel"
@@ -201,7 +228,6 @@ function Step1({ form, update, onNext }: Step1Props) {
             onBlur={() => setPhoneTouched(true)}
             aria-invalid={phoneInvalid || undefined}
             aria-describedby={phoneInvalid ? 'onboard-phone-err' : undefined}
-            required
           />
           {phoneInvalid && (
             <p id="onboard-phone-err" role="alert" className="text-caution text-xs mt-1.5">
@@ -618,6 +644,9 @@ function OnboardPageInner() {
     type: 'cancelled' | 'error' | 'failed' | 'pending';
     message: string;
   } | null>(null);
+  // "Check payment status" for a pending Ziina payment — read-only, cannot double-charge.
+  const [checkingPayment, setCheckingPayment] = useState(false);
+  const [checkCooldown, setCheckCooldown] = useState(0);
 
   const [promoDiscount, setPromoDiscount] = useState(0);
 
@@ -652,6 +681,28 @@ function OnboardPageInner() {
       }
     });
   }, [router]);
+
+  // Restore a saved draft on plain mount too (e.g. user navigated back, or returned without
+  // the ?payment= param). Only fills fields that are still empty, so profile pre-fill / typed
+  // values always win. The payment-return effect handles the banner + step jump.
+  useEffect(() => {
+    const draft = readDraft();
+    if (!draft) return;
+    setForm((prev) => {
+      const isEmpty = !prev.name && !prev.birthDate && !prev.birthTime && !prev.birthCity;
+      if (!isEmpty) return prev;
+      return {
+        ...prev,
+        name: prev.name || draft.name || '',
+        birthDate: prev.birthDate || draft.birthDate || '',
+        birthTime: prev.birthTime || draft.birthTime || '',
+        birthCity: prev.birthCity || draft.birthCity || '',
+        reportType: draft.reportType || prev.reportType,
+      };
+    });
+    if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const plan = searchParams.get('plan');
@@ -719,21 +770,42 @@ function OnboardPageInner() {
     const payment = searchParams.get('payment');
     if (!payment) return;
 
+    // Restore the birth-detail draft stashed before the Ziina redirect, so a cancelled /
+    // declined payment lands the user back on their filled-in form (React state was wiped
+    // by the full-page redirect). Only fill fields that are currently empty.
+    const failedOrCancelled = payment === 'cancelled' || payment === 'failed' || payment === 'error' || payment === 'pending' || payment === 'incomplete';
+    let restored = false;
+    if (failedOrCancelled) {
+      const draft = readDraft();
+      if (draft) {
+        setForm((prev) => ({
+          ...prev,
+          name: prev.name || draft.name || '',
+          birthDate: prev.birthDate || draft.birthDate || '',
+          birthTime: prev.birthTime || draft.birthTime || '',
+          birthCity: prev.birthCity || draft.birthCity || '',
+          reportType: draft.reportType || prev.reportType,
+        }));
+        if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);
+        restored = true;
+      }
+    }
+    const savedNote = restored ? ' Your details are saved below — just try again.' : '';
+
     if (payment === 'cancelled') {
-      setPaymentReturnBanner({ type: 'cancelled', message: 'Payment cancelled — select a plan below to try again.' });
+      setPaymentReturnBanner({ type: 'cancelled', message: `Your payment didn't complete — nothing was charged.${savedNote || ' Select a plan below to try again.'}` });
     } else if (payment === 'failed') {
-      setPaymentReturnBanner({ type: 'failed', message: 'Payment failed — please try again or use a different card.' });
+      setPaymentReturnBanner({ type: 'failed', message: `Payment failed — nothing was charged.${savedNote} Please try again or use a different card.` });
     } else if (payment === 'error') {
-      setPaymentReturnBanner({ type: 'error', message: 'Something went wrong with payment. Please try again.' });
+      setPaymentReturnBanner({ type: 'error', message: `Something went wrong with payment — nothing was charged.${savedNote} Please try again.` });
     } else if (payment === 'pending' || payment === 'incomplete') {
-      setPaymentReturnBanner({ type: 'pending', message: 'Payment is still processing — please wait a moment before trying again.' });
+      setPaymentReturnBanner({ type: 'pending', message: `Payment is still processing — you have not been charged twice.${savedNote} Use "Check payment status" below, or wait a moment before trying again.` });
     }
 
     // Jump to plan selection step (step 2) if we have a prior session so user skips re-entry.
-    // Note: form fields are React state and reset on full page navigation — we only preserve the step.
     try {
       const storedReportId = typeof window !== 'undefined' ? sessionStorage.getItem('ziina_report_id') : null;
-      if (storedReportId && payment !== 'pending' && payment !== 'incomplete') {
+      if ((storedReportId || restored) && payment !== 'pending' && payment !== 'incomplete') {
         setStep(2);
       }
     } catch { /* sessionStorage may be unavailable */ }
@@ -769,6 +841,11 @@ function OnboardPageInner() {
     return () => window.removeEventListener('e2e-sync-step2', handler);
   }, []);
 
+  // Fire a funnel event whenever the visible onboarding step changes (fire-and-forget).
+  useEffect(() => {
+    track('onboard_step', { step });
+  }, [step]);
+
   function update(field: keyof FormData, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
@@ -778,6 +855,44 @@ function OnboardPageInner() {
 
   function setReportType(id: ReportPlanId) {
     setForm((prev) => ({ ...prev, reportType: id }));
+    track('plan_selected', { plan: id });
+  }
+
+  // Tick down the "Check payment status" cooldown so users can't hammer the poll.
+  useEffect(() => {
+    if (checkCooldown <= 0) return;
+    const t = setTimeout(() => setCheckCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [checkCooldown]);
+
+  // Re-check a pending payment by reading the draft report's status (read-only — never
+  // creates a new intent, so it cannot double-charge). If the payment landed, the row
+  // will have left 'pending'; send the user to their report.
+  async function checkPaymentStatus() {
+    if (checkingPayment || checkCooldown > 0) return;
+    let reportId: string | null = null;
+    try { reportId = sessionStorage.getItem('ziina_report_id'); } catch { /* unavailable */ }
+    if (!reportId) {
+      setPaymentReturnBanner({ type: 'error', message: 'We could not find that payment to check. Please select a plan below and try again — you have not been charged.' });
+      return;
+    }
+    setCheckingPayment(true);
+    try {
+      const res = await fetch(`/api/reports/${reportId}/status`, { credentials: 'include', cache: 'no-store' });
+      const data = await res.json().catch(() => ({})) as { status?: string };
+      if (res.ok && data.status && data.status !== 'pending' && data.status !== 'unknown') {
+        // Payment confirmed server-side (report left the 'pending' draft state).
+        clearDraft();
+        router.push(`/report/${reportId}?payment_status=paid`);
+        return;
+      }
+      setPaymentReturnBanner({ type: 'pending', message: 'Still processing — no charge has gone through twice. Give it a few more seconds, then check again.' });
+    } catch {
+      setPaymentReturnBanner({ type: 'pending', message: 'Could not reach the server just now. Please try checking again in a moment — you have not been charged twice.' });
+    } finally {
+      setCheckingPayment(false);
+      setCheckCooldown(8);
+    }
   }
 
   async function geocodeCity(city: string, isCurrent = false) {
@@ -992,6 +1107,19 @@ function OnboardPageInner() {
             sessionStorage.setItem('ziina_report_id', reportId);
           } catch { /* storage unavailable (private mode/quota) — redirect proceeds */ }
         }
+        // Persist a form draft so a cancelled/declined Ziina payment restores the details
+        // instead of a blank form on return.
+        writeDraft({
+          name: form.name,
+          birthDate: form.birthDate,
+          birthTime: form.birthTime,
+          birthCity: form.birthCity,
+          reportType: effectiveType,
+          promoCode,
+        });
+
+        // Conversion event: fired fire-and-forget just before leaving for Ziina.
+        track('checkout_started', { plan: effectiveType, product: 'forecast' });
 
         // Redirect user to Ziina's hosted payment page
         // (sessionStorage cleared on successful report page load — see report/[id]/page.tsx)
@@ -1072,6 +1200,8 @@ function OnboardPageInner() {
       // Non-fatal: navigate anyway; the report page will detect missing state and retry
     }
 
+    // Report row created — the draft has served its purpose; drop it so a later visit starts clean.
+    clearDraft();
     router.push(finalUrl);
   }
 
@@ -1103,7 +1233,26 @@ function OnboardPageInner() {
             <span className="shrink-0 mt-0.5">
               {paymentReturnBanner.type === 'cancelled' ? '↩' : paymentReturnBanner.type === 'pending' ? '⏳' : '✕'}
             </span>
-            <span className="flex-1">{paymentReturnBanner.message}</span>
+            <div className="flex-1">
+              <span>{paymentReturnBanner.message}</span>
+              {paymentReturnBanner.type === 'pending' && (
+                <div className="mt-2.5">
+                  <button
+                    type="button"
+                    onClick={() => void checkPaymentStatus()}
+                    disabled={checkingPayment || checkCooldown > 0}
+                    className="font-mono text-mono-sm px-3 py-1.5 rounded-button border border-caution/40 text-caution hover:bg-caution/10 transition-colors disabled:opacity-50"
+                  >
+                    {checkingPayment
+                      ? 'Checking…'
+                      : checkCooldown > 0
+                      ? `Check again in ${checkCooldown}s`
+                      : 'Check payment status'}
+                  </button>
+                  <p className="font-mono text-[11px] text-caution/60 mt-1.5">Checking is safe — it won&apos;t charge you again.</p>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setPaymentReturnBanner(null)}
               className="shrink-0 opacity-60 hover:opacity-100 transition-opacity"

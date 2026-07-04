@@ -4,10 +4,21 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
 import { isValidLat, isValidLng } from '@/lib/utils/coords';
+import { track } from '@/components/analytics/PostHogProvider';
 
 const DEFAULT: BirthDetails = {
   name: '', birth_date: '', birth_time: '12:00:00', birth_city: '', birth_lat: 0, birth_lng: 0,
 };
+
+// Stash birth details before a Ziina redirect so a cancelled/declined payment restores
+// them instead of a blank form on return.
+const DRAFT_KEY = 'vh_kundali_draft';
+function readKundaliDraft(): BirthDetails | null {
+  try {
+    const raw = typeof window !== 'undefined' ? sessionStorage.getItem(DRAFT_KEY) : null;
+    return raw ? (JSON.parse(raw) as BirthDetails) : null;
+  } catch { return null; }
+}
 
 interface Teaser { lagna: string; moon_sign: string; moon_nakshatra: string; mahadasha: string; antardasha: string }
 
@@ -23,9 +34,24 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
   const [promo, setPromo] = useState('');
 
   useEffect(() => {
+    const payment = searchParams.get('payment');
     if (searchParams.get('unlocked') === '1') {
       setOkMsg('Your Kundali analysis is unlocked — enter your birth details and tap "See my chart" for the full reading.');
-    } else if (searchParams.get('payment') === 'error') {
+      return;
+    }
+    if (!payment) return;
+
+    // Restore birth details (wiped by the full-page Ziina redirect). Only if still empty.
+    const draft = readKundaliDraft();
+    if (draft) setP((prev) => (prev.birth_date ? prev : draft));
+
+    if (payment === 'cancelled') {
+      setErr('Your payment didn’t complete — nothing was charged. Your details are saved below; tap "Unlock" to try again.');
+    } else if (payment === 'failed') {
+      setErr('Payment failed — nothing was charged. Please try again or use a different card.');
+    } else if (payment === 'pending' || payment === 'incomplete') {
+      setOkMsg('Your payment is still processing — you have not been charged twice. If your unlock doesn’t appear, refresh this page in a minute.');
+    } else if (payment === 'error') {
       setErr('Something went wrong finishing your payment. If you were charged, refresh this page in a minute — your unlock should appear.');
     }
   }, [searchParams]);
@@ -46,7 +72,11 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
       }
       const data = (await res.json().catch(() => ({}))) as { redirectUrl?: string; error?: string };
       if (!res.ok) { setErr(data.error ?? 'Checkout failed'); return; }
-      if (data.redirectUrl) window.location.href = data.redirectUrl;
+      if (data.redirectUrl) {
+        try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(p)); } catch { /* private mode/quota */ }
+        track('checkout_started', { plan: 'kundali', product: 'kundali' });
+        window.location.href = data.redirectUrl;
+      }
     } catch {
       setErr('Network error');
     } finally {

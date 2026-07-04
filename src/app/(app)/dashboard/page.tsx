@@ -9,6 +9,7 @@ import { DayRating } from '@/components/report/DayRating';
 import { SynastryTeaser } from '@/components/marketing/SynastryTeaser';
 import CurrencySwitcher from '@/components/landing/CurrencySwitcher';
 import type { PaymentRecord } from '@/app/api/user/payments/route';
+import type { UserChartsResponse } from '@/app/api/user/charts/route';
 import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -406,6 +407,113 @@ function YesterdayFeelCard({ reports }: { reports: Report[] }) {
   );
 }
 
+/**
+ * "Your Kundli & matches" — lists the user's saved standalone Kundali and
+ * Synastry charts (the two non-forecast products), which the dashboard's
+ * `reports` query does not cover. Fetches /api/user/charts client-side, mirroring
+ * how YesterdayFeelCard degrades to nothing on 401/failure/empty (zero-noise).
+ */
+function SavedChartsCard() {
+  const [charts, setCharts] = useState<UserChartsResponse | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/user/charts', { credentials: 'include' });
+        if (!res.ok) return; // signed out / table not live → render nothing
+        const j = (await res.json()) as UserChartsResponse;
+        if (cancelled) return;
+        setCharts({
+          kundali: Array.isArray(j.kundali) ? j.kundali : [],
+          synastry: Array.isArray(j.synastry) ? j.synastry : [],
+        });
+      } catch {
+        // zero-noise degradation
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!charts) return null;
+  const { kundali, synastry } = charts;
+  if (kundali.length === 0 && synastry.length === 0) return null;
+
+  return (
+    <div className="card p-5">
+      <h2 className="font-body font-semibold text-star mb-4">Your Kundli &amp; matches</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Kundali charts */}
+        <div>
+          <p className="text-dust/50 text-mono-sm font-mono uppercase tracking-widest mb-2.5">Kundli readings</p>
+          {kundali.length === 0 ? (
+            <Link href="/kundali" className="text-amber/70 hover:text-amber text-body-sm transition-colors">
+              Get your first Kundli reading →
+            </Link>
+          ) : (
+            <ul className="space-y-1.5">
+              {kundali.map(k => (
+                <li key={k.id}>
+                  <Link href={`/kundali/${k.id}`} className="flex items-center justify-between gap-3 p-2.5 rounded-lg hover:bg-horizon/20 transition-colors group">
+                    <span className="text-star text-body-sm font-medium truncate group-hover:text-amber transition-colors">{k.name}</span>
+                    <span className="text-dust/60 text-mono-sm font-mono shrink-0">{formatDateShort(k.created_at)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* Synastry / match charts */}
+        <div>
+          <p className="text-dust/50 text-mono-sm font-mono uppercase tracking-widest mb-2.5">Match reports</p>
+          {synastry.length === 0 ? (
+            <Link href="/synastry" className="text-amber/70 hover:text-amber text-body-sm transition-colors">
+              Check your first compatibility →
+            </Link>
+          ) : (
+            <ul className="space-y-1.5">
+              {synastry.map(s => (
+                <li key={s.id}>
+                  <Link href={`/synastry/${s.id}`} className="flex items-center justify-between gap-3 p-2.5 rounded-lg hover:bg-horizon/20 transition-colors group">
+                    <span className="text-star text-body-sm font-medium truncate group-hover:text-amber transition-colors">
+                      {s.partnerA} &amp; {s.partnerB}
+                    </span>
+                    <span className="flex items-center gap-2 shrink-0">
+                      {s.score != null && (
+                        <span className="rounded-badge px-2 py-0.5 text-label-sm bg-amber/10 text-amber border border-amber/20 font-mono">{s.score}/36</span>
+                      )}
+                      <span className="text-dust/60 text-mono-sm font-mono">{formatDateShort(s.created_at)}</span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Dashboard discovery teaser for the standalone Kundali product (mirrors SynastryTeaser). */
+function KundaliTeaser() {
+  return (
+    <div className="card border border-amber/25 bg-amber/5 p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h2 className="font-body font-semibold text-star text-lg mb-1">Deep Kundli reading</h2>
+        <p className="text-dust text-body-sm max-w-xl">
+          A full birth-chart analysis — lagna, dashas, doshas and life themes — read from your exact
+          birth moment, grounded in classical Vedic technique.
+        </p>
+      </div>
+      <Link href="/kundali" className="btn-primary text-body-sm px-5 py-2.5 whitespace-nowrap shrink-0">
+        Open Kundli
+      </Link>
+    </div>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 function DashboardInner() {
@@ -710,7 +818,14 @@ function DashboardInner() {
             {/* Resonance loop — how did yesterday feel? */}
             <YesterdayFeelCard reports={reports} />
 
-            <SynastryTeaser />
+            {/* Discovery teasers for both non-forecast products */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <KundaliTeaser />
+              <SynastryTeaser />
+            </div>
+
+            {/* Saved Kundli & match reports (the two non-forecast products) */}
+            <SavedChartsCard />
 
             {/* Two-column grid for recent reports + last payment */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
