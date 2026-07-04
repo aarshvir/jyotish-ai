@@ -7,6 +7,7 @@
 import { createServiceClient } from '@/lib/supabase/admin';
 import { appendReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
+import { resolveHourlyProseDays, resolveProseDayCount } from '@/lib/reports/hourlyProseWindow';
 import { validateReportData } from '@/lib/validation/reportValidation';
 import type { JyotishRagMode } from '@/lib/rag/ragMode';
 import { PHASE } from '@/lib/reports/phases/slugs';
@@ -1600,14 +1601,8 @@ export async function generateReportPipeline(
       // This is what brings a monthly report from ~27min to under 10min: 6 sequential
       // hourly LLM batches → 2, which also slashes exposure to provider throttling.
       // REPORT_HOURLY_PROSE_DAYS=0 restores the old generate-everything behavior.
-      const HOURLY_PROSE_DAYS = (() => {
-        const raw = (process.env.REPORT_HOURLY_PROSE_DAYS ?? '').trim();
-        if (raw === '') return 10; // default: bounded to 10 days
-        const n = parseInt(raw, 10);
-        return Number.isFinite(n) && n >= 0 ? n : 10;
-      })();
-      const proseDayCount =
-        HOURLY_PROSE_DAYS > 0 ? Math.min(HOURLY_PROSE_DAYS, forecastDays.length) : forecastDays.length;
+      const HOURLY_PROSE_DAYS = resolveHourlyProseDays(process.env.REPORT_HOURLY_PROSE_DAYS);
+      const proseDayCount = resolveProseDayCount(HOURLY_PROSE_DAYS, forecastDays.length);
       const allDaysInput = forecastDays.slice(0, proseDayCount).map((day, i) => ({
         dayIndex: i,
         date: day.date,
