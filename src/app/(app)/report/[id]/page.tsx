@@ -21,6 +21,7 @@ import { TodayCard } from '@/components/report/TodayCard';
 import { CorrelationsPanel } from '@/components/report/CorrelationsPanel';
 import { MobileSectionNav } from '@/components/report/MobileSectionNav';
 import { PersonalizedAnswer } from '@/components/report/PersonalizedAnswer';
+import { ExitIntentUpsell } from '@/components/report/ExitIntentUpsell';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { Glossary } from '@/components/report/Glossary';
 import { AskQuestion } from '@/components/report/AskQuestion';
@@ -1510,6 +1511,9 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         )}
 
         <div id="report-content">
+          {/* Last-chance offer when a free reader signals they're leaving (preview only). */}
+          {isPreviewPlan && <ExitIntentUpsell unlockHref="/onboard?plan=7day&promo=NEWUSER30" />}
+
           {/* Mobile section nav — sticky scroll-spy tabs (desktop uses ReportSidebar). */}
           <MobileSectionNav preview={isPreviewPlan} />
 
