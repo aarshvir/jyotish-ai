@@ -21,13 +21,27 @@ export async function GET() {
   if (admin instanceof NextResponse) return admin;
 
   const db = createServiceClient();
-  const [users, reportsRes, paymentsRes] = await Promise.all([
+  // Window analytics to the cohort span (~8 weeks + buffer) so it scales past 50k
+  // events and stays newest-first (same fix as acquisition/funnel/journeys).
+  const nowMs = Date.now();
+  const analyticsSince = new Date(nowMs - 64 * DAY).toISOString();
+  const [users, reportsRes, paymentsRes, analyticsRes] = await Promise.all([
     fetchAllAuthUsers(db),
     db.from('reports').select('user_id, created_at, status').limit(50000),
     db.from('ziina_payments').select('user_id, created_at, status').eq('status', 'completed').limit(50000),
+    db
+      .from('analytics_events')
+      .select('user_id, created_at')
+      .not('user_id', 'is', null)
+      .in('event_name', ['page_view', 'session_start'])
+      .gte('created_at', analyticsSince)
+      .order('created_at', { ascending: false })
+      .limit(50000),
   ]);
 
-  // Activity timestamps (report completed OR payment) per user — the "return" signal.
+  // Activity timestamps per user — the "return" signal. Counts genuine engagement
+  // (a returning page_view / session_start), not only transactions: users rarely
+  // buy twice, so a transactions-only signal made every cohort read ~0% past week 0.
   const activity: Record<string, number[]> = {};
   for (const r of reportsRes.data ?? []) {
     const row = r as { user_id?: string; created_at?: string; status?: string };
@@ -35,6 +49,10 @@ export async function GET() {
   }
   for (const p of paymentsRes.data ?? []) {
     const row = p as { user_id?: string; created_at?: string };
+    if (row.user_id && row.created_at) (activity[row.user_id] ??= []).push(new Date(row.created_at).getTime());
+  }
+  for (const e of analyticsRes.data ?? []) {
+    const row = e as { user_id?: string; created_at?: string };
     if (row.user_id && row.created_at) (activity[row.user_id] ??= []).push(new Date(row.created_at).getTime());
   }
 
@@ -47,7 +65,7 @@ export async function GET() {
   const repeatBuyers = Object.values(paymentsByUser).filter((n) => n >= 2).length;
 
   // Weekly signup cohorts (last 8 weeks).
-  const now = Date.now();
+  const now = nowMs;
   const thisWeek = weekStart(new Date(now));
   const WEEKS = 8;
   const cohortStarts: number[] = [];
