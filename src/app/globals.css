@@ -130,6 +130,22 @@ body {
   .animate-twinkle   { animation: twinkle 4s ease-in-out infinite; }
   .animate-pulse-amber { animation: pulse-amber 2s ease-in-out infinite; }
 
+  /* StarField: static per-star styling lives here so each <span> ships only 5
+     CSS custom properties (position/size/timing). No will-change — the 80
+     forced GPU layer promotions are gone; the browser composites the twinkle
+     on demand. Visual is identical to the previous inline styling. */
+  .vh-star {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--sz);
+    height: var(--sz);
+    border-radius: 9999px;
+    background: #fff;
+    opacity: 0.1;
+    animation: twinkle var(--dur) var(--dly) ease-in-out infinite;
+  }
+
   /* Hero CSS animations — replace Framer Motion on critical above-fold path */
   .animate-fade-down  { animation: fade-down 0.5s cubic-bezier(0.22,1,0.36,1) 0.1s both; }
   .animate-fade-up-1  { animation: slide-up  0.6s cubic-bezier(0.22,1,0.36,1) 0.3s both; }
