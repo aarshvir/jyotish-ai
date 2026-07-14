@@ -7,6 +7,7 @@ import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { createClient } from '@/lib/supabase/client';
 import { track } from '@/components/analytics/PostHogProvider';
+import { isConfirmedPaymentStatus } from '@/lib/ziina/paymentRecovery';
 
 // Draft of the birth details + chosen plan, stashed to sessionStorage before a Ziina
 // redirect so a cancelled/declined payment can restore the form instead of a blank slate.
@@ -881,7 +882,7 @@ function OnboardPageInner() {
     try {
       const res = await fetch(`/api/reports/${reportId}/status`, { credentials: 'include', cache: 'no-store' });
       const data = await res.json().catch(() => ({})) as { payment_status?: string | null };
-      if (res.ok && (data.payment_status === 'paid' || data.payment_status === 'promo')) {
+      if (res.ok && isConfirmedPaymentStatus(data.payment_status)) {
         // Payment confirmed server-side. The report page will start generation if the
         // finalizer granted payment before its background dispatch could begin.
         clearDraft();

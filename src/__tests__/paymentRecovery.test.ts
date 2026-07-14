@@ -1,25 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { buildStatusPayload } from '@/app/api/reports/[id]/status/route';
+import { isConfirmedPaymentStatus } from '@/lib/ziina/paymentRecovery';
 
 describe('pending payment recovery', () => {
-  it('exposes confirmed payment independently of pending generation', () => {
-    const payload = buildStatusPayload(
-      'report-1',
-      {
-        status: 'pending',
-        payment_status: 'paid',
-        plan_type: '7day',
-        report_data: null,
-      },
-      false,
-    );
-
-    expect(payload).toMatchObject({
-      id: 'report-1',
-      status: 'pending',
-      payment_status: 'paid',
-      isComplete: false,
-      report: null,
-    });
+  it('recognizes only server-confirmed entitlement states', () => {
+    expect(isConfirmedPaymentStatus('paid')).toBe(true);
+    expect(isConfirmedPaymentStatus('promo')).toBe(true);
+    expect(isConfirmedPaymentStatus('unpaid')).toBe(false);
+    expect(isConfirmedPaymentStatus('pending')).toBe(false);
+    expect(isConfirmedPaymentStatus(null)).toBe(false);
   });
 });
