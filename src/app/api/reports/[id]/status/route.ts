@@ -209,7 +209,7 @@ function logStatusFetchFailure(
   });
 }
 
-function buildStatusPayload(reportId: string, data: Record<string, unknown>, userIsAdmin: boolean): ReportStatusCachePayload {
+export function buildStatusPayload(reportId: string, data: Record<string, unknown>, userIsAdmin: boolean): ReportStatusCachePayload {
   const status = data?.status ?? 'unknown';
   const isComplete = status === 'complete';
   const reportData = data?.report_data as Record<string, unknown> | null;
@@ -259,6 +259,7 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
   return {
     id: reportId,
     status,
+    payment_status: data?.payment_status ?? null,
     isComplete,
     progress,
     generation_step: data?.generation_step ?? null,
