@@ -210,7 +210,7 @@ function logStatusFetchFailure(
   });
 }
 
-export function buildStatusPayload(
+function buildStatusPayload(
   reportId: string,
   data: Record<string, unknown>,
   userIsAdmin: boolean,
