@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { extractUserVisibleReportError } from '@/lib/reports/reportErrors';
+import { confirmedPaymentStatus } from '@/lib/ziina/paymentRecovery';
 import {
   finalizeReportStatusResponse,
   nextPollAfterMsForPayload,
@@ -209,7 +210,11 @@ function logStatusFetchFailure(
   });
 }
 
-function buildStatusPayload(reportId: string, data: Record<string, unknown>, userIsAdmin: boolean): ReportStatusCachePayload {
+export function buildStatusPayload(
+  reportId: string,
+  data: Record<string, unknown>,
+  userIsAdmin: boolean,
+): ReportStatusCachePayload {
   const status = data?.status ?? 'unknown';
   const isComplete = status === 'complete';
   const reportData = data?.report_data as Record<string, unknown> | null;
@@ -255,10 +260,12 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
     typeof data?.generation_trace_id === 'string' && data.generation_trace_id.trim() !== ''
       ? data.generation_trace_id
       : null;
+  const paymentStatus = confirmedPaymentStatus(data?.payment_status);
 
   return {
     id: reportId,
     status,
+    payment_status: paymentStatus,
     isComplete,
     progress,
     generation_step: data?.generation_step ?? null,
