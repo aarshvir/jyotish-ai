@@ -3,6 +3,8 @@ import {
   type Personalized,
   wantedTier,
   cacheSatisfies,
+  canPersistFullPersonalization,
+  hasPaidPersonalizationEntitlement,
   projectForTier,
 } from '@/lib/reports/personalizedTier';
 
@@ -24,6 +26,9 @@ describe('personalized-answer tier gating (paywall)', () => {
   it('entitlement decides the tier, never the model', () => {
     expect(wantedTier(false)).toBe('preview');
     expect(wantedTier(true)).toBe('full');
+    expect(hasPaidPersonalizationEntitlement('paid')).toBe(true);
+    expect(hasPaidPersonalizationEntitlement('promo')).toBe(true);
+    expect(hasPaidPersonalizationEntitlement('free')).toBe(false);
   });
 
   it('projecting a full object to preview STRIPS full_answer and key_windows', () => {
@@ -56,5 +61,35 @@ describe('personalized-answer tier gating (paywall)', () => {
     const shown = projectForTier(full, want);
     expect(shown.full_answer).toBeUndefined();
     expect(JSON.stringify(shown)).not.toContain('PAID ANSWER');
+  });
+
+  it('never persists an admin inspection into another user’s free report', () => {
+    expect(canPersistFullPersonalization({
+      paymentStatus: 'free',
+      reportOwnerId: 'preview-owner',
+      requesterId: 'admin-user',
+      requesterIsAdmin: true,
+    })).toBe(false);
+  });
+
+  it('persists full answers only when the owner is entitled or is the inspecting admin', () => {
+    expect(canPersistFullPersonalization({
+      paymentStatus: 'paid',
+      reportOwnerId: 'paid-owner',
+      requesterId: 'paid-owner',
+      requesterIsAdmin: false,
+    })).toBe(true);
+    expect(canPersistFullPersonalization({
+      paymentStatus: 'promo',
+      reportOwnerId: 'promo-owner',
+      requesterId: 'admin-user',
+      requesterIsAdmin: true,
+    })).toBe(true);
+    expect(canPersistFullPersonalization({
+      paymentStatus: 'free',
+      reportOwnerId: 'admin-user',
+      requesterId: 'admin-user',
+      requesterIsAdmin: true,
+    })).toBe(true);
   });
 });

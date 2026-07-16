@@ -8,7 +8,14 @@ import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { sanitizePersonalContext, sanitizeLagnaSign, sanitizePlanetName, sanitizeForPrompt } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
-import { type Personalized, wantedTier, cacheSatisfies, projectForTier } from '@/lib/reports/personalizedTier';
+import {
+  type Personalized,
+  cacheSatisfies,
+  canPersistFullPersonalization,
+  hasPaidPersonalizationEntitlement,
+  projectForTier,
+  wantedTier,
+} from '@/lib/reports/personalizedTier';
 
 /**
  * POST /api/reports/[id]/personalized
@@ -44,7 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const entitled =
-    auth.isAdmin === true || row.payment_status === 'paid' || row.payment_status === 'promo';
+    auth.isAdmin === true || hasPaidPersonalizationEntitlement(row.payment_status);
   const wantTier = wantedTier(entitled);
 
   // No question on file → nothing to personalize (common; render nothing).
@@ -159,11 +166,22 @@ Start with { and end with }.`;
     const substantive = wantTier === 'full' ? personalized.full_answer : personalized.teaser;
     if (!substantive || substantive.length < 30) return NextResponse.json({ personalized: null });
 
-    const { error: upErr } = await db
-      .from('reports')
-      .update({ report_data: { ...reportData, personalized }, updated_at: new Date().toISOString() })
-      .eq('id', reportId);
-    if (upErr) console.error('[personalized] persist failed:', upErr.message);
+    const canPersist =
+      personalized.tier === 'preview' ||
+      canPersistFullPersonalization({
+        paymentStatus: row.payment_status,
+        reportOwnerId: row.user_id,
+        requesterId: auth.user.id,
+        requesterIsAdmin: auth.isAdmin === true,
+      });
+
+    if (canPersist) {
+      const { error: upErr } = await db
+        .from('reports')
+        .update({ report_data: { ...reportData, personalized }, updated_at: new Date().toISOString() })
+        .eq('id', reportId);
+      if (upErr) console.error('[personalized] persist failed:', upErr.message);
+    }
 
     return NextResponse.json({ personalized });
   } catch (e) {
