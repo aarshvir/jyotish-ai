@@ -24,12 +24,13 @@ import {
  * grounded in their own report. This is the conversion spine:
  *   - FREE / preview  → a warm teaser that genuinely starts to answer, plus THREE
  *     specific "unlock" bullets naming what the full report reveals — an open loop
- *     that makes buying feel obvious. The full answer is NEVER generated or stored
- *     for a non-entitled report (no paywall leak).
+ *     that makes buying feel obvious. The owner never receives paid fields.
  *   - PAID / promo / admin → the full, direct answer + the exact timing windows.
+ *     An admin inspecting another user's free report may receive a full answer for
+ *     QA, but it is never stored in that owner-readable report row.
  *
- * On-demand + idempotent: the result is persisted into report_data.personalized and
- * returned from cache on subsequent loads. Fail-soft: any error returns 204-shaped
+ * On-demand + idempotent for persistable tiers: the result is cached in
+ * report_data.personalized. Fail-soft: any error returns 204-shaped
  * `{ personalized: null }` so the report renders fine without it.
  */
 
