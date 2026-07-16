@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
-import { POST } from './route';
+import { POST } from '@/app/api/reports/[id]/personalized/route';
 
 const mockState = vi.hoisted(() => ({
   auth: {
