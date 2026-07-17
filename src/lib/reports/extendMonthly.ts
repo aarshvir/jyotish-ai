@@ -160,6 +160,14 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
     gridResults.push(...part);
   }
 
+  const failedGridDays = gridResults.filter((result) => result === null).length;
+  if (failedGridDays > 0) {
+    return {
+      ok: false,
+      message: `${failedGridDays} daily forecast grid${failedGridDays === 1 ? '' : 's'} failed`,
+    };
+  }
+
   const forecastNew: DayInt[] = gridResults.map((r, i) => {
     const date = dateRange[i];
     const raw = r as Record<string, unknown> | null;
@@ -247,6 +255,9 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
   const v2Enabled = isV2GuidanceEnabled();
 
   const newReportDays = forecastNew.map((d) => {
+    // Compute this before fallback text masks whether the LLM batch succeeded.
+    // DailyAnalysis uses false to recover prose on demand for affected days.
+    const hasAiProse = d.slots.some((slot) => (slot.commentary ?? '').trim().length >= 80);
     const mappedSlots = d.slots.map((s) => {
       const slotScore = s.score ?? 50;
       const isRk = s.is_rahu_kaal ?? false;
@@ -310,6 +321,7 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
         ? { start: d.rahu_kaal.start.slice(0, 5), end: d.rahu_kaal.end.slice(0, 5) }
         : null,
       slots: mappedSlots,
+      ai_prose: hasAiProse,
       peak_count: mappedSlots.filter((s) => s.score >= 75 && !s.is_rahu_kaal).length,
       caution_count: mappedSlots.filter((s) => s.score < 45 || s.is_rahu_kaal).length,
       ...(briefingV2 ? { briefing_v2: briefingV2 } : {}),

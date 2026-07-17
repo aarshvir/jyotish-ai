@@ -14,6 +14,7 @@ import {
 } from '@/lib/ziina/server';
 import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
 import { emitUpsellEvent } from '@/lib/analytics/upsellEvents';
+import { isMonthlyUpgradeReady } from '@/lib/ziina/monthlyUpgradeSafety';
 
 /**
  * POST /api/ziina/upgrade
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
   const db = createServiceClient();
   const { data: row, error } = await db
     .from('reports')
-    .select('id, user_id, plan_type, payment_status')
+    .select('id, user_id, plan_type, payment_status, status, report_data')
     .eq('id', reportId)
     .eq('user_id', auth.user.id)
     .maybeSingle();
@@ -50,6 +51,15 @@ export async function POST(request: NextRequest) {
   }
   if (row.plan_type !== '7day') {
     return NextResponse.json({ error: 'Upgrade only available from 7-day plan' }, { status: 400 });
+  }
+  // The automatic post-payment upsell can render while the base report is still
+  // generating. Charging before seven days exist makes the async extension fail
+  // permanently, so keep checkout closed until its required input is durable.
+  if (!isMonthlyUpgradeReady(row)) {
+    return NextResponse.json(
+      { error: 'Your 7-day report is still generating. Please try the upgrade again once it is ready.' },
+      { status: 409 },
+    );
   }
 
   const { data: parentPay } = await db

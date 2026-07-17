@@ -396,12 +396,14 @@ export async function finalizeCompletedZiinaIntent(
   }
 
   if (planType === 'monthly_upgrade') {
+    // Record the confirmed charge, but do not advertise a Monthly report until
+    // extendReportToMonthly has durably written all 30 days. That function flips
+    // plan_type only after its report_data update succeeds.
     await db
       .from('reports')
       .update({
         payment_status: 'paid',
         payment_provider: 'ziina',
-        plan_type: 'monthly',
         upsell_converted_at: new Date().toISOString(),
       })
       .eq('id', reportId)
