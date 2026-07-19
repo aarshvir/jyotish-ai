@@ -22,3 +22,8 @@ export function resolveProseDayCount(proseDays: number, totalDays: number): numb
   if (totalDays <= 0) return 0;
   return proseDays > 0 ? Math.min(proseDays, totalDays) : totalDays;
 }
+
+/** Whether the pipeline intentionally generated hourly prose for this day. */
+export function isDayInsideProseWindow(dayIndex: number, proseDayCount: number): boolean {
+  return dayIndex >= 0 && dayIndex < proseDayCount;
+}

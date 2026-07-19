@@ -7,7 +7,11 @@
 import { createServiceClient } from '@/lib/supabase/admin';
 import { appendReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
-import { resolveHourlyProseDays, resolveProseDayCount } from '@/lib/reports/hourlyProseWindow';
+import {
+  isDayInsideProseWindow,
+  resolveHourlyProseDays,
+  resolveProseDayCount,
+} from '@/lib/reports/hourlyProseWindow';
 import { validateReportData } from '@/lib/validation/reportValidation';
 import type { JyotishRagMode } from '@/lib/rag/ragMode';
 import { PHASE } from '@/lib/reports/phases/slugs';
@@ -2132,12 +2136,16 @@ export async function generateReportPipeline(
     onStep({ type: 'step_started', step: 10, message: 'Finalising your report...', detail: 'Assembling all sections' });
 
     const v2Enabled = isV2GuidanceEnabled();
+    const proseDayCount = resolveProseDayCount(
+      resolveHourlyProseDays(process.env.REPORT_HOURLY_PROSE_DAYS),
+      forecastDays.length,
+    );
 
-    const daysForReport = forecastDays.map((d) => {
-      // True when this day received real LLM hourly prose (bounded near-window);
-      // false = deterministic guidance only, generated on-demand when opened.
-      // Computed BEFORE the fallback fill below masks the distinction.
-      const hasAiProse = (d.slots ?? []).some((s) => ((s.commentary ?? '').trim().length >= 80));
+    const daysForReport = forecastDays.map((d, dayIndex) => {
+      // Validation can patch a handful of far-window slots. The configured
+      // pipeline boundary, not commentary length, is the source of truth for
+      // whether the whole day received hourly prose.
+      const hasAiProse = isDayInsideProseWindow(dayIndex, proseDayCount);
       const mappedSlots = (d.slots ?? []).map((s) => {
         const slotScore = s.score ?? 50;
         const isRk = s.is_rahu_kaal ?? false;

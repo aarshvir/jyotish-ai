@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { resolveHourlyProseDays, resolveProseDayCount } from '@/lib/reports/hourlyProseWindow';
+import {
+  isDayInsideProseWindow,
+  resolveHourlyProseDays,
+  resolveProseDayCount,
+} from '@/lib/reports/hourlyProseWindow';
 
 /**
  * Guards the bounded-window sizing that keeps report generation under 10 minutes.
@@ -43,6 +47,20 @@ describe('hourly-prose window sizing', () => {
     });
     it('a 7-day report is fully covered by the default window', () => {
       expect(resolveProseDayCount(resolveHourlyProseDays(undefined), 7)).toBe(7);
+    });
+  });
+
+  describe('isDayInsideProseWindow (completion marker)', () => {
+    it('marks only the first ten monthly days complete by default', () => {
+      const proseDayCount = resolveProseDayCount(resolveHourlyProseDays(undefined), 30);
+
+      expect(isDayInsideProseWindow(9, proseDayCount)).toBe(true);
+      expect(isDayInsideProseWindow(10, proseDayCount)).toBe(false);
+      expect(isDayInsideProseWindow(29, proseDayCount)).toBe(false);
+    });
+
+    it('rejects invalid negative indexes', () => {
+      expect(isDayInsideProseWindow(-1, 10)).toBe(false);
     });
   });
 });
