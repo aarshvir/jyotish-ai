@@ -44,6 +44,16 @@ describe('hourly prose integrity', () => {
     ])).toBe(true);
   });
 
+  it('detects the template stub used for partially parsed legacy model output', () => {
+    expect(containsDeterministicHourlyFallback([
+      {
+        slot_index: 0,
+        commentary:
+          'The Sun planetary hour shapes the tone of this window for you. Lean into the kind of work it naturally supports.',
+      },
+    ])).toBe(true);
+  });
+
   it('does not invalidate a fully personalized stored day', () => {
     expect(containsDeterministicHourlyFallback([
       {
