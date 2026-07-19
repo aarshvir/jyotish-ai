@@ -21,6 +21,7 @@ import {
 import { buildSlotGuidance } from '@/lib/guidance/builder';
 import { sanitizeRahuKaalCommentary } from '@/lib/commentary/rahuKaalSanitize';
 import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
+import { hasCompleteHourlyProse } from '@/lib/reports/hourlyProseIntegrity';
 
 const DEFAULT_BATCH_MODEL = 'claude-haiku-4-5-20251001';
 
@@ -264,6 +265,10 @@ Include every day from the input. Each day must have exactly 18 slots. Start wit
     for (const d of daysIn) {
       const normSlots = normalizeDaySlots(d.slots);
       const row = parsed?.days?.find((x) => x.dayIndex === d.dayIndex) ?? parsed?.days?.find((x) => x.date === d.date);
+      const expectedSlotIndexes = normSlots.map((slot, i) => slot.slot_index ?? i);
+      if (!hasCompleteHourlyProse(row?.slots, expectedSlotIndexes)) {
+        throw new Error(`hourly-batch: incomplete prose for day ${d.dayIndex}`);
+      }
       const slotMap = new Map<number, string>();
       (row?.slots ?? []).forEach((s) => {
         if (typeof s.slot_index === 'number' && typeof s.commentary === 'string') {
