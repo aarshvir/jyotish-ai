@@ -6,6 +6,9 @@ export interface HourlyProseSlot {
   };
 }
 
+const MIN_SUBSTANTIVE_PROSE_CHARS = 80;
+const TEMPLATE_STUB_PHRASE = 'planetary hour shapes the tone of this window for you';
+
 /**
  * A successful model batch must cover every requested slot exactly once with
  * substantive prose. Callers use this before treating HTTP 200 as complete.
@@ -26,7 +29,7 @@ export function hasCompleteHourlyProse(
       typeof slotIndex !== 'number' ||
       !expected.has(slotIndex) ||
       seen.has(slotIndex) ||
-      (slot.commentary ?? '').trim().length < 25
+      (slot.commentary ?? '').trim().length < MIN_SUBSTANTIVE_PROSE_CHARS
     ) {
       return false;
     }
@@ -46,6 +49,9 @@ export function containsDeterministicHourlyFallback(
   return (slots ?? []).some((slot) => {
     const commentary = (slot.commentary ?? '').trim();
     const deterministic = (slot.guidance_v2?.summary_plain ?? '').trim();
-    return Boolean(commentary && deterministic && commentary === deterministic);
+    return (
+      commentary.toLowerCase().includes(TEMPLATE_STUB_PHRASE) ||
+      Boolean(commentary && deterministic && commentary === deterministic)
+    );
   });
 }

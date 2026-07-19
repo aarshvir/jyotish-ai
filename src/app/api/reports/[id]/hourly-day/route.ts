@@ -95,7 +95,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   // Idempotent unless this is an older report affected by the broken assembly
   // marker, where validation patched a few slots but deterministic text remained.
-  if (day.ai_prose === true && !containsDeterministicHourlyFallback(day.slots)) {
+  const expectedStoredSlotIndexes = Array.from({ length: 18 }, (_, i) => i);
+  const hasCompleteStoredProse = hasCompleteHourlyProse(day.slots, expectedStoredSlotIndexes);
+  if (
+    day.ai_prose === true &&
+    hasCompleteStoredProse &&
+    !containsDeterministicHourlyFallback(day.slots)
+  ) {
     return NextResponse.json({ date, cached: true, slots: day.slots ?? [] });
   }
 
