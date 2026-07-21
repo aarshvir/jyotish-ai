@@ -1517,6 +1517,38 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           {/* Mobile section nav — sticky scroll-spy tabs (desktop uses ReportSidebar). */}
           <MobileSectionNav preview={isPreviewPlan} />
 
+          {/* Identity strip — whose chart this is. A real Jyotish report always opens
+              by stating the birth details it was cast from; it also builds trust that
+              the computation used THEIR exact data. */}
+          {(displayName || displayDate) && (
+            <div className="mb-6 rounded-card border border-horizon/40 bg-cosmos px-5 py-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+              <div className="min-w-0">
+                <p className="font-display text-headline-sm text-star leading-tight truncate">
+                  {displayName || 'Your chart'}
+                </p>
+                <p className="font-mono text-mono-sm text-dust/75 leading-relaxed">
+                  {[
+                    displayDate ? `Born ${displayDate}${displayTime ? ` at ${displayTime.slice(0, 5)}` : ''}` : '',
+                    displayCity ? `in ${displayCity}` : '',
+                  ].filter(Boolean).join(' ')}
+                  {(reportData?.current_city ?? currentCity) ? ` · Now in ${reportData?.current_city ?? currentCity}` : ''}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                {natalChart?.lagna && natalChart.lagna !== 'Unknown' && (
+                  <span className="font-mono text-mono-sm text-amber bg-amber/10 border border-amber/25 rounded-pill px-3 py-1">
+                    {natalChart.lagna} lagna
+                  </span>
+                )}
+                {natalChart?.planets?.Moon?.sign && (
+                  <span className="font-mono text-mono-sm text-dust bg-bg-3/60 border border-horizon/30 rounded-pill px-3 py-1">
+                    ☽ {natalChart.planets.Moon.sign}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* The seeker's own question, answered first. Preview shows a teaser +
               locked full answer (the conversion spine); paid shows the full answer.
               Renders nothing when there's no question on file. */}

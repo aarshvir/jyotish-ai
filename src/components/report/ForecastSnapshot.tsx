@@ -71,7 +71,9 @@ function domainAverage(months: MonthSummary[] | undefined, key: keyof MonthSumma
 }
 
 function trendWord(score: number | null): { word: string; tone: 'good' | 'mixed' | 'tender' } {
-  if (score == null) return { word: 'Unfolding', tone: 'mixed' };
+  // score==null cards are filtered out before render — never show filler like
+  // "Unfolding" (looked like random output to real readers). Kept as a safety net.
+  if (score == null) return { word: '', tone: 'mixed' };
   if (score >= 68) return { word: 'Strong', tone: 'good' };
   if (score >= 55) return { word: 'Steady', tone: 'good' };
   if (score >= 45) return { word: 'Mixed', tone: 'mixed' };
@@ -192,22 +194,61 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
           </div>
         )}
 
-        {/* Four domain cards — the paid 12-month Career/Money/Love/Health scores.
-            Hidden for preview so the year-ahead value stays behind the paywall. */}
-        {!preview && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
-            {domains.map((d) => {
-              const t = trendWord(d.score);
-              return (
-                <div key={d.label} className="rounded-md bg-bg-3/40 border border-horizon/30 p-4 flex flex-col">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-body text-body-sm text-star font-semibold">{d.label}</span>
-                    <span className={`font-mono text-mono-sm ${toneClass(t.tone)}`}>{t.word}</span>
+        {/* Domain cards — the paid 12-month Career/Money/Love/Health scores.
+            Only domains with REAL data render (a card with no score and no copy
+            read as random filler); hidden entirely for preview. */}
+        {!preview && (() => {
+          const real = domains.filter((d) => d.score != null || d.line);
+          if (real.length === 0) return null;
+          return (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
+              {real.map((d) => {
+                const t = trendWord(d.score);
+                return (
+                  <div key={d.label} className="rounded-md bg-bg-3/40 border border-horizon/30 p-4 flex flex-col">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-body text-body-sm text-star font-semibold">{d.label}</span>
+                      {d.score != null && t.word && (
+                        <span className={`font-mono text-mono-sm ${toneClass(t.tone)}`}>{t.word}</span>
+                      )}
+                    </div>
+                    <p className="font-body text-mono-sm text-dust/80 leading-snug">
+                      {d.line || (d.score != null ? `Averaging ${d.score}/100 across your 12 months.` : '')}
+                    </p>
                   </div>
-                  <p className="font-body text-mono-sm text-dust/80 leading-snug">{d.line || 'A steady area this period — no major swings expected.'}</p>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+          );
+        })()}
+
+        {/* PREVIEW: the year-ahead value, visible but locked — plus the way to buy.
+            (Free readers previously saw a thesis line and NO purchase path here.) */}
+        {preview && (
+          <div className="rounded-md bg-space/50 border border-amber/25 p-5 mb-2">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-4 h-4 text-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                <rect x="5" y="11" width="14" height="10" rx="2" />
+                <path d="M8 11V7a4 4 0 0 1 8 0v4" strokeLinecap="round" />
+              </svg>
+              <p className="font-mono text-mono-sm text-amber uppercase tracking-wider">In your full report</p>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {['Career', 'Money', 'Love', 'Health'].map((d) => (
+                <span key={d} className="font-mono text-mono-sm text-dust bg-bg-3/60 border border-horizon/30 rounded-pill px-3 py-1">
+                  🔒 {d} · 12-month score
+                </span>
+              ))}
+              <span className="font-mono text-mono-sm text-dust bg-bg-3/60 border border-horizon/30 rounded-pill px-3 py-1">
+                🔒 Best &amp; caution dates
+              </span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <a href="/onboard?plan=7day&promo=NEWUSER30" className="btn-primary px-6 py-3 text-sm">
+                Unlock my full year →
+              </a>
+              <span className="font-mono text-mono-sm text-dust/60">30% off with NEWUSER30 · 24-hour money-back guarantee</span>
+            </div>
           </div>
         )}
 
