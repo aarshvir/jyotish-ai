@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { inngest } from '@/lib/inngest/client';
 import type { PipelineInput } from '@/lib/reports/orchestrator';
+import { normalizePlanType } from '@/lib/reports/planType';
 import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
 import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { redeemPromoCode } from '@/lib/promo/server';
@@ -135,8 +136,8 @@ async function maybeDispatchReportGenerate(
     return;
   }
 
-  const planRaw = r.plan_type ?? '7day';
-    const planType = planRaw === 'free' || planRaw === 'preview' ? 'preview' : planRaw;
+  const planRaw = normalizePlanType(r.plan_type);
+  const planType = planRaw === 'free' ? 'preview' : planRaw;
   const tz = typeof r.timezone_offset === 'number' ? r.timezone_offset : 0;
 
   const input: PipelineInput = {
