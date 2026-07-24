@@ -37,6 +37,7 @@ import { buildFunctionalLordGroups } from '@/lib/engine/functionalNature';
 import { lagnaSignToIndex } from '@/lib/engine/horaBase';
 import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
 import { generationErrorCtaKind } from '@/lib/reports/reportErrors';
+import { isFreeOrPreviewPlan, normalizePlanType } from '@/lib/reports/planType';
 import { resolveLocalSlotTimes } from '@/lib/time/localTime';
 
 const UUID_RE =
@@ -375,7 +376,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
 
     // Prefer DB-cached values over URL params so retries never fall back to placeholders
     const cached = dbBirthRef.current;
-    const planRaw = cached?.plan_type || params.get('plan_type') || type;
+    const planRaw = normalizePlanType(cached?.plan_type || params.get('plan_type') || type);
     const planType = planRaw === 'free' ? 'preview' : planRaw;
     const rawTime = cached?.birth_time || params.get('time') || time;
     const birthTimeNorm =
@@ -728,7 +729,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
 
     // Prefer DB-cached birth data (populated during init()) over URL params.
     // This is what fixes "Try Again" sending placeholder "Seeker / 2000-01-01" data.
-    const planRaw = cached?.plan_type || params.get('plan_type') || type;
+    const planRaw = normalizePlanType(cached?.plan_type || params.get('plan_type') || type);
     const planType = planRaw === 'free' ? 'preview' : planRaw;
     const rawTime = cached?.birth_time || params.get('time') || time;
     const birthTimeNorm =
@@ -1319,9 +1320,10 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
   // navigated anyway), fall back to the URL `type` param so a free-origin load still
   // gates. type defaults to 'free' (line ~141), so unknown free-origin loads fail CLOSED
   // (preview) rather than leaking the paid report; a paid `type` keeps fail-open.
-  const reportPlanType = dbBirthRef.current?.plan_type ?? (type === 'free' ? 'preview' : type);
-  const isPreviewPlan =
-    !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview');
+  const reportPlanType = normalizePlanType(
+    dbBirthRef.current?.plan_type ?? (type === 'free' ? 'preview' : type),
+  );
+  const isPreviewPlan = !isAdminView && isFreeOrPreviewPlan(reportPlanType);
 
   // `synthesis` is a PeriodSynthesis OBJECT, not a string — interpolating it
   // directly yielded "[object Object]" and dropped the richest report context

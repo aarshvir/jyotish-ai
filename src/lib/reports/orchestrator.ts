@@ -8,6 +8,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { appendReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { resolveHourlyProseDays, resolveProseDayCount } from '@/lib/reports/hourlyProseWindow';
+import { isFreeOrPreviewPlan, normalizePlanType } from '@/lib/reports/planType';
 import { validateReportData } from '@/lib/validation/reportValidation';
 import type { JyotishRagMode } from '@/lib/rag/ragMode';
 import { PHASE } from '@/lib/reports/phases/slugs';
@@ -343,8 +344,7 @@ function createConcurrencyLimiter(limit: number) {
 
 /** free/preview may use 206 + template from LLM routes. Paid: refuse placeholder reports. */
 function allowPartialLlmFallbackForPlan(input: PipelineInput): boolean {
-  const p = String(input.planType ?? input.type ?? '7day').toLowerCase();
-  return p === 'free' || p === 'preview';
+  return isFreeOrPreviewPlan(input.planType ?? input.type);
 }
 
 function requireScriptureGroundingForPlan(input: PipelineInput): boolean {
@@ -587,10 +587,7 @@ export async function generateReportPipeline(
   // Free/preview reports are generated in full but only ONE sample day + no
   // months/weeks/synthesis may be persisted (the rest is paid). Hoisted so every
   // save (incl. the intermediate day_scores write) can narrow consistently.
-  const previewPlan = (() => {
-    const p = String(input.planType ?? input.type ?? '').toLowerCase();
-    return p === 'free' || p === 'preview';
-  })();
+  const previewPlan = isFreeOrPreviewPlan(input.planType ?? input.type);
   const defaultBudgetMs = (() => {
     if (explicitBudget > 0) return explicitBudget;
     // Inside Inngest step: each phase gets its own function invocation
@@ -797,7 +794,7 @@ export async function generateReportPipeline(
       .maybeSingle();
     if ((existingRow as { status?: string } | null)?.status === 'complete') return;
 
-    const planRaw = input.planType ?? input.type;
+    const planRaw = normalizePlanType(input.planType ?? input.type);
     const planType = planRaw === 'free' ? 'preview' : planRaw;
     const birthTimeNorm =
       input.time && input.time.includes(':') && input.time.split(':').length === 2

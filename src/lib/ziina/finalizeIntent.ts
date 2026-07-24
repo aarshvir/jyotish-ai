@@ -136,7 +136,7 @@ async function maybeDispatchReportGenerate(
   }
 
   const planRaw = r.plan_type ?? '7day';
-  const planType = planRaw === 'free' ? 'preview' : planRaw;
+    const planType = planRaw === 'free' || planRaw === 'preview' ? 'preview' : planRaw;
   const tz = typeof r.timezone_offset === 'number' ? r.timezone_offset : 0;
 
   const input: PipelineInput = {
