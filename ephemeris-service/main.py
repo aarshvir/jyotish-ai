@@ -22,12 +22,71 @@ def _err_detail(e: Exception) -> str:
 
 app = FastAPI(title="Vedic Astrology Ephemeris Service")
 
-# Set Lahiri ayanamsa using ICRC J2000.0 standard (23°51'20" at J2000.0)
-# This pins the zero-point to the Indian Nautical Almanac standard, matching
-# Jagannatha Hora and government ephemeris. Without this, pyswisseph uses a
-# slightly different default that can shift boundary planets by up to 0.3°.
-swe.set_sid_mode(swe.SIDM_LAHIRI, 2451545.0, 23.853222)
-print(f"[ephemeris] Lahiri ayanamsa at J2000.0: {swe.get_ayanamsa_ut(2451545.0):.6f}° (ICRC standard)")
+# ── Lahiri (Chitrapaksha) sidereal mode — LOAD-BEARING ────────────────────────
+# pyswisseph's DEFAULT sidereal mode is Fagan-Bradley (SIDM_FAGAN_BRADLEY == 0),
+# the Western sidereal zero-point. It sits ~0.88° from Lahiri — enough to place a
+# boundary planet in the WRONG SIGN AND HOUSE and to shift every Vimshottari dasha
+# date by ~13 months. Vedic astrology requires Lahiri.
+#
+# This previously called set_sid_mode(SIDM_LAHIRI, 2451545.0, 23.853222). Passing
+# t0/ayan_t0 alongside a *named* mode is version-dependent in pyswisseph: on some
+# builds it is ignored (correct Lahiri), on others the call does not stick and the
+# library silently stays on Fagan-Bradley. With pyswisseph unpinned, production
+# resolved to such a build and served Fagan-Bradley charts. Hence: no t0/ayan_t0,
+# a hard startup assertion, and a per-request re-assert (see the middleware below).
+_AYANAMSA_NAME = "Lahiri (Chitrapaksha)"
+# Lahiri at J2000.0 ≈ 23.85°; Fagan-Bradley ≈ 24.74°. The band below separates them
+# unambiguously, so a wrong mode fails loudly at boot instead of silently shipping.
+_LAHIRI_J2000_MIN, _LAHIRI_J2000_MAX = 23.70, 24.00
+
+
+def ensure_lahiri() -> float:
+    """Re-assert Lahiri and return the J2000.0 ayanamsa.
+
+    Setting the mode only writes a C global, so this is effectively free and safe
+    to call per request. It guarantees no library call, worker fork, or future
+    swe.close() can silently drop us back to the Fagan-Bradley default.
+    """
+    swe.set_sid_mode(swe.SIDM_LAHIRI, 0, 0)
+    return swe.get_ayanamsa_ut(2451545.0)
+
+
+_AYAN_J2000 = ensure_lahiri()
+if not (_LAHIRI_J2000_MIN <= _AYAN_J2000 <= _LAHIRI_J2000_MAX):
+    raise RuntimeError(
+        f"FATAL: sidereal mode is not {_AYANAMSA_NAME} — ayanamsa at J2000.0 is "
+        f"{_AYAN_J2000:.6f}°, expected {_LAHIRI_J2000_MIN}–{_LAHIRI_J2000_MAX}°. "
+        f"Refusing to serve charts computed on the wrong zero-point "
+        f"(pyswisseph {getattr(swe, '__version__', 'unknown')})."
+    )
+print(
+    f"[ephemeris] {_AYANAMSA_NAME} ayanamsa at J2000.0: {_AYAN_J2000:.6f}° "
+    f"(pyswisseph {getattr(swe, '__version__', 'unknown')})"
+)
+
+
+@app.middleware("http")
+async def _reassert_sidereal_mode(request, call_next):
+    """Belt-and-braces: pin Lahiri at the start of every request."""
+    ensure_lahiri()
+    return await call_next(request)
+
+
+@app.get("/health")
+def health():
+    """Liveness + the calculation invariant that matters most.
+
+    `curl <service>/health` is the one-command way to prove production is on the
+    correct zero-point. `ayanamsa_ok: false` means every chart being served is wrong.
+    """
+    ayan = ensure_lahiri()
+    return {
+        "ok": True,
+        "ayanamsa": _AYANAMSA_NAME,
+        "ayanamsa_j2000": round(ayan, 6),
+        "ayanamsa_ok": _LAHIRI_J2000_MIN <= ayan <= _LAHIRI_J2000_MAX,
+        "pyswisseph": getattr(swe, "__version__", "unknown"),
+    }
 
 # Timezone finder instance
 _tf = TimezoneFinder()
@@ -350,8 +409,9 @@ def read_root():
     return {"message": "Vedic Astrology Ephemeris Service", "version": "1.0"}
 
 
-@app.get("/health")
+@app.get("/healthz")
 def health_check():
+    """Legacy alias — see /health for the ayanamsa invariant."""
     return {"ok": True, "service": "ephemeris"}
 
 

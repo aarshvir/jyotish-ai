@@ -1,6 +1,10 @@
 fastapi
 uvicorn
-pyswisseph
+# PINNED — load-bearing. An unpinned pyswisseph let production resolve to a build
+# where set_sid_mode(SIDM_LAHIRI, t0, ayan_t0) did not stick, silently serving
+# Fagan-Bradley (Western sidereal) charts ~0.88° off Lahiri. Verify any bump with
+# `curl <service>/health` (ayanamsa_ok must be true) before deploying.
+pyswisseph==2.10.3.2
 geopy
 timezonefinder
 python-dateutil

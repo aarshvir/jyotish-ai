@@ -71,9 +71,11 @@ export function DecideSection({ months, strategicWindows, days }: DecideSectionP
       .map((m, idx) => ({
         ...m,
         idx,
-        domainScore: m.domain_scores?.[scoreKey] ?? m.score ?? 65,
+        // No magic default: a month we could not score must never be presented as
+        // a recommendation (it used to default to 65 and could outrank real data).
+        domainScore: m.domain_scores?.[scoreKey] ?? m.score ?? null,
       }))
-      .filter(() => true) // keep all — user may want to plan ahead
+      .filter((m): m is typeof m & { domainScore: number } => typeof m.domainScore === 'number')
       .sort((a, b) => b.domainScore - a.domainScore)
       .slice(0, 4);
   }, [months, scoreKey]);

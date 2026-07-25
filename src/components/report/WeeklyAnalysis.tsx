@@ -60,25 +60,10 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
     return { backgroundColor: '#ef4444' };
   };
 
-  if (!weeks || weeks.length === 0) {
-    return (
-      <motion.div
-        id="weekly"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.6 }}
-        className="space-y-4 mb-12"
-      >
-        <h2 className="font-display font-semibold text-star text-3xl">
-          Weekly Breakdown
-        </h2>
-        <p className="font-mono text-mono-sm text-dust">
-          Weekly data unavailable.
-        </p>
-      </motion.div>
-    );
-  }
+  // No weeks computed (stripped preview, or a partial report) → render nothing
+  // rather than a bare "Weekly data unavailable." panel, which reads as a broken
+  // product. The preview's value/upsell surfaces live in the snapshot hero.
+  if (!weeks || weeks.length === 0) return null;
 
   return (
     <motion.div
