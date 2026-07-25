@@ -7,6 +7,7 @@ import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { createClient } from '@/lib/supabase/client';
 import { track } from '@/components/analytics/PostHogProvider';
+import { isConfirmedPaymentStatus } from '@/lib/ziina/paymentRecovery';
 
 // Draft of the birth details + chosen plan, stashed to sessionStorage before a Ziina
 // redirect so a cancelled/declined payment can restore the form instead of a blank slate.
@@ -866,8 +867,9 @@ function OnboardPageInner() {
   }, [checkCooldown]);
 
   // Re-check a pending payment by reading the draft report's status (read-only — never
-  // creates a new intent, so it cannot double-charge). If the payment landed, the row
-  // will have left 'pending'; send the user to their report.
+  // creates a new intent, so it cannot double-charge). Payment and generation are separate
+  // state machines: a paid draft may still have generation status='pending', so only the
+  // server-owned payment_status is authoritative here.
   async function checkPaymentStatus() {
     if (checkingPayment || checkCooldown > 0) return;
     let reportId: string | null = null;
@@ -879,9 +881,10 @@ function OnboardPageInner() {
     setCheckingPayment(true);
     try {
       const res = await fetch(`/api/reports/${reportId}/status`, { credentials: 'include', cache: 'no-store' });
-      const data = await res.json().catch(() => ({})) as { status?: string };
-      if (res.ok && data.status && data.status !== 'pending' && data.status !== 'unknown') {
-        // Payment confirmed server-side (report left the 'pending' draft state).
+      const data = await res.json().catch(() => ({})) as { payment_status?: string | null };
+      if (res.ok && isConfirmedPaymentStatus(data.payment_status)) {
+        // Payment confirmed server-side. The report page will start generation if the
+        // finalizer granted payment before its background dispatch could begin.
         clearDraft();
         router.push(`/report/${reportId}?payment_status=paid`);
         return;

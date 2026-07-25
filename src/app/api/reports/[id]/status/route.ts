@@ -14,6 +14,7 @@ import {
   takeReportStatusRateLimit,
   type ReportStatusCachePayload,
 } from '@/lib/reports/reportStatusPoll';
+import { isConfirmedPaymentStatus } from '@/lib/ziina/paymentRecovery';
 
 /** Per-attempt PostgREST read timeouts (ms). Total worst-case fits within `maxDuration`. */
 const READ_TIMEOUTS_MS = [12_000, 20_000, 30_000] as const;
@@ -259,6 +260,7 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
   return {
     id: reportId,
     status,
+    payment_status: isConfirmedPaymentStatus(data?.payment_status) ? data.payment_status : null,
     isComplete,
     progress,
     generation_step: data?.generation_step ?? null,
