@@ -5,6 +5,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
+import {
+  containsDeterministicHourlyFallback,
+  hasCompleteHourlyProse,
+} from '@/lib/reports/hourlyProseIntegrity';
 
 /**
  * POST /api/reports/[id]/hourly-day  { date: 'YYYY-MM-DD' }
@@ -32,6 +36,9 @@ interface StoredSlot {
   score?: number;
   commentary?: string;
   commentary_short?: string;
+  guidance_v2?: {
+    summary_plain?: string;
+  };
   [k: string]: unknown;
 }
 interface StoredDay {
@@ -86,8 +93,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
   const day = days[dayIdx];
 
-  // Idempotent: already has AI prose (written by the pipeline or a previous call).
-  if (day.ai_prose === true) {
+  // Idempotent unless this is an older report affected by the broken assembly
+  // marker, where validation patched a few slots but deterministic text remained.
+  const expectedStoredSlotIndexes = Array.from({ length: 18 }, (_, i) => i);
+  const hasCompleteStoredProse = hasCompleteHourlyProse(day.slots, expectedStoredSlotIndexes);
+  if (
+    day.ai_prose === true &&
+    hasCompleteStoredProse &&
+    !containsDeterministicHourlyFallback(day.slots)
+  ) {
     return NextResponse.json({ date, cached: true, slots: day.slots ?? [] });
   }
 
@@ -153,6 +167,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     const j = (await res.json()) as { days?: Array<{ slots?: Array<{ slot_index?: number; commentary?: string; commentary_short?: string }> }> };
     const proseSlots = j.days?.[0]?.slots ?? [];
+    const expectedSlotIndexes = batchSlots.map((slot) => slot.slot_index);
+    if (!hasCompleteHourlyProse(proseSlots, expectedSlotIndexes)) {
+      return NextResponse.json(
+        { error: 'The AI writer is briefly busy — try again in a moment.' },
+        { status: 503 },
+      );
+    }
     const proseMap = new Map<number, { commentary: string; commentary_short?: string }>();
     proseSlots.forEach((s) => {
       if (typeof s.slot_index === 'number' && typeof s.commentary === 'string' && s.commentary.trim()) {
