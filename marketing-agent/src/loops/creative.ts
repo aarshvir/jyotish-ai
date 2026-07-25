@@ -325,10 +325,11 @@ PER-FIELD SPEC — follow exactly:
 - hookText: the burned-in on-screen text of the FIRST frame. It must be readable in under 1.0 second, because Meta scores early retention at the 1-second mark. Maximum ${HOOK_MAX_WORDS} words. Make it a moment or a question, not a slogan.
 - spokenScript: what the voice actually says. Hinglish in Latin letters. 22-32 seconds read aloud — that is 55 to 80 words. Conversational, like a friend texting you back, not an ad.
 - shotList: 3 to 5 shots. Each: kind = "presenter" | "broll" | "screencap"; seconds (number); visualPrompt.
-  - presenter / broll → visualPrompt is a concrete cinematic prompt for a text-to-video model: SUBJECT, ACTION, CAMERA MOVE, LIGHTING, MOOD. It must be physically renderable — one clear subject, one clear action. No text-in-video, no logos, no crowds of faces, no readable UI.
+  - presenter / broll → visualPrompt is a concrete cinematic prompt for a text-to-video model: SUBJECT, ACTION, CAMERA MOVE, LIGHTING, MOOD. It must be physically renderable — one clear subject, one clear action. No text-in-video, no logos, no crowds of faces, no readable UI. If a phone/laptop/screen appears in shot, the prompt MUST state the screen is "heavily out of focus, glowing softly, no legible characters" — video models render gibberish text on screens, and a paused frame with fake text kills credibility. Prefer b-roll with no device screens at all.
   - screencap → this is a REAL screen recording of the live product, so visualPrompt is simply WHAT TO CAPTURE, chosen from: ${s.screencapLibrary.map((x) => `"${x}"`).join('; ')}
   - SHOT 1 MUST BE kind "presenter" — a visible human opens every reel. Platforms deprioritise fully AI-generated reels with no human layer, and the render pipeline rejects any reel that does not open on a presenter.
   - Every variant must include at least one screencap shot. Shot seconds should sum to roughly the spoken length.
+  - HARD RULE — narration must FIT each shot: spoken Hinglish runs ~2.3 words/second, so the words spoken during a shot must be ≤ (seconds × 2.3). The renderer cuts overrun audio mid-sentence, which sounds broken. Budget the script line-by-line against the shot durations.
 - onScreenCaptions: 3-6 short burned-in caption lines that track the script. Punchy, Latin letters.
 - cta: one short line. Invite, never promise.
 - hashtags: 10-15, mixed romanised-Hindi and English, targeted at India. Lowercase, with the # prefix.
