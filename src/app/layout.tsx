@@ -6,6 +6,7 @@ import FirstTouch from '@/components/analytics/FirstTouch';
 import RefCapture from '@/components/analytics/RefCapture';
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
+import { MetaPixel } from '@/components/analytics/MetaPixel';
 
 const cormorant = localFont({
   src: [
@@ -152,6 +153,7 @@ export default function RootLayout({
         <RefCapture />
         <FeedbackWidget />
         <GoogleAnalytics />
+        <MetaPixel />
         {/* Global JSON-LD: Organization + WebSite + SoftwareApplication */}
         <script
           type="application/ld+json"

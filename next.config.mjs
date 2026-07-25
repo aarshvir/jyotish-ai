@@ -53,11 +53,11 @@ const nextConfig = {
               // maps.googleapis.com / api.opencagedata.com removed — geocoding + LLM calls
               // run server-side, no client code calls these origins. Tightens the
               // script-injection surface (script-src) with no functional loss.
-              "script-src 'self' 'unsafe-inline' https://pay.ziina.com https://eu-assets.i.posthog.com https://www.googletagmanager.com",
+              "script-src 'self' 'unsafe-inline' https://pay.ziina.com https://eu-assets.i.posthog.com https://www.googletagmanager.com https://connect.facebook.net",
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
               "img-src 'self' data: blob: https:",
-              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api-v2.ziina.com https://pay.ziina.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com",
+              "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api-v2.ziina.com https://pay.ziina.com https://eu.i.posthog.com https://eu-assets.i.posthog.com https://www.googletagmanager.com https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.facebook.com https://connect.facebook.net",
               "worker-src 'self' blob:",
               "frame-src https://pay.ziina.com",
               "object-src 'none'",
