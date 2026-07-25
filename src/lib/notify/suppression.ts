@@ -73,10 +73,10 @@ export async function addSuppression(db: SupabaseClient, email: string, reason =
 export async function fetchSuppressedSet(db: SupabaseClient): Promise<Set<string>> {
   const { data, error } = await db.from('email_suppressions').select('email').limit(100000);
   if (error) {
-    // Fail OPEN would spam unsubscribers; fail-safe is to treat the table as empty
-    // only when it genuinely doesn't exist yet, else surface nothing (no sends blocked).
     console.error('[suppression] fetch failed:', error.message);
-    return new Set();
+    // Marketing sends must fail closed: an empty set would treat every unsubscribed
+    // recipient as eligible during a transient DB outage or migration problem.
+    throw new Error('Could not verify email suppressions');
   }
   return new Set((data ?? []).map((r) => (r as { email?: string }).email?.trim().toLowerCase()).filter(Boolean) as string[]);
 }
