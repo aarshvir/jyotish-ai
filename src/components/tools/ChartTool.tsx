@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
 import { isValidLat, isValidLng } from '@/lib/utils/coords';
 import { ShareResult } from '@/components/shared/ShareResult';
+import { TimingBridge } from '@/components/tools/TimingBridge';
 
 export type ToolView =
   | 'manglik'
@@ -39,6 +40,20 @@ const DEFAULT: BirthDetails = {
 const fmt = (iso: string) => (iso ? iso.slice(0, 10) : '');
 
 // A factual, outcome-neutral one-liner describing the computed result — no claims, no luck.
+/** What the visitor just calculated — keeps the timing-bridge copy specific to the tool. */
+function anchorLabelFor(view: ToolView): string {
+  switch (view) {
+    case 'lagna': return 'Your Lagna';
+    case 'moonsign': return 'Your Moon sign';
+    case 'nakshatra': return 'Your nakshatra';
+    case 'dasha': return 'Your dasha';
+    case 'manglik':
+    case 'kaalsarp':
+    case 'sadesati': return 'This reading';
+    default: return 'Your chart';
+  }
+}
+
 function shareTextFor(view: ToolView, res: ChartResult): string {
   const doshaLine = (label: string, dosha: Dosha) =>
     `${label}: ${dosha.present ? `present (${dosha.severity})` : 'not present'}`;
@@ -137,9 +152,16 @@ export function ChartTool({
             utmCampaign="calculator_share"
             className="mt-7"
           />
-          <Link href={ctaHref} className="btn-primary inline-block mt-6 px-7 py-2.5">{ctaLabel} →</Link>
+          <Link
+            href={ctaHref}
+            className="inline-block mt-6 px-7 py-2.5 rounded-button border border-horizon text-dust hover:text-star hover:border-dust transition-colors duration-250"
+          >
+            {ctaLabel} →
+          </Link>
         </div>
       )}
+
+      {res && <TimingBridge anchorLabel={anchorLabelFor(view)} />}
     </div>
   );
 }
