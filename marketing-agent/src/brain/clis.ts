@@ -34,7 +34,14 @@ function spawnShim(cmd: string, args: string[], input: string, timeoutMs: number
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill();
+      // shell:true means child.kill() only kills the shell — the CLI grandchild
+      // keeps the stdio pipes open and 'close' never fires (observed: a 180s
+      // timeout surfacing after 292s). Kill the whole tree on Windows.
+      if (process.platform === 'win32' && child.pid) {
+        spawn('taskkill', ['/pid', String(child.pid), '/t', '/f'], { windowsHide: true });
+      } else {
+        child.kill('SIGKILL');
+      }
     }, timeoutMs);
     child.stdout.on('data', (d) => (stdout += d.toString()));
     child.stderr.on('data', (d) => (stderr += d.toString()));

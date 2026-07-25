@@ -8,7 +8,8 @@
   },
   "clis": {
     "gemini": {
-      "enabled": true,
+      "enabled": false,
+      "_disabled_why": "2026-07-25: Google dropped free-tier Code Assist for this client (IneligibleTierError) — every bulk call wasted ~12s failing before falling through. Re-enable after re-auth.",
       "model": "gemini-2.5-flash",
       "dailyCap": 1000,
       "minIntervalMs": 1500,
