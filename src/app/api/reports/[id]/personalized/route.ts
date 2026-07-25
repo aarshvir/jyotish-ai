@@ -8,7 +8,14 @@ import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { sanitizePersonalContext, sanitizeLagnaSign, sanitizePlanetName, sanitizeForPrompt } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
-import { type Personalized, wantedTier, cacheSatisfies, projectForTier } from '@/lib/reports/personalizedTier';
+import {
+  type Personalized,
+  cacheSatisfies,
+  canPersistFullPersonalization,
+  hasPaidPersonalizationEntitlement,
+  projectForTier,
+  wantedTier,
+} from '@/lib/reports/personalizedTier';
 
 /**
  * POST /api/reports/[id]/personalized
@@ -17,12 +24,13 @@ import { type Personalized, wantedTier, cacheSatisfies, projectForTier } from '@
  * grounded in their own report. This is the conversion spine:
  *   - FREE / preview  → a warm teaser that genuinely starts to answer, plus THREE
  *     specific "unlock" bullets naming what the full report reveals — an open loop
- *     that makes buying feel obvious. The full answer is NEVER generated or stored
- *     for a non-entitled report (no paywall leak).
+ *     that makes buying feel obvious. The owner never receives paid fields.
  *   - PAID / promo / admin → the full, direct answer + the exact timing windows.
+ *     An admin inspecting another user's free report may receive a full answer for
+ *     QA, but it is never stored in that owner-readable report row.
  *
- * On-demand + idempotent: the result is persisted into report_data.personalized and
- * returned from cache on subsequent loads. Fail-soft: any error returns 204-shaped
+ * On-demand + idempotent for persistable tiers: the result is cached in
+ * report_data.personalized. Fail-soft: any error returns 204-shaped
  * `{ personalized: null }` so the report renders fine without it.
  */
 
@@ -44,7 +52,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   const entitled =
-    auth.isAdmin === true || row.payment_status === 'paid' || row.payment_status === 'promo';
+    auth.isAdmin === true || hasPaidPersonalizationEntitlement(row.payment_status);
   const wantTier = wantedTier(entitled);
 
   // No question on file → nothing to personalize (common; render nothing).
@@ -159,11 +167,22 @@ Start with { and end with }.`;
     const substantive = wantTier === 'full' ? personalized.full_answer : personalized.teaser;
     if (!substantive || substantive.length < 30) return NextResponse.json({ personalized: null });
 
-    const { error: upErr } = await db
-      .from('reports')
-      .update({ report_data: { ...reportData, personalized }, updated_at: new Date().toISOString() })
-      .eq('id', reportId);
-    if (upErr) console.error('[personalized] persist failed:', upErr.message);
+    const canPersist =
+      personalized.tier === 'preview' ||
+      canPersistFullPersonalization({
+        paymentStatus: row.payment_status,
+        reportOwnerId: row.user_id,
+        requesterId: auth.user.id,
+        requesterIsAdmin: auth.isAdmin === true,
+      });
+
+    if (canPersist) {
+      const { error: upErr } = await db
+        .from('reports')
+        .update({ report_data: { ...reportData, personalized }, updated_at: new Date().toISOString() })
+        .eq('id', reportId);
+      if (upErr) console.error('[personalized] persist failed:', upErr.message);
+    }
 
     return NextResponse.json({ personalized });
   } catch (e) {
