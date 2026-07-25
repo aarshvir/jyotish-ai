@@ -1,0 +1,44 @@
+{
+  "name": "vedichour-marketing-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "VedicHour autonomous marketing agent — local CLI-orchestrated growth engine (Phase 0 foundations).",
+  "scripts": {
+    "doctor": "tsx src/cli.ts doctor",
+    "db:init": "tsx src/cli.ts db:init",
+    "brain": "tsx src/cli.ts brain",
+    "linter": "tsx src/cli.ts linter",
+    "loop:demo": "tsx src/cli.ts loop:demo",
+    "loop:blog": "tsx src/cli.ts loop:blog",
+    "blog:promote": "tsx src/cli.ts blog:promote",
+    "loop:creative": "tsx src/cli.ts loop:creative",
+    "loop:consent": "tsx src/cli.ts loop:consent",
+    "loop:reel": "tsx src/cli.ts loop:reel",
+    "loop:render": "tsx src/cli.ts loop:render",
+    "render:budget": "tsx src/cli.ts render:budget",
+    "loop:publish": "tsx src/cli.ts loop:publish",
+    "loop:social": "tsx src/cli.ts loop:social",
+    "loop:sync": "tsx src/cli.ts loop:sync",
+    "loop:stats": "tsx src/cli.ts loop:stats",
+    "loop:insights": "tsx src/cli.ts loop:insights",
+    "loop:lifecycle": "tsx src/loops/lifecycle.ts",
+    "loop:outreach": "tsx src/loops/outreach.ts",
+    "report": "tsx src/report.ts",
+    "relint": "tsx src/relint.ts",
+    "cycle": "tsx src/cycle.ts",
+    "email:launch": "tsx src/email/send-launch.ts",
+    "kill": "tsx src/cli.ts kill",
+    "revive": "tsx src/cli.ts revive",
+    "cockpit": "tsx src/cli.ts cockpit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

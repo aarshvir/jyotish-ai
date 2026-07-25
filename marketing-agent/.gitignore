@@ -1,0 +1,19 @@
+node_modules/
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+data/KILL
+data/heartbeat.json
+media/
+.env
+*.log
+tmp/
+
+# Rendered video output — binaries stay local; the publish sheets are committed.
+output/reels/**/*.mp4
+output/reels/**/*.jpg
+output/reels/**/*.png
+output/reels/**/*.wav
+output/reels/**/*.mp3
+output/reels/**/work/
