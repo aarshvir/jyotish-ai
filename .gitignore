@@ -98,3 +98,16 @@ scripts/*.log
 scripts/*.txt
 scripts/*.png
 scripts/*.webp
+
+# Transient local audit/probe artifacts (not product code)
+.gemini_audit/
+scratch/
+tmp/
+page-snapshots/
+launch-audit*.html
+codex_*.txt
+codex_*.md
+*_REVIEW*.md
+claude_audit.md
+e2e_test.js
+**/__tmp_*.tsx
