@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { isFreeOrPreviewPlan } from '@/lib/reports/planType';
 
 /**
  * Documents the admin report access contract enforced in:
@@ -22,16 +23,20 @@ describe('admin report access contract', () => {
   it('preview gating is bypassed for admin view', () => {
     const isAdminView = true;
     const reportPlanType = 'preview' as string;
-    const isPreviewPlan =
-      !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview');
+    const isPreviewPlan = !isAdminView && isFreeOrPreviewPlan(reportPlanType);
     expect(isPreviewPlan).toBe(false);
   });
 
   it('preview gating still applies for non-admin preview plans', () => {
     const isAdminView = false;
     const reportPlanType = 'preview' as string;
-    const isPreviewPlan =
-      !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview');
+    const isPreviewPlan = !isAdminView && isFreeOrPreviewPlan(reportPlanType);
+    expect(isPreviewPlan).toBe(true);
+  });
+
+  it('preview gating still applies for whitespace-padded free plans', () => {
+    const isAdminView = false;
+    const isPreviewPlan = !isAdminView && isFreeOrPreviewPlan(' free ');
     expect(isPreviewPlan).toBe(true);
   });
 });

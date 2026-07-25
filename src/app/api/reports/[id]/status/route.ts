@@ -14,6 +14,7 @@ import {
   takeReportStatusRateLimit,
   type ReportStatusCachePayload,
 } from '@/lib/reports/reportStatusPoll';
+import { isFreeOrPreviewPlan, normalizePlanType } from '@/lib/reports/planType';
 
 /** Per-attempt PostgREST read timeouts (ms). Total worst-case fits within `maxDuration`. */
 const READ_TIMEOUTS_MS = [12_000, 20_000, 30_000] as const;
@@ -216,11 +217,10 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
   // Read-side entitlement: return the report payload to admins, free/preview plans,
   // genuinely paid reports, or server-validated 100%-promo reports (payment_status
   // 'promo' — e.g. ADMIN100). Never a paid-plan row that is merely 'unpaid'.
-  const planType = String(data?.plan_type ?? '').toLowerCase();
+  const planType = normalizePlanType(String(data?.plan_type ?? ''), '');
   const entitledToContent =
     userIsAdmin ||
-    planType === 'free' ||
-    planType === 'preview' ||
+    isFreeOrPreviewPlan(planType) ||
     data?.payment_status === 'paid' ||
     data?.payment_status === 'promo';
 
@@ -229,7 +229,7 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
   // the wire. Without this, a free user could read the entire paid product (12-month
   // outlook, weekly synthesis, all 7 days of hourly windows) straight from the Network
   // tab, since the paywall was otherwise client-side presentation only.
-  const isPreviewPlan = !userIsAdmin && (planType === 'free' || planType === 'preview');
+  const isPreviewPlan = !userIsAdmin && isFreeOrPreviewPlan(planType);
   const stripForPreview = (rd: Record<string, unknown> | null): Record<string, unknown> | null => {
     if (!rd || !isPreviewPlan) return rd;
     return {

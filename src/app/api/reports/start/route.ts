@@ -28,6 +28,7 @@ import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/server';
+import { isFreeOrPreviewPlan, normalizePlanType } from '@/lib/reports/planType';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -177,8 +178,7 @@ function safeNonPaidPaymentStatus(
   // A client-claimed 'promo'/'bypass' no longer entitles by itself — only a real
   // completed payment ('paid') or a server-validated promo (see POST handler) does.
   if (requested === 'free') return 'free';
-  const normalizedPlan = (planType ?? '').trim();
-  return normalizedPlan === 'free' || normalizedPlan === 'preview' ? 'free' : 'unpaid';
+  return isFreeOrPreviewPlan(planType) ? 'free' : 'unpaid';
 }
 
 async function hasCompletedZiinaPayment(
@@ -319,6 +319,13 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Canonicalize BEFORE entitlement checks, DB writes, and pipeline input.
+  // Whitespace/case variants like " free " used to pass the free gate (which
+  // trimmed) while skipping orchestrator preview stripping (which did not).
+  body.plan_type = normalizePlanType(
+    typeof body.plan_type === 'string' ? body.plan_type : existing?.plan_type,
+  );
+
   // personal_context lives behind migration 20260617. Read it tolerantly (separate
   // query) so a not-yet-applied migration can never 500 the core report-start flow —
   // mirrors the deliberately tolerant WRITE further below. null when absent.
@@ -448,9 +455,8 @@ export async function POST(request: NextRequest) {
   // payment. Admins (owner) bypass. Client-claimed promo/bypass do NOT entitle
   // here — only 'paid' (a real completed Ziina payment) passes.
   const userIsAdmin = auth.isAdmin === true || (await isAdmin(auth.user.email));
-  const planNorm = (body.plan_type ?? existing?.plan_type ?? '7day').trim().toLowerCase();
-  const isFreePlan = planNorm === 'free' || planNorm === 'preview';
-
+  const planNorm = normalizePlanType(body.plan_type);
+  const isFreePlan = isFreeOrPreviewPlan(planNorm);
   // Server-validated 100%-off promo entitlement. A non-admin who supplies a valid
   // full-discount code (e.g. ADMIN100, opened to everyone) may generate a paid-forecast
   // report without payment. The code is validated against the DB here — a client-claimed
