@@ -1,0 +1,41 @@
+{
+  "slug": "swiss-ephemeris-precision",
+  "topic": "Why we use the Swiss Ephemeris",
+  "product": "forecast",
+  "pillar": 1,
+  "platforms": {
+    "instagram": {
+      "text": "Not another horoscope. 🪐 VedicHour starts with Swiss Ephemeris positions and Lahiri ayanamsa, then rates all 18 planetary hours in plain English. Astronomer-grade inputs, Jyotish timing awareness, no dramatic claims. Your Life, Decoded Hour by Hour.",
+      "hashtags": [
+        "#vedichour",
+        "#jyotish",
+        "#vedicastrology",
+        "#swissephemeris",
+        "#lahiriayanamsa",
+        "#planetaryhours"
+      ],
+      "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Content aligns with timing awareness, not outcome promises."
+    },
+    "x": {
+      "text": "Not another horoscope: VedicHour uses Swiss Ephemeris positions with Lahiri ayanamsa, then translates all 18 planetary hours into plain English so you can reflect on timing with more awareness. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Calm, educational copy focusing on timing awareness and reflection."
+    },
+    "facebook": {
+      "text": "Not another horoscope. 🪐 We use the Swiss Ephemeris for astronomer-grade planetary positions, apply Lahiri ayanamsa, and explain all 18 horas in plain English. Calm timing awareness for reflection, not certainty. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Aligns with timing awareness and reflection, explicitly disavows certainty."
+    },
+    "linkedin": {
+      "text": "VedicHour is built for people who want Jyotish timing explained with care. We use Swiss Ephemeris planetary positions with Lahiri ayanamsa, then translate all 18 planetary hours into plain English. The goal is timing awareness and reflection, not certainty or outcome claims. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Content aligns with timing awareness, reflection, and avoids banned claims."
+    }
+  },
+  "status": "ready_to_post"
+}

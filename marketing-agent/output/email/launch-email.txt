@@ -1,0 +1,34 @@
+Your day isn't one mood. It's 18.
+The best Vedic astrology forecast tool in the world is now live.
+
+Hi {{first_name}},
+
+A while back, you pulled your free Kundli with us. Thank you for being one of the first.
+
+We spent the months since building the platform we always wished existed - and today, VedicHour is live.
+
+It isn't another horoscope. A sun-sign reading is written for a twelfth of the planet at once. VedicHour reads your chart - and your day isn't one mood. It's 18 planetary hours (horas), each with its own texture: clearer windows for some things, heavier windows for others, and the few moments genuinely worth timing on purpose.
+
+We compute all 18 from your birth details with the Swiss Ephemeris and Lahiri ayanamsa - real astronomy - and explain them in plain English. No jargon. No fear. Just clarity.
+
+Three ways in:
+- Hour-by-Hour Forecast - your timing grid for the week, month, or year ahead.
+- Deep Kundli - your full birth chart, explained the way a thoughtful friend would.
+- Matchmaking (Gun Milan) - compatibility done properly, past the 36-point score.
+
+As one of our earliest, your first report is 30% off this launch week with code NEWUSER30.
+
+See your forecast:
+https://www.vedichour.com/pricing?utm_source=email&utm_medium=launch&utm_campaign=launch
+
+Prefer to ease in? Pull a fresh free Kundli and see today's hours, no cost:
+https://www.vedichour.com/free-kundli?utm_source=email&utm_medium=launch&utm_campaign=launch
+
+Your Life, Decoded Hour by Hour.
+- The VedicHour team
+
+----
+For reflection and planning only. Not medical, legal, financial, or emergency advice.
+You're receiving this because you created an account at vedichour.com.
+Unsubscribe: {{unsubscribe_url}}
+VedicHour - {{business_address}}

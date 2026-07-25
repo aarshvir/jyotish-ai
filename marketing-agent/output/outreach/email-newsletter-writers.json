@@ -1,0 +1,10 @@
+{
+  "id": "email-newsletter-writers",
+  "kind": "cold-email",
+  "audience": "astrology and mindfulness newsletter writers",
+  "subject": "Partnership idea for [their work]",
+  "body": "Hi [First name],\n\nI’m reaching out from VedicHour. I read [their work] and thought your audience might appreciate a calm, evidence-aware way to explore timing without certainty or outcome promises.\n\nVedicHour rates all 18 planetary hours (horas) in plain English, using Swiss Ephemeris + Lahiri ayanamsa. We’d like to offer you a free Pro account, a custom reader code like PARTNERNAME10, and a revenue share for paid reports your readers choose to buy.\n\nIf useful, I can send a simple partner brief and sample report.\n\nYour Life, Decoded Hour by Hour.\n\nTo opt out, reply “unsubscribe”; [Physical address].",
+  "linter": "pass",
+  "linter_reason": "Calm, educational tone; explicitly avoids certainty/outcome promises; aligns with timing awareness.",
+  "status": "ready"
+}

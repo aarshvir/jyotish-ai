@@ -1,0 +1,10 @@
+{
+  "id": "email-wellness-coaches",
+  "kind": "cold-email",
+  "audience": "wellness and spiritual coaches",
+  "subject": "A quiet partnership idea for your coaching community",
+  "body": "Hi [First name],\n\nI’m reaching out from VedicHour because [their work] seems aligned with reflective timing tools rather than outcome promises.\n\nVedicHour rates all 18 planetary hours (horas) in plain English, using Swiss Ephemeris + Lahiri ayanamsa, so clients can notice clearer or heavier windows for journaling, planning, and self-reflection.\n\nWe’d be glad to set you up with a free Pro account, create a custom audience code like PARTNERNAME10, and share revenue from referred paid reports.\n\nIf useful, I can send a simple partner outline.\n\nYour Life, Decoded Hour by Hour.\n\nTo unsubscribe, reply unsubscribe; [Physical address]",
+  "linter": "pass",
+  "linter_reason": "On-brand: focuses on reflective timing awareness, not outcomes.",
+  "status": "ready"
+}

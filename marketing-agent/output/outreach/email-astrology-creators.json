@@ -1,0 +1,10 @@
+{
+  "id": "email-astrology-creators",
+  "kind": "cold-email",
+  "audience": "astrology content creators on Instagram and YouTube",
+  "subject": "VedicHour partnership idea",
+  "body": "Hi [First name],\n\nI’ve been following [their work] and like the thoughtful way you make astrology approachable.\n\nI’m reaching out from VedicHour, a calm Jyotish timing tool that rates all 18 planetary hours, uses Swiss Ephemeris + Lahiri ayanamsa, and explains the day in plain English.\n\nWould you be open to a simple creator partnership? We can offer you a free Pro account, a custom audience code like PARTNERNAME10, and a revenue share on paid reports.\n\nNo pressure or hype. Just a useful timing-awareness resource your audience can try alongside your content.\n\nYour Life, Decoded Hour by Hour.\n\nTo unsubscribe, reply “unsubscribe.” [Physical address]",
+  "linter": "block",
+  "linter_reason": "Slogan 'Your Life, Decoded' implies certainty, not just awareness or reflection.",
+  "status": "blocked"
+}

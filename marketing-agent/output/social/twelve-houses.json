@@ -1,0 +1,42 @@
+{
+  "slug": "twelve-houses",
+  "topic": "The 12 houses of your chart",
+  "product": "kundali",
+  "pillar": 3,
+  "platforms": {
+    "instagram": {
+      "text": "Your chart has 12 houses: a plain-English map of self, resources, learning, home, creativity, work, partnership, change, meaning, career, community, and rest. 🪐 VedicHour keeps it modern and reflective, with reports that rate all 18 planetary hours for timing awareness. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "hashtags": [
+        "#vedichour",
+        "#jyotish",
+        "#vedicastro",
+        "#kundli",
+        "#birthchart",
+        "#planetaryhours",
+        "#selfreflection"
+      ],
+      "link": "https://www.vedichour.com/kundali?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Content aligns with timing awareness; no forbidden claims or promises."
+    },
+    "x": {
+      "text": "The 12 houses are your chart’s plain-English map: self, resources, learning, home, creativity, work, partnership, change, meaning, career, community, and rest. VedicHour adds timing awareness by rating all 18 horas. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/kundali?utm_source=x&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Educational, descriptive copy, aligns with brand on timing awareness."
+    },
+    "facebook": {
+      "text": "The 12 houses of your chart are a calm, plain-English map of life areas: self, resources, learning, home, creativity, work, partnership, change, meaning, career, community, and rest. ✨ VedicHour brings modern Jyotish into timing awareness by rating all 18 planetary hours. NEWUSER30 gives 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/kundali?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Calm, educational, on-brand for timing awareness; no banned promises or terms."
+    },
+    "linkedin": {
+      "text": "In Jyotish, the 12 houses offer a structured, plain-English map of life areas: identity, resources, communication, home, creativity, service, partnership, transformation, meaning, career, networks, and retreat. VedicHour presents this with a modern, reflective lens, using Swiss Ephemeris + Lahiri ayanamsa for credible timing awareness. NEWUSER30 gives 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/kundali?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Promotes timing awareness, reflection, and education."
+    }
+  },
+  "status": "ready_to_post"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "email-podcast-hosts",
+  "kind": "cold-email",
+  "audience": "spirituality podcast and YouTube hosts",
+  "subject": "Partnership idea for VedicHour",
+  "body": "Hi [First name], I’m reaching out from VedicHour because [their work] seems aligned with reflective, grounded spirituality. We help people understand daily timing patterns without certainty claims: each report rates all 18 planetary hours using Swiss Ephemeris + Lahiri ayanamsa, then explains clearer and heavier windows in plain English. We’d like to offer you a free Pro account, a custom listener code ([PARTNERNAME]10), and a revenue share if it feels useful to your audience. No scripts required; we can keep it simple and transparent.\n\nYour Life, Decoded Hour by Hour.\n\nTo stop hearing from us, reply unsubscribe; [Physical address]",
+  "linter": "pass",
+  "linter_reason": "Content aligns with timing awareness and calm reflection; no block or flag triggers.",
+  "status": "ready"
+}

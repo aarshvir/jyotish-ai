@@ -1,0 +1,11 @@
+{
+  "id": "welcome",
+  "channel": "email",
+  "trigger": "on free-Kundli signup",
+  "subject": "Welcome to VedicHour",
+  "body": "Welcome to VedicHour. You now have a private, modern Vedic timing dashboard that translates Jyotish into plain English. We rate all 18 planetary hours (horas) each day, using Swiss Ephemeris + Lahiri ayanamsa, so you can notice clearer or heavier windows for reflection and planning. Start by pulling your free Kundli; it gives your dashboard the birth context it needs.\n\nYour Life, Decoded Hour by Hour.\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.",
+  "link": "https://www.vedichour.com/free-kundli?utm_source=crm&utm_medium=email&utm_campaign=lifecycle",
+  "linter": "pass",
+  "linter_reason": "Content aligns with timing awareness, reflection, and planning. No block/flag keywords.",
+  "status": "ready"
+}

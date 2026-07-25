@@ -1,0 +1,60 @@
+{
+  "_comment": "L2 faceless-video backlog — brand-safe per playbook §1.7 (no best/worst/luck/outcome language; >=1 differentiator each). hook held on screen; beats cycle; voiceover = edge-tts VO; cta held at bottom. L9 appends AI-generated scripts.",
+  "voice": "en-IN-NeerjaNeural",
+  "reels": [
+    {
+      "slug": "the-18-hours",
+      "title": "The 18 planetary hours",
+      "product": "forecast",
+      "hook": "Your day isn't one mood. It's 18.",
+      "beats": ["Most apps: one reading for 24 hours", "Reality: 18 planetary hours, or horas", "Each hora has its own texture", "All 18 mapped for your chart"],
+      "voiceover": "Every day has eighteen planetary hours, called horas, each with its own texture. We map all eighteen for your chart, computed with the Swiss Ephemeris, so you can plan around clearer and heavier windows.",
+      "cta": "Free Kundli, link in bio. Your Life, Decoded Hour by Hour."
+    },
+    {
+      "slug": "clearer-window-to-act",
+      "title": "A clearer window to act",
+      "product": "forecast",
+      "hook": "Some windows are clearer. Some are heavier.",
+      "beats": ["Jupiter hora leans to growth", "Mercury hora: words land", "Mars hora can feel heavier", "Plan the moment on purpose"],
+      "voiceover": "Across your day, some horas are clearer for a task and some feel heavier. The Jupiter hora leans toward growth, the Mercury hora toward being understood. We map them in plain English so you can plan on purpose.",
+      "cta": "See your hours free, link in bio. NEWUSER30 for 30 percent off."
+    },
+    {
+      "slug": "nakshatra-reveal",
+      "title": "You have a birth star",
+      "product": "kundali",
+      "hook": "You have a sun sign. You also have a birth star.",
+      "beats": ["27 nakshatras", "More precise than 12 signs", "Set by your Moon at birth", "Explained in plain English"],
+      "voiceover": "Vedic astrology gives you twenty-seven nakshatras, your birth stars, set by the Moon at the moment you were born, and we explain yours in plain English.",
+      "cta": "Free nakshatra reading, link in bio. NEWUSER30."
+    },
+    {
+      "slug": "daily-horoscopes",
+      "title": "Daily horoscopes are too broad",
+      "product": "forecast",
+      "hook": "Your horoscope is written for 650 million people.",
+      "beats": ["One reading. A twelfth of Earth.", "Your chart is only yours", "Nakshatra, dasha, your horas", "A second lens, in plain English"],
+      "voiceover": "A sun-sign horoscope speaks to a twelfth of the planet at once. Your chart is yours alone, your nakshatra, your dasha, your horas, a structured second lens in plain English.",
+      "cta": "Try the real thing free, link in bio. NEWUSER30."
+    },
+    {
+      "slug": "manglik-calm",
+      "title": "Manglik, calmly",
+      "product": "matchmaking",
+      "hook": "Told you're Manglik and panicked? Breathe.",
+      "beats": ["Manglik is a Mars placement", "It often cancels out", "Two Mangliks? Often fine", "Check it calmly and properly"],
+      "voiceover": "Manglik dosha gets blamed for a lot. In many charts it cancels out. Check it calmly and properly, computed with real astronomy, before you ever worry.",
+      "cta": "Free Manglik check, link in bio. NEWUSER30."
+    },
+    {
+      "slug": "sade-sati-reframed",
+      "title": "Sade Sati is not a curse",
+      "product": "forecast",
+      "hook": "People call Sade Sati a curse. It isn't.",
+      "beats": ["Saturn moving over your Moon", "About 7.5 years, three phases", "A teacher, not a punishment", "Understand your phase"],
+      "voiceover": "Sade Sati is Saturn's roughly seven and a half year passage over your Moon. It's better understood as a teacher than a punishment, and knowing your phase helps you work with it, in plain English.",
+      "cta": "Free Sade Sati check, link in bio. NEWUSER30."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "id": "qa-7",
+  "kind": "reddit-quora",
+  "question": "Are astrology apps accurate, or is it made up?",
+  "answer_with_mention": "Some astrology apps are useful, but “accurate” depends on what they are claiming. The astronomy side can be checked: birth time, location, time zone, planetary positions, house system, ayanamsa, and transit calculations. If those inputs are sloppy, the reading can drift quickly. The interpretation side is different: it is symbolic, reflective, and tradition-based, not a lab instrument.\n\nA good app should show its method, avoid overconfident claims, and give you language you can actually use. I would be cautious of apps that reduce everything to one-line alerts or make life decisions sound automatic. Better tools help you notice themes, timing texture, and questions worth reflecting on.\n\nFor example, VedicHour focuses on timing awareness by rating all 18 planetary hours using Swiss Ephemeris + Lahiri ayanamsa, explained in plain English: Your Life, Decoded Hour by Hour.",
+  "answer_no_link": "Some astrology apps are useful, but “accurate” depends on what they are claiming. The astronomy side can be checked: birth time, location, time zone, planetary positions, house system, ayanamsa, and transit calculations. If those inputs are sloppy, the reading can drift quickly.\n\nThe interpretation side is different. Astrology is a symbolic and traditional framework for reflection, not a measuring device that can verify life events in a simple yes/no way. I would be cautious of apps that make sweeping claims, push fear, or turn complex charts into one-line alerts.\n\nA better approach is to ask: does the app explain its method, use reliable astronomical calculations, and speak in plain English? Does it help you reflect without outsourcing your judgment? Timing tools can be interesting when they compare all 18 planetary hours and describe some windows as clearer or heavier, but the value is awareness, not certainty.",
+  "linter": "pass",
+  "linter_reason": "Emphasizes timing awareness, reflection; avoids certainty, outcome promises; aligns with brand ethos.",
+  "status": "ready"
+}

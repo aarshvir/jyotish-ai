@@ -1,0 +1,11 @@
+{
+  "id": "weekly-timing",
+  "channel": "email",
+  "trigger": "weekly broadcast to opted-in users",
+  "subject": "Your timing note for the week",
+  "body": "This week, try one calm planning ritual: before a focused task or meaningful conversation, check whether the hour feels clearer or heavier for reflection.\n\nVedicHour rates all 18 planetary hours in plain English, so your grid can become a simple prompt for timing awareness, not certainty. If you are considering a paid report, NEWUSER30 gives 30% off your first one.\n\nYour Life, Decoded Hour by Hour.\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.",
+  "link": "https://www.vedichour.com/free-kundli?utm_source=crm&utm_medium=email&utm_campaign=lifecycle",
+  "linter": "pass",
+  "linter_reason": "Emphasizes timing awareness, calm reflection, and avoids blocklist terms. Includes disclaimers.",
+  "status": "ready"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "value-your-day-is-18-horas",
+  "channel": "email",
+  "trigger": "day 4 after signup",
+  "subject": "Why some hours feel clearer",
+  "body": "Hi, by day 4, you may have noticed VedicHour looks beyond a single daily reading. We rate all 18 planetary hours (horas) in plain English, so you can see which windows may feel clearer for focus or reflection, and which may feel heavier or better kept simple. The hour-by-hour forecast uses Swiss Ephemeris + Lahiri ayanamsa, then translates the timing into calm guidance without certainty or pressure. When you’re ready, NEWUSER30 gives 30% off your first paid report.\nYour Life, Decoded Hour by Hour.\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.",
+  "link": "https://www.vedichour.com/pricing?utm_source=crm&utm_medium=email&utm_campaign=lifecycle",
+  "linter": "pass",
+  "linter_reason": "Content aligns with timing awareness and calm guidance; explicitly avoids blocked claims.",
+  "status": "ready"
+}
