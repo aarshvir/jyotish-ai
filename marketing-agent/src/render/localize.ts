@@ -70,11 +70,24 @@ export function parseLanguages(spec: string | string[] | undefined): LangSpec[] 
   if (!spec) return [];
   const list = Array.isArray(spec) ? spec : spec.split(',');
   const out: LangSpec[] = [];
+  // Conversion-mismatch gate: VedicHour reports are ENGLISH-ONLY today (Hindi is a
+  // waitlist). A reel whose AUDIO is pure Hindi/Tamil/Telugu pulls viewers the product
+  // can't serve — and Meta reviews the landing page against the ad, so the mismatch is
+  // also a policy risk. Hinglish (Latin-script code-switching) self-selects
+  // English-comfortable viewers and stays allowed. Flip REGIONAL_REPORTS_LIVE=true in
+  // .env the day vedichour.com ships reports in these languages — not before.
+  const regionalLive = envStr('REGIONAL_REPORTS_LIVE') === 'true';
   for (const raw of list) {
     const k = raw.trim().toLowerCase();
     if (!k) continue;
     if (!LANGUAGES[k]) {
       console.warn(`[localize] unknown language "${k}" — Bulbul v3 supports: ${Object.keys(LANGUAGES).join(', ')}`);
+      continue;
+    }
+    if (!regionalLive) {
+      console.warn(
+        `[localize] BLOCKED "${k}": reports are English-only — regional-audio ads would sell a product that doesn't exist yet. Set REGIONAL_REPORTS_LIVE=true when vedichour.com ships them.`,
+      );
       continue;
     }
     out.push(LANGUAGES[k]);

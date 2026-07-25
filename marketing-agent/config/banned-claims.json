@@ -31,7 +31,13 @@
     "remove your curse",
     "you are cursed",
     "avoid disaster",
-    "ward off danger"
+    "ward off danger",
+    "we know your",
+    "we know you are",
+    "your chart says you are",
+    "your stars say you are",
+    "you were born unlucky",
+    "people like you"
   ],
   "flag": [
     "good luck",
@@ -48,7 +54,10 @@
     "evil eye",
     "doom",
     "struggling with",
-    "suffering from"
+    "suffering from",
+    "are you cursed",
+    "why you keep failing",
+    "your problem is"
   ],
   "categories": {
     "certainty": ["guaranteed", "will definitely", "100% accurate", "predict exactly", "for certain"],
@@ -57,6 +66,8 @@
     "health": ["cure your", "heal your", "treat your", "diagnosis", "mental illness"],
     "financial": ["become rich", "get rich", "guaranteed returns", "double your money"],
     "relationship": ["save your marriage", "get your ex back", "guaranteed marriage"],
-    "fear": ["avoid disaster", "doom", "curse", "danger"]
+    "fear": ["avoid disaster", "doom", "curse", "danger"],
+    "personal_attributes": ["we know your", "your chart says you are", "people like you", "you were born"],
+    "_policy_basis": ["Meta: ads may not assert or imply personal attributes of the viewer; landing page is reviewed with the ad. Google: claims enticing an improbable result as the likely outcome are prohibited; egregious violations suspend without warning. Verified 2026-07-25."]
   }
 }

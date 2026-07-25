@@ -20,6 +20,11 @@ import { resolveTools, runTool } from './ffmpeg';
  * (jyotish-ai/node_modules), which already ships playwright + a downloaded Chromium. It is
  * imported dynamically so that a machine without it degrades to a clear error instead of an
  * import-time crash.
+ *
+ * PRIVACY HARDLINE: only capture public pages or SAMPLE-data views (the homepage demo chart,
+ * /free-kundli with the public sample, marketing pages). NEVER a logged-in dashboard or any
+ * page showing a real person's birth details — a reel is forever, and real birth data in a
+ * published ad is a privacy breach the brand can't take back.
  */
 
 export interface CaptureOpts {
