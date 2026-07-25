@@ -1,0 +1,41 @@
+{
+  "slug": "nakshatra-traits",
+  "topic": "Your nakshatra, your birth star",
+  "product": "kundali",
+  "pillar": 1,
+  "platforms": {
+    "instagram": {
+      "text": "Your nakshatra is your birth star: one of 27 lunar mansions, offering a finer lens than the 12-sign view. ✨\n\nVedicHour is not another horoscope. We translate Swiss Ephemeris + Lahiri ayanamsa into plain English, so you can notice clearer and heavier timing windows with more awareness.\n\nYour Life, Decoded Hour by Hour.",
+      "hashtags": [
+        "#vedichour",
+        "#nakshatra",
+        "#birthstar",
+        "#jyotish",
+        "#vedicastrology",
+        "#lunarwisdom"
+      ],
+      "link": "https://www.vedichour.com/kundali?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Calm, educational copy focusing on awareness and differentiators; avoids banned phrases."
+    },
+    "x": {
+      "text": "Your nakshatra is your birth star: one of 27 lunar mansions, a finer lens than 12 signs. VedicHour turns Swiss Ephemeris + Lahiri ayanamsa into plain-English timing awareness, not another horoscope. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/kundali?utm_source=x&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Educational, descriptive copy; emphasizes timing awareness, not outcomes."
+    },
+    "facebook": {
+      "text": "Your nakshatra is your birth star: one of 27 lunar mansions, not just one of 12 signs. 🌙\n\nVedicHour is for people who want timing awareness without dramatic claims. We rate all 18 planetary hours in plain English, helping you reflect on clearer and heavier windows through the day.\n\nYour Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/kundali?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Calm, plain-English timing awareness copy, no block/flag terms."
+    },
+    "linkedin": {
+      "text": "Your nakshatra, or birth star, belongs to a system of 27 lunar mansions. It offers a more specific lens than the familiar 12-sign framework.\n\nVedicHour is not another horoscope. It combines Swiss Ephemeris + Lahiri ayanamsa with plain-English interpretation, designed for timing awareness and reflection rather than certainty.\n\nYour Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/kundali?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Calm, informative, explicitly rejects certainty, aligns with timing awareness and reflection."
+    }
+  },
+  "status": "ready_to_post"
+}

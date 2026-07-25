@@ -1,0 +1,41 @@
+{
+  "slug": "brahma-muhurat-practice",
+  "topic": "Brahma Muhurat, the pre-dawn window",
+  "product": "forecast",
+  "pillar": 2,
+  "platforms": {
+    "instagram": {
+      "text": "Before sunrise, the world feels a little softer. 🌅 Brahma Muhurat, the 96 minutes before sunrise, is traditionally held as a quieter window for reflection, prayer, journaling, breathwork, or simple stillness. VedicHour brings that timing awareness into plain English, rating all 18 planetary hours so your day is not treated as one mood. Your Life, Decoded Hour by Hour.",
+      "hashtags": [
+        "#vedichour",
+        "#brahmamuhurat",
+        "#jyotish",
+        "#vedicwisdom",
+        "#mindfultiming",
+        "#planetaryhours"
+      ],
+      "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Calm, reflective, timing awareness, aligns with core brand product."
+    },
+    "x": {
+      "text": "Brahma Muhurat is the 96 minutes before sunrise: a quieter window for reflection, mantra, journaling, or breathwork. VedicHour rates all 18 planetary hours in plain English, so your day isn’t treated as one mood. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Content aligns with timing awareness, not outcome promises."
+    },
+    "facebook": {
+      "text": "Brahma Muhurat is the 96 minutes before sunrise, a calm pre-dawn window for reflection and practice. 🌄 VedicHour helps you see the day with more nuance, rating all 18 planetary hours in plain English instead of treating every hour as the same mood. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Calm, educational, and promotes awareness; avoids outcome promises or certainty."
+    },
+    "linkedin": {
+      "text": "Brahma Muhurat, the 96 minutes before sunrise, offers a useful lens for intentional reflection before the day gathers pace. VedicHour translates Jyotish timing into plain English, rating all 18 planetary hours with Swiss Ephemeris and Lahiri ayanamsa, because a day is not one uniform mood. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Content aligns with timing awareness, reflection. 'Decoded' means understanding, not outcome."
+    }
+  },
+  "status": "ready_to_post"
+}

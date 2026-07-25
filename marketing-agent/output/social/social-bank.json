@@ -1,0 +1,495 @@
+[
+  {
+    "slug": "abhijit-window",
+    "topic": "Abhijit Muhurat, the midday window",
+    "product": "forecast",
+    "pillar": 2,
+    "platforms": {
+      "instagram": {
+        "text": "Your day is not one mood. Around local noon, Abhijit Muhurat offers a roughly 48-minute clearer window for reflection, setting intent, or beginning something with steadier attention. ☀️ VedicHour rates all 18 planetary hours using Swiss Ephemeris + Lahiri ayanamsa, then explains the timing in plain English. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#abhijitmuhurat",
+          "#jyotish",
+          "#vediccalendar",
+          "#planetaryhours",
+          "#mindfultiming"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm timing-awareness copy; no certainty, luck, or outcome promise."
+      },
+      "x": {
+        "text": "Abhijit Muhurat is the ~48-minute clearer window around local noon. Use it for reflection, prioritizing, or starting with steadier attention. VedicHour rates all 18 horas in plain English. NEWUSER30: 30% off first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational, and aligns with timing awareness, not outcome promises."
+      },
+      "facebook": {
+        "text": "Your day is not one mood. Around local noon, Abhijit Muhurat is traditionally seen as a roughly 48-minute clearer window for reflection, focus, and thoughtful starts. 🌿 VedicHour rates all 18 planetary hours with plain English guidance, so timing feels easier to read. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, plain-English content about timing awareness and product features."
+      },
+      "linkedin": {
+        "text": "Abhijit Muhurat points to a roughly 48-minute clearer window around local noon. For a modern schedule, it can be used as a moment to pause, prioritize, and begin work with more intentional attention. VedicHour brings this into plain English with ratings across all 18 planetary hours, calculated with Swiss Ephemeris + Lahiri ayanamsa. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "On-brand timing awareness, uses 'clearer window', no block/flag terms."
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "birth-time-matters",
+    "topic": "Why birth time matters",
+    "product": "kundali",
+    "pillar": 3,
+    "platforms": {
+      "instagram": {
+        "text": "Your birth time is more than a detail. A few minutes can shift the Lagna, move house emphasis, and change how a Jyotish report frames timing for reflection. VedicHour uses Swiss Ephemeris + Lahiri ayanamsa, then explains it in plain English. 🕰️\n\nYour Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#lagna",
+          "#birthchart",
+          "#modernjyotish",
+          "#privatejyotish"
+        ],
+        "link": "https://www.vedichour.com/kundali?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational, explains astrological principles without outcome promises or banned phrases."
+      },
+      "x": {
+        "text": "Birth time is not a small detail in Jyotish. A few minutes can shift your Lagna and houses, adjusting the timing context you reflect on. VedicHour uses Swiss Ephemeris + Lahiri ayanamsa in plain English. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational, explains timing awareness without outcome promises or banned terms."
+      },
+      "facebook": {
+        "text": "Your birth time helps set the lens of the chart. Even a few minutes can shift your Lagna and houses, changing what gets emphasized for timing awareness and reflection. VedicHour keeps it private, modern, and clear, using Swiss Ephemeris + Lahiri ayanamsa with plain-English explanations. ✨\n\nYour Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content focuses on timing awareness, explanations, and brand differentiators."
+      },
+      "linkedin": {
+        "text": "In Jyotish, birth time is not a minor input. A few minutes can shift the Lagna and house placements, which changes how timing patterns are interpreted for awareness and reflection. VedicHour brings a private, modern approach: rating all 18 planetary hours with Swiss Ephemeris + Lahiri ayanamsa, explained in plain English.\n\nYour Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "flag",
+        "linter_reason": "“Your Life, Decoded” implies overcertain personal life interpretation."
+      }
+    },
+    "status": "needs_review"
+  },
+  {
+    "slug": "brahma-muhurat-practice",
+    "topic": "Brahma Muhurat, the pre-dawn window",
+    "product": "forecast",
+    "pillar": 2,
+    "platforms": {
+      "instagram": {
+        "text": "Before sunrise, the world feels a little softer. 🌅 Brahma Muhurat, the 96 minutes before sunrise, is traditionally held as a quieter window for reflection, prayer, journaling, breathwork, or simple stillness. VedicHour brings that timing awareness into plain English, rating all 18 planetary hours so your day is not treated as one mood. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#brahmamuhurat",
+          "#jyotish",
+          "#vedicwisdom",
+          "#mindfultiming",
+          "#planetaryhours"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, reflective, timing awareness, aligns with core brand product."
+      },
+      "x": {
+        "text": "Brahma Muhurat is the 96 minutes before sunrise: a quieter window for reflection, mantra, journaling, or breathwork. VedicHour rates all 18 planetary hours in plain English, so your day isn’t treated as one mood. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content aligns with timing awareness, not outcome promises."
+      },
+      "facebook": {
+        "text": "Brahma Muhurat is the 96 minutes before sunrise, a calm pre-dawn window for reflection and practice. 🌄 VedicHour helps you see the day with more nuance, rating all 18 planetary hours in plain English instead of treating every hour as the same mood. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational, and promotes awareness; avoids outcome promises or certainty."
+      },
+      "linkedin": {
+        "text": "Brahma Muhurat, the 96 minutes before sunrise, offers a useful lens for intentional reflection before the day gathers pace. VedicHour translates Jyotish timing into plain English, rating all 18 planetary hours with Swiss Ephemeris and Lahiri ayanamsa, because a day is not one uniform mood. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content aligns with timing awareness, reflection. 'Decoded' means understanding, not outcome."
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "dasha-chapters",
+    "topic": "Dashas, your life's chapters",
+    "product": "forecast",
+    "pillar": 2,
+    "platforms": {
+      "instagram": {
+        "text": "Vimshottari Dashas can be understood as life chapters: seasons where one planet sets the tone at a time. Your day is not one mood, and neither is your path. VedicHour translates Jyotish timing into plain English and rates all 18 planetary hours for calmer reflection. ✨ Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#vedicastrology",
+          "#dashas",
+          "#vimshottari",
+          "#selfreflection"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational content about timing awareness and reflection."
+      },
+      "x": {
+        "text": "Vimshottari Dashas frame life as seasons, with one planet setting the tone at a time. VedicHour keeps it grounded: plain English timing awareness across all 18 planetary hours. Your day is not one mood. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational copy emphasizing timing awareness and understanding, not outcomes."
+      },
+      "facebook": {
+        "text": "Vimshottari Dashas describe life in chapters, each shaped by one planetary period at a time. Some windows may feel clearer, others heavier. VedicHour makes that timing easier to reflect on with plain English insights and ratings for all 18 planetary hours. 🌙 Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm timing-awareness copy; no certainty, luck, or outcome promise"
+      },
+      "linkedin": {
+        "text": "Vimshottari Dashas offer a thoughtful way to view life as a sequence of planetary seasons, with one period shaping the broader tone at a time. VedicHour approaches this as timing awareness, not certainty: Swiss Ephemeris + Lahiri ayanamsa, plain English interpretation, and ratings across all 18 planetary hours. Your day is not one mood. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content aligns with timing awareness, not certainty or outcome promises."
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "gun-milan-36",
+    "topic": "Gun Milan and the 36 points",
+    "product": "matchmaking",
+    "pillar": 3,
+    "platforms": {
+      "instagram": {
+        "text": "Gun Milan is often reduced to a number out of 36. But the Ashtakoot score is a starting point, not the whole conversation. VedicHour keeps it private, modern, and plain-English, with timing awareness across all 18 planetary hours. ✨ NEWUSER30 gives 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#gunmilan",
+          "#ashtakoot",
+          "#jyotish",
+          "#vedicastrology",
+          "#kundali",
+          "#modernjyotish"
+        ],
+        "link": "https://www.vedichour.com/synastry?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational copy focused on awareness, no block/flag terms."
+      },
+      "x": {
+        "text": "Gun Milan’s 36 points are a useful first read, not the full story. Ashtakoot highlights compatibility patterns; VedicHour adds private, plain-English timing awareness across all 18 planetary hours. NEWUSER30: 30% off first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/synastry?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content aligns with timing awareness and reflective understanding, not outcome promises."
+      },
+      "facebook": {
+        "text": "Gun Milan gives you a score out of 36, but that number is only step one. The Ashtakoot score points to patterns worth reflecting on, while VedicHour brings private, plain-English Jyotish and rates all 18 planetary hours for deeper timing awareness. 🕊️ Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/synastry?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content promotes timing awareness and reflection, not certainty or specific outcomes."
+      },
+      "linkedin": {
+        "text": "Gun Milan’s 36-point Ashtakoot score can be a helpful compatibility framework, but it should not be treated as a final answer. VedicHour approaches Jyotish as private, modern reflection: plain-English reports, Swiss Ephemeris with Lahiri ayanamsa, and awareness across all 18 planetary hours. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/synastry?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational, emphasizes awareness & reflection, no banned claims."
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "lagna-lens",
+    "topic": "Your Lagna, the lens of the chart",
+    "product": "kundali",
+    "pillar": 3,
+    "platforms": {
+      "instagram": {
+        "text": "Your Lagna is the lens of the chart: the starting point that gives every house, planet, and timing pattern its context. VedicHour keeps Jyotish private, modern, and reflective, with Swiss Ephemeris + Lahiri ayanamsa translated into plain English. ✨ Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#vedicastro",
+          "#lagna",
+          "#risingsign",
+          "#kundli",
+          "#selfreflection"
+        ],
+        "link": "https://www.vedichour.com/kundali?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm reflective positioning; no luck, guarantees, or outcome promises"
+      },
+      "x": {
+        "text": "Your Lagna is the chart’s front door: it frames how every house, planet, and timing pattern is read. VedicHour keeps it private and practical, using Swiss Ephemeris + Lahiri ayanamsa in plain English. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "block",
+        "linter_reason": "'Your Life, Decoded Hour by Hour' promises outcome/certainty, not just awareness."
+      },
+      "facebook": {
+        "text": "Your Lagna, or rising sign, is where the chart begins. It quietly structures how every house, planet, and timing layer is understood. VedicHour brings private, modern Jyotish into plain English, rating all 18 planetary hours for clearer reflection. 🌙 Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational, plain-English; focuses on awareness, not banned outcomes."
+      },
+      "linkedin": {
+        "text": "In Jyotish, the Lagna is not a minor detail. It is the organizing lens of the chart, shaping how houses, planets, and timing patterns are interpreted. VedicHour offers a private, modern approach with Swiss Ephemeris + Lahiri ayanamsa and plain-English guidance for timing awareness. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational language focusing on awareness and interpretation."
+      }
+    },
+    "status": "needs_review"
+  },
+  {
+    "slug": "mercury-hora-communication",
+    "topic": "The Mercury hora and communication",
+    "product": "forecast",
+    "pillar": 2,
+    "platforms": {
+      "instagram": {
+        "text": "☿ Mercury hora can feel like a clearer window for words: writing, replying, explaining, or noticing what needs to be said with more care. VedicHour rates all 18 planetary hours in plain English, because your day is not one mood. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#planetaryhours",
+          "#mercuryhora",
+          "#vedicwisdom"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Describes planetary hour nature and product features; no banned claims."
+      },
+      "x": {
+        "text": "Mercury hora can be a clearer window for words: messages, replies, notes, and reflection before you speak. VedicHour rates all 18 horas in plain English, because your day is not one mood. NEWUSER30: 30% off first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm timing awareness copy; clearer window framing stays on-brand."
+      },
+      "facebook": {
+        "text": "Some parts of the day feel sharper for language than others. Mercury hora can be a clearer window for messages, thoughtful replies, and saying what you mean with more care. VedicHour rates all 18 planetary hours in plain English, so your day is not one mood. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Describes general nature of hora, product features, and promo, no banned claims."
+      },
+      "linkedin": {
+        "text": "Communication is not only about what you say. Timing can shape how clearly you reflect, write, revise, and respond. Mercury hora is often considered a clearer window for words and messages. VedicHour uses Swiss Ephemeris + Lahiri ayanamsa and explains all 18 planetary hours in plain English, so your day is not one mood. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm timing-awareness copy with clearer-window framing and no outcome promises"
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "nakshatra-traits",
+    "topic": "Your nakshatra, your birth star",
+    "product": "kundali",
+    "pillar": 1,
+    "platforms": {
+      "instagram": {
+        "text": "Your nakshatra is your birth star: one of 27 lunar mansions, offering a finer lens than the 12-sign view. ✨\n\nVedicHour is not another horoscope. We translate Swiss Ephemeris + Lahiri ayanamsa into plain English, so you can notice clearer and heavier timing windows with more awareness.\n\nYour Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#nakshatra",
+          "#birthstar",
+          "#jyotish",
+          "#vedicastrology",
+          "#lunarwisdom"
+        ],
+        "link": "https://www.vedichour.com/kundali?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational copy focusing on awareness and differentiators; avoids banned phrases."
+      },
+      "x": {
+        "text": "Your nakshatra is your birth star: one of 27 lunar mansions, a finer lens than 12 signs. VedicHour turns Swiss Ephemeris + Lahiri ayanamsa into plain-English timing awareness, not another horoscope. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Educational, descriptive copy; emphasizes timing awareness, not outcomes."
+      },
+      "facebook": {
+        "text": "Your nakshatra is your birth star: one of 27 lunar mansions, not just one of 12 signs. 🌙\n\nVedicHour is for people who want timing awareness without dramatic claims. We rate all 18 planetary hours in plain English, helping you reflect on clearer and heavier windows through the day.\n\nYour Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, plain-English timing awareness copy, no block/flag terms."
+      },
+      "linkedin": {
+        "text": "Your nakshatra, or birth star, belongs to a system of 27 lunar mansions. It offers a more specific lens than the familiar 12-sign framework.\n\nVedicHour is not another horoscope. It combines Swiss Ephemeris + Lahiri ayanamsa with plain-English interpretation, designed for timing awareness and reflection rather than certainty.\n\nYour Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, informative, explicitly rejects certainty, aligns with timing awareness and reflection."
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "private-modern-jyotish",
+    "topic": "Private, modern Jyotish",
+    "product": "forecast",
+    "pillar": 3,
+    "platforms": {
+      "instagram": {
+        "text": "A calmer way to meet the day. VedicHour keeps your Jyotish timing private, modern, and easy to read — rating all 18 planetary hours and translating them into plain English. NEWUSER30 gives 30% off your first paid report. ✨ Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#vediccalendar",
+          "#planetaryhours",
+          "#modernjyotish"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content aligns with timing awareness and calm reflection, not certainty or outcomes."
+      },
+      "x": {
+        "text": "Your timing is personal, not a public horoscope feed. VedicHour rates all 18 planetary hours with Swiss Ephemeris + Lahiri ayanamsa, then explains them in plain English. NEWUSER30: 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content aligns with timing awareness and educational focus, no blocked claims."
+      },
+      "facebook": {
+        "text": "Your Jyotish timing does not need to live in a public feed. VedicHour gives you a calm, private dashboard for reflecting on clearer and heavier windows across the day, with all 18 planetary hours explained in plain English. Use NEWUSER30 for 30% off your first paid report. 🌙 Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, reflective copy. 'Decoded' implies understanding, not outcome promise."
+      },
+      "linkedin": {
+        "text": "Modern Jyotish can be private, measured, and easy to understand. VedicHour is a calm timing dashboard, not a public horoscope feed, using Swiss Ephemeris + Lahiri ayanamsa to rate all 18 planetary hours and explain them in plain English. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational tone; promotes awareness, not certainty or outcomes."
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "rahu-kaal-caution",
+    "topic": "Rahu Kaal, the daily caution window",
+    "product": "forecast",
+    "pillar": 2,
+    "platforms": {
+      "instagram": {
+        "text": "Rahu Kaal is the day’s traditional caution window 🌙 Not a reason to fear the day, just a time to move with a little more awareness.\n\nIt shifts by city and weekday, so your window may differ from someone across town or across the world. VedicHour helps you check your local Rahu Kaal, then see how it sits among all 18 planetary hours in plain English.\n\nYour day is not one mood. Some windows feel clearer, some heavier.\n\nYour Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#rahukaal",
+          "#jyotish",
+          "#vedicwisdom",
+          "#planetaryhours",
+          "#mindfultiming"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational tone; promotes awareness, avoids outcome promises, uses brand-approved language."
+      },
+      "x": {
+        "text": "Rahu Kaal is a daily caution window, not a reason to worry. It shifts by city and weekday, so check your local timing and use it for pause, review, or lower-stakes tasks. VedicHour rates all 18 planetary hours in plain English. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational, timing awareness copy; no block words or outcome promises."
+      },
+      "facebook": {
+        "text": "Rahu Kaal is often called the daily caution window, but it does not need to be approached fearfully. Think of it as a reminder to slow down, review, and choose timing with more awareness. 🕰️\n\nBecause Rahu Kaal shifts by city and weekday, your window is local. VedicHour shows yours in plain English and places it alongside all 18 planetary hours, so the whole day has context.\n\nYour day is not one mood.\n\nYour Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "flag",
+        "linter_reason": "'Decoded' might imply certainty/outcome knowledge, bordering on knowing future."
+      },
+      "linkedin": {
+        "text": "Rahu Kaal is a traditional daily caution window in Jyotish. A useful way to approach it is not as certainty, but as timing awareness: a moment to pause, review, and reserve sharper decisions for clearer windows when possible.\n\nBecause it shifts by city and weekday, local calculation matters. VedicHour uses Swiss Ephemeris with Lahiri ayanamsa and explains the day’s 18 planetary hours in plain English.\n\nYour day is not one mood.\n\nYour Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, reflective copy. Focuses on timing awareness, not certainty or outcomes."
+      }
+    },
+    "status": "needs_review"
+  },
+  {
+    "slug": "swiss-ephemeris-precision",
+    "topic": "Why we use the Swiss Ephemeris",
+    "product": "forecast",
+    "pillar": 1,
+    "platforms": {
+      "instagram": {
+        "text": "Not another horoscope. 🪐 VedicHour starts with Swiss Ephemeris positions and Lahiri ayanamsa, then rates all 18 planetary hours in plain English. Astronomer-grade inputs, Jyotish timing awareness, no dramatic claims. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#vedicastrology",
+          "#swissephemeris",
+          "#lahiriayanamsa",
+          "#planetaryhours"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content aligns with timing awareness, not outcome promises."
+      },
+      "x": {
+        "text": "Not another horoscope: VedicHour uses Swiss Ephemeris positions with Lahiri ayanamsa, then translates all 18 planetary hours into plain English so you can reflect on timing with more awareness. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational copy focusing on timing awareness and reflection."
+      },
+      "facebook": {
+        "text": "Not another horoscope. 🪐 We use the Swiss Ephemeris for astronomer-grade planetary positions, apply Lahiri ayanamsa, and explain all 18 horas in plain English. Calm timing awareness for reflection, not certainty. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Aligns with timing awareness and reflection, explicitly disavows certainty."
+      },
+      "linkedin": {
+        "text": "VedicHour is built for people who want Jyotish timing explained with care. We use Swiss Ephemeris planetary positions with Lahiri ayanamsa, then translate all 18 planetary hours into plain English. The goal is timing awareness and reflection, not certainty or outcome claims. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content aligns with timing awareness, reflection, and avoids banned claims."
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "twelve-houses",
+    "topic": "The 12 houses of your chart",
+    "product": "kundali",
+    "pillar": 3,
+    "platforms": {
+      "instagram": {
+        "text": "Your chart has 12 houses: a plain-English map of self, resources, learning, home, creativity, work, partnership, change, meaning, career, community, and rest. 🪐 VedicHour keeps it modern and reflective, with reports that rate all 18 planetary hours for timing awareness. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#vedicastro",
+          "#kundli",
+          "#birthchart",
+          "#planetaryhours",
+          "#selfreflection"
+        ],
+        "link": "https://www.vedichour.com/kundali?utm_source=instagram&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Content aligns with timing awareness; no forbidden claims or promises."
+      },
+      "x": {
+        "text": "The 12 houses are your chart’s plain-English map: self, resources, learning, home, creativity, work, partnership, change, meaning, career, community, and rest. VedicHour adds timing awareness by rating all 18 horas. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=x&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Educational, descriptive copy, aligns with brand on timing awareness."
+      },
+      "facebook": {
+        "text": "The 12 houses of your chart are a calm, plain-English map of life areas: self, resources, learning, home, creativity, work, partnership, change, meaning, career, community, and rest. ✨ VedicHour brings modern Jyotish into timing awareness by rating all 18 planetary hours. NEWUSER30 gives 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=facebook&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Calm, educational, on-brand for timing awareness; no banned promises or terms."
+      },
+      "linkedin": {
+        "text": "In Jyotish, the 12 houses offer a structured, plain-English map of life areas: identity, resources, communication, home, creativity, service, partnership, transformation, meaning, career, networks, and retreat. VedicHour presents this with a modern, reflective lens, using Swiss Ephemeris + Lahiri ayanamsa for credible timing awareness. NEWUSER30 gives 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+        "link": "https://www.vedichour.com/kundali?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+        "linter": "pass",
+        "linter_reason": "Promotes timing awareness, reflection, and education."
+      }
+    },
+    "status": "ready_to_post"
+  }
+]

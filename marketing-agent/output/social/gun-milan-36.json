@@ -1,0 +1,42 @@
+{
+  "slug": "gun-milan-36",
+  "topic": "Gun Milan and the 36 points",
+  "product": "matchmaking",
+  "pillar": 3,
+  "platforms": {
+    "instagram": {
+      "text": "Gun Milan is often reduced to a number out of 36. But the Ashtakoot score is a starting point, not the whole conversation. VedicHour keeps it private, modern, and plain-English, with timing awareness across all 18 planetary hours. ✨ NEWUSER30 gives 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "hashtags": [
+        "#vedichour",
+        "#gunmilan",
+        "#ashtakoot",
+        "#jyotish",
+        "#vedicastrology",
+        "#kundali",
+        "#modernjyotish"
+      ],
+      "link": "https://www.vedichour.com/synastry?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Calm, educational copy focused on awareness, no block/flag terms."
+    },
+    "x": {
+      "text": "Gun Milan’s 36 points are a useful first read, not the full story. Ashtakoot highlights compatibility patterns; VedicHour adds private, plain-English timing awareness across all 18 planetary hours. NEWUSER30: 30% off first paid report. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/synastry?utm_source=x&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Content aligns with timing awareness and reflective understanding, not outcome promises."
+    },
+    "facebook": {
+      "text": "Gun Milan gives you a score out of 36, but that number is only step one. The Ashtakoot score points to patterns worth reflecting on, while VedicHour brings private, plain-English Jyotish and rates all 18 planetary hours for deeper timing awareness. 🕊️ Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/synastry?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Content promotes timing awareness and reflection, not certainty or specific outcomes."
+    },
+    "linkedin": {
+      "text": "Gun Milan’s 36-point Ashtakoot score can be a helpful compatibility framework, but it should not be treated as a final answer. VedicHour approaches Jyotish as private, modern reflection: plain-English reports, Swiss Ephemeris with Lahiri ayanamsa, and awareness across all 18 planetary hours. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/synastry?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "linter": "pass",
+      "linter_reason": "Calm, educational, emphasizes awareness & reflection, no banned claims."
+    }
+  },
+  "status": "ready_to_post"
+}

@@ -1,0 +1,10 @@
+{
+  "id": "qa-2",
+  "kind": "reddit-quora",
+  "question": "What is my nakshatra and how do I find it?",
+  "answer_with_mention": "Your nakshatra is the lunar mansion the Moon occupied at your birth. In Jyotish, the zodiac is divided into 27 nakshatras, each covering 13°20'. To find yours, you need your birth date, exact birth time, and birthplace. Then use a Vedic astrology chart calculator, not a Western-only one, and check the Moon’s nakshatra in the result. Accuracy matters because the Moon moves quickly, so a rough birth time can sometimes shift the answer, especially near a nakshatra boundary. If you want to understand it, start with the nakshatra’s qualities, ruling planet, pada, and the sign it falls in, but treat it as a reflection tool, not a fixed script. If you want a plain-English timing view after you find it, VedicHour rates all 18 planetary hours using Swiss Ephemeris + Lahiri ayanamsa: /free-kundli — Your Life, Decoded Hour by Hour.",
+  "answer_no_link": "Your nakshatra is the lunar mansion the Moon was in when you were born. Jyotish divides the zodiac into 27 nakshatras of 13°20' each, and your Moon’s exact degree determines yours. To find it, gather your birth date, exact birth time, and birthplace, then use a Vedic astrology chart calculator and look for the Moon’s nakshatra. Choose one that uses Lahiri ayanamsa and reliable astronomy calculations such as Swiss Ephemeris if possible, because small differences matter near boundaries. Once you know it, look at four things: the nakshatra name, its ruling planet, its pada, and the zodiac sign containing your Moon. That gives more context than the nakshatra name alone. Use the interpretation as a language for self-reflection and timing awareness, not as certainty about personality or life outcomes.",
+  "linter": "pass",
+  "linter_reason": "Educational content; emphasizes reflection, not certainty or outcome promises.",
+  "status": "ready"
+}

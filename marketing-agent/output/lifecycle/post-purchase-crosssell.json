@@ -1,0 +1,11 @@
+{
+  "id": "post-purchase-crosssell",
+  "channel": "email",
+  "trigger": "after a purchase",
+  "subject": "Thank you for your Kundli purchase",
+  "body": "Thank you for choosing VedicHour. Your Kundli report is designed to make Jyotish timing easier to reflect on in plain English, with calculations grounded in Swiss Ephemeris + Lahiri ayanamsa.\n\nIf you’re ready to explore another angle, Matchmaking can compare two charts with calm context, while a Forecast can help you notice upcoming clearer and heavier windows without treating them as certainty.\n\nYour Life, Decoded Hour by Hour.\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.",
+  "link": "https://www.vedichour.com/synastry?utm_source=crm&utm_medium=email&utm_campaign=lifecycle",
+  "linter": "pass",
+  "linter_reason": "Calm reflection, uses approved differentiators, and includes disclaimers.",
+  "status": "ready"
+}

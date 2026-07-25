@@ -1,0 +1,10 @@
+{
+  "id": "email-wedding-planners",
+  "kind": "cold-email",
+  "audience": "wedding planners and matchmakers",
+  "subject": "Partnership idea for [their work]",
+  "body": "Hi [First name],\n\nI noticed [their work] and thought VedicHour may fit clients who ask for reflective timing context around ceremonies or introductions.\n\nWe do not promise outcomes or certainty. We offer plain-English timing awareness, rating all 18 planetary hours with Swiss Ephemeris + Lahiri ayanamsa.\n\nFor partners, we can provide a free Pro account, a custom audience discount code like PARTNERNAME10, and a simple revenue share on referred paid reports.\n\nOpen to a short conversation?\n\nYour Life, Decoded Hour by Hour.\n\nTo unsubscribe, reply “unsubscribe.” [Physical address]",
+  "linter": "pass",
+  "linter_reason": "Explicitly states no outcome promises, focuses on awareness.",
+  "status": "ready"
+}

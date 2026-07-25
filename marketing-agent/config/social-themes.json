@@ -1,0 +1,17 @@
+{
+  "_comment": "L3 social-post backlog. Each theme -> Instagram + X + Facebook + LinkedIn posts via brain, linted, staged to output/social/. pillar: 1=Not another horoscope, 2=Your day is not one mood, 3=Private modern Jyotish. product routes the UTM link.",
+  "themes": [
+    { "slug": "rahu-kaal-caution", "topic": "Rahu Kaal, the daily caution window", "angle": "What it is, that it shifts by city/weekday, and how to check yours — calmly, not fearfully.", "product": "forecast", "pillar": 2 },
+    { "slug": "abhijit-window", "topic": "Abhijit Muhurat, the midday window", "angle": "A roughly 48-minute clearer window around local noon and how to use it.", "product": "forecast", "pillar": 2 },
+    { "slug": "twelve-houses", "topic": "The 12 houses of your chart", "angle": "Each house governs an area of life; a plain-English map.", "product": "kundali", "pillar": 3 },
+    { "slug": "dasha-chapters", "topic": "Dashas, your life's chapters", "angle": "Vimshottari periods as seasons ruled by one planet at a time.", "product": "forecast", "pillar": 2 },
+    { "slug": "swiss-ephemeris-precision", "topic": "Why we use the Swiss Ephemeris", "angle": "Astronomer-grade positions with Lahiri ayanamsa, explained in plain English.", "product": "forecast", "pillar": 1 },
+    { "slug": "gun-milan-36", "topic": "Gun Milan and the 36 points", "angle": "What the Ashtakoot score means and why it's only step one.", "product": "matchmaking", "pillar": 3 },
+    { "slug": "lagna-lens", "topic": "Your Lagna, the lens of the chart", "angle": "Why the rising sign structures everything.", "product": "kundali", "pillar": 3 },
+    { "slug": "birth-time-matters", "topic": "Why birth time matters", "angle": "A few minutes can shift your Lagna and houses.", "product": "kundali", "pillar": 3 },
+    { "slug": "brahma-muhurat-practice", "topic": "Brahma Muhurat, the pre-dawn window", "angle": "The 96 minutes before sunrise for reflection and practice.", "product": "forecast", "pillar": 2 },
+    { "slug": "nakshatra-traits", "topic": "Your nakshatra, your birth star", "angle": "27 lunar mansions, more precise than 12 signs.", "product": "kundali", "pillar": 1 },
+    { "slug": "mercury-hora-communication", "topic": "The Mercury hora and communication", "angle": "A clearer window for words, messages, and being understood.", "product": "forecast", "pillar": 2 },
+    { "slug": "private-modern-jyotish", "topic": "Private, modern Jyotish", "angle": "A calm, private timing dashboard — not a public horoscope feed.", "product": "forecast", "pillar": 3 }
+  ]
+}

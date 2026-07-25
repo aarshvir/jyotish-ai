@@ -17,3 +17,7 @@ output/reels/**/*.png
 output/reels/**/*.wav
 output/reels/**/*.mp3
 output/reels/**/work/
+
+# Send-tracking state holds REAL customer email addresses — never commit it.
+output/email/sent.json
+output/email/sent-followup.json

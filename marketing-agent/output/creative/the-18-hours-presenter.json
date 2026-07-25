@@ -1,0 +1,51 @@
+{
+  "_comment": "REFERENCE CREATIVE — the contract between the creative engine and src/render/. The creative engine writes files exactly like this one. Rule: shots[0].role MUST be 'presenter' (visible human opener), and presenter dialogue MUST be Roman/Latin-script Hinglish. See src/render/types.ts.",
+  "slug": "the-18-hours-presenter",
+  "title": "The 18 planetary hours (presenter-led)",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.92,
+  "hook": "Your day isn't one mood. It's 18.",
+  "cta": "Free Kundli — link in bio. Your Life, Decoded Hour by Hour.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1-open",
+      "role": "presenter",
+      "seconds": 8,
+      "prompt": "Medium close-up of a warm, natural Indian woman in her late twenties, minimal makeup, soft window light from camera left, calm modern apartment blurred behind her, shallow depth of field, vertical 9:16 framing, speaking directly to camera",
+      "dialogue": "Aapka din ek mood nahi hai. Vedic astrology mein din ke aththarah planetary hours hote hain — horas."
+    },
+    {
+      "id": "s2-hero",
+      "role": "broll_hero",
+      "seconds": 5,
+      "prompt": "Slow cinematic push-in on a deep navy night sky, faint golden constellation lines drawing themselves across it, fine star field, quietly premium, no text, vertical 9:16",
+      "vo": "Each hora has its own texture. Some windows are clearer, some heavier."
+    },
+    {
+      "id": "s3-product",
+      "role": "product",
+      "seconds": 5,
+      "capture": {
+        "url": "https://www.vedichour.com/free-kundli",
+        "scrollPx": 0
+      },
+      "vo": "We compute all eighteen with the Swiss Ephemeris and Lahiri ayanamsa."
+    },
+    {
+      "id": "s4-broll",
+      "role": "broll",
+      "seconds": 5,
+      "prompt": "Overhead shot of hands turning a page in a plain notebook on a warm wooden desk, morning light, dust motes, muted navy and gold palette, no text, vertical 9:16",
+      "vo": "Plain English. No jargon. Just when to act, and when to wait."
+    },
+    {
+      "id": "s5-close",
+      "role": "presenter_close",
+      "seconds": 6,
+      "prompt": "Same Indian woman, same apartment and lighting, medium close-up, vertical 9:16, warm relaxed smile, speaking directly to camera",
+      "dialogue": "Free kundli banaiye aur apna timing grid dekhiye. Link description mein."
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "cart-abandon",
+  "channel": "email",
+  "trigger": "started a report but did not complete checkout",
+  "subject": "Your VedicHour report is waiting",
+  "body": "You started your VedicHour report, and it is still ready when you are. It offers calm timing awareness in plain English, rating all 18 planetary hours so you can notice clearer and heavier windows with more perspective.\n\nUse NEWUSER30 for 30% off your first paid report at checkout. No pressure, just a thoughtful way to complete what you began.\n\nYour Life, Decoded Hour by Hour.\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.",
+  "link": "https://www.vedichour.com/onboard?utm_source=crm&utm_medium=email&utm_campaign=lifecycle",
+  "linter": "pass",
+  "linter_reason": "Calm timing awareness; avoids block/flag criteria, explicitly states disclaimers.",
+  "status": "ready"
+}

@@ -1,0 +1,520 @@
+[
+  {
+    "slug": "clearer-window-to-act",
+    "title": "A clearer window to act",
+    "product": "forecast",
+    "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\media\\reels\\clearer-window-to-act\\clearer-window-to-act.mp4",
+    "platforms": {
+      "instagram": {
+        "caption": "Ever feel like some moments just click, while others are a bit of a push? 🌿 It's all about tuning into the subtle energies of planetary hours. Whether it's a Jupiter Hora for growth or a Mercury Hora for clear communication, understanding these clearer or heavier windows helps you align your actions with purpose. We analyze all 18 planetary hours using precise calculations, delivered in plain English. Explore your unique timing today with NEWUSER30 for 30% off your first paid report! Your Life, Decoded Hour by Hour. ✨",
+        "hashtags": [
+          "#vedichour",
+          "#planetaryhours",
+          "#jyotish",
+          "#astrologyinsights",
+          "#timingiseverything",
+          "#intentionalliving",
+          "#dailyflow",
+          "#vedicastrology",
+          "#horatiming",
+          "#selfreflection",
+          "#cosmicguidance",
+          "#alignedactions"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "flag",
+        "linter_reason": "Implies advantage (align purpose) and outcome ('Life, Decoded'). Borderline."
+      },
+      "youtube": {
+        "caption": "Plan your moments with purpose! Some windows are naturally clearer, others feel heavier. Discover how Jupiter Hora can support growth, and Mercury Hora helps your message land. We map all 18 planetary hours in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#planetaryhours",
+          "#jyotish",
+          "#astrology",
+          "#timing",
+          "#horatiming",
+          "#purposefulliving",
+          "#vedicastrology",
+          "#cosmicrhythm",
+          "#dailyplanning",
+          "#astrologyfacts",
+          "#innerwisdom"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Calm, credible, sells timing/reflection, uses clearer/heavier, includes differentiators."
+      },
+      "tiktok": {
+        "caption": "Okay, real talk: some days just hit different. ✨ Ever wonder why? It's the planetary hours! Knowing when you're in a Jupiter hora (hello, growth!) or when a Mars hora feels a bit heavier helps you flow with your day. We decode all 18 hours, super easy to understand. Ready to plan your moments on purpose? Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#planetaryhours",
+          "#astrology",
+          "#jyotish",
+          "#spiritualtiktok",
+          "#dailyroutine",
+          "#flowstate",
+          "#timing",
+          "#selfawareness",
+          "#vedicastrology",
+          "#astrologyhacks"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video",
+        "linter": "flag",
+        "linter_reason": "Casual tone and growth framing imply advantage beyond calm timing awareness"
+      },
+      "facebook": {
+        "caption": "Have you ever noticed that certain times of day feel more conducive to specific activities? This isn't just coincidence; it's the influence of planetary hours, or \"horas.\" Our latest reel explores how understanding these \"clearer\" or \"heavier\" windows can empower you to approach your day with more intention. For instance, a Jupiter hora often leans towards growth and expansion, while a Mercury hora can make communication flow more smoothly. Conversely, a Mars hora might bring a more intense or challenging energy. At VedicHour, we provide precise calculations for all 18 planetary hours, utilizing Swiss Ephemeris and Lahiri ayanamsa, presented in clear, plain English. By understanding these subtle shifts, you can consciously plan your important moments. Discover your unique timing today and get 30% off your first paid report with code NEWUSER30. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#planetaryhours",
+          "#jyotishawareness",
+          "#astrologyexplained",
+          "#dailyintentions",
+          "#consciousliving",
+          "#timingmatters",
+          "#vedicastrologyreadings",
+          "#lahiriayanamsa",
+          "#selfdevelopment",
+          "#cosmiccycles",
+          "#planwithpurpose"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "block",
+        "linter_reason": "Outcome promise: 'Your Life, Decoded Hour by Hour' implies life change."
+      }
+    },
+    "status": "needs_review"
+  },
+  {
+    "slug": "daily-horoscopes",
+    "title": "Daily horoscopes are too broad",
+    "product": "forecast",
+    "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\media\\reels\\daily-horoscopes\\daily-horoscopes.mp4",
+    "platforms": {
+      "instagram": {
+        "caption": "Daily horoscopes can feel broad because they are. Your timing is more personal: nakshatra, dasha, and VedicHour’s ratings for all 18 planetary hours (horas), translated into plain English. 🪐✨ Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#vedicastrology",
+          "#horas",
+          "#nakshatra",
+          "#dasha",
+          "#birthchart",
+          "#astrologyapp",
+          "#selfreflection",
+          "#timingawareness"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "flag",
+        "linter_reason": "'Your Life, Decoded' implies an outcome or certainty about life."
+      },
+      "youtube": {
+        "caption": "650 million people. One horoscope.\nYour chart is only yours. VedicHour adds a second timing lens with nakshatra, dasha, and all 18 planetary hours (horas) in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#vedicastrology",
+          "#horas",
+          "#nakshatra",
+          "#dasha",
+          "#kundli",
+          "#birthchart",
+          "#astrologyshorts",
+          "#selfreflection"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video",
+        "linter": "flag",
+        "linter_reason": "Implies outcome: 'Your Life, Decoded Hour by Hour'"
+      },
+      "tiktok": {
+        "caption": "your daily horoscope was not written for just you. VedicHour looks at your chart, nakshatra, dasha, and rates all 18 planetary hours so the day feels less generic and more reflective, in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#vedicastro",
+          "#horas",
+          "#nakshatra",
+          "#dasha",
+          "#kundli",
+          "#astrologytok",
+          "#birthchart",
+          "#timingawareness"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "On-brand: calm, credible, sells awareness, offers key differentiators."
+      },
+      "facebook": {
+        "caption": "Daily horoscopes speak to a huge group at once. VedicHour is built for a more personal timing view, using your chart, nakshatra, dasha, and Swiss Ephemeris + Lahiri ayanamsa to offer reflective guidance in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#jyotish",
+          "#vedicastrology",
+          "#horas",
+          "#nakshatra",
+          "#dasha",
+          "#kundali",
+          "#birthchart",
+          "#selfreflection",
+          "#timingawareness"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "flag",
+        "linter_reason": "Implies definite life outcome via 'Decoded', borders on certainty, not just awareness."
+      }
+    },
+    "status": "needs_review"
+  },
+  {
+    "slug": "manglik-calm",
+    "title": "Manglik, calmly",
+    "product": "matchmaking",
+    "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\media\\reels\\manglik-calm\\manglik-calm.mp4",
+    "platforms": {
+      "instagram": {
+        "caption": "Told you're Manglik and feeling overwhelmed? Take a deep breath. 🙏 Manglik is a specific Mars placement, but it often finds balance within a comprehensive chart analysis. Many assume it’s a big hurdle, but understanding its nuances, especially with another Manglik, can reveal a harmonious path. We empower you to explore these layers with precision, using Swiss Ephemeris and Lahiri ayanamsa for clear insights, explained in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#manglik",
+          "#vedicastrology",
+          "#jyotish",
+          "#marscardinality",
+          "#kundalimatching",
+          "#astrology",
+          "#compatibility",
+          "#birthchart",
+          "#planetaryplacements",
+          "#vedichour",
+          "#cosmicguidance"
+        ],
+        "link": "https://www.vedichour.com/synastry?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Calm, educational explanation of Manglik, not a banned outcome promise."
+      },
+      "youtube": {
+        "caption": "Don't panic about Manglik! This Mars placement is often misunderstood. It frequently finds its balance, and two Mangliks can indeed align beautifully. It's about looking at your chart thoroughly, not just one point. We dive deep with Swiss Ephemeris and Lahiri ayanamsa, offering clarity in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#manglik",
+          "#vedicastrology",
+          "#jyotish",
+          "#marscardinality",
+          "#kundalimatching",
+          "#astrology",
+          "#compatibility",
+          "#birthchart",
+          "#planetaryplacements",
+          "#vedichour",
+          "#dharma",
+          "#horoscope"
+        ],
+        "link": "https://www.vedichour.com/synastry?utm_source=youtube&utm_medium=short&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Calmly discusses dosha, reassuring, educational, no personal outcome promises."
+      },
+      "tiktok": {
+        "caption": "Heard \"Manglik\" and instantly stressed? Nah, let's clear that up. It's just Mars doing its thing in a specific house. Good news: it often cancels out, especially if your partner has it too! No need for instant panic. Get the real, calm breakdown of what it means for YOU. We explain it all in plain English, with precision from Swiss Ephemeris. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#manglik",
+          "#astrologyfacts",
+          "#vedicastrology",
+          "#jyotish",
+          "#birthchart",
+          "#marscardinality",
+          "#kundalimatching",
+          "#astrology",
+          "#vedichour",
+          "#compatibility",
+          "#horoscope",
+          "#planetaryplacements"
+        ],
+        "link": "https://www.vedichour.com/synastry?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Calm, educational tone; dispels fear; aligns with calibration for dosha explanation."
+      },
+      "facebook": {
+        "caption": "The term \"Manglik\" often sparks worry, but it's important to understand what it truly signifies in Jyotish. This specific placement of Mars can indicate certain energetic expressions, yet these are frequently mitigated or 'cancelled out' by other planetary influences or through compatibility with another Manglik individual. Instead of generalized fear, a detailed and proper astrological assessment provides genuine clarity. We provide precise chart analysis using advanced Swiss Ephemeris and Lahiri ayanamsa, presented in understandable, plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#manglik",
+          "#vedicastrology",
+          "#jyotish",
+          "#marscardinality",
+          "#kundalimatching",
+          "#astrology",
+          "#compatibility",
+          "#birthchart",
+          "#planetaryplacements",
+          "#vedichour",
+          "#spiritualgrowth",
+          "#cosmicguidance"
+        ],
+        "link": "https://www.vedichour.com/synastry?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Calm, educational tone; aligns with allowed dosha discussion and awareness focus."
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "nakshatra-reveal",
+    "title": "You have a birth star",
+    "product": "kundali",
+    "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\media\\reels\\nakshatra-reveal\\nakshatra-reveal.mp4",
+    "platforms": {
+      "instagram": {
+        "caption": "Beyond your sun sign, there's a birth star that illuminates your unique path ✨. With 27 nakshatras, this ancient insight, set by your Moon at birth, offers a more precise understanding than just 12 signs, explained simply in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedicastrology",
+          "#nakshatra",
+          "#birthstar",
+          "#jyotish",
+          "#moonatbirth",
+          "#astrologyfacts",
+          "#knowthyself",
+          "#cosmicinsights",
+          "#selfawareness",
+          "#plainenglish",
+          "#vedichour",
+          "#awareness"
+        ],
+        "link": "https://www.vedichour.com/kundali?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "flag",
+        "linter_reason": "Implies outcome: 'illuminates your unique path,' 'Your Life, Decoded Hour by Hour.'"
+      },
+      "youtube": {
+        "caption": "You have a sun sign, but have you heard of your birth star? Discover the 27 nakshatras, a precise system beyond the 12 signs, determined by your Moon at birth. We explain it all in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#birthstar",
+          "#nakshatras",
+          "#vedicastrology",
+          "#astrology",
+          "#moon",
+          "#jyotish",
+          "#selfdiscovery",
+          "#cosmicguidance",
+          "#awareness",
+          "#vedichour",
+          "#spiritualinsights",
+          "#ancientwisdom"
+        ],
+        "link": "https://www.vedichour.com/kundali?utm_source=youtube&utm_medium=short&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Calm, credible, plain English; sells awareness/reflection; on-brand differentiators."
+      },
+      "tiktok": {
+        "caption": "Okay, you know your sun sign. But what about your birth star? 🤯 There are 27 nakshatras, way more precise than the usual 12 signs, all based on your Moon at birth. We break it down in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#birthstar",
+          "#nakshatra",
+          "#astrologytiktok",
+          "#vedicastrology",
+          "#jyotish",
+          "#moonastrology",
+          "#cosmictruth",
+          "#selfreflection",
+          "#astrologyforbeginners",
+          "#vedichour",
+          "#spiritualtiktok",
+          "#learnastrology"
+        ],
+        "link": "https://www.vedichour.com/kundali?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video",
+        "linter": "flag",
+        "linter_reason": "Emoji, 'Decoded' implies outcome, 'more precise' implies advantage. Not calm."
+      },
+      "facebook": {
+        "caption": "While many know their sun sign, the concept of a 'birth star' (Nakshatra) offers a deeper layer of astrological understanding. Comprising 27 distinct lunar mansions, this system provides insights that are often considered more precise than the familiar 12 zodiac signs, as it's determined by the Moon's position at the moment of your birth. At VedicHour, we clarify these intricate concepts in plain English, helping you reflect on your unique cosmic blueprint. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedicastrology",
+          "#nakshatras",
+          "#birthstar",
+          "#jyotishastrology",
+          "#moonastrology",
+          "#astrologyexplained",
+          "#selfawareness",
+          "#cosmicguidance",
+          "#spiritualgrowth",
+          "#ancientwisdom",
+          "#learnastrology",
+          "#vedichour"
+        ],
+        "link": "https://www.vedichour.com/kundali?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "flag",
+        "linter_reason": "'Your Life, Decoded' implies an outcome, not just timing awareness."
+      }
+    },
+    "status": "needs_review"
+  },
+  {
+    "slug": "sade-sati-reframed",
+    "title": "Sade Sati is not a curse",
+    "product": "forecast",
+    "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\media\\reels\\sade-sati-reframed\\sade-sati-reframed.mp4",
+    "platforms": {
+      "instagram": {
+        "caption": "People often call Sade Sati a curse, but what if it's actually a profound teacher? 🤔 It's a significant planetary transit of Saturn over your Moon, lasting approximately 7.5 years in three distinct phases. Rather than a punishment, consider it a period designed for deep reflection and growth. Understanding your unique phase can bring immense clarity. VedicHour helps you explore these cosmic timings with clarity, using precise Swiss Ephemeris data and Lahiri ayanamsa, explained in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#sadesati",
+          "#vedicastrology",
+          "#jyotish",
+          "#saturn",
+          "#moon",
+          "#planetarytransits",
+          "#selfreflection",
+          "#spiritualgrowth",
+          "#cosmictiming",
+          "#astrologyinsights",
+          "#vedichour"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Calm educational timing awareness; no certainty, luck, or outcome promise."
+      },
+      "youtube": {
+        "caption": "Sade Sati: Is it a curse or your greatest teacher? This 7.5-year transit of Saturn over your Moon isn't about punishment, but profound transformation across three distinct phases. Understand what your phase means for you. VedicHour offers insights into all 18 planetary hours (horas) and major transits, all explained in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#sadesatiexplained",
+          "#vedicastrologyfacts",
+          "#saturntransit",
+          "#jyotishwisdom",
+          "#astrologyteacher",
+          "#lifecycles",
+          "#vedichour",
+          "#spiritualjourney",
+          "#planetaryinfluences"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Content is educational, reflective, and focuses on understanding, not specific outcomes."
+      },
+      "tiktok": {
+        "caption": "Okay, so everyone talks about Sade Sati like it's the end of the world. 🙅‍♀️ But real talk, it's NOT a curse. It's Saturn spending about 7.5 years chilling (or not!) over your Moon, broken into three phases. Think of it as a cosmic teacher, not a punishment. Knowing your phase? Game changer for reflection. VedicHour helps you make sense of it all with clear explanations, based on precise Swiss Ephemeris and Lahiri ayanamsa. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#sadesati",
+          "#astrologytiktok",
+          "#vedicastrology",
+          "#saturn",
+          "#jyotish",
+          "#nottacurse",
+          "#spiritualtiktok",
+          "#astrologyfacts",
+          "#cosmicteachings",
+          "#vedichour",
+          "#learnastrology"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Promotes reflection and awareness, avoids blocklist terms."
+      },
+      "facebook": {
+        "caption": "The term \"Sade Sati\" often carries a heavy connotation, with many mistakenly labeling it a curse. However, Vedic astrology views this significant 7.5-year transit of Saturn over one's natal Moon as a profound period of transformation and learning. It unfolds in three distinct phases, each bringing its own lessons and opportunities for growth. Instead of a punishment, consider Sade Sati a cosmic teacher, guiding you towards greater self-awareness and maturity. Understanding the specific phase you're in can provide immense clarity and help navigate its energies constructively. VedicHour provides clear, accessible insights into these complex planetary movements and other cosmic timings, using precise Swiss Ephemeris data and Lahiri ayanamsa, all explained in plain English. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#sadesativedicastrology",
+          "#saturnsadesati",
+          "#vedicastrologyinsights",
+          "#jyotishlearning",
+          "#astrologyforgrowth",
+          "#planetarytransitsdecoded",
+          "#vedichourinsights",
+          "#selfdiscoveryjourney",
+          "#cosmiclessons",
+          "#spiritualdevelopment",
+          "#ancientwisdom"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Describes period's nature, promotes awareness, uses brand differentiators."
+      }
+    },
+    "status": "ready_to_post"
+  },
+  {
+    "slug": "the-18-hours",
+    "title": "The 18 planetary hours",
+    "product": "forecast",
+    "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\media\\reels\\the-18-hours\\the-18-hours.mp4",
+    "platforms": {
+      "instagram": {
+        "caption": "Your day isn't one mood. It's 18. 💫 Ever feel like your daily horoscope doesn't quite capture your entire day? That's because there's more to your cosmic rhythm than a single reading! Most apps offer one generalized outlook for 24 hours, but the truth is, your day unfolds through 18 distinct planetary hours, or horas. Each hora carries its own unique energy and texture, influencing moments in subtle yet profound ways. We map all 18 for your unique chart, calculated with Swiss Ephemeris and Lahiri ayanamsa, presented in plain English. Discover a deeper awareness of your daily flow. ✨ Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#planetaryhours",
+          "#horas",
+          "#astrology",
+          "#jyotish",
+          "#dailyrhythm",
+          "#cosmicawareness",
+          "#reflection",
+          "#innerwisdom",
+          "#vedicastrology",
+          "#personalizedinsights",
+          "#swissephemeris"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Emphasizes awareness, uses differentiators, avoids block terms."
+      },
+      "youtube": {
+        "caption": "Your day isn't one mood. It's 18. 🤯 Most apps give you one reading for 24 hours. But reality? There are 18 planetary hours, or horas, each with its own unique texture. We map all 18 for your chart. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#planetaryhours",
+          "#horas",
+          "#astrology",
+          "#jyotish",
+          "#dailyflow",
+          "#cosmicenergy",
+          "#selfawareness",
+          "#vedicastrology",
+          "#personalizedastrology",
+          "#dailyhoroscope",
+          "#spiritualjourney"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video",
+        "linter": "flag",
+        "linter_reason": "Tone is not calm/credible, implies outcome with 'Decoded Hour by Hour'"
+      },
+      "tiktok": {
+        "caption": "Okay, real talk: your day isn't just one vibe, it's like 18 different ones! 🤔 Most apps tell you one thing for 24 hours, but ancient wisdom reveals 18 planetary hours, or horas. Each one feels different, has its own unique texture. We're here to map all 18 of them for YOUR chart. Get ready to understand your day like never before. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#planetaryhours",
+          "#horas",
+          "#astrologyfacts",
+          "#vedicastrology",
+          "#dailyvibe",
+          "#cosmiccodes",
+          "#selfdiscovery",
+          "#spiritualtiktok",
+          "#astrologyinsights",
+          "#knowyourself",
+          "#dailywisdom"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video",
+        "linter": "block",
+        "linter_reason": "Implies certainty and outcome promises of decoding one's entire life."
+      },
+      "facebook": {
+        "caption": "Your day isn't one mood. It's 18. Have you ever felt that a single daily horoscope doesn't quite encompass the complexity and nuances of your day? While many applications offer a singular reading for a full 24-hour period, the intricate reality of cosmic timing involves 18 distinct planetary hours, known as horas. Each of these horas carries its own unique energetic texture, subtly influencing the unfolding moments of your day. At VedicHour, we meticulously map all 18 of these planetary hours specifically for your birth chart, utilizing precise Swiss Ephemeris calculations and Lahiri ayanamsa, all delivered in clear, plain English. This offers a profound opportunity for heightened awareness and reflection on your daily experiences. Your Life, Decoded Hour by Hour.",
+        "hashtags": [
+          "#vedichour",
+          "#planetaryhours",
+          "#horas",
+          "#astrologyinsights",
+          "#jyotish",
+          "#vedicastrology",
+          "#dailyawareness",
+          "#cosmicrhythms",
+          "#selfreflection",
+          "#birthchart",
+          "#personalizedguidance",
+          "#spiritualgrowth"
+        ],
+        "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video",
+        "linter": "pass",
+        "linter_reason": "Calm, credible, plain-English; sells awareness & reflection with differentiators."
+      }
+    },
+    "status": "needs_review"
+  }
+]

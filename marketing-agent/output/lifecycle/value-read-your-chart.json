@@ -1,0 +1,11 @@
+{
+  "id": "value-read-your-chart",
+  "channel": "email",
+  "trigger": "day 2 after signup",
+  "subject": "Day 2: a simple chart reading order",
+  "body": "When reading your chart, start with context before questions. First, notice the Lagna: how life meets you. Then read the Moon nakshatra for temperament and emotional rhythm. Next, check the current dasha, because timing colors interpretation. After that, look at the 10th house for work patterns and the 7th for partnership dynamics.\n\nVedicHour keeps this in plain English, with calculations built on Swiss Ephemeris + Lahiri ayanamsa. When you want a deeper report, NEWUSER30 gives 30% off your first paid one.\n\nYour Life, Decoded Hour by Hour.\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.",
+  "link": "https://www.vedichour.com/free-kundli?utm_source=crm&utm_medium=email&utm_campaign=lifecycle",
+  "linter": "pass",
+  "linter_reason": "Educational, reflective content; no block/flag keywords or tone.",
+  "status": "ready"
+}

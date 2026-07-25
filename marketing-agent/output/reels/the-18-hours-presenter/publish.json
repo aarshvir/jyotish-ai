@@ -1,0 +1,113 @@
+{
+  "slug": "the-18-hours-presenter",
+  "title": "The 18 planetary hours (presenter-led)",
+  "product": "forecast",
+  "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\the-18-hours-presenter\\final.mp4",
+  "durationSec": 35.97,
+  "generationCostUsd": 0,
+  "dryRun": true,
+  "youtubeTitle": "Your day isn't one mood. It's 18. | VedicHour",
+  "description": "Your day isn't one mood. It's 18.\n\nAapka din ek mood nahi hai. Vedic astrology mein din ke aththarah planetary hours hote hain — horas. Each hora has its own texture. Some windows are clearer, some heavier. We compute all eighteen with the Swiss Ephemeris and Lahiri ayanamsa. Plain English. No jargon. Just when to act, and when to wait. Free kundli banaiye aur apna timing grid dekhiye. Link description mein.\n\nVedicHour rates all 18 planetary hours (horas) of your day, real astronomy — computed with the Swiss Ephemeris and Lahiri ayanamsa, explained in plain English.\n\nStart free: https://www.vedichour.com/free-kundli?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=the-18-hours-presenter\nFull report: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=the-18-hours-presenter\nUse NEWUSER30 for 30% off your first paid report.\n\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.\n\n#vedicastrology #jyotish #planetaryhours #hora #kundli #panchang #astrologytiming #vedichour",
+  "tags": [
+    "vedic astrology",
+    "jyotish",
+    "planetary hours",
+    "hora",
+    "kundli",
+    "panchang",
+    "astrology timing",
+    "vedichour"
+  ],
+  "hashtags": [
+    "#vedichour",
+    "#vedicastrology",
+    "#jyotish",
+    "#kundli",
+    "#planetaryhours",
+    "#hora",
+    "#astrologyindia",
+    "#timing",
+    "#panchang",
+    "#dailyastrology"
+  ],
+  "caption": "Your day isn't one mood. It's 18.\n\nAapka din ek mood nahi hai. Vedic astrology mein din ke aththarah planetary hours hote hain — horas. Each hora has its own texture. Some windows are clearer, some heavier. We compute all eighteen with the Swiss Ephemeris and Lahiri ayanamsa. Plain English. No jargon. Just when to act, and when to wait. Free kundli bana\n\nYour Life, Decoded Hour by Hour.\n\n#vedichour #vedicastrology #jyotish #kundli #planetaryhours #hora #astrologyindia #timing #panchang #dailyastrology",
+  "links": {
+    "instagram": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video&utm_content=the-18-hours-presenter",
+    "youtube": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=the-18-hours-presenter",
+    "tiktok": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video&utm_content=the-18-hours-presenter",
+    "facebook": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video&utm_content=the-18-hours-presenter"
+  },
+  "status": "ready_to_post_manually",
+  "verification": {
+    "ok": true,
+    "problems": [],
+    "probe": {
+      "width": 1080,
+      "height": 1920,
+      "durationSec": 35.97,
+      "fps": 30,
+      "hasAudio": true,
+      "codec": "h264"
+    },
+    "frames": [
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\the-18-hours-presenter\\frames\\frame1.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\the-18-hours-presenter\\frames\\frame2.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\the-18-hours-presenter\\frames\\frame3.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\the-18-hours-presenter\\frames\\frame4.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\the-18-hours-presenter\\frames\\frame5.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\the-18-hours-presenter\\frames\\frame6.jpg"
+    ]
+  },
+  "shots": [
+    {
+      "id": "s1-open",
+      "role": "presenter",
+      "provider": "veo31_fast",
+      "label": "Google Veo 3.1 Fast",
+      "requestedSec": 8,
+      "billedSec": 8,
+      "usd": 1.2,
+      "priceVerified": true
+    },
+    {
+      "id": "s2-hero",
+      "role": "broll_hero",
+      "provider": "kling30",
+      "label": "Kling 3.0 Standard",
+      "requestedSec": 5,
+      "billedSec": 5,
+      "usd": 0.42,
+      "priceVerified": true
+    },
+    {
+      "id": "s3-product",
+      "role": "product",
+      "provider": "screencap",
+      "label": "Product screen capture",
+      "requestedSec": 5,
+      "billedSec": 5,
+      "usd": 0,
+      "priceVerified": true
+    },
+    {
+      "id": "s4-broll",
+      "role": "broll",
+      "provider": "wan27",
+      "label": "Wan 2.7",
+      "requestedSec": 5,
+      "billedSec": 5,
+      "usd": 0.5,
+      "priceVerified": true
+    },
+    {
+      "id": "s5-close",
+      "role": "presenter_close",
+      "provider": "veo31_fast",
+      "label": "Google Veo 3.1 Fast",
+      "requestedSec": 6,
+      "billedSec": 6,
+      "usd": 0.9,
+      "priceVerified": true
+    }
+  ]
+}

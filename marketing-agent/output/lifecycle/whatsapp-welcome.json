@@ -1,0 +1,10 @@
+{
+  "id": "whatsapp-welcome",
+  "channel": "whatsapp",
+  "trigger": "on WhatsApp opt-in",
+  "body": "Welcome to VedicHour. You'll receive calm timing insights in plain English, including ratings for all 18 planetary hours. Tap the attached link to get your free Kundli. Use NEWUSER30 for 30% off your first paid report.\nYour Life, Decoded Hour by Hour.\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.",
+  "link": "https://www.vedichour.com/free-kundli?utm_source=crm&utm_medium=whatsapp&utm_campaign=lifecycle",
+  "linter": "block",
+  "linter_reason": "'Decoded' implies certainty about life, violating policy against guarantees.",
+  "status": "blocked"
+}

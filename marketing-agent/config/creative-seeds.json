@@ -1,0 +1,63 @@
+{
+  "_comment": "Seed material for L4, the creative engine (src/loops/creative.ts). This is the ONLY place the creative loop learns what VedicHour actually does, who it talks to, and what it may never say. Edit freely — read fresh on every run, no restart needed.",
+
+  "valueProp": "VedicHour scores all 18 planetary hours (horas) of a given day against YOUR birth chart, and tells you which windows run clearer and which run heavier — for a specific kind of task (a negotiation, a first meeting, focused study, publishing something). Computed with the Swiss Ephemeris and Lahiri ayanamsa, explained in plain English. It is a timing grid for your day, not a mood forecast for your star sign.",
+
+  "audience": "Urban Indians aged 24-40 (Bengaluru / Delhi NCR / Mumbai / Pune / Hyderabad) plus the diaspora (US, UK, UAE, Singapore, Australia). Phone-first, scroll-fast, sceptical-but-curious. Many grew up around Jyotish at home and take it semi-seriously; they will instantly cringe at anything that sounds like a WhatsApp-forward astrologer, a doom prophecy, or a get-rich promise.",
+
+  "register": "HINGLISH written in ROMAN / LATIN letters ONLY. Natural code-switching, the way people actually text: 'kal 11 baje meeting rakhun ya 4 baje?'. Never Devanagari or any non-Latin script — the downstream text-to-video and caption models reject non-Latin input.",
+
+  "families": [
+    {
+      "key": "decision_moment",
+      "weight": "most ideas should come from here",
+      "brief": "A specific, named, ordinary moment where a real person is choosing WHEN to do something. The whole idea is the moment, not the astrology. Concrete beats abstract every single time.",
+      "provenSeeds": [
+        "kal 11 baje meeting rakhun ya 4 baje?",
+        "boss se promotion ki baat kab karun",
+        "partner ke parents se pehli baar milna hai",
+        "padhai actually kis time hoti hai, 6am ya 11pm",
+        "launch / post kab karun ki log dekhein",
+        "wo mushkil baat karni hai — aaj ya weekend pe"
+      ]
+    },
+    {
+      "key": "cost_time_anchor",
+      "brief": "Contrast the EFFORT and TIME of getting a personal timing read the old way (finding a good astrologer, coordinating a sitting, waiting days for a written reply, going back for follow-ups) against roughly 90 seconds here, on your phone, on your own chart.",
+      "hardConstraint": "NEVER state, imply, or hint at any rupee or dollar figure, discount comparison, or 'cheaper than X' claim — we cannot defend a price claim about anyone else. Compare TIME and EFFORT only."
+    },
+    {
+      "key": "respectful_contrarian",
+      "brief": "A sun-sign horoscope column is written for one-twelfth of the planet; your birth chart is not. Same date, same city, two different charts, two different days. Position VedicHour as the specific version of something the viewer already half-believes.",
+      "hardConstraint": "Respect the tradition and everyone in it. Never mock Jyotish, never mock astrologers, never name or knock a competitor app, never call believers gullible. The enemy is the GENERIC, never the practice."
+    }
+  ],
+
+  "screencapLibrary": [
+    "the 18-hora day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim",
+    "one hora card tapped open, showing its plain-English line about what that window suits",
+    "the onboarding screen: birth date, exact birth time, birth city being entered",
+    "the week view, where the same hour reads differently on different days",
+    "the free kundli chart wheel drawing itself in",
+    "two windows side by side on the same day — one clearer, one heavier — for the same task"
+  ],
+
+  "shotKinds": {
+    "presenter": "a real person on camera, talking to the phone. Give the video model a subject, an action, a camera move, lighting and mood.",
+    "broll": "no dialogue, atmosphere or metaphor. Give the video model a subject, an action, a camera move, lighting and mood.",
+    "screencap": "a real screen recording of the live product. The prompt is simply WHAT TO CAPTURE, pulled from screencapLibrary — no cinematography, because it is a recording, not a generation."
+  },
+
+  "hardRules": [
+    "Latin script only, everywhere — hook, script, captions, CTA.",
+    "No guarantees, no '100%', no 'miracle', no 'will definitely'.",
+    "Never 'the best hour' or 'the worst hour' as fact — VedicHour says 'clearer' and 'heavier' windows.",
+    "No health, money, legal, or relationship outcome promises. Not 'you'll get the raise' — instead 'you'll know which window runs clearer for asking'.",
+    "No fear-mongering, no doom, no curses, no 'bad luck'.",
+    "No invented social proof — no fake testimonials, no made-up user counts, no star ratings.",
+    "No competitor names and no mocking of astrology or astrologers.",
+    "No rupee or dollar figures of any kind.",
+    "Hook text must be readable in under one second — about 8 words maximum.",
+    "Shot 1 is always a presenter shot — a visible human opens every reel."
+  ]
+}
