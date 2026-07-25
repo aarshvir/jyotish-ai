@@ -3,124 +3,188 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdminApi } from '@/lib/admin/guard';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { toUsdCents } from '@/lib/admin/analytics';
-import { utmRollup, revenueKpis, type FirstTouchUserRow, type PaymentRow, type UtmRow } from '@/lib/analytics/calcs';
 
 /**
- * Campaign rollup: sessions / signups / payers / revenue by (utm_source,
- * utm_medium, utm_campaign). Signups+revenue come from first-touch attribution
- * (user_profiles.first_touch_*, persisted at signup); sessions come from the
- * landing UTMs of recent analytics_events page views. Math lives in
- * src/lib/analytics/calcs.ts (utmRollup / revenueKpis).
+ * Campaign Control Panel API.
+ *
+ * GET  — every marketing_asset with its latest stats, an hour-by-hour views
+ *        series (48h), attributed sessions/signups (analytics_events +
+ *        user_profiles first-touch joined by utm_campaign), plus the latest
+ *        marketing_insights verdict. Fails soft with { migrationPending }
+ *        until the owner runs RUN_IN_SUPABASE.sql.
+ * POST — { slug, action: 'kill' } sets status='killed'; the marketing-agent
+ *        sync loop propagates the kill down so rendering/publishing stops.
+ *
+ * Tables are written by the local marketing-agent loops (sync/stats/insights).
+ * The historical UTM → revenue rollup lives at /api/admin/campaigns/utm.
  */
 
-// Must match utmRollup's grouping (norm + '(direct)' fallback) so session rows
-// land in the same bucket as the signups they produced.
 const norm = (v?: string | null) => (v && v.trim() ? v.trim().toLowerCase() : null);
-const keyOf = (source?: string | null, medium?: string | null, campaign?: string | null) =>
-  `${norm(source) ?? '(direct)'}|${norm(medium) ?? '-'}|${norm(campaign) ?? '-'}`;
 
-export async function GET(req: NextRequest) {
+// PostgREST error when a table is missing from the schema (migration not run).
+const isMissingTable = (e: { code?: string; message?: string } | null) =>
+  !!e && (e.code === '42P01' || e.code === 'PGRST205' || /does not exist|could not find the table/i.test(e.message ?? ''));
+
+type StatRow = {
+  asset_id: string;
+  captured_at: string;
+  source: string;
+  views: number;
+  likes: number;
+  comments: number;
+};
+
+export async function GET() {
   const admin = await requireAdminApi();
   if (admin instanceof NextResponse) return admin;
-
-  const daysRaw = parseInt(req.nextUrl.searchParams.get('days') ?? '30', 10);
-  const days = Math.min(90, Math.max(1, Number.isFinite(daysRaw) ? daysRaw : 30));
-  const since = new Date(Date.now() - days * 24 * 3600 * 1000).toISOString();
-
   const db = createServiceClient();
-  const [profRes, payRes, evRes] = await Promise.all([
-    db.from('user_profiles').select('id, first_touch_source, first_touch_medium, first_touch_campaign').limit(50000),
-    db.from('ziina_payments').select('user_id, amount, currency, status, created_at').eq('status', 'completed').limit(50000),
-    db.from('analytics_events').select('properties, created_at').eq('event_name', 'page_view').gte('created_at', since).order('created_at', { ascending: false }).limit(50000),
+
+  const [assetsRes, insightRes] = await Promise.all([
+    db.from('marketing_assets').select('*').order('created_at', { ascending: false }).limit(200),
+    db.from('marketing_insights').select('*').order('generated_at', { ascending: false }).limit(1),
   ]);
-  if (profRes.error) {
-    return NextResponse.json({ rows: [], kpis: null, totalProfiles: 0, range: { days }, note: 'Run the first-touch migration (20260615_first_touch_attribution.sql), then this fills in as new users sign up.' });
+
+  if (assetsRes.error) {
+    if (isMissingTable(assetsRes.error)) {
+      return NextResponse.json({
+        migrationPending: true,
+        assets: [],
+        insight: null,
+        totals: null,
+        note: 'marketing_* tables are not in Supabase yet — paste RUN_IN_SUPABASE.sql into the Supabase SQL editor, then this page fills in as the engine syncs.',
+      });
+    }
+    return NextResponse.json({ error: assetsRes.error.message }, { status: 500 });
   }
 
-  const users: FirstTouchUserRow[] = (profRes.data ?? []).map((p) => {
-    const row = p as { id: string; first_touch_source?: string | null; first_touch_medium?: string | null; first_touch_campaign?: string | null };
+  const assets = assetsRes.data ?? [];
+  const insight = insightRes.error ? null : (insightRes.data?.[0] ?? null);
+  const ids = assets.map((a) => a.id as string);
+  const campaigns = new Set(assets.map((a) => norm(a.utm_campaign as string | null)).filter(Boolean) as string[]);
+
+  const since48h = new Date(Date.now() - 48 * 3600 * 1000).toISOString();
+  const since7d = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+  const since30d = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+
+  const [statsRes, eventsRes, profilesRes] = await Promise.all([
+    ids.length
+      ? db
+          .from('marketing_stats')
+          .select('asset_id, captured_at, source, views, likes, comments')
+          .in('asset_id', ids)
+          .gte('captured_at', since7d)
+          .order('captured_at', { ascending: true })
+          .limit(20000)
+      : Promise.resolve({ data: [] as StatRow[], error: null }),
+    campaigns.size
+      ? db
+          .from('analytics_events')
+          .select('properties, created_at')
+          .eq('event_name', 'page_view')
+          .gte('created_at', since30d)
+          .order('created_at', { ascending: false })
+          .limit(50000)
+      : Promise.resolve({ data: [] as { properties: unknown }[], error: null }),
+    campaigns.size
+      ? db.from('user_profiles').select('id, first_touch_campaign').limit(50000)
+      : Promise.resolve({ data: [] as { id: string; first_touch_campaign?: string | null }[], error: null }),
+  ]);
+
+  // Stats series per asset (latest snapshot + 48h sparkline).
+  const statsByAsset = new Map<string, StatRow[]>();
+  for (const s of (statsRes.data ?? []) as StatRow[]) {
+    const arr = statsByAsset.get(s.asset_id) ?? [];
+    arr.push(s);
+    statsByAsset.set(s.asset_id, arr);
+  }
+
+  // Attributed sessions per campaign: distinct session_ids whose page views
+  // carried a matching utm_campaign in the last 30 days.
+  const sessionsByCampaign = new Map<string, number>();
+  const seenSessions = new Set<string>();
+  for (const e of (eventsRes.data ?? []) as { properties?: { session_id?: string | null; utm?: Record<string, string> | null } | null }[]) {
+    const p = e.properties ?? {};
+    const camp = norm(p.utm?.utm_campaign);
+    const sid = p.session_id;
+    if (!camp || !campaigns.has(camp) || !sid || seenSessions.has(sid)) continue;
+    seenSessions.add(sid);
+    sessionsByCampaign.set(camp, (sessionsByCampaign.get(camp) ?? 0) + 1);
+  }
+
+  // Attributed signups per campaign: first-touch attribution persisted at signup.
+  const signupsByCampaign = new Map<string, number>();
+  for (const u of (profilesRes.data ?? []) as { first_touch_campaign?: string | null }[]) {
+    const camp = norm(u.first_touch_campaign);
+    if (!camp || !campaigns.has(camp)) continue;
+    signupsByCampaign.set(camp, (signupsByCampaign.get(camp) ?? 0) + 1);
+  }
+
+  let totalViews = 0;
+  let totalSessions = 0;
+  let totalSignups = 0;
+  let totalSpend = 0;
+
+  const out = assets.map((a) => {
+    const series = statsByAsset.get(a.id as string) ?? [];
+    const latest = series.length ? series[series.length - 1] : null;
+    const spark = series
+      .filter((s) => s.captured_at >= since48h)
+      .map((s) => ({ t: s.captured_at, views: s.views }));
+    const camp = norm(a.utm_campaign as string | null);
+    const sessions = camp ? (sessionsByCampaign.get(camp) ?? 0) : 0;
+    const signups = camp ? (signupsByCampaign.get(camp) ?? 0) : 0;
+    if (a.status !== 'killed') totalViews += latest?.views ?? 0;
+    totalSessions += sessions;
+    totalSignups += signups;
+    totalSpend += Number(a.render_cost_usd ?? 0);
     return {
-      user_id: row.id,
-      first_touch_source: row.first_touch_source ?? null,
-      first_touch_medium: row.first_touch_medium ?? null,
-      first_touch_campaign: row.first_touch_campaign ?? null,
+      ...a,
+      latestViews: latest?.views ?? null,
+      latestLikes: latest?.likes ?? null,
+      latestComments: latest?.comments ?? null,
+      latestSource: latest?.source ?? null,
+      latestAt: latest?.captured_at ?? null,
+      spark,
+      series: series.slice(-48).map((s) => ({
+        t: s.captured_at,
+        source: s.source,
+        views: s.views,
+        likes: s.likes,
+        comments: s.comments,
+      })),
+      sessions,
+      signups,
     };
   });
-  const payments: PaymentRow[] = (payRes.data ?? []).map((p) => {
-    const row = p as { user_id?: string | null; amount?: number; currency?: string; created_at?: string };
-    return { user_id: row.user_id ?? null, usd_cents: toUsdCents(row.amount ?? 0, row.currency ?? 'USD'), created_at: row.created_at ?? '' };
-  });
-
-  // Signups / payers / revenue by first-touch UTM (all-time attribution).
-  const rollup = utmRollup(users, payments);
-
-  // Sessions per campaign: the first page_view per session carries the landing
-  // UTMs (events fetched newest-first so the window stays fresh at scale, then
-  // re-ascended so "first per session" is correct).
-  const events = (evRes.data ?? []).slice().reverse();
-  const seen = new Set<string>();
-  const sessionsByKey = new Map<string, number>();
-  for (const e of events) {
-    const p = (e.properties ?? {}) as { session_id?: string | null; utm?: Record<string, string> | null };
-    const sid = p.session_id;
-    if (!sid || seen.has(sid)) continue;
-    seen.add(sid);
-    const key = keyOf(p.utm?.utm_source, p.utm?.utm_medium, p.utm?.utm_campaign);
-    sessionsByKey.set(key, (sessionsByKey.get(key) ?? 0) + 1);
-  }
-
-  type Row = UtmRow & { sessions: number; convPct: number | null; revenuePerSignupUsdCents: number | null };
-  const byKey = new Map<string, Row>();
-  for (const r of rollup) {
-    byKey.set(keyOf(r.source, r.medium, r.campaign), {
-      ...r,
-      sessions: 0,
-      convPct: r.signups > 0 ? Math.round((r.payers / r.signups) * 1000) / 10 : null,
-      revenuePerSignupUsdCents: r.signups > 0 ? Math.round(r.revenueUsdCents / r.signups) : null,
-    });
-  }
-  // Campaigns with traffic but no signups yet (the launch-day case) still get a row.
-  for (const entry of Array.from(sessionsByKey.entries())) {
-    const [key, count] = entry;
-    let row = byKey.get(key);
-    if (!row) {
-      const parts = key.split('|');
-      row = {
-        source: parts[0],
-        medium: parts[1] === '-' ? null : parts[1],
-        campaign: parts[2] === '-' ? null : parts[2],
-        signups: 0,
-        payers: 0,
-        revenueUsdCents: 0,
-        sessions: 0,
-        convPct: null,
-        revenuePerSignupUsdCents: null,
-      };
-      byKey.set(key, row);
-    }
-    row.sessions = count;
-  }
-
-  const rows = Array.from(byKey.values()).sort(
-    (a, b) => b.revenueUsdCents - a.revenueUsdCents || b.signups - a.signups || b.sessions - a.sessions
-  );
-
-  const kpis = revenueKpis(payments, users.length);
 
   return NextResponse.json({
-    rows,
-    kpis: {
-      revenueUsdCents: kpis.revenueUsdCents,
-      payers: kpis.payers,
-      purchases: kpis.purchases,
-      arppUsdCents: kpis.arppUsdCents,
-      paidConversionPct: kpis.paidConversionPct,
-      // Revenue-per-signup = the LTV proxy for a one-time-purchase business (paid-ads CAC ceiling).
-      revenuePerSignupUsdCents: users.length > 0 ? Math.round(kpis.revenueUsdCents / users.length) : null,
-    },
-    totalProfiles: users.length,
-    range: { days },
-    note: `Signups/payers/revenue = all-time first-touch attribution. Sessions = last ${days} days of traffic (first hit per session). Conv. = payers / signups.`,
+    assets: out,
+    insight,
+    totals: { views: totalViews, sessions: totalSessions, signups: totalSignups, spendUsd: Math.round(totalSpend * 100) / 100 },
+    generatedAt: new Date().toISOString(),
   });
+}
+
+export async function POST(request: NextRequest) {
+  const admin = await requireAdminApi();
+  if (admin instanceof NextResponse) return admin;
+  const body = (await request.json().catch(() => ({}))) as { slug?: string; action?: string };
+  const slug = (body.slug ?? '').trim();
+  if (!slug) return NextResponse.json({ error: 'slug required' }, { status: 400 });
+  if (body.action !== 'kill') return NextResponse.json({ error: 'Unsupported action' }, { status: 400 });
+
+  // Killing a parent kills its localized language variants too — the whole
+  // family stops rendering/publishing when the sync loop pulls this down.
+  const db = createServiceClient();
+  const { data, error } = await db
+    .from('marketing_assets')
+    .update({ status: 'killed', updated_at: new Date().toISOString() })
+    .or(`slug.eq.${slug},parent_slug.eq.${slug}`)
+    .select('slug, status');
+  if (error) {
+    if (isMissingTable(error)) return NextResponse.json({ error: 'marketing_assets table missing — run RUN_IN_SUPABASE.sql first.' }, { status: 409 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (!data?.length) return NextResponse.json({ error: `No asset with slug "${slug}"` }, { status: 404 });
+  return NextResponse.json({ ok: true, killed: data.map((d) => d.slug) });
 }

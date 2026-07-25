@@ -25,6 +25,7 @@ const NAV_GROUPS: { label: string; links: { href: string; label: string }[] }[] 
     links: [
       { href: '/admin/marketing', label: 'Marketing' },
       { href: '/admin/campaigns', label: 'Campaigns' },
+      { href: '/admin/campaigns/utm', label: 'UTM' },
       { href: '/admin/acquisition', label: 'Acquisition' },
       { href: '/admin/attribution', label: 'Attribution' },
       { href: '/admin/content', label: 'Content' },
