@@ -1,0 +1,133 @@
+{
+  "slug": "2026-07-25-interview-slot-10-baje-ya-5-baje",
+  "title": "Interview 10 Baje Ya 5 Baje? Timing Grid Dekho",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.88,
+  "hook": "Interview slot: 10 baje ya 5 baje?",
+  "cta": "Apna timing grid explore karo. Your Life, Decoded Hour by Hour.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 5,
+      "prompt": "Young Indian professional seated at a tidy apartment desk, holding a phone and asking an uncertain question; slow camera push-in; soft morning window light; curious, grounded mood.",
+      "dialogue": "Interview slot 10 baje loon ya 5 baje?"
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "seconds": 7,
+      "prompt": "Single hand hovering between two interview appointments on a paper calendar with no readable text; overhead camera drift; warm natural light; thoughtful mood.",
+      "vo": "Calendar dekh ke dono same lagte hain, but VedicHour tumhari birth chart ke against us din ke saare 18 planetary hours rate karta hai."
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 7,
+      "vo": "Interview jaisi task ke liye grid batata hai kaunsi window clearer chal rahi hai aur kaunsi heavier.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s4",
+      "role": "product",
+      "seconds": 7,
+      "vo": "Yeh result ki prediction nahi, timing awareness hai, plain English mein. Confirm karne se pehle apna grid dekh lo.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Interview 10 Baje Ya 5 Baje? Timing Grid Dekho",
+    "description": "Apne interview day ke saare 18 horas ko birth chart ke context mein clearer aur heavier windows ke roop mein dekho. First paid report par 30% off ke liye NEWUSER30 use karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=interview-slot-morning-or-evening",
+    "hashtags": [
+      "#interviewtips",
+      "#jyotish",
+      "#vedicjyotish",
+      "#timingawareness",
+      "#planetaryhours",
+      "#careerindia",
+      "#hinglishreels",
+      "#bengaluru",
+      "#delhincr",
+      "#mumbai",
+      "#pune",
+      "#hyderabad"
+    ],
+    "caption": "10 baje ya 5 baje? Saare 18 horas rated Clearer aur heavier windows Result nahi, timing context"
+  },
+  "batchId": "2026-07-25-ms0a4jxi",
+  "scores": {
+    "hookStrength": 82,
+    "specificity": 94,
+    "credibility": 84,
+    "brandSafety": 98,
+    "producibility": 89,
+    "total": 88,
+    "notes": "The explanation is bloated; “birth chart ke against” sounds like product copy, not natural speech.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing awareness using clearer/heavier windows without promising interview outcomes."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "interview-slot-morning-or-evening",
+  "family": "decision_moment",
+  "angle": "Presenter asks which interview slot to choose, then shows how all 18 horas are rated for that task.",
+  "variantIndex": 1,
+  "hookText": "Interview slot: 10 baje ya 5 baje?",
+  "spokenScript": "Interview slot 10 baje loon ya 5 baje? Calendar dekh ke dono same lagte hain, but VedicHour tumhari birth chart ke against us din ke saare 18 planetary hours rate karta hai. Interview jaisi task ke liye grid batata hai kaunsi window clearer chal rahi hai aur kaunsi heavier. Yeh result ki prediction nahi, timing awareness hai, plain English mein. Confirm karne se pehle apna grid dekh lo.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 5,
+      "visualPrompt": "Young Indian professional seated at a tidy apartment desk, holding a phone and asking an uncertain question; slow camera push-in; soft morning window light; curious, grounded mood."
+    },
+    {
+      "kind": "broll",
+      "seconds": 7,
+      "visualPrompt": "Single hand hovering between two interview appointments on a paper calendar with no readable text; overhead camera drift; warm natural light; thoughtful mood."
+    },
+    {
+      "kind": "screencap",
+      "seconds": 7,
+      "visualPrompt": "the 18-hora day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 7,
+      "visualPrompt": "two windows side by side on the same day — one clearer, one heavier — for the same task"
+    }
+  ],
+  "onScreenCaptions": [
+    "10 baje ya 5 baje?",
+    "Saare 18 horas rated",
+    "Clearer aur heavier windows",
+    "Result nahi, timing context"
+  ],
+  "hashtags": [
+    "#interviewtips",
+    "#jyotish",
+    "#vedicjyotish",
+    "#timingawareness",
+    "#planetaryhours",
+    "#careerindia",
+    "#hinglishreels",
+    "#bengaluru",
+    "#delhincr",
+    "#mumbai",
+    "#pune",
+    "#hyderabad"
+  ],
+  "youtubeTitle": "Interview 10 Baje Ya 5 Baje? Timing Grid Dekho",
+  "youtubeDescription": "Apne interview day ke saare 18 horas ko birth chart ke context mein clearer aur heavier windows ke roop mein dekho. First paid report par 30% off ke liye NEWUSER30 use karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=interview-slot-morning-or-evening",
+  "language": "hinglish"
+}

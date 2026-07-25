@@ -1,0 +1,133 @@
+{
+  "slug": "2026-07-25-hr-ne-do-slots-bheje",
+  "title": "HR Ne 10 AM Aur 5 PM Diya: Ab Kya Dekhein?",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.92,
+  "hook": "HR ne do slots bheje",
+  "cta": "Reply se pehle reflect karo. Your Life, Decoded Hour by Hour.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 5,
+      "prompt": "Young Indian man at a cafe table, reading his phone and pausing before replying; subtle camera push-in; soft side lighting; familiar, slightly tense mood.",
+      "dialogue": "HR ka message aaya: 10 AM or 5 PM?"
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "seconds": 6,
+      "prompt": "Single thumb hovering above the send button area of a phone with the screen deliberately out of focus; macro camera move; warm cafe light; suspended-decision mood.",
+      "vo": "Reply type karke main ruk gayi."
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 8,
+      "vo": "VedicHour mein interview select kiya, aur poore din ke 18 planetary hours ek grid mein aa gaye. Ek hora card khola toh seedha plain-English context mila: yeh window kis tarah ke kaam ko suit karti hai.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s4",
+      "role": "product",
+      "seconds": 7,
+      "vo": "Koi outcome claim nahi, bas apni birth chart ke hisaab se timing ko reflect karne ka ek lens.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "HR Ne 10 AM Aur 5 PM Diya: Ab Kya Dekhein?",
+    "description": "Interview slot ke liye poore din ka 18-hora grid dekho aur har window ka plain-English context samjho. VedicHour ko yahan explore karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=interview-slot-morning-or-evening",
+    "hashtags": [
+      "#hrmessage",
+      "#interviewslot",
+      "#jobinterviewindia",
+      "#jyotish",
+      "#vedicwisdom",
+      "#planetaryhours",
+      "#timingawareness",
+      "#hinglishcontent",
+      "#pune",
+      "#hyderabad",
+      "#bengaluru",
+      "#delhincr"
+    ],
+    "caption": "Reply bhejun? Interview task select karo Hora card kholo Plain-English timing context"
+  },
+  "batchId": "2026-07-25-ms0a4jxi",
+  "scores": {
+    "hookStrength": 88,
+    "specificity": 95,
+    "credibility": 91,
+    "brandSafety": 98,
+    "producibility": 90,
+    "total": 92,
+    "notes": "It opens a generic hora card instead of proving the promised 10 AM versus 5 PM comparison.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing reflection, plain-English context, and no promised interview outcome."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "interview-slot-morning-or-evening",
+  "family": "decision_moment",
+  "angle": "Presenter asks which interview slot to choose, then shows how all 18 horas are rated for that task.",
+  "variantIndex": 3,
+  "hookText": "HR ne do slots bheje",
+  "spokenScript": "HR ka message aaya: 10 AM or 5 PM? Reply type karke main ruk gayi. VedicHour mein interview select kiya, aur poore din ke 18 planetary hours ek grid mein aa gaye. Ek hora card khola toh seedha plain-English context mila: yeh window kis tarah ke kaam ko suit karti hai. Koi outcome claim nahi, bas apni birth chart ke hisaab se timing ko reflect karne ka ek lens.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 5,
+      "visualPrompt": "Young Indian man at a cafe table, reading his phone and pausing before replying; subtle camera push-in; soft side lighting; familiar, slightly tense mood."
+    },
+    {
+      "kind": "broll",
+      "seconds": 6,
+      "visualPrompt": "Single thumb hovering above the send button area of a phone with the screen deliberately out of focus; macro camera move; warm cafe light; suspended-decision mood."
+    },
+    {
+      "kind": "screencap",
+      "seconds": 8,
+      "visualPrompt": "the 18-hora day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 7,
+      "visualPrompt": "one hora card tapped open, showing its plain-English line about what that window suits"
+    }
+  ],
+  "onScreenCaptions": [
+    "Reply bhejun?",
+    "Interview task select karo",
+    "Hora card kholo",
+    "Plain-English timing context"
+  ],
+  "hashtags": [
+    "#hrmessage",
+    "#interviewslot",
+    "#jobinterviewindia",
+    "#jyotish",
+    "#vedicwisdom",
+    "#planetaryhours",
+    "#timingawareness",
+    "#hinglishcontent",
+    "#pune",
+    "#hyderabad",
+    "#bengaluru",
+    "#delhincr"
+  ],
+  "youtubeTitle": "HR Ne 10 AM Aur 5 PM Diya: Ab Kya Dekhein?",
+  "youtubeDescription": "Interview slot ke liye poore din ka 18-hora grid dekho aur har window ka plain-English context samjho. VedicHour ko yahan explore karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=interview-slot-morning-or-evening",
+  "language": "hinglish"
+}
