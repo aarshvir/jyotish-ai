@@ -11,18 +11,30 @@ const config: Config = {
     extend: {
       /* ── Color System ──────────────────────────────────────────────── */
       colors: {
-        // Core surfaces (dark mode)
-        space:   '#080C18',
-        cosmos:  '#0D1426',
-        nebula:  '#141C35',
-        horizon: '#1E2A4A',
+        /* NIGHT canvas — the ritual frames (hero, report cover, chapter
+           dividers, generating screen). Deep plum-indigo replaces the old cold
+           navy (#080C18/#0D1426/#141C35), which read as a terminal. Names are
+           unchanged so every existing component re-skins with no churn.
+           See docs/DESIGN_SYSTEM.md. */
+        space:   '#0A0713',   // page void
+        cosmos:  '#120C1E',   // canvas
+        nebula:  '#1B1329',   // raised card
+        horizon: '#2A1E3D',   // hairline / border
+        // `bg-3` was referenced 34 times but never defined, so those surfaces
+        // emitted NO background at all — the single biggest reason cards read
+        // as floating text rather than cards.
+        'bg-3':  '#251A38',   // inset / chip / input well
+        'night-4': '#32234A', // overlay / sheet
 
-        // Core surfaces (light / reading mode)
-        parchment:     '#FAF8F5',
-        'parchment-2': '#F2EDE6',
-        'parchment-3': '#E8E0D6',
-        ink:           '#1A1A2E',
-        'ink-muted':   '#4A4A5E',
+        // PAPER canvas — every surface a human reads or types on.
+        parchment:     '#FBF7F1',
+        'parchment-2': '#F4EDE3',
+        'parchment-3': '#EAE0D2',
+        'paper-line':  '#E6DBCB',
+        ink:           '#1E1726',
+        'ink-muted':   '#3B3247',
+        'ink-soft':    '#66596F',
+        'ink-faint':   '#857A8E',
 
         // Primary accent
         amber: {
@@ -63,10 +75,20 @@ const config: Config = {
           bg:      'rgba(199, 91, 58, 0.10)',
         },
 
-        // Text layers
-        star:    '#E8EAF0',
-        dust:    '#8892A4',
-        'dust-light': '#A0A8B8',
+        // Text layers — warmed off-white replaces the blue-white #E8EAF0, and
+        // `dust` is lifted to a 4.6:1 floor (it was #8892A4, below AA on the
+        // new canvas and the cause of ~340 sub-AA text instances).
+        star:    '#F6EFE4',
+        dust:    '#9B8FA6',
+        'dust-light': '#C9BCCE',
+
+        // Secondary accent — breaks the amber monopoly so amber can mean
+        // "the ONE next action" instead of "anything emphasised".
+        indigo: {
+          DEFAULT: '#9AA0F2',
+          deep:    '#4A4FA8',
+          muted:   'rgba(154, 160, 242, 0.13)',
+        },
 
         // Legacy compat
         emerald: '#3B9B6E',
