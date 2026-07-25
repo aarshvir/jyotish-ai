@@ -137,6 +137,15 @@ export interface AssLayout {
   hookWrap?: number;
   /** ASS font family for captions/hook — overridden for scripts the brand TTFs can't render. */
   fontFamily?: { hook?: string; body?: string; cta?: string };
+  /**
+   * Reel-relative time windows (product/screencap shots) during which karaoke captions move to
+   * the TOP zone (`topCaptionY`) instead of `captionY`. Real product UI is dense with its own
+   * text mid-frame; a caption at chest height lands straight on it. The top zone sits below the
+   * wordmark (~120-166px) and above the page content that matters.
+   */
+  topWindows?: { start: number; end: number }[];
+  /** Caption anchor Y used inside `topWindows`. Default 330 keeps the block within ~240-420px. */
+  topCaptionY?: number;
 }
 
 /** Build an .ass with a Cormorant hook, word-synced karaoke VO captions (gold sweep), and a CTA. */
@@ -174,14 +183,20 @@ export function buildAss(hook: string, segments: Seg[], cta: string, total: numb
   }
   const capStart = hookEnd - 0.1;
   const capEnd = total - ctaHold;
+  const topY = layout.topCaptionY ?? 330;
+  const topWins = layout.topWindows ?? [];
   const cap = words.filter((x) => x.start >= capStart && x.start < capEnd);
   for (let i = 0; i < cap.length; i += 3) {
     const grp = cap.slice(i, i + 3);
     const bs = grp[0].start;
     const be = Math.min(capEnd, grp[grp.length - 1].end + 0.22);
     if (be <= bs) continue;
+    // Classify the group by its midpoint so a line straddling a shot boundary follows
+    // whichever shot it mostly plays over.
+    const mid = (bs + be) / 2;
+    const y = topWins.some((w) => mid >= w.start && mid <= w.end) ? topY : captionY;
     const kara = grp.map((g) => `{\\kf${Math.max(8, Math.round((g.end - g.start) * 100))}}${assEsc(g.text.toUpperCase())} `).join('').trim();
-    ev.push(`Dialogue: 0,${assTime(bs)},${assTime(be)},Caption,,0,0,0,,{\\an5\\pos(540,${captionY})\\fad(70,70)\\fscx84\\fscy84\\t(0,150,\\fscx105\\fscy105)\\t(150,230,\\fscx100\\fscy100)}${kara}`);
+    ev.push(`Dialogue: 0,${assTime(bs)},${assTime(be)},Caption,,0,0,0,,{\\an5\\pos(540,${y})\\fad(70,70)\\fscx84\\fscy84\\t(0,150,\\fscx105\\fscy105)\\t(150,230,\\fscx100\\fscy100)}${kara}`);
   }
   ev.push(`Dialogue: 0,${assTime(Math.max(0, total - ctaHold))},${assTime(total)},CTA,,0,0,0,,{\\an5\\pos(540,${ctaY})\\fad(200,200)}${assEsc(wrap(cta, 26))}`);
   return header + ev.join('\n') + '\n';

@@ -355,7 +355,7 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
         recordSpend({ run_id: runId, slug: creative.slug, shot_id: shot.id, provider: 'placeholder', model: spec.endpoint, seconds: billedSec, cost_usd: 0, estimated_usd: est.shots.find((s) => s.id === shot.id)?.usd ?? 0, status: 'dry', detail: `stand-in for ${spec.label}` });
       } else if (shot.role === 'product') {
         if (engine.ok && shot.capture?.url) {
-          await captureProductShot({ url: shot.capture.url, seconds: billedSec, outPath: rawClip, waitForSelector: shot.capture.waitForSelector, offsetPx: shot.capture.scrollPx, onProgress: (m) => console.log(`[render]   ${m}`) });
+          await captureProductShot({ url: shot.capture.url, seconds: billedSec, outPath: rawClip, waitForSelector: shot.capture.waitForSelector, offsetPx: shot.capture.scrollPx, panToPx: shot.capture.panToPx, onProgress: (m) => console.log(`[render]   ${m}`) });
         } else {
           await renderPlaceholder(shot, billedSec, rawClip, 'product shot unavailable');
         }
@@ -441,8 +441,12 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
 
     const finalPath = resolve(outDir, 'final.mp4');
     const allSegments = prepared.flatMap((p) => p.segments);
+    // Product pages carry their own dense text — move karaoke captions to the top zone there.
+    const productWindows = prepared
+      .filter((p) => p.shot.role === 'product')
+      .map((p) => ({ start: p.startSec, end: p.startSec + p.seconds }));
     console.log('[render] finishing: grade -> bloom -> vignette -> karaoke captions -> wordmark -> progress -> grain');
-    await finish({ stitched, work, outPath: finalPath, creative, segments: allSegments, totalSec, music });
+    await finish({ stitched, work, outPath: finalPath, creative, segments: allSegments, totalSec, music, productWindows });
 
     // ---- 6. verify --------------------------------------------------------------------
     const framesDir = resolve(outDir, 'frames');

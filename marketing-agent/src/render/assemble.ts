@@ -237,16 +237,45 @@ export interface FinishOpts {
   totalSec: number;
   music: string | null;
   /**
+   * Reel-relative windows of the `product` (screencap) shots. Karaoke captions move to the TOP
+   * zone during these windows so they never land on the page's own text (pricing cards, buttons).
+   */
+  productWindows?: { start: number; end: number }[];
+  /**
    * Non-Latin localized reels pass pre-rendered caption plates instead of an .ass file, because
    * this ffmpeg's libass does no Indic shaping. See src/render/localize.ts for the evidence.
    */
   plates?: { inputs: string[]; graph: string } | null;
 }
 
+/** Loudness target for the final mix: −16 LUFS integrated, the short-form delivery norm. */
+const LOUDNORM_TARGET = 'I=-16:TP=-1.5:LRA=11';
+
+/**
+ * Pass 1 of two-pass loudnorm: run the exact final audio chain into a null sink and read the
+ * measured stats, so pass 2 can normalize LINEARLY (a plain one-pass loudnorm falls back to a
+ * dynamic mode that pumps on speech). Returns null on any failure — pass 2 then runs one-pass.
+ */
+async function measureLoudness(ffmpeg: string, inputs: string[], mixChain: string, totalSec: number): Promise<Record<string, string> | null> {
+  const res = await runCapture(ffmpeg, [
+    ...inputs,
+    '-filter_complex', `${mixChain},loudnorm=${LOUDNORM_TARGET}:print_format=json[a]`,
+    '-map', '[a]', '-t', String(totalSec), '-f', 'null', '-',
+  ], 300000);
+  const m = /\{[\s\S]*?"input_i"[\s\S]*?\}/.exec(res.stderr);
+  if (!m) return null;
+  try {
+    const j = JSON.parse(m[0]);
+    return typeof j?.input_i === 'string' ? j : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The finishing pass: grade -> bloom -> vignette -> karaoke captions -> wordmark -> progress
- * bar -> grain, plus the music mix. Encoded libx264 crf 22 / maxrate 9M so a 30s reel lands
- * around 8-12 MB and uploads instantly.
+ * bar -> grain, plus the music mix and a two-pass −16 LUFS loudness normalization. Encoded
+ * libx264 crf 22 / maxrate 9M so a 30s reel lands around 8-12 MB and uploads instantly.
  */
 export async function finish(o: FinishOpts): Promise<void> {
   const { ffmpeg } = resolveTools();
@@ -266,28 +295,40 @@ export async function finish(o: FinishOpts): Promise<void> {
   } else {
     writeFileSync(
       resolve(o.work, 'captions.ass'),
-      buildAss(o.creative.hook, o.segments, o.creative.cta, o.totalSec, PRESENTER_LAYOUT),
+      buildAss(o.creative.hook, o.segments, o.creative.cta, o.totalSec, { ...PRESENTER_LAYOUT, topWindows: o.productWindows }),
     );
     graph = `${head},subtitles=captions.ass:fontsdir=.,${tail}[v]`;
   }
 
+  // ---- audio: (optional) music mix, then two-pass loudness normalization ------------------
+  // The chain is identical for measurement and encode; only the music input INDEX differs
+  // (the encode command also carries the caption-plate inputs before the music bed).
+  const mixFor = (musicIdx: number) =>
+    o.music
+      ? `[0:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo,volume=1.0[vo];\n` +
+        // Duck the bed well under the voice; VO stays the loudest thing in the mix.
+        `[${musicIdx}:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo,volume=0.14,afade=t=out:st=${Math.max(0, o.totalSec - 1.5)}:d=1.5[bed];\n` +
+        `[vo][bed]amix=inputs=2:duration=first:dropout_transition=0,alimiter=limit=0.95`
+      : `[0:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo`;
+
+  const measureInputs = ['-i', o.stitched, ...(o.music ? ['-stream_loop', '-1', '-i', o.music] : [])];
+  const meas = await measureLoudness(ffmpeg, measureInputs, mixFor(1), o.totalSec);
+  const ln = meas
+    ? `loudnorm=${LOUDNORM_TARGET}:measured_I=${meas.input_i}:measured_TP=${meas.input_tp}:measured_LRA=${meas.input_lra}:measured_thresh=${meas.input_thresh}:offset=${meas.target_offset}:linear=true`
+    : `loudnorm=${LOUDNORM_TARGET}`;
+  console.log(
+    meas
+      ? `[render] loudness: measured ${meas.input_i} LUFS -> normalizing linearly to -16 LUFS`
+      : '[render] loudness: measurement pass failed — using one-pass loudnorm to -16 LUFS',
+  );
+
   const args = ['-y', '-i', o.stitched, ...(o.plates?.inputs ?? [])];
-  let audioMap: string[];
-  if (o.music) {
-    // Input indices: 0 = stitched video, 1..N = caption plates, then the music bed.
-    const musicIdx = 1 + (o.plates?.inputs.length ?? 0) / 2;
-    args.push('-stream_loop', '-1', '-i', o.music);
-    // Duck the bed well under the voice; VO stays the loudest thing in the mix.
-    const amix =
-      `[0:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo,volume=1.0[vo];\n` +
-      `[${musicIdx}:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo,volume=0.14,afade=t=out:st=${Math.max(0, o.totalSec - 1.5)}:d=1.5[bed];\n` +
-      `[vo][bed]amix=inputs=2:duration=first:dropout_transition=0,alimiter=limit=0.95[a]`;
-    writeFileSync(resolve(o.work, 'graph.txt'), `${graph};\n${amix}`);
-    audioMap = ['-map', '[v]', '-map', '[a]'];
-  } else {
-    writeFileSync(resolve(o.work, 'graph.txt'), graph);
-    audioMap = ['-map', '[v]', '-map', '0:a?'];
-  }
+  // Input indices: 0 = stitched video, 1..N = caption plates, then the music bed.
+  if (o.music) args.push('-stream_loop', '-1', '-i', o.music);
+  // loudnorm resamples internally (192kHz) — bring the stream back to the house rate.
+  const audioChain = `${mixFor(1 + (o.plates?.inputs.length ?? 0) / 2)},${ln},aresample=${AUDIO.rate}[a]`;
+  writeFileSync(resolve(o.work, 'graph.txt'), `${graph};\n${audioChain}`);
+  const audioMap = ['-map', '[v]', '-map', '[a]'];
 
   args.push(
     '-filter_complex_script', resolve(o.work, 'graph.txt'),

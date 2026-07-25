@@ -34,6 +34,9 @@ export interface CaptureOpts {
   waitForSelector?: string;
   /** Start the pan this many px down the page (skip a hero you don't want). */
   offsetPx?: number;
+  /** Page-Y where the pan ENDS. Defaults to the page bottom. `0` ends on the hero — a clean
+   *  end-frame instead of a mid-scroll footer. May be above `offsetPx` (the pan then runs UP). */
+  panToPx?: number;
   onProgress?: (msg: string) => void;
 }
 
@@ -140,14 +143,18 @@ export async function captureProductShot(opts: CaptureOpts): Promise<string> {
   opts.onProgress?.(`page shot ${w}x${h}px`);
 
   const dur = Math.max(2, opts.seconds);
-  const offset = Math.max(0, opts.offsetPx ?? 0);
-  // Pan from `offset` down to the bottom of the page. If the page is shorter than one frame,
-  // scale-and-pad instead of panning so we never emit letterboxed black bars.
-  const travel = Math.max(0, h - 1920 - offset);
+  // Pan from `offsetPx` to `panToPx` (default: page bottom). If the page is shorter than one
+  // frame, scale-and-pad instead of panning so we never emit letterboxed black bars.
+  const maxTravel = Math.max(0, h - 1920);
+  const start = Math.min(Math.max(0, opts.offsetPx ?? 0), maxTravel);
+  const end = Math.min(Math.max(0, opts.panToPx ?? maxTravel), maxTravel);
+  const travel = end - start;
   const vf =
-    travel > 8
-      ? `crop=1080:1920:0:'${offset}+${travel}*min(t/${dur},1)',fps=30,setsar=1,format=yuv420p`
-      : `scale=1080:-2,pad=1080:1920:0:(1920-ih)/2:color=0x0a0a1a,fps=30,setsar=1,format=yuv420p`;
+    h < 1920 + 8
+      ? `scale=1080:-2,pad=1080:1920:0:(1920-ih)/2:color=0x0a0a1a,fps=30,setsar=1,format=yuv420p`
+      : Math.abs(travel) > 8
+        ? `crop=1080:1920:0:'${start}+${travel}*min(t/${dur},1)',fps=30,setsar=1,format=yuv420p`
+        : `crop=1080:1920:0:${start},fps=30,setsar=1,format=yuv420p`;
 
   await runTool(ffmpeg, [
     '-y',
@@ -161,6 +168,6 @@ export async function captureProductShot(opts: CaptureOpts): Promise<string> {
     opts.outPath,
   ]);
   rmSync(png, { force: true });
-  opts.onProgress?.(`product shot -> ${opts.outPath} (${travel > 8 ? 'pan' : 'static'}, ${dur}s, $0.00)`);
+  opts.onProgress?.(`product shot -> ${opts.outPath} (${Math.abs(travel) > 8 ? `pan ${start}->${end}px` : 'static'}, ${dur}s, $0.00)`);
   return opts.outPath;
 }

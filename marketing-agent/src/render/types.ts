@@ -33,8 +33,10 @@ export interface Shot {
   dialogue?: string;
   /** Non-presenter shots: narration laid over this shot (edge-tts / ElevenLabs). */
   vo?: string;
-  /** `product` shots: which page to capture and how. */
-  capture?: { url: string; waitForSelector?: string; scrollPx?: number };
+  /** `product` shots: which page to capture and how. `panToPx` is the page-Y where the pan
+   *  STOPS (default: page bottom); `panToPx: 0` with a `scrollPx` start pans back UP and ends
+   *  cleanly on the hero instead of mid-scroll footer. */
+  capture?: { url: string; waitForSelector?: string; scrollPx?: number; panToPx?: number };
   /** Override the default provider routing for this role. */
   provider?: ShotProvider;
   /** Optional reference image (data URL or https) for image-to-video subject consistency. */
