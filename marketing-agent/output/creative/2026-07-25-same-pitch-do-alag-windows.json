@@ -1,0 +1,146 @@
+{
+  "slug": "2026-07-25-same-pitch-do-alag-windows",
+  "title": "Same Client Pitch, Two Very Different Windows",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.89,
+  "hook": "Same pitch. Do alag windows.",
+  "cta": "See both windows before scheduling. Your Life, Decoded Hour by Hour.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 6,
+      "prompt": "Indian male consultant holding the same presentation folder beside two blank calendar cards, camera slowly zooms in, neutral studio lighting, direct and inquisitive mood",
+      "dialogue": "Deck same hai. Client same hai."
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "seconds": 5,
+      "prompt": "Single presentation folder placed between two phones showing unreadable abstract calendar blocks, overhead camera slides right, cool office lighting, precise mood",
+      "vo": "Bas question hai: Tuesday ya Thursday?"
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 9,
+      "vo": "VedicHour star sign ka generic mood forecast nahi hai. Yeh aapki birth chart ke against, pitch jaise task ke liye, dono din ke saare 18 planetary hours rate karta hai.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s4",
+      "role": "product",
+      "seconds": 7,
+      "vo": "Ek window clearer ho sakta hai, doosra heavier. Plain English mein reason dekho, phir practical constraints ke saath decide karo.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s5",
+      "role": "presenter_close",
+      "seconds": 5,
+      "prompt": "Indian male consultant calmly gestures toward his phone and then the presentation folder, locked medium camera, soft key lighting, grounded mood",
+      "dialogue": "Your Life, Decoded Hour by Hour."
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Same Client Pitch, Two Very Different Windows",
+    "description": "Generic star sign forecast nahi, yeh pitch ke liye personal timing comparison hai. See your grid: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=client-pitch-tuesday-or-thursday",
+    "hashtags": [
+      "#pitchdeck",
+      "#clientpitch",
+      "#jyotishindia",
+      "#vedicjyotish",
+      "#hinglishcontent",
+      "#delhiprofessionals",
+      "#mumbaiprofessionals",
+      "#bengalurustartups",
+      "#worksmarter",
+      "#meetingstrategy",
+      "#founderlifeindia",
+      "#timinggrid"
+    ],
+    "caption": "Same deck, different day Not a star sign forecast Pitch specific scoring 18 horas compared Reason plain English mein"
+  },
+  "batchId": "2026-07-25-ms0a4jxi",
+  "scores": {
+    "hookStrength": 83,
+    "specificity": 94,
+    "credibility": 88,
+    "brandSafety": 97,
+    "producibility": 88,
+    "total": 89,
+    "notes": "Strong comparison, weakened by repetitive feature exposition and the grammatically sloppy “window clearer ho sakta hai.”",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm personal timing comparison uses approved clearer/heavier framing without promising outcomes."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "client-pitch-tuesday-or-thursday",
+  "family": "decision_moment",
+  "angle": "Compare two client-pitch windows using a personal timing grid explained in plain English.",
+  "variantIndex": 3,
+  "hookText": "Same pitch. Do alag windows.",
+  "spokenScript": "Deck same hai. Client same hai. Bas question hai: Tuesday ya Thursday? VedicHour star sign ka generic mood forecast nahi hai. Yeh aapki birth chart ke against, pitch jaise task ke liye, dono din ke saare 18 planetary hours rate karta hai. Ek window clearer ho sakta hai, doosra heavier. Plain English mein reason dekho, phir practical constraints ke saath decide karo. Your Life, Decoded Hour by Hour.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 6,
+      "visualPrompt": "Indian male consultant holding the same presentation folder beside two blank calendar cards, camera slowly zooms in, neutral studio lighting, direct and inquisitive mood"
+    },
+    {
+      "kind": "broll",
+      "seconds": 5,
+      "visualPrompt": "Single presentation folder placed between two phones showing unreadable abstract calendar blocks, overhead camera slides right, cool office lighting, precise mood"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 9,
+      "visualPrompt": "one hora card tapped open, showing its plain-English line about what that window suits"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 7,
+      "visualPrompt": "the week view, where the same hour reads differently on different days"
+    },
+    {
+      "kind": "presenter",
+      "seconds": 5,
+      "visualPrompt": "Indian male consultant calmly gestures toward his phone and then the presentation folder, locked medium camera, soft key lighting, grounded mood"
+    }
+  ],
+  "onScreenCaptions": [
+    "Same deck, different day",
+    "Not a star sign forecast",
+    "Pitch specific scoring",
+    "18 horas compared",
+    "Reason plain English mein"
+  ],
+  "hashtags": [
+    "#pitchdeck",
+    "#clientpitch",
+    "#jyotishindia",
+    "#vedicjyotish",
+    "#hinglishcontent",
+    "#delhiprofessionals",
+    "#mumbaiprofessionals",
+    "#bengalurustartups",
+    "#worksmarter",
+    "#meetingstrategy",
+    "#founderlifeindia",
+    "#timinggrid"
+  ],
+  "youtubeTitle": "Same Client Pitch, Two Very Different Windows",
+  "youtubeDescription": "Generic star sign forecast nahi, yeh pitch ke liye personal timing comparison hai. See your grid: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=client-pitch-tuesday-or-thursday",
+  "language": "hinglish"
+}

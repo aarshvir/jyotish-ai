@@ -1,0 +1,83 @@
+{
+  "batchId": "2026-07-25-ms0a4jxi",
+  "date": "2026-07-25",
+  "winners": [
+    {
+      "rank": 1,
+      "hookText": "HR ne do slots bheje",
+      "total": 92,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-25-hr-ne-do-slots-bheje.json"
+    },
+    {
+      "rank": 2,
+      "hookText": "Interview slot: 10 baje ya 5 baje?",
+      "total": 88,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-25-interview-slot-10-baje-ya-5-baje.json"
+    },
+    {
+      "rank": 3,
+      "hookText": "Same pitch. Do alag windows.",
+      "total": 89,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-25-same-pitch-do-alag-windows.json"
+    }
+  ],
+  "rejected": [
+    {
+      "ideaId": "interview-slot-morning-or-evening",
+      "variantIndex": 2,
+      "hookText": "10 AM ya 5 PM?",
+      "reason": "hostile reviewer rejected: “10 AM ya 5 PM?” lacks interview context, so the hook is meaningless until viewers have already scrolled."
+    },
+    {
+      "ideaId": "interview-slot-morning-or-evening",
+      "variantIndex": 4,
+      "hookText": "Slot choose karne ka data kya?",
+      "reason": "hostile reviewer rejected: Swiss Ephemeris and Lahiri ayanamsa become credential-dumping before the viewer has any reason to care."
+    },
+    {
+      "ideaId": "interview-slot-morning-or-evening",
+      "variantIndex": 5,
+      "hookText": "Yeh daily horoscope wala sawal nahi",
+      "reason": "hostile reviewer rejected: The week-view detour abandons the actual 10-versus-5 decision and leaves the core demonstration unresolved."
+    },
+    {
+      "ideaId": "interview-slot-morning-or-evening",
+      "variantIndex": 6,
+      "hookText": "Confirm karun ya timing dekhun?",
+      "reason": "hostile reviewer rejected: This is a feature tutorial disguised as a story; there is no tension, surprise, or memorable payoff."
+    },
+    {
+      "ideaId": "client-pitch-tuesday-or-thursday",
+      "variantIndex": 1,
+      "hookText": "Pitch Tuesday ya Thursday?",
+      "reason": "hostile reviewer rejected: Concrete premise, but the hook feels like ordinary scheduling chatter and never creates enough tension to stop scrolling."
+    },
+    {
+      "ideaId": "client-pitch-tuesday-or-thursday",
+      "variantIndex": 2,
+      "hookText": "Calendar free hai, par timing?",
+      "reason": "hostile reviewer rejected: Swiss Ephemeris and Lahiri ayanamsa read like defensive credential dumping, not persuasive short-form storytelling."
+    },
+    {
+      "ideaId": "client-pitch-tuesday-or-thursday",
+      "variantIndex": 4,
+      "hookText": "Pitch invite bhejne se pehle...",
+      "reason": "lost the tournament (rank 5)"
+    },
+    {
+      "ideaId": "client-pitch-tuesday-or-thursday",
+      "variantIndex": 5,
+      "hookText": "Mummy se poochun ya data?",
+      "reason": "brand-safety 55/100 (floor 80): The “Mummy versus data” trope cheapens familiar Jyotish and risks sounding smugly dismissive of astrologers and family culture."
+    },
+    {
+      "ideaId": "client-pitch-tuesday-or-thursday",
+      "variantIndex": 6,
+      "hookText": "Thursday clearer kyun dikh raha?",
+      "reason": "lost the tournament (rank 4)"
+    }
+  ]
+}

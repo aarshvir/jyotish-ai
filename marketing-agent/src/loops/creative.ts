@@ -195,6 +195,10 @@ function recentAngles(limit = 40): string[] {
  * so the per-CLI timeout kills the shell but not the grandchild holding the stdio
  * pipes, and `'close'` can then never fire. An unattended loop must not wedge on that,
  * so every stage carries its own deadline and moves on.
+ *
+ * Known tradeoff: the abandoned call is not cancellable through the CLI adapter, so it
+ * keeps walking its tier list in the background and still writes its own runs_log rows.
+ * It costs a little daily-cap quota; it cannot block or corrupt the stage that moved on.
  */
 async function brainOnce(prompt: string, tier: Tier, stage: string): Promise<string | null> {
   const t0 = Date.now();
