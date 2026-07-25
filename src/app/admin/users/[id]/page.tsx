@@ -18,6 +18,16 @@ type Detail = {
     payment_status: string;
     native_name: string;
     birth_date: string;
+    birth_time?: string | null;
+    birth_city?: string | null;
+    current_city?: string | null;
+    timezone_offset?: number | null;
+    lagna_sign?: string | null;
+    moon_sign?: string | null;
+    moon_nakshatra?: string | null;
+    dasha_mahadasha?: string | null;
+    dasha_antardasha?: string | null;
+    user_email?: string | null;
     phone?: string | null;
     personal_context?: string | null;
     created_at: string;
@@ -169,6 +179,53 @@ export default function AdminUserDetail() {
                     </Link>
                   </span>
                 </div>
+                {/* Birth details as submitted + what the engine computed from them.
+                    These drive every calculation, so they belong in the admin view:
+                    a wrong city or time here explains a wrong report. */}
+                <div className="mt-3 rounded-card border border-horizon/30 bg-space/40 p-3">
+                  <div className="font-mono text-mono-sm text-amber/70 uppercase tracking-wider mb-2">
+                    Birth details
+                  </div>
+                  <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-2">
+                    {[
+                      ['Name', r.native_name],
+                      ['Date of birth', r.birth_date],
+                      ['Time of birth', r.birth_time ? r.birth_time.slice(0, 5) : null],
+                      ['Place of birth', r.birth_city],
+                      ['Current city', r.current_city],
+                      ['UTC offset', typeof r.timezone_offset === 'number' ? `${r.timezone_offset >= 0 ? '+' : ''}${r.timezone_offset} min` : null],
+                      ['Email', r.user_email],
+                      ['Phone', r.phone],
+                    ].map(([label, value]) => (
+                      <div key={String(label)} className="min-w-0">
+                        <dt className="font-mono text-mono-sm text-dust/50 uppercase tracking-wider">{label}</dt>
+                        <dd className={`truncate ${value ? 'text-star' : 'text-dust/40 italic'}`} title={value ? String(value) : undefined}>
+                          {value ? String(value) : 'not provided'}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {(r.lagna_sign || r.moon_sign || r.dasha_mahadasha) && (
+                    <div className="mt-3 pt-3 border-t border-horizon/30 flex flex-wrap gap-2">
+                      {r.lagna_sign && (
+                        <span className="font-mono text-mono-sm text-amber bg-amber/10 border border-amber/25 rounded-pill px-2.5 py-1">
+                          {r.lagna_sign} lagna
+                        </span>
+                      )}
+                      {r.moon_sign && (
+                        <span className="font-mono text-mono-sm text-dust bg-bg-3/60 border border-horizon/30 rounded-pill px-2.5 py-1">
+                          ☽ {r.moon_sign}{r.moon_nakshatra ? ` · ${r.moon_nakshatra}` : ''}
+                        </span>
+                      )}
+                      {r.dasha_mahadasha && (
+                        <span className="font-mono text-mono-sm text-dust bg-bg-3/60 border border-horizon/30 rounded-pill px-2.5 py-1">
+                          {r.dasha_mahadasha}{r.dasha_antardasha ? ` / ${r.dasha_antardasha}` : ''} dasha
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div className="mt-3 rounded-card border border-horizon/30 bg-space/40 p-3">
                   <div className="font-mono text-mono-sm text-amber/70 uppercase tracking-wider mb-1">
                     What they wrote
