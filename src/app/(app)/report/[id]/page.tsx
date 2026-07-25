@@ -22,6 +22,7 @@ import { CorrelationsPanel } from '@/components/report/CorrelationsPanel';
 import { MobileSectionNav } from '@/components/report/MobileSectionNav';
 import { PersonalizedAnswer } from '@/components/report/PersonalizedAnswer';
 import { ExitIntentUpsell } from '@/components/report/ExitIntentUpsell';
+import { PreviewValueStrip } from '@/components/report/PreviewValueStrip';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { Glossary } from '@/components/report/Glossary';
 import { AskQuestion } from '@/components/report/AskQuestion';
@@ -1556,9 +1557,22 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             <PersonalizedAnswer
               reportId={reportIdFromRoute}
               isPreview={isPreviewPlan}
-              unlockHref="/onboard?plan=7day"
+              unlockHref="/onboard?plan=7day&promo=NEWUSER30"
             />
           </ReportErrorBoundary>
+
+          {/* Preview proof-of-value: their REAL next-30-day score curve (deterministic,
+              no LLM cost) with the strongest/hardest dates named — and the reasons
+              locked. Free previews otherwise carry a single day, which reads as empty. */}
+          {isPreviewPlan && (
+            <ReportErrorBoundary fallbackTitle="Your next 30 days">
+              <PreviewValueStrip
+                reportId={reportIdFromRoute}
+                firstName={(displayName || '').trim().split(/\s+/)[0]}
+                unlockHref="/onboard?plan=7day&promo=NEWUSER30"
+              />
+            </ReportErrorBoundary>
+          )}
 
           {/* Today anchor — grounds the report in the current day (paid only; preview
               shows a single sample day so "today" framing would mislead). */}
