@@ -31,14 +31,19 @@ const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'Ju
 export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
   const monthsData = useMemo(() => {
   const today = new Date();
-  return Array.from({ length: 12 }, (_, i) => {
+  // Render ONLY months we actually computed. This used to always build 12 cards
+  // and fill missing ones with a hardcoded score of 65 — so a report whose months
+  // were absent (e.g. the stripped free preview, viewed by an admin who bypasses
+  // the preview gate) displayed twelve identical "65/100" months. Fabricated
+  // scores in an astrology product read as broken output, and rightly so.
+  const src = months ?? [];
+  return src.map((ex, i) => {
     const m = new Date(today.getFullYear(), today.getMonth() + i, 1);
     const label = `${MONTH_NAMES[m.getMonth()]} ${m.getFullYear()}`;
-    const ex = (months ?? [])[i];
     return {
       month: ex?.month ?? label,
-      score: ex?.score ?? ex?.overall_score ?? 65,
-      overall_score: ex?.overall_score ?? ex?.score ?? 65,
+      score: ex?.score ?? ex?.overall_score ?? 0,
+      overall_score: ex?.overall_score ?? ex?.score ?? 0,
       career_score: ex?.domain_scores?.career ?? ex?.career_score,
       money_score: ex?.domain_scores?.money ?? ex?.money_score,
       health_score: ex?.domain_scores?.health ?? ex?.health_score,
@@ -53,7 +58,7 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
       key_transits: ex?.key_transits ?? [],
       commentary: (() => {
         const c = (ex?.commentary ?? '').trim();
-        const sc = ex?.score ?? ex?.overall_score ?? 65;
+        const sc = ex?.score ?? ex?.overall_score ?? 0;
         if (!c || isDevFallback(c) || c.includes('Monthly overview will be available when the forecast is generated')) {
           return `A ${sc >= 70 ? 'strong' : sc >= 55 ? 'steady' : 'quieter'} month overall (score ${sc}/100). Use your highest-scoring days for important decisions, and the hourly detail for precision timing.`;
         }
@@ -68,6 +73,10 @@ export function MonthlyAnalysis({ months }: MonthlyAnalysisProps) {
 
   const [selected, setSelected] = useState(0);
   const [domainFilter, setDomainFilter] = useState<'overall' | 'career' | 'money' | 'health' | 'love'>('overall');
+
+  // No months computed (stripped preview, or a partial report) → render nothing.
+  // Showing fabricated month cards is worse than showing none.
+  if (monthsData.length === 0) return null;
 
   const DOMAIN_FILTERS = [
     { key: 'overall', label: 'All' },
