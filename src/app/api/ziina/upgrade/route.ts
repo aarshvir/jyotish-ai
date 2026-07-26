@@ -166,7 +166,15 @@ export async function POST(request: NextRequest) {
       .eq('plan_type', 'monthly_upgrade')
       .eq('status', 'pending');
 
-    await db.from('ziina_payments').insert(insertPayload);
+    // Fail CLOSED: never return a payable redirectUrl without a durable ziina_payments
+    // bind. Supabase JS does not throw on PostgREST errors — ignoring `{ error }` here
+    // let buyers complete Ziina checkout while finalize returned `no_binding` (no grant,
+    // and reconcile cannot recover a row that was never inserted).
+    const { error: bindErr } = await db.from('ziina_payments').insert(insertPayload);
+    if (bindErr) {
+      console.error('[ziina/upgrade] ziina_payments insert failed:', bindErr.message);
+      return NextResponse.json({ error: 'Failed to bind upgrade checkout' }, { status: 500 });
+    }
 
     await emitUpsellEvent(auth.user.id, 'upsell_checkout_started', { reportId, intentId: intent.id });
 
