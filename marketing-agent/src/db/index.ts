@@ -12,6 +12,31 @@ const SCHEMA_PATH = resolve(here, 'schema.sql');
 
 let _db: Database.Database | null = null;
 
+/**
+ * Additive column migrations. `CREATE TABLE IF NOT EXISTS` in schema.sql is a no-op on a database
+ * that already exists, so a column added to an existing table has to be ALTERed in — and SQLite
+ * has no `ADD COLUMN IF NOT EXISTS`. Each entry is applied only when PRAGMA table_info says it is
+ * missing, which makes this idempotent and safe to run on every open.
+ */
+const COLUMN_MIGRATIONS: { table: string; column: string; ddl: string }[] = [
+  // Hook taxonomy (src/taxonomy.ts) — the join key between a creative's SHAPE and its results.
+  { table: 'creative_variants', column: 'hook_family', ddl: 'ALTER TABLE creative_variants ADD COLUMN hook_family TEXT' },
+  { table: 'creative_variants', column: 'decision_domain', ddl: 'ALTER TABLE creative_variants ADD COLUMN decision_domain TEXT' },
+  { table: 'creative_variants', column: 'emotional_register', ddl: 'ALTER TABLE creative_variants ADD COLUMN emotional_register TEXT' },
+  { table: 'creative_variants', column: 'duration_target_sec', ddl: 'ALTER TABLE creative_variants ADD COLUMN duration_target_sec REAL' },
+  { table: 'creative_variants', column: 'explore', ddl: 'ALTER TABLE creative_variants ADD COLUMN explore INTEGER NOT NULL DEFAULT 0' },
+];
+
+function migrate(d: Database.Database): void {
+  for (const m of COLUMN_MIGRATIONS) {
+    const cols = d.prepare(`PRAGMA table_info(${m.table})`).all() as { name: string }[];
+    if (!cols.length) continue; // table itself is absent — schema.sql owns creating it
+    if (cols.some((c) => c.name === m.column)) continue;
+    d.exec(m.ddl);
+  }
+  d.exec('CREATE INDEX IF NOT EXISTS idx_creative_variants_tags ON creative_variants(hook_family, decision_domain)');
+}
+
 /** Open (and lazily initialise) the singleton SQLite connection. */
 export function db(): Database.Database {
   if (_db) return _db;
@@ -20,6 +45,7 @@ export function db(): Database.Database {
   _db.pragma('journal_mode = WAL');
   _db.pragma('busy_timeout = 5000');
   _db.exec(readFileSync(SCHEMA_PATH, 'utf8'));
+  migrate(_db);
   return _db;
 }
 

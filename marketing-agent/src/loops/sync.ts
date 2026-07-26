@@ -40,6 +40,12 @@ export interface LocalAsset {
   youtube_video_id: string | null;
   instagram_permalink: string | null;
   render_cost_usd: number | null;
+  // HOOK TAXONOMY (src/taxonomy.ts) — mirrored up so posted performance in marketing_stats can be
+  // attributed back to the SHAPE of the creative by src/performance.ts.
+  hook_family: string | null;
+  decision_domain: string | null;
+  emotional_register: string | null;
+  duration_target_sec: number | null;
 }
 
 const readJson = (file: string): any | null => {
@@ -66,6 +72,13 @@ function merge(a: LocalAsset, b: Partial<LocalAsset>): LocalAsset {
 /** Tolerant mapping from any publish.json / creative variant shape. */
 function fromLoose(slug: string, j: any, status: Status): Partial<LocalAsset> & { slug: string } {
   const yt = j?.platforms?.youtube ?? {};
+  // Tags may sit at the contract root (`tags`), inline on a legacy publish.json, or be absent.
+  const tags = j?.tags ?? j?.script?.tags ?? {};
+  const tag = (camel: string, snake: string): string | null => {
+    const v = tags?.[camel] ?? tags?.[snake] ?? j?.[camel] ?? j?.[snake];
+    return v == null || v === '' ? null : String(v);
+  };
+  const durationTarget = tags?.durationTargetSec ?? tags?.duration_target_sec ?? j?.durationTargetSec ?? j?.duration_target_sec;
   let utmCampaign: string | null = j?.utm_campaign ?? j?.utmCampaign ?? null;
   if (!utmCampaign && typeof yt.link === 'string') {
     try {
@@ -89,6 +102,10 @@ function fromLoose(slug: string, j: any, status: Status): Partial<LocalAsset> & 
     youtube_video_id: j?.youtube_video_id ?? j?.youtubeVideoId ?? null,
     instagram_permalink: j?.instagram_permalink ?? j?.instagramPermalink ?? null,
     render_cost_usd: typeof (j?.render_cost_usd ?? j?.renderCostUsd ?? j?.cost_usd) === 'number' ? (j?.render_cost_usd ?? j?.renderCostUsd ?? j?.cost_usd) : null,
+    hook_family: tag('hookFamily', 'hook_family'),
+    decision_domain: tag('decisionDomain', 'decision_domain'),
+    emotional_register: tag('emotionalRegister', 'emotional_register'),
+    duration_target_sec: Number.isFinite(Number(durationTarget)) && Number(durationTarget) > 0 ? Number(durationTarget) : null,
   };
 }
 
@@ -113,6 +130,10 @@ export function collectLocalAssets(notes: string[]): Map<string, LocalAsset> {
       youtube_video_id: null,
       instagram_permalink: null,
       render_cost_usd: null,
+      hook_family: null,
+      decision_domain: null,
+      emotional_register: null,
+      duration_target_sec: null,
     };
     const existing = assets.get(p.slug) ?? base;
     assets.set(p.slug, merge(existing, p));
@@ -221,6 +242,46 @@ function slugFromPath(p: string): string | null {
   return m ? m[1] : null;
 }
 
+/**
+ * The taxonomy columns land in Supabase only when the owner applies migration 20260726, and he
+ * applies migrations on his own schedule. Until then PostgREST rejects the whole write with
+ * PGRST204 — so the first rejection flips this flag and every subsequent write in the run drops
+ * the tag fields. The engine keeps syncing; it just cannot attribute performance to a shape yet,
+ * and says so once instead of failing every 30 minutes.
+ */
+let tagColumnsMissing = false;
+
+const isUnknownColumn = (e: any): boolean =>
+  /PGRST204|42703|column .* does not exist|could not find the .* column/i.test(String(e?.message ?? e));
+
+function stripTags<T extends Record<string, any>>(fields: T): T {
+  const out = { ...fields };
+  delete out.hook_family;
+  delete out.decision_domain;
+  delete out.emotional_register;
+  delete out.duration_target_sec;
+  return out;
+}
+
+/** Run a Supabase write, retrying once without the taxonomy fields if those columns are absent. */
+async function writeTolerant<T extends Record<string, any>>(fields: T, write: (f: T) => Promise<unknown>): Promise<void> {
+  if (tagColumnsMissing) {
+    await write(stripTags(fields));
+    return;
+  }
+  try {
+    await write(fields);
+  } catch (e: any) {
+    if (!isUnknownColumn(e)) throw e;
+    tagColumnsMissing = true;
+    console.warn(
+      '[sync] marketing_assets has no hook_family/decision_domain/emotional_register/duration_target_sec columns yet — ' +
+        'syncing WITHOUT the hook taxonomy. Apply supabase/migrations/20260726_marketing_hook_taxonomy.sql to close the learning loop.',
+    );
+    await write(stripTags(fields));
+  }
+}
+
 type RemoteAsset = {
   slug: string;
   status: Status;
@@ -321,15 +382,22 @@ export async function runSyncLoop(): Promise<void> {
         render_cost_usd: a.render_cost_usd,
         ...(a.youtube_video_id ? { youtube_video_id: a.youtube_video_id } : {}),
         ...(a.instagram_permalink ? { instagram_permalink: a.instagram_permalink } : {}),
+        // Omit when unknown, so a later run that DOES know the tags can fill them in and a PATCH
+        // never nulls a tag the creative engine already recorded.
+        ...(a.hook_family ? { hook_family: a.hook_family } : {}),
+        ...(a.decision_domain ? { decision_domain: a.decision_domain } : {}),
+        ...(a.emotional_register ? { emotional_register: a.emotional_register } : {}),
+        ...(a.duration_target_sec ? { duration_target_sec: a.duration_target_sec } : {}),
         updated_at: now,
       };
       if (!r) {
-        await sbInsert(sb, 'marketing_assets', [{ slug: a.slug, status: a.status, ...fields }]);
+        await writeTolerant(fields, (f) => sbInsert(sb, 'marketing_assets', [{ slug: a.slug, status: a.status, ...f }]));
         inserted++;
       } else {
         // Only advance status (ready → rendered → published); never demote.
-        const patch = RANK[a.status] > RANK[r.status] ? { status: a.status, ...fields } : fields;
-        await sbPatch(sb, `marketing_assets?slug=eq.${encodeURIComponent(a.slug)}`, patch);
+        await writeTolerant(fields, (f) =>
+          sbPatch(sb, `marketing_assets?slug=eq.${encodeURIComponent(a.slug)}`, RANK[a.status] > RANK[r.status] ? { status: a.status, ...f } : f),
+        );
         updated++;
       }
     }
