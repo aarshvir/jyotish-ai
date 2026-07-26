@@ -116,6 +116,24 @@ export const WORDS_PER_SECOND = 2.3;
  */
 export const NARRATION_MAX_WORDS = 12;
 
+/**
+ * THE SITE NAME, AS A LISTENER MUST HEAR IT.
+ *
+ * OWNER LAW (2026-07-26, verbatim): "at the end there should be a call to action: Try
+ * VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this
+ * new platform, VedicHour."
+ *
+ * A reel is consumed with the thumb, often with the eyes half-elsewhere — an on-screen-only CTA
+ * reaches nobody who is LISTENING. So the closing presenter shot has to say the name out loud, in
+ * his own on-camera dialogue: Veo performs it, which makes it free, single-voiced and lip-synced.
+ * Asserted for $0 twice before any spend — in the creative engine's own reject gate and again in
+ * the render pre-flight (src/loops/render.ts).
+ *
+ * Deliberately loose about the space and the .com: "VedicHour.com pe dekh lo", "Vedic Hour pe
+ * dekh lo" and "vedichour dot com" all satisfy it, because all three SOUND like the brand.
+ */
+export const SPOKEN_SITE = /vedic\s*hour/i;
+
 const wordCount = (s: string | undefined): number => (s ?? '').trim().split(/\s+/).filter(Boolean).length;
 
 export interface ValidationIssue {

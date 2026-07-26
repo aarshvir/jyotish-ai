@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { db, logRun, enqueueApproval, ROOT } from '../db/index';
@@ -7,7 +7,7 @@ import { writeHeartbeat } from '../scheduler/heartbeat';
 import { lint, jargonHits } from '../policy/linter';
 import { activeLessons } from '../lessons';
 import { BRAND, utm } from '../brand';
-import { validateCreative, type CreativeScript, type Shot, type ShotProvider } from '../render/types';
+import { validateCreative, SPOKEN_SITE, type CreativeScript, type Shot, type ShotProvider } from '../render/types';
 import { PRICE_TABLE, ROLE_ROUTING, estimateCost, providerFor, hasFalKey, quantizeSeconds } from '../render/providers';
 import { checkBudget, recordSpend, caps, budgetLine, spendSnapshot } from '../render/budget';
 import { captureProductShot, browserEngineAvailable } from '../render/screencap';
@@ -15,7 +15,7 @@ import { assertCaptureAllowed, resolveLiveCapture } from '../render/capture-poli
 import { AD_VO_VOICE, NATIVE_VOICE, assertSingleAdVoice, SARVAM_PRICING } from '../render/sarvam';
 import {
   FRAME, PRESENTER_LAYOUT, renderPlaceholder, normalizeClip, concatClips, finish,
-  synthesizeVo, nativeVo, findMusic, verifyOutput, type PreparedShot,
+  synthesizeVo, nativeVo, findMusic, verifyOutput, renderEndCard, type PreparedShot,
 } from '../render/assemble';
 import { resolveTools, probeVideo, type Seg } from '../render/ffmpeg';
 import {
@@ -48,6 +48,16 @@ export interface RenderOpts {
   /** Estimate and validate, then stop before rendering anything. */
   estimateOnly?: boolean;
   keepIntermediates?: boolean;
+  /**
+   * Reuse any `work/<shot>.raw.mp4` that a previous run of THIS creative already paid for.
+   *
+   * Exists because a mid-reel failure (fal 422 content-checker, a network drop) otherwise makes
+   * the retry re-buy every shot that had already succeeded. On 2026-07-26 a rejected prompt on
+   * shot 2 would have cost the owner a second $0.90 for a shot 1 that was already sitting on
+   * disk. Paying twice for identical footage is exactly the waste CLAUDE.md §1 exists to stop.
+   * Opt-in, never the default: a reused clip is footage nobody re-checked this run.
+   */
+  resume?: boolean;
   /** e.g. "hi,ta,te". Localization is opt-in and meant for WINNER assets only. */
   languages?: string;
 }
@@ -69,7 +79,7 @@ const LIPSYNC_ROLES = ['presenter', 'presenter_close'];
  * batch. This is the last line of defence in the spend path itself — it must never be softened
  * into a warning, whatever else exists upstream.
  */
-function preflight(creative: CreativeScript, scriptText: string): string[] {
+export function preflight(creative: CreativeScript, scriptText: string): string[] {
   const problems: string[] = [];
 
   // 1. capture targets — the report, never the payment section
@@ -101,6 +111,31 @@ function preflight(creative: CreativeScript, scriptText: string): string[] {
     );
   } catch (e: any) {
     problems.push(String(e?.message ?? e));
+  }
+
+  // 4. the closing CTA must NAME THE SITE OUT LOUD, in the presenter's own on-camera dialogue.
+  //
+  // Owner law 2026-07-26, verbatim: "at the end there should be a call to action: Try
+  // VedicHour.com... because people who are listening to the reel will figure out, Oh, I found
+  // this new platform, VedicHour." A reel is half-watched and fully HEARD; an on-screen-only CTA
+  // reaches nobody whose eyes are elsewhere. The renderer always appends the branded end card
+  // (END_CARD), but the card cannot put the name in the viewer's EARS in the reel's one voice —
+  // only the presenter can, and Veo performs his line for free. This is decidable from the JSON,
+  // so it is decided here, before a cent (CLAUDE.md §1).
+  const presenterShots = creative.shots.filter((s) => s.role === 'presenter' || s.role === 'presenter_close');
+  const closer = presenterShots[presenterShots.length - 1];
+  if (!closer) {
+    problems.push(
+      'no presenter shot to close on — the reel cannot say the site out loud in its own voice. ' +
+        'End on a presenter whose dialogue names vedichour.com.',
+    );
+  } else if (!SPOKEN_SITE.test(closer.dialogue ?? '')) {
+    problems.push(
+      `the closing presenter shot (${closer.id}) never says the site out loud: "${(closer.dialogue ?? '').slice(0, 80)}". ` +
+        'Owner law 2026-07-26: "at the end there should be a call to action: Try VedicHour.com... because people who are ' +
+        'LISTENING to the reel will figure out, Oh, I found this new platform, VedicHour." Rewrite the last on-camera line to ' +
+        'name it, e.g. "…VedicHour.com pe dekh lo." — Veo performs it, so it costs nothing and stays in the one voice.',
+    );
   }
 
   return problems;
@@ -485,6 +520,11 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
           await renderPlaceholder(shot, billedSec, rawClip, 'product shot unavailable');
         }
         recordSpend({ run_id: runId, slug: creative.slug, shot_id: shot.id, provider: 'screencap', seconds: billedSec, cost_usd: 0, estimated_usd: 0, status: 'ok', detail: shot.capture?.url ?? '' });
+      } else if (opts.resume && existsSync(rawClip) && statSync(rawClip).size > 100_000) {
+        // Already generated and already paid for by an earlier run of this creative.
+        nativeAudio = isPresenter && spec.nativeAudio;
+        console.log(`[render]   --resume: reusing ${shot.id}.raw.mp4 from a previous run — nothing regenerated, nothing charged.`);
+        recordSpend({ run_id: runId, slug: creative.slug, shot_id: shot.id, provider: key, model: spec.endpoint, seconds: billedSec, cost_usd: 0, estimated_usd: 0, status: 'ok', detail: 'reused existing raw clip (--resume) — paid for in an earlier run' });
       } else {
         // Re-check the budget per shot: a multi-shot reel must not blow the cap halfway through.
         const shotEst = estimateCost(key, shot.seconds);
@@ -567,10 +607,24 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     const voices = [...new Set(prepared.map((p) => p.voiceId).filter(Boolean))];
     console.log(`[render] voice plan verified: ${voices.join(' + ') || 'silent'}`);
 
-    const totalSec = cursor;
+    // The branded end card is a STANDING element of the renderer, not something a script opts
+    // into: every reel ends on the wordmark and `vedichour.com`, and no creative can forget it.
+    // Owner law 2026-07-26 — see END_CARD in src/render/assemble.ts.
+    const bodySec = cursor;
+    const endCardPath = resolve(work, 'endcard.mp4');
+    const card = await renderEndCard(work, endCardPath);
+    console.log(
+      `[render] end card: ${card.seconds}s — vedichour.com + the "${'Try Vedic Hour dot com'}" sign-off at +${card.tagStartSec}s` +
+        `${card.costUsd > 0 ? ` (tag synthesized once, $${card.costUsd.toFixed(5)}, cached for every future reel)` : ' (cached tag — $0)'}`,
+    );
+    if (card.costUsd > 0) {
+      recordSpend({ run_id: runId, slug: creative.slug, shot_id: 'endcard', provider: 'sarvam_bulbul_v3', model: SARVAM_PRICING.model, seconds: 0, cost_usd: card.costUsd, estimated_usd: card.costUsd, status: 'ok', detail: 'branded end-card sign-off tag — synthesized once, then cached in media/brand/' });
+    }
+
+    const totalSec = Math.round((bodySec + card.seconds) * 100) / 100;
     const stitched = resolve(work, 'stitched.mp4');
-    console.log(`[render] stitching ${prepared.length} shots -> ${totalSec}s`);
-    await concatClips(prepared.map((p) => p.path), work, stitched);
+    console.log(`[render] stitching ${prepared.length} shots + end card -> ${totalSec}s`);
+    await concatClips([...prepared.map((p) => p.path), endCardPath], work, stitched);
 
     const music = findMusic();
     console.log(`[render] music bed: ${music ? music : 'none found in media/ — rendering voice-only'}`);
@@ -583,7 +637,7 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       .map((p) => ({ start: p.startSec, end: p.startSec + p.seconds }));
     assertCaptionPlan(prepared, productWindows);
     console.log('[render] finishing: grade -> bloom -> vignette -> karaoke captions -> wordmark -> progress -> grain');
-    await finish({ stitched, work, outPath: finalPath, creative, segments: allSegments, totalSec, music, productWindows });
+    await finish({ stitched, work, outPath: finalPath, creative, segments: allSegments, totalSec, music, productWindows, endCardSec: card.seconds });
 
     // ---- 6. verify --------------------------------------------------------------------
     const framesDir = resolve(outDir, 'frames');
@@ -614,7 +668,7 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     const langs = parseLanguages(opts.languages ?? (picked.raw?.languages as string[] | undefined));
     if (langs.length) {
       console.log(`\n[localize] ${langs.length} language(s) requested: ${langs.map((l) => l.label).join(', ')}`);
-      await localizeReel({ runId, creative, prepared, outDir, totalSec, music, est, dry }, langs);
+      await localizeReel({ runId, creative, prepared, outDir, totalSec, music, est, dry, endCard: card }, langs);
     }
 
     if (!opts.keepIntermediates && v.ok) rmSync(work, { recursive: true, force: true });
@@ -648,6 +702,8 @@ interface LocalizeCtx {
   music: string | null;
   est: ReturnType<typeof estimateReel>;
   dry: boolean;
+  /** The same branded end card the English cut ends on — a dub is still a VedicHour reel. */
+  endCard: { path: string; seconds: number };
 }
 
 /**
@@ -736,19 +792,21 @@ async function localizeReel(ctx: LocalizeCtx, langs: LangSpec[]): Promise<void> 
         dubbed.push(clipOut);
       }
 
-      // 3. reassemble
+      // 3. reassemble — including the same branded end card the English cut ends on. The tag is a
+      //    brand name and a domain, so it needs no translation and no second synthesis.
       const stitched = resolve(work, 'stitched.mp4');
-      await concatClips(dubbed, work, stitched);
+      await concatClips([...dubbed, ctx.endCard.path], work, stitched);
 
       // 4. captions via Chromium (libass cannot shape Indic — see src/render/localize.ts)
-      const plan = planPlates(script, ctx.prepared.map((p) => ({ shot: p.shot, startSec: p.startSec, seconds: p.seconds })), ctx.totalSec);
+      // Planned against the STORY, not the reel: the end card is not a caption surface.
+      const plan = planPlates(script, ctx.prepared.map((p) => ({ shot: p.shot, startSec: p.startSec, seconds: p.seconds })), ctx.totalSec - ctx.endCard.seconds);
       const plates = await renderCaptionPlates(plan, resolve(work, 'plates'));
       console.log(`[localize]   ${plates.length} caption plates rendered in Chromium (${l.nativeName} shaping)`);
 
       const finalPath = resolve(langDir, 'final.mp4');
       await finish({
         stitched, work, outPath: finalPath, creative: ctx.creative, segments: [], totalSec: ctx.totalSec,
-        music: ctx.music, plates: plateOverlayGraph(plates, 'pbase', 'v'),
+        music: ctx.music, plates: plateOverlayGraph(plates, 'pbase', 'v'), endCardSec: ctx.endCard.seconds,
       });
 
       // 5. verify visually

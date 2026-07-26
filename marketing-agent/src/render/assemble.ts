@@ -5,7 +5,7 @@ import { envStr } from './env';
 import {
   resolveTools, run, runCapture, probeVideo, probeDuration,
   buildAss, FONT, FONTS,
-  GRADE, BLOOM, GRAIN, wordmarkFilter, progressFilter,
+  GRADE, BLOOM, GRAIN, TEXT_SHADOW, wordmarkFilter, progressFilter,
   type Seg, type Probe,
 } from './ffmpeg';
 import { AD_VO_VOICE, AD_VO_LANGUAGE, NATIVE_VOICE, sarvamSpeak, hasSarvamKey, SARVAM_MISSING_MESSAGE } from './sarvam';
@@ -242,6 +242,27 @@ export interface FinishOpts {
    * this ffmpeg's libass does no Indic shaping. See src/render/localize.ts for the evidence.
    */
   plates?: { inputs: string[]; graph: string } | null;
+  /**
+   * The caller already applied the grade/bloom/vignette per shot — skip the whole-reel look pass
+   * and only do captions, overlays and the mix.
+   *
+   * Why this exists: the VedicHour look (navy/gold grade + a screen-blended highlight bloom) was
+   * built for DARK generated footage. Run it over a LIGHT product page and the bloom lifts the
+   * page's dark body text from ~0.15 to ~0.42 luma while the cream background stays at ~0.97 —
+   * measured on the 2026-07-26 sample-report capture, where the hour-slot text came out hazy and
+   * half-legible. The product shot is the proof; it has to stay crisp. A caller that grades the
+   * presenter shots and the screencap differently sets this and does the look itself.
+   */
+  preGraded?: boolean;
+  /**
+   * Seconds of BRANDED END CARD at the tail of `stitched` (see END_CARD / renderEndCard).
+   *
+   * The karaoke captions and the closing CTA are timed against `totalSec - endCardSec`, so the
+   * card is a clean hold of the wordmark and `vedichour.com` rather than having the reel's own
+   * CTA line composited over the top of it. Everything else — wordmark, progress bar, grain, the
+   * loudness pass — deliberately still runs over the whole file, card included.
+   */
+  endCardSec?: number;
 }
 
 /** Loudness target for the final mix: −16 LUFS integrated, the short-form delivery norm. */
@@ -281,7 +302,9 @@ export async function finish(o: FinishOpts): Promise<void> {
   copyFileSync(resolve(FONTS, FONT.cta), resolve(o.work, 'cta.ttf'));
 
   // No Ken Burns here: the shots already move. Grade + bloom + overlays only.
-  const head = `[0:v]${GRADE},split[a][b];\n[b]${BLOOM}[glow];\n[a][glow]blend=all_mode=screen:all_opacity=0.42,vignette=PI/5:mode=backward`;
+  const head = o.preGraded
+    ? `[0:v]setsar=1`
+    : `[0:v]${GRADE},split[a][b];\n[b]${BLOOM}[glow];\n[a][glow]blend=all_mode=screen:all_opacity=0.42,vignette=PI/5:mode=backward`;
   const tail = `${wordmarkFilter(120)},${progressFilter(o.totalSec)},${GRAIN},format=yuv420p`;
 
   let graph: string;
@@ -291,7 +314,11 @@ export async function finish(o: FinishOpts): Promise<void> {
   } else {
     writeFileSync(
       resolve(o.work, 'captions.ass'),
-      buildAss(o.creative.hook, o.segments, o.creative.cta, o.totalSec, { ...PRESENTER_LAYOUT, topWindows: o.productWindows }),
+      buildAss(o.creative.hook, o.segments, o.creative.cta, o.totalSec, {
+        ...PRESENTER_LAYOUT,
+        topWindows: o.productWindows,
+        bodyEndSec: o.totalSec - (o.endCardSec ?? 0),
+      }),
     );
     graph = `${head},subtitles=captions.ass:fontsdir=.,${tail}[v]`;
   }
@@ -338,6 +365,167 @@ export async function finish(o: FinishOpts): Promise<void> {
     o.outPath,
   );
   await run(ffmpeg, args, o.work, 900000);
+}
+
+// ---------------------------------------------------------------------------
+// The branded end card — a STANDING element of every reel
+// ---------------------------------------------------------------------------
+
+/**
+ * THE END CARD.
+ *
+ * OWNER LAW (2026-07-26, verbatim): "at the end there should be a call to action: Try
+ * VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this
+ * new platform, VedicHour."
+ *
+ * That ruling has two halves and both are load-bearing:
+ *
+ *   ON SCREEN — this card. Brand-dark ground, the standing gold wordmark, and `vedichour.com` as
+ *     the single largest thing on the frame. It is a property of the RENDERER, not of a script:
+ *     no creative can forget it, and no creative has to remember it.
+ *   OUT LOUD  — the presenter names the site inside his own on-camera dialogue. Veo performs that
+ *     line, so it is free, lip-synced and in the ONE voice the reel already has. Enforced for $0
+ *     before any spend by preflight() in src/loops/render.ts and by the creative engine's own
+ *     reject gate (SPOKEN_SITE in src/render/types.ts).
+ *
+ * The spoken tag below is the ONE sanctioned exception to "one reel, one narrator" (see
+ * assertSingleAdVoice): it is a four-word SIGN-OFF that lands after the presenter's last word with
+ * a deliberate gap, in the same male AD_VO_VOICE that was measurement-matched to the presenter's
+ * pitch — not a narrator taking over the story. It is synthesized ONCE and cached on disk, so it
+ * costs sub-a-cent in total and exactly $0 for every reel after the first.
+ */
+export const END_CARD = {
+  /** Long enough to read a URL and hear the tag; short enough to not cost watch-time. */
+  seconds: 2.2,
+  /** Silence at the head of the card, so the tag reads as a sign-off, not an interruption. */
+  tagLeadSec: 0.35,
+  /** What the tag says. Spaced "Vedic Hour" so the TTS pronounces the brand, not a mangled compound. */
+  tag: 'Try Vedic Hour dot com.',
+  /** The hero line — must stay the largest element on the frame. */
+  domain: 'vedichour.com',
+  /** One short human line under the domain. */
+  line: 'Apna din, ghanta by ghanta.',
+  /** Brand-dark ground, per docs/DESIGN_SYSTEM.md night surfaces. */
+  bg: '0x0D1426',
+  /** Cream reads ~12:1 on the navy; the gold is kept for the rules and the sub-line. */
+  domainColor: '0xF5E6B8',
+  gold: '0xD4AF37',
+  /**
+   * Type sizes at 1080x1920, set by LOOKING at extracted frames, not by arithmetic. At 112 the
+   * domain runs ~790px wide — dominant, and still ~145px clear of both edges, so Instagram's
+   * rounded preview crop can never clip a character of the one thing this card exists to say.
+   */
+  domainSize: 112,
+  lineSize: 44,
+  /** Hairline width. Narrower than the domain, wide enough to read as a rule and not a stray dash. */
+  ruleW: 660,
+} as const;
+
+/** Cached once, reused by every reel forever — the tag never changes, so neither does the file. */
+const END_CARD_TAG_WAV = resolve(ROOT, 'media', 'brand', 'end-card-tag.wav');
+
+function drawPath(p: string): string {
+  return p.replace(/\\/g, '/').replace(/:/g, '\\:');
+}
+
+/**
+ * The spoken sign-off, at the reel's own −16 LUFS so it sits at the presenter's level rather than
+ * arriving louder or thinner than the voice it follows.
+ *
+ * Cached at media/brand/end-card-tag.wav. A cache hit costs $0 and needs no API key at all, which
+ * is the point: the *structure* removes the recurring cost instead of buying a cheaper voice
+ * (CLAUDE.md §2). A cache MISS with no SARVAM_API_KEY fails loudly rather than shipping a silent
+ * card that quietly drops half the owner's ruling.
+ */
+export async function endCardTagAudio(): Promise<{ path: string; seconds: number; costUsd: number; cached: boolean }> {
+  const { ffmpeg, ffprobe } = resolveTools();
+  if (existsSync(END_CARD_TAG_WAV)) {
+    const seconds = await probeDuration(ffprobe, END_CARD_TAG_WAV).catch(() => 0);
+    if (seconds > 0.4) return { path: END_CARD_TAG_WAV, seconds, costUsd: 0, cached: true };
+  }
+  if (!hasSarvamKey()) throw new Error(`end card tag: ${SARVAM_MISSING_MESSAGE}`);
+
+  mkdirSync(resolve(ROOT, 'media', 'brand'), { recursive: true });
+  const raw = END_CARD_TAG_WAV.replace(/\.wav$/, '.raw.wav');
+  const res = await sarvamSpeak({
+    text: END_CARD.tag,
+    languageCode: envStr('AD_VO_LANGUAGE') ?? AD_VO_LANGUAGE,
+    voice: AD_VO_VOICE,
+    outPath: raw,
+  });
+
+  // Two-pass, same target as the reel, so the tag needs no gain-riding once it is in the mix.
+  const dur = await probeDuration(ffprobe, raw).catch(() => 0);
+  const chain = `[0:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo`;
+  const meas = await measureLoudness(ffmpeg, ['-i', raw], chain, Math.max(0.5, dur));
+  const ln = meas
+    ? `loudnorm=${LOUDNORM_TARGET}:measured_I=${meas.input_i}:measured_TP=${meas.input_tp}:measured_LRA=${meas.input_lra}:measured_thresh=${meas.input_thresh}:offset=${meas.target_offset}:linear=true`
+    : `loudnorm=${LOUDNORM_TARGET}`;
+  await run(ffmpeg, ['-y', '-i', raw, '-filter_complex', `${chain},${ln},aresample=${AUDIO.rate}[a]`, '-map', '[a]', END_CARD_TAG_WAV]);
+
+  const seconds = await probeDuration(ffprobe, END_CARD_TAG_WAV).catch(() => 0);
+  return { path: END_CARD_TAG_WAV, seconds, costUsd: res.costUsd, cached: false };
+}
+
+export interface EndCardResult {
+  path: string;
+  seconds: number;
+  /** Where the spoken tag starts, relative to the card. */
+  tagStartSec: number;
+  tagSec: number;
+  costUsd: number;
+}
+
+/**
+ * Render the end card as a normal house-format clip, so it concatenates onto the reel exactly
+ * like a shot does and inherits the wordmark, the progress bar and the loudness pass in finish().
+ *
+ * Layout, in the order a viewer's eye takes it: the standing gold wordmark finish() draws at
+ * y=120, then `vedichour.com` at 118px — nothing else on the frame comes close — bracketed by two
+ * gold hairlines, with one short human line under it. Motion is a 0.4s fade up and nothing else:
+ * the frame's whole job is to be read and remembered.
+ */
+export async function renderEndCard(work: string, outPath: string, opts: { seconds?: number } = {}): Promise<EndCardResult> {
+  const { ffmpeg } = resolveTools();
+  const tag = await endCardTagAudio();
+  const lead = END_CARD.tagLeadSec;
+  // Never clip the tag: the card is at least long enough to hold it, plus a beat to land on.
+  const seconds = Math.round(Math.max(opts.seconds ?? END_CARD.seconds, lead + tag.seconds + 0.2) * 100) / 100;
+
+  const body = drawPath(resolve(FONTS, FONT.body));
+  const cta = drawPath(resolve(FONTS, FONT.cta));
+  const vf = [
+    // Two gold hairlines that bracket the domain and give the composition a spine.
+    `drawbox=x=(iw-${END_CARD.ruleW})/2:y=762:w=${END_CARD.ruleW}:h=2:color=${END_CARD.gold}@0.45:t=fill`,
+    `drawtext=fontfile='${body}':text='${END_CARD.domain}':fontcolor=${END_CARD.domainColor}:fontsize=${END_CARD.domainSize}:x=(w-text_w)/2:y=830:${TEXT_SHADOW}`,
+    `drawtext=fontfile='${cta}':text='${END_CARD.line}':fontcolor=${END_CARD.gold}@0.92:fontsize=${END_CARD.lineSize}:x=(w-text_w)/2:y=1050:${TEXT_SHADOW}`,
+    `drawbox=x=(iw-${END_CARD.ruleW})/2:y=1002:w=${END_CARD.ruleW}:h=2:color=${END_CARD.gold}@0.45:t=fill`,
+    // Corners fall away, so the brightest thing on the frame is the domain. `forward` also
+    // partially cancels the `backward` vignette finish() lays over an un-preGraded reel.
+    'vignette=PI/4.6:mode=forward',
+    'fade=t=in:st=0:d=0.4',
+    'format=yuv420p',
+  ].join(',');
+
+  const ms = Math.round(lead * 1000);
+  const graph =
+    `[0:v]${vf}[v];\n` +
+    `[1:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo,adelay=${ms}|${ms},apad,atrim=0:${seconds},asetpts=N/SR/TB[a]`;
+
+  await run(ffmpeg, [
+    '-y',
+    '-f', 'lavfi', '-i', `color=c=${END_CARD.bg}:s=${FRAME.w}x${FRAME.h}:r=${FRAME.fps}:d=${seconds}`,
+    '-i', tag.path,
+    '-filter_complex', graph,
+    '-map', '[v]', '-map', '[a]',
+    '-t', String(seconds),
+    '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p',
+    '-c:a', 'aac', '-ar', String(AUDIO.rate), '-ac', String(AUDIO.channels), '-b:a', '160k',
+    '-video_track_timescale', '30000',
+    outPath,
+  ]);
+
+  return { path: outPath, seconds, tagStartSec: lead, tagSec: tag.seconds, costUsd: tag.costUsd };
 }
 
 // ---------------------------------------------------------------------------

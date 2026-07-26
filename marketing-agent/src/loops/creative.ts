@@ -9,7 +9,7 @@ import { lessonBlock } from '../lessons';
 import { BRAND, BRAND_BRIEF, utm } from '../brand';
 import { resolveCapture } from '../render/capture-policy';
 import { AD_VO_VOICE, NATIVE_VOICE } from '../render/sarvam';
-import { NARRATION_MAX_WORDS, WORDS_PER_SECOND } from '../render/types';
+import { NARRATION_MAX_WORDS, WORDS_PER_SECOND, SPOKEN_SITE } from '../render/types';
 
 const OUT_DIR = resolve(ROOT, 'output', 'creative');
 const SEEDS_FILE = resolve(ROOT, 'config', 'creative-seeds.json');
@@ -354,9 +354,10 @@ PER-FIELD SPEC — follow exactly:
   - SCREENCAP HARD RULE (owner, verbatim): "when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day." Never ask to capture pricing, plans, checkout, payment or the signup/onboarding form. The screen we show is the report and its hour-slots.
   - SHOT 1 MUST BE kind "presenter" — a visible human opens every reel. Platforms deprioritise fully AI-generated reels with no human layer, and the render pipeline rejects any reel that does not open on a presenter.
   - The LAST shot should also be a presenter shot wherever the idea allows, so the reel closes on a face saying the closing line rather than on synthesized narration over a scroll.
+  - THE CLOSING PRESENTER LINE MUST SAY "VedicHour.com" OUT LOUD. This is a hard reject, not a preference. The owner, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Half this audience is LISTENING with their eyes somewhere else, so a CTA that only exists on screen reaches nobody. Put it in the final presenter shot's \`dialogue\`, in his own words, e.g. "…VedicHour.com pe dekh lo." or "…VedicHour.com — free hai." Budget the words: the site name costs 1-2 of that shot's word allowance, so keep the rest of the closing line short. The renderer already ends every reel on a branded card showing vedichour.com — your job is the SPOKEN half, which only the presenter can deliver.
   - Every variant must include at least one screencap shot. Shot seconds should sum to roughly the spoken length.
 - onScreenCaptions: 3-6 short burned-in caption lines that track the script. Punchy, Latin letters.
-- cta: one short line. Invite, never promise.
+- cta: one short line, and it names vedichour.com. Invite, never promise.
 - hashtags: 10-15, mixed romanised-Hindi and English, targeted at India. Lowercase, with the # prefix.
 - youtubeTitle: under 70 characters.
 - youtubeDescription: 2-3 sentences, and it MUST contain this link exactly once, verbatim: ${link}
@@ -468,7 +469,25 @@ function preflight(v: Variant): string | null {
   }
   if (!v.shotList.some((sh) => sh.kind === 'presenter' && words((sh.dialogue ?? lines[v.shotList.indexOf(sh)]) ?? '')))
     return 'no presenter shot actually speaks — the message must be delivered on camera';
+
+  // Owner law 2026-07-26 — the reel must NAME THE SITE OUT LOUD, in the presenter's own mouth.
+  // The renderer always appends a branded end card carrying vedichour.com, but a card is only
+  // seen; half this audience is listening. Veo performs the presenter's line, so the spoken CTA
+  // is free and stays in the reel's single voice. Mirrored by preflight() in src/loops/render.ts,
+  // which refuses to spend on a creative that fails this.
+  const closing = closingPresenterLine(v);
+  if (!SPOKEN_SITE.test(closing))
+    return `the closing presenter line never says the site out loud ("${closing.slice(0, 60)}") — the owner's ruling is that a listener must hear "VedicHour.com"; end on e.g. "…VedicHour.com pe dekh lo."`;
   return null;
+}
+
+/** The line the LAST presenter shot says on camera — the reel's only spoken CTA surface. */
+function closingPresenterLine(v: Variant): string {
+  const lines = speechFor(v);
+  for (let i = v.shotList.length - 1; i >= 0; i--) {
+    if (v.shotList[i].kind === 'presenter') return (lines[i] ?? '').trim();
+  }
+  return '';
 }
 
 function auditPrompt(idea: Idea, variants: Variant[]): string {
@@ -481,7 +500,8 @@ spoken: ${v.spokenScript}
 captions: ${v.onScreenCaptions.join(' | ')}
 cta: ${v.cta}
 shots: ${v.shotList.map((s, i) => `[${s.kind} ${s.seconds}s${lines[i] ? `, ${s.kind === 'presenter' ? 'ON CAMERA' : 'SYNTHESIZED NARRATION'}: "${lines[i]}"` : ', silent'}] ${s.visualPrompt}`).join(' || ')}
-on-camera share of spoken words: ${Math.round(nativeDialogueRatio(v) * 100)}%`;
+on-camera share of spoken words: ${Math.round(nativeDialogueRatio(v) * 100)}%
+closing line says the site out loud: ${SPOKEN_SITE.test(closingPresenterLine(v)) ? 'YES' : 'NO'}`;
     })
     .join('\n\n');
 
@@ -499,6 +519,8 @@ Score EVERY variant 0-100 on each axis:
 - credibility: would an Indian viewer who actually knows some astrology find this embarrassing to be seen watching? Cringe, guru-voice, over-claiming, or fake-deep = low. ENGINE JARGON IS A CREDIBILITY FAILURE, not a credential: "Swiss Ephemeris", "Lahiri", "ayanamsa", "sidereal", "whole-sign", "vimshottari" mean nothing to this viewer and read as a nerd flex — the owner's words: "No one gives a shit. I don't even know what this is." Any variant using one scores under 35 here. The credible version of the same claim is "real astronomical data, the same math a careful astrologer uses".
 - brandSafety: score 0-100, and be ruthless. Score BELOW 60 if there is ANY of: a guarantee or certainty claim; "100%" or miracle framing; a health, money, legal, or relationship OUTCOME promise; fear-mongering; a deterministic "THE best hour / worst hour" stated as fact; invented social proof (fake testimonials, made-up user numbers, star ratings); competitor bashing or mockery of astrology or astrologers; any rupee or dollar figure. Calibrate carefully: a script with NO violation at all should score 90-100, and anything you score under ${BRAND_SAFETY_FLOOR} is automatically rejected and never rendered.
 - producibility: can a text-to-video model actually render the presenter/broll shots, AND does the reel sound like one human? Readable on-screen text, logos, specific real places, crowds of faces, complex hand interactions, or multi-subject choreography = low. Screencap shots are free (they are real recordings) — judge only what a model must generate. VOICE STRUCTURE IS PART OF THIS SCORE: the presenter's on-camera dialogue is performed by the video model itself in a real voice, while every other line has to be synthesized afterwards and a viewer hears the switch. A variant with 85-100% of its words spoken on camera scores high; one that parks long paragraphs of synthesized narration on b-roll or screencap shots scores under 40, however pretty the visuals are. The "on-camera share" figure is given for each variant above — use it.
+
+HARD RULE, ABOVE ALL FIVE AXES — THE SPOKEN CTA. The last presenter shot's on-camera dialogue must NAME THE SITE OUT LOUD ("…VedicHour.com pe dekh lo"). The owner's ruling, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Each variant above is annotated with "closing line says the site out loud: YES/NO". Any variant marked NO is verdict "reject" — no exceptions, however good the hook is — and score its hookStrength no higher than 45, because a reel nobody can act on is not doing the job a hook exists to start.
 
 ${lessonBlock(['script', 'voice', 'caption'], 'LESSONS THE OWNER HAS ALREADY RULED ON — a variant that violates one is a reject, not a note')}
 Return STRICT JSON — an array, one object per variant, nothing before or after it, no fences:
@@ -524,15 +546,28 @@ function degradedScores(v: Variant, lintVerdict: string): Scores {
 }
 
 /**
- * Deterministic enforcement of the owner's two scoring laws, applied AFTER the model scores so a
+ * Flat deduction from the weighted total when the closing line does not name the site out loud.
+ *
+ * Deliberately NOT folded into one of the five axes: none of them means "did the ad ask for the
+ * business". Distorting `credibility` or `producibility` to carry it would make both scores lie,
+ * and the tournament ranks on the total anyway. 20 points is enough that a CTA-less variant can
+ * never out-rank an equivalent one that closes properly.
+ */
+const MISSING_SPOKEN_CTA_PENALTY = 20;
+
+/**
+ * Deterministic enforcement of the owner's scoring laws, applied AFTER the model scores so a
  * generous reviewer cannot score them away:
  *   credibility  <- engine jargon is a credibility failure, not a credential.
  *   producibility <- a reel whose words are spoken ON CAMERA needs no TTS and sounds like one
  *                    human; a narration-heavy variant is the defect the owner rejected.
+ *   total        <- a closing line that never says "VedicHour.com" out loud is penalised, because
+ *                    a listener with their eyes elsewhere never learns where to go.
  */
 function applyOwnerLaws(v: Variant, s: Scores): Scores {
   const jargon = jargonHits([v.hookText, v.spokenScript, v.onScreenCaptions.join(' '), v.cta, v.youtubeTitle, v.youtubeDescription].join('\n'));
   const ratio = nativeDialogueRatio(v);
+  const noSpokenCta = !SPOKEN_SITE.test(closingPresenterLine(v));
 
   const credibility = jargon.length ? Math.min(s.credibility, 30) : s.credibility;
   const producibility =
@@ -542,17 +577,20 @@ function applyOwnerLaws(v: Variant, s: Scores): Scores {
     s.notes,
     jargon.length ? `credibility capped at 30 — ad-copy jargon: ${jargon.join(', ')}` : '',
     ratio < 0.7 ? `producibility capped — only ${Math.round(ratio * 100)}% of the words are spoken on camera` : '',
+    noSpokenCta ? `total −${MISSING_SPOKEN_CTA_PENALTY} — the closing line never says "VedicHour.com" out loud (owner law)` : '',
   ]
     .filter(Boolean)
     .join(' · ')
-    .slice(0, 220);
+    .slice(0, 260);
 
-  const total = Math.round(
-    s.hookStrength * WEIGHTS.hookStrength +
-      s.specificity * WEIGHTS.specificity +
-      credibility * WEIGHTS.credibility +
-      s.brandSafety * WEIGHTS.brandSafety +
-      producibility * WEIGHTS.producibility,
+  const total = clamp(
+    Math.round(
+      s.hookStrength * WEIGHTS.hookStrength +
+        s.specificity * WEIGHTS.specificity +
+        credibility * WEIGHTS.credibility +
+        s.brandSafety * WEIGHTS.brandSafety +
+        producibility * WEIGHTS.producibility,
+    ) - (noSpokenCta ? MISSING_SPOKEN_CTA_PENALTY : 0),
   );
   return { ...s, credibility, producibility, total, notes };
 }

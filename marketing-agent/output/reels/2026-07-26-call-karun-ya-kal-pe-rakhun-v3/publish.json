@@ -1,0 +1,110 @@
+{
+  "slug": "2026-07-26-call-karun-ya-kal-pe-rakhun-v3",
+  "title": "Call karun ya kal pe rakhun? Apna din dekho",
+  "product": "forecast",
+  "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-26-call-karun-ya-kal-pe-rakhun-v3\\final.mp4",
+  "durationSec": 18,
+  "generationCostUsd": 1.8,
+  "dryRun": false,
+  "youtubeTitle": "Call karun... ya kal pe rakhun?",
+  "description": "Woh call jo aap do din se taal rahe ho. VedicHour aapke din ke saare 18 ghanton ko aapki apni birth chart ke against score karta hai, aur har ghante ke saath ek plain line deta hai - ki woh window kis kaam ke liye theek hai. Kuch windows clearer hote hain, kuch heavier. Sab kuch asli astronomical data se nikalta hai, andaaze se nahi, aur plain English mein likha jata hai.\n\nApna free chart banao: https://www.vedichour.com/free-kundli?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=call-karun-v3\nSample din poora dekho: https://www.vedichour.com/sample-report\n\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.\n\nYour Life, Decoded Hour by Hour.",
+  "tags": [
+    "vedic astrology",
+    "jyotish",
+    "planetary hours",
+    "hora",
+    "kundli",
+    "timing",
+    "hinglish",
+    "vedichour"
+  ],
+  "hashtags": [
+    "#sorrybolna",
+    "#aajyakal",
+    "#jyotish",
+    "#vedicjyotish",
+    "#horatiming",
+    "#birthchart",
+    "#mindfuldecisions",
+    "#selfreflection",
+    "#hindireels",
+    "#urbanindia",
+    "#vedichour"
+  ],
+  "caption": "Call karun... ya kal pe rakhun?\n\nDin ke 18 ghante, har ek ka score, aur ek line - kis kaam ke liye theek hai. Kuch windows clearer, kuch heavier.\n\nFree chart: vedichour.com\n\nYour Life, Decoded Hour by Hour.",
+  "links": {
+    "instagram": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-26-call-karun-ya-kal-pe-rakhun-v3",
+    "youtube": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=2026-07-26-call-karun-ya-kal-pe-rakhun-v3",
+    "tiktok": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video&utm_content=2026-07-26-call-karun-ya-kal-pe-rakhun-v3",
+    "facebook": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-26-call-karun-ya-kal-pe-rakhun-v3"
+  },
+  "status": "ready_to_post_manually",
+  "verification": {
+    "ok": true,
+    "problems": [],
+    "probe": {
+      "width": 1080,
+      "height": 1920,
+      "durationSec": 18,
+      "fps": 30,
+      "hasAudio": true,
+      "codec": "h264"
+    },
+    "frames": [
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-26-call-karun-ya-kal-pe-rakhun-v3\\frames\\frame1.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-26-call-karun-ya-kal-pe-rakhun-v3\\frames\\frame2.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-26-call-karun-ya-kal-pe-rakhun-v3\\frames\\frame3.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-26-call-karun-ya-kal-pe-rakhun-v3\\frames\\frame4.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-26-call-karun-ya-kal-pe-rakhun-v3\\frames\\frame5.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-26-call-karun-ya-kal-pe-rakhun-v3\\frames\\frame6.jpg"
+    ]
+  },
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "label": "Google Veo 3.1 Fast (on camera)",
+      "billedSec": 5.2,
+      "usd": 0.9
+    },
+    {
+      "id": "s3+s2",
+      "role": "product",
+      "label": "Report screen capture under s2's Veo native voice",
+      "billedSec": 7.8,
+      "usd": 1.2
+    },
+    {
+      "id": "s4",
+      "role": "presenter_close",
+      "label": "Google Veo 3.1 Fast (on camera)",
+      "billedSec": 2.8,
+      "usd": 0.6
+    }
+  ],
+  "recut": {
+    "at": "2026-07-26T15:24:39.914Z",
+    "costUsd": 0,
+    "from": "26s sequential cut with an 8.75s silent product beat",
+    "to": "15.8s — one voice end to end, full-bleed frame, un-bloomed report, navy chrome band for the wordmark, two-move product proof",
+    "fixed": [
+      "dead air over the product shot (blocker)",
+      "garbled overlapping captions at every group boundary (blocker)",
+      "wordmark burned over the report body copy (blocker)",
+      "proof showed only a late-day slice of the report (blocker)",
+      "letterbox bars from fal Veo (major)",
+      "bloom washing out the light report page (major)",
+      "inter-shot dead air at the s1 boundary and the silent tail (major)",
+      "presenter-identity break and malformed hand at 6.1s — both were in s2's picture, which this cut never shows (2 x needs-re-render, resolved at $0)"
+    ]
+  },
+  "endCard": {
+    "at": "2026-07-26T16:18:49.359Z",
+    "costUsd": 0,
+    "seconds": 2.2,
+    "onScreen": "vedichour.com at 112px — the largest element on the frame — under the standing gold wordmark, over \"Apna din, ghanta by ghanta.\"",
+    "spoken": "\"Try Vedic Hour dot com.\" in the approved Sarvam male voice, starting 0.68s after the presenter's last word",
+    "why": "Owner ruling 2026-07-26: \"at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour.\"",
+    "note": "The presenter's Veo-native audio was not touched or re-voiced. The sign-off is a branded tag on the end card only — the one sanctioned exception to one-reel-one-narrator."
+  }
+}

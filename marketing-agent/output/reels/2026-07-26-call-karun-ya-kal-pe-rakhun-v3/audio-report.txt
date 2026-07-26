@@ -1,0 +1,33 @@
+AUDIO REPORT — 2026-07-26-call-karun-ya-kal-pe-rakhun-v3 (2026-07-26T16:19:47.717Z)
+final: C:\Users\aarsh\Downloads\jyotish-ai\marketing-agent\output\reels\2026-07-26-call-karun-ya-kal-pe-rakhun-v3\final.mp4
+duration: 18.00s · target loudness -16 LUFS (two-pass linear loudnorm in finish())
+
+== loudnorm measurement of the FINAL mix (input_* = what the file measures now) ==
+{
+	"input_i" : "-16.23",
+	"input_tp" : "-1.45",
+	"input_lra" : "3.80",
+	"input_thresh" : "-27.35",
+	"output_i" : "-16.77",
+	"output_tp" : "-1.50",
+	"output_lra" : "2.80",
+	"output_thresh" : "-27.89",
+	"normalization_type" : "dynamic",
+	"target_offset" : "0.77"
+}
+
+== silencedetect (noise=-35dB, min 0.7s) ==
+silence_start: 2.386979
+silence_end: 3.694042 | silence_duration: 1.307063
+frame=  245 fps=0.0 q=-0.0 size=N/A time=00:00:08.16 bitrate=N/A speed=15.5x elapsed=0:00:00.52    [Parsed_silencedetect_0 @ 00000194c2f5da80] silence_start: 9.843146
+silence_end: 10.729 | silence_duration: 0.885854
+silence_start: 15.516875
+silence_end: 16.401896 | silence_duration: 0.885021
+
+== astats (overall) ==
+Max difference: 0.224581
+Peak level dB: -1.468232
+RMS level dB: -19.737536
+Flat factor: 0.000000
+
+Shot boundaries: s1 0-5.2s (Veo native voice, on camera) · report capture 5.2-13s (THE SAME Veo native voice continues over it — one voice, no narrator) · s4 13-15.8s (Veo native voice, on camera) · branded end card 15.8-18s (vedichour.com on screen; the only non-presenter audio in the reel is the 1.62s sign-off "Try Vedic Hour dot com.", starting 0.68s after the presenter's last word)
