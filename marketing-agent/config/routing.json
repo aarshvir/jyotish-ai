@@ -26,7 +26,7 @@
   "clis": {
     "gemini": {
       "enabled": false,
-      "_disabled_why": "2026-07-25: Google dropped free-tier Code Assist for this client (IneligibleTierError) — every bulk call wasted ~12s failing before falling through. Re-enable after re-auth.",
+      "_disabled_why": "PERMANENT (2026-07-26): Google discontinued Gemini Code Assist for individual accounts — sign-in returns \"This client is no longer supported... migrate to the Antigravity suite\". This is NOT a login problem; do not retry re-auth. To use Gemini in brain(), add a free Google AI Studio API key (GEMINI_API_KEY) and write a direct HTTP adapter — the CLI path is dead. Claude + codex both work and are both vision-capable, so the engine needs nothing from Google.",
       "model": "gemini-2.5-flash",
       "dailyCap": 1000,
       "minIntervalMs": 1500,
