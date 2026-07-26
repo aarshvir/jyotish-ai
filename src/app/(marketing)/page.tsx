@@ -15,7 +15,7 @@ import { FAQS } from '@/lib/faq-data';
 import FinalCTA from '@/components/landing/FinalCTA';
 
 const PAGE_DESCRIPTION =
-  'Get your free Kundli (Janam Kundali) and AI Jyotish forecast online. 18 hourly Vedic windows/day — Swiss Ephemeris, Lahiri Ayanamsa. No card needed.';
+  'Get your free Kundli (Janam Kundali) and AI Jyotish forecast online. 18 hourly Vedic windows a day, each scored and explained in plain English. No card needed.';
 
 export const metadata: Metadata = {
   title: { absolute: 'Free Kundli & AI Jyotish Forecast | VedicHour' },

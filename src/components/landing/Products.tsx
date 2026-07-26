@@ -76,7 +76,7 @@ export default function Products() {
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
             A precise daily forecast, a full birth-chart analysis, or a compatibility match —
-            all built on the same Swiss Ephemeris, Lahiri Ayanamsa core.
+            all built on the same chart, so nothing ever contradicts itself.
           </p>
         </div>
 

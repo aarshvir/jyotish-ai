@@ -70,16 +70,16 @@ export default function Footer() {
           <div className="col-span-2 md:col-span-1">
             <span className="font-display font-semibold text-lg tracking-wide text-star/70">VedicHour</span>
             <p className="mt-2 font-body text-body-sm text-dust max-w-[14rem]">
-              Your life, decoded hour by hour — Vedic astrology with{' '}
+              Your life, decoded hour by hour — Vedic astrology built on{' '}
               <a
                 href="https://www.astro.com/swisseph/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="underline hover:text-star transition-colors"
               >
-                Swiss Ephemeris
-              </a>{' '}
-              precision.
+                real astronomical data
+              </a>
+              .
             </p>
           </div>
           <Col title="Readings" links={READINGS} />

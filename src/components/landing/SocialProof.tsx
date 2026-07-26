@@ -18,8 +18,8 @@ export default function SocialProof() {
       label: 'lagnas covered',
     },
     {
-      value: 'Sidereal',
-      label: 'Swiss Ephemeris · Lahiri Ayanamsa',
+      value: 'Real',
+      label: 'astronomy behind every score',
     },
   ];
 

@@ -218,7 +218,7 @@ export default function TransitSEOPage({ params }: Props) {
             </Link>
           </div>
           <p className="text-dust text-xs text-center mt-4">
-            Free Kundli • 30-day hourly forecast • Swiss Ephemeris accuracy
+            Free Kundli • 30-day hourly forecast • precise to the minute
           </p>
 
           <div className="mt-10 pt-6 border-t border-horizon/30 text-center">

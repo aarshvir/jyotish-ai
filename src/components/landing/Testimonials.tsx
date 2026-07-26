@@ -98,7 +98,7 @@ export default function Testimonials() {
         </div>
 
         <p className="text-center mt-12 font-mono text-mono-sm text-dust tracking-wider">
-          Computed by the same engine that writes your report — Swiss Ephemeris positions, Lahiri Ayanamsa.
+          Computed by the same engine that writes your report — from your birth moment, not a template.
         </p>
       </div>
     </section>

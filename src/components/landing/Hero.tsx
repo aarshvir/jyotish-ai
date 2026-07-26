@@ -5,7 +5,7 @@ import { MandalaRing } from '@/components/ui/MandalaRing';
 // Verifiable product facts only — no invented counters or ratings.
 const TRUST_STATS = [
   { value: '18', label: 'hourly Vedic windows/day' },
-  { value: 'Swiss Ephemeris', label: 'Lahiri Ayanamsa' },
+  { value: 'Real', label: 'astronomy — no guesswork' },
   { value: 'One-time', label: 'payment · no subscription' },
   { value: '24h', label: 'no-questions refund' },
 ];
@@ -35,7 +35,7 @@ export default function Hero() {
         <div className="animate-fade-down inline-flex items-center gap-2 mb-8 md:mb-10 px-4 py-1.5 rounded-pill border border-amber/20 bg-amber/[0.04]">
           <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse-amber" />
           <span className="font-mono text-mono-sm text-amber tracking-[0.15em] uppercase">
-            Classical Vedic system · AI-powered · Swiss Ephemeris precision
+            Classical Vedic timing · calculated for your exact birth
           </span>
         </div>
 
@@ -75,8 +75,8 @@ export default function Hero() {
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </Link>
-          <Link href="#sample-report" className="font-body text-body-sm text-dust hover:text-dust underline-offset-2 hover:underline transition-colors">
-            Or preview a sample report →
+          <Link href="/sample-report" className="font-body text-body-sm text-dust hover:text-dust underline-offset-2 hover:underline transition-colors">
+            Or see a full sample day →
           </Link>
           <p className="font-mono text-mono-sm text-dust tracking-wider">
             Free account in 20 seconds · no card required
