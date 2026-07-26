@@ -136,7 +136,7 @@ describe('finalizeCompletedZiinaIntent', () => {
     expect(tables.reports[0].payment_status).toBe('free');
   });
 
-  it('can complete a paid forecast binding before the report row exists', async () => {
+  it('refuses to claim a forecast payment when the report draft row is missing', async () => {
     const tables: Tables = {
       ziina_payments: [
         {
@@ -157,8 +157,47 @@ describe('finalizeCompletedZiinaIntent', () => {
       { intent: completedIntent as never },
     );
 
+    // Must NOT mark completed — a completed row with no report is unrecoverable
+    // (reconcile only scans non-completed intents; grant/dispatch need the draft).
+    expect(result).toEqual({
+      ok: false,
+      error: 'Forecast payment is missing a report binding',
+    });
+    expect(tables.ziina_payments[0].status).toBe('pending');
+    expect(tables.reports).toEqual([]);
+  });
+
+  it('grants a forecast payment when the draft report row exists', async () => {
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'new_report',
+          plan_type: '7day',
+          status: 'pending',
+          user_id: 'buyer_user',
+        },
+      ],
+      reports: [
+        {
+          id: 'new_report',
+          user_id: 'buyer_user',
+          payment_status: 'unpaid',
+          plan_type: '7day',
+          status: 'pending',
+        },
+      ],
+    };
+
+    const result = await finalizeCompletedZiinaIntent(
+      createMockDb(tables) as never,
+      'intent_1',
+      'https://example.test',
+      { intent: completedIntent as never },
+    );
+
     expect(result).toEqual({ ok: true, action: 'processed' });
     expect(tables.ziina_payments[0].status).toBe('completed');
-    expect(tables.reports).toEqual([]);
+    expect(tables.reports[0].payment_status).toBe('paid');
   });
 });

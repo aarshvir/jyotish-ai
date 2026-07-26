@@ -348,6 +348,20 @@ export async function finalizeCompletedZiinaIntent(
     return { ok: false, error: 'Upgrade payment is missing a report owner binding' };
   }
 
+  // Forecast plans require a durable reports row BEFORE we atomically claim the
+  // payment as completed. Claiming first left charged buyers with status=completed
+  // and no grant/dispatch when create-intent's draft upsert had failed open.
+  // Leaving the row non-completed lets verify/reconcile retry once the draft exists.
+  const forecastPlans = new Set(['7day', 'monthly', 'annual']);
+  if (forecastPlans.has(planType) && (!reportForPayment || !boundUserId)) {
+    console.error('[ziina/finalize] forecast payment missing report row — refusing to claim', {
+      intentId,
+      reportId,
+      planType,
+    });
+    return { ok: false, error: 'Forecast payment is missing a report binding' };
+  }
+
   // Atomically CLAIM completion: only the caller whose UPDATE flips a still-'pending'
   // row proceeds to the one-time side effects below. The line-233 read guard is racy
   // (concurrent verify GET + webhook both see 'pending'); without this, both would
@@ -446,7 +460,6 @@ export async function finalizeCompletedZiinaIntent(
       .eq('user_id', boundUserId);
   }
 
-  const forecastPlans = new Set(['7day', 'monthly', 'annual']);
   if (forecastPlans.has(planType) && reportForPayment) {
     await maybeDispatchReportGenerate(db, reportId, baseUrl);
   }

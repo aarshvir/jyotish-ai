@@ -15,11 +15,12 @@ export function UpsellButton({ reportId }: { reportId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reportId }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl as string;
+      const data = await res.json().catch(() => ({})) as { redirectUrl?: string; error?: string };
+      // Require HTTP success — a 5xx must never send the buyer to Ziina without a bind row.
+      if (res.ok && data.redirectUrl) {
+        window.location.href = data.redirectUrl;
       } else {
-        throw new Error((data as { error?: string }).error ?? 'Could not start checkout');
+        throw new Error(data.error ?? 'Could not start checkout');
       }
     } catch (e) {
       // Surface the failure — previously the button just silently reset, leaving the

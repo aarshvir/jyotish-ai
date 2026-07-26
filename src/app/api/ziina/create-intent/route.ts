@@ -290,8 +290,14 @@ export async function POST(request: NextRequest) {
         },
         { onConflict: 'id', ignoreDuplicates: true },
       );
+      // Fail CLOSED: never mint a payable Ziina intent without a durable reports row.
+      // Otherwise the buyer can complete checkout, finalize marks ziina_payments
+      // completed, and grant/dispatch are skipped (no reportForPayment) — a charged
+      // buyer with nothing to recover (reconcile only scans non-completed rows;
+      // verify redirects to /report/{id} without birth params → not found).
       if (draftErr) {
         console.error('[ziina/create-intent] draft report upsert failed:', draftErr.message);
+        return NextResponse.json({ error: 'Could not start checkout' }, { status: 500 });
       }
 
       // Optional column: phone (migration 20260614_user_phone). Tolerant of older DBs;
