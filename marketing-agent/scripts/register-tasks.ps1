@@ -16,6 +16,7 @@
     VedicHour-Loop-Sync          npm run loop:sync      every 30min
     VedicHour-Loop-Stats         npm run loop:stats     hourly
     VedicHour-Loop-Insights      npm run loop:insights  every 2h
+    VedicHour-Loop-Sense         npm run loop:sense     every 6h  (free trend sensing, $0)
   Every loop is kill-aware (data/KILL halts it) and no-ops gracefully when its
   inputs/creds are missing. Tasks run only while you are logged in (no stored
   password). For 24/7 operation keep the laptop awake or use an always-on box.
@@ -36,7 +37,8 @@ $Tasks = @(
   @{ Name = 'VedicHour-Loop-Render';     Script = 'loop:render';   Interval = 120;              Offset = 60; Limit = 55 },
   @{ Name = 'VedicHour-Loop-Sync';       Script = 'loop:sync';     Interval = 30;               Offset = 5;  Limit = 15 },
   @{ Name = 'VedicHour-Loop-Stats';      Script = 'loop:stats';    Interval = 60;               Offset = 10; Limit = 15 },
-  @{ Name = 'VedicHour-Loop-Insights';   Script = 'loop:insights'; Interval = 120;              Offset = 20; Limit = 25 }
+  @{ Name = 'VedicHour-Loop-Insights';   Script = 'loop:insights'; Interval = 120;              Offset = 20; Limit = 25 },
+  @{ Name = 'VedicHour-Loop-Sense';      Script = 'loop:sense';    Interval = 360;              Offset = 15; Limit = 10 }
 )
 
 if ($Unregister) {

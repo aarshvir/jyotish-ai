@@ -94,6 +94,13 @@ CREATE TABLE IF NOT EXISTS creative_variants (
   hook_text TEXT,                              -- the first frame, must land in <1.0s
   spoken_script TEXT,
   language TEXT NOT NULL DEFAULT 'hinglish',
+  -- HOOK TAXONOMY (src/taxonomy.ts). Tagged at CREATION so posted performance can later be
+  -- joined back to the SHAPE of the creative — without these there is nothing to learn from.
+  hook_family TEXT,                            -- question_dilemma | cost_time_anchor | contrarian_respectful | pov_relatable | proof_demo | curiosity_gap
+  decision_domain TEXT,                        -- work | relationships | family | study | money_timing | health_routine | other
+  emotional_register TEXT,                     -- anxious | hopeful | practical | playful
+  duration_target_sec REAL,                    -- intended finished length
+  explore INTEGER NOT NULL DEFAULT 0,          -- 1 = came from a reserved EXPLORE slot (under-tested combo)
   status TEXT NOT NULL DEFAULT 'rejected',     -- ready_to_render | needs_review | rejected
   lint_verdict TEXT,                           -- pass | flag | block
   lint_reason TEXT,
@@ -126,6 +133,9 @@ CREATE TABLE IF NOT EXISTS lessons (
 );
 
 CREATE INDEX IF NOT EXISTS idx_lessons_scope ON lessons(scope, active);
+-- idx_creative_variants_tags is created by migrate() in src/db/index.ts, AFTER the additive
+-- ALTER TABLEs — an index here would fail on a pre-taxonomy database, where CREATE TABLE
+-- IF NOT EXISTS is a no-op and the columns therefore do not exist yet.
 
 CREATE INDEX IF NOT EXISTS idx_perf_entity ON performance(entity_id);
 CREATE INDEX IF NOT EXISTS idx_perf_metric ON performance(metric);

@@ -51,6 +51,10 @@ npm run loop:social           # L3: generate IG/X/FB/LinkedIn posts -> output/so
 npm run loop:lifecycle        # L8: generate email/WhatsApp sequence copy -> output/lifecycle/ (no send)
 npm run loop:outreach         # L7: B2B cold-email + Reddit/Quora value bank -> output/outreach/ (no send)
 npm run loop:consent   # L8: sync Supabase signups -> consent ledger (reads prod; sends nothing)
+npm run loop:sense     # free trend sensing (Google Trends RSS + Reddit Atom + YouTube) -> state/sense.json
+npm run perf           # the exact per-tag performance brief the creative prompts receive
+npm run playbook       # print the craft principles the prompts are currently reading
+npm run playbook:review# re-examine each principle against observed evidence -> proposals (never auto-edits)
 npm run loop:demo      # kill-aware brain heartbeat
 npm run cockpit        # dashboard at http://localhost:4317 (scoreboard, content bank, approval queue)
 npm run kill "reason"  # engage kill-switch   |   npm run revive
@@ -67,7 +71,11 @@ marketing-agent/
     routing.json         # brain() tiers, models, caps, throttles (edit freely)
     banned-claims.json   # policy-linter word-list (block / flag / categories)
     creative-seeds.json  # L4 value prop, audience, idea families, hard rules (edit freely)
+    playbook.json        # THE LIVING PLAYBOOK — craft principles with source + verifiedOn (edit freely)
   src/
+    taxonomy.ts          # hook taxonomy: the join key between a creative's SHAPE and its results
+    performance.ts       # marketing_assets x marketing_stats -> per-tag brief injected into prompts
+    playbook.ts          # loads the playbook into prompts; `review` proposes updates, never edits
     brain/index.ts       # the router: tier -> CLI, throttle, daily cap, fallback, logging
     brain/clis.ts        # gemini / codex / claude adapters (Windows-safe, stdin-fed)
     db/index.ts          # SQLite singleton + helpers (logRun, enqueueApproval)
@@ -77,6 +85,7 @@ marketing-agent/
     scheduler/heartbeat.ts
     loops/demo.ts        # Phase-0 dummy loop (proves the chain)
     loops/creative.ts    # L4 creative engine: ideate -> variants -> audit -> tournament
+    loops/sense.ts       # L-sense: free trend sensing every 6h -> state/sense.json (never Instagram)
     cockpit/server.ts    # local HTML dashboard (scoreboard, queue, usage, runs, kill toggle)
     cli.ts               # command dispatch
   scripts/
@@ -88,8 +97,10 @@ marketing-agent/
 ## Memory (SQLite, `data/marketing.db`)
 
 `content_library` · `performance` · `attribution` · `consent_log` · `approval_queue` ·
-`trust_ledger` · `runs_log` · `creative_variants`. Every brain call and loop logs to
-`runs_log`; the cockpit and the daily-cap logic read from it.
+`trust_ledger` · `runs_log` · `creative_variants` · `lessons`. Every brain call and loop logs to
+`runs_log`; the cockpit and the daily-cap logic read from it. `creative_variants` also carries the
+hook taxonomy (`hook_family`, `decision_domain`, `emotional_register`, `duration_target_sec`,
+`explore`) — additive columns applied automatically by `migrate()` in `src/db/index.ts`.
 
 ## L4 — the creative engine (`npm run loop:creative`)
 
@@ -97,9 +108,15 @@ The cheap, high-frequency half of the video pipeline. Text is nearly free to gen
 video is not, so this loop over-produces scripts and then tries hard to kill its own work,
 and only survivors reach the paid render stage.
 
+0. **Learn** — before a word is written the loop gathers everything it knows: the per-tag
+   performance brief (`src/performance.ts`), the least-tested tag combinations, the trend
+   digest (`state/sense.json`) and the playbook (`config/playbook.json`). All $0, all
+   degrade to nothing rather than failing the run. See "The closed learning loop" below.
 1. **Ideate** — 8-12 candidate hooks, grounded in `config/creative-seeds.json` (what the
    product actually does, who it talks to, what it may never say). Angles already used in
    recent batches are excluded, so a loop running every 2 hours stops repeating itself.
+   Every idea is TAGGED (`src/taxonomy.ts`), and ~30% of the slots that advance to scripting
+   are reserved for under-tested tag combinations.
 2. **Script** — 6 structured variants per idea: a hook that lands in under 1.0s (Meta's
    early-retention signal), a 22-32s Hinglish spoken script in Latin script, a 3-5 shot list
    with cinematic prompts, burned-in captions, CTA, hashtags, and YouTube copy.
@@ -116,6 +133,33 @@ and only survivors reach the paid render stage.
 Each winner's `.json` satisfies the `CreativeScript` contract in `src/render/types.ts`, so
 the render pipeline consumes it directly. `--dry` skips all writes; `--count N` sets how many
 ideas advance to scripting. Every call is $0 (CLI subscriptions, not APIs).
+
+## The closed learning loop
+
+The engine used to learn only from REJECTIONS — owner rulings and audit findings became rows in
+`lessons` that are injected into the next prompt. It could not learn from RESULTS: `loop:stats`
+collected views into `marketing_stats`, but those were keyed by asset SLUG, and a slug says
+nothing about the SHAPE of a creative, so "which hooks actually perform?" had no join key.
+
+Four pieces close that loop, all $0:
+
+| piece | command | what it does |
+| --- | --- | --- |
+| **Hook taxonomy** (`src/taxonomy.ts`) | — | Tags every variant at creation: `hookFamily` · `decisionDomain` · `emotionalRegister` · `durationTargetSec`. Tags travel creative JSON → `creative_variants` → `marketing_assets` (migration `20260726`). This is the join key. |
+| **Performance feedback** (`src/performance.ts`) | `npm run perf` | Joins `marketing_assets` × `marketing_stats`, computes peak views / views@24h / engagement / retention proxy per asset, aggregates BY TAG, and renders an honest brief that is injected into the ideate + script prompts. |
+| **Trend sensing** (`src/loops/sense.ts`) | `npm run loop:sense` | Google Trends RSS + Reddit public Atom feeds + YouTube `search.list` (≤6 calls/run) → `state/sense.json`, digested into the ideate prompt. Instagram is never scraped. |
+| **Living playbook** (`config/playbook.json`) | `npm run playbook` / `npm run playbook:review` | Craft research as versioned, sourced, dated data instead of a prompt string. The review command PROPOSES updates to the approval queue; it never edits the playbook itself. |
+
+**The honesty rules are the point.** `performanceBrief()` never asserts a comparison with fewer
+than 3 samples on either side, labels every number with its `n`, and when the evidence is thin it
+says so in those words. A confident brief built on two data points would collapse the engine onto
+one format permanently, on noise — worse than no brief at all.
+
+**Explore/exploit.** Roughly 30% of the ideas that advance to scripting are reserved for
+under-tested tag combinations, enforced deterministically in `selectForScripting()` against the
+engine's OWN counts of what has been written and posted — never against the model's self-declared
+`"explore": true`. If no candidate idea lands in an under-tested combination, the run says the
+quota went unmet rather than mislabelling an exploit idea, which would poison the coverage counts.
 
 ## L2b — AI video render pipeline (`src/render/`)
 

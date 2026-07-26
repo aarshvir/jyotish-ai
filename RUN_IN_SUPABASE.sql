@@ -539,3 +539,22 @@ CREATE TABLE IF NOT EXISTS public.marketing_insights (
 );
 CREATE INDEX IF NOT EXISTS idx_marketing_insights_generated ON public.marketing_insights (generated_at DESC);
 ALTER TABLE public.marketing_insights ENABLE ROW LEVEL SECURITY;
+
+
+-- ---------------------------------------------------------------------
+-- 20260726_marketing_hook_taxonomy.sql
+-- ---------------------------------------------------------------------
+-- Closes the marketing learning loop. The engine learned from REJECTIONS but not
+-- from RESULTS: marketing_stats recorded views against an asset SLUG, and a slug
+-- says nothing about the SHAPE of the creative, so "which hooks actually perform?"
+-- had no join key. These four columns are that key — every reel variant is now
+-- tagged at creation (hook family / decision domain / emotional register / target
+-- duration), loop:sync mirrors the tags here, and the creative engine reads the
+-- per-tag performance back into the script-writing prompt.
+-- Purely additive. loop:sync keeps working without them; it just cannot attribute.
+ALTER TABLE public.marketing_assets ADD COLUMN IF NOT EXISTS hook_family TEXT;
+ALTER TABLE public.marketing_assets ADD COLUMN IF NOT EXISTS decision_domain TEXT;
+ALTER TABLE public.marketing_assets ADD COLUMN IF NOT EXISTS emotional_register TEXT;
+ALTER TABLE public.marketing_assets ADD COLUMN IF NOT EXISTS duration_target_sec NUMERIC;
+CREATE INDEX IF NOT EXISTS idx_marketing_assets_hook_family ON public.marketing_assets (hook_family);
+CREATE INDEX IF NOT EXISTS idx_marketing_assets_decision_domain ON public.marketing_assets (decision_domain);

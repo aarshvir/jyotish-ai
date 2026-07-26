@@ -1,0 +1,82 @@
+{
+  "_comment": "THE LIVING PLAYBOOK — the craft research the creative prompts are written from. It lives here, as data, and NOT inside a prompt string, because research goes stale and a principle frozen in code can only be changed by a developer. src/playbook.ts renders these into the ideate + script prompts at runtime. `npm run playbook:review` re-examines each entry against what the engine has actually observed and PROPOSES changes to an approvals queue — it never edits this file, because a hallucinated 'best practice' written straight in here would silently poison every future reel.",
+  "_editing": "Edit freely by hand. Every entry needs a `source` (who says so) and a `verifiedOn` (when we last checked). `confidence` is one of: verified (we or a platform measured it) | inherited (industry consensus we have not tested) | contested (our own data disagrees or the field disagrees).",
+
+  "version": "1.0.0",
+  "updatedOn": "2026-07-26",
+
+  "entries": [
+    {
+      "id": "hook-1s-window",
+      "category": "hook",
+      "principle": "The first frame must be readable and understood in under 1.0 second.",
+      "detail": "Meta scores early retention at the 1-second mark, so the opening on-screen line is the whole game. Keep it to about 8 words; 10 is the hard reject line. It must be a moment or a question, never a slogan.",
+      "source": "Meta Reels creator guidance on early retention + owner review of the first two rendered VedicHour ads, where the good stretch was the opening 6 seconds.",
+      "verifiedOn": "2026-07-26",
+      "confidence": "verified"
+    },
+    {
+      "id": "mute-first",
+      "category": "retention",
+      "principle": "Design mute-first: the burned-in captions alone must carry the message.",
+      "detail": "The majority of Reels/Shorts impressions start with sound off. If the reel is unintelligible without audio, the hook never lands. Captions track the spoken line, stay short, and never overlap the page's own text on a product screencap.",
+      "source": "Platform default autoplay behaviour (Instagram/YouTube Shorts) + owner review of the first two ads, which produced the caption-band rule now in src/render/assemble.ts.",
+      "verifiedOn": "2026-07-26",
+      "confidence": "verified"
+    },
+    {
+      "id": "specific-outcome-framing",
+      "category": "hook",
+      "principle": "A named, concrete moment beats an abstraction, every single time.",
+      "detail": "\"kal 11 baje meeting rakhun ya 4 baje?\" is a good hook. \"Discover your cosmic timing\" is a worthless hook. Test: if the line could belong to any astrology app, it is dead. Frame the payoff as a specific decision the viewer makes, never as an outcome we promise.",
+      "source": "Owner rulings 2026-07-26 + the config/creative-seeds.json provenSeeds, which are the moments that survived review.",
+      "verifiedOn": "2026-07-26",
+      "confidence": "verified"
+    },
+    {
+      "id": "presenter-led-native-voice",
+      "category": "format",
+      "principle": "A visible human opens the reel and carries the message ON CAMERA.",
+      "detail": "Platforms deprioritise fully AI-generated reels with no human layer, while AI-ASSISTED content with a visible presenter performs normally. The video model performs presenter dialogue natively, lip-synced, in a real voice, at no extra cost — that in-shot voice is the quality bar. Every line NOT spoken by the presenter has to be synthesized afterwards and a viewer hears the switch instantly.",
+      "source": "Owner review 2026-07-26, verbatim: \"the second voice, when it comes, looks very AI-generated, the woman's voice... the first 6 seconds are good.\" Encoded as the presenter-opener gate in src/render/types.ts.",
+      "verifiedOn": "2026-07-26",
+      "confidence": "verified"
+    },
+    {
+      "id": "short-duration-bias",
+      "category": "format",
+      "principle": "Bias short: reels of 15 seconds or less tend to complete, and completion is what gets re-served.",
+      "detail": "UNSETTLED, AND DELIBERATELY FLAGGED AS SUCH. The current VedicHour format spec is a 22-32 second read (55-80 words), which contradicts this bias. Both cannot be right. Do not silently resolve it — this is exactly the question the performance evidence exists to settle, so keep generating across duration buckets until the data can speak.",
+      "source": "Industry consensus on short-form completion rate. NOT yet verified against VedicHour's own posted reels — zero measured at the time of writing.",
+      "verifiedOn": "2026-07-26",
+      "confidence": "contested"
+    },
+    {
+      "id": "subject-continuity",
+      "category": "format",
+      "principle": "Every shot is generated independently, so an under-described person gets re-cast at random.",
+      "detail": "Any b-roll shot featuring a person must explicitly describe them as the same person as the presenter shot — same gender, same clothing, same time of day. A b-roll that silently swaps the protagonist for a different-looking stranger breaks the first-person story and kills the reel.",
+      "source": "Text-to-video model behaviour observed across VedicHour render runs (each shot is a separate model call with no shared state).",
+      "verifiedOn": "2026-07-26",
+      "confidence": "verified"
+    },
+    {
+      "id": "no-legible-screens-in-generated-shots",
+      "category": "format",
+      "principle": "Never ask a video model to render a readable screen, logo or sign.",
+      "detail": "Video models produce gibberish text on screens, and a paused frame with fake text destroys credibility. If a phone or laptop appears in a generated shot, the prompt must state the screen is heavily out of focus, glowing softly, with no legible characters. Real UI comes from screencap shots, which are actual recordings.",
+      "source": "Text-to-video model behaviour observed across VedicHour render runs.",
+      "verifiedOn": "2026-07-26",
+      "confidence": "verified"
+    },
+    {
+      "id": "proof-is-the-product",
+      "category": "platform",
+      "principle": "Show the real product, and show the part that is the promise.",
+      "detail": "Every variant carries at least one screencap of the live report and its hour-slots. The pricing page, checkout, payment and onboarding are forbidden capture targets — the proof shot is the thing the viewer would get, not the till.",
+      "source": "Owner ruling 2026-07-26: \"when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day.\" Enforced in src/render/capture-policy.ts.",
+      "verifiedOn": "2026-07-26",
+      "confidence": "verified"
+    }
+  ]
+}

@@ -10,6 +10,10 @@ import { BRAND, BRAND_BRIEF, utm } from '../brand';
 import { resolveCapture } from '../render/capture-policy';
 import { AD_VO_VOICE, NATIVE_VOICE } from '../render/sarvam';
 import { NARRATION_MAX_WORDS, WORDS_PER_SECOND, SPOKEN_SITE } from '../render/types';
+import { comboKey, normalizeTags, taxonomyPromptSpec, taxonomyPromptSpecCompact, type CreativeTags } from '../taxonomy';
+import { aggregatePerformance, exploreTargets, renderBrief, type ComboCoverage, type PerformanceSnapshot } from '../performance';
+import { senseDigest } from './sense';
+import { playbookBlock } from '../playbook';
 
 const OUT_DIR = resolve(ROOT, 'output', 'creative');
 const SEEDS_FILE = resolve(ROOT, 'config', 'creative-seeds.json');
@@ -22,6 +26,16 @@ const BRAND_SAFETY_FLOOR = 80; // ANY brand-safety failure is a hard reject
 const HOOK_MAX_WORDS = 8; // spec; 10 is the hard reject line
 const HOOK_REJECT_WORDS = 10;
 const BRACKET_SIZE = 4;
+/**
+ * EXPLORE/EXPLOIT. Roughly this share of the ideas that advance to scripting is RESERVED for
+ * under-tested tag combinations, whatever the performance evidence currently favours.
+ *
+ * Without a floor, the first hook family to get lucky on a handful of posts becomes the only
+ * family the engine ever writes again — the evidence that would have overturned it never gets
+ * generated. The reservation is enforced deterministically in selectForScripting(), on OUR count
+ * of what has actually been written and posted, never on the model's self-declared label.
+ */
+const EXPLORE_SHARE = 0.3;
 /** Per-stage wall-clock deadline. Longer than any single CLI timeout in routing.json,
  *  short enough that an unattended 2-hourly loop can never wedge on a stuck child. */
 const STAGE_DEADLINE_MS = 300_000;
@@ -47,6 +61,10 @@ interface Idea {
   angle: string;
   decisionMoment: string;
   whyItStops: string;
+  /** Hook taxonomy (src/taxonomy.ts) — the join key between a creative's shape and its results. */
+  tags: CreativeTags;
+  /** True when this idea occupied a reserved EXPLORE slot (an under-tested tag combination). */
+  explore: boolean;
 }
 
 interface Shot {
@@ -76,6 +94,9 @@ interface Variant {
   youtubeTitle: string;
   youtubeDescription: string;
   language: string;
+  /** Tagged at CREATION — carried to creative_variants, the render contract and marketing_assets. */
+  tags: CreativeTags;
+  explore: boolean;
 }
 
 interface Scores {
@@ -240,7 +261,51 @@ async function tryBrain(prompt: string, tier: Tier, stage: string): Promise<stri
 
 // ---------------------------------------------------------------- 1. ideate
 
-function ideatePrompt(s: Seeds, count: number, recent: string[]): string {
+/**
+ * Everything the engine has LEARNED, gathered once per run and threaded into the prompts.
+ * All three are $0 and all three degrade to an empty string rather than failing the run.
+ */
+interface LearnedContext {
+  /** What posted reels actually did, aggregated by tag — src/performance.ts. */
+  performance: string;
+  /** Which tag combinations are under-tested, and therefore reserved for exploration. */
+  explore: ComboCoverage[];
+  /** Live public questions and search trends — src/loops/sense.ts. */
+  sense: string;
+  /** Craft principles, as editable data with sources — config/playbook.json. */
+  playbook: string;
+  snapshot: PerformanceSnapshot | null;
+}
+
+async function gatherLearned(count: number): Promise<LearnedContext> {
+  let snapshot: PerformanceSnapshot | null = null;
+  let performance = '';
+  try {
+    snapshot = await aggregatePerformance();
+    performance = renderBrief(snapshot);
+  } catch (e: any) {
+    console.warn(`[creative] performance evidence unavailable — ${String(e?.message ?? e).slice(0, 100)}`);
+  }
+  // Ask for a couple more explore targets than slots, so the model has room to pick the ones it
+  // can actually write a good idea for rather than being forced into one awkward combination.
+  const explore = exploreTargets(snapshot, Math.max(2, Math.ceil(count * EXPLORE_SHARE) + 2));
+  return { performance, explore, sense: senseDigest(), playbook: playbookBlock(), snapshot };
+}
+
+function exploreBlock(targets: ComboCoverage[], reserved: number): string {
+  if (!targets.length || reserved <= 0) return '';
+  return `EXPLORATION QUOTA — at least ${reserved} of your ideas MUST come from the UNDER-TESTED combinations below, and you must mark each of those with "explore": true.
+This is not a stylistic request. Whatever the evidence above currently favours was measured on a
+small sample; if the engine only ever writes the currently-winning shape, the evidence that would
+overturn it is never generated and one lucky early result becomes permanent. These are the
+combinations the engine has written and posted least:
+${targets.map((t) => `- ${t.hookFamily} x ${t.decisionDomain}  (written ${t.generated}, posted ${t.posted})`).join('\n')}
+An explore idea still has to be GOOD. Do not submit a weak idea just to fill the quota — pick the
+combination from this list you can write the strongest concrete moment for.
+`;
+}
+
+function ideatePrompt(s: Seeds, count: number, recent: string[], learned: LearnedContext, reserved: number): string {
   const families = s.families
     .map(
       (f, i) =>
@@ -268,6 +333,13 @@ ${families}
 
 WHAT MAKES AN IDEA GOOD: a specific named moment beats an abstraction. "kal 11 baje meeting rakhun ya 4 baje?" is a good idea. "discover your cosmic timing" is a worthless idea. If the idea could be about any astrology app, throw it away.
 
+${learned.playbook}
+${learned.performance}
+
+${exploreBlock(learned.explore, reserved)}
+${taxonomyPromptSpec()}
+
+${learned.sense}
 NON-NEGOTIABLE RULES:
 ${s.hardRules.map((r) => `- ${r}`).join('\n')}
 
@@ -276,7 +348,7 @@ PLAIN ENGLISH ONLY — the owner's ruling, verbatim: "some jargon like Swiss Eph
 ${recent.length ? `\nDO NOT repeat these angles, we already used them recently:\n${recent.slice(0, 25).map((a) => `- ${a}`).join('\n')}` : ''}
 
 Return exactly ${count} ideas as STRICT JSON — an array, nothing before or after it, no markdown fences:
-[{"id":"kebab-case-slug","family":"decision_moment|cost_time_anchor|respectful_contrarian","angle":"<the creative angle in one line>","decisionMoment":"<the concrete moment; Hinglish in Latin letters if it is a spoken line>","whyItStops":"<why a scrolling viewer stops inside the first second, max 20 words>"}]`;
+[{"id":"kebab-case-slug","family":"decision_moment|cost_time_anchor|respectful_contrarian","angle":"<the creative angle in one line>","decisionMoment":"<the concrete moment; Hinglish in Latin letters if it is a spoken line>","whyItStops":"<why a scrolling viewer stops inside the first second, max 20 words>","hookFamily":"<one of the six>","decisionDomain":"<one of the seven>","emotionalRegister":"<one of the four>","durationTargetSec":22,"explore":false}]`;
 }
 
 function seedFallbackIdeas(s: Seeds, count: number): Idea[] {
@@ -289,14 +361,18 @@ function seedFallbackIdeas(s: Seeds, count: number): Idea[] {
         angle: seed,
         decisionMoment: seed,
         whyItStops: 'a named, ordinary decision the viewer had this week',
+        // The legacy config family maps onto a hook family; the rest fall back to the declared
+        // defaults rather than being guessed, so a fallback batch never fakes its own evidence.
+        tags: normalizeTags({ hookFamily: f.key }),
+        explore: false,
       });
     }
   }
   return out.slice(0, count);
 }
 
-async function ideate(s: Seeds, tier: Tier, count: number): Promise<{ ideas: Idea[]; fallback: boolean }> {
-  const raw = await tryBrain(ideatePrompt(s, count, recentAngles()), tier, 'ideate');
+async function ideate(s: Seeds, tier: Tier, count: number, learned: LearnedContext, reserved: number): Promise<{ ideas: Idea[]; fallback: boolean }> {
+  const raw = await tryBrain(ideatePrompt(s, count, recentAngles(), learned, reserved), tier, 'ideate');
   const parsed = raw ? extractJson<any[]>(raw) : null;
   const ideas = (Array.isArray(parsed) ? parsed : [])
     .map((x, i) => ({
@@ -305,6 +381,10 @@ async function ideate(s: Seeds, tier: Tier, count: number): Promise<{ ideas: Ide
       angle: String(x?.angle ?? '').trim(),
       decisionMoment: String(x?.decisionMoment ?? '').trim(),
       whyItStops: String(x?.whyItStops ?? '').trim(),
+      // Defensive: an omitted or invented tag falls back to the legacy family / declared default
+      // rather than to something plausible-sounding, because a wrong tag corrupts the evidence.
+      tags: normalizeTags(x, { hookFamily: normalizeTags({ hookFamily: x?.family }).hookFamily }),
+      explore: x?.explore === true,
     }))
     .filter((x) => x.angle.length > 4);
 
@@ -315,9 +395,46 @@ async function ideate(s: Seeds, tier: Tier, count: number): Promise<{ ideas: Ide
   return { ideas, fallback: false };
 }
 
+/**
+ * THE EXPLORE/EXPLOIT SPLIT, enforced here rather than trusted to the model.
+ *
+ * `count` slots advance to the (expensive) scripting stage. `reserved` of them are held for ideas
+ * whose (hookFamily x decisionDomain) combination is genuinely under-tested — under-tested
+ * according to OUR counts of what has been written and posted, not according to the model's
+ * self-declared "explore": true, which it can hand out to everything or nothing.
+ *
+ * Exploit slots are filled in the model's own order (it ranked them). Explore slots are then
+ * filled from the least-tested combinations. If no candidate idea occupies an under-tested
+ * combination, the quota simply cannot be met this batch — we say so and move on rather than
+ * mislabelling an exploit idea as exploration, which would poison the coverage counts.
+ */
+function selectForScripting(
+  ideas: Idea[],
+  count: number,
+  targets: ComboCoverage[],
+): { chosen: Idea[]; exploreChosen: number; reserved: number } {
+  const reserved = Math.min(count, Math.max(1, Math.round(count * EXPLORE_SHARE)));
+  const targetKeys = new Set(targets.map((t) => t.key));
+  const isExplore = (i: Idea) => targetKeys.has(comboKey(i.tags.hookFamily, i.tags.decisionDomain));
+
+  const exploreCandidates = ideas.filter(isExplore);
+  const rest = ideas.filter((i) => !isExplore(i));
+
+  // Prefer the LEAST-tested combination first among the explore candidates.
+  const rank = new Map(targets.map((t, i) => [t.key, i]));
+  exploreCandidates.sort((a, b) => (rank.get(comboKey(a.tags.hookFamily, a.tags.decisionDomain)) ?? 99) - (rank.get(comboKey(b.tags.hookFamily, b.tags.decisionDomain)) ?? 99));
+
+  const picked = exploreCandidates.slice(0, reserved);
+  for (const i of picked) i.explore = true;
+  for (const i of rest) i.explore = false;
+
+  const chosen = [...picked, ...rest, ...exploreCandidates.slice(reserved)].slice(0, count);
+  return { chosen, exploreChosen: chosen.filter((i) => i.explore).length, reserved };
+}
+
 // ---------------------------------------------------------------- 2. script
 
-function scriptPrompt(s: Seeds, idea: Idea, n: number, link: string): string {
+function scriptPrompt(s: Seeds, idea: Idea, n: number, link: string, learned: LearnedContext): string {
   return `${BRAND_BRIEF}
 
 You are writing short-form video scripts for VedicHour. Write ${n} DIFFERENT variants of ONE idea. The variants must genuinely differ — different opening move, different structure, different emotional temperature — not the same script reworded.
@@ -327,12 +444,16 @@ family: ${idea.family}
 angle: ${idea.angle}
 decision moment: ${idea.decisionMoment}
 why it stops the scroll: ${idea.whyItStops}
+tags: hookFamily=${idea.tags.hookFamily} · decisionDomain=${idea.tags.decisionDomain} · emotionalRegister=${idea.tags.emotionalRegister} · durationTargetSec=${idea.tags.durationTargetSec}${idea.explore ? '\nTHIS IS AN EXPLORATION IDEA — it occupies a deliberately under-tested combination. Stay inside those tags; the point is to generate evidence for a shape the engine has not tried, so do not drift back toward the familiar format.' : ''}
 
 WHAT THE PRODUCT DOES (never invent a feature):
 ${s.valueProp}
 
 AUDIENCE: ${s.audience}
 REGISTER: ${s.register}
+
+${learned.playbook}
+${learned.performance}
 
 HOW THE AUDIO WORKS — this drives the whole structure, read it twice:
 The PRESENTER shots are generated by a video model that also performs the dialogue ON CAMERA, lip-synced, in a real human voice, at no extra cost. That in-shot voice is the quality bar. Any line NOT spoken by the presenter has to be synthesized by a text-to-speech engine afterwards, and a viewer hears the change instantly — the owner rejected the first two ads for exactly this ("the second voice, when it comes, looks very AI-generated... the first 6 seconds are good").
@@ -341,18 +462,17 @@ So: PUT THE MESSAGE IN THE PRESENTER'S MOUTH.
 - The middle shots (broll / screencap) are VISUAL. They carry a short connective line of ${NARRATION_MAX_WORDS} words maximum, or no line at all, with the on-screen captions doing the work.
 - If a middle shot needs to say more than ${NARRATION_MAX_WORDS} words, that content belongs in presenter dialogue instead. Move it. Do not lengthen the narration.
 
-PER-FIELD SPEC — follow exactly:
-- hookText: the burned-in on-screen text of the FIRST frame. It must be readable in under 1.0 second, because Meta scores early retention at the 1-second mark. Maximum ${HOOK_MAX_WORDS} words. Make it a moment or a question, not a slogan.
+PER-FIELD SPEC — follow exactly (the WHY behind these lives in the playbook above, which is versioned and dated; what follows is the mechanical contract):
+- hookText: the burned-in on-screen text of the FIRST frame. Maximum ${HOOK_MAX_WORDS} words — see the 1-second hook window in the playbook. Make it a moment or a question, not a slogan.
 - spokenScript: every spoken word in the reel, in order (presenter dialogue + any connective narration), as one paragraph. Hinglish in Latin letters. 22-32 seconds read aloud — that is 55 to 80 words. Conversational, like a friend texting you back, not an ad.
 - shotList: 3 to 5 shots. Each: kind = "presenter" | "broll" | "screencap"; seconds (number); visualPrompt; PLUS the line for that shot:
   - presenter shots MUST carry "dialogue" — the exact words said on camera, Hinglish in Latin letters.
   - broll / screencap shots may carry "narration" — ${NARRATION_MAX_WORDS} words maximum, or "" for silence.
   - HARD ARITHMETIC: spoken Hinglish runs ~${WORDS_PER_SECOND} words/second, so any shot's line must be at most (seconds x ${WORDS_PER_SECOND}) words. A ${'4'}s shot holds 9 words. Over that, the renderer cuts the line off mid-sentence and the reel is thrown away. Count the words.
-  - presenter / broll → visualPrompt is a concrete cinematic prompt for a text-to-video model: SUBJECT, ACTION, CAMERA MOVE, LIGHTING, MOOD. It must be physically renderable — one clear subject, one clear action. No text-in-video, no logos, no crowds of faces, no readable UI. If a phone/laptop/screen appears in shot, the prompt MUST state the screen is "heavily out of focus, glowing softly, no legible characters" — video models render gibberish text on screens, and a paused frame with fake text kills credibility. Prefer b-roll with no device screens at all.
-  - SUBJECT CONTINUITY (hard rule): every shot is generated independently by a separate model call, so an under-described subject gets re-cast at random. Any broll shot featuring a person MUST explicitly describe them as "the same person as the presenter shot: young Indian man/woman, same clothing, same time of day" (matching the presenter shot's actual gender, outfit and lighting). A b-roll that silently swaps the protagonist for a different-looking stranger breaks the first-person story and kills the reel.
+  - presenter / broll → visualPrompt is a concrete cinematic prompt for a text-to-video model: SUBJECT, ACTION, CAMERA MOVE, LIGHTING, MOOD. It must be physically renderable — one clear subject, one clear action. Apply the playbook's "no legible screens" and "subject continuity" principles literally: no text-in-video, no logos, no crowds of faces, no readable UI; any screen in shot is described as "heavily out of focus, glowing softly, no legible characters"; and any person in a b-roll shot is described as "the same person as the presenter shot: young Indian man/woman, same clothing, same time of day", matching the presenter shot's actual gender, outfit and lighting.
   - screencap → this is a REAL screen recording of the live product, so visualPrompt is simply WHAT TO CAPTURE, chosen from: ${s.screencapLibrary.map((x) => `"${x}"`).join('; ')}
   - SCREENCAP HARD RULE (owner, verbatim): "when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day." Never ask to capture pricing, plans, checkout, payment or the signup/onboarding form. The screen we show is the report and its hour-slots.
-  - SHOT 1 MUST BE kind "presenter" — a visible human opens every reel. Platforms deprioritise fully AI-generated reels with no human layer, and the render pipeline rejects any reel that does not open on a presenter.
+  - SHOT 1 MUST BE kind "presenter" — see "presenter-led" in the playbook. The render pipeline rejects any reel that does not open on a presenter.
   - The LAST shot should also be a presenter shot wherever the idea allows, so the reel closes on a face saying the closing line rather than on synthesized narration over a scroll.
   - THE CLOSING PRESENTER LINE MUST SAY "VedicHour.com" OUT LOUD. This is a hard reject, not a preference. The owner, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Half this audience is LISTENING with their eyes somewhere else, so a CTA that only exists on screen reaches nobody. Put it in the final presenter shot's \`dialogue\`, in his own words, e.g. "…VedicHour.com pe dekh lo." or "…VedicHour.com — free hai." Budget the words: the site name costs 1-2 of that shot's word allowance, so keep the rest of the closing line short. The renderer already ends every reel on a branded card showing vedichour.com — your job is the SPOKEN half, which only the presenter can deliver.
   - Every variant must include at least one screencap shot. Shot seconds should sum to roughly the spoken length.
@@ -363,6 +483,9 @@ PER-FIELD SPEC — follow exactly:
 - youtubeDescription: 2-3 sentences, and it MUST contain this link exactly once, verbatim: ${link}
 - language: "hinglish"
 
+${taxonomyPromptSpecCompact()}
+Tag EVERY variant. Default to the idea's tags above; change one only when this particular variant genuinely lands somewhere else (e.g. you wrote a playful take on an anxious idea). Do NOT change a tag to make the variant look better.
+
 NON-NEGOTIABLE RULES:
 ${s.hardRules.map((r) => `- ${r}`).join('\n')}
 - Close the spoken script or the CTA on the brand line "${BRAND.taglineClose}" when it fits naturally.
@@ -371,7 +494,7 @@ ${lessonBlock(['script', 'voice'])}
 PLAIN ENGLISH ONLY — the owner's ruling, verbatim: "some jargon like Swiss Ephemeris, Lahiri... No one gives a shit. I don't even know what this is." A script containing Swiss Ephemeris, Lahiri, ayanamsa, sidereal, whole-sign or vimshottari is rejected automatically and never renders. Where the script needs credibility, the approved phrasing is "real astronomical data, the same math a careful astrologer uses".
 
 Return STRICT JSON — an array of exactly ${n} objects, nothing before or after it, no markdown fences:
-[{"hookText":"...","spokenScript":"...","shotList":[{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"..."},{"kind":"screencap","seconds":6,"visualPrompt":"...","narration":""}],"onScreenCaptions":["..."],"cta":"...","hashtags":["#..."],"youtubeTitle":"...","youtubeDescription":"...","language":"hinglish"}]`;
+[{"hookText":"...","spokenScript":"...","shotList":[{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"..."},{"kind":"screencap","seconds":6,"visualPrompt":"...","narration":""}],"onScreenCaptions":["..."],"cta":"...","hashtags":["#..."],"youtubeTitle":"...","youtubeDescription":"...","language":"hinglish","hookFamily":"${idea.tags.hookFamily}","decisionDomain":"${idea.tags.decisionDomain}","emotionalRegister":"${idea.tags.emotionalRegister}","durationTargetSec":${idea.tags.durationTargetSec}}]`;
 }
 
 function normalizeVariant(raw: any, idea: Idea, index: number, link: string): Variant {
@@ -403,12 +526,16 @@ function normalizeVariant(raw: any, idea: Idea, index: number, link: string): Va
     youtubeTitle: String(raw?.youtubeTitle ?? '').trim().slice(0, 70),
     youtubeDescription: desc,
     language: String(raw?.language ?? 'hinglish'),
+    // Tags default to the idea's, so an omission inherits a real value instead of a guess. The
+    // shot total is the honest floor for durationTargetSec when the model leaves it out.
+    tags: normalizeTags(raw, idea.tags, shots.reduce((n, sh) => n + (sh.seconds || 0), 0)),
+    explore: idea.explore,
   };
 }
 
-async function scriptIdea(s: Seeds, idea: Idea, tier: Tier, n: number): Promise<Variant[]> {
+async function scriptIdea(s: Seeds, idea: Idea, tier: Tier, n: number, learned: LearnedContext): Promise<Variant[]> {
   const link = utm(BRAND.links.pricing, 'youtube', 'short', 'creative_engine', idea.id);
-  const raw = await tryBrain(scriptPrompt(s, idea, n, link), tier, 'script');
+  const raw = await tryBrain(scriptPrompt(s, idea, n, link, learned), tier, 'script');
   const parsed = raw ? extractJson<any[]>(raw) : null;
   if (!Array.isArray(parsed)) {
     console.warn(`[creative] script: no parsable variants for "${idea.id}" — skipping the idea.`);
@@ -854,6 +981,10 @@ function renderContract(j: Judged, slug: string) {
     rank: Number((j.scores.total / 100).toFixed(2)),
     hook: v.hookText,
     cta: v.cta,
+    // The hook taxonomy travels with the contract so loop:sync can mirror it into
+    // marketing_assets — that is the join that lets performance be attributed to a SHAPE.
+    tags: v.tags,
+    explore: v.explore,
     voice: AD_VO_VOICE,
     voicePlan: voicePlanFor(shots),
     shots,
@@ -888,6 +1019,8 @@ function variantMarkdown(j: Judged, batchId: string): string {
 **Rank ${j.rank} of batch \`${batchId}\`** · idea \`${v.ideaId}\` · variant ${v.variantIndex} · family \`${v.family}\` · language \`${v.language}\`
 
 > Angle: ${v.angle}
+
+**Tags** — hook family \`${v.tags.hookFamily}\` · domain \`${v.tags.decisionDomain}\` · register \`${v.tags.emotionalRegister}\` · target ${v.tags.durationTargetSec}s${v.explore ? ' · **EXPLORE** (reserved slot, under-tested combination)' : ''}
 
 ## Scores
 | axis | score |
@@ -975,10 +1108,12 @@ async function persist(judged: Judged[], winners: Judged[], batchId: string): Pr
     `INSERT INTO creative_variants
        (batch_id, idea_id, family, angle, variant_index, hook_text, spoken_script, language, status,
         lint_verdict, lint_reason, hook_strength, specificity, credibility, brand_safety, producibility,
-        total_score, tournament_rank, rejection_reason, payload, asset_path)
+        total_score, tournament_rank, rejection_reason, payload, asset_path,
+        hook_family, decision_domain, emotional_register, duration_target_sec, explore)
      VALUES (@batch_id, @idea_id, @family, @angle, @variant_index, @hook_text, @spoken_script, @language, @status,
         @lint_verdict, @lint_reason, @hook_strength, @specificity, @credibility, @brand_safety, @producibility,
-        @total_score, @tournament_rank, @rejection_reason, @payload, @asset_path)`,
+        @total_score, @tournament_rank, @rejection_reason, @payload, @asset_path,
+        @hook_family, @decision_domain, @emotional_register, @duration_target_sec, @explore)`,
   );
   const insertContent = db().prepare(
     `INSERT INTO content_library (asset, type, product, script_source, status, perf_score, meta)
@@ -1009,6 +1144,11 @@ async function persist(judged: Judged[], winners: Judged[], batchId: string): Pr
         rejection_reason: j.rejectionReason,
         payload: JSON.stringify(j.variant),
         asset_path: j.assetPath,
+        hook_family: j.variant.tags.hookFamily,
+        decision_domain: j.variant.tags.decisionDomain,
+        emotional_register: j.variant.tags.emotionalRegister,
+        duration_target_sec: j.variant.tags.durationTargetSec,
+        explore: j.variant.explore ? 1 : 0,
       });
     }
     for (const w of winners) {
@@ -1066,19 +1206,32 @@ export async function runCreativeLoop(opts: CreativeOpts = {}): Promise<void> {
   try {
     const seeds = loadSeeds();
 
+    // 0. LEARN — what results, live questions and the playbook say, before a word is written.
+    const learned = await gatherLearned(count);
+    console.log(`[creative] evidence → ${learned.snapshot?.assets.length ?? 0} posted asset(s) with stats · ${learned.sense ? 'sense digest present' : 'no sense digest (run loop:sense)'}`);
+    console.log(`             ${learned.performance.split('\n')[0]}`);
+
     // 1. IDEATE
-    const { ideas, fallback } = await ideate(seeds, tier, IDEAS_REQUESTED);
+    const reservedAsk = Math.min(count, Math.max(1, Math.round(count * EXPLORE_SHARE)));
+    const { ideas, fallback } = await ideate(seeds, tier, IDEAS_REQUESTED, learned, reservedAsk);
     console.log(`[creative] ideate → ${ideas.length} candidate hooks${fallback ? ' (SEED FALLBACK — brain was unreachable)' : ''}`);
-    for (const i of ideas.slice(0, count)) console.log(`             · [${i.family}] ${i.angle}`);
+
+    // 1b. EXPLORE/EXPLOIT — enforced on OUR coverage counts, not on the model's self-label.
+    const { chosen, exploreChosen, reserved } = selectForScripting(ideas, count, learned.explore);
+    console.log(
+      `[creative] explore/exploit → ${exploreChosen}/${reserved} reserved explore slot(s) filled, ${chosen.length - exploreChosen} exploit` +
+        (exploreChosen < reserved ? ' — QUOTA UNMET: no candidate idea landed in an under-tested combination this batch (not faked)' : ''),
+    );
+    for (const i of chosen) console.log(`             · ${i.explore ? '[EXPLORE] ' : ''}[${i.tags.hookFamily}/${i.tags.decisionDomain}/${i.tags.emotionalRegister}] ${i.angle}`);
 
     // 2. SCRIPT
     const scripted: { idea: Idea; variants: Variant[] }[] = [];
-    for (const idea of ideas.slice(0, count)) {
+    for (const idea of chosen) {
       if (isKilled()) {
         console.log('[creative] kill-switch tripped mid-run — stopping.');
         break;
       }
-      const variants = await scriptIdea(seeds, idea, tier, VARIANTS_PER_IDEA);
+      const variants = await scriptIdea(seeds, idea, tier, VARIANTS_PER_IDEA, learned);
       if (variants.length) scripted.push({ idea, variants });
       console.log(`[creative] script → "${idea.id}": ${variants.length} variants`);
     }
@@ -1120,7 +1273,7 @@ export async function runCreativeLoop(opts: CreativeOpts = {}): Promise<void> {
     const secs = ((Date.now() - t0) / 1000).toFixed(0);
     console.log(`\n[creative] === batch ${batchId} — top ${winners.length} ===`);
     for (const w of winners) {
-      console.log(`  #${w.rank} [${w.scores.total}] "${w.variant.hookText}"  → ${w.status}`);
+      console.log(`  #${w.rank} [${w.scores.total}] "${w.variant.hookText}"  → ${w.status}  {${w.variant.tags.hookFamily}/${w.variant.tags.decisionDomain}/${w.variant.tags.emotionalRegister}/${w.variant.tags.durationTargetSec}s${w.variant.explore ? ' EXPLORE' : ''}}`);
       console.log(`      ${w.variant.spokenScript.slice(0, 110)}${w.variant.spokenScript.length > 110 ? '…' : ''}`);
       if (w.assetPath) console.log(`      ${w.assetPath}`);
     }
