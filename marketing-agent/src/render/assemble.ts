@@ -1,13 +1,14 @@
-import { existsSync, mkdirSync, readdirSync, writeFileSync, copyFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, writeFileSync, copyFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ROOT } from '../db/index';
-import { envStr, envNum } from './env';
+import { envStr } from './env';
 import {
   resolveTools, run, runCapture, probeVideo, probeDuration,
-  buildAss, FONT, FONTS, TTS_HELPER,
+  buildAss, FONT, FONTS,
   GRADE, BLOOM, GRAIN, wordmarkFilter, progressFilter,
   type Seg, type Probe,
 } from './ffmpeg';
+import { AD_VO_VOICE, AD_VO_LANGUAGE, NATIVE_VOICE, sarvamSpeak, hasSarvamKey, SARVAM_MISSING_MESSAGE } from './sarvam';
 import type { CreativeScript, Shot } from './types';
 
 /**
@@ -48,6 +49,8 @@ export interface PreparedShot {
   segments: Seg[];
   /** Did this shot's audio come from the model itself (Veo) rather than TTS? */
   nativeAudio: boolean;
+  /** Voice this shot speaks with: `veo_native`, the Sarvam ad voice, or null when silent. */
+  voiceId: string | null;
   costUsd: number;
   provider: string;
 }
@@ -60,64 +63,57 @@ export interface VoResult {
   audioPath: string | null;
   segments: Seg[];
   durationSec: number;
-  engine: 'edge-tts' | 'elevenlabs' | 'none';
+  engine: 'sarvam' | 'native' | 'none';
   costUsd: number;
+  /** The voice id this shot actually speaks with — asserted to be uniform across the reel. */
+  voiceId: string | null;
+  chars: number;
 }
 
 /**
- * ElevenLabs is an OPT-IN upgrade: only used when ELEVENLABS_API_KEY is present AND
- * VOICE_ENGINE=elevenlabs. Otherwise we use edge-tts, which is free and already proven here.
- * Note: the per-1k-character rate is config, not a verified published price — set
- * ELEVENLABS_USD_PER_1K_CHARS to whatever the account actually bills.
+ * THE AD-REEL VOICE LADDER (owner law 2026-07-26 + CLAUDE.md §2):
+ *
+ *   (a) the shot has Veo native dialogue -> `nativeVo()`, never overdubbed. Free, and the bar.
+ *   (b) otherwise -> Sarvam Bulbul v3, the single male AD_VO_VOICE. ~$0.01/reel.
+ *   (c) no SARVAM_API_KEY -> THROW. There is deliberately no third rung: the owner rejected
+ *       edge-tts (en-IN-NeerjaNeural) as "very AI-generated", so a silent fallback to it would
+ *       ship the exact defect he already rejected once.
+ *
+ * edge-tts and ElevenLabs were removed from this path rather than left dormant — a dormant
+ * female-defaulting fallback is how the first two ads went out.
  */
-function elevenLabsEnabled(): boolean {
-  return envStr('ELEVENLABS_API_KEY') !== null && (envStr('VOICE_ENGINE') ?? 'edge-tts') === 'elevenlabs';
-}
-
-async function ttsElevenLabs(text: string, outPath: string): Promise<VoResult> {
-  const key = envStr('ELEVENLABS_API_KEY')!;
-  const voiceId = envStr('ELEVENLABS_VOICE_ID') ?? '21m00Tcm4TlvDq8ikWAM';
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-    method: 'POST',
-    headers: { 'xi-api-key': key, 'Content-Type': 'application/json', Accept: 'audio/mpeg' },
-    body: JSON.stringify({ text, model_id: envStr('ELEVENLABS_MODEL') ?? 'eleven_multilingual_v2' }),
-  });
-  if (!res.ok) throw new Error(`ElevenLabs HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  writeFileSync(outPath, Buffer.from(await res.arrayBuffer()));
-  const { ffprobe } = resolveTools();
-  const durationSec = await probeDuration(ffprobe, outPath);
-  const costUsd = Math.round((text.length / 1000) * envNum('ELEVENLABS_USD_PER_1K_CHARS', 0.07) * 10000) / 10000;
-  // ElevenLabs gives no word boundaries on this endpoint — one segment, buildAss splits per word.
-  return { audioPath: outPath, segments: [{ text, start: 0.1, end: Math.max(0.6, durationSec - 0.05) }], durationSec, engine: 'elevenlabs', costUsd };
-}
-
-async function ttsEdge(text: string, voice: string, outPath: string, segsPath: string, cwd: string): Promise<VoResult> {
-  await run('python', [TTS_HELPER, text, voice, outPath, segsPath], cwd, 120000);
-  const { ffprobe } = resolveTools();
-  const durationSec = await probeDuration(ffprobe, outPath).catch(() => 0);
-  let segments: Seg[] = [];
-  try {
-    segments = (JSON.parse(readFileSync(segsPath, 'utf8')).segments as Seg[]) ?? [];
-  } catch {
-    /* fall back below */
-  }
-  if (!segments.length) segments = [{ text, start: 0.1, end: Math.max(0.6, durationSec - 0.05) }];
-  return { audioPath: outPath, segments, durationSec, engine: 'edge-tts', costUsd: 0 };
-}
-
-/** Synthesize narration for one shot. Returns `engine: 'none'` when there is nothing to say. */
-export async function synthesizeVo(text: string | undefined, voice: string, work: string, id: string): Promise<VoResult> {
+export async function synthesizeVo(text: string | undefined, work: string, id: string): Promise<VoResult> {
   const t = (text ?? '').trim();
-  if (!t) return { audioPath: null, segments: [], durationSec: 0, engine: 'none', costUsd: 0 };
-  const mp3 = resolve(work, `${id}.mp3`);
-  if (elevenLabsEnabled()) {
-    try {
-      return await ttsElevenLabs(t, mp3);
-    } catch (e: any) {
-      console.warn(`[render]   ElevenLabs failed (${String(e?.message ?? e).slice(0, 80)}) — falling back to edge-tts`);
-    }
-  }
-  return ttsEdge(t, voice, mp3, resolve(work, `${id}.segs.json`), work);
+  if (!t) return { audioPath: null, segments: [], durationSec: 0, engine: 'none', costUsd: 0, voiceId: null, chars: 0 };
+  if (!hasSarvamKey()) throw new Error(`shot ${id}: ${SARVAM_MISSING_MESSAGE}`);
+
+  const wav = resolve(work, `${id}.vo.wav`);
+  const res = await sarvamSpeak({ text: t, languageCode: envStr('AD_VO_LANGUAGE') ?? AD_VO_LANGUAGE, voice: AD_VO_VOICE, outPath: wav });
+  const { ffprobe } = resolveTools();
+  const durationSec = await probeDuration(ffprobe, wav).catch(() => 0);
+  // Bulbul returns no word boundaries — one segment, which buildAss splits per word by length.
+  return {
+    audioPath: wav,
+    segments: [{ text: t, start: 0.1, end: Math.max(0.6, durationSec - 0.05) }],
+    durationSec,
+    engine: 'sarvam',
+    costUsd: res.costUsd,
+    voiceId: res.voice,
+    chars: res.chars,
+  };
+}
+
+/** The zero-cost, highest-quality rung: the video model performed the line in-shot. */
+export function nativeVo(dialogue: string, billedSec: number): VoResult {
+  return {
+    audioPath: null,
+    segments: [{ text: dialogue, start: 0.3, end: Math.max(0.9, billedSec - 0.3) }],
+    durationSec: billedSec,
+    engine: 'native',
+    costUsd: 0,
+    voiceId: NATIVE_VOICE,
+    chars: dialogue.length,
+  };
 }
 
 // ---------------------------------------------------------------------------

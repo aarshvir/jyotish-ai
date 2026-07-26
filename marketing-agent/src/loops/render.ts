@@ -4,15 +4,18 @@ import { randomUUID } from 'node:crypto';
 import { db, logRun, enqueueApproval, ROOT } from '../db/index';
 import { isKilled, killInfo } from '../safety/killswitch';
 import { writeHeartbeat } from '../scheduler/heartbeat';
-import { lint } from '../policy/linter';
+import { lint, jargonHits } from '../policy/linter';
+import { activeLessons } from '../lessons';
 import { BRAND, utm } from '../brand';
 import { validateCreative, type CreativeScript, type Shot, type ShotProvider } from '../render/types';
 import { PRICE_TABLE, ROLE_ROUTING, estimateCost, providerFor, hasFalKey, quantizeSeconds } from '../render/providers';
 import { checkBudget, recordSpend, caps, budgetLine, spendSnapshot } from '../render/budget';
 import { captureProductShot, browserEngineAvailable } from '../render/screencap';
+import { assertCaptureAllowed, resolveLiveCapture } from '../render/capture-policy';
+import { AD_VO_VOICE, NATIVE_VOICE, assertSingleAdVoice, SARVAM_PRICING } from '../render/sarvam';
 import {
   FRAME, PRESENTER_LAYOUT, renderPlaceholder, normalizeClip, concatClips, finish,
-  synthesizeVo, findMusic, verifyOutput, type PreparedShot,
+  synthesizeVo, nativeVo, findMusic, verifyOutput, type PreparedShot,
 } from '../render/assemble';
 import { resolveTools, probeVideo, type Seg } from '../render/ffmpeg';
 import {
@@ -51,6 +54,85 @@ export interface RenderOpts {
 
 /** Which shot roles get true lip-sync when dubbing. Others just take the dubbed VO. */
 const LIPSYNC_ROLES = ['presenter', 'presenter_close'];
+
+// ---------------------------------------------------------------------------
+// $0 PRE-FLIGHT — CLAUDE.md §1: never spend before you check
+// ---------------------------------------------------------------------------
+
+/**
+ * Everything below is decidable from the creative JSON alone, i.e. for $0, BEFORE a cent of
+ * fal.ai spend. All three defects the owner found in the first two ads (a synthetic female
+ * narrator, a scroll of the pricing page, "Swiss Ephemeris" in the script) were plain text in
+ * this file and are hard-blocked here.
+ *
+ * Note the sibling `src/audit/preflight.ts` gate runs the same laws earlier, over the whole
+ * batch. This is the last line of defence in the spend path itself — it must never be softened
+ * into a warning, whatever else exists upstream.
+ */
+function preflight(creative: CreativeScript, scriptText: string): string[] {
+  const problems: string[] = [];
+
+  // 1. capture targets — the report, never the payment section
+  for (const s of creative.shots) {
+    if (s.role !== 'product' || !s.capture?.url) continue;
+    try {
+      assertCaptureAllowed(s.capture.url, `shot ${s.id}`);
+    } catch (e: any) {
+      problems.push(String(e?.message ?? e));
+    }
+  }
+
+  // 2. jargon — plain English or nothing
+  const jargon = jargonHits(scriptText);
+  if (jargon.length) {
+    problems.push(
+      `ad copy contains engine jargon (${jargon.join(', ')}). Owner: "No one gives a shit. I don't even ` +
+        'know what this is." Say "real astronomical data, the same math a careful astrologer uses" instead.',
+    );
+  }
+
+  // 3. voice plan — one narrator, and it is never edge-tts
+  try {
+    assertSingleAdVoice(
+      creative.shots.map((s) => ({
+        id: s.id,
+        voice: s.voice ?? (s.role === 'presenter' || s.role === 'presenter_close' ? NATIVE_VOICE : s.vo?.trim() ? AD_VO_VOICE : null),
+      })),
+    );
+  } catch (e: any) {
+    problems.push(String(e?.message ?? e));
+  }
+
+  return problems;
+}
+
+/**
+ * Log every active lesson that governs the RENDER side, so an unattended run leaves a record of
+ * what it was holding itself to. The mechanically checkable ones are asserted separately
+ * (capture policy and voice plan in preflight(); caption banding in assertCaptionPlan()).
+ */
+function logRenderLessons(): void {
+  const rows = activeLessons(['visual', 'capture', 'caption']);
+  if (!rows.length) return;
+  console.log(`[render] pre-flight — ${rows.length} active lesson(s) governing this render:`);
+  for (const l of rows) console.log(`[render]   · [${l.scope}] ${l.rule}`);
+}
+
+/**
+ * Lesson "captions must never overlap the page's own text — use the opaque band": mechanically,
+ * every product shot must contribute a window to `productWindows`, because that array is what
+ * switches buildAss() to the CaptionBand/CtaBand styles. If a product shot were missing from it,
+ * gold karaoke text would land straight on the page's own copy.
+ */
+function assertCaptionPlan(prepared: PreparedShot[], productWindows: { start: number; end: number }[]): void {
+  const productShots = prepared.filter((p) => p.shot.role === 'product').length;
+  if (productWindows.length !== productShots) {
+    throw new Error(
+      `caption plan violation — ${productShots} product shot(s) but ${productWindows.length} banded caption window(s). ` +
+        'Captions over a screencap must use the opaque band or they garble the page text.',
+    );
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Creative selection
@@ -161,7 +243,9 @@ function buildPublishPack(c: CreativeScript, videoPath: string, durationSec: num
     `${c.hook}\n\n${spokenText(c).slice(0, 320)}\n\n${BRAND.taglineClose}\n\n${hashtags.join(' ')}`;
   const description =
     p.description ??
-    `${c.hook}\n\n${spokenText(c)}\n\nVedicHour ${BRAND.differentiators[0]}, ${BRAND.differentiators[1]}, ${BRAND.differentiators[2]}.\n\n` +
+    // Ad copy uses the plain-English differentiators — the engine names (Swiss Ephemeris,
+    // Lahiri) are blog/site language only. Owner ruling 2026-07-26.
+    `${c.hook}\n\n${spokenText(c)}\n\nVedicHour ${BRAND.adSafeDifferentiators[0]}, ${BRAND.adSafeDifferentiators[1]}, ${BRAND.adSafeDifferentiators[2]}.\n\n` +
       `Start free: ${utm(BRAND.links.freeKundli, 'youtube', 'short', 'launch_video', c.slug)}\n` +
       `Full report: ${utm(landing, 'youtube', 'short', 'launch_video', c.slug)}\n` +
       `Use ${BRAND.promoPublic} for 30% off your first paid report.\n\n` +
@@ -287,7 +371,22 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
 
     // ---- 2. policy gate --------------------------------------------------------------
     const scriptText = [creative.hook, spokenText(creative), creative.cta].join('\n');
-    const verdict = await lint(scriptText);
+
+    // 2a. $0 pre-flight on the INPUTS. Refuses before the budget guard is even consulted.
+    logRenderLessons();
+    const preflightProblems = preflight(creative, scriptText);
+    if (preflightProblems.length) {
+      console.error(`[render] PRE-FLIGHT FAILED (${preflightProblems.length}) — nothing generated, nothing charged:`);
+      for (const p of preflightProblems) console.error(`[render]   ✗ ${p}`);
+      logRun({ loop, status: 'skipped', detail: `pre-flight: ${preflightProblems[0].slice(0, 160)}` });
+      writeFileSync(picked.file, JSON.stringify({ ...picked.raw, status: 'blocked', blocked_reason: preflightProblems.join(' | ').slice(0, 900) }, null, 2));
+      enqueueApproval({ item: `Reel BLOCKED by pre-flight: ${creative.title} — ${preflightProblems[0]}`, lane: 'B', linter_verdict: 'block', linter_reason: 'pre-flight', channel: 'reel' });
+      writeHeartbeat(loop, `pre-flight blocked: ${creative.slug}`);
+      return;
+    }
+    console.log('[render] pre-flight: PASS — capture targets, voice plan and jargon all clean ($0 spent so far)');
+
+    const verdict = await lint(scriptText, { context: 'ad' });
     if (verdict.verdict === 'block') {
       console.log(`[render] BLOCKED by policy linter — ${verdict.reason}. Not rendering, not spending.`);
       logRun({ loop, status: 'skipped', detail: `blocked: ${verdict.reason}` });
@@ -330,7 +429,12 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     const outDir = resolve(REELS_OUT, creative.slug);
     const work = resolve(outDir, 'work');
     mkdirSync(work, { recursive: true });
-    const voice = creative.voice ?? 'en-IN-NeerjaNeural';
+    // The reel's voice is not negotiable per-creative any more: Veo native in-shot audio, and
+    // AD_VO_VOICE for the little narration that survives. Legacy creatives carrying an edge-tts
+    // name here are ignored rather than obeyed.
+    if (creative.voice && creative.voice !== AD_VO_VOICE) {
+      console.log(`[render] ignoring creative.voice "${creative.voice}" — ad narration is Sarvam "${AD_VO_VOICE}" (owner law 2026-07-26).`);
+    }
     const prepared: PreparedShot[] = [];
     let cursor = 0;
     let spentUsd = 0;
@@ -355,7 +459,15 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
         recordSpend({ run_id: runId, slug: creative.slug, shot_id: shot.id, provider: 'placeholder', model: spec.endpoint, seconds: billedSec, cost_usd: 0, estimated_usd: est.shots.find((s) => s.id === shot.id)?.usd ?? 0, status: 'dry', detail: `stand-in for ${spec.label}` });
       } else if (shot.role === 'product') {
         if (engine.ok && shot.capture?.url) {
-          await captureProductShot({ url: shot.capture.url, seconds: billedSec, outPath: rawClip, waitForSelector: shot.capture.waitForSelector, offsetPx: shot.capture.scrollPx, panToPx: shot.capture.panToPx, onProgress: (m) => console.log(`[render]   ${m}`) });
+          // Second gate, at the moment of capture: pre-flight already refused a pricing/checkout
+          // URL in the plan, and this refuses one that a 404-fallback could still produce.
+          const target = await resolveLiveCapture(
+            { url: shot.capture.url, libraryKey: shot.capture.libraryKey ?? 'unspecified', waitForSelector: shot.capture.waitForSelector, scrollPx: shot.capture.scrollPx, panToPx: shot.capture.panToPx },
+            (m) => console.log(`[render]   ${m}`),
+          );
+          assertCaptureAllowed(target.url, `shot ${shot.id}`);
+          console.log(`[render]   capturing ${target.url} (${target.libraryKey})${target.waitForSelector ? ` after ${target.waitForSelector}` : ''}`);
+          await captureProductShot({ url: target.url, seconds: billedSec, outPath: rawClip, waitForSelector: target.waitForSelector, offsetPx: target.scrollPx, panToPx: target.panToPx, onProgress: (m) => console.log(`[render]   ${m}`) });
         } else {
           await renderPlaceholder(shot, billedSec, rawClip, 'product shot unavailable');
         }
@@ -387,23 +499,28 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
         }
       }
 
-      // 4b. audio for this shot
+      // 4b. audio for this shot — the voice ladder (see src/render/sarvam.ts)
       let voPath: string | null = null;
       let segments: Seg[] = [];
       let actualSec = billedSec;
+      let voiceId: string | null = null;
 
       if (nativeAudio) {
-        // Veo supplies the voice. We still need caption timings: one segment across the shot,
-        // which buildAss splits per word proportionally.
-        segments = [{ text: shot.dialogue!, start: 0.3, end: Math.max(0.9, billedSec - 0.3) }];
+        // (a) Veo performed the line in-shot. Free, and the quality bar — never overdubbed.
+        const vo = nativeVo(shot.dialogue!, billedSec);
+        segments = vo.segments;
+        voiceId = vo.voiceId;
       } else {
+        // (b) Sarvam Bulbul v3, one male voice for the whole reel. (c) No key -> this throws.
         const speak = isPresenter ? shot.dialogue : shot.vo;
-        const vo = await synthesizeVo(speak, voice, work, shot.id);
+        const vo = await synthesizeVo(speak, work, shot.id);
         voPath = vo.audioPath;
         segments = vo.segments;
+        voiceId = vo.voiceId;
         if (vo.costUsd > 0) {
           spentUsd += vo.costUsd;
-          recordSpend({ run_id: runId, slug: creative.slug, shot_id: shot.id, provider: vo.engine, seconds: 0, cost_usd: vo.costUsd, estimated_usd: vo.costUsd, status: 'ok', detail: 'tts' });
+          recordSpend({ run_id: runId, slug: creative.slug, shot_id: shot.id, provider: 'sarvam_bulbul_v3', model: SARVAM_PRICING.model, seconds: 0, cost_usd: vo.costUsd, estimated_usd: vo.costUsd, status: 'ok', detail: `tts ${vo.chars} chars · voice ${vo.voiceId}` });
+          console.log(`[render]   narration: Sarvam ${vo.voiceId}, ${vo.chars} chars, $${vo.costUsd.toFixed(5)}`);
         }
         if (vo.durationSec > billedSec + 0.05) {
           // Real feedback for the creative engine: the line does not fit the billable duration.
@@ -425,12 +542,18 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       prepared.push({
         shot, path: normClip, seconds: actualSec, startSec: cursor,
         segments: segments.map((s) => ({ ...s, start: s.start + cursor, end: s.end + cursor })),
-        nativeAudio, costUsd, provider: providerUsed,
+        nativeAudio, voiceId, costUsd, provider: providerUsed,
       });
       cursor = Math.round((cursor + actualSec) * 100) / 100;
     }
 
     // ---- 5. assemble ------------------------------------------------------------------
+    // Post-generation restatement of the voice law: whatever the shots actually ended up
+    // speaking with, it must still be one narrator. Throws before the finishing pass.
+    assertSingleAdVoice(prepared.map((p) => ({ id: p.shot.id, voice: p.voiceId })));
+    const voices = [...new Set(prepared.map((p) => p.voiceId).filter(Boolean))];
+    console.log(`[render] voice plan verified: ${voices.join(' + ') || 'silent'}`);
+
     const totalSec = cursor;
     const stitched = resolve(work, 'stitched.mp4');
     console.log(`[render] stitching ${prepared.length} shots -> ${totalSec}s`);
@@ -445,6 +568,7 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     const productWindows = prepared
       .filter((p) => p.shot.role === 'product')
       .map((p) => ({ start: p.startSec, end: p.startSec + p.seconds }));
+    assertCaptionPlan(prepared, productWindows);
     console.log('[render] finishing: grade -> bloom -> vignette -> karaoke captions -> wordmark -> progress -> grain');
     await finish({ stitched, work, outPath: finalPath, creative, segments: allSegments, totalSec, music, productWindows });
 
@@ -576,7 +700,9 @@ async function localizeReel(ctx: LocalizeCtx, langs: LangSpec[]): Promise<void> 
           continue;
         }
         const wav = resolve(work, `${p.shot.id}.wav`);
-        const tts = await sarvamTts(line, l, l.voiceFemale, wav);
+        // MALE voice, per the same owner law that governs the English reel — a dubbed variant
+        // must not hand the brand a different-gendered narrator in another language.
+        const tts = await sarvamTts(line, l, l.voiceMale, wav);
         langCost += tts.costUsd;
         recordSpend({ run_id: ctx.runId, slug: ctx.creative.slug, shot_id: `${p.shot.id}:${l.code}`, provider: 'sarvam_bulbul_v3', model: 'bulbul:v3', seconds: 0, cost_usd: tts.costUsd, estimated_usd: tts.costUsd, status: 'ok', detail: `${tts.chars} chars` });
 

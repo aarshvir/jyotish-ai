@@ -13,6 +13,17 @@ export const BRAND = {
     'real astronomy — computed with the Swiss Ephemeris and Lahiri ayanamsa',
     'explained in plain English',
   ],
+  /**
+   * AD COPY ONLY. Owner ruling 2026-07-26: "some jargon like Swiss Ephemeris, Lahiri... No one
+   * gives a shit. I don't even know what this is." The engine names stay in `differentiators`
+   * for the blog and the site, where a reader chose to go deeper; anything that ships inside an
+   * ad — script, caption, YouTube description — uses these plain-English versions instead.
+   */
+  adSafeDifferentiators: [
+    'rates all 18 hours of your day against your own birth chart',
+    'real astronomical data — the same math a careful astrologer uses',
+    'explained in plain English, no jargon',
+  ],
   pillars: ['Not another horoscope', 'Your day is not one mood', 'Private, modern Jyotish'],
   links: {
     freeKundli: '/free-kundli',

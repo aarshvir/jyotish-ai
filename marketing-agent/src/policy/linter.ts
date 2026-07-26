@@ -15,6 +15,8 @@ export interface LintResult {
 interface BannedClaims {
   block: string[];
   flag: string[];
+  /** AD COPY ONLY — engine/technical terms the owner ruled meaningless to a viewer. */
+  jargon?: string[];
   categories: Record<string, string[]>;
 }
 
@@ -25,12 +27,31 @@ function loadClaims(): BannedClaims {
 const sev: Record<Verdict, number> = { pass: 0, flag: 1, block: 2 };
 const worse = (a: Verdict, b: Verdict): Verdict => (sev[a] >= sev[b] ? a : b);
 
-function deterministic(text: string, claims: BannedClaims): { verdict: Verdict; reason: string } {
+/**
+ * Jargon terms present in `text`. Exported because the creative engine scores against the same
+ * list (it penalises `credibility` and hard-rejects the variant), and both must agree.
+ *
+ * Owner ruling 2026-07-26: "some jargon like Swiss Ephemeris, Lahiri... No one gives a shit. I
+ * don't even know what this is." Ad copy only — the blog and site may use these freely.
+ */
+export function jargonHits(text: string): string[] {
+  const t = (text ?? '').toLowerCase();
+  const list = loadClaims().jargon ?? [];
+  return list.filter((w) => t.includes(w.toLowerCase()));
+}
+
+function deterministic(text: string, claims: BannedClaims, context: 'organic' | 'ad'): { verdict: Verdict; reason: string } {
   const t = text.toLowerCase();
   const hitBlock = claims.block.find((w) => t.includes(w.toLowerCase()));
   if (hitBlock) return { verdict: 'block', reason: `banned phrase: "${hitBlock}"` };
   const hitFlag = claims.flag.find((w) => t.includes(w.toLowerCase()));
   if (hitFlag) return { verdict: 'flag', reason: `sensitive phrase: "${hitFlag}"` };
+  // FLAG, never block: jargon is a quality defect, not a policy violation, and it is legal
+  // everywhere except paid/ad copy.
+  if (context === 'ad') {
+    const hitJargon = (claims.jargon ?? []).find((w) => t.includes(w.toLowerCase()));
+    if (hitJargon) return { verdict: 'flag', reason: `ad-copy jargon: "${hitJargon}" — say "real astronomical data" instead` };
+  }
   return { verdict: 'pass', reason: 'no banned/sensitive phrases' };
 }
 
@@ -48,7 +69,7 @@ CALIBRATION — READ CAREFULLY: VedicHour's ENTIRE product is timing AWARENESS. 
 
 FLAG (escalate) ONLY if: it promises a SPECIFIC personal result the reader will get ("you'll land the raise"), the tone is spooky / hypey / guru-like / fear-based, or you are genuinely unsure it's on-brand.
 
-PASS (the default for calm, on-brand copy): plain-English timing/reflection content that avoids the BLOCK list above. A differentiator (18 horas, Swiss Ephemeris + Lahiri, plain English) is a plus but not required to pass.
+PASS (the default for calm, on-brand copy): plain-English timing/reflection content that avoids the BLOCK list above. A differentiator (18 horas, real astronomical data, plain English) is a plus but not required to pass.${context === 'ad' ? '\n(THIS IS A PAID AD) Engine jargon — Swiss Ephemeris, Lahiri, ayanamsa, sidereal, whole-sign, vimshottari — does not belong in ad copy; a deterministic list already flags it, so do not also block for it.' : ''}
 
 Respond with ONE LINE of strict JSON and nothing else:
 {"verdict":"pass|flag|block","reason":"<=14 words"}
@@ -84,7 +105,7 @@ export async function lint(
   opts: { classify?: boolean; context?: 'organic' | 'ad' } = {},
 ): Promise<LintResult> {
   const claims = loadClaims();
-  const det = deterministic(text, claims);
+  const det = deterministic(text, claims, opts.context ?? 'organic');
 
   if (det.verdict === 'block' || opts.classify === false) {
     return { verdict: det.verdict, reason: det.reason, deterministic: det.verdict, classifier: null };

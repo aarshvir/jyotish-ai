@@ -110,6 +110,23 @@ CREATE TABLE IF NOT EXISTS creative_variants (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
+-- THE LESSONS LOOP (src/lessons.ts). Every owner rejection, internal-audit finding and GPT
+-- review finding lands here as an imperative one-liner. Active lessons are INJECTED into the
+-- creative prompts and asserted in the render pre-flight, so a mistake the owner named once can
+-- never reach him twice. `rule` is UNIQUE so seeding/filing is idempotent.
+CREATE TABLE IF NOT EXISTS lessons (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  source TEXT NOT NULL,                        -- owner | internal_audit | gpt_review
+  severity TEXT NOT NULL DEFAULT 'high',       -- critical | high | medium | low
+  scope TEXT NOT NULL,                         -- script | visual | voice | capture | caption
+  rule TEXT NOT NULL UNIQUE,                   -- the imperative one-liner injected into prompts
+  evidence TEXT,                               -- what happened / who said it
+  active INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE INDEX IF NOT EXISTS idx_lessons_scope ON lessons(scope, active);
+
 CREATE INDEX IF NOT EXISTS idx_perf_entity ON performance(entity_id);
 CREATE INDEX IF NOT EXISTS idx_perf_metric ON performance(metric);
 CREATE INDEX IF NOT EXISTS idx_runs_loop ON runs_log(loop);
