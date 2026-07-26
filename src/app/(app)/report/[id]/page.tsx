@@ -246,7 +246,14 @@ function ReportContent() {
 
   const authJsonHeaders = useCallback((): Record<string, string> => {
     const h: Record<string, string> = { 'Content-Type': 'application/json' };
-    const b = params.get('bypass');
+    // Prefer sessionStorage (onboard no longer puts bypass in the URL — Meta Pixel /
+    // Referer must never see BYPASS_SECRET). Legacy `?bypass=` still works for one load.
+    let b = params.get('bypass');
+    if (!b && typeof window !== 'undefined') {
+      try {
+        b = sessionStorage.getItem('vh_bypass_token');
+      } catch { /* unavailable */ }
+    }
     if (b) h['x-bypass-token'] = b;
     return h;
   }, [params]);

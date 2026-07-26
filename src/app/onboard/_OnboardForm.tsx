@@ -1030,7 +1030,13 @@ function OnboardPageInner() {
       if (form.currentTzOffset != null) paramsObj.currentTz = String(form.currentTzOffset);
     }
 
-    if (hasBypass && bypassToken) paramsObj.bypass = bypassToken;
+    // Never put the bypass secret in the report URL — Meta Pixel / referrers / logs
+    // would capture it. Stash in sessionStorage; the report page reads it for x-bypass-token.
+    if (hasBypass && bypassToken) {
+      try {
+        sessionStorage.setItem('vh_bypass_token', bypassToken);
+      } catch { /* private mode/quota */ }
+    }
 
     const reportId = crypto.randomUUID();
     const isPaidPlan = effectiveType !== 'free';
