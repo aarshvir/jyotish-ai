@@ -161,6 +161,10 @@ export function buildAss(hook: string, segments: Seg[], cta: string, total: numb
     `[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\n` +
     `Style: Hook,${fam.hook},104,${CREAM},${CREAM},${OUTL},&H64000000,0,0,0,0,100,100,0,0,1,4,4,5,80,80,0,1\n` +
     `Style: Caption,${fam.body},76,${GOLD},${OFFWHITE},${OUTL},&H64000000,-1,0,0,0,100,100,1,0,1,5,3,5,80,80,0,1\n` +
+    // Top-zone variant for product shots: BorderStyle=3 draws an opaque navy band (OutlineColour
+    // is the box fill) so the caption never garbles the page's own text behind it. Shadow=0 —
+    // with BorderStyle=3 a shadow would draw a second offset box.
+    `Style: CaptionBand,${fam.body},76,${GOLD},${OFFWHITE},&H101A0A0A,&H64000000,-1,0,0,0,100,100,1,0,3,16,0,5,80,80,0,1\n` +
     `Style: CTA,${fam.cta},46,${GOLD},${GOLD},${OUTL},&H64000000,0,0,0,0,100,100,1,0,1,3,2,5,80,80,0,1\n\n` +
     `[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
 
@@ -194,9 +198,10 @@ export function buildAss(hook: string, segments: Seg[], cta: string, total: numb
     // Classify the group by its midpoint so a line straddling a shot boundary follows
     // whichever shot it mostly plays over.
     const mid = (bs + be) / 2;
-    const y = topWins.some((w) => mid >= w.start && mid <= w.end) ? topY : captionY;
+    const inTop = topWins.some((w) => mid >= w.start && mid <= w.end);
+    const y = inTop ? topY : captionY;
     const kara = grp.map((g) => `{\\kf${Math.max(8, Math.round((g.end - g.start) * 100))}}${assEsc(g.text.toUpperCase())} `).join('').trim();
-    ev.push(`Dialogue: 0,${assTime(bs)},${assTime(be)},Caption,,0,0,0,,{\\an5\\pos(540,${y})\\fad(70,70)\\fscx84\\fscy84\\t(0,150,\\fscx105\\fscy105)\\t(150,230,\\fscx100\\fscy100)}${kara}`);
+    ev.push(`Dialogue: 0,${assTime(bs)},${assTime(be)},${inTop ? 'CaptionBand' : 'Caption'},,0,0,0,,{\\an5\\pos(540,${y})\\fad(70,70)\\fscx84\\fscy84\\t(0,150,\\fscx105\\fscy105)\\t(150,230,\\fscx100\\fscy100)}${kara}`);
   }
   ev.push(`Dialogue: 0,${assTime(Math.max(0, total - ctaHold))},${assTime(total)},CTA,,0,0,0,,{\\an5\\pos(540,${ctaY})\\fad(200,200)}${assEsc(wrap(cta, 26))}`);
   return header + ev.join('\n') + '\n';
