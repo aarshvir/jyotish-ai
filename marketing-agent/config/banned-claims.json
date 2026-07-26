@@ -59,6 +59,16 @@
     "why you keep failing",
     "your problem is"
   ],
+  "_jargon_comment": "AD COPY ONLY. Owner ruling 2026-07-26: 'some jargon like Swiss Ephemeris, Lahiri... No one gives a shit. I don't even know what this is.' These terms remain perfectly legal on the blog and the website, where a reader has chosen to go deeper — the linter only raises them when context is 'ad'. If an ad needs credibility, say: 'real astronomical data, the same math a careful astrologer uses'.",
+  "jargon": [
+    "swiss ephemeris",
+    "lahiri",
+    "ayanamsa",
+    "sidereal",
+    "whole-sign",
+    "whole sign",
+    "vimshottari"
+  ],
   "categories": {
     "certainty": ["guaranteed", "will definitely", "100% accurate", "predict exactly", "for certain"],
     "luck": ["good luck", "bad luck", "lucky hour", "unlucky"],

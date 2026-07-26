@@ -2,9 +2,12 @@ import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { brain } from '../brain/index';
 import { envStr, envNum } from './env';
-import { resolveTools, run, probeDuration } from './ffmpeg';
+import { resolveTools, probeDuration } from './ffmpeg';
 import { FRAME, PRESENTER_LAYOUT } from './assemble';
+import { sarvamSpeak, sarvamCostUsd, hasSarvamKey, SARVAM_PRICING } from './sarvam';
 import type { CreativeScript, Shot } from './types';
+
+export { sarvamCostUsd, hasSarvamKey };
 
 /**
  * LOCALIZATION — real dubbed audio per language, not translated captions.
@@ -104,11 +107,10 @@ export function parseLanguages(spec: string | string[] | undefined): LangSpec[] 
  * where the published rate depends on a plan we budget the CONSERVATIVE (higher) figure.
  */
 export const LOCALIZE_PRICING = {
-  /** Sarvam Bulbul v3: ₹30 per 10,000 characters. Beta pricing, charged per request rounded up.
-   *  Source: https://docs.sarvam.ai/api/getting-started/pricing.md */
-  sarvamInrPer10kChars: 30,
+  /** Sarvam Bulbul v3 rate — single source of truth now lives in src/render/sarvam.ts. */
+  sarvamInrPer10kChars: SARVAM_PRICING.inrPer10kChars,
   /** ₹ -> $ conversion used for the budget ledger; override with INR_PER_USD. */
-  inrPerUsd: 87,
+  inrPerUsd: SARVAM_PRICING.inrPerUsd,
   /**
    * sync.so lipsync-2. The widely-quoted $0.04/s is the SCALE-PLAN rate ($249/mo); the base
    * (Hobbyist/Creator) rate is $0.05/s. Billing counts OUTPUT FRAMES against a 25fps reference,
@@ -120,18 +122,10 @@ export const LOCALIZE_PRICING = {
   syncModel: 'lipsync-2',
 } as const;
 
-export function sarvamCostUsd(chars: number): number {
-  const inr = (chars / 10000) * LOCALIZE_PRICING.sarvamInrPer10kChars;
-  return Math.round((inr / envNum('INR_PER_USD', LOCALIZE_PRICING.inrPerUsd)) * 100000) / 100000;
-}
-
 export function syncCostUsd(seconds: number): number {
   return Math.round(seconds * envNum('SYNC_USD_PER_SECOND', LOCALIZE_PRICING.syncUsdPerSecond) * 10000) / 10000;
 }
 
-export function hasSarvamKey(): boolean {
-  return envStr('SARVAM_API_KEY') !== null;
-}
 export function hasSyncKey(): boolean {
   return envStr('SYNC_API_KEY') !== null;
 }
@@ -167,7 +161,8 @@ function translationPrompt(c: CreativeScript, l: LangSpec): string {
 RULES — follow exactly:
 - Write in NATURAL SPOKEN ${l.label}, the way a real person talks to camera. NOT a literal or formal translation. It must sound like it was written in ${l.label} first.
 - Output MUST be in the NATIVE ${l.label} script (${l.nativeName}). Do NOT romanise. A text-to-speech engine reads this directly and needs native script.
-- Keep these brand terms UNTRANSLATED and in Latin script: VedicHour, hora, Kundli, Swiss Ephemeris, Lahiri.
+- Keep these brand terms UNTRANSLATED and in Latin script: VedicHour, hora, Kundli.
+- NEVER introduce engine jargon (Swiss Ephemeris, Lahiri, ayanamsa, sidereal) — the owner ruled it meaningless to a viewer. If the original implies credibility, say the ${l.label} equivalent of "real astronomical data".
 - Keep each line roughly the same SPOKEN LENGTH as the original — these are timed to video shots.
 - Calm and factual. Never promise outcomes, luck, or certainty. Say "clearer"/"heavier" windows, never "best"/"worst".
 
@@ -208,65 +203,13 @@ export async function translateCreative(c: CreativeScript, l: LangSpec): Promise
 // 2. Sarvam TTS
 // ---------------------------------------------------------------------------
 
-const SARVAM_MAX_CHARS = 2500;
-
 /**
- * Synthesize one line with Bulbul v3. Auth is `api-subscription-key` (NOT Bearer). The response
- * is JSON with base64 WAV in `audios[]`. Long text is chunked at the 2500-char REST limit and
- * the parts are concatenated — note Sarvam rounds each REQUEST up when billing, so we chunk on
- * sentence boundaries rather than making many tiny calls.
+ * Dub one line into `l`. The Bulbul v3 client itself now lives in src/render/sarvam.ts so the
+ * ad-narration path (src/render/assemble.ts) and this dubbing path share exactly one
+ * implementation — auth header, chunking, pricing and all.
  */
 export async function sarvamTts(text: string, l: LangSpec, voice: string, outPath: string): Promise<{ path: string; chars: number; costUsd: number }> {
-  const key = envStr('SARVAM_API_KEY');
-  if (!key) throw new Error('SARVAM_API_KEY is not set');
-  const chunks = chunkText(text, SARVAM_MAX_CHARS);
-  const parts: string[] = [];
-
-  for (let i = 0; i < chunks.length; i++) {
-    const res = await fetch('https://api.sarvam.ai/text-to-speech', {
-      method: 'POST',
-      headers: { 'api-subscription-key': key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: chunks[i],
-        target_language_code: l.sarvam,
-        model: 'bulbul:v3',
-        speaker: voice,
-        speech_sample_rate: 24000,
-        // pitch/loudness are v2-only fields — sending them with v3 is an error.
-      }),
-    });
-    if (!res.ok) throw new Error(`Sarvam HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
-    const j: any = await res.json();
-    const b64 = j?.audios?.[0];
-    if (!b64) throw new Error(`Sarvam returned no audio: ${JSON.stringify(j).slice(0, 200)}`);
-    const part = outPath.replace(/\.wav$/, `.part${i}.wav`);
-    writeFileSync(part, Buffer.from(b64, 'base64'));
-    parts.push(part);
-  }
-
-  if (parts.length === 1) {
-    writeFileSync(outPath, readFileSync(parts[0]));
-  } else {
-    const { ffmpeg } = resolveTools();
-    const list = outPath.replace(/\.wav$/, '.parts.txt');
-    writeFileSync(list, parts.map((p) => `file '${p.replace(/\\/g, '/')}'`).join('\n') + '\n');
-    await run(ffmpeg, ['-y', '-f', 'concat', '-safe', '0', '-i', list, '-c', 'copy', outPath]);
-  }
-  return { path: outPath, chars: text.length, costUsd: sarvamCostUsd(text.length) };
-}
-
-function chunkText(text: string, max: number): string[] {
-  if (text.length <= max) return [text];
-  const out: string[] = [];
-  let cur = '';
-  for (const sentence of text.split(/(?<=[.!?।])\s+/)) {
-    if (cur && (cur + ' ' + sentence).length > max) {
-      out.push(cur);
-      cur = sentence;
-    } else cur = cur ? `${cur} ${sentence}` : sentence;
-  }
-  if (cur) out.push(cur);
-  return out;
+  return sarvamSpeak({ text, languageCode: l.sarvam, voice, outPath });
 }
 
 // ---------------------------------------------------------------------------
