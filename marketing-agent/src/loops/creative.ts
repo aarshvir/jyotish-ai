@@ -36,9 +36,16 @@ const BRACKET_SIZE = 4;
  * of what has actually been written and posted, never on the model's self-declared label.
  */
 const EXPLORE_SHARE = 0.3;
-/** Per-stage wall-clock deadline. Longer than any single CLI timeout in routing.json,
- *  short enough that an unattended 2-hourly loop can never wedge on a stuck child. */
-const STAGE_DEADLINE_MS = 300_000;
+/**
+ * Per-stage wall-clock deadline. MUST stay comfortably longer than TWO CLI timeouts from
+ * routing.json, or a slow first CLI eats the whole budget and brain()'s fallback to the next
+ * tier never gets a turn — the stage just dies. That is exactly what happened on 2026-07-26:
+ * the CLI timeouts were raised 180s -> 300s for 10-frame vision review, which silently made
+ * them equal to this deadline, and the script stage then failed every run for a day (08:21,
+ * 10:19, 12:20, 14:21) producing zero variants. 660s = codex 300 + claude 300 + overhead.
+ * Still bounded, so an unattended 2-hourly loop can never wedge forever.
+ */
+const STAGE_DEADLINE_MS = 660_000;
 
 /** Weighted total. Hook carries the most weight — the first second is the whole game. */
 const WEIGHTS = { hookStrength: 0.3, specificity: 0.2, credibility: 0.2, brandSafety: 0.15, producibility: 0.15 };
