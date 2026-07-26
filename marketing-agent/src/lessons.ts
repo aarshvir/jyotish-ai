@@ -136,6 +136,23 @@ export const OWNER_SEED_LESSONS: NewLesson[] = [
   },
   {
     source: 'owner',
+    severity: 'critical',
+    scope: 'script',
+    // PHRASING MATTERS HERE. src/audit/lessons-bridge.ts turns a NEGATIVE script lesson that names
+    // terms in quotes into a forbidden-substring block. A lesson that REQUIRES a phrase must
+    // therefore never be written as "never ... 'vedichour.com'", or the pre-flight would block
+    // every creative that obeys it. Kept positive and unquoted; the gate itself is deterministic
+    // (SPOKEN_SITE, asserted in creative.ts preflight() and render.ts preflight()).
+    rule:
+      'Every reel MUST close by naming the site out loud AND on screen: the final presenter shot says vedichour.com in his own ' +
+      'on-camera dialogue (Veo performs it, so it is free and stays in the reel one voice), and the reel ends on the branded ' +
+      'card where vedichour.com is the largest element. A viewer who only LISTENS must still learn where to go.',
+    evidence:
+      'Owner, 2026-07-26, reviewing the two finished reels: "at the end there should be a call to action: Try VedicHour.com... ' +
+      'because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour."',
+  },
+  {
+    source: 'owner',
     severity: 'high',
     scope: 'visual',
     rule: 'The end frame must be a clean hero hold of at least 1.5s — no launch banners, no floating feedback widgets, no mid-scroll footer.',

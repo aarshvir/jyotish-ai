@@ -146,6 +146,13 @@ export interface AssLayout {
   topWindows?: { start: number; end: number }[];
   /** Caption anchor Y used inside `topWindows`. Default 330 keeps the block within ~240-420px. */
   topCaptionY?: number;
+  /**
+   * Where the STORY ends, when the reel is longer than the story — i.e. the reel's duration minus
+   * the branded end card. Captions and the closing CTA lay out against this, not against `total`,
+   * so the end card stays a clean hold of the wordmark and `vedichour.com` instead of having the
+   * karaoke CTA composited on top of it. Defaults to `total` (no end card).
+   */
+  bodyEndSec?: number;
 }
 
 /** Build an .ass with a Cormorant hook, word-synced karaoke VO captions (gold sweep), and a CTA. */
@@ -154,6 +161,8 @@ export function buildAss(hook: string, segments: Seg[], cta: string, total: numb
   const captionY = layout.captionY ?? 1175;
   const ctaY = layout.ctaY ?? 1630;
   const ctaHold = layout.ctaHoldSec ?? 2.5;
+  // Everything below is timed against the STORY, which ends before the end card does.
+  const bodyEnd = Math.min(total, layout.bodyEndSec ?? total);
   const hookWrap = layout.hookWrap ?? 16;
   const fam = { hook: layout.fontFamily?.hook ?? FAM.hook, body: layout.fontFamily?.body ?? FAM.body, cta: layout.fontFamily?.cta ?? FAM.cta };
   const header =
@@ -165,11 +174,14 @@ export function buildAss(hook: string, segments: Seg[], cta: string, total: numb
     // is the box fill) so the caption never garbles the page's own text behind it. Shadow=0 —
     // with BorderStyle=3 a shadow would draw a second offset box.
     `Style: CaptionBand,${fam.body},76,${GOLD},${OFFWHITE},&H101A0A0A,&H64000000,-1,0,0,0,100,100,1,0,3,16,0,5,80,80,0,1\n` +
-    `Style: CTA,${fam.cta},46,${GOLD},${GOLD},${OUTL},&H64000000,0,0,0,0,100,100,1,0,1,3,2,5,80,80,0,1\n\n` +
+    `Style: CTA,${fam.cta},46,${GOLD},${GOLD},${OUTL},&H64000000,0,0,0,0,100,100,1,0,1,3,2,5,80,80,0,1\n` +
+    // CTA variant for when the closing CTA plays over a product screencap: same 94%-opaque navy
+    // band as CaptionBand, so the CTA never garbles the page's own text behind it.
+    `Style: CtaBand,${fam.cta},46,${GOLD},${GOLD},&H101A0A0A,&H64000000,0,0,0,0,100,100,1,0,3,16,0,5,80,80,0,1\n\n` +
     `[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n`;
 
   const ev: string[] = [];
-  const hookEnd = Math.min(2.7, Math.max(2.1, total * 0.16 + 1.7));
+  const hookEnd = Math.min(2.7, Math.max(2.1, bodyEnd * 0.16 + 1.7));
   ev.push(`Dialogue: 0,${assTime(0)},${assTime(hookEnd)},Hook,,0,0,0,,{\\an5\\pos(540,${hookY})\\fad(250,200)}${assEsc(wrap(hook, hookWrap))}`);
 
   // derive per-word timing from segments (proportional by char length, +90ms lead)
@@ -186,14 +198,19 @@ export function buildAss(hook: string, segments: Seg[], cta: string, total: numb
     }
   }
   const capStart = hookEnd - 0.1;
-  const capEnd = total - ctaHold;
+  const capEnd = bodyEnd - ctaHold;
   const topY = layout.topCaptionY ?? 330;
   const topWins = layout.topWindows ?? [];
   const cap = words.filter((x) => x.start >= capStart && x.start < capEnd);
   for (let i = 0; i < cap.length; i += 3) {
     const grp = cap.slice(i, i + 3);
     const bs = grp[0].start;
-    const be = Math.min(capEnd, grp[grp.length - 1].end + 0.22);
+    // The +0.22s "hang" must never reach the NEXT group's in-point. libass draws both events
+    // when they overlap, so two full caption lines land on the same baseline and composite into
+    // gibberish — the 2026-07-26 review read "SCLINE, AKISEK" where "SCORE, AUR EK" was still on
+    // screen as "LINE - KIS" came up, and it recurred at every group boundary in the reel.
+    const nextStart = cap[i + 3]?.start ?? Infinity;
+    const be = Math.min(capEnd, grp[grp.length - 1].end + 0.22, nextStart - 0.04);
     if (be <= bs) continue;
     // Classify the group by its midpoint so a line straddling a shot boundary follows
     // whichever shot it mostly plays over.
@@ -203,7 +220,10 @@ export function buildAss(hook: string, segments: Seg[], cta: string, total: numb
     const kara = grp.map((g) => `{\\kf${Math.max(8, Math.round((g.end - g.start) * 100))}}${assEsc(g.text.toUpperCase())} `).join('').trim();
     ev.push(`Dialogue: 0,${assTime(bs)},${assTime(be)},${inTop ? 'CaptionBand' : 'Caption'},,0,0,0,,{\\an5\\pos(540,${y})\\fad(70,70)\\fscx84\\fscy84\\t(0,150,\\fscx105\\fscy105)\\t(150,230,\\fscx100\\fscy100)}${kara}`);
   }
-  ev.push(`Dialogue: 0,${assTime(Math.max(0, total - ctaHold))},${assTime(total)},CTA,,0,0,0,,{\\an5\\pos(540,${ctaY})\\fad(200,200)}${assEsc(wrap(cta, 26))}`);
+  // Band the CTA when it plays over a product screencap (same rule as the karaoke captions).
+  const ctaStart = Math.max(0, bodyEnd - ctaHold);
+  const ctaOnProduct = topWins.some((w) => (ctaStart + bodyEnd) / 2 >= w.start && (ctaStart + bodyEnd) / 2 <= w.end);
+  ev.push(`Dialogue: 0,${assTime(ctaStart)},${assTime(bodyEnd)},${ctaOnProduct ? 'CtaBand' : 'CTA'},,0,0,0,,{\\an5\\pos(540,${ctaY})\\fad(200,200)}${assEsc(wrap(cta, 26))}`);
   return header + ev.join('\n') + '\n';
 }
 

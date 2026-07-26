@@ -158,10 +158,26 @@ export function lessonMatcher(l: ActiveLesson): { re: RegExp; label: string } | 
   if (l.pattern) {
     try { return { re: new RegExp(l.pattern, 'i'), label: `pattern /${l.pattern}/` }; } catch { /* bad regex */ }
   }
+  // A lesson that REQUIRES a phrase must never become a rule FORBIDDING it. The 2026-07-26 CTA
+  // ruling ("every reel must end by saying VedicHour.com") was first filed with the mandated
+  // phrase in quotes; harvested as a banned substring it would have blocked every creative that
+  // obeyed the owner — the exact inversion of the lesson. A requirement is asserted by a
+  // deterministic gate (SPOKEN_SITE in the two preflights), never by substring matching here.
+  if (/\b(must|always|required|has to|have to)\b/i.test(l.rule)) return null;
+
   const negative = /\b(never|no|avoid|don'?t|do not|ban(ned)?|forbid(den)?|stop)\b/i.test(l.rule);
   if (!negative) return null;
 
-  let terms = [...l.rule.matchAll(/[`"“']([^`"”']{3,60})[`"”']/g)].map((m) => m[1].trim());
+  // Quoted text is a BANNED PHRASE only in a copy lesson. In any other scope the quotes are
+  // evidence — a caption fragment, a UI string, a timestamp — and turning them into a forbidden
+  // substring blocks the reel for saying the very words it is supposed to say.
+  //
+  // Real case, 2026-07-26: the review auto-filed 'Remove the caption overlap; end "SCORE, AUR EK"
+  // before "LINE - KIS" appears' (scope: reel, a TIMING rule, already fixed in buildAss). The
+  // next pre-flight blocked the creative because its script contains those words. A lesson about
+  // when a caption leaves the screen must never become a rule about what the presenter may say.
+  const copyScope = !l.scope || l.scope === 'script';
+  let terms = copyScope ? [...l.rule.matchAll(/[`"“']([^`"”']{3,60})[`"”']/g)].map((m) => m[1].trim()) : [];
 
   // A copy lesson often names its forbidden terms in a plain list: "never Swiss Ephemeris,
   // Lahiri, ayanamsa or sidereal". Harvest those too — but only for script/copy lessons, where
