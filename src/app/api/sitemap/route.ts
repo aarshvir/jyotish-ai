@@ -20,6 +20,7 @@ const STATIC_ROUTES = [
   { path: '/kundali',  changefreq: 'weekly',  priority: '0.9'  },  // Deep Kundali product landing
   { path: '/synastry', changefreq: 'weekly',  priority: '0.9'  },  // Matchmaking / Gun Milan landing
   { path: '/pricing',  changefreq: 'weekly',  priority: '0.95' },
+  { path: '/sample-report', changefreq: 'monthly', priority: '0.9' },  // Public full-day sample report (ad landing)
   { path: '/hora',     changefreq: 'monthly', priority: '0.7'  },  // Wave-3 category explainer (planetary hours)
   { path: '/muhurat',  changefreq: 'monthly', priority: '0.7'  },  // Wave-3 category explainer (auspicious timing)
   { path: '/refund',   changefreq: 'monthly', priority: '0.5'  },

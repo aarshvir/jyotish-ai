@@ -9,11 +9,11 @@ export interface QA {
 export const FAQS: QA[] = [
   {
     q: 'What is Jyotish astrology?',
-    a: 'Jyotish (Sanskrit: "science of light") is the classical Indian system of Vedic astrology. It uses sidereal planetary positions, the Lahiri Ayanamsa, and time-based systems like Vimshottari Dasha and hora rulers to interpret life events and optimal timing. VedicHour applies classical Jyotish rules computed via the Swiss Ephemeris to produce AI-written Jyotish forecasts for the days and months ahead.',
+    a: 'Jyotish (Sanskrit: "science of light") is the classical Indian system of Vedic astrology. It reads the planets from where they actually sit in the sky, and uses time-based systems like Vimshottari Dasha and hora rulers to interpret life events and optimal timing. VedicHour applies those classical Jyotish rules to produce AI-written Jyotish forecasts for the days and months ahead.',
   },
   {
     q: 'What is a Kundli (Janam Kundali)?',
-    a: 'A Kundli — also called Janam Kundali, Janam Patri, or birth chart — is a map of planetary positions at the exact moment of your birth. It shows your Lagna (rising sign), Moon sign, Sun sign, and the placement of all 9 Jyotish grahas across the 12 houses. VedicHour generates your free Kundli online from your birth date, time, and place using the Swiss Ephemeris engine.',
+    a: 'A Kundli — also called Janam Kundali, Janam Patri, or birth chart — is a map of planetary positions at the exact moment of your birth. It shows your Lagna (rising sign), Moon sign, Sun sign, and the placement of all 9 Jyotish grahas across the 12 houses. VedicHour generates your free Kundli online from your birth date, time, and place.',
   },
   {
     q: 'Can I get a free Kundli here?',
@@ -21,15 +21,15 @@ export const FAQS: QA[] = [
   },
   {
     q: 'What is AI Jyotish / AI Kundli?',
-    a: 'AI Jyotish (or AI Kundli) refers to using artificial intelligence to interpret a classically computed Jyotish chart. VedicHour first calculates your planetary positions and timings using the Swiss Ephemeris — no guesswork. It then passes that mathematical data to AI (Anthropic Claude, with automatic fallback to OpenAI or Google Gemini) to generate written commentary, narrative forecasts, and actionable guidance in plain language.',
+    a: 'AI Jyotish (or AI Kundli) refers to using artificial intelligence to interpret a classically computed Jyotish chart. VedicHour first calculates your planetary positions and timings exactly, to the minute — no guesswork. It then passes that mathematical data to AI (Anthropic Claude, with automatic fallback to OpenAI or Google Gemini) to generate written commentary, narrative forecasts, and actionable guidance in plain language.',
   },
   {
     q: 'How is a Vedic forecast different from a Sun-sign horoscope?',
-    a: "A Vedic astrology forecast (Jyotish forecast) is personalised to your exact birth chart — not a generic Sun sign. It uses sidereal positions (not tropical), your natal Lagna and Moon sign, and predictive systems like Vimshottari Dasha. VedicHour goes further: it gives you 18 hourly windows per day with individual scores and written commentary, far beyond any daily horoscope column.",
+    a: "A Vedic astrology forecast (Jyotish forecast) is personalised to your exact birth chart — not a generic Sun sign. It reads the planets from where they actually sit in the sky, uses your own Lagna and Moon sign, and predictive systems like Vimshottari Dasha. VedicHour goes further: it gives you 18 hourly windows per day with individual scores and written commentary, far beyond any daily horoscope column.",
   },
   {
     q: 'How is VedicHour different from other free Kundli or astrology apps?',
-    a: "Most free Kundli apps show your chart but give generic interpretations. VedicHour gives you 18 hourly windows per day (06:00–24:00 in your city's local time), each rated 0–100 and explained in detail. The calculations use Swiss Ephemeris with Lahiri Ayanamsa — the same engine professional Jyotish astrologers use — not simplified or pre-computed tables.",
+    a: "Most free Kundli apps show your chart but give generic interpretations. VedicHour gives you 18 hourly windows per day (06:00–24:00 in your city's local time), each rated 0–100 and explained in detail. Every number is computed fresh from your own chart to the standards professional Jyotish astrologers work to — never from simplified or pre-computed tables.",
   },
   {
     q: 'How fast is report delivery?',

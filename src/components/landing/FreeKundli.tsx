@@ -79,7 +79,7 @@ export default function FreeKundli() {
             </div>
 
             <p className="mt-4 font-mono text-mono-sm text-dust">
-              Swiss Ephemeris · Lahiri Ayanamsa · Vimshottari Dasha · 100% free
+              Your full birth chart · your current life period · 100% free
             </p>
           </div>
 
@@ -122,14 +122,13 @@ export default function FreeKundli() {
                 <strong className="text-star">Vedic astrology forecast</strong>) uses your Kundli
                 along with predictive tools — primarily Vimshottari Dasha and transit analysis —
                 to identify favourable and challenging periods ahead. Unlike Western horoscopes,
-                Jyotish uses the sidereal zodiac (actual star positions, not the tropical/seasonal
-                zodiac).
+                Jyotish measures from where the stars actually sit in the sky, not from the
+                seasons.
               </p>
               <p>
                 VedicHour is an <strong className="text-star">AI Jyotish</strong> platform. We
-                compute your chart and every hourly window using the Swiss Ephemeris (the same
-                engine used by professional Jyotish astrologers worldwide), then use AI to turn
-                those calculations into readable, actionable{' '}
+                compute your chart and every hourly window from your exact birth moment, then use
+                AI to turn those calculations into readable, actionable{' '}
                 <strong className="text-star">Vedic astrology reports</strong> — from a free
                 Kundli preview to a full 30-day Jyotish forecast with a 12-month outlook.
               </p>

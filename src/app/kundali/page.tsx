@@ -14,18 +14,18 @@ import { faqPageLd, breadcrumbLd, softwareAppLd, type Faq } from '@/lib/seo/json
 export const metadata: Metadata = {
   title: 'Deep Kundali Report — Your Full Vedic Birth Chart',
   description:
-    'A deep, personalized Vedic birth report — your full chart read across career & money, marriage & intimacy, health, children and family, a year-by-year outlook for the next 5 years, and the classical checks (Manglik, Kaal Sarpa, Sade Sati). Computed with the Swiss Ephemeris. $9.99 / ₹899.',
+    'A deep, personalized Vedic birth report — your full chart read across career & money, marriage & intimacy, health, children and family, a year-by-year outlook for the next 5 years, and the classical checks (Manglik, Kaal Sarpa, Sade Sati). Computed from your exact birth moment. $9.99 / ₹899.',
   alternates: { canonical: '/kundali' },
 };
 
 const POINTS = [
   { t: 'Every area of life', d: 'Career & money, marriage & intimacy, health, children, and family — each read directly from your chart in plain English, not generic horoscope filler.' },
   { t: 'Your next 5 years', d: 'A year-by-year outlook driven by your exact planetary periods (dasha) — what each year emphasises and how to make the most of it.' },
-  { t: 'The classical checks', d: 'Manglik, Kaal Sarpa and Sade Sati assessed from real Swiss Ephemeris calculations — explained clearly, never with fear.' },
+  { t: 'The classical checks', d: 'Manglik, Kaal Sarpa and Sade Sati assessed from your own chart, not a lookup table — explained clearly, never with fear.' },
 ];
 
 const KUNDALI_SECTIONS: { h: string; p: string }[] = [
-  { h: '', p: 'Your Kundli — also called a Janam Kundali or Vedic birth chart — is a precise map of where every planet sat in the sky at the exact moment and place you were born. VedicHour computes it with the Swiss Ephemeris using the sidereal zodiac and the Lahiri Ayanamsa, the same standard professional Jyotish astrologers use. Here is what a full reading covers.' },
+  { h: '', p: 'Your Kundli — also called a Janam Kundali or Vedic birth chart — is a precise map of where every planet sat in the sky at the exact moment and place you were born. VedicHour casts it the way a traditional astrologer would, measuring from where the stars actually sit rather than from the seasons. Here is what a full reading covers.' },
   { h: 'The twelve houses (bhavas)', p: 'Your chart is divided into twelve houses, each governing an area of life — the 1st (self and body), 2nd (money and family), 4th (home and mother), 7th (marriage and partnership), 10th (career and status), and so on. The planets sitting in, and ruling, each house shape how that part of your life unfolds. Your deep report reads all twelve in plain English.' },
   { h: 'Manglik (Mangal) Dosha', p: 'Manglik, or Mangal, Dosha occurs when Mars sits in the 1st, 2nd, 4th, 7th, 8th or 12th house — checked from your ascendant, Moon and Venus. It is traditionally weighed in marriage matching. Classical texts also list many cancellations, and two Manglik partners are considered to offset it, so being Manglik is rarely the obstacle it is feared to be. Your report explains your exact placement without scare tactics.' },
   { h: 'Kaal Sarpa Dosha', p: 'Kaal Sarpa Dosha forms when all seven classical planets fall on one side of the Rahu–Ketu axis. There are twelve named types depending on which houses Rahu and Ketu occupy. It is associated with intensity and delayed-then-sudden results. Your report identifies whether it is present, which type, and whether it is partial.' },
@@ -35,14 +35,14 @@ const KUNDALI_SECTIONS: { h: string; p: string }[] = [
 ];
 
 const KUNDALI_FAQS: Faq[] = [
-  { q: 'What is a Kundli (Janam Kundali)?', a: 'A Kundli, or Janam Kundali, is your Vedic birth chart — a snapshot of the planets’ sidereal positions at your exact birth time and place. It is the basis for every Jyotish prediction, from personality to the timing of events.' },
+  { q: 'What is a Kundli (Janam Kundali)?', a: 'A Kundli, or Janam Kundali, is your Vedic birth chart — a snapshot of where every planet sat at your exact birth time and place. It is the basis for every Jyotish prediction, from personality to the timing of events.' },
   { q: 'Do I need my exact birth time?', a: 'For the ascendant (Lagna), the houses and dasha timing, yes — the Lagna changes about every two hours. With only your date you still get an accurate Moon sign, nakshatra and planetary signs, but house-based and timing details need a birth time.' },
   { q: 'Is the Kundli free?', a: 'Yes — you can generate your birth chart and see your core facts (Lagna, Moon sign, nakshatra, current dasha and dosha flags) for free. The deep, plain-English report across all life areas with a 5-year outlook is a one-time $9.99 / ₹899.' },
   { q: 'What does the deep report include?', a: 'Your full chart read across character, career & money, relationships, marriage & intimacy, health, children and family; divisional charts (D9, D7, D10); Manglik / Kaal Sarpa / Sade Sati checks; and a year-by-year outlook for the next five years.' },
-  { q: 'How accurate is it?', a: 'The astronomy is computed with the Swiss Ephemeris and the Lahiri Ayanamsa — the professional standard — so the chart itself is precise. The interpretation follows classical Parashari principles in plain English. Astrology is for reflection and guidance, not guaranteed outcomes.' },
+  { q: 'How accurate is it?', a: 'The chart is calculated from real astronomical data — the same math a careful astrologer uses — so the positions themselves are precise. The interpretation follows classical Parashari principles in plain English. Astrology is for reflection and guidance, not guaranteed outcomes.' },
   { q: 'Does Manglik Dosha stop marriage?', a: 'Rarely. Manglik Dosha is a Mars placement weighed in matching, but classical texts list many cancellations and two Manglik partners offset it. Your report explains your exact situation plainly, without fear.' },
   { q: 'What is Sade Sati?', a: 'Sade Sati is Saturn’s roughly 7.5-year transit around your Moon sign, in three phases. It is a period of discipline and restructuring — challenging at times but also maturing. Your report tells you if and where you are in it.' },
-  { q: 'How is Vedic astrology different from Western?', a: 'Vedic (Jyotish) uses the sidereal zodiac fixed to the actual stars; Western uses the tropical zodiac tied to the seasons — so your Vedic Sun or Moon sign is often one sign earlier. Jyotish also emphasises the Moon sign, the nakshatras and the dasha timing system.' },
+  { q: 'How is Vedic astrology different from Western?', a: 'Vedic (Jyotish) measures from where the stars actually sit in the sky; Western measures from the seasons — so your Vedic Sun or Moon sign is often one sign earlier. Jyotish also emphasises the Moon sign, the nakshatras and the dasha timing system.' },
 ];
 
 export default async function KundaliPage() {
@@ -62,7 +62,7 @@ export default async function KundaliPage() {
           <p className="text-body-lg text-dust max-w-2xl mx-auto leading-relaxed">
             A deep, personalized Vedic birth report in plain English — your character, career &amp; money,
             marriage &amp; intimacy, health, children and family, plus a year-by-year outlook for the next
-            five years. Computed from your exact birth moment with the Swiss Ephemeris.
+            five years. Computed from your exact birth moment.
           </p>
         </div>
 

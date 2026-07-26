@@ -208,7 +208,7 @@ export function KundaliResultDisplay({
       </div>
 
       <p className="text-center font-mono text-mono-sm text-dust">
-        Computed with the Swiss Ephemeris (Lahiri ayanamsa){createdAt ? ` · ${new Date(createdAt).toLocaleDateString()}` : ''}
+        Calculated from real astronomical data{createdAt ? ` · ${new Date(createdAt).toLocaleDateString()}` : ''}
       </p>
 
       <style jsx global>{`

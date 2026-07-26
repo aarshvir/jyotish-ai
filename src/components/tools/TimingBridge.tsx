@@ -63,8 +63,8 @@ export function TimingBridge({
 
       <p className="font-body text-body-sm text-dust mt-5">
         Traditionally this is a paid sitting with an astrologer, and the calculation takes days.
-        The engine computes all 18 windows from your birth details with the Swiss Ephemeris and
-        Lahiri ayanamsa &mdash; real astronomy, no jargon.
+        The engine works out all 18 windows from your birth details using real astronomical data
+        &mdash; the same math a careful astrologer uses.
       </p>
 
       <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">

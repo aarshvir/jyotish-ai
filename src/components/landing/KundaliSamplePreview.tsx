@@ -74,7 +74,7 @@ export default function KundaliSamplePreview() {
         </div>
 
         <p className="font-mono text-mono-sm text-dust italic text-center">
-          Swiss Ephemeris · Lahiri Ayanamsa · Parashari principles — the full report explains every placement across seven life areas.
+          Classical Parashari principles, applied to your exact chart — the full report explains every placement across seven life areas.
         </p>
       </div>
     </section>

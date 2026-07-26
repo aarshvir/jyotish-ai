@@ -7,9 +7,9 @@
 const ROWS = [
   {
     dim: 'Zodiac system',
-    vedic: 'Sidereal — Lahiri ayanamsa, anchored to fixed stars',
-    western: 'Tropical — tied to equinoxes, drifts with precession',
-    matters: 'Your sidereal lagna is typically one full sign behind your tropical sun sign.',
+    vedic: 'Anchored to where the stars actually sit in the sky',
+    western: 'Anchored to the seasons, so it has drifted over the centuries',
+    matters: 'Your Vedic rising sign is usually one whole sign behind your Western sun sign.',
   },
   {
     dim: 'Lagna (Ascendant)',
@@ -67,7 +67,7 @@ export default function VedicVsWestern() {
             Vedic Jyotish vs Western Astrology
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            We do Jyotish — sidereal, scripture-grounded, hour-precise. Here is what that means.
+            We do Jyotish — star-anchored, scripture-grounded, hour-precise. Here is what that means.
           </p>
         </div>
 

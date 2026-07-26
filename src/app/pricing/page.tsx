@@ -259,8 +259,8 @@ export default async function PricingPage({
           <h2 className="font-body text-headline-md text-star mb-4">Our Methodology</h2>
           <div className="prose-reading text-body-md text-dust space-y-3">
             <p>
-              VedicHour uses the Swiss Ephemeris (pyswisseph) for planetary calculations — the same engine used by professional astrologers worldwide.
-              We apply the Lahiri ayanamsa for sidereal positions and Vimshottari dasha for timing predictions.
+              VedicHour calculates every chart from real astronomical data — the same math a careful astrologer uses.
+              Positions are measured the traditional Indian way, from where the stars actually sit in the sky, and life-period timing comes from your Vimshottari dasha.
             </p>
             <p>
               Each hourly window is scored by combining hora rulers, choghadiya quality, transit lagna, and your natal chart&apos;s functional benefic/malefic relationships.

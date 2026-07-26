@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-const HIDE_ON = ['/admin', '/login', '/signup', '/auth'];
+// /sample-report is captured frame-by-frame by the ad renderer — a fixed
+// floating button would sit over the report in every ad frame.
+const HIDE_ON = ['/admin', '/login', '/signup', '/auth', '/sample-report'];
 
 export function FeedbackWidget() {
   const pathname = usePathname() || '';

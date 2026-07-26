@@ -18,7 +18,7 @@ const STEPS = [
   {
     number: '02',
     title: 'Classical Vedic calculation',
-    description: 'Actual planetary positions computed using Swiss Ephemeris — the same engine used by professional astrologers worldwide. Classical Vedic system, precise to the minute, no approximations.',
+    description: 'Your chart is worked out from real astronomical data — the same math a careful astrologer uses. Precise to the minute, from your actual birth moment, with no shortcuts or pre-baked tables.',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
         <circle cx="24" cy="24" r="5" fill="currentColor" opacity="0.9" />
