@@ -16,8 +16,11 @@ import { runStatsLoop } from './loops/stats';
 import { runInsightsLoop } from './loops/insights';
 import { startCockpit } from './cockpit/server';
 import { readHeartbeat } from './scheduler/heartbeat';
+import { runReviewLoop } from './audit/index';
+import { preflightCli } from './audit/preflight';
+import { approve, printPending, reject } from './audit/approvals';
 
-function parse(rest: string[]): { flags: Record<string, string>; text: string } {
+function parse(rest: string[]): { flags: Record<string, string>; text: string; pos: string[] } {
   const flags: Record<string, string> = {};
   const pos: string[] = [];
   for (let i = 0; i < rest.length; i++) {
@@ -27,12 +30,12 @@ function parse(rest: string[]): { flags: Record<string, string>; text: string } 
       pos.push(rest[i]);
     }
   }
-  return { flags, text: pos.join(' ') };
+  return { flags, text: pos.join(' '), pos };
 }
 
 async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
-  const { flags, text } = parse(rest);
+  const { flags, text, pos } = parse(rest);
 
   switch (cmd) {
     case 'doctor': {
@@ -98,6 +101,36 @@ async function main() {
     case 'render:budget':
       printBudgetStatus();
       break;
+    case 'preflight':
+      process.exitCode = await preflightCli(text);
+      break;
+    case 'loop:review':
+      await runReviewLoop({
+        slug: pos[0],
+        allowPaid: flags['allow-paid'] === 'true',
+        concurrency: flags.conc ? Number(flags.conc) : undefined,
+      });
+      break;
+    case 'approvals':
+      printPending();
+      break;
+    case 'approve': {
+      if (!pos[0]) return console.error('usage: npm run approve <slug> ["note"]');
+      const r = approve(pos[0], pos.slice(1).join(' '));
+      console.log(r ? `APPROVED ${pos[0]} — it may now be published.` : `Nothing pending for "${pos[0]}". Run: npm run approvals`);
+      break;
+    }
+    case 'reject': {
+      if (!pos[0] || !pos[1]) return console.error('usage: npm run reject <slug> "<reason>"');
+      const reason = pos.slice(1).join(' ');
+      const { row, lesson } = await reject(pos[0], reason);
+      console.log(
+        row
+          ? `REJECTED ${pos[0]}. Lesson filed (${lesson === 'store' ? 'lessons store' : 'data/lessons-pending.jsonl'}) so it cannot happen again:\n  "${reason}"`
+          : `Nothing pending for "${pos[0]}". Run: npm run approvals`,
+      );
+      break;
+    }
     case 'loop:publish':
       await runPublishPrep();
       break;
@@ -144,6 +177,15 @@ async function main() {
           `                                 --dry stubs only the paid calls · --estimate prices it and stops\n` +
           `                                 --languages hi,ta,te  real DUBBED variants (winners only)\n` +
           `  npm run render:budget          video budget caps, spend so far, and the fal.ai price table\n` +
+          `\n  -- THE PUBLISH GATE (nothing reaches a platform without it) --\n` +
+          `  npm run preflight -- <slug>    STAGE 0 ($0, BEFORE any render): hard-block a creative plan on\n` +
+          `                                 voice, capture targets, jargon, narration fit, brand safety, lessons\n` +
+          `  npm run loop:review -- <slug>  4 internal audits + 5 GPT cross-reviews + 2 deterministic passes\n` +
+          `                                 over a rendered reel -> REVIEW.md + review.json + fix_queue\n` +
+          `                                 [--conc N] [--allow-paid  metered OpenAI fallback, cap $0.25/reel]\n` +
+          `  npm run approvals              reels waiting for your decision\n` +
+          `  npm run approve <slug>         approve for publishing\n` +
+          `  npm run reject <slug> "why"    reject + file the reason as a lesson\n\n` +
           `  npm run loop:publish           package reels into post-ready platform posts (L3)\n` +
           `  npm run loop:social            generate platform social posts (L3 organic)\n` +
           `  npm run loop:consent           sync Supabase signups into the consent ledger (L8)\n` +
