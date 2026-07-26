@@ -41,6 +41,10 @@ export const ALLOWED_CAPTURE = [
   /\/sample-report\b/i,
   /\/demo\b/i,
   /\/dashboard\b/i,
+  // The free-Kundli form is the ad's destination, not a paywall — the owner approved an
+  // end-frame holding on its hero. Allowed for the CLOSING shot; the body of the reel must
+  // still scroll the report itself (the pricing/checkout block below is what law §2 targets).
+  /\/free-kundli\b/i,
 ];
 
 /**

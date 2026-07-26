@@ -375,6 +375,19 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     // 2a. $0 pre-flight on the INPUTS. Refuses before the budget guard is even consulted.
     logRenderLessons();
     const preflightProblems = preflight(creative, scriptText);
+    // The plan-only gate above cannot see the PAGE. The owner's jargon defect lived on the
+    // captured page, not in the script, so the deep gate also fetches each capture URL and
+    // scans what a viewer would actually read. Never let its own failure block a clean render.
+    try {
+      const { runPreflight } = await import('../audit/preflight');
+      const deep = await runPreflight(picked.raw, { file: picked.file, raw: readFileSync(picked.file, 'utf8') });
+      for (const b of deep?.blocks ?? []) {
+        const line = `${b.rule}: ${b.detail ?? ''}`.trim();
+        if (!preflightProblems.includes(line)) preflightProblems.push(line);
+      }
+    } catch (e: any) {
+      console.warn(`[render] deep pre-flight unavailable (${String(e?.message ?? e).slice(0, 120)}) — plan-only gate still applied.`);
+    }
     if (preflightProblems.length) {
       console.error(`[render] PRE-FLIGHT FAILED (${preflightProblems.length}) — nothing generated, nothing charged:`);
       for (const p of preflightProblems) console.error(`[render]   ✗ ${p}`);

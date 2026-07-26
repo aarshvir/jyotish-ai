@@ -2,9 +2,26 @@
   "_comment": "brain() routing. Each tier lists CLIs in preference order; the router tries them in turn, skipping disabled/rate-limited ones. Spreads load to respect each subscription's fair-use. Edit freely — no restart needed (read per call).",
   "killSwitchFile": "data/KILL",
   "tiers": {
-    "bulk":  { "clis": ["gemini", "codex", "claude"] },
-    "smart": { "clis": ["claude", "codex", "gemini"] },
-    "code":  { "clis": ["codex", "gemini"] }
+    "bulk": {
+      "clis": [
+        "gemini",
+        "codex",
+        "claude"
+      ]
+    },
+    "smart": {
+      "clis": [
+        "claude",
+        "codex",
+        "gemini"
+      ]
+    },
+    "code": {
+      "clis": [
+        "codex",
+        "gemini"
+      ]
+    }
   },
   "clis": {
     "gemini": {
@@ -20,14 +37,15 @@
       "model": null,
       "dailyCap": 300,
       "minIntervalMs": 3000,
-      "timeoutMs": 180000
+      "timeoutMs": 300000,
+      "_timeout_why": "300s: vision review of 10 frames exceeds 180s (audit lens c timed out)."
     },
     "claude": {
       "enabled": "auto",
       "model": null,
       "dailyCap": 200,
       "minIntervalMs": 2000,
-      "timeoutMs": 180000
+      "timeoutMs": 300000
     }
   }
 }
