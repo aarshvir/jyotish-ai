@@ -35,6 +35,7 @@ import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { buildTransitQueryTerms, detectYogas } from '@/lib/rag/yogaDetector';
 import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
 import { notifyReportReady } from '@/lib/notify/reportReady';
+import { forecastDayCount, toReportPlanType } from '@/lib/reports/planType';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
 
@@ -797,8 +798,7 @@ export async function generateReportPipeline(
       .maybeSingle();
     if ((existingRow as { status?: string } | null)?.status === 'complete') return;
 
-    const planRaw = input.planType ?? input.type;
-    const planType = planRaw === 'free' ? 'preview' : planRaw;
+    const planType = toReportPlanType(input.planType ?? input.type);
     const birthTimeNorm =
       input.time && input.time.includes(':') && input.time.split(':').length === 2
         ? `${input.time}:00`
@@ -975,8 +975,7 @@ export async function generateReportPipeline(
     // grids + hourly LLM prose was pure discarded spend AND made the free
     // funnel's time-to-first-value equal a paid report (~11 min). Generate
     // exactly what the preview shows: 1 day.
-    const dayCount =
-      input.type === 'monthly' || input.type === 'annual' ? 30 : previewPlan ? 1 : 7;
+    const dayCount = forecastDayCount(input.planType ?? input.type, previewPlan);
     const cLat = input.currentLat || input.lat;
     const cLng = input.currentLng || input.lng;
 
