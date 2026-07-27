@@ -28,6 +28,7 @@ import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/server';
+import { toReportPlanType } from '@/lib/reports/planType';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -546,6 +547,9 @@ export async function POST(request: NextRequest) {
 
   // Bind the report's plan to what was actually paid for — prevents paying for a
   // 7-day plan then requesting 'annual' (the completed-payment check is plan-agnostic).
+  // Map payment-only SKUs (e.g. monthly_upgrade) to generation plans — otherwise a
+  // post-upgrade Try Again / stale-generating restart would regenerate 7 days and
+  // overwrite the paid Monthly forecast with plan_type='monthly_upgrade'.
   if (!isFreePlan && userIsAdmin !== true) {
     const { data: paidRow } = await db
       .from('ziina_payments')
@@ -557,7 +561,7 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .maybeSingle();
     const paidPlan = (paidRow as { plan_type?: string } | null)?.plan_type;
-    if (paidPlan) body.plan_type = paidPlan;
+    if (paidPlan) body.plan_type = toReportPlanType(paidPlan);
   }
 
   // Guard: refuse to generate for unresolved birth coordinates. A geocode failure
@@ -646,7 +650,7 @@ export async function POST(request: NextRequest) {
       current_lat: body.current_lat ?? null,
       current_lng: body.current_lng ?? null,
       timezone_offset: timezoneOffset,
-      plan_type: body.plan_type ?? '7day',
+      plan_type: toReportPlanType(body.plan_type ?? '7day'),
       status: 'generating',
       payment_status: trustedPaymentStatus,
       payment_provider:
@@ -760,6 +764,7 @@ export async function POST(request: NextRequest) {
             : undefined;
 
   const toNum = (v: string | number | null | undefined) => parseFloat(String(v ?? 0)) || 0;
+  const generationPlan = toReportPlanType(body.plan_type ?? '7day');
   const input: PipelineInput = {
     name: body.name ?? 'Seeker',
     date: body.birth_date ?? '',
@@ -771,9 +776,9 @@ export async function POST(request: NextRequest) {
     currentLng: toNum(body.current_lng ?? body.birth_lng),
     currentCity: body.current_city ?? body.birth_city ?? '',
     timezoneOffset,
-    type: body.plan_type ?? '7day',
+    type: generationPlan,
     forecastStart: body.forecast_start ?? undefined,
-    planType: body.plan_type ?? '7day',
+    planType: generationPlan,
     paymentStatus: trustedPaymentStatus,
     // Prefer the freshly-submitted context; fall back to the persisted column so a
     // report-page retry / "Try Again" (which omits the field) stays personalized.
