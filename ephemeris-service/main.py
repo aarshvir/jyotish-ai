@@ -1114,7 +1114,9 @@ SPECIAL_EVENT_MOD = {
 }
 
 # Verified DrikPanchang-aligned values for Dubai (25.2°N, 55.3°E).
-# Overrides Swiss-Ephemeris sunrise snapshot when the civil date matches.
+# Overrides Swiss-Ephemeris sunrise snapshot when the civil date matches AND
+# the grid location is near Dubai (see _panchang_override_for). Never apply
+# worldwide — that replaces another city's true nakshatra/tithi/yoga/moon_house.
 PANCHANG_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "2026-03-06": {"nakshatra": "Chitra", "yoga": "Shula", "tithi": "Krishna Chaturthi"},
     "2026-03-07": {"nakshatra": "Swati", "yoga": "Ganda", "tithi": "Krishna Panchami"},
@@ -1149,6 +1151,29 @@ PANCHANG_OVERRIDES: Dict[str, Dict[str, Any]] = {
     "2026-04-17": {"tithi": "Amavasya"},
     "2026-04-18": {"tithi": "Shukla Pratipada"},
 }
+
+DUBAI_OVERRIDE_LAT = 25.2048
+DUBAI_OVERRIDE_LNG = 55.2708
+# ~1.5° ≈ 150 km — covers Dubai/Sharjah/Ajman; excludes Muscat, Riyadh, Delhi, etc.
+DUBAI_OVERRIDE_RADIUS_DEG = 1.5
+
+
+def _is_dubai_panchang_locale(lat: float, lng: float) -> bool:
+    try:
+        return (
+            abs(float(lat) - DUBAI_OVERRIDE_LAT) <= DUBAI_OVERRIDE_RADIUS_DEG
+            and abs(float(lng) - DUBAI_OVERRIDE_LNG) <= DUBAI_OVERRIDE_RADIUS_DEG
+        )
+    except (TypeError, ValueError):
+        return False
+
+
+def _panchang_override_for(date_str: str, lat: float, lng: float) -> Dict[str, Any]:
+    """Return Dubai DrikPanchang overrides only for Dubai-locale grids."""
+    if not _is_dubai_panchang_locale(lat, lng):
+        return {}
+    return PANCHANG_OVERRIDES.get(date_str, {})
+
 
 SPECIAL_EVENTS_CALENDAR = {
     "mercury_retrograde_periods": [
@@ -1684,7 +1709,7 @@ def generate_daily_grid(data: DailyGridInput):
         weekday = date_obj.strftime("%A")
         date_str = date_obj.strftime("%Y-%m-%d")
 
-        override = PANCHANG_OVERRIDES.get(date_str, {})
+        override = _panchang_override_for(date_str, data.current_lat, data.current_lng)
         if override.get("nakshatra"):
             nakshatra_str = override["nakshatra"]
         if override.get("yoga"):
