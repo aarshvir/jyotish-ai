@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
   daysLength,
   mergeForecastDaysByDate,
@@ -67,7 +67,7 @@ describe('patchReportData', () => {
       updated_at: '2026-03-01T00:00:00.000Z',
     };
 
-    let readCount = 0;
+    let writeCount = 0;
     const db = {
       from() {
         return {
@@ -76,22 +76,6 @@ describe('patchReportData', () => {
               eq() {
                 return {
                   async maybeSingle() {
-                    readCount += 1;
-                    if (readCount === 1) {
-                      // First read: still 7 days.
-                      return {
-                        data: {
-                          report_data: {
-                            days: Array.from({ length: 7 }, (_, i) => ({
-                              date: `2026-03-${String(i + 1).padStart(2, '0')}`,
-                            })),
-                          },
-                          updated_at: '2026-03-01T00:00:00.000Z',
-                        },
-                        error: null,
-                      };
-                    }
-                    // Concurrent extend won — fresh row now has 30 days.
                     return {
                       data: {
                         report_data: store.report_data,
@@ -114,8 +98,9 @@ describe('patchReportData', () => {
               select() {
                 return {
                   async maybeSingle() {
-                    if (filters.updated_at !== store.updated_at) {
-                      // Simulate extend writing between our read and write on attempt 1.
+                    writeCount += 1;
+                    if (writeCount === 1) {
+                      // Concurrent extend wins between our read and write.
                       store.report_data = {
                         days: Array.from({ length: 30 }, (_, i) => ({
                           date: `2026-03-${String(i + 1).padStart(2, '0')}`,
@@ -124,6 +109,7 @@ describe('patchReportData', () => {
                       store.updated_at = '2026-03-01T00:01:00.000Z';
                       return { data: null, error: null };
                     }
+                    expect(filters.updated_at).toBe(store.updated_at);
                     store.report_data = payload.report_data;
                     store.updated_at = payload.updated_at;
                     return { data: { id: 'r1' }, error: null };
@@ -137,15 +123,13 @@ describe('patchReportData', () => {
       },
     };
 
-    // Stale-style mutator that would have wiped 30→7 without preserveDaysIfShrunk /
-    // fresh re-read on retry.
     const result = await patchReportData(db, 'r1', (current) => ({
       ...current,
       personalized: { tier: 'preview', teaser: 'hello there this is long enough' },
     }));
 
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.attempts).toBeGreaterThanOrEqual(2);
+    if (result.ok) expect(result.attempts).toBe(2);
     expect(daysLength(store.report_data)).toBe(30);
     expect(store.report_data.personalized).toEqual({
       tier: 'preview',
