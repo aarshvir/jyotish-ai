@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
+import { patchReportData } from '@/lib/reports/patchReportData';
 
 /**
  * POST /api/reports/[id]/hourly-day  { date: 'YYYY-MM-DD' }
@@ -176,16 +177,33 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       };
     });
 
-    // Persist: write the upgraded day back into report_data (single-row update).
-    const updatedDays = days.slice();
-    updatedDays[dayIdx] = { ...day, slots: updatedSlots, ai_prose: true };
-    const { error: upErr } = await db
-      .from('reports')
-      .update({ report_data: { ...reportData, days: updatedDays }, updated_at: new Date().toISOString() })
-      .eq('id', reportId);
-    if (upErr) {
+    // Persist onto a FRESH report_data read. Applying prose to the day-by-date in
+    // the current row (not the pre-LLM snapshot) so a concurrent monthly extension
+    // that grew days 8–30 is not wiped back to 7.
+    const patch = await patchReportData(db, reportId, (current) => {
+      const freshDays = Array.isArray(current.days) ? [...(current.days as StoredDay[])] : [];
+      const idx = freshDays.findIndex((d) => d?.date === date);
+      if (idx < 0) {
+        throw new Error(`Date ${date} no longer present on report`);
+      }
+      const freshDay = freshDays[idx];
+      const mergedSlots = (freshDay.slots ?? []).map((s, i) => {
+        const p = proseMap.get(typeof s.slot_index === 'number' ? s.slot_index : i);
+        if (!p) return s;
+        return {
+          ...s,
+          commentary: p.commentary,
+          commentary_short: p.commentary_short?.trim() || `${p.commentary.split('.')[0] ?? ''}.`,
+        };
+      });
+      // If the fresh day has no slots (unexpected), fall back to the generated set.
+      const slotsOut = mergedSlots.length > 0 ? mergedSlots : updatedSlots;
+      freshDays[idx] = { ...freshDay, slots: slotsOut, ai_prose: true };
+      return { ...current, days: freshDays };
+    });
+    if (!patch.ok) {
       // Still return the prose (user sees it this session); next open regenerates.
-      console.error('[hourly-day] persist failed:', upErr.message);
+      console.error('[hourly-day] persist failed:', patch.error);
     }
 
     return NextResponse.json({ date, cached: false, slots: updatedSlots });
