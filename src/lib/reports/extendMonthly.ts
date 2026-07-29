@@ -9,6 +9,7 @@ import { buildSlotGuidance, buildDayBriefing } from '@/lib/guidance/builder';
 import { isV2GuidanceEnabled } from '@/lib/guidance/featureFlag';
 import type { ReportData } from '@/lib/agents/types';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
+import { mergeForecastDaysByDate, patchReportData } from '@/lib/reports/patchReportData';
 
 const SIGNS_FOR_LAGNA = [
   'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -316,23 +317,32 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
     };
   });
 
-  const merged: ReportData = {
-    ...reportData!,
+  // Final write must re-merge onto whatever is currently stored. Buyers are told they
+  // can open the report while days 8–30 append; personalized / hourly-day / teaser may
+  // have patched report_data meanwhile. A stale full-blob write would drop those keys
+  // or — if a concurrent writer raced the other way — wipe the extension.
+  const patch = await patchReportData(db, reportId, (fresh) => ({
+    ...mergeForecastDaysByDate(
+      fresh,
+      newReportDays as unknown as Array<Record<string, unknown>>,
+    ),
     report_type: 'monthly',
-    days: [...existingDays, ...newReportDays] as ReportData['days'],
-  };
+  }));
 
-  const { error: upErr } = await db
+  if (!patch.ok) {
+    return { ok: false, message: patch.error };
+  }
+
+  const { error: planErr } = await db
     .from('reports')
     .update({
-      report_data: merged as unknown as Record<string, unknown>,
       plan_type: 'monthly',
       updated_at: new Date().toISOString(),
     })
     .eq('id', reportId);
 
-  if (upErr) {
-    return { ok: false, message: upErr.message };
+  if (planErr) {
+    return { ok: false, message: planErr.message };
   }
 
   return { ok: true, message: 'Extended to 30 days' };

@@ -9,6 +9,7 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { sanitizePersonalContext, sanitizeLagnaSign, sanitizePlanetName, sanitizeForPrompt } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { type Personalized, wantedTier, cacheSatisfies, projectForTier } from '@/lib/reports/personalizedTier';
+import { patchReportData } from '@/lib/reports/patchReportData';
 
 /**
  * POST /api/reports/[id]/personalized
@@ -159,11 +160,13 @@ Start with { and end with }.`;
     const substantive = wantTier === 'full' ? personalized.full_answer : personalized.teaser;
     if (!substantive || substantive.length < 30) return NextResponse.json({ personalized: null });
 
-    const { error: upErr } = await db
-      .from('reports')
-      .update({ report_data: { ...reportData, personalized }, updated_at: new Date().toISOString() })
-      .eq('id', reportId);
-    if (upErr) console.error('[personalized] persist failed:', upErr.message);
+    // Merge onto a fresh read so a long LLM call cannot overwrite an in-flight
+    // monthly extension (or teaser) with the pre-extension report_data snapshot.
+    const patch = await patchReportData(db, reportId, (current) => ({
+      ...current,
+      personalized,
+    }));
+    if (!patch.ok) console.error('[personalized] persist failed:', patch.error);
 
     return NextResponse.json({ personalized });
   } catch (e) {

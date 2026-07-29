@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { patchReportData } from '@/lib/reports/patchReportData';
 
 /**
  * POST /api/reports/[id]/teaser
@@ -88,13 +89,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .map((d) => ({ date: String(d.date), score: Number(d.day_score) }));
     if (days.length === 0) return NextResponse.json({ teaser: null });
 
-    await db
-      .from('reports')
-      .update({
-        report_data: { ...reportData, teaser: { days, generated_at: new Date().toISOString() } },
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', reportId);
+    // Re-read + optimistic merge so a concurrent monthly extension (or personalized
+    // write) cannot be clobbered by this stale snapshot of report_data.
+    const patch = await patchReportData(db, reportId, (current) => ({
+      ...current,
+      teaser: { days, generated_at: new Date().toISOString() },
+    }));
+    if (!patch.ok) {
+      console.error('[teaser] persist failed:', patch.error);
+    }
 
     return NextResponse.json({ teaser: { days, cached: false } });
   } catch (e) {
