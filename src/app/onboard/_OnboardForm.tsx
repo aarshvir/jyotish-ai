@@ -7,6 +7,7 @@ import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { createClient } from '@/lib/supabase/client';
 import { track } from '@/components/analytics/PostHogProvider';
+import { estimateTimezoneOffsetMinutes } from '@/lib/utils/timezoneOffset';
 
 // Draft of the birth details + chosen plan, stashed to sessionStorage before a Ziina
 // redirect so a cancelled/declined payment can restore the form instead of a blank slate.
@@ -49,6 +50,8 @@ interface FormData {
   birthCity: string;
   birthLat: number | null;
   birthLng: number | null;
+  /** UTC offset minutes for the birth city (from geocode) — used when timing at birth. */
+  birthTzOffset: number | null;
   currentCity: string;
   currentLat: number | null;
   currentLng: number | null;
@@ -618,7 +621,7 @@ function OnboardPageInner() {
   const [form, setForm] = useState<FormData>({
     name: '', email: '', phone: '',
     birthDate: '', birthTime: '', birthCity: '',
-    birthLat: null, birthLng: null,
+    birthLat: null, birthLng: null, birthTzOffset: null,
     currentCity: '', currentLat: null, currentLng: null, currentTzOffset: null,
     reportType: 'free',
     forecastStartDate: '',
@@ -917,23 +920,15 @@ function OnboardPageInner() {
         const lat = parseFloat(data[0].lat);
         const lng = parseFloat(data[0].lon);
         const name = data[0].display_name.split(',').slice(0, 3).join(',').trim();
-        const displayLower = (name + ' ' + city).toLowerCase();
-        const knownTz: Record<string, number> = {
-          'dubai': 240, 'uae': 240, 'abu dhabi': 240, 'sharjah': 240,
-          'india': 330, 'mumbai': 330, 'delhi': 330, 'bangalore': 330,
-          'singapore': 480, 'hong kong': 480, 'london': 0, 'new york': -300,
-        };
-        let tzOffset = Math.round((lng / 15) * 60 / 30) * 30;
-        for (const [key, val] of Object.entries(knownTz)) {
-          if (displayLower.includes(key)) { tzOffset = val; break; }
-        }
+        const tzOffset =
+          estimateTimezoneOffsetMinutes({ city: `${name} ${city}`, lng }) ?? 0;
         const geoResult: GeoResult = { display: name, lat, lng, tzOffset };
         if (isCurrent) {
           setCurrentGeo(geoResult);
           setForm((prev) => ({ ...prev, currentLat: lat, currentLng: lng, currentTzOffset: tzOffset }));
         } else {
           setGeo(geoResult);
-          setForm((prev) => ({ ...prev, birthLat: lat, birthLng: lng }));
+          setForm((prev) => ({ ...prev, birthLat: lat, birthLng: lng, birthTzOffset: tzOffset }));
         }
       } else {
         const err = 'City not found. Try a different spelling.';
@@ -1060,9 +1055,13 @@ function OnboardPageInner() {
           rawTimePaid && rawTimePaid.includes(':') && rawTimePaid.split(':').length === 2
             ? `${rawTimePaid}:00`
             : rawTimePaid || '12:00:00';
-        const tzFallbackPaid =
-          form.currentTzOffset ??
-          (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
+        // Time grids follow the timed location (current city if set, else birth city).
+        // Never fall back to the browser TZ — that silently shifts every hourly window.
+        const tzForPaid = useCurrent
+          ? (form.currentTzOffset ?? form.birthTzOffset ?? 0)
+          : (form.birthTzOffset ??
+              estimateTimezoneOffsetMinutes({ city: form.birthCity, lng: form.birthLng }) ??
+              0);
         const intentRes = await fetch('/api/ziina/create-intent', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
           body: JSON.stringify({
@@ -1077,7 +1076,7 @@ function OnboardPageInner() {
             birth_city: form.birthCity,
             birth_lat: form.birthLat,
             birth_lng: form.birthLng,
-            timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallbackPaid) : tzFallbackPaid,
+            timezone_offset: tzForPaid,
             ...(useCurrent ? {
               current_city: form.currentCity,
               current_lat: form.currentLat,
@@ -1146,9 +1145,11 @@ function OnboardPageInner() {
         rawTime && rawTime.includes(':') && rawTime.split(':').length === 2
           ? `${rawTime}:00`
           : rawTime || '12:00:00';
-      const tzFallback =
-        form.currentTzOffset ??
-        (typeof window !== 'undefined' ? -new Date().getTimezoneOffset() : 0);
+      const tzForStart = useCurrent
+        ? (form.currentTzOffset ?? form.birthTzOffset ?? 0)
+        : (form.birthTzOffset ??
+            estimateTimezoneOffsetMinutes({ city: form.birthCity, lng: form.birthLng }) ??
+            0);
 
       const startPayload: Record<string, unknown> = {
         reportId,
@@ -1165,7 +1166,7 @@ function OnboardPageInner() {
         type: effectiveType,
         plan_type: paramsObj.plan_type ?? effectiveType,
         payment_status: isPaidPlan ? 'promo' : 'free',
-        timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
+        timezone_offset: tzForStart,
         ...(form.forecastStartDate ? { forecast_start: form.forecastStartDate } : {}),
         ...(form.personalContext.trim() ? { personal_context: form.personalContext.trim() } : {}),
         ...(useCurrent ? {

@@ -28,6 +28,7 @@ import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/server';
+import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -407,13 +408,21 @@ export async function POST(request: NextRequest) {
 
   const generationTraceId = randomUUID();
 
-  const tzBody = body.timezone_offset;
-  const timezoneOffset =
-    typeof tzBody === 'number' && Number.isFinite(tzBody)
-      ? tzBody
-      : typeof tzBody === 'string' && tzBody.trim() !== ''
-        ? parseInt(tzBody, 10) || 0
-        : 0;
+  // Prefer an estimate from the timed location (current city if set, else birth)
+  // over a client/browser timezone_offset. Onboard historically sent
+  // -getTimezoneOffset() whenever "I live elsewhere" was unchecked, which shifted
+  // every paid hourly window for travelers (e.g. Dubai browser + Delhi birth).
+  const parseLng = (v: unknown): number | null => {
+    const n = typeof v === 'number' ? v : parseFloat(String(v ?? ''));
+    return Number.isFinite(n) ? n : null;
+  };
+  const timezoneOffset = resolveReportTimezoneOffset({
+    clientOffset: body.timezone_offset,
+    birthCity: body.birth_city,
+    birthLng: parseLng(body.birth_lng),
+    currentCity: body.current_city,
+    currentLng: parseLng(body.current_lng),
+  });
 
   const nowIso = new Date().toISOString();
   let trustedPaymentStatus: string;

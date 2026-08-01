@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { isValidLat, isValidLng } from '@/lib/utils/coords';
 import { getDayOutcomeTier } from '@/lib/guidance/labels';
 import type { NowResponse } from '@/lib/api/nowTypes';
+import { localDateStringForOffset } from '@/lib/utils/timezoneOffset';
 
 export const dynamic = 'force-dynamic';
 
@@ -157,7 +158,6 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
-  const dateStr = now.toISOString().slice(0, 10);
   // Finite checks, not truthiness: a real equator (lat 0) / prime-meridian (lng 0)
   // location must NOT fall back to Dubai and show the wrong timing intelligence.
   const rawLat = Number(row.current_lat ?? row.birth_lat);
@@ -168,6 +168,9 @@ export async function GET(request: NextRequest) {
     typeof row.timezone_offset === 'number' && Number.isFinite(row.timezone_offset)
       ? row.timezone_offset
       : DUBAI_TZ_MIN;
+  // Civil date in the seeker's stored offset — UTC date near local midnight would
+  // fetch yesterday's grid and fall back to slot 0 ("06:00 this morning").
+  const dateStr = localDateStringForOffset(now, tz);
   const natalIdx = lagnaIndexFromRow(row.lagna_sign as string, row.report_data);
 
   const cacheKey = `${auth.user.id}:${dateStr}:${lat}:${lng}:${tz}:${natalIdx}`;
