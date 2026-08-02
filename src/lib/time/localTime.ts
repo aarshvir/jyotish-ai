@@ -77,3 +77,32 @@ export function resolveLocalSlotTimes(
     end_time: end,
   };
 }
+
+/**
+ * Civil YYYY-MM-DD for `instant` in a fixed UTC offset (minutes east of UTC).
+ * Matches TodayCard / report-TZ "today" so forecast day-1 is the seeker's local day,
+ * not the server/UTC calendar date.
+ */
+export function civilDateYmd(
+  instant: Date,
+  offsetMinutes: number | null | undefined,
+): string {
+  const offset = isFiniteNumber(offsetMinutes) ? offsetMinutes : 0;
+  const shifted = new Date(instant.getTime() + offset * 60_000);
+  return `${shifted.getUTCFullYear()}-${pad2(shifted.getUTCMonth() + 1)}-${pad2(shifted.getUTCDate())}`;
+}
+
+/** Add whole civil days to a YYYY-MM-DD string (calendar arithmetic in UTC noon space). */
+export function addCivilDays(ymd: string, days: number): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd.trim());
+  if (!m) return ymd;
+  const utc = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0) + days * 86_400_000;
+  const d = new Date(utc);
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+}
+
+/** Build a contiguous YYYY-MM-DD range anchored on a civil start date. */
+export function civilDateRange(startYmd: string, count: number): string[] {
+  const n = Math.max(0, Math.floor(count));
+  return Array.from({ length: n }, (_, i) => addCivilDays(startYmd, i));
+}
