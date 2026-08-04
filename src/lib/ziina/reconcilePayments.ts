@@ -87,8 +87,11 @@ export async function drainReconcilePayments(
     pageSize?: number;
   },
 ): Promise<ReconcileDrainResult> {
-  const nowMs = opts.nowMs ?? Date.now();
-  const deadline = nowMs + (opts.timeBudgetMs ?? RECONCILE_TIME_BUDGET_MS);
+  // Wall-clock budget must use real Date.now() — opts.nowMs is only for expire decisions
+  // (tests pin "now" without freezing the event loop clock).
+  const startedMs = Date.now();
+  const decisionNowMs = opts.nowMs ?? startedMs;
+  const deadline = startedMs + (opts.timeBudgetMs ?? RECONCILE_TIME_BUDGET_MS);
   const pageSize = opts.pageSize ?? RECONCILE_PAGE_SIZE;
   const results: ReconcileAction[] = [];
   let reconciled = 0;
@@ -130,7 +133,7 @@ export async function drainReconcilePayments(
           continue;
         }
 
-        const decision = reconcileNonCompletedDecision(intent.status, row.created_at, Date.now());
+        const decision = reconcileNonCompletedDecision(intent.status, row.created_at, decisionNowMs);
         if (decision.kind === 'close') {
           await db
             .from('ziina_payments')
