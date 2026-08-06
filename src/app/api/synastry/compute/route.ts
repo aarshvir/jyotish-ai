@@ -6,7 +6,7 @@ import { checkRateLimit, RATE_LIMITS } from '@/lib/api/rateLimit';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { hasValidBirthCoords } from '@/lib/utils/coords';
 import type { NatalChartData } from '@/lib/agents/types';
-import { computeAshtakoot, NAKSHATRA_NAMES } from '@/lib/synastry/ashtakoot';
+import { computeAshtakoot, nakshatraNameToIndex } from '@/lib/synastry/ashtakoot';
 import { buildSynastryCommentary } from '@/lib/synastry/synastryCommentary';
 
 const SIGNS = [
@@ -16,14 +16,7 @@ const SIGNS = [
 
 function signToIndex(sign: string): number {
   const i = SIGNS.findIndex((s) => s.toLowerCase() === sign.trim().toLowerCase());
-  return i >= 0 ? i : 0;
-}
-
-function nakshatraToIndex(name: string): number {
-  const i = NAKSHATRA_NAMES.findIndex(
-    (n) => n.toLowerCase() === name.trim().toLowerCase(),
-  );
-  return i >= 0 ? i : 0;
+  return i >= 0 ? i : -1;
 }
 
 type BirthPayload = {
@@ -130,10 +123,16 @@ export async function POST(request: NextRequest) {
 
   const moonA = chartA.planets?.Moon;
   const moonB = chartB.planets?.Moon;
-  const nakA = nakshatraToIndex(moonA?.nakshatra ?? chartA.moon_nakshatra ?? 'Ashwini');
-  const nakB = nakshatraToIndex(moonB?.nakshatra ?? chartB.moon_nakshatra ?? 'Ashwini');
-  const sigA = signToIndex(moonA?.sign ?? 'Aries');
-  const sigB = signToIndex(moonB?.sign ?? 'Aries');
+  const nakA = nakshatraNameToIndex(moonA?.nakshatra ?? chartA.moon_nakshatra);
+  const nakB = nakshatraNameToIndex(moonB?.nakshatra ?? chartB.moon_nakshatra);
+  const sigA = signToIndex(moonA?.sign ?? '');
+  const sigB = signToIndex(moonB?.sign ?? '');
+  if (nakA < 0 || nakB < 0 || sigA < 0 || sigB < 0) {
+    return NextResponse.json(
+      { error: 'Could not resolve Moon sign/nakshatra from the birth charts.' },
+      { status: 502 },
+    );
+  }
 
   const ashtakoot = computeAshtakoot({
     moonNakshatraIndexA: nakA,

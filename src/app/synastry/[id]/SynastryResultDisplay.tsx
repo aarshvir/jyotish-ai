@@ -12,7 +12,10 @@ const NAKSHATRA_NATURES: Record<string, string> = {
   Hasta: 'Skillful & Helpful', Chitra: 'Brilliant & Structural', Swati: 'Independent & Adaptable',
   Vishakha: 'Goal-oriented & Vigorous', Anuradha: 'Devotional & Friendly', Jyeshtha: 'Protective & Masterful',
   Mula: 'Rooted & Destructive', 'Purva Ashadha': 'Invincible & Patient', 'Uttara Ashadha': 'Victory & Enduring',
-  Shravana: 'Listening & Learning', Dhanishtha: 'Rhythmic & Wealthy', Shatabhisha: 'Healing & Secluded',
+  Shravana: 'Listening & Learning',
+  // Ephemeris canonical spelling + common transliteration alias
+  Dhanishta: 'Rhythmic & Wealthy', Dhanishtha: 'Rhythmic & Wealthy',
+  Shatabhisha: 'Healing & Secluded',
   'Purva Bhadrapada': 'Ecstatic & Independent', 'Uttara Bhadrapada': 'Wise & Restrained', Revati: 'Gentle & Completing',
 };
 

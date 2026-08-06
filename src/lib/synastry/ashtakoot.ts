@@ -4,13 +4,35 @@
  * Classical groupings follow common North-Indian parashari tables used in software kundli.
  */
 
+/** Canonical spellings — must match ephemeris-service NAKSHATRAS (Swiss/Lahiri). */
 export const NAKSHATRA_NAMES = [
   'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra', 'Punarvasu',
   'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni', 'Hasta',
   'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha', 'Mula', 'Purva Ashadha',
-  'Uttara Ashadha', 'Shravana', 'Dhanishtha', 'Shatabhisha', 'Purva Bhadrapada',
+  'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha', 'Purva Bhadrapada',
   'Uttara Bhadrapada', 'Revati',
 ] as const;
+
+/**
+ * Alternate transliterations → canonical index. Ephemeris emits "Dhanishta";
+ * content/UI sometimes use "Dhanishtha". A silent miss used to map to Ashwini (0)
+ * and corrupt paid Ashtakoot (Nadi/Tara/Yoni/Gana).
+ */
+const NAKSHATRA_ALIASES: Record<string, number> = {
+  dhanishtha: 22,
+  dhanista: 22,
+  moola: 18,
+  jyestha: 17,
+};
+
+/** Resolve a nakshatra display name to 0..26, or -1 if unknown (never invent Ashwini). */
+export function nakshatraNameToIndex(name: string | null | undefined): number {
+  const key = (name ?? '').trim().toLowerCase();
+  if (!key) return -1;
+  const direct = NAKSHATRA_NAMES.findIndex((n) => n.toLowerCase() === key);
+  if (direct >= 0) return direct;
+  return NAKSHATRA_ALIASES[key] ?? -1;
+}
 
 /** 0 Deva, 1 Manushya, 2 Rakshasa */
 const GANA: number[] = [

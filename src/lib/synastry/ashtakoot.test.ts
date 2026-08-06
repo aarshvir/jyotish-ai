@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeAshtakoot } from './ashtakoot';
+import { computeAshtakoot, nakshatraNameToIndex, NAKSHATRA_NAMES } from './ashtakoot';
 
 describe('computeAshtakoot', () => {
   it('matches golden total for identical Moons (Ashwini, Aries / Ashwini, Aries)', () => {
@@ -34,5 +34,40 @@ describe('computeAshtakoot', () => {
     });
     expect(r.total).toBeGreaterThan(0);
     expect(r.total).toBeLessThanOrEqual(36);
+  });
+});
+
+describe('nakshatraNameToIndex', () => {
+  it('matches ephemeris canonical Dhanishta at index 22', () => {
+    expect(NAKSHATRA_NAMES[22]).toBe('Dhanishta');
+    expect(nakshatraNameToIndex('Dhanishta')).toBe(22);
+  });
+
+  it('accepts Dhanishtha transliteration alias (does not fall through to Ashwini)', () => {
+    expect(nakshatraNameToIndex('Dhanishtha')).toBe(22);
+    expect(nakshatraNameToIndex('dhanishtha')).toBe(22);
+  });
+
+  it('returns -1 for unknown names instead of inventing Ashwini', () => {
+    expect(nakshatraNameToIndex('NotAStar')).toBe(-1);
+    expect(nakshatraNameToIndex('')).toBe(-1);
+    expect(nakshatraNameToIndex(undefined)).toBe(-1);
+  });
+
+  it('keeps Ashwini+Dhanishta Nadi at full points (regression for silent Ashwini remap)', () => {
+    const correct = computeAshtakoot({
+      moonNakshatraIndexA: nakshatraNameToIndex('Ashwini'),
+      moonNakshatraIndexB: nakshatraNameToIndex('Dhanishta'),
+      moonSignIndexA: 0,
+      moonSignIndexB: 9,
+    });
+    const viaAlias = computeAshtakoot({
+      moonNakshatraIndexA: nakshatraNameToIndex('Ashwini'),
+      moonNakshatraIndexB: nakshatraNameToIndex('Dhanishtha'),
+      moonSignIndexA: 0,
+      moonSignIndexB: 9,
+    });
+    expect(correct.breakdown.find((k) => k.name === 'Nadi')?.score).toBe(8);
+    expect(viaAlias.total).toBe(correct.total);
   });
 });

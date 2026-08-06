@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import type { NatalChartData } from '@/lib/agents/types';
 import { hasValidBirthCoords } from '@/lib/utils/coords';
-import { computeAshtakoot, NAKSHATRA_NAMES } from '@/lib/synastry/ashtakoot';
+import { computeAshtakoot, nakshatraNameToIndex } from '@/lib/synastry/ashtakoot';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 
 /**
@@ -20,11 +20,7 @@ const SIGNS = [
 
 function signToIndex(sign: string): number {
   const i = SIGNS.findIndex((s) => s.toLowerCase() === (sign || '').trim().toLowerCase());
-  return i >= 0 ? i : 0;
-}
-function nakshatraToIndex(name: string): number {
-  const i = NAKSHATRA_NAMES.findIndex((n) => n.toLowerCase() === (name || '').trim().toLowerCase());
-  return i >= 0 ? i : 0;
+  return i >= 0 ? i : -1;
 }
 
 function band(total: number): { label: string; tone: 'excellent' | 'good' | 'fair' | 'work' } {
@@ -92,11 +88,21 @@ export async function POST(request: NextRequest) {
 
   const moonA = chartA.planets?.Moon;
   const moonB = chartB.planets?.Moon;
+  const nakA = nakshatraNameToIndex(moonA?.nakshatra ?? chartA.moon_nakshatra);
+  const nakB = nakshatraNameToIndex(moonB?.nakshatra ?? chartB.moon_nakshatra);
+  const sigA = signToIndex(moonA?.sign ?? '');
+  const sigB = signToIndex(moonB?.sign ?? '');
+  if (nakA < 0 || nakB < 0 || sigA < 0 || sigB < 0) {
+    return NextResponse.json(
+      { error: 'Could not resolve Moon sign/nakshatra from the birth charts.' },
+      { status: 502 },
+    );
+  }
   const ashtakoot = computeAshtakoot({
-    moonNakshatraIndexA: nakshatraToIndex(moonA?.nakshatra ?? chartA.moon_nakshatra ?? 'Ashwini'),
-    moonNakshatraIndexB: nakshatraToIndex(moonB?.nakshatra ?? chartB.moon_nakshatra ?? 'Ashwini'),
-    moonSignIndexA: signToIndex(moonA?.sign ?? 'Aries'),
-    moonSignIndexB: signToIndex(moonB?.sign ?? 'Aries'),
+    moonNakshatraIndexA: nakA,
+    moonNakshatraIndexB: nakB,
+    moonSignIndexA: sigA,
+    moonSignIndexB: sigB,
   });
 
   return NextResponse.json({
