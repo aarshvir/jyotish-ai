@@ -210,6 +210,189 @@ export type FinalizeIntentResult =
   | { ok: true; action: 'already_done' | 'ignored_incomplete' | 'no_binding' | 'processed' }
   | { ok: false; error: string };
 
+type GrantResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Persist report entitlement after Ziina confirms payment. Failures must surface —
+ * ziina_payments may already be `completed`, and reconcile only scans `pending`, so
+ * a silent grant miss would permanently strand a charged buyer as unpaid.
+ */
+async function grantReportPaidEntitlement(
+  db: SupabaseClient,
+  opts: { reportId: string; userId: string; planType: string },
+): Promise<GrantResult> {
+  const { reportId, userId, planType } = opts;
+
+  if (planType === 'monthly_upgrade') {
+    const { data, error } = await db
+      .from('reports')
+      .update({
+        payment_status: 'paid',
+        payment_provider: 'ziina',
+        plan_type: 'monthly',
+        upsell_converted_at: new Date().toISOString(),
+      })
+      .eq('id', reportId)
+      .eq('user_id', userId)
+      .select('id')
+      .maybeSingle();
+    if (error) {
+      console.error('[ziina/finalize] monthly_upgrade entitlement grant failed:', error.message);
+      return { ok: false, error: error.message };
+    }
+    if (!data) {
+      return { ok: false, error: 'Report entitlement grant matched no row' };
+    }
+    return { ok: true };
+  }
+
+  // Bind the report's plan to what was actually PAID for (the ziina_payments row),
+  // not whatever plan the draft row was created with — closes the pay-7day-get-annual
+  // escalation on the finalize auto-dispatch path (which reads reports.plan_type).
+  const { data, error } = await db
+    .from('reports')
+    .update({
+      payment_status: 'paid',
+      payment_provider: 'ziina',
+      ...(planType ? { plan_type: planType } : {}),
+    })
+    .eq('id', reportId)
+    .eq('user_id', userId)
+    .select('id')
+    .maybeSingle();
+  if (error) {
+    console.error('[ziina/finalize] report entitlement grant failed:', error.message);
+    return { ok: false, error: error.message };
+  }
+  if (!data) {
+    return { ok: false, error: 'Report entitlement grant matched no row' };
+  }
+  return { ok: true };
+}
+
+async function dispatchMonthlyExtend(baseUrl: string, reportId: string): Promise<void> {
+  const hasInngest = !!(process.env.INNGEST_EVENT_KEY ?? '').trim();
+  if (hasInngest) {
+    try {
+      await inngest.send({
+        // Idempotency id (matches the report/generate pattern) so a webhook retry /
+        // double-finalize doesn't enqueue a second extend within Inngest's dedupe window.
+        id: `report-extend:${reportId}`,
+        name: 'report/extend',
+        data: { reportId, baseUrl },
+      });
+    } catch (e) {
+      console.warn('[ziina/finalize] report/extend Inngest failed, inline fallback:', e);
+      void extendReportToMonthly(baseUrl, reportId).catch((err) =>
+        console.error('[ziina/finalize] inline extend failed:', err),
+      );
+    }
+  } else {
+    void extendReportToMonthly(baseUrl, reportId).catch((err) =>
+      console.error('[ziina/finalize] inline extend failed:', err),
+    );
+  }
+}
+
+async function grantStandaloneUnlock(
+  db: SupabaseClient,
+  planType: string,
+  userId: string,
+): Promise<GrantResult> {
+  const unlockTable = planType === 'kundali' ? 'user_kundali_unlock' : 'user_synastry_unlock';
+  const { error: upErr } = await db.from(unlockTable).upsert(
+    {
+      user_id: userId,
+      unlocked_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' },
+  );
+  if (upErr) {
+    console.error(`[ziina/finalize] ${unlockTable} upsert:`, upErr);
+    return { ok: false, error: upErr.message };
+  }
+  return { ok: true };
+}
+
+/**
+ * Re-apply entitlements for a payment already marked `completed`. Critical when the
+ * first finalize claimed the payment row then lost the report/unlock write — verify
+ * retries and concurrent losers used to return `already_done` without healing, and
+ * reconcile never re-scans completed intents.
+ */
+async function healCompletedPaymentGrants(
+  db: SupabaseClient,
+  row: ZiinaPaymentRow & { promo_code_id?: string | null },
+  baseUrl: string,
+  bookPromoRedemption: () => Promise<void>,
+): Promise<FinalizeIntentResult> {
+  const planType = row.plan_type ?? '';
+  const reportId = row.report_id;
+
+  const standaloneUnlock =
+    (planType === 'synastry' || planType === 'kundali') && !reportId && row.user_id;
+  if (standaloneUnlock) {
+    const grant = await grantStandaloneUnlock(db, planType, row.user_id!);
+    if (!grant.ok) return { ok: false, error: grant.error };
+    await bookPromoRedemption();
+    return { ok: true, action: 'already_done' };
+  }
+
+  if (!reportId || !row.user_id) {
+    return { ok: true, action: 'already_done' };
+  }
+
+  const { data: reportForPayment, error: reportForPaymentErr } = await db
+    .from('reports')
+    .select('id, user_id, payment_status')
+    .eq('id', reportId)
+    .maybeSingle();
+
+  if (reportForPaymentErr) {
+    console.error('[ziina/finalize] heal report lookup:', reportForPaymentErr.message);
+    return { ok: false, error: reportForPaymentErr.message };
+  }
+
+  // Draft may land after payment claim (#194 class) — nothing to grant yet; keep
+  // already_done so verify can redirect when the row appears on a later attempt.
+  if (!reportForPayment) {
+    return { ok: true, action: 'already_done' };
+  }
+
+  if (reportForPayment.user_id !== row.user_id) {
+    console.error('[ziina/finalize] heal owner mismatch', {
+      reportId,
+      paymentUserId: row.user_id,
+      reportUserId: reportForPayment.user_id,
+    });
+    return { ok: false, error: 'Payment is not bound to the report owner' };
+  }
+
+  const needsGrant =
+    reportForPayment.payment_status !== 'paid' && reportForPayment.payment_status !== 'promo';
+  if (needsGrant) {
+    const grant = await grantReportPaidEntitlement(db, {
+      reportId,
+      userId: row.user_id,
+      planType,
+    });
+    if (!grant.ok) return { ok: false, error: grant.error };
+    await bookPromoRedemption();
+  }
+
+  if (planType === 'monthly_upgrade') {
+    await dispatchMonthlyExtend(baseUrl, reportId);
+    return { ok: true, action: 'already_done' };
+  }
+
+  const forecastPlans = new Set(['7day', 'monthly', 'annual']);
+  if (forecastPlans.has(planType)) {
+    await maybeDispatchReportGenerate(db, reportId, baseUrl);
+  }
+
+  return { ok: true, action: 'already_done' };
+}
+
 /**
  * Confirms intent with Ziina API, marks DB rows, dispatches Inngest for forecast plans
  * or extend for monthly_upgrade.
@@ -250,10 +433,6 @@ export async function finalizeCompletedZiinaIntent(
     return { ok: true, action: 'no_binding' };
   }
 
-  if (row.status === 'completed') {
-    return { ok: true, action: 'already_done' };
-  }
-
   // Book the coupon redemption ONLY after this call commits the grant (owner-mismatch
   // guard + atomic claim below). Booking it before those guards burned the coupon —
   // and, for once-per-user codes, blocked the legitimate owner forever — on a payment
@@ -279,6 +458,10 @@ export async function finalizeCompletedZiinaIntent(
     }
   };
 
+  if (row.status === 'completed') {
+    return healCompletedPaymentGrants(db, row, baseUrl, bookPromoRedemption);
+  }
+
   const planType = row.plan_type ?? '';
   const reportId = row.report_id;
 
@@ -290,18 +473,8 @@ export async function finalizeCompletedZiinaIntent(
     // Grant the unlock FIRST. Only mark the payment 'completed' after it succeeds —
     // so if the unlock table is missing/errors, our payment row stays un-completed and
     // a later re-verify retries (instead of stranding a charged buyer who can't self-heal).
-    const unlockTable = planType === 'kundali' ? 'user_kundali_unlock' : 'user_synastry_unlock';
-    const { error: upErr } = await db.from(unlockTable).upsert(
-      {
-        user_id: row.user_id,
-        unlocked_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' },
-    );
-    if (upErr) {
-      console.error(`[ziina/finalize] ${unlockTable} upsert:`, upErr);
-      return { ok: false, error: upErr.message };
-    }
+    const grant = await grantStandaloneUnlock(db, planType, row.user_id!);
+    if (!grant.ok) return { ok: false, error: grant.error };
 
     await db
       .from('ziina_payments')
@@ -371,8 +544,14 @@ export async function finalizeCompletedZiinaIntent(
     .select('ziina_intent_id')
     .maybeSingle();
   if (!claimedRow) {
-    // Another concurrent verify/webhook already finalized this payment.
-    return { ok: true, action: 'already_done' };
+    // Another concurrent verify/webhook already claimed this payment — still heal
+    // entitlements in case the winner lost the report/unlock write after the claim.
+    return healCompletedPaymentGrants(
+      db,
+      { ...row, status: 'completed' },
+      baseUrl,
+      bookPromoRedemption,
+    );
   }
 
   // This caller won the atomic claim and passed the owner check → book the coupon now.
@@ -396,54 +575,24 @@ export async function finalizeCompletedZiinaIntent(
   }
 
   if (planType === 'monthly_upgrade') {
-    await db
-      .from('reports')
-      .update({
-        payment_status: 'paid',
-        payment_provider: 'ziina',
-        plan_type: 'monthly',
-        upsell_converted_at: new Date().toISOString(),
-      })
-      .eq('id', reportId)
-      .eq('user_id', boundUserId);
+    const grant = await grantReportPaidEntitlement(db, {
+      reportId,
+      userId: boundUserId!,
+      planType,
+    });
+    if (!grant.ok) return { ok: false, error: grant.error };
 
-    const hasInngest = !!(process.env.INNGEST_EVENT_KEY ?? '').trim();
-    if (hasInngest) {
-      try {
-        await inngest.send({
-          // Idempotency id (matches the report/generate pattern) so a webhook retry /
-          // double-finalize doesn't enqueue a second extend within Inngest's dedupe window.
-          id: `report-extend:${reportId}`,
-          name: 'report/extend',
-          data: { reportId, baseUrl },
-        });
-      } catch (e) {
-        console.warn('[ziina/finalize] report/extend Inngest failed, inline fallback:', e);
-        void extendReportToMonthly(baseUrl, reportId).catch((err) =>
-          console.error('[ziina/finalize] inline extend failed:', err),
-        );
-      }
-    } else {
-      void extendReportToMonthly(baseUrl, reportId).catch((err) =>
-        console.error('[ziina/finalize] inline extend failed:', err),
-      );
-    }
+    await dispatchMonthlyExtend(baseUrl, reportId);
     return { ok: true, action: 'processed' };
   }
 
   if (reportForPayment && boundUserId) {
-    // Bind the report's plan to what was actually PAID for (the ziina_payments row),
-    // not whatever plan the draft row was created with — closes the pay-7day-get-annual
-    // escalation on the finalize auto-dispatch path (which reads reports.plan_type).
-    await db
-      .from('reports')
-      .update({
-        payment_status: 'paid',
-        payment_provider: 'ziina',
-        ...(planType ? { plan_type: planType } : {}),
-      })
-      .eq('id', reportId)
-      .eq('user_id', boundUserId);
+    const grant = await grantReportPaidEntitlement(db, {
+      reportId,
+      userId: boundUserId,
+      planType,
+    });
+    if (!grant.ok) return { ok: false, error: grant.error };
   }
 
   const forecastPlans = new Set(['7day', 'monthly', 'annual']);
