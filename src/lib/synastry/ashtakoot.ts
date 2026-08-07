@@ -39,14 +39,41 @@ const GANA: number[] = [
   0, 1, 2, 1, 0, 1, 0, 0, 2, 2, 1, 1, 0, 2, 0, 2, 0, 2, 2, 1, 1, 0, 2, 2, 1, 1, 0,
 ];
 
-/** 0 Vata, 1 Pitta, 2 Kapha (simplified nadi groups) */
+/**
+ * Classical Ashtakoot Nadi (Adi=0 / Madhya=1 / Antya=2) by Moon nakshatra.
+ * Was a bogus repeating 0,0,1,1,1,2,2,2… block that mislabeled 18/27 stars and
+ * flipped Nadi Dosha (±8 pts) for ~44% of Moon pairs.
+ *
+ * Adi: Ashwini, Ardra, Punarvasu, Uttara Phalguni, Hasta, Jyeshtha, Mula,
+ *      Shatabhisha, Purva Bhadrapada
+ * Madhya: Bharani, Mrigashira, Pushya, Purva Phalguni, Chitra, Anuradha,
+ *         Purva Ashadha, Dhanishta, Uttara Bhadrapada
+ * Antya: Krittika, Rohini, Ashlesha, Magha, Swati, Vishakha, Uttara Ashadha,
+ *        Shravana, Revati
+ */
 const NADI: number[] = [
-  0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 1,
+  0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2,
 ];
 
+/**
+ * Classical Yoni animal id per nakshatra (14 animals, not a 0..8 cycle).
+ * 0 Horse, 1 Elephant, 2 Sheep, 3 Snake, 4 Dog, 5 Cat, 6 Rat, 7 Cow,
+ * 8 Buffalo, 9 Tiger, 10 Deer, 11 Monkey, 12 Mongoose, 13 Lion.
+ */
 const YONI_MAP: number[] = [
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+  0, 1, 2, 3, 3, 4, 5, 2, 5, 6, 6, 7, 8, 9, 8, 9, 10, 10, 4, 11, 12, 11, 13, 0, 13, 7, 1,
 ];
+
+/** Mahavaira (bitter foe) yoni pairs — classical 0 points. Sorted lo-hi keys. */
+const YONI_MAHAVIRA = new Set([
+  '0-8', // Horse–Buffalo
+  '1-13', // Elephant–Lion
+  '2-11', // Sheep–Monkey
+  '3-12', // Snake–Mongoose
+  '4-10', // Dog–Deer
+  '5-6', // Cat–Rat
+  '7-9', // Cow–Tiger
+]);
 
 export interface KootaLine {
   name: string;
@@ -105,15 +132,30 @@ function scoreTara(nakA: number, nakB: number): KootaLine {
   };
 }
 
+function yoniPoints(animalA: number, animalB: number): number {
+  if (animalA === animalB) return 4;
+  const lo = Math.min(animalA, animalB);
+  const hi = Math.max(animalA, animalB);
+  if (YONI_MAHAVIRA.has(`${lo}-${hi}`)) return 0;
+  // Non-foe different animals: classical tables span 1–3; neutral 2 is the
+  // honest middle (old code used adjacent-index=2 / else=0, which invented foes).
+  return 2;
+}
+
 function scoreYoni(nakA: number, nakB: number): KootaLine {
   const ya = YONI_MAP[nakA] ?? 0;
   const yb = YONI_MAP[nakB] ?? 0;
-  const score = ya === yb ? 4 : Math.abs(ya - yb) === 1 ? 2 : 0;
+  const score = yoniPoints(ya, yb);
   return {
     name: 'Yoni',
     max: 4,
     score,
-    note: ya === yb ? 'Same yoni animal' : 'Different instincts',
+    note:
+      score === 4
+        ? 'Same yoni animal'
+        : score === 0
+          ? 'Mahavaira yoni — classical 0'
+          : 'Different yoni animals',
   };
 }
 

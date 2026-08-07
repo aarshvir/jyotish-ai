@@ -107,4 +107,53 @@ describe('computeAshtakoot', () => {
     });
     expect(koota('Gana', r)?.score).toBe(6);
   });
+
+  it('uses classical Adi/Madhya/Antya Nadi (not the old repeating block)', () => {
+    // Ashwini (Adi) + Ardra (Adi) → Nadi Dosha 0 (old table wrongly awarded 8)
+    const sameAdi = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 5,
+      moonSignIndexA: 0,
+      moonSignIndexB: 2,
+    });
+    expect(koota('Nadi', sameAdi)?.score).toBe(0);
+
+    // Ashwini (Adi) + Bharani (Madhya) → full 8 (old table false-dosha'd both as 0)
+    const different = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 1,
+      moonSignIndexA: 0,
+      moonSignIndexB: 0,
+    });
+    expect(koota('Nadi', different)?.score).toBe(8);
+  });
+
+  it('scores Yoni from classical animal pairs, not adjacent nakshatra indices', () => {
+    // Rohini + Mrigashira — both Snake → full 4 (old map gave adjacent-index 2)
+    const sameSnake = computeAshtakoot({
+      moonNakshatraIndexA: 3,
+      moonNakshatraIndexB: 4,
+      moonSignIndexA: 1,
+      moonSignIndexB: 1,
+    });
+    expect(koota('Yoni', sameSnake)?.score).toBe(4);
+
+    // Ashwini + Shatabhisha — both Horse → full 4
+    const sameHorse = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 23,
+      moonSignIndexA: 0,
+      moonSignIndexB: 10,
+    });
+    expect(koota('Yoni', sameHorse)?.score).toBe(4);
+
+    // Ashwini (Horse) + Hasta (Buffalo) — Mahavaira → 0
+    const foe = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 12,
+      moonSignIndexA: 0,
+      moonSignIndexB: 5,
+    });
+    expect(koota('Yoni', foe)?.score).toBe(0);
+  });
 });
