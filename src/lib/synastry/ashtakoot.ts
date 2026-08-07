@@ -1,7 +1,7 @@
 /**
  * Ashtakoot / Guna Milan — 8 kootas, 36 points max.
- * Uses Moon nakshatra indices 0..26 (Ashwini=0 … Revati=26).
- * Classical groupings follow common North-Indian parashari tables used in software kundli.
+ * Uses Moon nakshatra indices 0..26 (Ashwini=0 … Revati=26) and Moon sign indices 0..11.
+ * Classical North-Indian parashari tables (Bhakoot house counts, Graha Maitri via rashi lords).
  */
 
 export const NAKSHATRA_NAMES = [
@@ -12,9 +12,31 @@ export const NAKSHATRA_NAMES = [
   'Uttara Bhadrapada', 'Revati',
 ] as const;
 
-/** 0 Deva, 1 Manushya, 2 Rakshasa */
+/** Moon-sign lords (Aries=0 … Pisces=11). */
+const SIGN_LORDS = [
+  'Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury',
+  'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter',
+] as const;
+
+type PlanetRel = 'friend' | 'neutral' | 'enemy';
+
+/** Natural (naisargika) friendship — used for Graha Maitri. */
+const PLANET_REL: Record<string, Record<string, PlanetRel>> = {
+  Sun: { Sun: 'friend', Moon: 'friend', Mars: 'friend', Jupiter: 'friend', Mercury: 'neutral', Venus: 'enemy', Saturn: 'enemy' },
+  Moon: { Moon: 'friend', Sun: 'friend', Mercury: 'friend', Mars: 'neutral', Jupiter: 'neutral', Venus: 'neutral', Saturn: 'neutral' },
+  Mars: { Mars: 'friend', Sun: 'friend', Moon: 'friend', Jupiter: 'friend', Venus: 'neutral', Saturn: 'neutral', Mercury: 'enemy' },
+  Mercury: { Mercury: 'friend', Sun: 'friend', Venus: 'friend', Mars: 'neutral', Jupiter: 'neutral', Saturn: 'neutral', Moon: 'enemy' },
+  Jupiter: { Jupiter: 'friend', Sun: 'friend', Moon: 'friend', Mars: 'friend', Saturn: 'neutral', Mercury: 'enemy', Venus: 'enemy' },
+  Venus: { Venus: 'friend', Mercury: 'friend', Saturn: 'friend', Mars: 'neutral', Jupiter: 'neutral', Sun: 'enemy', Moon: 'enemy' },
+  Saturn: { Saturn: 'friend', Mercury: 'friend', Venus: 'friend', Jupiter: 'neutral', Sun: 'enemy', Moon: 'enemy', Mars: 'enemy' },
+};
+
+/**
+ * 0 Deva, 1 Manushya, 2 Rakshasa.
+ * Ardra is Manushya (was incorrectly Rakshasa, corrupting Gana for Ardra Moons).
+ */
 const GANA: number[] = [
-  0, 1, 2, 1, 0, 2, 0, 0, 2, 2, 1, 1, 0, 2, 0, 2, 0, 2, 2, 1, 1, 0, 2, 2, 1, 1, 0,
+  0, 1, 2, 1, 0, 1, 0, 0, 2, 2, 1, 1, 0, 2, 0, 2, 0, 2, 2, 1, 1, 0, 2, 2, 1, 1, 0,
 ];
 
 /** 0 Vata, 1 Pitta, 2 Kapha (simplified nadi groups) */
@@ -95,19 +117,27 @@ function scoreYoni(nakA: number, nakB: number): KootaLine {
   };
 }
 
-function scoreGrahaMaitri(nakA: number, nakB: number): KootaLine {
-  const ga = GANA[nakA] ?? 0;
-  const gb = GANA[nakB] ?? 0;
-  let score = 0;
-  if (ga === gb) score = 5;
-  else if ((ga === 0 && gb === 1) || (ga === 1 && gb === 0)) score = 4;
-  else if ((ga === 0 && gb === 2) || (ga === 2 && gb === 0)) score = 1;
-  else score = 3;
+function grahaMaitriPoints(signA: number, signB: number): number {
+  const la = SIGN_LORDS[((signA % 12) + 12) % 12];
+  const lb = SIGN_LORDS[((signB % 12) + 12) % 12];
+  if (la === lb) return 5;
+  const ab = PLANET_REL[la]?.[lb] ?? 'neutral';
+  const ba = PLANET_REL[lb]?.[la] ?? 'neutral';
+  if (ab === 'friend' && ba === 'friend') return 5;
+  if ((ab === 'friend' && ba === 'neutral') || (ab === 'neutral' && ba === 'friend')) return 4;
+  if (ab === 'neutral' && ba === 'neutral') return 3;
+  if ((ab === 'friend' && ba === 'enemy') || (ab === 'enemy' && ba === 'friend')) return 1;
+  if ((ab === 'neutral' && ba === 'enemy') || (ab === 'enemy' && ba === 'neutral')) return 0.5;
+  return 0;
+}
+
+function scoreGrahaMaitri(signA: number, signB: number): KootaLine {
+  const score = grahaMaitriPoints(signA, signB);
   return {
     name: 'Graha Maitri',
     max: 5,
     score,
-    note: 'Friendship of lunar constellations (gana)',
+    note: 'Friendship of Moon-sign lords',
   };
 }
 
@@ -123,15 +153,20 @@ function scoreGana(nakA: number, nakB: number): KootaLine {
   };
 }
 
+/**
+ * Bhakoot dosha when Moon signs stand in 2/12, 5/9, or 6/8 from each other.
+ * Whole-sign house count from A to B is `diff + 1`, so bad modular diffs are
+ * 1 & 11 (2/12), 4 & 8 (5/9), 5 & 7 (6/8). Diff 6 is the 7th (opposition) — full points.
+ */
 function scoreBhakoot(signA: number, signB: number): KootaLine {
   const diff = (signB - signA + 12) % 12;
-  const bad = [6, 8];
+  const bad = [1, 4, 5, 7, 8, 11];
   const score = bad.includes(diff) ? 0 : 7;
   return {
     name: 'Bhakoot',
     max: 7,
     score,
-    note: score === 7 ? 'Rashi relationship supportive' : 'Bhakoot dosha risk (2/12, 5/12, 6/8)',
+    note: score === 7 ? 'Rashi relationship supportive' : 'Bhakoot dosha risk (2/12, 5/9, 6/8)',
   };
 }
 
@@ -166,7 +201,7 @@ export function computeAshtakoot(params: {
     scoreVashya(sa, sb),
     scoreTara(a, b),
     scoreYoni(a, b),
-    scoreGrahaMaitri(a, b),
+    scoreGrahaMaitri(sa, sb),
     scoreGana(a, b),
     scoreBhakoot(sa, sb),
     scoreNadi(a, b),
