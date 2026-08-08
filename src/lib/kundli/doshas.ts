@@ -146,24 +146,34 @@ function detectKaalSarpa(chart: NatalChartData): DoshaFlag {
   const rahuLon = absLongitude(rahu.sign, rahu.degree);
   const others = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
-  let allWithin = true;
+  // Kaal Sarpa is "all seven on ONE side of the Rahu–Ketu axis" — Anuloma (Rahu→Ketu)
+  // or Viloma (Ketu→Rahu). Checking only the Rahu→Ketu semicircle falsely clears every
+  // Viloma chart as "spread on both sides".
+  let hasAnuloma = false; // strictly inside the Rahu→Ketu open arc (0 < rel < 180)
+  let hasViloma = false; // strictly inside the Ketu→Rahu open arc (180 < rel < 360)
   let onAxis = false;
   for (const key of others) {
     const p = chart.planets?.[key];
     if (!p) {
-      allWithin = false;
-      break;
+      return {
+        present: false,
+        severity: 'none',
+        from: [],
+        note: 'Planet positions incomplete, so Kaal Sarpa could not be assessed.',
+      };
     }
     const lon = absLongitude(p.sign, p.degree);
     const rel = ((lon - rahuLon) % 360 + 360) % 360; // 0..360 forward from Rahu
-    if (rel > 180) {
-      allWithin = false;
-      break;
+    if (rel === 0 || rel === 180) {
+      onAxis = true;
+    } else if (rel < 180) {
+      hasAnuloma = true;
+    } else {
+      hasViloma = true;
     }
-    if (rel === 0 || rel === 180) onAxis = true;
   }
 
-  if (!allWithin) {
+  if (hasAnuloma && hasViloma) {
     return {
       present: false,
       severity: 'none',

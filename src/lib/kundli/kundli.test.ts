@@ -159,6 +159,46 @@ describe('detectDoshas — Kaal Sarpa', () => {
     expect(report.kaalSarpa.present).toBe(false);
   });
 
+  it('flags Anuloma Kaal Sarpa when all seven sit in the Rahu→Ketu arc', () => {
+    // Rahu Leo 10° (~130°), Ketu Aquarius 10° (~310°). Pack the seven into
+    // Virgo–Capricorn (forward from Rahu, before Ketu).
+    const report = detectDoshas(
+      makeChart({
+        Sun: planet('Virgo', 5, 6),
+        Moon: planet('Libra', 5, 7),
+        Mars: planet('Scorpio', 5, 8),
+        Mercury: planet('Virgo', 15, 6),
+        Jupiter: planet('Sagittarius', 5, 9),
+        Venus: planet('Libra', 15, 7),
+        Saturn: planet('Capricorn', 5, 10),
+        Rahu: planet('Leo', 10, 5),
+        Ketu: planet('Aquarius', 10, 11),
+      }),
+    );
+    expect(report.kaalSarpa.present).toBe(true);
+    expect(report.kaalSarpa.severity).not.toBe('none');
+  });
+
+  it('flags Viloma Kaal Sarpa when all seven sit in the Ketu→Rahu arc', () => {
+    // Same Rahu–Ketu axis, but all seven in Pisces–Cancer (the other semicircle).
+    // A Rahu→Ketu-only check falsely clears this as "spread on both sides".
+    const report = detectDoshas(
+      makeChart({
+        Sun: planet('Aries', 10, 1),
+        Moon: planet('Taurus', 10, 2),
+        Mars: planet('Gemini', 10, 3),
+        Mercury: planet('Aries', 12, 1),
+        Jupiter: planet('Cancer', 10, 4),
+        Venus: planet('Taurus', 12, 2),
+        Saturn: planet('Pisces', 10, 12),
+        Rahu: planet('Leo', 10, 5),
+        Ketu: planet('Aquarius', 10, 11),
+      }),
+    );
+    expect(report.kaalSarpa.present).toBe(true);
+    expect(report.kaalSarpa.severity).not.toBe('none');
+  });
+
   it('reports Sade Sati pending when no current Saturn sign is supplied', () => {
     const report = detectDoshas(makeChart());
     expect(report.sadeSati.present).toBe(false);
