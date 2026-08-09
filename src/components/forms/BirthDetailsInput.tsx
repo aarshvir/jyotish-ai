@@ -137,7 +137,13 @@ export function BirthDetailsInput({ value, onChange, label, showName = true, all
           className={inputCls}
           value={value.birth_city}
           placeholder="e.g. Mumbai, India"
-          onChange={(e) => onChange({ ...value, birth_city: e.target.value })}
+          onChange={(e) => {
+            // Editing the city invalidates any prior geocode (including the
+            // historical 0,0 form default). Submit must wait for a fresh locate.
+            onChange({ ...value, birth_city: e.target.value, birth_lat: 0, birth_lng: 0 });
+            setResolvedName('');
+            setGeoStatus('idle');
+          }}
           onBlur={(e) => void geocodeCity(e.target.value)}
         />
         <span className="mt-1 block font-mono text-mono-sm min-h-[18px]">

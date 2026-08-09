@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { parseCoord, resolveTimingCoords } from '@/lib/utils/coords';
+import {
+  hasValidBirthCoords,
+  isNullIsland,
+  parseCoord,
+  resolveTimingCoords,
+} from '@/lib/utils/coords';
 
 describe('parseCoord', () => {
   it('preserves real zero (equator / prime meridian)', () => {
@@ -13,6 +18,22 @@ describe('parseCoord', () => {
     expect(parseCoord(undefined)).toBeNull();
     expect(parseCoord('')).toBeNull();
     expect(parseCoord('abc')).toBeNull();
+  });
+});
+
+describe('hasValidBirthCoords / isNullIsland', () => {
+  it('rejects the form-default Null Island pair (0,0)', () => {
+    expect(isNullIsland(0, 0)).toBe(true);
+    expect(hasValidBirthCoords({ birth_lat: 0, birth_lng: 0 })).toBe(false);
+  });
+
+  it('accepts equator or prime meridian alone (real birthplaces)', () => {
+    expect(hasValidBirthCoords({ birth_lat: 0, birth_lng: -78.5 })).toBe(true);
+    expect(hasValidBirthCoords({ birth_lat: 51.5, birth_lng: 0 })).toBe(true);
+  });
+
+  it('accepts a normal city geocode', () => {
+    expect(hasValidBirthCoords({ birth_lat: 19.07, birth_lng: 72.87 })).toBe(true);
   });
 });
 
@@ -75,6 +96,7 @@ describe('resolveTimingCoords', () => {
 
   it('returns null when no usable coords exist', () => {
     expect(resolveTimingCoords({ current_lat: 0, current_lng: 0 })).toBeNull();
+    expect(resolveTimingCoords({ birth_lat: 0, birth_lng: 0 })).toBeNull();
     expect(resolveTimingCoords({})).toBeNull();
   });
 });
