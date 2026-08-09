@@ -28,6 +28,7 @@ import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/server';
+import { decideAfterPromoRedeem } from '@/lib/promo/redeemGate';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -589,23 +590,32 @@ export async function POST(request: NextRequest) {
   // so a code that hit its max_uses cap blocks generation instead of granting a free
   // report past the cap (the read-time check in getPromoDiscount is racy at the
   // boundary; the RPC enforces the cap atomically). The RPC returns FALSE for BOTH a
-  // genuine cap-reached AND an idempotent duplicate (same order_id) — disambiguate by
-  // re-reading the cap, so only a full cap blocks; a duplicate (race/retry) proceeds.
-  // Once-per-user codes use the stable promo:{codeId}:{userId} order_id (the unique
-  // index enforces once-per-user across the free + checkout paths); unlimited codes
-  // use the per-report id so legitimate repeat use is allowed.
+  // genuine cap-reached AND an idempotent duplicate (same order_id). Cap-reached
+  // blocks; once-per-user duplicates only proceed for the SAME report already marked
+  // promo (retry). A concurrent second reportId that raced past hasUserRedeemed must
+  // NOT proceed — that was an unbounded free paid-report grant. Unlimited codes use
+  // a per-report order_id so duplicate ⇒ same-report retry and may proceed.
   if (promoCodeIdToRedeem) {
     const orderId = promoOncePerUser
       ? `promo:${promoCodeIdToRedeem}:${auth.user.id}`
       : reportId;
-    let booked = true;
+    let booked: boolean;
     try {
       booked = await redeemPromoCode(promoCodeIdToRedeem, auth.user.id, orderId);
     } catch (e) {
-      // Redemption bookkeeping hiccup: don't fail the report over it; the atomic cap
-      // still held in the RPC. (Matches prior fail-open-on-bookkeeping behavior.)
-      console.warn('[reports/start] promo redeem failed (non-fatal):', e);
-      booked = true;
+      // Fail CLOSED: a throw here means we could not prove the coupon was booked.
+      // Proceeding would hand out free paid-tier reports without burning the code.
+      console.warn('[reports/start] promo redeem failed:', e);
+      await releaseOwnedLock();
+      return NextResponse.json(
+        {
+          error: 'Could not apply your coupon — please try again.',
+          code: 'PROMO_REDEEM_FAILED',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 503 },
+      );
     }
     if (!booked) {
       const { data: capRow } = await db
@@ -615,19 +625,36 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       const cap = capRow as { used_count?: number; max_uses?: number | null } | null;
       const capReached = cap?.max_uses != null && (cap.used_count ?? 0) >= cap.max_uses;
-      if (capReached) {
+      // Re-read this report's payment_status: concurrent same-report retries may have
+      // been granted promo by the winning twin between our initial `existing` read and now.
+      let reportAlreadyPromo = existing?.payment_status === 'promo';
+      if (!reportAlreadyPromo) {
+        const { data: fresh } = await db
+          .from('reports')
+          .select('payment_status')
+          .eq('id', reportId)
+          .eq('user_id', auth.user.id)
+          .maybeSingle();
+        reportAlreadyPromo = (fresh as { payment_status?: string } | null)?.payment_status === 'promo';
+      }
+      const decision = decideAfterPromoRedeem({
+        booked: false,
+        oncePerUser: promoOncePerUser,
+        capReached,
+        reportAlreadyPromo,
+      });
+      if (decision.action === 'block') {
         await releaseOwnedLock();
         return NextResponse.json(
           {
-            error: 'This code has reached its usage limit.',
-            code: 'PROMO_LIMIT_REACHED',
+            error: decision.error,
+            code: decision.code,
             engine: 'none' as ReportStartEngine,
             dispatch_mode: 'blocked' as ReportStartDispatchMode,
           },
-          { status: 409 },
+          { status: decision.code === 'PROMO_LIMIT_REACHED' ? 409 : 400 },
         );
       }
-      // else: idempotent duplicate (concurrent retry / replay) — proceed to generate.
     }
   }
 
