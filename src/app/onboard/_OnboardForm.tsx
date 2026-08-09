@@ -1078,7 +1078,7 @@ function OnboardPageInner() {
             birth_lat: form.birthLat,
             birth_lng: form.birthLng,
             timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallbackPaid) : tzFallbackPaid,
-            ...(useCurrent ? {
+            ...(useCurrent && form.currentLat != null && form.currentLng != null ? {
               current_city: form.currentCity,
               current_lat: form.currentLat,
               current_lng: form.currentLng,
@@ -1168,10 +1168,12 @@ function OnboardPageInner() {
         timezone_offset: useCurrent ? (form.currentTzOffset ?? tzFallback) : tzFallback,
         ...(form.forecastStartDate ? { forecast_start: form.forecastStartDate } : {}),
         ...(form.personalContext.trim() ? { personal_context: form.personalContext.trim() } : {}),
-        ...(useCurrent ? {
+        ...(useCurrent && form.currentLat != null && form.currentLng != null ? {
           current_city: form.currentCity,
-          current_lat: form.currentLat ?? 0,
-          current_lng: form.currentLng ?? 0,
+          // Only send resolved coords — never coerce missing geocode to 0,0
+          // (Null Island), which corrupted the free preview 30-day teaser curve.
+          current_lat: form.currentLat,
+          current_lng: form.currentLng,
         } : {}),
         ...(promoCode ? { promoCode } : {}),
       };

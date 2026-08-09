@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { resolveTimingCoords } from '@/lib/utils/coords';
 
 /**
  * POST /api/reports/[id]/teaser
@@ -20,6 +21,15 @@ import { createServiceClient } from '@/lib/supabase/admin';
  */
 
 interface TeaserDay { date: string; score: number }
+
+interface TeaserCache {
+  days?: TeaserDay[];
+  generated_at?: string;
+  /** Coords + lagna the curve was computed for — used to invalidate stale Null-Island caches. */
+  lat?: number;
+  lng?: number;
+  lagna_index?: number;
+}
 
 const EPHEMERIS_URL = (
   process.env.EPHEMERIS_SERVICE_URL ??
@@ -43,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const db = createServiceClient();
   const { data: row } = await db
     .from('reports')
-    .select('user_id, lagna_sign, current_lat, current_lng, timezone_offset, report_data')
+    .select('user_id, lagna_sign, current_lat, current_lng, birth_lat, birth_lng, timezone_offset, report_data')
     .eq('id', reportId)
     .maybeSingle();
 
@@ -52,13 +62,30 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ teaser: null }, { status: 404 });
   }
 
-  const reportData = (row.report_data ?? {}) as { teaser?: { days?: TeaserDay[] } };
-  const cached = reportData.teaser?.days;
-  if (Array.isArray(cached) && cached.length > 0) {
-    return NextResponse.json({ teaser: { days: cached, cached: true } });
+  const lagnaIndex = SIGNS.indexOf(String(row.lagna_sign ?? ''));
+  // Refuse to invent an Aries curve when lagna is missing/unrecognised — that
+  // would be a fabricated 30-day score strip, cached forever under report_data.teaser.
+  if (lagnaIndex < 0) {
+    return NextResponse.json({ teaser: null });
   }
 
-  const lagnaIndex = Math.max(0, SIGNS.indexOf(String(row.lagna_sign ?? '')));
+  const timing = resolveTimingCoords(row);
+  if (!timing) {
+    return NextResponse.json({ teaser: null });
+  }
+
+  const reportData = (row.report_data ?? {}) as { teaser?: TeaserCache };
+  const cached = reportData.teaser;
+  if (
+    Array.isArray(cached?.days) &&
+    cached.days.length > 0 &&
+    cached.lat === timing.lat &&
+    cached.lng === timing.lng &&
+    cached.lagna_index === lagnaIndex
+  ) {
+    return NextResponse.json({ teaser: { days: cached.days, cached: true } });
+  }
+
   const start = new Date();
   start.setUTCHours(0, 0, 0, 0);
   const dates = Array.from({ length: HORIZON_DAYS }, (_, i) => {
@@ -73,8 +100,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         dates,
-        current_lat: Number(row.current_lat ?? 0),
-        current_lng: Number(row.current_lng ?? 0),
+        current_lat: timing.lat,
+        current_lng: timing.lng,
         timezone_offset_minutes: Number(row.timezone_offset ?? 0),
         natal_lagna_sign_index: lagnaIndex,
       }),
@@ -88,10 +115,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .map((d) => ({ date: String(d.date), score: Number(d.day_score) }));
     if (days.length === 0) return NextResponse.json({ teaser: null });
 
+    const teaser: TeaserCache = {
+      days,
+      generated_at: new Date().toISOString(),
+      lat: timing.lat,
+      lng: timing.lng,
+      lagna_index: lagnaIndex,
+    };
+
     await db
       .from('reports')
       .update({
-        report_data: { ...reportData, teaser: { days, generated_at: new Date().toISOString() } },
+        report_data: { ...reportData, teaser },
         updated_at: new Date().toISOString(),
       })
       .eq('id', reportId);

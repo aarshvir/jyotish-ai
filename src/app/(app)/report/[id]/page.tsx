@@ -39,6 +39,7 @@ import { lagnaSignToIndex } from '@/lib/engine/horaBase';
 import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
 import { generationErrorCtaKind } from '@/lib/reports/reportErrors';
 import { resolveLocalSlotTimes } from '@/lib/time/localTime';
+import { parseCoord } from '@/lib/utils/coords';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -390,11 +391,13 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       birth_date: cached?.birth_date || params.get('date') || date || '2000-01-01',
       birth_time: birthTimeNorm,
       birth_city: cached?.birth_city || params.get('city') || city || 'Unknown',
-      birth_lat: (cached?.birth_lat ?? parseFloat(params.get('lat') || lat || '0')) || null,
-      birth_lng: (cached?.birth_lng ?? parseFloat(params.get('lng') || lng || '0')) || null,
+      birth_lat: cached?.birth_lat ?? parseCoord(params.get('lat') ?? lat),
+      birth_lng: cached?.birth_lng ?? parseCoord(params.get('lng') ?? lng),
       current_city: (cached?.current_city ?? params.get('currentCity')) || currentCity || null,
-      current_lat: (cached?.current_lat ?? parseFloat(params.get('currentLat') || currentLat || '0')) || null,
-      current_lng: (cached?.current_lng ?? parseFloat(params.get('currentLng') || currentLng || '0')) || null,
+      // Do NOT coerce missing current city to 0 — that wrote Null Island into the
+      // row and the free preview teaser then scored 30 days at (0,0)/GMT.
+      current_lat: cached?.current_lat ?? parseCoord(params.get('currentLat') ?? currentLat),
+      current_lng: cached?.current_lng ?? parseCoord(params.get('currentLng') ?? currentLng),
       timezone_offset: cached?.timezone_offset ?? currentTzOffset,
       plan_type: planType,
       status: 'generating',
@@ -745,11 +748,12 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       birth_date: cached?.birth_date || params.get('date') || date || '2000-01-01',
       birth_time: birthTimeNorm,
       birth_city: cached?.birth_city || params.get('city') || city || 'Unknown',
-      birth_lat: cached?.birth_lat ?? (parseFloat(params.get('lat') || lat || '0') || 0),
-      birth_lng: cached?.birth_lng ?? (parseFloat(params.get('lng') || lng || '0') || 0),
+      birth_lat: cached?.birth_lat ?? parseCoord(params.get('lat') ?? lat),
+      birth_lng: cached?.birth_lng ?? parseCoord(params.get('lng') ?? lng),
       current_city: cached?.current_city ?? params.get('currentCity') ?? currentCity ?? null,
-      current_lat: cached?.current_lat ?? (parseFloat(params.get('currentLat') || currentLat || '0') || 0),
-      current_lng: cached?.current_lng ?? (parseFloat(params.get('currentLng') || currentLng || '0') || 0),
+      // Omit fake 0,0 when current city was never set (see parseCoord / teaser fix).
+      current_lat: cached?.current_lat ?? parseCoord(params.get('currentLat') ?? currentLat),
+      current_lng: cached?.current_lng ?? parseCoord(params.get('currentLng') ?? currentLng),
       timezone_offset: tz,
       plan_type: planType,
       forecast_start: forecastStartParam || undefined,
