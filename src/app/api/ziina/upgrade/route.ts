@@ -166,7 +166,15 @@ export async function POST(request: NextRequest) {
       .eq('plan_type', 'monthly_upgrade')
       .eq('status', 'pending');
 
-    await db.from('ziina_payments').insert(insertPayload);
+    // Fail closed if the binding row cannot be persisted — same class of bug as
+    // create-intent's "Failed to bind payment intent". Returning redirectUrl without
+    // a ziina_payments row lets the buyer pay at Ziina, then finalize returns
+    // no_binding (no upgrade grant) and webhook may ack the event permanently.
+    const { error: insertErr } = await db.from('ziina_payments').insert(insertPayload);
+    if (insertErr) {
+      console.error('[ziina/upgrade] ziina_payments insert failed:', insertErr.message);
+      return NextResponse.json({ error: 'Failed to bind payment intent' }, { status: 500 });
+    }
 
     await emitUpsellEvent(auth.user.id, 'upsell_checkout_started', { reportId, intentId: intent.id });
 
