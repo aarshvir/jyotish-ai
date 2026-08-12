@@ -324,11 +324,16 @@ def get_current_dasha(dasha_sequence: List[Dict], current_date: datetime) -> Dic
 
 
 def get_sunrise_sunset(jd: float, lat: float, lng: float) -> tuple:
-    """Calculate sunrise and sunset times"""
-    # swe.rise_trans(tjdut, body, rsmi, geopos, atpress, attemp)
+    """Return (sunrise_jd, sunset_jd) for the same solar day.
+
+    Searching both rise and set from ``jd - 0.5`` independently often returns the
+    *previous* day's sunset for longitudes east of the Americas (Dubai, India,
+    UK, NYC, …), yielding a negative day length and inverted hora/choghadiya/
+    Rahu-Kaal schedules. Always find sunrise first, then the next sunset after it.
+    """
     geopos = (lng, lat, 0.0)
     sunrise_jd = swe.rise_trans(jd - 0.5, swe.SUN, swe.CALC_RISE | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
-    sunset_jd = swe.rise_trans(jd - 0.5, swe.SUN, swe.CALC_SET | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
+    sunset_jd = swe.rise_trans(sunrise_jd, swe.SUN, swe.CALC_SET | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
     return sunrise_jd, sunset_jd
 
 
@@ -556,13 +561,18 @@ def hora_schedule(data: HoraScheduleInput):
         night_hora_duration = night_duration / 12
         
         day_of_week = dt.weekday()
+        # Weekday index Sun=0…Sat=6 (same as DAY_RULERS / generate_daily_grid).
+        # First daytime hora is the day's ruler in *Chaldean* order (HORA_RULERS),
+        # not DAY_RULERS[i] used as a HORA_RULERS subscript (that made Monday's
+        # first hora Venus instead of Moon, Tuesday Mercury instead of Mars, …).
         day_ruler_idx = (day_of_week + 1) % 7
+        hora_base = HORA_RULERS.index(DAY_RULERS[day_ruler_idx])
         
         schedule = []
         
         # Day horas
         for i in range(12):
-            hora_ruler_idx = (day_ruler_idx + i) % 7
+            hora_ruler_idx = (hora_base + i) % 7
             start_jd = sunrise_jd + (i * hora_duration / 24)
             end_jd = sunrise_jd + ((i + 1) * hora_duration / 24)
             
@@ -575,7 +585,7 @@ def hora_schedule(data: HoraScheduleInput):
         
         # Night horas
         for i in range(12):
-            hora_ruler_idx = (day_ruler_idx + 12 + i) % 7
+            hora_ruler_idx = (hora_base + 12 + i) % 7
             start_jd = sunset_jd + (i * night_hora_duration / 24)
             end_jd = sunset_jd + ((i + 1) * night_hora_duration / 24)
             
@@ -1554,10 +1564,7 @@ def _jd_to_aware_dt(jd: float, tz: ZoneInfo) -> datetime:
 
 def _sunrise_sunset_pair(jd: float, lat: float, lng: float) -> tuple:
     """Return (sunrise_jd, sunset_jd) guaranteed to be for the same solar day."""
-    geopos = (lng, lat, 0.0)
-    sr = swe.rise_trans(jd - 0.5, swe.SUN, swe.CALC_RISE | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
-    ss = swe.rise_trans(sr, swe.SUN, swe.CALC_SET | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
-    return sr, ss
+    return get_sunrise_sunset(jd, lat, lng)
 
 
 def _overlap_secs(a0: datetime, a1: datetime, b0: datetime, b1: datetime) -> float:

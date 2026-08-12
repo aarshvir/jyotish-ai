@@ -53,13 +53,28 @@ function scoreVarna(sunOrMoonSignA: number, sunOrMoonSignB: number): KootaLine {
 }
 
 function scoreVashya(signA: number, signB: number): KootaLine {
-  const groups = [
-    [0, 1, 6, 7, 8, 11],
-    [2, 3, 4, 5, 9, 10],
-  ];
-  const ga = groups[0].includes(signA % 12) ? 0 : 1;
-  const gb = groups[0].includes(signB % 12) ? 0 : 1;
-  const score = ga === gb ? 2 : ga === 0 && gb === 1 ? 2 : 0;
+  // Classical rashi-control table (North-Indian Ashtakoot). Same Moon sign = 2;
+  // A controls B = 2; B controls A = 1; otherwise 0.
+  const CONTROLS: Record<number, number[]> = {
+    0: [4, 7], // Aries → Leo, Scorpio
+    1: [3, 6], // Taurus → Cancer, Libra
+    2: [5], // Gemini → Virgo
+    3: [7, 8], // Cancer → Scorpio, Sagittarius
+    4: [6], // Leo → Libra
+    5: [2, 11], // Virgo → Gemini, Pisces
+    6: [5, 9], // Libra → Virgo, Capricorn
+    7: [3], // Scorpio → Cancer
+    8: [11], // Sagittarius → Pisces
+    9: [0, 10], // Capricorn → Aries, Aquarius
+    10: [0], // Aquarius → Aries
+    11: [9], // Pisces → Capricorn
+  };
+  const a = ((signA % 12) + 12) % 12;
+  const b = ((signB % 12) + 12) % 12;
+  let score = 0;
+  if (a === b) score = 2;
+  else if ((CONTROLS[a] ?? []).includes(b)) score = 2;
+  else if ((CONTROLS[b] ?? []).includes(a)) score = 1;
   return {
     name: 'Vashya',
     max: 2,
@@ -114,7 +129,11 @@ function scoreGrahaMaitri(nakA: number, nakB: number): KootaLine {
 function scoreGana(nakA: number, nakB: number): KootaLine {
   const ga = GANA[nakA] ?? 0;
   const gb = GANA[nakB] ?? 0;
-  const score = ga === gb ? 6 : ga === 1 || gb === 1 ? 3 : 0;
+  let score = 0;
+  if (ga === gb) score = 6;
+  else if ((ga === 0 && gb === 1) || (ga === 1 && gb === 0)) score = 5; // Deva–Manushya
+  else if ((ga === 1 && gb === 2) || (ga === 2 && gb === 1)) score = 1; // Manushya–Rakshasa
+  // Deva–Rakshasa remains 0
   return {
     name: 'Gana',
     max: 6,
