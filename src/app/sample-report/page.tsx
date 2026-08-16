@@ -4,6 +4,7 @@ import Footer from '@/components/shared/Footer';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { breadcrumbLd, softwareAppLd } from '@/lib/seo/jsonLd';
 import { SAMPLE_GRID, SAMPLE_SEEKER, SAMPLE_DAY_SCORE } from '@/components/landing/sampleData';
+import { UNLOCK_FREE_HREF } from '@/lib/pricing';
 
 export const metadata: Metadata = {
   title: 'Sample Vedic Day Timing Report — All 18 Hourly Windows',
@@ -241,7 +242,11 @@ export default function SampleReportPage() {
             Your birth details, your city, your hours. The chart is free and takes about a minute.
           </p>
           <div className="mt-7 flex flex-col items-center gap-3">
-            <Link href="/free-kundli" className="btn-primary min-h-[3rem] w-full max-w-xs text-base">
+            {/* Primary CTA is the same free path the navbar uses (UNLOCK_FREE_HREF).
+                /free-kundli is an SEO landing page, not the entry to the flow —
+                sending the highest-intent reader there added a hop. It stays in
+                the footer nav for search traffic. */}
+            <Link href={UNLOCK_FREE_HREF} className="btn-primary min-h-[3rem] w-full max-w-xs text-base">
               See your own day — free
             </Link>
             <Link href="/pricing" className="btn-secondary min-h-[3rem] w-full max-w-xs">
