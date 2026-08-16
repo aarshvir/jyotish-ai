@@ -12,6 +12,7 @@ import {
   writeOnboardDraft as writeDraft,
   clearOnboardDraft as clearDraft,
 } from '@/lib/onboard/draft';
+import { applyDiscount, formatAmount, type SupportedCurrency } from '@/lib/ziina/amounts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -440,26 +441,10 @@ function Step3({
     if (!promoDiscount || promoDiscount <= 0) return { original, discounted: null };
     if (promoDiscount >= 100) return { original, discounted: 'Free' };
     if (!geoEntry) return { original, discounted: null };
-    // Compute discounted amount client-side with same rounding logic
-    const currency = geoEntry.currency as 'AED' | 'USD' | 'INR';
-    const rawDiscounted = geoEntry.amount * (1 - promoDiscount / 100);
-    let pretty: number;
-    if (currency === 'INR') {
-      const rupees = rawDiscounted / 100;
-      const rounded = Math.round(rupees / 100) * 100;
-      pretty = (Math.max(99, rounded - 1)) * 100;
-    } else {
-      const major = rawDiscounted / 100;
-      const rounded = Math.round(major);
-      pretty = Math.round(Math.max(0.99, rounded - 0.01) * 100);
-    }
-    const majorPretty = pretty / 100;
-    let discounted: string;
-    if (currency === 'AED') discounted = `AED ${majorPretty.toFixed(2)}`;
-    // Indian grouping so the discounted price matches the struck-through original
-    // (formatAmount uses toLocaleString('en-IN')) — e.g. ₹1,048 not ₹1048.
-    else if (currency === 'INR') discounted = `₹${Math.round(majorPretty).toLocaleString('en-IN')}`;
-    else discounted = `$${majorPretty.toFixed(2)}`;
+    // Same applyDiscount/formatAmount the create-intent route uses to set the Ziina
+    // charge — one implementation, so the shown price IS the charged price.
+    const currency = geoEntry.currency as SupportedCurrency;
+    const discounted = formatAmount(applyDiscount(geoEntry.amount, promoDiscount, currency), currency);
     return { original, discounted };
   }
 

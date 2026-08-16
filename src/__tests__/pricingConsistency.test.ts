@@ -5,6 +5,8 @@ import {
   formatAmount,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
+import { applyDiscount } from '@/lib/ziina/amounts';
+import { computeIntentAmount } from '@/lib/ziina/server';
 import { PLAN_CARDS, UNLOCK_7DAY_HREF } from '@/lib/pricing';
 
 /**
@@ -36,6 +38,58 @@ describe('pricing consistency — display == charge', () => {
         expect(amt).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+/**
+ * NEWUSER30 is advertised as "30% off" in the launch banner, the onboard step-3
+ * nudge, every blog CTA, the lifecycle emails and the already-SENT launch emails.
+ * A discount that charges less than it promises is a false price on a live
+ * payments site. These lock the promise to the charge.
+ *
+ * Regression: charm rounding turned ₹799 − 30% (= ₹559.30) into ₹599, a 25%
+ * discount sold as 30%.
+ */
+describe('advertised discount == charged discount', () => {
+  const NEWUSER30_PCT = 30; // supabase/migrations/20260418_seed_promo_codes.sql
+
+  it('NEWUSER30 on the 7-day plan charges ₹559 in INR, not ₹599', () => {
+    expect(computeIntentAmount('7day', 'INR', NEWUSER30_PCT)).toBe(55900);
+    expect(formatAmount(55900, 'INR')).toBe('₹559');
+  });
+
+  it('never charges MORE than the exact advertised discount, for every plan × currency × code', () => {
+    // Every discount percentage the promo table can hand out (seed migration).
+    for (const pct of [30, 80, 10]) {
+      for (const [planId, plan] of Object.entries(ZIINA_PLANS)) {
+        for (const cur of ['USD', 'INR', 'AED'] as SupportedCurrency[]) {
+          const list = getPlanAmount(planId, cur);
+          const exact = list * (1 - pct / 100);
+          const charged = applyDiscount(list, pct, cur);
+          expect(
+            charged,
+            `${planId}/${cur} at ${pct}% off: charged ${charged} > exact ${exact}`,
+          ).toBeLessThanOrEqual(exact);
+          expect(charged).toBeGreaterThan(0);
+          expect(Number.isInteger(charged)).toBe(true);
+          expect(plan.name.length).toBeGreaterThan(0);
+        }
+      }
+    }
+  });
+
+  it('INR discounted amounts land on whole rupees so the shown price is the charged price', () => {
+    for (const pct of [30, 80, 10]) {
+      for (const planId of Object.keys(ZIINA_PLANS)) {
+        const charged = applyDiscount(getPlanAmount(planId, 'INR'), pct, 'INR');
+        expect(charged % 100, `${planId} at ${pct}% off is not a whole rupee`).toBe(0);
+      }
+    }
+  });
+
+  it('a 0% / absent code leaves the list price untouched', () => {
+    expect(applyDiscount(79900, 0, 'INR')).toBe(79900);
+    expect(computeIntentAmount('7day', 'INR')).toBe(79900);
   });
 });
 
