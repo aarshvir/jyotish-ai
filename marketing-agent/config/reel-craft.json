@@ -1,0 +1,555 @@
+{
+  "_comment": "BEST-IN-CLASS short-form craft law for VedicHour Reels/posts. Drop-in principles for the marketing agent. The creative loop must fill storyboardTemplate.slots before any paid render. Founder approval is mandatory (src/audit/approvals.ts). Budget envelope: ~$200/mo total marketing; video must not eat ad money (see budgetAllocation + src/render/budget.ts).",
+  "_editing": "Edit freely. Prefer revising this file over prompt strings. When a principle conflicts with config/playbook.json, THIS file wins for visual/audio/storyboard craft; playbook.json wins for retention research claims. Brand claims still defer to src/brand.ts + config/banned-claims.json.",
+
+  "version": "1.0.0",
+  "updatedOn": "2026-08-16",
+  "northStar": "Calm Precision Astrology on video — a private timing instrument, not a temple screensaver and not a Canva-template horoscope. If a paused frame could belong to any astrology creator, reject and replan.",
+
+  "operatingModel": {
+    "automation": "Agent ideates → fills 12-shot storyboard → preflight → Remotion/ffmpeg template assemble (preferred) or fal.ai only for locked presenter/b-roll cells → audit → approvals queue.",
+    "founderRole": "Approve or reject only. Never ask the founder to edit timelines, pick fonts, or regenerate backgrounds by hand.",
+    "killCondition": "Anything that fails brand safety, uncanny-valley face checks, or the neverGenerate list never reaches approvals.",
+    "budgetAllocationUsdPerMonth": {
+      "totalCeiling": 200,
+      "metaGoogleAds": 100,
+      "paidVideoGeneration": 35,
+      "voiceTts": 12,
+      "musicLicensingOrBeds": 8,
+      "canvaOrMisc": 15,
+      "contingency": 30,
+      "notes": "Aligns with src/render/budget.ts weekly video cap (~$35/wk is the HARD render ceiling; monthly paid-video target stays ≤$35 so ads keep majority share). Prefer $0 ffmpeg/Remotion templates + free brand SVGs over regenerating cosmos every time."
+    }
+  },
+
+  "visualSystem": {
+    "name": "Night Ritual Frame",
+    "mode": "Ritual canvas only — never Paper/parchment on Reels. Match docs/design-system.md Night surfaces + amber brand mark.",
+    "colors": {
+      "space": "#080C18",
+      "cosmos": "#0D1426",
+      "nebula": "#141C35",
+      "horizon": "#1E2A4A",
+      "amber": "#D4A853",
+      "amberLight": "#E8C97A",
+      "amberDark": "#B8923E",
+      "star": "#E8EAF0",
+      "dust": "#8892A4",
+      "cream": "#F5EFE0",
+      "success": "#3B9B6E",
+      "caution": "#C75B3A",
+      "rendererGoldLegacy": "#D4AF37",
+      "rendererGoldNote": "Current ffmpeg drawtext/ASS gold is #D4AF37 (playbook kit). Prefer migrating overlays to site amber #D4A853; until then keep ONE gold per reel — never mix both."
+    },
+    "gradientRecipe": {
+      "base": "radial: nebula/indigo lift at top → cosmos mid → space/#06060F bottom",
+      "accent": "single soft amber glow, top-right third only, opacity ≤0.35",
+      "stars": "sparse cream pinpoints; no twinkle spam; constellation lines only at edges",
+      "ornament": "at most one thin gold timing-dial arc (partial circle), low opacity — reads as clock/sun, never as zodiac wheel",
+      "negativeSpace": "center vertical band must stay dark and empty for type (faceless). Presenter: face in middle-third; type clears face."
+    },
+    "typography": {
+      "display": {
+        "family": "Cormorant Garamond",
+        "weight": 600,
+        "use": "Hook title only (0–2.7s). Never for karaoke captions or CTA.",
+        "sizePx1080": 104,
+        "color": "#F5E6B8",
+        "trackingEm": -0.015,
+        "maxWords": 8,
+        "hardRejectWords": 10
+      },
+      "caption": {
+        "family": "DM Sans",
+        "weight": 500,
+        "use": "Word-synced karaoke / beat lines",
+        "sizePx1080": 76,
+        "colorPrimary": "#D4A853",
+        "colorSecondary": "#F4ECD8",
+        "case": "UPPERCASE for karaoke groups of 2–3 words; sentence case allowed for static beat cards",
+        "outline": "translucent black; on product screencaps use opaque navy CaptionBand (BorderStyle=3)"
+      },
+      "cta": {
+        "family": "DM Sans",
+        "weight": 400,
+        "sizePx1080": 46,
+        "color": "#D4A853"
+      },
+      "mono": {
+        "family": "JetBrains Mono",
+        "use": "FORBIDDEN on Reels except a single tiny time tick on a product UI screencap that already uses it. Never for hooks or VO captions."
+      },
+      "hindiEnglish": {
+        "spokenAndLipSync": "ROMAN / Latin Hinglish only (creative-seeds register). Devanagari in dialogue breaks Veo mouth shapes.",
+        "onScreenCaptions": "Default Latin. If a Hindi keyword must appear on screen (e.g. राहु काल as a title card), use a Noto Sans Devanagari ASS style, max 3 words, and keep karaoke Latin.",
+        "mixingRule": "One script per text layer. Never stack Devanagari + Latin on the same baseline.",
+        "pronunciationAid": "Sanskrit terms in Latin with brand.ts pronunciation available to TTS; do not phonetic-spell on screen unless the beat is educational."
+      }
+    },
+    "motion": {
+      "easing": "ease-out-expo feel (fast in, soft settle) — cubic-bezier 0.22, 1, 0.36, 1",
+      "hookIn": "250ms fade/rise; no bounce, no spin",
+      "kenBurns": "supersampled ping-pong on stills; amplitude subtle; never dizzying zooms",
+      "grade": "navy/gold split-tone + highlight bloom + vignette + luma grain (src/loops/video.ts GRADE/BLOOM/GRAIN)",
+      "progressBar": "thin amber fill at y≈14 — signature, keep",
+      "wordmark": "VEDICHOUR amber, y≈120, persistent except when it collides with a presenter's forehead — then drop to y≈80 or hide for that shot only",
+      "forbiddenMotion": ["infinite twinkle", "spinning mandalas", "pulse-amber loops", "emoji rain", "whoosh every cut", "3D zodiac spin", "glitch transitions", "zoom-punch on every word"]
+    },
+    "finishPass": {
+      "required": ["1080x1920", "30fps", "yuv420p", "brand grade", "wordmark or end-card logo", "mute-first readable captions", "story ends before branded end card"],
+      "loudness": "dialogue-led; music bed −18 to −22 LUFS under VO; no clipping"
+    }
+  },
+
+  "presenterVsFaceless": {
+    "defaultMix": {
+      "facelessShare": 0.7,
+      "presenterShare": 0.3,
+      "rationale": "Faceless = volume + $0–low cost + brand consistency. Presenter = trust, explainers, comment replies, and platform preference for a visible human layer."
+    },
+    "usePresenterWhen": [
+      "Explainer / skeptic-friendly / 'what we're not' (pillars of calm credibility)",
+      "Comment-reply or 'someone asked…' formats",
+      "First-time product walkthrough where a human points at the report",
+      "Series that needs a recurring recognizable face (brand memory)"
+    ],
+    "useFacelessWhen": [
+      "Daily timing education (18 horas, Rahu Kaal, muhurat windows)",
+      "Hook banks and A/B variants of a winning script",
+      "Pure product-proof reels (screencap of the 18-hour grid)",
+      "Budget-tight days — stay inside ffmpeg template + edge assets"
+    ],
+    "recurringFaceProtocol": {
+      "goal": "One calm Indian/diaspora adult face the audience can recognize — without Uncanny Valley.",
+      "preferredPath": "REAL founder or hired creator filmed once (15–30 lock takes) → image-to-video / talking-head templates. Best consistency, lowest valley risk.",
+      "aiAvatarPath": {
+        "allowed": true,
+        "constraints": [
+          "Lock ONE avatar ID + ONE wardrobe + ONE lighting recipe in config; never re-roll 'random professional'.",
+          "Image-to-video with the same reference still on every presenter shot (subject continuity law).",
+          "Medium close-up, eye-line to lens, soft key from window side, night/#080C18 void behind — no office stock.",
+          "Native in-shot voice only for presenter dialogue (Veo native). Never overdub a second TTS timbre on the same face.",
+          "Max 8s continuous talking-head per shot; cut to product/b-roll before micro-expressions drift.",
+          "Reject frames with: waxy skin, asymmetric blink, melting hairline, extra fingers, plastic smile, dead eyes, uncanny teeth."
+        ],
+        "budgetNote": "HeyGen ~$24/mo only if recurring 'explains' series earns its keep; otherwise Veo presenter shots inside existing fal budget."
+      },
+      "never": [
+        "Swap genders/outfits mid-reel",
+        "Generate a new 'pretty face' per post",
+        "Deepfake a celebrity or known astrologer",
+        "White-default stock avatars for an India-first brand without explicit choice"
+      ]
+    }
+  },
+
+  "captions": {
+    "muteFirst": true,
+    "safeZonesPx1080x1920": {
+      "topUiReserve": 250,
+      "bottomUiReserve": 420,
+      "sideMargin": 80,
+      "faceless": {
+        "hookY": 700,
+        "captionY": 1175,
+        "ctaY": 1630
+      },
+      "presenter": {
+        "hookY": 400,
+        "hookWrapChars": 20,
+        "captionY": 1290,
+        "ctaY": 1400,
+        "note": "Hook clears Instagram top chrome AND face crown; karaoke over chest, never mouth; CTA above ~1500 bottom chrome."
+      },
+      "productScreencap": {
+        "captionY": 330,
+        "style": "CaptionBand opaque navy box — page text must never leak beside captions"
+      }
+    },
+    "karaoke": {
+      "wordsPerGroup": "2-3",
+      "hangMs": 220,
+      "noOverlapGroups": true,
+      "goldSweep": true
+    },
+    "legibilityTests": [
+      "Readable at arm's length on a phone in sunlight simulation (high contrast)",
+      "No caption overlaps report UI text",
+      "Hook understood in ≤1.0s"
+    ]
+  },
+
+  "audio": {
+    "voiceLadder": {
+      "presenterDialogue": "Model-native lip-synced voice (free with Veo) — quality bar. One timbre for the whole reel.",
+      "facelessOrConnectiveVo": "Sarvam Bulbul v3 single approved male AD voice (~$0.01/reel) — see src/render/sarvam.ts.",
+      "elevenLabs": {
+        "when": "Optional upgrade for flagship faceless series IF Sarvam/CapCut still feel thin — Starter ~$5–22/mo.",
+        "how": "Clone or lock ONE Indian-English / Hinglish-capable voice; stability high, style low, no theatrical emotion.",
+        "whenNot": "Do not buy ElevenLabs and Sarvam and CapCut TTS in the same month. One paid VO stack."
+      },
+      "forbidden": ["edge-tts en-IN-NeerjaNeural for ad reels (owner rejected as AI-sounding)", "voice switches mid-reel", "robotic CapCut default on presenter-led pieces"]
+    },
+    "musicBeds": {
+      "goal": "Felt, not noticed. Editorial ambient — think late-night documentary underscore, not 'epic India pack #7'.",
+      "do": [
+        "Commission or license 3–5 looping beds (30–60s) once; rotate for months",
+        "Sparse drone + soft tanpura/swar hint OR clean neo-classical piano; leave 2–4kHz open for VO",
+        "Sidechain/duck −6 to −10 dB under dialogue",
+        "Prefer Artlist/Epidemic custom search ('ambient documentary dusk', 'soft tanpura drone') over 'mystical India' presets",
+        "Or generate ONE private bed with a music model, then never regenerate — treat as brand asset"
+      ],
+      "dont": [
+        "Untagged CapCut 'Indian Folk Happy' / 'Mystic Temple' spam",
+        "Sitar + tabla loops everyone recognizes from Reels templates",
+        "Trending audio that fights the VO (if used for reach, keep ≤15–20% and duck hard)",
+        "Stock whooshes on every cut",
+        "Copyright-unsafe filmi tracks"
+      ],
+      "budget": "≤$8/mo amortized — buy a small pack once rather than monthly subscriptions when possible."
+    }
+  },
+
+  "hooks": {
+    "whatEightyPercentLookLike": [
+      "Zodiac-wheel spin + 'Your week will be…' fear/luck language",
+      "Neon purple galaxy stock + all-caps Impact captions",
+      "Green-screen creator pointing at CapCut text",
+      "AI god/deity faces, om symbols, temple bells, 'manifest' overlays",
+      "Sun-sign listicles ('Leos this week…') with emoji fire",
+      "Doom hooks: curse, Sade Sati panic, Manglik scare",
+      "Fake chat screenshots and 'astrologer WhatsApp' skits"
+    ],
+    "differentiateBy": [
+      "Concrete decision moment in Hinglish ('kal 11 baje meeting rakhun ya 4 baje?') — never abstract 'cosmic timing'",
+      "Visual proof of the product: real 18-hour grid screencap, amber clearer vs dim heavier",
+      "Night ritual grade + Cormorant hook — looks like VedicHour site, not CapCut astrology",
+      "Calm contrarian: 'not another horoscope' / 'day is not one mood' — no fear",
+      "Numbers that are ours: 18 horas, 27 nakshatras — used as clarity, not jargon flex",
+      "First frame is a readable sentence OR a face mid-thought — never a logo sting"
+    ],
+    "hookFrameRules": [
+      "≤8 words on screen at t=0",
+      "High-contrast cream/amber on space — no thin grey type",
+      "If presenter: mouth not mid-word gibberish; eyes to lens",
+      "If faceless: timing-dial or grid fragment already in frame, center clear for type",
+      "Test: mute + 1-second scrub — stranger gets the conflict"
+    ],
+    "provenFamilies": ["decision_moment", "respectful_contrarian", "cost_time_anchor"],
+    "deadHooks": ["Discover your cosmic destiny", "The universe has a message", "Tag a Leo", "Like for good luck"]
+  },
+
+  "endCard": {
+    "durationSec": "2.4–3.0",
+    "look": "Still Night frame — wordmark, one line invitation, domain. Feels like the last page of a report, not a Super Bowl cutdown.",
+    "copyHierarchy": [
+      "Primary: Try your free Kundli",
+      "Secondary: vedichour.com",
+      "Optional whisper: Your Life, Decoded Hour by Hour.",
+      "Promo NEWUSER30 only if it already appeared earlier OR in caption — never shout a coupon as the hero of the end card"
+    ],
+    "visual": {
+      "background": "space/cosmos gradient, no new generative art",
+      "logo": "brand concentric gold rings or wordmark — from /brand assets, never AI-redrawn",
+      "motion": "single soft fade-in; no fireworks, no zoom-punch, no 'SHOP NOW' sticker"
+    },
+    "conversionWithoutAdSmell": [
+      "Invite, don't command ('try' / 'see yours' > 'BUY' / 'LIMITED TIME')",
+      "No countdown timers, no fake scarcity",
+      "No testimonial stars, no '10,000 users' claims",
+      "CTA already earned by showing the report mid-reel",
+      "Caption + bio carry UTM; end card stays clean"
+    ],
+    "utm": "Always via brand.utm() — e.g. free-kundli?utm_source=instagram&utm_medium=reel&utm_campaign=launch"
+  },
+
+  "neverGenerate": {
+    "_comment": "Hard reject at creative, preflight, and audit. Overlaps banned-claims.json + visual tropes.",
+    "visualTropes": [
+      "Gods, deities, murti, haloed faces, third eyes",
+      "Temples, diya spam, incense smoke as main idea",
+      "Zodiac wheels, sun-sign glyphs as hero art",
+      "Palmistry hands, crystal balls, tarot spreads",
+      "Purple nebula / rainbow galaxy stock",
+      "Glowing Sanskrit wallpaper behind dense text",
+      "Cartoon chakras, aura outlines, energy beams",
+      "Uncanny AI faces, beauty-filter plastic skin",
+      "Fake UI with gibberish text (models inventing screens)",
+      "Pricing, checkout, payment, onboard screencaps",
+      "Competitor logos or WhatsApp-forward astrologer skits",
+      "Blood-moon disaster imagery, black magic aesthetics"
+    ],
+    "copyTropes": [
+      "lucky/unlucky, best/worst hour, guaranteed, curse, doom",
+      "Medical/legal/financial/relationship outcome promises",
+      "Engine jargon in ads: Swiss Ephemeris, Lahiri, ayanamsa, vimshottari",
+      "Fake social proof, rupee/dollar comparisons",
+      "Devanagari in lip-sync dialogue fields"
+    ]
+  },
+
+  "storyboardTemplate": {
+    "_comment": "MANDATORY. Agent fills every slot before any fal.ai / paid render. Slots may be marked skip:true with reason, but the plan must exist. Final assembled reel may collapse adjacent skips; planning stays 12-beat.",
+    "canvas": "1080x1920",
+    "targetDurationSec": "18–28",
+    "requiredFieldsPerSlot": [
+      "id",
+      "intent",
+      "onScreenText",
+      "spoken",
+      "visual",
+      "shotRole",
+      "seconds",
+      "provider",
+      "continuityNotes",
+      "safeZoneCheck"
+    ],
+    "slots": [
+      {
+        "id": "S01_hook_frame",
+        "intent": "Stop the scroll in ≤1s with a concrete decision or calm contrarian.",
+        "shotRole": "presenter | faceless_title",
+        "seconds": "1.5–2.5",
+        "must": "Readable hook ≤8 words; mute-first.",
+        "providerBias": "template_still | veo31_fast if presenter"
+      },
+      {
+        "id": "S02_stakes",
+        "intent": "Name the ordinary moment (meeting, message, launch) — no astrology yet.",
+        "shotRole": "presenter | broll",
+        "seconds": "2–3",
+        "must": "Specific > abstract."
+      },
+      {
+        "id": "S03_pattern_interrupt",
+        "intent": "Show why generic horoscopes fail this moment (1/12 planet, one mood all day).",
+        "shotRole": "broll | typography_card",
+        "seconds": "2–3",
+        "providerBias": "ffmpeg_template preferred"
+      },
+      {
+        "id": "S04_reframe",
+        "intent": "Introduce VedicHour lens: clearer vs heavier windows / personal chart.",
+        "shotRole": "presenter | faceless_title",
+        "seconds": "2–3",
+        "must": "Brand-safe vocabulary only."
+      },
+      {
+        "id": "S05_mechanism",
+        "intent": "One crisp mechanism beat (18 horas / nakshatra / dasha chapter) in plain English.",
+        "shotRole": "typography_card | broll_hero",
+        "seconds": "2–3",
+        "providerBias": "ffmpeg_template | kling for one beauty shot max"
+      },
+      {
+        "id": "S06_proof_product",
+        "intent": "REAL report UI — hour slots scrolling; clearer amber, heavier dim.",
+        "shotRole": "product",
+        "seconds": "3–5",
+        "provider": "screencap",
+        "must": "capture-policy: report only, never pricing/checkout/onboard.",
+        "captions": "top band"
+      },
+      {
+        "id": "S07_proof_detail",
+        "intent": "Tap one slot — plain-English 'what this window suits'.",
+        "shotRole": "product",
+        "seconds": "2–4",
+        "provider": "screencap"
+      },
+      {
+        "id": "S08_human_return",
+        "intent": "Bridge back to the viewer's decision; presenter or calm title.",
+        "shotRole": "presenter_close | faceless_title",
+        "seconds": "2–3",
+        "must": "Same face/wardrobe as S01 if presenter path."
+      },
+      {
+        "id": "S09_objection",
+        "intent": "Optional skeptic beat — reflection not certainty. Skip if duration tight.",
+        "shotRole": "presenter | typography_card",
+        "seconds": "0–3",
+        "optional": true
+      },
+      {
+        "id": "S10_soft_cta_line",
+        "intent": "Spoken/on-screen invite to free Kundli — still in story tone.",
+        "shotRole": "presenter_close | faceless_title",
+        "seconds": "2–3"
+      },
+      {
+        "id": "S11_end_card",
+        "intent": "Branded hold: free Kundli + vedichour.com + optional tagline.",
+        "shotRole": "end_card",
+        "seconds": "2.4–3.0",
+        "provider": "ffmpeg_template",
+        "must": "No karaoke over end card; bodyEndSec before this slot."
+      },
+      {
+        "id": "S12_caption_pack",
+        "intent": "Not a video frame — publish pack: IG caption, 3–5 hashtags, YT title, UTM path, compliance self-check.",
+        "shotRole": "meta",
+        "seconds": 0,
+        "must": "Pass banned-claims + brand.ts; Latin caption; link in bio points to utm()."
+      }
+    ],
+    "gate": "Refuse render if any non-optional slot lacks onScreenText + visual + shotRole + seconds, or if no product proof slot (S06/S07) exists on a product-led reel."
+  },
+
+  "templatesBeatOneOffs": {
+    "thesis": "Remotion or ffmpeg brand templates beat one-off fal.ai generations for consistency, cost, and founder-scale ops.",
+    "whyTemplatesWin": [
+      "Pixel-identical grade, fonts, wordmark, progress bar, end card — brand memory compounds",
+      "Near-$0 marginal cost after the template exists; fal.ai bills per second per shot",
+      "Deterministic captions/safe zones — no random composition failures",
+      "Subject continuity: stills + Ken Burns + real screencaps don't re-cast faces",
+      "Auditability: same filtergraph every time; defects are fixable in code, not prompt roulette",
+      "Founder approval is comparing script + storyboard, not 40 slightly different nebulas"
+    ],
+    "whenFalAiIsAllowed": [
+      "Locked presenter cells with reference image (image-to-video)",
+      "At most one broll_hero beauty shot per reel",
+      "Never for end cards, typography cards, gradients, or logos"
+    ],
+    "architecture": {
+      "preferred": "Remotion (or existing ffmpeg assemble.ts) owns: Night background, type, karaoke, wordmark, progress, end card, music ducking, grade.",
+      "generativeCells": "Only shotRoles presenter / broll_hero / broll insert into template timeline as clips.",
+      "productCells": "Playwright screencap only.",
+      "cache": "Hash(prompt+ref+model+seed) → reuse clip across variants; never regenerate identical cells."
+    },
+    "migrationPath": [
+      "Codify current v3.1 ffmpeg look as Remotion <Composition> props (colors from visualSystem.colors)",
+      "Storyboard JSON → Remotion props + optional fal clip URLs",
+      "Keep assemble.ts as the production path until Remotion CI export matches grade parity"
+    ]
+  },
+
+  "principles": [
+    {
+      "id": "craft-night-only",
+      "category": "visual",
+      "principle": "Reels live on the Night ritual canvas only — space/cosmos/amber, never parchment paper UI.",
+      "detail": "Paper canvas is for reading product surfaces. Video is a ritual frame: radial night gradient, sparse stars, one amber accent, Cormorant hook.",
+      "source": "docs/design-system.md + docs/DESIGN_SYSTEM.md Night canvas rules",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-one-gold",
+      "category": "visual",
+      "principle": "One amber/gold hex per finished reel.",
+      "detail": "Do not mix site #D4A853 and legacy renderer #D4AF37 in the same export. Pick one and drive ASS + drawtext + progress bar from it.",
+      "source": "design-system amber token vs src/loops/video.ts drawtext",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-mute-first",
+      "category": "captions",
+      "principle": "Burned-in captions alone must carry the message.",
+      "detail": "Most impressions start muted. If the reel fails without audio, it fails.",
+      "source": "config/playbook.json mute-first + Instagram autoplay behaviour",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-safe-zones",
+      "category": "captions",
+      "principle": "Respect Instagram chrome: top ~250px and bottom ~420px are hostile.",
+      "detail": "Presenter layout: hookY 400, captionY 1290, ctaY 1400. Product shots move captions to top band with opaque navy box.",
+      "source": "src/render/assemble.ts PRESENTER_LAYOUT + owner frame reviews 2026-07-26",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-hook-1s",
+      "category": "hook",
+      "principle": "First frame understood in under 1.0 second; ≤8 words.",
+      "detail": "Concrete Hinglish decision moment beats cosmic abstraction. Dead if it could belong to any astrology app.",
+      "source": "playbook hook-1s-window + creative-seeds decision_moment",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-proof-is-product",
+      "category": "format",
+      "principle": "Show the live report hour-grid — never pricing or checkout.",
+      "detail": "Screencap is the honesty shot. Fake model-rendered UI is forbidden.",
+      "source": "Owner ruling 2026-07-26 + capture-policy.ts",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-presenter-native-voice",
+      "category": "audio",
+      "principle": "Presenter lines use in-shot native voice; never a second TTS timbre on that face.",
+      "detail": "Voice switch is the fastest Uncanny Valley. Connective VO on non-presenter shots uses one approved Sarvam ad voice only.",
+      "source": "Owner review 2026-07-26 + assemble.ts voice ladder",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-subject-continuity",
+      "category": "format",
+      "principle": "One recurring face recipe — same person, clothes, light — across all presenter shots.",
+      "detail": "Each fal shot is independent; under-described people get re-cast. Always pass the same reference still.",
+      "source": "playbook subject-continuity",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-templates-over-dice",
+      "category": "pipeline",
+      "principle": "Default to Remotion/ffmpeg templates; generative video is a scarce cell, not the whole reel.",
+      "detail": "End cards, gradients, type, karaoke, wordmark are code. fal.ai is for locked presenter/b-roll only. Consistency is the premium signal.",
+      "source": "Cost + brand-memory analysis vs one-off Veo/Sora aesthetics; budget.ts caps",
+      "verifiedOn": "2026-08-16",
+      "confidence": "inherited"
+    },
+    {
+      "id": "craft-storyboard-gate",
+      "category": "pipeline",
+      "principle": "No paid render without a filled 12-slot storyboard.",
+      "detail": "S01–S12 in storyboardTemplate must be completed (optional slots may skip with reason). Prevents prompt-and-pray one-offs.",
+      "source": "This craft spec — founder-only approval operating model",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-endcard-invitation",
+      "category": "conversion",
+      "principle": "End card invites to free Kundli + vedichour.com like a report signature — not an ad bumper.",
+      "detail": "No countdown, no fake scarcity, no coupon hero. Tagline optional whisper. UTM lives in caption/bio.",
+      "source": "Playbook end-card SOP + brand tagline rules",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-anti-cheap-ai",
+      "category": "visual",
+      "principle": "Reject cheap astrology AI tropes on sight.",
+      "detail": "No deities, zodiac wheels, purple nebulas, temple spam, plastic faces, gibberish screens, fear hooks. Calm fintech-meets-Jyotish only.",
+      "source": "Playbook §4 visual identity + neverGenerate list",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "craft-music-not-spam",
+      "category": "audio",
+      "principle": "Music beds must not sound like royalty-free India pack spam.",
+      "detail": "3–5 owned loops, sparse, ducked under VO. Avoid CapCut mystic/folk presets everyone recognizes.",
+      "source": "Premium craft brief 2026-08-16",
+      "verifiedOn": "2026-08-16",
+      "confidence": "inherited"
+    },
+    {
+      "id": "craft-founder-approves",
+      "category": "ops",
+      "principle": "Automation prepares; only the founder ships.",
+      "detail": "Queue via approvals. No auto-publish. Rejects feed lessons; never silently retry uncanny faces into production.",
+      "source": "src/audit/approvals.ts + cloud operating model",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    }
+  ]
+}
