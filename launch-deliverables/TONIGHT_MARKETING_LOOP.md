@@ -105,7 +105,7 @@ Reject reasons that matter: uncanny face, gibberish on a screen, wrong product s
 
 ### 6. Render (only approved slugs)
 `npm run loop:render <slug>`  
-Then `npm run loop:render <slug> -- --estimate` first if you want the dollar printout.  
+Then `npm run loop:render -- <slug> --estimate` first if you want the dollar printout (`--estimate` is a boolean; putting it before the slug used to eat the slug — that is fixed).  
 Resume paid shots with `--resume` if a mid-reel fal 422 killed shot 2.
 
 Caps (do not raise tonight): **$4 / reel, $6 / rolling 24h, $35 / rolling 7d**.

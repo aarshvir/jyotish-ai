@@ -270,7 +270,7 @@ If `FAL_KEY` or `SARVAM_API_KEY` is missing, stop and create them first (sarvam.
 
 1. [fal.ai/dashboard/billing](https://fal.ai/dashboard) → add **$40** now, calendar a **$100** top-up after the first approved Reel looks right (month total still $140).
 2. Confirm endpoints still price as in `src/render/providers.ts`. If Kling Standard audio-off moved, **edit `PRICE_TABLE` the same night** so the guard cannot under-estimate.
-3. Dry-run: `npm run loop:render -- --estimate` on any `output/creative/*.json` winner.
+3. Dry-run: `npm run loop:render -- <slug> --estimate` on any `output/creative/*.json` winner. `--estimate` is a boolean and may sit before or after the slug.
 
 ### T2 — Post Bridge (25 min)
 

@@ -1,0 +1,49 @@
+{
+  "_comment": "Launch-night creative that is meant to PASS Stage 0 preflight. Male presenter, no second voice, report capture (not /free-kundli or /pricing), no engine jargon, spoken VedicHour.com on the close. Ranked above the legacy blocked reference files so loop:render without a slug picks this one.",
+  "slug": "same-tuesday-two-windows",
+  "title": "Same Tuesday, two windows",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.97,
+  "hook": "Same Tuesday. Two windows.",
+  "cta": "Free Kundli — VedicHour.com. Your Life, Decoded Hour by Hour.",
+  "shots": [
+    {
+      "id": "s1-open",
+      "role": "presenter",
+      "seconds": 8,
+      "prompt": "Medium close-up of a warm, natural Indian man in his late twenties, short hair, light stubble, navy shirt, soft window light from camera left, calm modern apartment blurred behind him, shallow depth of field, vertical 9:16 framing, speaking directly to camera",
+      "dialogue": "Aapka din ek mood nahi hai. Same Tuesday, do alag windows."
+    },
+    {
+      "id": "s2-hero",
+      "role": "broll_hero",
+      "seconds": 5,
+      "prompt": "Slow cinematic push-in on a quiet city morning from a high window, warm gold light on buildings, no text, no graphics, vertical 9:16"
+    },
+    {
+      "id": "s3-product",
+      "role": "product",
+      "seconds": 6,
+      "capture": {
+        "url": "https://www.vedichour.com/sample-report",
+        "libraryKey": "sample_report_page",
+        "waitForSelector": "#main-content",
+        "scrollPx": 400
+      }
+    },
+    {
+      "id": "s4-broll",
+      "role": "broll",
+      "seconds": 4,
+      "prompt": "Overhead shot of hands turning a page in a plain notebook on a warm wooden desk, morning light, muted navy and gold palette, no text, vertical 9:16"
+    },
+    {
+      "id": "s5-close",
+      "role": "presenter_close",
+      "seconds": 6,
+      "prompt": "Same Indian man, same apartment and lighting, medium close-up, vertical 9:16, warm relaxed smile, speaking directly to camera",
+      "dialogue": "Free kundli VedicHour.com pe. Apna timing grid dekho."
+    }
+  ]
+}

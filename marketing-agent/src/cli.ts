@@ -21,19 +21,7 @@ import { readHeartbeat } from './scheduler/heartbeat';
 import { runReviewLoop } from './audit/index';
 import { preflightCli } from './audit/preflight';
 import { approve, printPending, reject } from './audit/approvals';
-
-function parse(rest: string[]): { flags: Record<string, string>; text: string; pos: string[] } {
-  const flags: Record<string, string> = {};
-  const pos: string[] = [];
-  for (let i = 0; i < rest.length; i++) {
-    if (rest[i].startsWith('--')) {
-      flags[rest[i].slice(2)] = rest[i + 1] && !rest[i + 1].startsWith('--') ? rest[(i += 1)] : 'true';
-    } else {
-      pos.push(rest[i]);
-    }
-  }
-  return { flags, text: pos.join(' '), pos };
-}
+import { parse } from './cli-parse';
 
 async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
@@ -104,6 +92,7 @@ async function main() {
         dry: flags.dry === 'true',
         estimateOnly: flags.estimate === 'true',
         keepIntermediates: flags.keep === 'true',
+        resume: flags.resume === 'true',
         languages: flags.languages,
       });
       break;
@@ -189,7 +178,7 @@ async function main() {
           `  npm run loop:reel [slug]       render a faceless 9:16 reel (L2, edge-tts + ffmpeg)\n` +
           `  npm run loop:render [slug]     render a PRESENTER-LED AI reel (L2b, fal.ai + ffmpeg)\n` +
           `                                 --dry stubs only the paid calls · --estimate prices it and stops\n` +
-          `                                 --languages hi,ta,te  real DUBBED variants (winners only)\n` +
+          `                                 --resume reuses paid work/<shot>.raw.mp4 · --languages hi,ta,te\n` +
           `  npm run render:budget          video budget caps, spend so far, and the fal.ai price table\n` +
           `\n  -- THE PUBLISH GATE (nothing reaches a platform without it) --\n` +
           `  npm run preflight -- <slug>    STAGE 0 ($0, BEFORE any render): hard-block a creative plan on\n` +
