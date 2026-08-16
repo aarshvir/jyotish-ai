@@ -109,24 +109,36 @@ export async function sarvamSpeak(opts: {
   voice: string;
   outPath: string;
 }): Promise<SarvamResult> {
-  const key = envStr('SARVAM_API_KEY');
-  if (!key) throw new Error(SARVAM_MISSING_MESSAGE);
+  // Two accounts, each carrying its own free credit. When the primary is exhausted or its key is
+  // rejected, fall through to the spare rather than failing the render — a dead TTS key must never
+  // be the reason a finished reel stops halfway. Anything that is not a credit/auth problem (a bad
+  // voice name, malformed text) is a real error and is raised immediately, not retried on key two.
+  const keys = [envStr('SARVAM_API_KEY'), envStr('SARVAM_API_KEY_ALT')].filter(Boolean) as string[];
+  if (!keys.length) throw new Error(SARVAM_MISSING_MESSAGE);
   const chunks = chunkText(opts.text, SARVAM_MAX_CHARS);
   const parts: string[] = [];
+  let keyIdx = 0;
 
   for (let i = 0; i < chunks.length; i++) {
-    const res = await fetch('https://api.sarvam.ai/text-to-speech', {
-      method: 'POST',
-      headers: { 'api-subscription-key': key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: chunks[i],
-        target_language_code: opts.languageCode,
-        model: SARVAM_PRICING.model,
-        speaker: opts.voice,
-        speech_sample_rate: 24000,
-        // pitch/loudness are v2-only fields — sending them with v3 is an error.
-      }),
-    });
+    let res!: Response;
+    for (;;) {
+      res = await fetch('https://api.sarvam.ai/text-to-speech', {
+        method: 'POST',
+        headers: { 'api-subscription-key': keys[keyIdx], 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: chunks[i],
+          target_language_code: opts.languageCode,
+          model: SARVAM_PRICING.model,
+          speaker: opts.voice,
+          speech_sample_rate: 24000,
+          // pitch/loudness are v2-only fields — sending them with v3 is an error.
+        }),
+      });
+      const exhausted = res.status === 401 || res.status === 402 || res.status === 403 || res.status === 429;
+      if (res.ok || !exhausted || keyIdx >= keys.length - 1) break;
+      console.warn(`[sarvam] key ${keyIdx + 1} returned HTTP ${res.status} — switching to spare key ${keyIdx + 2}.`);
+      keyIdx++;
+    }
     if (!res.ok) throw new Error(`Sarvam HTTP ${res.status}: ${(await res.text()).slice(0, 240)}`);
     const j: any = await res.json();
     const b64 = j?.audios?.[0];
