@@ -14,25 +14,25 @@
         "#planetaryhours",
         "#mindfultiming"
       ],
-      "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=instagram&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, educational tone; promotes awareness, avoids outcome promises, uses brand-approved language."
     },
     "x": {
       "text": "Rahu Kaal is a daily caution window, not a reason to worry. It shifts by city and weekday, so check your local timing and use it for pause, review, or lower-stakes tasks. VedicHour rates all 18 planetary hours in plain English. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=x&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, educational, timing awareness copy; no block words or outcome promises."
     },
     "facebook": {
       "text": "Rahu Kaal is often called the daily caution window, but it does not need to be approached fearfully. Think of it as a reminder to slow down, review, and choose timing with more awareness. 🕰️\n\nBecause Rahu Kaal shifts by city and weekday, your window is local. VedicHour shows yours in plain English and places it alongside all 18 planetary hours, so the whole day has context.\n\nYour day is not one mood.\n\nYour Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=facebook&utm_medium=post&utm_campaign=social",
       "linter": "flag",
       "linter_reason": "'Decoded' might imply certainty/outcome knowledge, bordering on knowing future."
     },
     "linkedin": {
-      "text": "Rahu Kaal is a traditional daily caution window in Jyotish. A useful way to approach it is not as certainty, but as timing awareness: a moment to pause, review, and reserve sharper decisions for clearer windows when possible.\n\nBecause it shifts by city and weekday, local calculation matters. VedicHour uses Swiss Ephemeris with Lahiri ayanamsa and explains the day’s 18 planetary hours in plain English.\n\nYour day is not one mood.\n\nYour Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "text": "Rahu Kaal is a traditional daily caution window in Jyotish. A useful way to approach it is not as certainty, but as timing awareness: a moment to pause, review, and reserve sharper decisions for clearer windows when possible.\n\nBecause it shifts by city and weekday, local calculation matters. VedicHour uses real astronomical data and explains the day’s 18 planetary hours in plain English.\n\nYour day is not one mood.\n\nYour Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/sample-report?utm_source=linkedin&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, reflective copy. Focuses on timing awareness, not certainty or outcomes."
     }

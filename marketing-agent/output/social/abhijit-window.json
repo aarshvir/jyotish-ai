@@ -5,7 +5,7 @@
   "pillar": 2,
   "platforms": {
     "instagram": {
-      "text": "Your day is not one mood. Around local noon, Abhijit Muhurat offers a roughly 48-minute clearer window for reflection, setting intent, or beginning something with steadier attention. ☀️ VedicHour rates all 18 planetary hours using Swiss Ephemeris + Lahiri ayanamsa, then explains the timing in plain English. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "text": "Your day is not one mood. Around local noon, Abhijit Muhurat offers a roughly 48-minute clearer window for reflection, setting intent, or beginning something with steadier attention. ☀️ VedicHour rates all 18 planetary hours from real astronomical data then explains the timing in plain English. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
       "hashtags": [
         "#vedichour",
         "#abhijitmuhurat",
@@ -14,25 +14,25 @@
         "#planetaryhours",
         "#mindfultiming"
       ],
-      "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=instagram&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm timing-awareness copy; no certainty, luck, or outcome promise."
     },
     "x": {
       "text": "Abhijit Muhurat is the ~48-minute clearer window around local noon. Use it for reflection, prioritizing, or starting with steadier attention. VedicHour rates all 18 horas in plain English. NEWUSER30: 30% off first paid report. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=x&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, educational, and aligns with timing awareness, not outcome promises."
     },
     "facebook": {
       "text": "Your day is not one mood. Around local noon, Abhijit Muhurat is traditionally seen as a roughly 48-minute clearer window for reflection, focus, and thoughtful starts. 🌿 VedicHour rates all 18 planetary hours with plain English guidance, so timing feels easier to read. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=facebook&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, plain-English content about timing awareness and product features."
     },
     "linkedin": {
-      "text": "Abhijit Muhurat points to a roughly 48-minute clearer window around local noon. For a modern schedule, it can be used as a moment to pause, prioritize, and begin work with more intentional attention. VedicHour brings this into plain English with ratings across all 18 planetary hours, calculated with Swiss Ephemeris + Lahiri ayanamsa. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "text": "Abhijit Muhurat points to a roughly 48-minute clearer window around local noon. For a modern schedule, it can be used as a moment to pause, prioritize, and begin work with more intentional attention. VedicHour brings this into plain English with ratings across all 18 planetary hours, calculated from real astronomical data. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/sample-report?utm_source=linkedin&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "On-brand timing awareness, uses 'clearer window', no block/flag terms."
     }

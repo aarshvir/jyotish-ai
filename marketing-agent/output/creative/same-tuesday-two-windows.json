@@ -1,19 +1,19 @@
 {
-  "_comment": "Launch-night creative that is meant to PASS Stage 0 preflight. Male presenter, no second voice, report capture (not /free-kundli or /pricing), no engine jargon, spoken VedicHour.com on the close. Ranked above the legacy blocked reference files so loop:render without a slug picks this one.",
+  "_comment": "Launch creative: a specific Tuesday (HR sent 10am vs 5pm), not a keyword stub. Male presenter, no second voice, sample-report capture with measured hour-slot pan, spoken VedicHour.com on the close. Ranked above the legacy blocked reference files so loop:render without a slug picks this one. Dialogue changed after the 2026-08-16 dry/paid render — re-run loop:render before posting.",
   "slug": "same-tuesday-two-windows",
-  "title": "Same Tuesday, two windows",
+  "title": "HR sent two slots",
   "product": "forecast",
-  "status": "rendered",
+  "status": "ready_to_render",
   "rank": 0.97,
-  "hook": "Same Tuesday. Two windows.",
-  "cta": "Free Kundli — VedicHour.com. Your Life, Decoded Hour by Hour.",
+  "hook": "HR sent two slots.",
+  "cta": "See the sample — VedicHour.com",
   "shots": [
     {
       "id": "s1-open",
       "role": "presenter",
       "seconds": 8,
       "prompt": "Medium close-up of a warm, natural Indian man in his late twenties, short hair, light stubble, navy shirt, soft window light from camera left, calm modern apartment blurred behind him, shallow depth of field, vertical 9:16 framing, speaking directly to camera",
-      "dialogue": "Aapka din ek mood nahi hai. Same Tuesday, do alag windows."
+      "dialogue": "HR sent 10am and 5pm. Same Tuesday. Same call. Not the same hour."
     },
     {
       "id": "s2-hero",
@@ -38,15 +38,20 @@
       "id": "s4-broll",
       "role": "broll",
       "seconds": 4,
-      "prompt": "Overhead shot of hands turning a page in a plain notebook on a warm wooden desk, morning light, muted navy and gold palette, no text, vertical 9:16"
+      "prompt": "Overhead shot of a laptop calendar with two meeting blocks on the same Tuesday, morning light on a wooden desk, muted navy and gold palette, no readable logos, no text overlays, vertical 9:16"
     },
     {
       "id": "s5-close",
       "role": "presenter_close",
       "seconds": 6,
       "prompt": "Medium close-up of a warm, natural Indian man in his late twenties, short hair, light stubble, navy shirt, soft window light from camera left, calm modern apartment blurred behind him, shallow depth of field, warm relaxed smile, speaking directly to camera, vertical 9:16",
-      "dialogue": "Free kundli VedicHour.com pe. Apna timing grid dekho."
+      "dialogue": "See both windows on VedicHour.com. Free to start."
     }
   ],
-  "rendered_at": "2026-08-16T18:15:01.589Z"
+  "publish": {
+    "youtubeTitle": "HR sent 10am and 5pm. Same Tuesday.",
+    "caption": "HR sent two slots. Same Tuesday. Same call. Not the same hour.\n\nYour chart already knows which window is clearer. VedicHour scores all 18 hours of your day against your birth chart — real astronomical data, the same math a careful astrologer uses.\n\nRead the sample: vedichour.com/sample-report\n\nYour Life, Decoded Hour by Hour.",
+    "hashtags": ["#vedichour", "#vedictiming"],
+    "tags": ["vedic astrology", "hourly timing", "kundli", "vedichour"]
+  }
 }

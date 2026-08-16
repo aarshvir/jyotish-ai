@@ -5,7 +5,7 @@
   "pillar": 3,
   "platforms": {
     "instagram": {
-      "text": "Your Lagna is the lens of the chart: the starting point that gives every house, planet, and timing pattern its context. VedicHour keeps Jyotish private, modern, and reflective, with Swiss Ephemeris + Lahiri ayanamsa translated into plain English. ✨ Your Life, Decoded Hour by Hour.",
+      "text": "Your Lagna is the lens of the chart: the starting point that gives every house, planet, and timing pattern its context. VedicHour keeps Jyotish private, modern, and reflective, from real astronomical data translated into plain English. ✨ Your Life, Decoded Hour by Hour.",
       "hashtags": [
         "#vedichour",
         "#jyotish",
@@ -20,7 +20,7 @@
       "linter_reason": "Calm reflective positioning; no luck, guarantees, or outcome promises"
     },
     "x": {
-      "text": "Your Lagna is the chart’s front door: it frames how every house, planet, and timing pattern is read. VedicHour keeps it private and practical, using Swiss Ephemeris + Lahiri ayanamsa in plain English. Your Life, Decoded Hour by Hour.",
+      "text": "Your Lagna is the chart’s front door: it frames how every house, planet, and timing pattern is read. VedicHour keeps it private and practical, from real astronomical data in plain English. Your Life, Decoded Hour by Hour.",
       "link": "https://www.vedichour.com/kundali?utm_source=x&utm_medium=post&utm_campaign=social",
       "linter": "block",
       "linter_reason": "'Your Life, Decoded Hour by Hour' promises outcome/certainty, not just awareness."
@@ -32,7 +32,7 @@
       "linter_reason": "Calm, educational, plain-English; focuses on awareness, not banned outcomes."
     },
     "linkedin": {
-      "text": "In Jyotish, the Lagna is not a minor detail. It is the organizing lens of the chart, shaping how houses, planets, and timing patterns are interpreted. VedicHour offers a private, modern approach with Swiss Ephemeris + Lahiri ayanamsa and plain-English guidance for timing awareness. Your Life, Decoded Hour by Hour.",
+      "text": "In Jyotish, the Lagna is not a minor detail. It is the organizing lens of the chart, shaping how houses, planets, and timing patterns are interpreted. VedicHour offers a private, modern approach from real astronomical data and plain-English guidance for timing awareness. Your Life, Decoded Hour by Hour.",
       "link": "https://www.vedichour.com/kundali?utm_source=linkedin&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, educational language focusing on awareness and interpretation."

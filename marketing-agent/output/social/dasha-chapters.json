@@ -14,25 +14,25 @@
         "#vimshottari",
         "#selfreflection"
       ],
-      "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=instagram&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, educational content about timing awareness and reflection."
     },
     "x": {
       "text": "Vimshottari Dashas frame life as seasons, with one planet setting the tone at a time. VedicHour keeps it grounded: plain English timing awareness across all 18 planetary hours. Your day is not one mood. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=x&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, educational copy emphasizing timing awareness and understanding, not outcomes."
     },
     "facebook": {
       "text": "Vimshottari Dashas describe life in chapters, each shaped by one planetary period at a time. Some windows may feel clearer, others heavier. VedicHour makes that timing easier to reflect on with plain English insights and ratings for all 18 planetary hours. 🌙 Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=facebook&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm timing-awareness copy; no certainty, luck, or outcome promise"
     },
     "linkedin": {
-      "text": "Vimshottari Dashas offer a thoughtful way to view life as a sequence of planetary seasons, with one period shaping the broader tone at a time. VedicHour approaches this as timing awareness, not certainty: Swiss Ephemeris + Lahiri ayanamsa, plain English interpretation, and ratings across all 18 planetary hours. Your day is not one mood. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "text": "Vimshottari Dashas offer a thoughtful way to view life as a sequence of planetary seasons, with one period shaping the broader tone at a time. VedicHour approaches this as timing awareness, not certainty: real astronomical data, plain English interpretation, and ratings across all 18 planetary hours. Your day is not one mood. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/sample-report?utm_source=linkedin&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Content aligns with timing awareness, not certainty or outcome promises."
     }
