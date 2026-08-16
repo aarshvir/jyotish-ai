@@ -72,11 +72,11 @@ export default function Products() {
         <div className="section-header text-center">
           <p className="section-eyebrow">Three ways to read your chart</p>
           <h2 id="products-heading" className="section-title text-display-md">
-            One Jyotish engine. Three readings.
+            Three readings. One chart.
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            A precise daily forecast, a full birth-chart analysis, or a compatibility match —
-            all built on the same chart, so nothing ever contradicts itself.
+            Hour-by-hour timing, a full birth-chart reading, or a compatibility match —
+            all from the same chart, so nothing contradicts itself.
           </p>
         </div>
 

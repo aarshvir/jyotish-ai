@@ -45,7 +45,7 @@ export function emailShell({ preheader, contentHtml }: EmailDoc): string {
       <tr><td style="padding:0 28px 26px;font-family:Arial,Helvetica,sans-serif">
         <hr style="border:none;border-top:1px solid #ece8df;margin:0 0 16px">
         <p style="margin:0;font-size:12px;line-height:1.6;color:${MUTED}">
-          VedicHour &bull; AI Vedic astrology, computed with Swiss Ephemeris precision.<br>
+          VedicHour &bull; Hour-by-hour Vedic timing, in plain English.<br>
           For reflection and guidance, not guaranteed outcomes.<br>
           Questions? Just reply to this email &bull; <a href="https://www.vedichour.com" style="color:${MUTED}">vedichour.com</a>
         </p>

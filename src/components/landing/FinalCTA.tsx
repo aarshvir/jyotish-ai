@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UNLOCK_FREE_HREF } from '@/lib/pricing';
 
 export default function FinalCTA() {
   return (
@@ -11,18 +12,18 @@ export default function FinalCTA() {
       </div>
 
       <div className="relative max-w-3xl mx-auto px-6 text-center">
-        <p className="section-eyebrow">Free Kundli · AI Jyotish Forecast</p>
+        <p className="section-eyebrow">Free chart · hourly windows</p>
         <h2 className="section-title text-display-md mb-5">
-          Your Vedic Forecast Starts Free.
+          Your day is not one mood.
         </h2>
         <p className="font-body text-body-lg text-dust max-w-xl mx-auto mb-10">
-          Generate your free birth chart and see today&apos;s hourly windows — no card needed. Upgrade anytime
-          for a full 7-day or 30-day forecast with a 12-month year-ahead view.
+          Get the free chart and a sample of today&apos;s hours — no card. Upgrade when you want
+          every window across 7 or 30 days, plus a 12-month outlook.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
           <Link
-            href="/onboard?plan=free"
+            href={UNLOCK_FREE_HREF}
             rel="nofollow"
             className="btn-primary text-base px-8 py-3.5 group"
           >

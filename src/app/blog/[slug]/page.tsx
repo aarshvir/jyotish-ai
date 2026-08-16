@@ -9,6 +9,7 @@ import { POSTS, getPost } from '@/content/blog';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { FaqSection } from '@/components/seo/SeoSection';
 import { absUrl, faqPageLd, breadcrumbLd } from '@/lib/seo/jsonLd';
+import { UNLOCK_7DAY_HREF, UNLOCK_FREE_HREF } from '@/lib/pricing';
 
 export function generateStaticParams() {
   return POSTS.map((p) => ({ slug: p.slug }));
@@ -54,8 +55,8 @@ function htmlToText(html: string) {
 function relatedTools(keywords: string[]) {
   const kw = keywords.join(' ');
   const tools: { href: string; label: string }[] = [
-    { href: '/free-kundli', label: 'Free Kundli generator — your birth chart in seconds' },
-    { href: '/pricing', label: 'See report plans & pricing' },
+    { href: UNLOCK_7DAY_HREF, label: 'Unlock the hour-by-hour forecast' },
+    { href: UNLOCK_FREE_HREF, label: 'Free birth chart — no card' },
   ];
   if (/match|milan|compat|marriage|synastry/i.test(kw)) {
     tools.push({ href: '/synastry', label: 'Kundli matching (Gun Milan) — check compatibility' });
@@ -136,11 +137,11 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         <div className="mt-14 card border border-amber/30 rounded-card p-6 text-center">
           <p className="font-display text-headline-sm text-star mb-3">Ready to decode your own hours?</p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Link href="/onboard?plan=7day" className="btn-primary">Unlock my hour-by-hour forecast →</Link>
-            <Link href="/free-kundli" className="btn-secondary">Or generate a free Kundli first</Link>
+            <Link href={UNLOCK_7DAY_HREF} className="btn-primary">Unlock my hour-by-hour forecast →</Link>
+            <Link href={UNLOCK_FREE_HREF} className="btn-secondary">Or start with the free chart</Link>
           </div>
           <p className="font-body text-body-sm text-dust mt-4">
-            Use code NEWUSER30 for <Link href="/pricing" className="text-amber underline">30% off</Link> your first paid report. 24-hour money-back.
+            Use code NEWUSER30 for <Link href={UNLOCK_7DAY_HREF} className="text-amber underline">30% off</Link> your first paid report. 24-hour money-back.
           </p>
         </div>
 

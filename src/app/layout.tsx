@@ -43,10 +43,10 @@ const SITE_URL = (RAW_SITE_URL.startsWith('http://localhost') || RAW_SITE_URL ==
   : RAW_SITE_URL
 ).trim().replace(/\/+$/, '');
 const SITE_NAME = 'VedicHour';
-const SITE_TITLE = 'Free Kundli & AI Jyotish Forecast | VedicHour';
+const SITE_TITLE = 'Hour-by-hour Vedic timing | VedicHour';
 // Keep ≤160 chars for Google snippet (no truncation).
 const SITE_DESCRIPTION =
-  'Free Kundli & AI Jyotish forecast online. 18 hourly Vedic windows/day — Swiss Ephemeris, Lahiri Ayanamsa, Vimshottari Dasha. No card needed.';
+  'Your chart scored into 18 hourly windows a day — clearer vs heavier, in plain English. Free to start. No card needed.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -192,7 +192,7 @@ export default function RootLayout({
                 {
                   '@type': 'SoftwareApplication',
                   '@id': `${SITE_URL}#app`,
-                  name: 'VedicHour — AI Jyotish Forecast & Free Kundli',
+                  name: 'VedicHour — hour-by-hour Vedic timing',
                   alternateName: [
                     'Free Kundli Generator',
                     'AI Kundli',
@@ -202,7 +202,7 @@ export default function RootLayout({
                     'Janam Kundali Generator',
                   ],
                   description:
-                    'Generate your free Kundli (Janam Kundali) and AI-powered Jyotish forecast online. Vedic astrology with 18 hourly precision windows per day — Swiss Ephemeris, Lahiri Ayanamsa, Vimshottari Dasha.',
+                    'Generate your free Vedic birth chart and an hour-by-hour forecast in plain English. Eighteen scored windows a day from your exact birth moment.',
                   url: SITE_URL,
                   applicationCategory: 'LifestyleApplication',
                   applicationSubCategory: 'Astrology',
@@ -221,7 +221,7 @@ export default function RootLayout({
                       name: '7-Day Jyotish Forecast',
                       price: '9.99',
                       priceCurrency: 'USD',
-                      description: '7-day AI Jyotish forecast with 126 hourly windows, choghadiya, hora, and Rahu Kaal.',
+                      description: '7-day hourly forecast with 126 windows, planetary hours, and daily caution slots.',
                       url: `${SITE_URL}/onboard?plan=7day`,
                     },
                     {
@@ -244,7 +244,7 @@ export default function RootLayout({
                   featureList: [
                     'Free Kundli generator',
                     'Janam Kundali online',
-                    'AI Jyotish forecast',
+                    'Hourly Vedic forecast',
                     'Vedic astrology report',
                     'Jyotish hourly forecast',
                     'Swiss Ephemeris calculations',

@@ -31,8 +31,8 @@ const STEPS = [
   },
   {
     number: '03',
-    title: 'AI writes your personal forecast',
-    description: 'Generates 18 precision hourly windows per day — each with a score, quality rating, and plain-English guidance. Your chart, translated into decisions you can act on today.',
+    title: 'Eighteen windows, in English',
+    description: 'Each hour of the day gets a score and a line you can actually use — take the call, send the note, or leave it. Your chart, translated into today.',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
         <rect x="6" y="30" width="8" height="12" rx="1" fill="currentColor" opacity="0.35" />
@@ -56,10 +56,10 @@ export default function HowItWorks() {
         <div className="section-header text-center">
           <p className="section-eyebrow">The Process</p>
           <h2 className="section-title text-display-md">
-            How Your Jyotish Forecast Is Built
+            How your day gets scored
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Classical Jyotish precision — your full forecast in minutes.
+            Birth details in. Hourly windows out. About a minute.
           </p>
         </div>
 

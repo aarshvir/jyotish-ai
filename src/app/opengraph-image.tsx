@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { ogFont } from '@/lib/og/ogFont';
 
-export const alt = 'VedicHour — Free Kundli & AI Jyotish Forecast';
+export const alt = 'VedicHour — your day is not one mood';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 export const dynamic = 'force-dynamic';
@@ -59,7 +59,7 @@ export default function OpengraphImage() {
               maxWidth: 1000,
             }}
           >
-            Free Kundli &amp; AI Jyotish Forecast
+            Your day is not one mood
           </div>
           <div
             style={{
@@ -70,7 +70,7 @@ export default function OpengraphImage() {
               display: 'flex',
             }}
           >
-            Free Kundli · AI Vedic forecast · 18 hourly Jyotish windows per day
+            18 hourly windows, scored from your birth chart
           </div>
         </div>
 
@@ -84,11 +84,11 @@ export default function OpengraphImage() {
             color: 'rgba(245,239,224,0.6)',
           }}
         >
-          <span>Free Kundli</span>
+          <span>Free chart</span>
           <span>·</span>
-          <span>Jyotish AI</span>
+          <span>Hourly timing</span>
           <span>·</span>
-          <span>Swiss Ephemeris</span>
+          <span>No card</span>
         </div>
       </div>
     ),

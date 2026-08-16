@@ -58,13 +58,13 @@ export default async function PricingPage({
 
       {/* Hero */}
       <section className="text-center px-5 sm:px-8 pt-28 sm:pt-32 pb-10 sm:pb-14">
-        <p className="section-eyebrow mb-3">Free Kundli · AI Jyotish Forecast</p>
+        <p className="section-eyebrow mb-3">Free chart · hourly windows</p>
         <h1 className="font-body font-semibold text-display-lg mb-4">
-          Free Kundli &amp; Jyotish Forecast Plans
+          Start free. Pay once if the hours earn it.
         </h1>
         <p className="font-body text-body-lg text-dust max-w-lg mx-auto leading-relaxed">
-          Generate your free Kundli (Janam Kundali) in minutes — no card needed. Upgrade for a full
-          AI Jyotish forecast with 18 hourly Vedic windows per day. One-time payments. No subscriptions.
+          Free birth chart in about a minute — no card. Upgrade for every hourly window across
+          7 or 30 days. One-time payments. No subscriptions.
         </p>
         <p className="mt-4 font-mono text-mono-sm text-dust">
           Prices shown in {currency}. All plans are one-time — no subscription.
