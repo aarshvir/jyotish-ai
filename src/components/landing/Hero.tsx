@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { StarField } from '@/components/ui/StarField';
-import { MandalaRing } from '@/components/ui/MandalaRing';
+import { UNLOCK_FREE_HREF } from '@/lib/pricing';
 
 // Verifiable product facts only — no invented counters or ratings.
 const TRUST_STATS = [
-  { value: '18', label: 'hourly Vedic windows/day' },
+  { value: '18', label: 'hourly windows a day' },
   { value: 'Real', label: 'astronomy — no guesswork' },
   { value: 'One-time', label: 'payment · no subscription' },
   { value: '24h', label: 'no-questions refund' },
@@ -26,16 +26,12 @@ export default function Hero() {
         <div className="aura-glow animate-aurora" />
       </div>
 
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center select-none">
-        <MandalaRing className="w-[600px] h-[600px] md:w-[800px] md:h-[800px] text-amber opacity-[0.08] animate-slow-spin" />
-      </div>
-
       <div className="relative z-10 text-center max-w-4xl mx-auto px-6 pt-24 pb-16 md:pt-32 md:pb-20">
         {/* Eyebrow — CSS fade-down */}
         <div className="animate-fade-down inline-flex items-center gap-2 mb-8 md:mb-10 px-4 py-1.5 rounded-pill border border-amber/20 bg-amber/[0.04]">
           <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse-amber" />
           <span className="font-mono text-mono-sm text-amber tracking-[0.15em] uppercase">
-            Classical Vedic timing · calculated for your exact birth
+            Calculated for your exact birth — not a sun-sign mood
           </span>
         </div>
 
@@ -52,31 +48,24 @@ export default function Hero() {
           <span className="inline-block mr-[0.2em]">by</span>{' '}
           <span className="inline-block text-amber-gradient">Hour.</span>
         </h1>
-        {/* SEO: keep Jyotish as a keyword signal without putting it in the visible H1 */}
-        <span className="sr-only">Jyotish Forecast · AI Jyotish</span>
 
         {/* Subtitle — CSS fade-up */}
         <p className="animate-fade-up-1 font-body text-body-lg text-dust max-w-xl mx-auto mb-10 leading-relaxed">
-          AI-powered Vedic astrology &amp; free Kundli online — with hourly precision.
+          Same Tuesday. Two windows. Your chart says which hour is clearer for the call.
           <br className="hidden md:block" />
-          Know exactly when to act — and when to rest.
+          Eighteen slots a day, scored in plain English. Free to start.
         </p>
-        {/* Supplementary SEO text for crawlers */}
-        <span className="sr-only">
-          Free Kundli generator · Janam Kundali online · AI Jyotish forecast · Vedic astrology report ·
-          Jyotish AI · Vedic forecast · Astrology report · AI kundli
-        </span>
 
         {/* Primary CTA — single high-contrast action */}
         <div className="animate-fade-up-2 flex flex-col items-center gap-3 mb-4">
-          <Link href="/onboard?plan=free" rel="nofollow" className="btn-primary text-base px-10 py-4 w-full max-w-xs sm:max-w-none sm:w-auto group">
-            <span>Get Your Free Kundli</span>
+          <Link href={UNLOCK_FREE_HREF} rel="nofollow" className="btn-primary text-base px-10 py-4 w-full max-w-xs sm:max-w-none sm:w-auto group">
+            <span>See today&apos;s windows — free</span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="group-hover:translate-x-0.5 transition-transform" aria-hidden>
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </Link>
           <Link href="/sample-report" className="font-body text-body-sm text-dust hover:text-dust underline-offset-2 hover:underline transition-colors">
-            Or see a full sample day →
+            Or read a full sample day →
           </Link>
           <p className="font-mono text-mono-sm text-dust tracking-wider">
             Free account in 20 seconds · no card required

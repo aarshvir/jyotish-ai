@@ -9,8 +9,10 @@ import { sendWhatsApp } from './whatsapp';
 import { toUsdCents, fetchAllAuthUsers } from '@/lib/admin/analytics';
 import { emailShell, emailButton, plainText } from './emailLayout';
 import { fetchSuppressedSet, unsubscribeUrl } from './suppression';
+import { UNLOCK_7DAY_HREF } from '@/lib/pricing';
 
 const SITE = 'https://www.vedichour.com';
+const UNLOCK_URL = `${SITE}${UNLOCK_7DAY_HREF}`;
 const FOUNDER_EMAIL = process.env.FOUNDER_EMAIL?.trim() || 'support@vedichour.com';
 
 // ── Founder daily digest ──────────────────────────────────────────────────
@@ -132,7 +134,7 @@ function escapeHtml(s: string): string {
 function nurtureEmail(stage: 's1' | 's2' | 's3', name: string, personalContext: string | null): { subject: string; html: string; text: string } {
   const qClause = firstQuestionClause(personalContext);
   const qPlain = (personalContext ?? '').trim().slice(0, 140);
-  const unlockUrl = `${SITE}/onboard?plan=7day&promo=NEWUSER30`;
+  const unlockUrl = UNLOCK_URL;
   const bullets = [
     'The exact hours and days ahead that favour your decision — hour by hour.',
     'Your 12-month timeline, so you act with the tide instead of against it.',

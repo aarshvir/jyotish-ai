@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Pricing — Free Kundli & AI Jyotish Forecast | VedicHour' },
+  title: { absolute: 'Pricing — VedicHour' },
   description:
-    'Free Kundli — no card needed. Upgrade to 7-day, monthly, or annual AI Jyotish forecast. One-time payments, no subscriptions. 24-hour refund.',
+    'Free birth chart — no card. Upgrade to 7-day, monthly, or annual hourly forecasts. One-time payments, no subscriptions. 24-hour refund.',
   keywords: [
     'free Kundli',
     'AI Kundli price',
@@ -14,17 +14,17 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: '/pricing' },
   openGraph: {
-    title: 'Pricing — Free Kundli & AI Jyotish Forecast | VedicHour',
+    title: 'Pricing — VedicHour',
     description:
-      'Free Kundli, plus one-time Jyotish forecast plans. 7-day, monthly, annual Vedic astrology reports. No subscriptions.',
+      'Free birth chart, plus one-time hourly forecast plans. 7-day, monthly, annual. No subscriptions.',
     url: '/pricing',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Pricing — Free Kundli & AI Jyotish Forecast | VedicHour',
+    title: 'Pricing — VedicHour',
     description:
-      'Free Kundli, plus one-time Jyotish forecast plans. 7-day, monthly, annual Vedic astrology reports. No subscriptions.',
+      'Free birth chart, plus one-time hourly forecast plans. 7-day, monthly, annual. No subscriptions.',
   },
   other: {
     'og:price:amount': '9.99',
@@ -47,9 +47,9 @@ const pricingJsonLd = {
       '@type': 'WebPage',
       '@id': `${SITE_URL}/pricing#webpage`,
       url: `${SITE_URL}/pricing`,
-      name: 'Free Kundli & AI Jyotish Forecast Pricing | VedicHour',
+      name: 'VedicHour pricing',
       description:
-        'Free Kundli (no card needed) plus one-time AI Jyotish forecast plans. 7-day, monthly, annual Vedic astrology reports.',
+        'Free birth chart plus one-time hourly forecast plans. 7-day, monthly, annual.',
       isPartOf: { '@id': `${SITE_URL}#website` },
       breadcrumb: { '@id': `${SITE_URL}/pricing#breadcrumb` },
       inLanguage: 'en',
@@ -64,8 +64,8 @@ const pricingJsonLd = {
     },
     {
       '@type': 'ItemList',
-      name: 'Jyotish Forecast & Kundli Plans',
-      description: 'Free Kundli and paid AI Jyotish forecast plans from VedicHour.',
+      name: 'Hourly forecast plans',
+      description: 'Free birth chart and paid hourly forecast plans from VedicHour.',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: 'Free Kundli (Janam Kundali)', url: `${SITE_URL}/onboard?plan=free` },
         { '@type': 'ListItem', position: 2, name: '7-Day Jyotish Forecast', url: `${SITE_URL}/onboard?plan=7day` },

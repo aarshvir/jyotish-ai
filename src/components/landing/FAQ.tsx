@@ -34,9 +34,9 @@ export default function FAQ() {
       <div className="max-w-3xl mx-auto px-6">
         <div className="section-header text-center">
           <p className="section-eyebrow">Questions</p>
-          <h2 className="section-title text-display-md">Jyotish &amp; Kundli — Frequently Asked</h2>
+          <h2 className="section-title text-display-md">Questions, answered plainly</h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Everything you might want to know about Jyotish, Kundli, and your AI Vedic forecast.
+            What the chart is, what the hours mean, and what is free versus paid.
           </p>
         </div>
 

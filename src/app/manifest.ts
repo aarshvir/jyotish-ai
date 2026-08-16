@@ -17,7 +17,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'VedicHour — Vedic Astrology, Hour by Hour',
     short_name: 'VedicHour',
     description:
-      'AI-powered Vedic astrology forecasts with hourly precision. Know exactly when to act — and when to rest.',
+      'Hour-by-hour Vedic timing from your birth chart. Eighteen scored windows a day, in plain English.',
     start_url: '/',
     scope: '/',
     display: 'standalone',

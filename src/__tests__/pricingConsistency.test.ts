@@ -7,7 +7,7 @@ import {
 } from '@/lib/ziina/server';
 import { applyDiscount } from '@/lib/ziina/amounts';
 import { computeIntentAmount } from '@/lib/ziina/server';
-import { PLAN_CARDS, UNLOCK_7DAY_HREF } from '@/lib/pricing';
+import { PLAN_CARDS, UNLOCK_7DAY_HREF, UNLOCK_FREE_HREF } from '@/lib/pricing';
 
 /**
  * Locks the canonical displayed prices so the amount a customer SEES always equals
@@ -96,6 +96,10 @@ describe('advertised discount == charged discount', () => {
 describe('unlock and plan-card honesty', () => {
   it('unlocks 7-day with the public launch promo', () => {
     expect(UNLOCK_7DAY_HREF).toBe('/onboard?plan=7day&promo=NEWUSER30');
+  });
+
+  it('free start is onboard, not a dead tool URL', () => {
+    expect(UNLOCK_FREE_HREF).toBe('/onboard?plan=free');
   });
 
   it('Annual card is access + support, not a year of hourly windows', () => {

@@ -19,32 +19,25 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
   // ONLY weeks the pipeline actually computed — see selectComputedWeeks.
   const realWeeks = selectComputedWeeks(weeks);
   const total = realWeeks.length;
-  const weeksData = realWeeks.map((w, i) => ({
-    ...w,
-    week_label: (w.week_label ?? '').trim() || `Week ${i + 1} of ${total}`,
-    // Empty/dev-fallback theme renders nothing rather than filler prose.
-    theme: (() => {
-      const t = (w.theme ?? '').trim();
-      return !t || isDevFallback(t) ? '' : t;
-    })(),
-    commentary: (() => {
-      const c = (w.commentary ?? '').trim();
-      // Navigational pointer, not a claim about their chart — safe when prose is missing.
-      if (!c || isDevFallback(c)) return 'Use the daily score calendar below to find your best days this week, and the hourly table for precision timing.';
-      return c;
-    })(),
-  }));
+  if (total === 0) return null;
+
+  const weeksData = realWeeks.map((w, i) => {
+    const theme = (w.theme ?? '').trim();
+    const commentary = (w.commentary ?? '').trim();
+    return {
+      ...w,
+      week_label: (w.week_label ?? '').trim() || `Week ${i + 1}`,
+      theme: !theme || theme.toLowerCase() === 'weekly energy arc.' || isDevFallback(theme) ? '' : theme,
+      // Missing prose stays missing. A generic "best days" pointer is still filler.
+      commentary: !commentary || isDevFallback(commentary) ? '' : commentary,
+    };
+  });
   const getBarBg = (score: number) => {
     if (score >= 75) return { backgroundColor: '#10b981' };
     if (score >= 55) return { backgroundColor: '#f59e0b' };
     if (score >= 45) return { backgroundColor: 'rgba(245,158,11,0.5)' };
     return { backgroundColor: '#ef4444' };
   };
-
-  // No weeks computed (stripped preview, or a partial report) → render nothing
-  // rather than a bare "Weekly data unavailable." panel, which reads as a broken
-  // product. The preview's value/upsell surfaces live in the snapshot hero.
-  if (total === 0) return null;
 
   return (
     <motion.div
@@ -56,7 +49,7 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
       className="space-y-6 mb-12"
     >
       <h2 className="font-display font-semibold text-star text-3xl">
-        {total === 1 ? 'The Next Week' : `The Next ${total} Weeks`}
+        {total === 1 ? 'This week' : `The next ${total} weeks`}
       </h2>
 
       <div className="grid sm:grid-cols-2 gap-6">
@@ -115,16 +108,18 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
               )}
 
               {/* Theme — omitted entirely when the pipeline produced none */}
-              {week.theme && (
+              {week.theme ? (
                 <p className="font-display italic text-amber text-base mb-3">
                   {week.theme}
                 </p>
-              )}
+              ) : null}
 
               {/* Commentary */}
-              <p className="font-display text-star text-body-sm leading-[1.8] mb-4">
-                {week.commentary}
-              </p>
+              {week.commentary ? (
+                <p className="font-display text-star text-body-sm leading-[1.8] mb-4">
+                  {week.commentary}
+                </p>
+              ) : null}
 
               {/* Daily sparkline */}
               {(week.daily_scores?.length ?? 0) > 0 && (

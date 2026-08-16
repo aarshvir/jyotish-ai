@@ -107,10 +107,10 @@ export default function UseCases() {
         <div className="section-header text-center">
           <p className="section-eyebrow">What you can do</p>
           <h2 id="usecases-heading" className="section-title text-display-md">
-            From Janam Kundali to muhurta — covered.
+            When people actually use this
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Six classical use cases, one report engine. Pick the package that matches your moment.
+            Pick a meeting, a chapter of life, or a match. Same chart underneath.
           </p>
         </div>
 

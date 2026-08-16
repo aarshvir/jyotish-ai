@@ -15,10 +15,10 @@ import { FAQS } from '@/lib/faq-data';
 import FinalCTA from '@/components/landing/FinalCTA';
 
 const PAGE_DESCRIPTION =
-  'Get your free Kundli (Janam Kundali) and AI Jyotish forecast online. 18 hourly Vedic windows a day, each scored and explained in plain English. No card needed.';
+  'Your chart scored into 18 hourly windows a day — clearer vs heavier, in plain English. Free birth chart to start. No card needed.';
 
 export const metadata: Metadata = {
-  title: { absolute: 'Free Kundli & AI Jyotish Forecast | VedicHour' },
+  title: { absolute: 'Hour-by-hour Vedic timing | VedicHour' },
   description: PAGE_DESCRIPTION,
   keywords: [
     'Jyotish',
@@ -38,17 +38,17 @@ export const metadata: Metadata = {
   ],
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'Free Kundli & AI Jyotish Forecast | VedicHour',
+    title: 'Hour-by-hour Vedic timing | VedicHour',
     description: PAGE_DESCRIPTION,
     url: '/',
     type: 'website',
     // Re-declared here because a page-level openGraph REPLACES (not merges
     // with) the root layout's openGraph, which would otherwise drop the image.
-    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'VedicHour — Free Kundli & AI Jyotish Forecast' }],
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'VedicHour — your day is not one mood' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Free Kundli & AI Jyotish Forecast | VedicHour',
+    title: 'Hour-by-hour Vedic timing | VedicHour',
     description: PAGE_DESCRIPTION,
     images: ['/opengraph-image'],
   },
@@ -70,7 +70,7 @@ export default async function LandingPage() {
     '@type': 'WebPage',
     '@id': `${SITE_URL}/#webpage`,
     url: SITE_URL,
-    name: 'Free Kundli & AI Jyotish Forecast | VedicHour',
+    name: 'Hour-by-hour Vedic timing | VedicHour',
     description: PAGE_DESCRIPTION,
     isPartOf: { '@id': `${SITE_URL}#website` },
     about: {

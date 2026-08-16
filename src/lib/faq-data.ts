@@ -9,7 +9,7 @@ export interface QA {
 export const FAQS: QA[] = [
   {
     q: 'What is Jyotish astrology?',
-    a: 'Jyotish (Sanskrit: "science of light") is the classical Indian system of Vedic astrology. It reads the planets from where they actually sit in the sky, and uses time-based systems like Vimshottari Dasha and hora rulers to interpret life events and optimal timing. VedicHour applies those classical Jyotish rules to produce AI-written Jyotish forecasts for the days and months ahead.',
+    a: 'Jyotish (Sanskrit: "science of light") is the classical Indian system of Vedic astrology. It reads the planets from where they actually sit in the sky, and uses time-based systems like dasha periods and planetary hours to interpret life chapters and daily timing. VedicHour applies those rules to score your hours and write the reading in plain English.',
   },
   {
     q: 'What is a Kundli (Janam Kundali)?',
@@ -20,8 +20,8 @@ export const FAQS: QA[] = [
     a: 'Yes — our Free Kundli plan is completely free, no credit card needed. Enter your birth date, time, and city and we will generate your Janam Kundali with your Lagna, Moon sign, current Dasha period, and a sample Jyotish hora schedule. Upgrade to a paid plan for full hourly forecasts across 7 or 30 days, plus a 12-month outlook.',
   },
   {
-    q: 'What is AI Jyotish / AI Kundli?',
-    a: 'AI Jyotish (or AI Kundli) refers to using artificial intelligence to interpret a classically computed Jyotish chart. VedicHour first calculates your planetary positions and timings exactly, to the minute — no guesswork. It then passes that mathematical data to AI (Anthropic Claude, with automatic fallback to OpenAI or Google Gemini) to generate written commentary, narrative forecasts, and actionable guidance in plain language.',
+    q: 'Does AI write the report?',
+    a: 'The chart and every hourly score are calculated first — to the minute, from your birth data. A language model then writes the English commentary from those fixed numbers. It is not allowed to invent positions. Treat the writing as a clear reading of the math, not as an oracle.',
   },
   {
     q: 'How is a Vedic forecast different from a Sun-sign horoscope?',

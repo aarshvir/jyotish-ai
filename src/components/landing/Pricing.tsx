@@ -75,10 +75,10 @@ export default function Pricing() {
         <div className="section-header text-center">
           <p className="section-eyebrow">Pricing</p>
           <h2 className="section-title text-display-md">
-            Free Kundli &amp; Jyotish Forecast Plans
+            Start free. Pay once if it earns the rest.
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Free Kundli included. One-time payments for deeper Jyotish forecasts. No subscriptions.
+            Free chart included. One-time payments for the full hourly forecast. No subscriptions.
           </p>
 
           <div className="flex justify-center mt-7">
