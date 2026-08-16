@@ -5,7 +5,7 @@
   "pillar": 3,
   "platforms": {
     "instagram": {
-      "text": "Your birth time is more than a detail. A few minutes can shift the Lagna, move house emphasis, and change how a Jyotish report frames timing for reflection. VedicHour uses Swiss Ephemeris + Lahiri ayanamsa, then explains it in plain English. 🕰️\n\nYour Life, Decoded Hour by Hour.",
+      "text": "Your birth time is more than a detail. A few minutes can shift the Lagna, move house emphasis, and change how a Jyotish report frames timing for reflection. VedicHour uses real astronomical data, then explains it in plain English. 🕰️\n\nYour Life, Decoded Hour by Hour.",
       "hashtags": [
         "#vedichour",
         "#jyotish",
@@ -19,19 +19,19 @@
       "linter_reason": "Calm, educational, explains astrological principles without outcome promises or banned phrases."
     },
     "x": {
-      "text": "Birth time is not a small detail in Jyotish. A few minutes can shift your Lagna and houses, adjusting the timing context you reflect on. VedicHour uses Swiss Ephemeris + Lahiri ayanamsa in plain English. Your Life, Decoded Hour by Hour.",
+      "text": "Birth time is not a small detail in Jyotish. A few minutes can shift your Lagna and houses, adjusting the timing context you reflect on. VedicHour uses real astronomical data in plain English. Your Life, Decoded Hour by Hour.",
       "link": "https://www.vedichour.com/kundali?utm_source=x&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, educational, explains timing awareness without outcome promises or banned terms."
     },
     "facebook": {
-      "text": "Your birth time helps set the lens of the chart. Even a few minutes can shift your Lagna and houses, changing what gets emphasized for timing awareness and reflection. VedicHour keeps it private, modern, and clear, using Swiss Ephemeris + Lahiri ayanamsa with plain-English explanations. ✨\n\nYour Life, Decoded Hour by Hour.",
+      "text": "Your birth time helps set the lens of the chart. Even a few minutes can shift your Lagna and houses, changing what gets emphasized for timing awareness and reflection. VedicHour keeps it private, modern, and clear, from real astronomical data with plain-English explanations. ✨\n\nYour Life, Decoded Hour by Hour.",
       "link": "https://www.vedichour.com/kundali?utm_source=facebook&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Content focuses on timing awareness, explanations, and brand differentiators."
     },
     "linkedin": {
-      "text": "In Jyotish, birth time is not a minor input. A few minutes can shift the Lagna and house placements, which changes how timing patterns are interpreted for awareness and reflection. VedicHour brings a private, modern approach: rating all 18 planetary hours with Swiss Ephemeris + Lahiri ayanamsa, explained in plain English.\n\nYour Life, Decoded Hour by Hour.",
+      "text": "In Jyotish, birth time is not a minor input. A few minutes can shift the Lagna and house placements, which changes how timing patterns are interpreted for awareness and reflection. VedicHour brings a private, modern approach: rating all 18 planetary hours from real astronomical data explained in plain English.\n\nYour Life, Decoded Hour by Hour.",
       "link": "https://www.vedichour.com/kundali?utm_source=linkedin&utm_medium=post&utm_campaign=social",
       "linter": "flag",
       "linter_reason": "“Your Life, Decoded” implies overcertain personal life interpretation."

@@ -65,6 +65,23 @@ function str(v: unknown, fallback = ''): string {
   return typeof v === 'string' ? v : fallback;
 }
 
+export function presenterLines(creative: Json): string[] {
+  const shots = Array.isArray(creative.shots) ? creative.shots : [];
+  return shots
+    .map((raw) => str(asRecord(raw).dialogue).trim())
+    .filter(Boolean);
+}
+
+/** Caption built from the presenter's spoken lines + one proof line + spoken-site CTA. */
+export function defaultCaption(pub: Json, creative: Json): string {
+  const hook = str(pub.hook, str(creative.hook, 'Your day is not one mood.'));
+  const lines = presenterLines(creative);
+  const spoken = lines.length ? lines.join(' ') : str(pub.caption).trim();
+  const proof = `Proof: ${BRAND.adSafeDifferentiators[0]}.`;
+  const close = `Try VedicHour.com. ${BRAND.taglineClose}`;
+  return [hook, spoken, proof, close].filter(Boolean).join('\n\n');
+}
+
 export function carouselSlides(pub: Json, creative: Json) {
   const hook = str(pub.hook, str(creative.hook, str(creative.hookText, 'Your day is not one mood')));
   const fromCreative = Array.isArray(creative.onScreenCaptions)
@@ -82,7 +99,7 @@ export function carouselSlides(pub: Json, creative: Json) {
     { title: 'The tension', body: captions[1] ?? captions[0] ?? 'Same day. Different windows.' },
     { title: 'The proof', body: '18 hour-slots on YOUR chart — clearer vs heavier for the task.' },
     { title: 'How it feels', body: captions[2] ?? 'Not a sun-sign mood. A timing grid.' },
-    { title: 'CTA', body: `Try VedicHour.com — free kundli start. ${BRAND.taglineClose}` },
+    { title: 'CTA', body: `Try VedicHour.com — see the sample day. ${BRAND.taglineClose}` },
   ];
 }
 
@@ -126,21 +143,18 @@ export async function packageSlug(slug: string): Promise<string[]> {
   mkdirSync(pkgDir, { recursive: true });
   const pub = loadPublish(slug);
   const creative = loadCreative(slug);
-  const landing = BRAND.links.freeKundli;
+  const landing = BRAND.links.sampleReport;
   const written: string[] = [];
   const platforms = asRecord(pub.platforms);
   const igPlat = asRecord(platforms.instagram);
   const ytPlat = asRecord(platforms.youtube);
-  const igCaption = str(
-    igPlat.caption,
-    `${str(pub.caption, str(creative.hook))}\n\n${BRAND.taglineClose}`.trim(),
-  );
+  const igCaption = str(igPlat.caption, defaultCaption(pub, creative));
   const ytCaption = str(ytPlat.caption, str(pub.youtubeTitle, igCaption));
   const hashtags: string[] = Array.isArray(pub.hashtags)
     ? pub.hashtags.map(String)
     : Array.isArray(igPlat.hashtags)
       ? igPlat.hashtags.map(String)
-      : ['#vedichour', '#vedicastrology', '#jyotish'];
+      : ['#vedichour', '#vedictiming'];
   const video = existsSync(resolve(dir, 'final.mp4')) ? resolve(dir, 'final.mp4') : null;
   const ig = {
     platform: 'instagram_reels',
@@ -176,7 +190,7 @@ export async function packageSlug(slug: string): Promise<string[]> {
     '',
     'VedicHour rates the hours of your day against your birth chart — clearer vs heavier windows.',
     '',
-    `Start free: ${utm(landing, 'google', 'gbp', 'content_ops', slug)}`,
+    `Read a sample day: ${utm(landing, 'google', 'gbp', 'content_ops', slug)}`,
     BRAND.taglineClose,
   ].join('\n');
   const gbp = {

@@ -13,25 +13,25 @@
         "#mercuryhora",
         "#vedicwisdom"
       ],
-      "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=instagram&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Describes planetary hour nature and product features; no banned claims."
     },
     "x": {
       "text": "Mercury hora can be a clearer window for words: messages, replies, notes, and reflection before you speak. VedicHour rates all 18 horas in plain English, because your day is not one mood. NEWUSER30: 30% off first paid report. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=x&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm timing awareness copy; clearer window framing stays on-brand."
     },
     "facebook": {
       "text": "Some parts of the day feel sharper for language than others. Mercury hora can be a clearer window for messages, thoughtful replies, and saying what you mean with more care. VedicHour rates all 18 planetary hours in plain English, so your day is not one mood. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=facebook&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Describes general nature of hora, product features, and promo, no banned claims."
     },
     "linkedin": {
-      "text": "Communication is not only about what you say. Timing can shape how clearly you reflect, write, revise, and respond. Mercury hora is often considered a clearer window for words and messages. VedicHour uses Swiss Ephemeris + Lahiri ayanamsa and explains all 18 planetary hours in plain English, so your day is not one mood. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "text": "Communication is not only about what you say. Timing can shape how clearly you reflect, write, revise, and respond. Mercury hora is often considered a clearer window for words and messages. VedicHour uses real astronomical data and explains all 18 planetary hours in plain English, so your day is not one mood. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/sample-report?utm_source=linkedin&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm timing-awareness copy with clearer-window framing and no outcome promises"
     }

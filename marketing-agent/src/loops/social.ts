@@ -5,7 +5,7 @@ import { lint } from '../policy/linter';
 import { isKilled, killInfo } from '../safety/killswitch';
 import { db, logRun, enqueueApproval, ROOT } from '../db/index';
 import { writeHeartbeat } from '../scheduler/heartbeat';
-import { BRAND, BRAND_BRIEF, utm } from '../brand';
+import { BRAND, BRAND_BRIEF, utm, landingPath } from '../brand';
 
 const SOCIAL = resolve(ROOT, 'output', 'social');
 const THEMES = resolve(ROOT, 'config', 'social-themes.json');
@@ -19,10 +19,7 @@ interface Theme {
 }
 
 function landingFor(product: string): string {
-  if (product === 'matchmaking') return BRAND.links.synastry;
-  if (product === 'forecast') return BRAND.links.pricing;
-  if (product === 'kundali') return BRAND.links.kundali;
-  return BRAND.links.freeKundli;
+  return landingPath(product);
 }
 
 function prompt(t: Theme): string {

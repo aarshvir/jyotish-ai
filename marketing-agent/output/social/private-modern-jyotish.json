@@ -13,25 +13,25 @@
         "#planetaryhours",
         "#modernjyotish"
       ],
-      "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=instagram&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Content aligns with timing awareness and calm reflection, not certainty or outcomes."
     },
     "x": {
-      "text": "Your timing is personal, not a public horoscope feed. VedicHour rates all 18 planetary hours with Swiss Ephemeris + Lahiri ayanamsa, then explains them in plain English. NEWUSER30: 30% off your first paid report. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+      "text": "Your timing is personal, not a public horoscope feed. VedicHour rates all 18 planetary hours from real astronomical data then explains them in plain English. NEWUSER30: 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/sample-report?utm_source=x&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Content aligns with timing awareness and educational focus, no blocked claims."
     },
     "facebook": {
       "text": "Your Jyotish timing does not need to live in a public feed. VedicHour gives you a calm, private dashboard for reflecting on clearer and heavier windows across the day, with all 18 planetary hours explained in plain English. Use NEWUSER30 for 30% off your first paid report. 🌙 Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=facebook&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, reflective copy. 'Decoded' implies understanding, not outcome promise."
     },
     "linkedin": {
-      "text": "Modern Jyotish can be private, measured, and easy to understand. VedicHour is a calm timing dashboard, not a public horoscope feed, using Swiss Ephemeris + Lahiri ayanamsa to rate all 18 planetary hours and explain them in plain English. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "text": "Modern Jyotish can be private, measured, and easy to understand. VedicHour is a calm timing dashboard, not a public horoscope feed, from real astronomical data to rate all 18 planetary hours and explain them in plain English. Use NEWUSER30 for 30% off your first paid report. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/sample-report?utm_source=linkedin&utm_medium=post&utm_campaign=social",
       "linter": "pass",
       "linter_reason": "Calm, educational tone; promotes awareness, not certainty or outcomes."
     }

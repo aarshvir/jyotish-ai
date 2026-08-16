@@ -26,7 +26,8 @@ export const BRAND = {
   ],
   pillars: ['Not another horoscope', 'Your day is not one mood', 'Private, modern Jyotish'],
   links: {
-    freeKundli: '/free-kundli',
+    freeKundli: '/onboard?plan=free',
+    sampleReport: '/sample-report',
     kundali: '/kundali',
     synastry: '/synastry',
     pricing: '/pricing',
@@ -54,8 +55,19 @@ export function utm(path: string, source: string, medium: string, campaign = 'la
   return u.toString();
 }
 
+/** Organic/social landing. Forecast ads show the sample report, never checkout. */
+export function landingPath(product: string): string {
+  if (product === 'matchmaking') return BRAND.links.synastry;
+  if (product === 'kundali') return BRAND.links.kundali;
+  if (product === 'forecast') return BRAND.links.sampleReport;
+  return BRAND.links.freeKundli;
+}
+
 /** Compact brand brief injected into generation prompts so the brain stays on-spec. */
-export const BRAND_BRIEF = `BRAND: VedicHour — calm, credible, modern, quietly premium. A thoughtful friend who understands astronomy and Jyotish. Sell timing AWARENESS and reflection, NEVER certainty, luck, or outcomes.
+export const BRAND_BRIEF = `BRAND: VedicHour — calm, credible, modern, quietly premium. A thoughtful friend who understands timing. Sell timing AWARENESS and reflection, NEVER certainty, luck, or outcomes.
+Voice: specific moments (HR sent 10am and 5pm), not keyword soup. A viewer should feel a Tuesday they recognise.
 NEVER use: guaranteed/will definitely/100% · good luck/bad luck/lucky/unlucky · "best hour"/"worst hour" (say "clearer"/"heavier" windows) · fix your life/change your destiny · become rich/get the job/pass the exam/win · save your marriage · cure/heal/treat · avoid disaster/doom/curse · predict exactly. No medical/legal/financial/relationship claims.
-ALWAYS include ≥1 differentiator: rates all 18 planetary hours (horas) · Swiss Ephemeris + Lahiri ayanamsa · plain English.
-Promo: NEWUSER30 (30% off first paid report) — only public code. Close with the tagline "Your Life, Decoded Hour by Hour." Internal links only: /free-kundli /kundali /synastry /pricing /blog.`;
+NEVER put engine jargon in ads or social. Do not name astronomy libraries, ayanamsa systems, sidereal, whole-sign, or dasha-cycle brand names. Credibility line: "real astronomical data, the same math a careful astrologer uses".
+ALWAYS include ≥1 ad-safe differentiator: rates all 18 hours of your day against your own birth chart · real astronomical data · plain English.
+Promo: NEWUSER30 (30% off first paid report) — only public code. Close with the tagline "Your Life, Decoded Hour by Hour."
+Links: show the product, never checkout. Forecast → /sample-report. Free start → /onboard?plan=free. Never /pricing in an ad.`;

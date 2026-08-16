@@ -1,40 +1,36 @@
 {
   "slug": "swiss-ephemeris-precision",
-  "topic": "Why we use the Swiss Ephemeris",
+  "topic": "Real astronomy, not a sun-sign mood",
   "product": "forecast",
   "pillar": 1,
   "platforms": {
     "instagram": {
-      "text": "Not another horoscope. 🪐 VedicHour starts with Swiss Ephemeris positions and Lahiri ayanamsa, then rates all 18 planetary hours in plain English. Astronomer-grade inputs, Jyotish timing awareness, no dramatic claims. Your Life, Decoded Hour by Hour.",
+      "text": "HR sent 10am and 5pm. Same Tuesday. Same call. Not the same hour.\n\nYour chart is calculated from real sky positions — the same math a careful astrologer uses — then scored into 18 windows. Read a sample day before you pay.\n\nYour Life, Decoded Hour by Hour.",
       "hashtags": [
         "#vedichour",
-        "#jyotish",
-        "#vedicastrology",
-        "#swissephemeris",
-        "#lahiriayanamsa",
-        "#planetaryhours"
+        "#vedictiming"
       ],
-      "link": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=post&utm_campaign=social",
+      "link": "https://www.vedichour.com/sample-report?utm_source=instagram&utm_medium=post&utm_campaign=social",
       "linter": "pass",
-      "linter_reason": "Content aligns with timing awareness, not outcome promises."
+      "linter_reason": "Specific moment, timing awareness, no engine jargon."
     },
     "x": {
-      "text": "Not another horoscope: VedicHour uses Swiss Ephemeris positions with Lahiri ayanamsa, then translates all 18 planetary hours into plain English so you can reflect on timing with more awareness. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=x&utm_medium=post&utm_campaign=social",
+      "text": "HR sent 10am and 5pm. Same Tuesday, same call, two different hours. VedicHour scores all 18 windows from real astronomical data. Sample: vedichour.com/sample-report Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/sample-report?utm_source=x&utm_medium=post&utm_campaign=social",
       "linter": "pass",
-      "linter_reason": "Calm, educational copy focusing on timing awareness and reflection."
+      "linter_reason": "Specific moment, no certainty claims."
     },
     "facebook": {
-      "text": "Not another horoscope. 🪐 We use the Swiss Ephemeris for astronomer-grade planetary positions, apply Lahiri ayanamsa, and explain all 18 horas in plain English. Calm timing awareness for reflection, not certainty. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=post&utm_campaign=social",
+      "text": "Same Tuesday. Two slots from HR. Your chart already knows which window is clearer.\n\nVedicHour rates all 18 hours of your day against your birth chart, from real astronomical data, in plain English. Start with the sample report.\n\nYour Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/sample-report?utm_source=facebook&utm_medium=post&utm_campaign=social",
       "linter": "pass",
-      "linter_reason": "Aligns with timing awareness and reflection, explicitly disavows certainty."
+      "linter_reason": "Specific moment, timing awareness."
     },
     "linkedin": {
-      "text": "VedicHour is built for people who want Jyotish timing explained with care. We use Swiss Ephemeris planetary positions with Lahiri ayanamsa, then translate all 18 planetary hours into plain English. The goal is timing awareness and reflection, not certainty or outcome claims. Your Life, Decoded Hour by Hour.",
-      "link": "https://www.vedichour.com/pricing?utm_source=linkedin&utm_medium=post&utm_campaign=social",
+      "text": "Two meeting slots on the same Tuesday are not interchangeable. VedicHour scores every hour of your day against your own birth chart, using real astronomical data — the same math a careful astrologer uses — then explains the windows in plain English. Read a sample before you buy. Your Life, Decoded Hour by Hour.",
+      "link": "https://www.vedichour.com/sample-report?utm_source=linkedin&utm_medium=post&utm_campaign=social",
       "linter": "pass",
-      "linter_reason": "Content aligns with timing awareness, reflection, and avoids banned claims."
+      "linter_reason": "Professional, specific, no outcome claims."
     }
   },
   "status": "ready_to_post"
