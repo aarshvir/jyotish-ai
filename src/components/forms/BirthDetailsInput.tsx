@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { hasValidBirthCoords } from '@/lib/utils/coords';
 
 export interface BirthDetails {
@@ -39,25 +39,43 @@ export function BirthDetailsInput({ value, onChange, label, showName = true, all
   // Remember the user's exact time so unchecking "use noon" restores it instead of leaving 12:00.
   const [lastExactTime, setLastExactTime] = useState('');
 
+  // Two races guarded here (same pattern as the onboard form's geocoder):
+  //  1. Stale response wins — blur "Mumbai", correct it to "Delhi", blur again;
+  //     if Mumbai's response lands last it writes Mumbai's coords AND rewrites
+  //     birth_city back to "Mumbai". An AbortController supersedes the old call.
+  //  2. Stale-closure clobber — `{ ...value }` captured at blur time would revert
+  //     any name/date/time edit made while the request was in flight, so the
+  //     spread reads the LATEST props via a ref instead.
+  const geocodeAbort = useRef<AbortController | null>(null);
+  const latestValue = useRef(value);
+  latestValue.current = value;
+
   async function geocodeCity(city: string) {
     const q = city.trim();
+    geocodeAbort.current?.abort();
     if (!q) {
       setGeoStatus('idle');
       return;
     }
+    const controller = new AbortController();
+    geocodeAbort.current = controller;
     setGeoStatus('loading');
     try {
-      const res = await fetch(`/api/geocode?city=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/geocode?city=${encodeURIComponent(q)}`, { signal: controller.signal });
       const data = (await res.json().catch(() => [])) as Array<{ lat: string; lon: string; display_name?: string }>;
+      // .json()'s catch swallows an abort mid-body, so re-check before writing.
+      if (controller.signal.aborted) return;
       const first = Array.isArray(data) ? data[0] : undefined;
       if (first?.lat && first?.lon) {
-        onChange({ ...value, birth_city: q, birth_lat: parseFloat(first.lat), birth_lng: parseFloat(first.lon) });
+        onChange({ ...latestValue.current, birth_city: q, birth_lat: parseFloat(first.lat), birth_lng: parseFloat(first.lon) });
         setResolvedName(first.display_name ?? '');
         setGeoStatus('ok');
       } else {
         setGeoStatus('error');
       }
-    } catch {
+    } catch (err) {
+      // Superseded by a newer lookup — the newer call owns the status.
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       setGeoStatus('error');
     }
   }
