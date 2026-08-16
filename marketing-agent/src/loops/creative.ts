@@ -14,6 +14,7 @@ import { comboKey, normalizeTags, taxonomyPromptSpec, taxonomyPromptSpecCompact,
 import { aggregatePerformance, exploreTargets, renderBrief, type ComboCoverage, type PerformanceSnapshot } from '../performance';
 import { senseDigest } from './sense';
 import { playbookBlock } from '../playbook';
+import { craftBlock } from '../craft';
 
 const OUT_DIR = resolve(ROOT, 'output', 'creative');
 const SEEDS_FILE = resolve(ROOT, 'config', 'creative-seeds.json');
@@ -281,6 +282,8 @@ interface LearnedContext {
   sense: string;
   /** Craft principles, as editable data with sources — config/playbook.json. */
   playbook: string;
+  /** Visual/audio/storyboard law — config/reel-craft.json (wins over playbook on look/sound). */
+  craft: string;
   snapshot: PerformanceSnapshot | null;
 }
 
@@ -296,7 +299,14 @@ async function gatherLearned(count: number): Promise<LearnedContext> {
   // Ask for a couple more explore targets than slots, so the model has room to pick the ones it
   // can actually write a good idea for rather than being forced into one awkward combination.
   const explore = exploreTargets(snapshot, Math.max(2, Math.ceil(count * EXPLORE_SHARE) + 2));
-  return { performance, explore, sense: senseDigest(), playbook: playbookBlock(), snapshot };
+  return {
+    performance,
+    explore,
+    sense: senseDigest(),
+    playbook: playbookBlock(),
+    craft: craftBlock(),
+    snapshot,
+  };
 }
 
 function exploreBlock(targets: ComboCoverage[], reserved: number): string {
@@ -341,6 +351,7 @@ ${families}
 WHAT MAKES AN IDEA GOOD: a specific named moment beats an abstraction. "kal 11 baje meeting rakhun ya 4 baje?" is a good idea. "discover your cosmic timing" is a worthless idea. If the idea could be about any astrology app, throw it away.
 
 ${learned.playbook}
+${learned.craft}
 ${learned.performance}
 
 ${exploreBlock(learned.explore, reserved)}
@@ -460,6 +471,7 @@ AUDIENCE: ${s.audience}
 REGISTER: ${s.register}
 
 ${learned.playbook}
+${learned.craft}
 ${learned.performance}
 
 HOW THE AUDIO WORKS — this drives the whole structure, read it twice:
