@@ -15,6 +15,17 @@ import { aggregatePerformance, exploreTargets, renderBrief, type ComboCoverage, 
 import { senseDigest } from './sense';
 import { playbookBlock } from '../playbook';
 import { craftBlock } from '../craft';
+import {
+  LITERALISM_BAN_BLOCK,
+  HUMAN_EYE_FLOOR,
+  degradedHumanEye,
+  humanEyePrompt,
+  literalismHits,
+  parseHumanEye,
+  propBanHits,
+  type HumanEyeReel,
+  type HumanEyeVerdict,
+} from '../audit/human-eye';
 
 const OUT_DIR = resolve(ROOT, 'output', 'creative');
 const SEEDS_FILE = resolve(ROOT, 'config', 'creative-seeds.json');
@@ -27,6 +38,94 @@ const BRAND_SAFETY_FLOOR = 80; // ANY brand-safety failure is a hard reject
 const HOOK_MAX_WORDS = 8; // spec; 10 is the hard reject line
 const HOOK_REJECT_WORDS = 10;
 const BRACKET_SIZE = 4;
+
+/**
+ * ────────────────────────────────────────────────────────────────────────────────────────────
+ * THE FORMAT SPEC — "cold open, proof early, intercut". Owner ruling 2026-08-16.
+ * ────────────────────────────────────────────────────────────────────────────────────────────
+ *
+ * The reel that was rejected ("this reel is shit... this should look like a real advert that a
+ * $1B saas platform will launch") was measured afterwards: 5 shots, 29s, and THIRTEEN SECONDS of
+ * talking head before the product appeared. A reel loses its viewer by second three. The most
+ * interesting thing this company owns — a real 18-slot day grid with scores and plain-English
+ * guidance — arrived at second 13, to an audience that had already gone.
+ *
+ * So the shape is inverted. The presenter no longer INTRODUCES the product; he answers a question
+ * that the product is already on screen answering. Concretely:
+ *
+ *   s1  presenter  <=3s   COLD OPEN, mid-sentence. Hook burned in from frame 0.
+ *   s2  product    ~3s    the real report — proof is on screen before second 3.
+ *   s3  presenter  <=6s   the one long beat: the turn.
+ *   s4  product    ~3s    a single hour card and its plain-English line.
+ *   s5  presenter  ~4s    (optional middle beat)
+ *   s6  product    ~3s    proof again
+ *   s7  presenter  ~4s    close, names vedichour.com out loud.
+ *
+ * Why these numbers and not others:
+ *  - PRODUCT SHOTS ARE FREE (real screen recordings) and GENERATED SHOTS ARE NOT. So the format
+ *    that retains best is also the cheapest: ~$2.40 of Veo for four presenter beats, versus $3.02
+ *    for the rejected reel, and every extra product beat costs nothing.
+ *  - B-ROLL IS THE SLOP VECTOR. Generic atmosphere footage is where "expensive" dies and where
+ *    the metaphor-as-prop defect lives (see audit/human-eye.ts). One b-roll shot maximum, and it
+ *    must show the real human subject of the sentence, never an illustration of it.
+ *
+ * ONE CONCESSION TO THE RENDER CONTRACT: src/render/types.ts hard-requires shots[0].role ===
+ * 'presenter' (platform policy — faceless AI reels are deprioritised), so the product cannot
+ * literally be frame 1. The cold open is the compliant equivalent: a face, mid-sentence, for at
+ * most FIRST_SHOT_MAX_SEC, with the product on screen the instant he stops. No greeting, no
+ * setup, no "kya aapko pata hai" — he is already answering.
+ */
+const SHOTS_MIN = 5;
+const SHOTS_MAX = 8;
+const REEL_SEC_MIN = 20;
+const REEL_SEC_MAX = 28;
+/** The cold open. Long enough for one sentence, short enough that proof lands inside 3 seconds. */
+const FIRST_SHOT_MAX_SEC = 3;
+/** Every other shot, except the single long presenter beat below. */
+const SHOT_MAX_SEC = 4;
+/** Exactly one presenter beat may run to this — the reel's only pause for breath. */
+const LONG_BEAT_MAX_SEC = 6;
+/** The product must be on screen by here. Shot 2 being a product shot enforces it structurally. */
+const PROOF_BY_SEC = 3;
+const MIN_PRODUCT_SHOTS = 2;
+const MIN_PRODUCT_SEC = 5;
+const MIN_PRESENTER_SHOTS = 3;
+const MAX_BROLL_SHOTS = 1;
+/** Spoken words for a 20-28s reel at 2.3 words/s, with room for silence under the captions. */
+const SCRIPT_WORDS_MIN = 30;
+const SCRIPT_WORDS_MAX = 64;
+/**
+ * NO SHOT MAY PLAY SILENT. src/render/assemble.ts fails a finished reel on a single silence longer
+ * than 1.2s (MAX_SILENCE_GAP_SEC) or more than 25% silence overall — the gate the owner's "half the
+ * video has no audio" produced. The first run of this format answered that by writing FOUR silent
+ * product shots, 13 of 26 seconds: a reel that would have burned ~$2.70 of Veo and then failed
+ * verification. Caught here instead, for $0, which is CLAUDE.md §1.
+ *
+ * The connective line is capped well below the renderer's 12-word ceiling because every one of
+ * those words is synthesized rather than spoken on camera: short enough that the timbre change
+ * reads as a beat, never as a second narrator taking over.
+ */
+const CONNECTIVE_MAX_WORDS = 6;
+/**
+ * A shot this short reads as a CUT, not as dead air — it stays under the renderer's 1.2s ceiling
+ * with rounding to spare. This is the escape valve that keeps the reel in one voice: a product
+ * beat that would otherwise need narration can instead be a fast silent cutaway.
+ */
+const SILENT_SHOT_MAX_SEC = 1;
+/**
+ * THE VOICE-SWITCH BUDGET — the correction to my own first fix.
+ *
+ * Forbidding silent shots (dead air fails the render) made the writer narrate every product beat,
+ * and the second attempt came back with three narrated shots alternating with four presenter
+ * shots: SIX audible timbre changes in 23 seconds, between the video model's in-shot voice and the
+ * synthesized one. That is the defect the owner has already rejected twice ("the second voice,
+ * when it comes, looks very AI-generated"), reintroduced by the cure for a different defect.
+ *
+ * So both are bounded: at most two shots may be narrated, everything else is either spoken on
+ * camera or a sub-second silent cutaway, and at least this share of the words must be on camera.
+ */
+const MAX_NARRATED_SHOTS = 2;
+const NATIVE_RATIO_FLOOR = 0.72;
 /**
  * EXPLORE/EXPLOIT. Roughly this share of the ideas that advance to scripting is RESERVED for
  * under-tested tag combinations, whatever the performance evidence currently favours.
@@ -48,8 +147,15 @@ const EXPLORE_SHARE = 0.3;
  */
 const STAGE_DEADLINE_MS = 660_000;
 
-/** Weighted total. Hook carries the most weight — the first second is the whole game. */
-const WEIGHTS = { hookStrength: 0.3, specificity: 0.2, credibility: 0.2, brandSafety: 0.15, producibility: 0.15 };
+/**
+ * Weighted total. The hook still carries the most single weight — the first second is the whole
+ * game — but HUMAN EYE is now the second heaviest and, unlike the other five, it can reject on
+ * its own. The five original axes are all COMPLIANCE axes; the rejected reel scored well on every
+ * one of them and the owner still hated it, so a scoreboard made only of them cannot see quality.
+ * brandSafety's weight is small because it is not really a score: anything under BRAND_SAFETY_FLOOR
+ * is a hard reject regardless of the total.
+ */
+const WEIGHTS = { hookStrength: 0.24, specificity: 0.12, credibility: 0.12, brandSafety: 0.08, producibility: 0.12, humanEye: 0.32 };
 
 // ---------------------------------------------------------------- types
 
@@ -113,6 +219,8 @@ interface Scores {
   credibility: number;
   brandSafety: number;
   producibility: number;
+  /** The taste axis — src/audit/human-eye.ts. Not a compliance score, and it can reject alone. */
+  humanEye: number;
   total: number;
   notes: string;
   degraded: boolean;
@@ -350,6 +458,17 @@ ${families}
 
 WHAT MAKES AN IDEA GOOD: a specific named moment beats an abstraction. "kal 11 baje meeting rakhun ya 4 baje?" is a good idea. "discover your cosmic timing" is a worthless idea. If the idea could be about any astrology app, throw it away.
 
+WHERE THE EMOTIONAL WEIGHT ACTUALLY IS — bias hard toward this, it is the biggest correction available to you.
+We harvest the real questions this audience asks in public, and today's are almost entirely about ONE PERSON AND ANOTHER PERSON, or about a life that has stalled: "are there any chances of reconciliation?", "when will my relationship start?", "any big career breakthroughs coming?", "should I stay an engineer or switch?", "any chance of moving abroad again?". Nobody is lying awake about scheduling a meeting or when to study.
+Our recent hooks were about meetings, study slots and posting times. That is the SAFE end of the product and it is the LOW-STAKES end. It is why the reels are forgettable.
+So write ideas that sit inside the conversations people actually lose sleep over — the message to an ex you have drafted and not sent, the conversation with your parents about the person you are seeing, the resignation you keep rewriting, the "we need to talk" that has been pending for three weeks, the call home you have been putting off.
+AND THEN STAY INSIDE BRAND LAW, which is not negotiable and is what makes this defensible rather than exploitative:
+- We sell TIMING AND REFLECTION, never outcomes. The idea is "WHEN to have the conversation", never "will he come back". Never "kya wo wapas aayega" — always "wo baat karni hai, aaj ya Sunday?".
+- Never predict, never promise, never reassure. We do not know what happens. We know which windows of a day run clearer or heavier for HAVING the conversation, on this person's own chart.
+- No fear, no urgency, no doom, no "before it's too late". The register is calm and adult: a friend who says "not tonight, tomorrow morning" — not a fortune-teller.
+- The person in the idea is never a victim and never desperate. They are someone sensible who has already decided WHAT to do and is only unsure WHEN.
+An idea that fails any of those four is worthless to us even if it would go viral. Write the high-stakes MOMENT, keep the low-stakes CLAIM.
+
 ${learned.playbook}
 ${learned.craft}
 ${learned.performance}
@@ -414,6 +533,22 @@ async function ideate(s: Seeds, tier: Tier, count: number, learned: LearnedConte
 }
 
 /**
+ * How many of `count` scripting slots are RESERVED for under-tested tag combinations.
+ *
+ * The floor of one used to apply at every size, which meant a single-idea run was 100% explore —
+ * a share of 0.3 turning into all of it. That is not exploration, it is a different policy, and it
+ * had a visible cost: two consecutive `--count 1` runs on 2026-08-16 were steered into the
+ * least-tested combination (money_timing, then study) while the ideation stage was deliberately
+ * biased toward the relationship and career questions the audience actually asks. The bandit floor
+ * exists to stop one lucky early winner monopolising a BATCH; with one slot there is no batch to
+ * protect, so the model's own best idea is the honest pick.
+ */
+function reservedSlots(count: number): number {
+  if (count <= 1) return 0;
+  return Math.min(count, Math.max(1, Math.round(count * EXPLORE_SHARE)));
+}
+
+/**
  * THE EXPLORE/EXPLOIT SPLIT, enforced here rather than trusted to the model.
  *
  * `count` slots advance to the (expensive) scripting stage. `reserved` of them are held for ideas
@@ -431,7 +566,7 @@ function selectForScripting(
   count: number,
   targets: ComboCoverage[],
 ): { chosen: Idea[]; exploreChosen: number; reserved: number } {
-  const reserved = Math.min(count, Math.max(1, Math.round(count * EXPLORE_SHARE)));
+  const reserved = reservedSlots(count);
   const targetKeys = new Set(targets.map((t) => t.key));
   const isExplore = (i: Idea) => targetKeys.has(comboKey(i.tags.hookFamily, i.tags.decisionDomain));
 
@@ -451,6 +586,53 @@ function selectForScripting(
 }
 
 // ---------------------------------------------------------------- 2. script
+
+/**
+ * THE FORMAT SPEC, as the writer sees it. Every number here is asserted mechanically in
+ * preflight(), so this block and that function must be changed together.
+ */
+function formatSpecBlock(): string {
+  return `THE FORMAT — this is the shape of the reel, and it is not a suggestion. Read it before you write a word.
+
+WHAT WENT WRONG LAST TIME, measured: the reel we shipped ran 29 seconds in 5 shots, and the first THIRTEEN SECONDS were a man talking before anything happened. The product — a real day broken into hour slots, each scored, each with a plain-English line about what that window suits — did not appear until second 13. A viewer decides in second three. The single most interesting thing this company owns arrived eight seconds after the audience left. The founder's verdict was "this reel is shit" and he was right.
+
+So the reel no longer INTRODUCES the product. It opens in the middle of the answer, with the product already arriving.
+
+THE SPINE — ${SHOTS_MIN} to ${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX} seconds total:
+  1. presenter, at most ${FIRST_SHOT_MAX_SEC}s — THE COLD OPEN. He is already mid-thought, answering the question the hook asks. NO greeting, NO "kya aapko pata hai", NO "aaj main baat karunga", NO setup of any kind. If the line would work as the SECOND sentence of a conversation, it is right; if it would work as the first, it is warm-up and you must delete it.
+     THE COLD OPEN IS ABOUT THE MOMENT, NOT ABOUT US. It may not name the product, the site, an app, a chart, a report or a score — those words in the first three seconds are a company clearing its throat, and the viewer is gone. It is the sentence the VIEWER has said in their own head: "Teen hafte se yeh message draft mein pada hai." / "Main jaanta hoon kya bolna hai — kab bolna hai, wo nahi." Say the human thing first; the product answers it at second three, on screen, where it is far more convincing than a claim.
+  2. screencap — THE PROOF, and it lands before second ${PROOF_BY_SEC}. The real report: hour slots down the day, clearer windows lit, heavier ones dim.
+  3. presenter, up to ${LONG_BEAT_MAX_SEC}s — the ONE long beat in the reel, where the idea turns. Only one shot may be this long.
+  4. screencap — closer in: one hour slot and the plain-English line under it.
+  5-6. presenter and screencap again, short, alternating.
+  last. presenter — closes, and says vedichour.com out loud.
+
+THE RULES THAT ARE CHECKED MECHANICALLY (a variant that breaks one is rejected before it costs anything):
+- ${SHOTS_MIN}-${SHOTS_MAX} shots. ${REEL_SEC_MIN}-${REEL_SEC_MAX}s total. Not 4 long shots — ${SHOTS_MIN}+ short ones.
+- Shot 1 is a presenter shot of at most ${FIRST_SHOT_MAX_SEC}s. Shot 2 is a screencap. The last shot is a presenter shot.
+- No shot may run longer than ${SHOT_MAX_SEC}s, except exactly ONE presenter beat which may reach ${LONG_BEAT_MAX_SEC}s.
+- At least ${MIN_PRODUCT_SHOTS} screencap shots, at least ${MIN_PRODUCT_SEC}s of product on screen in total. The product is the proof AND it is free to film, so it should be the most-seen thing in the reel.
+- At least ${MIN_PRESENTER_SHOTS} presenter shots.
+- At most ${MAX_BROLL_SHOTS} broll shot in the whole reel, and it is optional — prefer zero.
+- NO SHOT PLAYS SILENT for longer than ${SILENT_SHOT_MAX_SEC}s — the renderer discards any reel with a silence longer than that, as dead air.
+- BUT AT MOST ${MAX_NARRATED_SHOTS} SHOTS MAY BE NARRATED OFF CAMERA, and at least ${Math.round(NATIVE_RATIO_FLOOR * 100)}% of the spoken words must be said on camera. Every off-camera line is an audible change of voice, and the owner has already rejected two ads for exactly that.
+  These two rules together give you one technique, and it happens to be good filmmaking: a product beat is EITHER a longer shot carrying ${CONNECTIVE_MAX_WORDS} words of narration, OR a fast silent CUTAWAY of ${SILENT_SHOT_MAX_SEC}s or less. Quick cutaways cost no voice change, cost no money, and read as confident editing. Use one narrated product shot and one or two flash cutaways, not three narrated ones.
+
+WHY SO LITTLE B-ROLL. Generic atmosphere footage is what makes an ad look cheap: it is the visual equivalent of clearing your throat, and it is where a generated shot quietly turns your words into props. A face and a real screen, cut tightly against each other, is what a funded company's ad looks like. If you use your one b-roll shot, it must show the ACTUAL human moment of the script — the same man, same clothes, same light, doing the real thing the words describe — never an illustration of the idea.
+
+EVERY SPOKEN LINE MUST BE A SENTENCE A PERSON WOULD SAY OUT LOUD. This is where the last four drafts died, so read this twice. Lines a viewer-reviewer actually threw out, with what he said about them:
+- "Farq personal birth chart fit ka." and "Real data, simple what-to-do line." — product bullets with the punctuation of speech.
+- "…birth chart se rate hote hain" — "that is the product deck talking, not him."
+- "real astronomical data, wahi math jo careful astrologer use karta hai" — "a press release, not a person." THAT PHRASE IS FOR CAPTIONS AND THE DESCRIPTION, NEVER FOR A PRESENTER'S MOUTH. If he needs credibility on camera he says it his own way, in five words, or he does not say it at all — the product on screen is the credibility.
+- "yahaan clearer, wahaan heavier" recited as a feature — "the fourth reel making the same point."
+Test: read the line aloud. If it is a noun phrase, a feature, or something that could only appear on a landing page, rewrite it as what a friend would actually say. Not "Farq personal birth chart fit ka" but "Tera chart alag hai, mera alag." Not "Real data, simple what-to-do line" but "Yahaan likha hai kis ghante mein kya karna hai."
+
+PUT ONE CONCRETE CONSEQUENCE IN THE SCRIPT — the single most useful note we have received. Somewhere in the middle, one line must name a REAL THING THAT HAPPENED when this person guessed the timing before: the message sent at 1am that got a one-word reply, the appraisal he opened right after his boss's worst meeting, the call he made from the car park because he could not wait. One specific past detail is worth more than every adjective in the script, and it is the difference between a reel about a product and a reel about a person.
+
+DO NOT WRITE THE SAME REEL SIX TIMES. The reviewer's exact complaint on the last batch: "same amber-room-presenter-then-screen pattern; I've already seen this reel." The MAN is fixed — same face, same clothes, that is brand law and it does not change. Everything else must not be: each variant picks its own room and hour (kitchen at night, balcony at first light, parked car, empty office at 8pm, stairwell), its own physical action (not sitting and talking — pouring tea and stopping, standing up mid-thought, putting the phone face-down), and its own shot sizes. Within one reel, three identical medium close-ups of a man in a booth is a slideshow of one shot.
+
+THE TEST TO APPLY TO YOUR OWN DRAFT, honestly: play it in your head at 11pm, muted, thumb ready. At second 1, is anything happening? At second 3, has a real product shown you something specific? If the answer to either is no, the draft is dead and you should write a different one.`;
+}
 
 function scriptPrompt(s: Seeds, idea: Idea, n: number, link: string, learned: LearnedContext): string {
   return `${BRAND_BRIEF}
@@ -477,25 +659,29 @@ ${learned.performance}
 HOW THE AUDIO WORKS — this drives the whole structure, read it twice:
 The PRESENTER shots are generated by a video model that also performs the dialogue ON CAMERA, lip-synced, in a real human voice, at no extra cost. That in-shot voice is the quality bar. Any line NOT spoken by the presenter has to be synthesized by a text-to-speech engine afterwards, and a viewer hears the change instantly — the owner rejected the first two ads for exactly this ("the second voice, when it comes, looks very AI-generated... the first 6 seconds are good").
 So: PUT THE MESSAGE IN THE PRESENTER'S MOUTH.
-- Use TWO presenter shots — one opening, one closing — and let them carry the substance between them.
+- Use ${MIN_PRESENTER_SHOTS} OR MORE presenter shots, spread through the reel — never two long ones bookending a silent middle. Short beats, cut against the product.
 - THE PRESENTER IS A RECURRING BRAND FACE, not a fresh casting each time: always a warm, natural young Indian MAN in his late twenties, softly lit, at home or in a cafe. Describe him that way in every presenter and person-carrying b-roll shot. Two reasons, both hard: a viewer who meets the same face across reels starts recognising VedicHour, and the one synthesized voice we own is pitch-matched to a man of that age (~114 Hz), so a female presenter would force a timbre switch the owner has already rejected once.
-- The middle shots (broll / screencap) are VISUAL. They carry a short connective line of ${NARRATION_MAX_WORDS} words maximum, or no line at all, with the on-screen captions doing the work.
-- If a middle shot needs to say more than ${NARRATION_MAX_WORDS} words, that content belongs in presenter dialogue instead. Move it. Do not lengthen the narration.
+- The middle shots (broll / screencap) are VISUAL, but they are NOT SILENT. Each carries a short connective line of ${CONNECTIVE_MAX_WORDS} words maximum — never zero. A shot that plays with no audio for more than ${SILENT_SHOT_MAX_SEC}s makes the renderer throw the whole reel away as dead air, and a viewer with the sound on hears a broken file.
+- If a middle shot needs to say more than ${CONNECTIVE_MAX_WORDS} words, that content belongs in presenter dialogue instead. Move it. Do not lengthen the narration.
+
+${formatSpecBlock()}
+
+${LITERALISM_BAN_BLOCK}
 
 PER-FIELD SPEC — follow exactly (the WHY behind these lives in the playbook above, which is versioned and dated; what follows is the mechanical contract):
 - hookText: the burned-in on-screen text of the FIRST frame. Maximum ${HOOK_MAX_WORDS} words — see the 1-second hook window in the playbook. Make it a moment or a question, not a slogan.
-- spokenScript: every spoken word in the reel, in order (presenter dialogue + any connective narration), as one paragraph. Hinglish in Latin letters. 22-32 seconds read aloud — that is 55 to 80 words. Conversational, like a friend texting you back, not an ad.
-- shotList: 3 to 5 shots. Each: kind = "presenter" | "broll" | "screencap"; seconds (number); visualPrompt; PLUS the line for that shot:
+- spokenScript: every spoken word in the reel, in order (presenter dialogue + any connective narration), as one paragraph. Hinglish in Latin letters. ${REEL_SEC_MIN}-${REEL_SEC_MAX} seconds read aloud — that is ${SCRIPT_WORDS_MIN} to ${SCRIPT_WORDS_MAX} words. Conversational, like a friend texting you back, not an ad. Fewer words than you think: the product on screen is doing half the talking.
+- shotList: ${SHOTS_MIN} to ${SHOTS_MAX} shots, following the FORMAT SPEC above exactly. Each: kind = "presenter" | "broll" | "screencap"; seconds (number); visualPrompt; PLUS the line for that shot:
   - presenter shots MUST carry "dialogue" — the exact words said on camera, Hinglish in Latin letters.
-  - broll / screencap shots may carry "narration" — ${NARRATION_MAX_WORDS} words maximum, or "" for silence.
-  - HARD ARITHMETIC: spoken Hinglish runs ~${WORDS_PER_SECOND} words/second, so any shot's line must be at most (seconds x ${WORDS_PER_SECOND}) words. A ${'4'}s shot holds 9 words. Over that, the renderer cuts the line off mid-sentence and the reel is thrown away. Count the words.
-  - presenter / broll → visualPrompt is a concrete cinematic prompt for a text-to-video model: SUBJECT, ACTION, CAMERA MOVE, LIGHTING, MOOD. It must be physically renderable — one clear subject, one clear action. Apply the playbook's "no legible screens" and "subject continuity" principles literally: no text-in-video, no logos, no crowds of faces, no readable UI; any screen in shot is described as "heavily out of focus, glowing softly, no legible characters"; and any person in a b-roll shot is described as "the same person as the presenter shot: young Indian man/woman, same clothing, same time of day", matching the presenter shot's actual gender, outfit and lighting.
+  - broll / screencap shots MUST carry "narration" — between 2 and ${CONNECTIVE_MAX_WORDS} words. Never "" and never omitted: a silent shot longer than ${SILENT_SHOT_MAX_SEC}s is rejected as dead air.
+  - HARD ARITHMETIC: spoken Hinglish runs ~${WORDS_PER_SECOND} words/second, so any shot's line must be at most (seconds x ${WORDS_PER_SECOND}) words, rounded DOWN. A 2s shot holds 4 words. A 3s shot holds 6. A 4s shot holds 9. A 5s shot holds 11. A 6s shot holds 13. Over that, the renderer cuts the line off mid-sentence and the reel is thrown away. Count the words in every single line before you return it.
+  - presenter / broll → visualPrompt is a concrete cinematic prompt for a text-to-video model: SUBJECT, ACTION, CAMERA MOVE, LIGHTING, MOOD. It must be physically renderable — one clear subject, one clear action. Apply the playbook's "no legible screens" and "subject continuity" principles literally: no text-in-video, no logos, no crowds of faces, no readable UI; any screen in shot is described as "heavily out of focus, glowing softly, no legible characters"; and any person in a b-roll shot is described as "the same man as the presenter shot: young Indian man in his late twenties, same clothing, same time of day", matching the presenter shot's outfit and lighting exactly.
   - screencap → this is a REAL screen recording of the live product, so visualPrompt is simply WHAT TO CAPTURE, chosen from: ${s.screencapLibrary.map((x) => `"${x}"`).join('; ')}
   - SCREENCAP HARD RULE (owner, verbatim): "when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day." Never ask to capture pricing, plans, checkout, payment or the signup/onboarding form. The screen we show is the report and its hour-slots.
-  - SHOT 1 MUST BE kind "presenter" — see "presenter-led" in the playbook. The render pipeline rejects any reel that does not open on a presenter.
-  - The LAST shot should also be a presenter shot wherever the idea allows, so the reel closes on a face saying the closing line rather than on synthesized narration over a scroll.
+  - SHOT 1 MUST BE kind "presenter", at most ${FIRST_SHOT_MAX_SEC} seconds, and it is a COLD OPEN — see the FORMAT SPEC above. SHOT 2 MUST BE kind "screencap". Both are hard rejects.
+  - The LAST shot MUST be a presenter shot, so the reel closes on a face saying the closing line rather than on synthesized narration over a scroll.
   - THE CLOSING PRESENTER LINE MUST SAY "VedicHour.com" OUT LOUD. This is a hard reject, not a preference. The owner, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Half this audience is LISTENING with their eyes somewhere else, so a CTA that only exists on screen reaches nobody. Put it in the final presenter shot's \`dialogue\`, in his own words, e.g. "…VedicHour.com pe dekh lo." or "…VedicHour.com — free hai." Budget the words: the site name costs 1-2 of that shot's word allowance, so keep the rest of the closing line short. The renderer already ends every reel on a branded card showing vedichour.com — your job is the SPOKEN half, which only the presenter can deliver.
-  - Every variant must include at least one screencap shot. Shot seconds should sum to roughly the spoken length.
+  - Every variant needs at least ${MIN_PRODUCT_SHOTS} screencap shots totalling at least ${MIN_PRODUCT_SEC}s. Shot seconds must sum to ${REEL_SEC_MIN}-${REEL_SEC_MAX}s.
 - onScreenCaptions: 3-6 short burned-in caption lines that track the script. Punchy, Latin letters.
 - cta: one short line, and it names vedichour.com. Invite, never promise.
 - hashtags: 10-15, mixed romanised-Hindi and English, targeted at India. Lowercase, with the # prefix.
@@ -508,13 +694,13 @@ Tag EVERY variant. Default to the idea's tags above; change one only when this p
 
 NON-NEGOTIABLE RULES:
 ${s.hardRules.map((r) => `- ${r}`).join('\n')}
-- Close the spoken script or the CTA on the brand line "${BRAND.taglineClose}" when it fits naturally.
+- The brand line "${BRAND.taglineClose}" belongs in the written \`cta\` field ONLY. Never put it in a presenter's spoken dialogue: said out loud it turns the last thing the viewer hears into an ad read, and it spends words the closing shot needs for saying the site.
 
 ${lessonBlock(['script', 'voice'])}
 PLAIN ENGLISH ONLY — the owner's ruling, verbatim: "some jargon like Swiss Ephemeris, Lahiri... No one gives a shit. I don't even know what this is." A script containing Swiss Ephemeris, Lahiri, ayanamsa, sidereal, whole-sign or vimshottari is rejected automatically and never renders. Where the script needs credibility, the approved phrasing is "real astronomical data, the same math a careful astrologer uses".
 
 Return STRICT JSON — an array of exactly ${n} objects, nothing before or after it, no markdown fences:
-[{"hookText":"...","spokenScript":"...","shotList":[{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"..."},{"kind":"screencap","seconds":6,"visualPrompt":"...","narration":""}],"onScreenCaptions":["..."],"cta":"...","hashtags":["#..."],"youtubeTitle":"...","youtubeDescription":"...","language":"hinglish","hookFamily":"${idea.tags.hookFamily}","decisionDomain":"${idea.tags.decisionDomain}","emotionalRegister":"${idea.tags.emotionalRegister}","durationTargetSec":${idea.tags.durationTargetSec}}]`;
+[{"hookText":"...","spokenScript":"...","shotList":[{"kind":"presenter","seconds":3,"visualPrompt":"...","dialogue":"<cold open, max 6 words>"},{"kind":"screencap","seconds":3,"visualPrompt":"...","narration":"<max 6 words, or empty>"},{"kind":"presenter","seconds":6,"visualPrompt":"...","dialogue":"..."},{"kind":"screencap","seconds":3,"visualPrompt":"...","narration":""},{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"...vedichour.com..."}],"onScreenCaptions":["..."],"cta":"...","hashtags":["#..."],"youtubeTitle":"...","youtubeDescription":"...","language":"hinglish","hookFamily":"${idea.tags.hookFamily}","decisionDomain":"${idea.tags.decisionDomain}","emotionalRegister":"${idea.tags.emotionalRegister}","durationTargetSec":${idea.tags.durationTargetSec}}]`;
 }
 
 function normalizeVariant(raw: any, idea: Idea, index: number, link: string): Variant {
@@ -579,6 +765,60 @@ function nativeDialogueRatio(v: Variant): number {
   return total ? native / total : 1;
 }
 
+/**
+ * THE FORMAT SPEC, enforced. Every rule the writer was given in formatSpecBlock() is asserted
+ * here, on plain text, for $0. Returns the first violation as a sentence, or null.
+ *
+ * These are hard rejects rather than warnings on purpose: the reel the owner threw out broke no
+ * rule we had, because we had no rule about SHAPE. A gate that only warns about shape produces
+ * exactly the reel we already shipped.
+ */
+function formatSpecViolation(v: Variant): string | null {
+  const shots = v.shotList;
+  if (shots.length < SHOTS_MIN || shots.length > SHOTS_MAX)
+    return `${shots.length} shots — the format is ${SHOTS_MIN}-${SHOTS_MAX} short shots, not a few long ones`;
+
+  const total = shots.reduce((n, sh) => n + (sh.seconds || 0), 0);
+  if (total < REEL_SEC_MIN || total > REEL_SEC_MAX)
+    return `${total}s total — the format is ${REEL_SEC_MIN}-${REEL_SEC_MAX}s`;
+
+  // House rule from src/render/types.ts: a visible human must open the reel (platforms
+  // deprioritise fully AI reels with no human layer). The COLD OPEN is how that coexists with
+  // getting the product on screen inside three seconds — the face gets one sentence, not a warm-up.
+  if (shots[0].kind !== 'presenter') return `opens on a ${shots[0].kind} shot — a reel must open on a presenter`;
+  if ((shots[0].seconds || 0) > FIRST_SHOT_MAX_SEC)
+    return `opening presenter shot is ${shots[0].seconds}s — the cold open is ${FIRST_SHOT_MAX_SEC}s at most, or the product cannot land by second ${PROOF_BY_SEC} (the rejected reel spent 13s here)`;
+  if (shots[1]?.kind !== 'screencap')
+    return `shot 2 is a ${shots[1]?.kind ?? 'missing'} shot — it must be the product, so proof is on screen before second ${PROOF_BY_SEC}`;
+  if (shots[shots.length - 1].kind !== 'presenter')
+    return `closes on a ${shots[shots.length - 1].kind} shot — the reel must end on a face saying the site out loud`;
+
+  // At most one shot may pause for breath, and only a presenter beat may do it.
+  const long = shots.filter((sh) => (sh.seconds || 0) > SHOT_MAX_SEC);
+  if (long.length > 1)
+    return `${long.length} shots run longer than ${SHOT_MAX_SEC}s — exactly one presenter beat may reach ${LONG_BEAT_MAX_SEC}s, everything else is ${SHOT_MAX_SEC}s or under`;
+  if (long.length === 1 && long[0].kind !== 'presenter')
+    return `a ${long[0].kind} shot runs ${long[0].seconds}s — only a presenter beat may exceed ${SHOT_MAX_SEC}s`;
+  if (long.length === 1 && (long[0].seconds || 0) > LONG_BEAT_MAX_SEC)
+    return `the long presenter beat is ${long[0].seconds}s — the ceiling is ${LONG_BEAT_MAX_SEC}s`;
+
+  const product = shots.filter((sh) => sh.kind === 'screencap');
+  const productSec = product.reduce((n, sh) => n + (sh.seconds || 0), 0);
+  if (product.length < MIN_PRODUCT_SHOTS)
+    return `${product.length} product shot(s) — the proof must return at least ${MIN_PRODUCT_SHOTS} times; screencaps are free and they are the most interesting thing we own`;
+  if (productSec < MIN_PRODUCT_SEC) return `only ${productSec}s of product on screen — the floor is ${MIN_PRODUCT_SEC}s`;
+
+  const presenters = shots.filter((sh) => sh.kind === 'presenter').length;
+  if (presenters < MIN_PRESENTER_SHOTS)
+    return `${presenters} presenter shot(s) — the format needs ${MIN_PRESENTER_SHOTS}+ short beats cut against the product, not two long ones bookending a silent middle`;
+
+  const broll = shots.filter((sh) => sh.kind === 'broll').length;
+  if (broll > MAX_BROLL_SHOTS)
+    return `${broll} b-roll shots — at most ${MAX_BROLL_SHOTS}; generic atmosphere footage is what makes an ad look cheap`;
+
+  return null;
+}
+
 /** Deterministic gates that need no model: script, length, shape. Cheap and unarguable. */
 function preflight(v: Variant): string | null {
   const bad = [
@@ -590,17 +830,27 @@ function preflight(v: Variant): string | null {
   if (bad.length) return `non-Latin script (${[...new Set(bad)].slice(0, 6).join('')}) — video models reject it`;
   if (words(v.hookText) > HOOK_REJECT_WORDS) return `hook is ${words(v.hookText)} words — cannot land in under 1.0s`;
   const w = words(v.spokenScript);
-  if (w < 40 || w > 110) return `spoken script is ${w} words — outside the 22-32s read`;
-  if (v.shotList.length < 3 || v.shotList.length > 5) return `${v.shotList.length} shots — spec is 3-5`;
+  if (w < SCRIPT_WORDS_MIN || w > SCRIPT_WORDS_MAX)
+    return `spoken script is ${w} words — outside the ${REEL_SEC_MIN}-${REEL_SEC_MAX}s read (${SCRIPT_WORDS_MIN}-${SCRIPT_WORDS_MAX} words)`;
   if (v.shotList.some((sh) => !sh.visualPrompt)) return 'a shot has no visualPrompt';
-  if (!v.shotList.some((sh) => sh.kind === 'screencap')) return 'no screencap shot — nothing shows the real product';
-  // House rule from src/render/types.ts: a visible human must open the reel, or the
-  // render pipeline rejects it (platforms deprioritise fully AI reels with no human layer).
-  if (v.shotList[0]?.kind !== 'presenter') return `opens on a ${v.shotList[0]?.kind} shot — a reel must open on a presenter`;
+
+  const structural = formatSpecViolation(v);
+  if (structural) return structural;
 
   // Owner law 2026-07-26 — jargon is a hard reject in ad copy, not a note for later.
   const jargon = jargonHits([v.hookText, v.spokenScript, v.onScreenCaptions.join(' '), v.cta, v.youtubeTitle].join('\n'));
   if (jargon.length) return `ad-copy jargon (${jargon.join(', ')}) — the owner ruled it meaningless; say "real astronomical data" instead`;
+
+  // Owner law 2026-08-16, verbatim: "window shares an image of window while we are talking of time
+  // window." The generator renders figures of speech as props. Both checks are plain-text and free.
+  const props = propBanHits(v.shotList);
+  if (props.length)
+    return `shot ${props[0].shotIndex} generates a "${props[0].prop}" — a metaphor prop, the visual vocabulary of a stock timing ad; show the real subject instead`;
+  const literal = literalismHits([v.hookText, v.spokenScript, v.onScreenCaptions.join(' '), v.cta].join('\n'), v.shotList);
+  if (literal.length) {
+    const h = literal[0];
+    return `LITERALISM: the copy says "${h.word}" as a figure of speech and shot ${h.shotIndex} renders a literal one ("${h.excerpt}") — the owner rejected exactly this ("window shares an image of window while we are talking of time window"); show the actual subject of the sentence`;
+  }
 
   // Voice law: the message rides on camera, narration is a short connective line at most, and
   // no line may outrun its shot (the renderer would cut it mid-sentence).
@@ -608,7 +858,13 @@ function preflight(v: Variant): string | null {
   for (let i = 0; i < v.shotList.length; i++) {
     const sh = v.shotList[i];
     const n = words(lines[i] ?? '');
-    if (!n) continue;
+    if (!n) {
+      if ((sh.seconds || 0) > SILENT_SHOT_MAX_SEC)
+        return `shot ${i + 1} (${sh.kind}, ${sh.seconds}s) plays silent — the renderer fails any reel with a silence longer than ${SILENT_SHOT_MAX_SEC}s; give it a connective line of ${CONNECTIVE_MAX_WORDS} words or fewer`;
+      continue;
+    }
+    if (sh.kind !== 'presenter' && n > CONNECTIVE_MAX_WORDS)
+      return `shot ${i + 1} (${sh.kind}) carries ${n} words off camera — the connective cap is ${CONNECTIVE_MAX_WORDS}; that line belongs in presenter dialogue`;
     if (sh.kind !== 'presenter' && n > NARRATION_MAX_WORDS)
       return `shot ${i + 1} (${sh.kind}) carries ${n} words of synthesized narration — the cap is ${NARRATION_MAX_WORDS}; that line belongs in presenter dialogue`;
     if (n > capacity(sh))
@@ -616,6 +872,14 @@ function preflight(v: Variant): string | null {
   }
   if (!v.shotList.some((sh) => sh.kind === 'presenter' && words((sh.dialogue ?? lines[v.shotList.indexOf(sh)]) ?? '')))
     return 'no presenter shot actually speaks — the message must be delivered on camera';
+
+  // ONE REEL, ONE VOICE, as close as the format allows.
+  const narrated = v.shotList.filter((sh, i) => sh.kind !== 'presenter' && words(lines[i] ?? '') > 0).length;
+  if (narrated > MAX_NARRATED_SHOTS)
+    return `${narrated} shots are narrated off camera — the cap is ${MAX_NARRATED_SHOTS}. Every one is an audible switch between the on-camera voice and the synthesized one, which is the defect the owner rejected twice; make the extra product beats silent cutaways of ${SILENT_SHOT_MAX_SEC}s instead`;
+  const ratio = nativeDialogueRatio(v);
+  if (ratio < NATIVE_RATIO_FLOOR)
+    return `only ${Math.round(ratio * 100)}% of the spoken words are said on camera (floor ${Math.round(NATIVE_RATIO_FLOOR * 100)}%) — move the rest into presenter dialogue`;
 
   // Owner law 2026-07-26 — the reel must NAME THE SITE OUT LOUD, in the presenter's own mouth.
   // The renderer always appends a branded end card carrying vedichour.com, but a card is only
@@ -656,6 +920,8 @@ closing line says the site out loud: ${SPOKEN_SITE.test(closingPresenterLine(v))
 
 The product: VedicHour scores all 18 planetary hours of a day against a person's birth chart and says which windows run clearer or heavier for a given task. Audience: urban Indian and diaspora viewers, aged 24-40, who grew up around Jyotish and will cringe hard at anything that sounds like a WhatsApp-forward astrologer.
 
+THE FORMAT THESE WERE WRITTEN TO — judge them INSIDE it, do not object to it. Every reel opens on a presenter COLD OPEN of ${FIRST_SHOT_MAX_SEC}s or less (the render pipeline requires a human opener; platforms deprioritise faceless AI reels), cuts straight to the real product by second ${PROOF_BY_SEC}, and then alternates short presenter beats with product shots across ${SHOTS_MIN}-${SHOTS_MAX} shots in ${REEL_SEC_MIN}-${REEL_SEC_MAX}s. A brief opening face is therefore CORRECT and must not be marked down as "the presenter should be secondary" or "open on the product instead" — that shape is impossible here. What you SHOULD punish is a cold open that warms up instead of answering, that names the product in the first three seconds, or a reel that fails to keep returning to the proof.
+
 IDEA UNDER REVIEW: ${idea.angle}
 
 ${blocks}
@@ -674,7 +940,7 @@ Return STRICT JSON — an array, one object per variant, nothing before or after
 [{"variantIndex":1,"hookStrength":0,"specificity":0,"credibility":0,"brandSafety":0,"producibility":0,"verdict":"reject|keep","notes":"<your single harshest objection, max 20 words>"}]`;
 }
 
-function degradedScores(v: Variant, lintVerdict: string): Scores {
+function degradedScores(v: Variant, lintVerdict: string, humanEye: number): Scores {
   // Heuristic backstop when the hostile reviewer is unreachable. Deliberately
   // conservative — nothing reaches a winner slot on heuristics alone by luck.
   const hookWords = words(v.hookText);
@@ -688,8 +954,9 @@ function degradedScores(v: Variant, lintVerdict: string): Scores {
     specificity * WEIGHTS.specificity +
     credibility * WEIGHTS.credibility +
     brandSafety * WEIGHTS.brandSafety +
-    producibility * WEIGHTS.producibility;
-  return { hookStrength, specificity, credibility, brandSafety, producibility, total: Math.round(total), notes: 'heuristic fallback — hostile reviewer unavailable', degraded: true };
+    producibility * WEIGHTS.producibility +
+    humanEye * WEIGHTS.humanEye;
+  return { hookStrength, specificity, credibility, brandSafety, producibility, humanEye, total: Math.round(total), notes: 'heuristic fallback — hostile reviewer unavailable', degraded: true };
 }
 
 /**
@@ -736,10 +1003,34 @@ function applyOwnerLaws(v: Variant, s: Scores): Scores {
         s.specificity * WEIGHTS.specificity +
         credibility * WEIGHTS.credibility +
         s.brandSafety * WEIGHTS.brandSafety +
-        producibility * WEIGHTS.producibility,
+        producibility * WEIGHTS.producibility +
+        s.humanEye * WEIGHTS.humanEye,
     ) - (noSpokenCta ? MISSING_SPOKEN_CTA_PENALTY : 0),
   );
   return { ...s, credibility, producibility, total, notes };
+}
+
+/**
+ * THE HUMAN-EYE PASS — src/audit/human-eye.ts. Runs alongside the hostile compliance reviewer and
+ * answers a different question: would a bored person at 11pm stop, and does this look like an ad a
+ * funded company paid for. It is allowed to reject a script that breaks no rule, which is the
+ * whole point — every rule we own passed the reel the owner threw out.
+ */
+async function humanEyeReview(variants: Variant[], tier: Tier): Promise<Map<number, HumanEyeVerdict>> {
+  const reels: HumanEyeReel[] = variants.map((v) => {
+    const lines = speechFor(v);
+    return {
+      index: v.variantIndex,
+      hookText: v.hookText,
+      spokenScript: v.spokenScript,
+      captions: v.onScreenCaptions,
+      shots: v.shotList.map((sh, i) => ({ kind: sh.kind, seconds: sh.seconds, visualPrompt: sh.visualPrompt, line: lines[i] ?? '' })),
+    };
+  });
+  const raw = await tryBrain(humanEyePrompt(reels), tier, 'human-eye');
+  const eye = parseHumanEye(raw ? extractJson<unknown>(raw) : null, reels.map((r) => r.index));
+  if (raw && !eye.size) console.warn(`[creative] human-eye: answered ${raw.length} chars but no verdict parsed — every variant will be treated as unreviewed.`);
+  return eye;
 }
 
 async function auditIdea(idea: Idea, variants: Variant[], tier: Tier): Promise<Map<number, any>> {
@@ -750,13 +1041,19 @@ async function auditIdea(idea: Idea, variants: Variant[], tier: Tier): Promise<M
   return map;
 }
 
-/** lint() + hostile audit + deterministic gates → a judged variant. Never throws. */
+/** lint() + hostile audit + human-eye lens + deterministic gates → a judged variant. Never throws. */
 async function judge(idea: Idea, variants: Variant[], tier: Tier): Promise<Judged[]> {
   const audit = await auditIdea(idea, variants, tier);
+  // The taste pass only looks at variants whose SHAPE is already legal — asking a viewer whether
+  // they would stop watching a reel that can never be rendered is wasted reasoning.
+  const preByIndex = new Map(variants.map((v) => [v.variantIndex, preflight(v)]));
+  const showable = variants.filter((v) => !preByIndex.get(v.variantIndex));
+  const eye = showable.length ? await humanEyeReview(showable, tier) : new Map<number, HumanEyeVerdict>();
   const out: Judged[] = [];
 
   for (const v of variants) {
-    const pre = preflight(v);
+    const pre = preByIndex.get(v.variantIndex) ?? null;
+    const he = eye.get(v.variantIndex) ?? degradedHumanEye(v.variantIndex);
 
     let lintVerdict = 'pass';
     let lintReason = 'skipped (failed deterministic preflight)';
@@ -782,17 +1079,20 @@ async function judge(idea: Idea, variants: Variant[], tier: Tier): Promise<Judge
             credibility: clamp(Number(a.credibility) || 0),
             brandSafety: clamp(Number(a.brandSafety) || 0),
             producibility: clamp(Number(a.producibility) || 0),
+            humanEye: he.overall,
           };
           const total = Math.round(
             s.hookStrength * WEIGHTS.hookStrength +
               s.specificity * WEIGHTS.specificity +
               s.credibility * WEIGHTS.credibility +
               s.brandSafety * WEIGHTS.brandSafety +
-              s.producibility * WEIGHTS.producibility,
+              s.producibility * WEIGHTS.producibility +
+              s.humanEye * WEIGHTS.humanEye,
           );
-          return { ...s, total, notes: String(a.notes ?? '').slice(0, 160), degraded: false };
+          const eyeNote = he.degraded ? 'human eye: UNAVAILABLE (neutral score)' : `human eye ${he.overall}: ${he.diesAt || 'watched it through'}`;
+          return { ...s, total, notes: [String(a.notes ?? '').slice(0, 160), eyeNote].filter(Boolean).join(' · '), degraded: false };
         })()
-      : degradedScores(v, lintVerdict);
+      : degradedScores(v, lintVerdict, he.overall);
     const scores = applyOwnerLaws(v, rawScores);
 
     // Hard rejects, in order of authority.
@@ -801,13 +1101,22 @@ async function judge(idea: Idea, variants: Variant[], tier: Tier): Promise<Judge
     else if (lintVerdict === 'block') rejection = `policy-linter BLOCK: ${lintReason}`;
     else if (scores.brandSafety < BRAND_SAFETY_FLOOR) rejection = `brand-safety ${scores.brandSafety}/100 (floor ${BRAND_SAFETY_FLOOR}): ${scores.notes}`;
     else if (String(a?.verdict ?? '').toLowerCase() === 'reject') rejection = `hostile reviewer rejected: ${scores.notes}`;
+    // The taste veto. Deliberately AFTER the compliance rejects so the log names the cheapest
+    // reason first, and deliberately absolute: a reel that breaks no rule and that a bored viewer
+    // would scroll past is exactly the reel the owner threw out, and it must not reach him again.
+    else if (!he.degraded && he.verdict === 'reject')
+      rejection = `HUMAN EYE rejected — dies at ${he.diesAt || 'the first second'}${he.oneFix ? ` · fix: ${he.oneFix}` : ''}`;
+    else if (!he.degraded && he.overall < HUMAN_EYE_FLOOR)
+      rejection = `HUMAN EYE ${he.overall}/100 (floor ${HUMAN_EYE_FLOOR}) — ${he.diesAt || 'nothing here would stop a thumb'}`;
 
     out.push({
       variant: v,
       scores,
       lintVerdict,
       lintReason,
-      status: rejection ? 'rejected' : lintVerdict === 'flag' ? 'needs_review' : 'ready_to_render',
+      // A script the human-eye lens never saw is not cleared, it is unreviewed — it goes to the
+      // owner's queue rather than straight to the machine that spends money.
+      status: rejection ? 'rejected' : lintVerdict === 'flag' || he.degraded ? 'needs_review' : 'ready_to_render',
       rejectionReason: rejection,
       rank: null,
       assetPath: null,
@@ -1050,6 +1359,7 @@ function variantMarkdown(j: Judged, batchId: string): string {
 | credibility | ${s.credibility} |
 | brand safety | ${s.brandSafety} |
 | producibility | ${s.producibility} |
+| human eye (taste, can reject alone) | ${s.humanEye} |
 | **weighted total** | **${s.total}** |
 
 Policy-linter: **${j.lintVerdict}** — ${j.lintReason}
@@ -1232,7 +1542,7 @@ export async function runCreativeLoop(opts: CreativeOpts = {}): Promise<void> {
     console.log(`             ${learned.performance.split('\n')[0]}`);
 
     // 1. IDEATE
-    const reservedAsk = Math.min(count, Math.max(1, Math.round(count * EXPLORE_SHARE)));
+    const reservedAsk = reservedSlots(count);
     const { ideas, fallback } = await ideate(seeds, tier, IDEAS_REQUESTED, learned, reservedAsk);
     console.log(`[creative] ideate → ${ideas.length} candidate hooks${fallback ? ' (SEED FALLBACK — brain was unreachable)' : ''}`);
 

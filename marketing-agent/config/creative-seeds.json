@@ -11,14 +11,16 @@
     {
       "key": "decision_moment",
       "weight": "most ideas should come from here",
-      "brief": "A specific, named, ordinary moment where a real person is choosing WHEN to do something. The whole idea is the moment, not the astrology. Concrete beats abstract every single time.",
+      "brief": "A specific, named, ordinary moment where a real person is choosing WHEN to do something. The whole idea is the moment, not the astrology. Concrete beats abstract every single time. BIAS TOWARD WEIGHT: the questions this audience actually asks in public are about relationships, marriage, and career turning points — reconciliation, 'when will my relationship start', 'any big career breakthroughs coming', whether to leave a job, whether to move abroad. Nobody loses sleep over when to schedule a meeting. Write the high-stakes MOMENT and keep the low-stakes CLAIM: we say WHEN to have the conversation, never what the other person will do.",
       "provenSeeds": [
+        "wo message draft kar rakha hai, bhejun aaj ya kal subah",
+        "ghar pe uske baare mein baat karni hai — aaj raat ya Sunday lunch",
+        "resignation likh li hai, bhejun kab",
+        "teen hafte se 'we need to talk' pending hai",
+        "papa ko call karna hai jo main taal raha hoon",
         "kal 11 baje meeting rakhun ya 4 baje?",
         "boss se promotion ki baat kab karun",
-        "partner ke parents se pehli baar milna hai",
-        "padhai actually kis time hoti hai, 6am ya 11pm",
-        "launch / post kab karun ki log dekhein",
-        "wo mushkil baat karni hai — aaj ya weekend pe"
+        "partner ke parents se pehli baar milna hai"
       ]
     },
     {
@@ -86,7 +88,10 @@
     "No competitor names and no mocking of astrology or astrologers.",
     "No rupee or dollar figures of any kind.",
     "Hook text must be readable in under one second — about 8 words maximum.",
-    "Shot 1 is always a presenter shot — a visible human opens every reel.",
+    "Write the moment people actually lose sleep over (a relationship, a family conversation, a career turn) but keep the claim small: WHEN to have the conversation, never what the other person will do. No 'will he come back', no reassurance, no prediction.",
+    "Shot 1 is always a presenter COLD OPEN of 3 seconds or less — he is already mid-answer, no greeting and no setup — and shot 2 is always the real product, so proof is on screen before second three.",
+    "Never render a figure of speech as an object. If the copy says window, door, green light, clock or crossroads, the picture shows the actual subject — the person deciding, the moment, or the real report — never the metaphor as a prop.",
+    "At most one b-roll shot per reel, and prefer none. A face cut against the real product screen is what a funded company's ad looks like; generic atmosphere footage is what cheap looks like.",
     "No engine or astrology jargon in ad copy — never Swiss Ephemeris, Lahiri, ayanamsa, sidereal, whole-sign or vimshottari. If credibility is needed, say 'real astronomical data, the same math a careful astrologer uses'.",
     "The presenter carries the message on camera. Narration over a non-presenter shot is a short connective line of 12 words or fewer, or nothing at all.",
     "Screencap shots show the REPORT and its hour-slots. Never the pricing page, checkout, payment or onboarding."

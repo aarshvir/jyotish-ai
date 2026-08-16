@@ -158,6 +158,39 @@ export const OWNER_SEED_LESSONS: NewLesson[] = [
     rule: 'The end frame must be a clean hero hold of at least 1.5s — no launch banners, no floating feedback widgets, no mid-scroll footer.',
     evidence: 'Owner review of the first two ads, 2026-07-26. Site chrome is stripped in src/render/screencap.ts; the closing shot must settle before the reel ends.',
   },
+  {
+    source: 'owner',
+    severity: 'critical',
+    // SCOPE MATTERS: filed as `visual`, not `script`. lessonMatcher() harvests quoted terms from a
+    // COPY lesson into a forbidden-substring block, and this lesson quotes ordinary words the ad is
+    // still allowed to SAY. It is a rule about what may be PICTURED, and it is asserted
+    // deterministically by literalismHits()/propBanHits() in src/audit/human-eye.ts.
+    scope: 'visual',
+    rule:
+      'A figure of speech is never rendered as an object. When the copy says window, door, green light, clock or crossroads, the shot shows the actual subject — the person deciding, the real moment, or the live report — not the metaphor as a prop.',
+    evidence:
+      'Owner, 2026-08-16, on the rejected reel: "window shares an image of window while we are talking of time window". The script said "Same Tuesday. Two windows." (two windows of TIME) and shot 2 was a push-in through an apartment window.',
+  },
+  {
+    source: 'owner',
+    severity: 'critical',
+    scope: 'script',
+    // Phrased with "must" on purpose: lessonMatcher() refuses to turn a REQUIREMENT into a banned
+    // substring, so this can never invert into a gate that blocks the shape it is demanding.
+    rule:
+      'Every reel must open on a presenter cold open of 3 seconds or less — already mid-answer, no greeting and no setup — and must show the real report by second three, then keep cutting back to it. 5-8 shots in 20-28 seconds, at most one presenter beat over 4s, at most one b-roll shot.',
+    evidence:
+      'Owner, 2026-08-16: "this reel is shit" / "this should look like a real advert that a $1B saas platform will launch". Measured: the rejected reel ran 29s in 5 shots and spent its first 13 seconds on a talking head before the product appeared.',
+  },
+  {
+    source: 'owner',
+    severity: 'critical',
+    scope: 'script',
+    rule:
+      'Every reel must survive a human-eye review as well as the rule checks: a bored viewer scrolling at 11pm has to stop in the first second, find something real on screen inside three, and see something that looks like a funded company made it. A script that breaks no rule and would still be scrolled past must be rejected.',
+    evidence:
+      'Owner, 2026-08-16: "All the videos should be audited from a human lens — any user seeing the video should get a world class look into the platform like its a $1B platform launching an ad." The rejected reel passed brand safety, captions, voice, capture policy, jargon and loudness.',
+  },
 ];
 
 let seeded = false;

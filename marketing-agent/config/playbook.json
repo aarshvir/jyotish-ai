@@ -2,10 +2,46 @@
   "_comment": "THE LIVING PLAYBOOK — the craft research the creative prompts are written from. It lives here, as data, and NOT inside a prompt string, because research goes stale and a principle frozen in code can only be changed by a developer. src/playbook.ts renders these into the ideate + script prompts at runtime. `npm run playbook:review` re-examines each entry against what the engine has actually observed and PROPOSES changes to an approvals queue — it never edits this file, because a hallucinated 'best practice' written straight in here would silently poison every future reel.",
   "_editing": "Edit freely by hand. Every entry needs a `source` (who says so) and a `verifiedOn` (when we last checked). `confidence` is one of: verified (we or a platform measured it) | inherited (industry consensus we have not tested) | contested (our own data disagrees or the field disagrees).",
 
-  "version": "1.0.0",
-  "updatedOn": "2026-07-26",
+  "version": "1.1.0",
+  "updatedOn": "2026-08-16",
 
   "entries": [
+    {
+      "id": "cold-open-proof-early",
+      "category": "format",
+      "principle": "The presenter does not introduce the product. He answers a question the product is already on screen answering.",
+      "detail": "The reel the owner rejected ran 29s in 5 shots with THIRTEEN SECONDS of talking head before anything happened; the hour grid — the most interesting thing the company owns — arrived at second 13, long after the viewer left. The replacement shape is a cold open of 3 seconds or less (presenter already mid-thought, no greeting, no setup), the real product as shot 2 so proof lands before second three, then short presenter beats cut against the product for 20-28 seconds total across 5-8 shots. Only one presenter beat may run past 4s. This is also the cheapest shape we have: screencaps are free and generated shots are not.",
+      "source": "Owner ruling 2026-08-16, verbatim: \"this reel is shit\" / \"this should look like a real advert that a $1B saas platform will launch\", plus a shot-level measurement of the rejected reel (output/creative/same-tuesday-two-windows.json). Enforced in src/loops/creative.ts formatSpecViolation().",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "no-metaphor-as-prop",
+      "category": "format",
+      "principle": "Never render a figure of speech as an object — show the actual subject of the sentence.",
+      "detail": "The script said \"two windows\", meaning two windows of TIME, and the b-roll rendered a push-in through an apartment window. A video model has no idea which sense of a word you meant, so any metaphor in the copy becomes a prop. If the copy says window, door, green light, ticking clock or crossroads, the picture must show the person deciding, the moment itself, or the real report. Checked mechanically before spend: a distinctive noun shared between the copy and a generated shot's visual prompt is a hard reject, as is any pure metaphor prop (hourglass, traffic light, fork in the road).",
+      "source": "Owner ruling 2026-08-16, verbatim: \"window shares an image of window while we are talking of time window.\" Detectors in src/audit/human-eye.ts.",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "compliance-is-not-quality",
+      "category": "retention",
+      "principle": "Every reviewer that checks rules will pass a boring reel. One reviewer must be allowed to reject on taste alone.",
+      "detail": "The rejected reel passed brand safety, captions, voice plan, capture policy, jargon, loudness and the spoken CTA — every gate the repo owns — and the owner still threw it out. Compliance is a floor, not a standard. So the creative audit now carries a human-eye lens that is given no rulebook and is asked only what a bored person scrolling at 11pm would do: would I stop, does this look expensive or cheap, does the presenter ring true, is there a real moment of interest inside three seconds, or is this AI slop. Its verdict carries the second-heaviest weight in the tournament and a reject from it is final.",
+      "source": "Owner ruling 2026-08-16: \"All the videos should be audited from a human lens — any user seeing the video should get a world class look into the platform like its a $1B platform launching an ad.\" Implemented as src/audit/human-eye.ts.",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "high-stakes-moment-low-stakes-claim",
+      "category": "hook",
+      "principle": "Write the moment people actually lose sleep over; keep the claim to timing and reflection.",
+      "detail": "The questions this audience asks in public are overwhelmingly about relationships, marriage and career turning points — reconciliation, when a relationship will start, whether a breakthrough is coming, whether to leave a job. Our hooks were about scheduling meetings and study slots: the safe end of the product and the forgettable one. Move the SUBJECT to where the weight is (the unsent message, the conversation with parents, the resignation being rewritten) and hold the CLAIM exactly where brand law puts it: when to have the conversation, never what the other person will do. No prediction, no reassurance, no fear, no urgency.",
+      "source": "src/loops/sense.ts harvest 2026-08-16 (r/vedicastrology): \"Are there any chances of reconciliation…\", \"26M- When will my relationship start?\", \"26f any big career breakthroughs coming?\" — cross-checked against the banned-claims list in config/creative-seeds.json.",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
     {
       "id": "hook-1s-window",
       "category": "hook",
@@ -46,7 +82,7 @@
       "id": "short-duration-bias",
       "category": "format",
       "principle": "Bias short: reels of 15 seconds or less tend to complete, and completion is what gets re-served.",
-      "detail": "UNSETTLED, AND DELIBERATELY FLAGGED AS SUCH. The current VedicHour format spec is a 22-32 second read (55-80 words), which contradicts this bias. Both cannot be right. Do not silently resolve it — this is exactly the question the performance evidence exists to settle, so keep generating across duration buckets until the data can speak.",
+      "detail": "UNSETTLED, AND DELIBERATELY FLAGGED AS SUCH. The current VedicHour format spec is a 20-28 second read (30-64 words), which still contradicts this bias. Both cannot be right. Do not silently resolve it — this is exactly the question the performance evidence exists to settle, so keep generating across duration buckets until the data can speak.",
       "source": "Industry consensus on short-form completion rate. NOT yet verified against VedicHour's own posted reels — zero measured at the time of writing.",
       "verifiedOn": "2026-07-26",
       "confidence": "contested"
