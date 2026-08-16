@@ -5,7 +5,13 @@ data/*.db-wal
 data/*.db-shm
 data/KILL
 data/heartbeat.json
-media/
+# Media binaries stay local. The ONE exception is the music bed's licence record: the audio is
+# gitignored, so LICENSE.md is the only thing in the repo that says what the bed is, where it
+# legally came from, and how to reproduce it.
+media/*
+!media/music/
+media/music/*
+!media/music/LICENSE.md
 .env
 *.log
 tmp/

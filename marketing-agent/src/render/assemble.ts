@@ -9,7 +9,7 @@ import {
   type Seg, type Probe,
 } from './ffmpeg';
 import { AD_VO_VOICE, AD_VO_LANGUAGE, NATIVE_VOICE, sarvamSpeak, hasSarvamKey, SARVAM_MISSING_MESSAGE } from './sarvam';
-import { listenToReel, type ListenResult } from './listen';
+import { listenToReel, MAX_SILENCE_GAP_SEC, MAX_SILENT_SHARE, type ListenResult } from './listen';
 import type { CreativeScript, Shot } from './types';
 
 export { MAX_SILENCE_GAP_SEC, MAX_SILENT_SHARE } from './listen';
@@ -29,6 +29,13 @@ export { MAX_SILENCE_GAP_SEC, MAX_SILENT_SHARE } from './listen';
 
 export const FRAME = { w: 1080, h: 1920, fps: 30 };
 
+/**
+ * What counts as silence. Same detector settings listenToReel() uses, named here because
+ * analyzeSilence() also needs the gap POSITIONS and so cannot share that implementation.
+ * The LIMITS themselves live in ./listen and are imported, never redefined.
+ */
+export const SILENCE_FLOOR_DB = -35;
+export const SILENCE_MIN_SEC = 0.6;
 const AUDIO = { rate: 48000, channels: 2 };
 
 /**
@@ -214,7 +221,7 @@ export async function concatClips(clips: string[], work: string, outPath: string
 
 const MUSIC_DIRS = [resolve(ROOT, 'media', 'music'), resolve(ROOT, 'media')];
 
-/** Find a music bed if the owner has dropped one in media/music/ (or media/). Optional by design. */
+/** Find a music bed in media/music/ (or media/). Returns null when there is none. */
 export function findMusic(): string | null {
   for (const dir of MUSIC_DIRS) {
     if (!existsSync(dir)) continue;
@@ -222,6 +229,138 @@ export function findMusic(): string | null {
     if (hit) return resolve(dir, hit);
   }
   return null;
+}
+
+export const MUSIC_MISSING_MESSAGE =
+  'no music bed in marketing-agent/media/music/ — refusing to render. THE BED IS NOT DECORATION: it is ' +
+  'the only thing that carries the shots nobody speaks over. On 2026-08-16 a reel shipped with an ' +
+  'unbroken 15.2s silence (68% of it mute, the whole product section) precisely because this ' +
+  'directory was empty and the renderer quietly said "rendering voice-only". CLAUDE.md §2 — a ' +
+  'missing quality-critical component fails loudly, it never degrades silently. Fix: restore the ' +
+  'bed named in marketing-agent/media/music/LICENSE.md (that file records the exact CC0 source URL ' +
+  'and the ffmpeg command that cut the loop), or drop any licence-clean instrumental in that folder ' +
+  'and record its licence there.';
+
+/**
+ * The bed is mandatory for a real render. `findMusic()` still exists for callers that only want to
+ * know; anything that is about to MIX must go through this so a missing file can never become a
+ * silent reel again.
+ */
+export function requireMusicBed(): string {
+  const hit = findMusic();
+  if (!hit) throw new Error(MUSIC_MISSING_MESSAGE);
+  return hit;
+}
+
+// ---------------------------------------------------------------------------
+// Silence analysis — one implementation, used by the gate AND by the mix assertion
+// ---------------------------------------------------------------------------
+
+export interface SilenceGap {
+  startSec: number;
+  endSec: number;
+  durationSec: number;
+}
+
+export interface SilenceReport {
+  gaps: SilenceGap[];
+  longestSec: number;
+  totalSilentSec: number;
+  silentShare: number;
+  durationSec: number;
+}
+
+/**
+ * Measure the ACTUAL WAVEFORM of a finished file. `probe.hasAudio` only says a stream exists;
+ * this says whether anything is coming out of it, and — because it keeps the gap POSITIONS —
+ * lets the caller name the shot that went quiet instead of just reporting a number.
+ */
+export async function analyzeSilence(file: string): Promise<SilenceReport> {
+  const { ffmpeg, ffprobe } = resolveTools();
+  const durationSec = await probeDuration(ffprobe, file).catch(() => 0);
+  const res = await runCapture(ffmpeg, [
+    '-i', file, '-vn',
+    '-af', `silencedetect=n=${SILENCE_FLOOR_DB}dB:d=${SILENCE_MIN_SEC}`,
+    '-f', 'null', '-',
+  ], 300000);
+  const blob = res.stderr + res.stdout;
+
+  // silencedetect emits `silence_start: T` then `silence_end: T | silence_duration: D`. A run that
+  // is still silent when the file ends emits only the start — that is the worst case, so close it
+  // against the file duration rather than dropping it.
+  const gaps: SilenceGap[] = [];
+  let open: number | null = null;
+  for (const m of blob.matchAll(/silence_(start|end):\s*(-?[0-9.]+)/g)) {
+    const t = Number(m[2]);
+    if (m[1] === 'start') open = t;
+    else if (open !== null) {
+      gaps.push({ startSec: open, endSec: t, durationSec: Math.max(0, t - open) });
+      open = null;
+    }
+  }
+  if (open !== null && durationSec > open) gaps.push({ startSec: open, endSec: durationSec, durationSec: durationSec - open });
+
+  const totalSilentSec = gaps.reduce((a, g) => a + g.durationSec, 0);
+  return {
+    gaps,
+    longestSec: gaps.length ? Math.max(...gaps.map((g) => g.durationSec)) : 0,
+    totalSilentSec,
+    silentShare: durationSec > 0 ? totalSilentSec / durationSec : 0,
+    durationSec,
+  };
+}
+
+/** Human-readable list of the limits a report breaks. Empty array = clean. */
+export function silenceProblems(r: SilenceReport): string[] {
+  const problems: string[] = [];
+  // Same limits and the same >= comparison listenToReel() applies, imported from ./listen so the
+  // two gates can never drift apart.
+  if (r.longestSec >= MAX_SILENCE_GAP_SEC) {
+    problems.push(
+      `dead air: a single ${r.longestSec.toFixed(1)}s silence (limit ${MAX_SILENCE_GAP_SEC}s). ` +
+        'Either the shot needs a spoken line or the reel needs a music bed under it.',
+    );
+  }
+  if (r.silentShare >= MAX_SILENT_SHARE) {
+    problems.push(
+      `${Math.round(r.silentShare * 100)}% of the reel is silent (limit ${Math.round(MAX_SILENT_SHARE * 100)}%), ` +
+        `${r.totalSilentSec.toFixed(1)}s of ${r.durationSec.toFixed(1)}s.`,
+    );
+  }
+  return problems;
+}
+
+/**
+ * THE STRUCTURAL GUARANTEE, asserted on the mix itself rather than left to the post-render gate.
+ *
+ * verifyOutput() catching dead air is a smoke alarm; this is the wiring. Once a bed is mixed under
+ * the WHOLE reel it is arithmetically impossible for any window to be silent — so if one still is,
+ * the mix is broken (the bed ran short, the loop failed, amix dropped an input), and that is a bug
+ * in this file, not a note for the creative team. Fail with the shot that went quiet named.
+ */
+export function assertNoDeadAir(
+  r: SilenceReport,
+  opts: { hasMusic: boolean; shotWindows?: { id: string; start: number; end: number }[] } = { hasMusic: false },
+): void {
+  const problems = silenceProblems(r);
+  if (!problems.length) return;
+
+  const worst = r.gaps.slice().sort((a, b) => b.durationSec - a.durationSec)[0];
+  const overlapping = (opts.shotWindows ?? [])
+    .filter((w) => worst && w.start < worst.endSec && w.end > worst.startSec)
+    .map((w) => w.id);
+  const where = worst
+    ? ` The longest gap runs ${worst.startSec.toFixed(1)}s-${worst.endSec.toFixed(1)}s` +
+      (overlapping.length ? `, i.e. across shot(s) ${overlapping.join(', ')} — that shot's audio is missing from the mix.` : '.')
+    : '';
+
+  throw new Error(
+    opts.hasMusic
+      ? `MIX BUG — the reel still has dead air WITH a music bed present: ${problems.join(' ')}${where} ` +
+        'A bed runs under the whole reel, so no window can be silent unless the mix itself dropped it: ' +
+        'check that the bed input is actually reaching amix (stream_loop, input index, duration=first).'
+      : `${problems.join(' ')}${where}`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -267,10 +406,60 @@ export interface FinishOpts {
    * loudness pass — deliberately still runs over the whole file, card included.
    */
   endCardSec?: number;
+  /**
+   * Reel-relative windows of every shot, used ONLY to name the culprit if the finished mix still
+   * contains dead air. Optional: without it the assertion still fires, it just can't say "s3-product".
+   */
+  shotWindows?: { id: string; start: number; end: number }[];
 }
 
 /** Loudness target for the final mix: −16 LUFS integrated, the short-form delivery norm. */
 const LOUDNORM_TARGET = 'I=-16:TP=-1.5:LRA=11';
+
+/**
+ * THE MUSIC BED, and why every number here is derived instead of typed.
+ *
+ * The old chain was `volume=0.14` — a constant that means nothing without knowing how loud the
+ * bed file happens to be, and that says the same thing under a shouted line and under 15 seconds
+ * of nobody speaking. Both levels are computed from measurements instead:
+ *
+ *   - `belowVoiceInGapsDb` is applied to the DIFFERENCE between the voice's integrated loudness
+ *     and the bed's, so any licence-clean file dropped into media/music/ lands at the same
+ *     musical level. EBU R128 integrated loudness is gated, so the voice figure it is measured
+ *     against is the loudness of the SPEECH, not an average dragged down by the silences.
+ *   - `levelSc` then normalizes what the compressor's detector sees, so the duck depth does not
+ *     drift with the reel's absolute level.
+ *
+ * Net effect: the bed rides ~13 dB under the voice in the gaps (present, never a lead instrument)
+ * and ducks a further ~10 dB while anyone is speaking, landing inside the −22..−26 dB-under-speech
+ * window. Speech stays the loudest thing in the reel at every instant.
+ */
+const BED = {
+  belowVoiceInGapsDb: 13,
+  /** Level the sidechain detector is normalized to, so one threshold fits every reel. */
+  keyRefLufs: -16,
+  /**
+   * ≈ −34 dBFS. Measured, not assumed: at 0.03 (−30.5 dBFS) this reel's speech only cleared the
+   * threshold by ~8 dB, which capped the duck at 7.1 dB and left the bed 20.2 dB under the voice —
+   * just outside the −22..−26 dB window. 0.02 gives the detector ~12 dB to work with.
+   */
+  threshold: 0.02,
+  ratio: 8,
+  attackMs: 20,
+  /** Long enough that the bed does not pump between words, short enough to fill a real pause. */
+  releaseMs: 400,
+  fadeOutSec: 1.5,
+} as const;
+
+/** Integrated (gated) loudness of one file, in LUFS. Null when it cannot be measured. */
+async function measureIntegratedLufs(ffmpeg: string, file: string): Promise<number | null> {
+  const res = await runCapture(ffmpeg, ['-i', file, '-vn', '-af', 'ebur128', '-f', 'null', '-'], 300000);
+  const blob = res.stderr + res.stdout;
+  const tail = blob.slice(blob.lastIndexOf('Summary'));
+  const m = /I:\s*(-?[0-9.]+)\s*LUFS/.exec(tail);
+  const v = m ? Number(m[1]) : NaN;
+  return Number.isFinite(v) && v > -70 ? v : null;
+}
 
 /**
  * Pass 1 of two-pass loudnorm: run the exact final audio chain into a null sink and read the
@@ -330,15 +519,41 @@ export async function finish(o: FinishOpts): Promise<void> {
     graph = `${head},subtitles=captions.ass:fontsdir=.,${tail}[v]`;
   }
 
-  // ---- audio: (optional) music mix, then two-pass loudness normalization ------------------
+  // ---- audio: music mix, then two-pass loudness normalization ------------------------------
+  // Levels are derived from the two tracks' measured loudness (see BED), so the same chain gives
+  // the same musical result for any bed file and any reel.
+  const voiceLufs = o.music ? await measureIntegratedLufs(ffmpeg, o.stitched) : null;
+  const bedLufs = o.music ? await measureIntegratedLufs(ffmpeg, o.music) : null;
+  // A stitched track with no speech at all (a --dry reel of silent placeholders) measures as
+  // nothing; fall back to the delivery target so the bed still lands at a sane absolute level.
+  const voiceRef = voiceLufs ?? -16;
+  const bedGainDb = Math.round(((voiceRef - BED.belowVoiceInGapsDb) - (bedLufs ?? -16)) * 10) / 10;
+  const levelSc = Math.round(Math.pow(10, (BED.keyRefLufs - voiceRef) / 20) * 1000) / 1000;
+  if (o.music) {
+    console.log(
+      `[render] bed: ${o.music.split(/[\\/]/).pop()} at ${bedLufs?.toFixed(1) ?? '?'} LUFS -> ${bedGainDb >= 0 ? '+' : ''}${bedGainDb} dB ` +
+        `(${BED.belowVoiceInGapsDb} dB under a ${voiceRef.toFixed(1)} LUFS voice in the gaps), ducking ~10 dB more under speech`,
+    );
+  }
+
   // The chain is identical for measurement and encode; only the music input INDEX differs
   // (the encode command also carries the caption-plate inputs before the music bed).
   const mixFor = (musicIdx: number) =>
     o.music
-      ? `[0:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo,volume=1.0[vo];\n` +
-        // Duck the bed well under the voice; VO stays the loudest thing in the mix.
-        `[${musicIdx}:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo,volume=0.14,afade=t=out:st=${Math.max(0, o.totalSec - 1.5)}:d=1.5[bed];\n` +
-        `[vo][bed]amix=inputs=2:duration=first:dropout_transition=0,alimiter=limit=0.95`
+      ? // The voice is split: one copy is heard, the other is the compressor's key. Nothing about
+        // the voice path itself changes — it is never compressed, only used as a trigger.
+        `[0:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo,asplit=2[vo][key];\n` +
+        `[${musicIdx}:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo,volume=${bedGainDb}dB,` +
+        `afade=t=out:st=${Math.max(0, o.totalSec - BED.fadeOutSec)}:d=${BED.fadeOutSec}[bedraw];\n` +
+        `[bedraw][key]sidechaincompress=threshold=${BED.threshold}:ratio=${BED.ratio}:` +
+        `attack=${BED.attackMs}:release=${BED.releaseMs}:level_sc=${levelSc}:makeup=1[bed];\n` +
+        // normalize=0: amix's default divides every input by the input count, which drops the
+        // VOICE 6 dB purely because a bed was added. loudnorm then has to find that 6 dB back, and
+        // cannot without breaching TP=-1.5 — measured on this reel, the bed cost 1.0 LUFS of final
+        // loudness (-17.0 instead of -16.0) for no musical reason. Summing at unity keeps the voice
+        // exactly where it was; the bed sits ~29 dB below it, so it adds no meaningful peak, and
+        // alimiter is still there for the rare overshoot.
+        `[vo][bed]amix=inputs=2:duration=first:dropout_transition=0:normalize=0,alimiter=limit=0.95`
       : `[0:a]aformat=sample_rates=${AUDIO.rate}:channel_layouts=stereo`;
 
   const measureInputs = ['-i', o.stitched, ...(o.music ? ['-stream_loop', '-1', '-i', o.music] : [])];
@@ -372,6 +587,17 @@ export async function finish(o: FinishOpts): Promise<void> {
     o.outPath,
   );
   await run(ffmpeg, args, o.work, 900000);
+
+  // The mix is where dead air is PREVENTED, so it is where dead air is refused. verifyOutput()
+  // checks the same limits later; that one is the alarm, this one is the interlock — it runs
+  // before anything downstream (publish pack, content library, localization) can treat the file
+  // as finished, and it is inherited by every caller of finish(), dubs included.
+  const sil = await analyzeSilence(o.outPath);
+  assertNoDeadAir(sil, { hasMusic: Boolean(o.music), shotWindows: o.shotWindows });
+  console.log(
+    `[render] dead-air check: longest gap ${sil.longestSec.toFixed(2)}s (limit ${MAX_SILENCE_GAP_SEC}s), ` +
+      `${Math.round(sil.silentShare * 100)}% silent (limit ${Math.round(MAX_SILENT_SHARE * 100)}%)`,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -579,8 +805,14 @@ export async function verifyOutput(
   if (probe.width !== FRAME.w || probe.height !== FRAME.h) problems.push(`expected ${FRAME.w}x${FRAME.h}, got ${probe.width}x${probe.height}`);
   if (Math.abs(probe.fps - FRAME.fps) > 0.6) problems.push(`expected ~${FRAME.fps}fps, got ${probe.fps}`);
 
+  // An audio STREAM is not AUDIO. On 2026-08-16 a reel shipped to the owner with a single
+  // unbroken 15.2s silence out of 31.2s — the product section, the part meant to sell, played
+  // mute — and every gate passed it because `hasAudio` was true. listenToReel() plays the file
+  // the way a phone would: waveform, not container. The mix itself is guarded separately and
+  // earlier, by assertNoDeadAir() inside finish().
   const listen = await listenToReel(file, probe.durationSec, probe.hasAudio);
   problems.push(...listen.problems);
+
 
   if (Math.abs(probe.durationSec - expectSec) > 1.2) problems.push(`duration ${probe.durationSec.toFixed(2)}s vs expected ${expectSec.toFixed(2)}s`);
   if (probe.codec !== 'h264') problems.push(`expected h264, got ${probe.codec}`);

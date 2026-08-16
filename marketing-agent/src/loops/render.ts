@@ -15,7 +15,7 @@ import { assertCaptureAllowed, resolveLiveCapture } from '../render/capture-poli
 import { AD_VO_VOICE, NATIVE_VOICE, assertSingleAdVoice, SARVAM_PRICING } from '../render/sarvam';
 import {
   FRAME, PRESENTER_LAYOUT, renderPlaceholder, normalizeClip, concatClips, finish,
-  synthesizeVo, nativeVo, findMusic, verifyOutput, renderEndCard, type PreparedShot,
+  synthesizeVo, nativeVo, requireMusicBed, verifyOutput, renderEndCard, type PreparedShot,
 } from '../render/assemble';
 import { resolveTools, probeVideo, type Seg } from '../render/ffmpeg';
 import {
@@ -200,6 +200,15 @@ function pickCreative(slug?: string): { file: string; raw: any } | null {
 
 function providerForShot(shot: Shot): ShotProvider {
   return shot.provider ?? (ROLE_ROUTING as Record<string, ShotProvider>)[shot.role] ?? 'wan27';
+}
+
+/**
+ * Everything the reel actually says out loud, for the policy linter and the jargon gate.
+ * (Restored: the publish-pack extraction moved this into buildPublishPack() as a local and left
+ * the caller in the policy gate below without a definition, so `main` stopped typechecking.)
+ */
+function spokenText(c: CreativeScript): string {
+  return c.shots.map((s) => s.dialogue ?? s.vo ?? '').filter(Boolean).join(' ');
 }
 
 // ---------------------------------------------------------------------------
@@ -590,8 +599,10 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     console.log(`[render] stitching ${prepared.length} shots + end card -> ${totalSec}s`);
     await concatClips([...prepared.map((p) => p.path), endCardPath], work, stitched);
 
-    const music = findMusic();
-    console.log(`[render] music bed: ${music ? music : 'none found in media/ — rendering voice-only'}`);
+    // THE BED IS MANDATORY. Every shot without a spoken line — hero, product, b-roll — is carried
+    // by this and nothing else, so a missing file is a refusal, never a "voice-only" render.
+    const music = requireMusicBed();
+    console.log(`[render] music bed: ${music}`);
 
     const finalPath = resolve(outDir, 'final.mp4');
     const allSegments = prepared.flatMap((p) => p.segments);
@@ -601,7 +612,8 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       .map((p) => ({ start: p.startSec, end: p.startSec + p.seconds }));
     assertCaptionPlan(prepared, productWindows);
     console.log('[render] finishing: grade -> bloom -> vignette -> karaoke captions -> wordmark -> progress -> grain');
-    await finish({ stitched, work, outPath: finalPath, creative, segments: allSegments, totalSec, music, productWindows, endCardSec: card.seconds });
+    const shotWindows = prepared.map((p) => ({ id: p.shot.id, start: p.startSec, end: p.startSec + p.seconds }));
+    await finish({ stitched, work, outPath: finalPath, creative, segments: allSegments, totalSec, music, productWindows, shotWindows, endCardSec: card.seconds });
 
     // ---- 6. verify --------------------------------------------------------------------
     const framesDir = resolve(outDir, 'frames');
@@ -784,6 +796,7 @@ async function localizeReel(ctx: LocalizeCtx, langs: LangSpec[]): Promise<void> 
       await finish({
         stitched, work, outPath: finalPath, creative: ctx.creative, segments: [], totalSec: ctx.totalSec,
         music: ctx.music, plates: plateOverlayGraph(plates, 'pbase', 'v'), endCardSec: ctx.endCard.seconds,
+        shotWindows: ctx.prepared.map((p) => ({ id: p.shot.id, start: p.startSec, end: p.startSec + p.seconds })),
       });
 
       // 5. verify visually
