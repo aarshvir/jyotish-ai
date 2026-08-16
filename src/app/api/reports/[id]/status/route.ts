@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { extractUserVisibleReportError } from '@/lib/reports/reportErrors';
+import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 import {
   finalizeReportStatusResponse,
   nextPollAfterMsForPayload,
@@ -221,9 +222,7 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
     userIsAdmin ||
     planType === 'free' ||
     planType === 'preview' ||
-    data?.payment_status === 'paid' ||
-    data?.payment_status === 'promo' ||
-    data?.payment_status === 'bypass';
+    isEntitledPaymentStatus(data?.payment_status as string | null | undefined);
 
   // Server-side paywall: free/preview reports are generated in full (same pipeline as
   // paid), but only the advertised preview — natal chart + ONE sample day — may cross

@@ -13,6 +13,7 @@ import {
   type SupportedCurrency,
 } from '@/lib/ziina/server';
 import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
+import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 import { emitUpsellEvent } from '@/lib/analytics/upsellEvents';
 
 /**
@@ -45,8 +46,11 @@ export async function POST(request: NextRequest) {
   if (error || !row) {
     return NextResponse.json({ error: 'Report not found' }, { status: 404 });
   }
-  if (row.payment_status !== 'paid') {
-    return NextResponse.json({ error: 'Report must be paid before upgrade' }, { status: 400 });
+  // Entitlement, not revenue: a 100%-promo or admin-granted 7-day report is a real
+  // report its owner may pay to extend. Requiring 'paid' here locked those users out
+  // of ever upgrading (the upgrade delta itself is still a genuine charge).
+  if (!isEntitledPaymentStatus(row.payment_status)) {
+    return NextResponse.json({ error: 'Report must be unlocked before upgrade' }, { status: 400 });
   }
   if (row.plan_type !== '7day') {
     return NextResponse.json({ error: 'Upgrade only available from 7-day plan' }, { status: 400 });

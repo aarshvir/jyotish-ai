@@ -9,6 +9,7 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { sanitizePersonalContext, sanitizeLagnaSign, sanitizePlanetName, sanitizeForPrompt } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { type Personalized, wantedTier, cacheSatisfies, projectForTier } from '@/lib/reports/personalizedTier';
+import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 
 /**
  * POST /api/reports/[id]/personalized
@@ -43,8 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ personalized: null }, { status: 404 });
   }
 
-  const entitled =
-    auth.isAdmin === true || row.payment_status === 'paid' || row.payment_status === 'promo';
+  const entitled = auth.isAdmin === true || isEntitledPaymentStatus(row.payment_status);
   const wantTier = wantedTier(entitled);
 
   // No question on file → nothing to personalize (common; render nothing).

@@ -13,6 +13,7 @@ import {
 import { getPromoDiscount, redeemPromoCode, hasUserRedeemed } from '@/lib/promo/server';
 import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
 import { createServiceClient } from '@/lib/supabase/admin';
+import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 
 /**
  * POST /api/ziina/create-intent
@@ -204,7 +205,7 @@ export async function POST(request: NextRequest) {
       // Already paid: don't mint a fresh payable intent for a report the user already
       // bought — a stale/duplicated client redirect would otherwise charge them twice
       // (finalize is idempotent on the grant, so the 2nd charge buys nothing).
-      if (reportRow && (reportRow.payment_status === 'paid' || reportRow.payment_status === 'promo')) {
+      if (reportRow && isEntitledPaymentStatus(reportRow.payment_status)) {
         return NextResponse.json({
           alreadyPaid: true,
           redirectUrl: `/report/${reportId}?payment_status=paid`,

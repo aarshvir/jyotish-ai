@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
+import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 
 /**
  * POST /api/reports/[id]/hourly-day  { date: 'YYYY-MM-DD' }
@@ -62,10 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: 'Report not found' }, { status: 404 });
   }
   // Entitlement: paid purchase, 100%-promo grant, or admin.
-  const entitled =
-    auth.isAdmin === true ||
-    reportRow.payment_status === 'paid' ||
-    reportRow.payment_status === 'promo';
+  const entitled = auth.isAdmin === true || isEntitledPaymentStatus(reportRow.payment_status);
   if (!entitled) {
     return NextResponse.json({ error: 'This feature is part of a paid report.' }, { status: 402 });
   }
