@@ -5,7 +5,7 @@ import { lint } from '../policy/linter';
 import { isKilled, killInfo } from '../safety/killswitch';
 import { db, logRun, enqueueApproval, ROOT } from '../db/index';
 import { writeHeartbeat } from '../scheduler/heartbeat';
-import { BRAND, BRAND_BRIEF, utm } from '../brand';
+import { BRAND, BRAND_BRIEF, utm, landingPath } from '../brand';
 
 const REELS = resolve(ROOT, 'media', 'reels');
 const OUT = resolve(ROOT, 'output');
@@ -29,10 +29,7 @@ const PLATFORMS = [
 ] as const;
 
 function landingFor(product: string): string {
-  if (product === 'matchmaking') return BRAND.links.synastry;
-  if (product === 'forecast') return BRAND.links.pricing;
-  if (product === 'kundali') return BRAND.links.kundali;
-  return BRAND.links.freeKundli;
+  return landingPath(product);
 }
 
 function captionPrompt(s: ReelScript): string {

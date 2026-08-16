@@ -1,3 +1,4 @@
+import { MAX_SILENCE_GAP_SEC } from '../render/listen';
 import { BANNED_CAPTURE, jargonHits } from './policy';
 import type { Finding, LensReport } from './types';
 import type { ReelArtifacts } from './artifacts';
@@ -82,16 +83,16 @@ export function hardRules(a: ReelArtifacts): LensReport {
     });
   }
 
-  // 5. Dead air.
+  // 5. Dead air — a phone viewer experiences this as a broken file, not a "minor" note.
   for (const m of a.audioReport.matchAll(/silence_start:\s*([\d.]+)[\s\S]{0,120}?silence_duration:\s*([\d.]+)/g)) {
     const start = Number(m[1]);
     const dur = Number(m[2]);
-    if (dur >= 1.0 && start + dur < a.durationSec - 0.5) {
+    if (dur >= MAX_SILENCE_GAP_SEC) {
       add({
         timestamp: `${start.toFixed(1)}-${(start + dur).toFixed(1)}s`,
-        severity: 'minor',
-        issue: `${dur.toFixed(2)}s of dead air mid-reel — short-form viewers drop on silence.`,
-        fix: 'Tighten the shot transition or duck a licensed music bed under the gap (media/music/).',
+        severity: 'blocker',
+        issue: `${dur.toFixed(2)}s of dead air — short-form viewers drop on silence. This is not a minor mix note.`,
+        fix: 'Put a spoken line or a licensed music bed under the gap, then play the mp4 with sound on. Do not ship mute.',
       });
     }
   }
@@ -112,8 +113,56 @@ export function hardRules(a: ReelArtifacts): LensReport {
   if (a.durationSec > 45) {
     add({ timestamp: 'n/a', severity: 'minor', issue: `${a.durationSec}s is long for short-form (ranks best under ~45s).`, fix: 'Trim a beat.' });
   }
+
+  if (a.publish?.dryRun) {
+    add({
+      timestamp: 'n/a',
+      severity: 'blocker',
+      issue: 'DRY PLACEHOLDER marked as a reel — navy/gold cards and silent AAC. A viewer would not watch this.',
+      fix: 'Paid render after Approve. Never paste a dry file.',
+    });
+  }
+
+  const status = String(a.publish?.status ?? '');
+  if (/ready_to_post/i.test(status) && (a.publish?.dryRun || a.publish?.verification?.ok === false)) {
+    add({
+      timestamp: 'n/a',
+      severity: 'blocker',
+      issue: `Publish status is "${status}" while the reel is dry or failed verification.`,
+      fix: 'Set status to dry_placeholder_do_not_post or failed_verification. Do not paste.',
+    });
+  }
+
+  const linkBlob = JSON.stringify(a.publish?.links ?? {});
+  if (/\/pricing\b/i.test(linkBlob) || /\/pricing\b/i.test(String(a.publish?.description ?? '')) || /\/pricing\b/i.test(String(a.publish?.caption ?? ''))) {
+    add({
+      timestamp: 'n/a',
+      severity: 'blocker',
+      issue: 'Ad pack links to /pricing. Forecast ads show the sample report, never checkout.',
+      fix: 'Point every tracked link at /sample-report (landingPath).',
+    });
+  }
+
+  const copyBlob = `${a.publish?.caption ?? ''}\n${a.publish?.description ?? ''}`;
+  if (/aapka din ek mood/i.test(copyBlob)) {
+    add({
+      timestamp: 'n/a',
+      severity: 'blocker',
+      issue: 'Stub Hinglish caption ("Aapka din ek mood nahi hai") — not the spoken scene.',
+      fix: 'Rebuild the pack from presenter dialogue (HR 10am / 5pm) via defaultCaption().',
+    });
+  }
+
   for (const p of a.publish?.verification?.problems ?? []) {
-    add({ timestamp: 'n/a', severity: 'major', issue: `render verification: ${p}`, fix: 'Re-render or re-encode to spec.' });
+    const listenFail = /dead air|silent|no audio|inaudible|dry placeholder|audio stream|cannot watch|mute|placeholder/i.test(p);
+    add({
+      timestamp: 'n/a',
+      severity: listenFail ? 'blocker' : 'major',
+      issue: `render verification: ${p}`,
+      fix: listenFail
+        ? 'Play the mp4. If it is mute or a placeholder, re-render with audible speech. Do not post.'
+        : 'Re-render or re-encode to spec.',
+    });
   }
 
   const blocker = f.some((x) => x.severity === 'blocker');

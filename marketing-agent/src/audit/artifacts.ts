@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ROOT } from '../db/index';
 import { resolveCreativeFile } from './preflight';
+import { resolvePlayableVideo } from './watchable';
 
 /**
  * The INPUT CONTRACT for the publish gate: everything the render pipeline leaves behind in
@@ -80,11 +81,12 @@ export function loadReel(slug: string): ReelArtifacts {
 
   const audioReport = readIf(resolve(dir, 'audio-report.txt'));
   const boundaries = /Shot boundaries:.*/.exec(audioReport)?.[0] ?? '';
+  const playable = resolvePlayableVideo(dir, publish);
 
   return {
     slug,
     dir,
-    video: publish?.video ?? (existsSync(resolve(dir, 'final.mp4')) ? resolve(dir, 'final.mp4') : null),
+    video: playable.path,
     durationSec,
     publish,
     creative,
@@ -119,7 +121,7 @@ export function dossier(a: ReelArtifacts): string {
 
   return `REEL: ${a.slug}
 TITLE: ${a.publish?.title ?? '—'}
-DURATION: ${a.durationSec}s · ${a.probe?.width}x${a.probe?.height} · ${a.probe?.fps}fps · audio=${a.probe?.hasAudio}
+DURATION: ${a.durationSec}s · ${a.probe?.width}x${a.probe?.height} · ${a.probe?.fps}fps · audioStream=${a.probe?.hasAudio} · playableFile=${a.video ?? 'MISSING — cannot watch'}
 HOOK (first on-screen line): ${a.creative?.hook ?? '—'}
 CTA (closing on-screen line): ${a.creative?.cta ?? '—'}
 NARRATION VOICE CONFIGURED: ${a.creative?.voice ?? '(none declared)'}

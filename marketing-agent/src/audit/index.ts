@@ -10,6 +10,7 @@ import { GPT_LENSES } from './gpt';
 import { runLens, pool, type LensSpec } from './runner';
 import { runGptApiLens } from './gpt-api';
 import { hardRules } from './hardrules';
+import { humanViewLens } from './watchable';
 import { runPreflight } from './preflight';
 import { synthesize, writeReview } from './synthesize';
 import { writeFixQueue, reviewSpent } from './store';
@@ -19,9 +20,10 @@ import type { Finding, LensReport } from './types';
 /**
  * THE PUBLISH GATE — `npm run loop:review -- <slug>`.
  *
- *   pre-flight ($0) -> render -> [ 4 internal audits + 5 GPT cross-reviews + 2 deterministic ]
+ *   STAGE 0 human-view (play + listen) -> [ 4 internal audits + 5 GPT cross-reviews + hard-rules ]
  *   -> synthesis -> OWNER APPROVAL -> platform            (project law §5)
  *
+ * Mute, missing final.mp4, or dry placeholders BLOCK at stage 0 and skip the LLM lenses.
  * All eleven passes are $0: the four internal audits run on the Claude subscription, the five
  * GPT cross-reviews on the codex CLI (both were probed and can open image files), and the two
  * deterministic passes are regexes. The metered OpenAI path exists only behind --allow-paid.
@@ -100,14 +102,39 @@ export async function runReviewLoop(opts: ReviewOpts = {}): Promise<void> {
 
   const conc = Math.max(1, opts.concurrency ?? 3);
   console.log(`\n[review] ${slug} — ${a.durationSec}s, ${a.frames.length} audit frames · run ${runId}`);
+  console.log('[review] STAGE 0: human-view (play the mp4, listen to the waveform) — LLM stills cannot hear');
+
+  const human = await humanViewLens(a);
+  console.log(`[review]   ✓ ${human.lens} — ${human.verdict.toUpperCase()} (${human.findings.length} findings)`);
+
+  const deterministic: LensReport[] = [human, hardRules(a)];
+  const retro = await preflightRetro(a);
+  if (retro) deterministic.push(retro);
+  for (const d of deterministic.filter((x) => x !== human)) console.log(`[review]   ✓ ${d.lens} — ${d.verdict.toUpperCase()} (${d.findings.length} findings)`);
+
+  if (human.verdict === 'block') {
+    const bundle = synthesize(a, deterministic, runId);
+    writeReview(a, bundle);
+    writeFixQueue(slug, runId, bundle.fixQueue);
+    queueApproval(slug, bundle.verdict, bundle.reviewPath);
+    const lessons = await fileFindingLessons(slug, bundle.findings);
+    console.log('');
+    console.log('='.repeat(72));
+    console.log('VERDICT: BLOCK');
+    console.log('REASON:  human-view failed — a phone viewer would not watch this (mute, missing file, or placeholder). LLM lenses skipped.');
+    console.log(`FINDINGS: ${bundle.counts.blocker} blocker · ${bundle.counts.major} major · ${bundle.counts.minor} minor · ${bundle.counts.nit} nit`);
+    console.log(`LESSONS: ${lessons} filed`);
+    console.log(`REVIEW:  ${bundle.reviewPath}`);
+    console.log('NEXT:    play the mp4 with sound on. If it is a dry card or silent AAC, do not post. Re-render live, then loop:review.');
+    console.log('='.repeat(72));
+    logRun({ loop, status: 'ok', detail: `${slug}: block (human-view), ${bundle.findings.length} findings` });
+    writeHeartbeat(loop, `${slug} → block (human-view)`);
+    return;
+  }
+
   console.log(`[review] STAGE 1: ${INTERNAL_LENSES.length} internal audits ($0, claude CLI first)`);
   console.log(`[review] STAGE 2: ${GPT_LENSES.length} GPT cross-reviews ($0, codex CLI — subscription, not the metered API)`);
   if (opts.allowPaid) console.log('[review] PAID FALLBACK ENABLED — the metered OpenAI API may be used for GPT lenses the CLI cannot deliver (cap $0.25/reel).');
-
-  const deterministic: LensReport[] = [hardRules(a)];
-  const retro = await preflightRetro(a);
-  if (retro) deterministic.push(retro);
-  for (const d of deterministic) console.log(`[review]   ✓ ${d.lens} — ${d.verdict.toUpperCase()} (${d.findings.length} findings)`);
 
   const run = async (spec: LensSpec) => {
     const r = await runLens(spec, a, runId);

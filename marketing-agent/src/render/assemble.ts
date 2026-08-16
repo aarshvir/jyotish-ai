@@ -9,7 +9,10 @@ import {
   type Seg, type Probe,
 } from './ffmpeg';
 import { AD_VO_VOICE, AD_VO_LANGUAGE, NATIVE_VOICE, sarvamSpeak, hasSarvamKey, SARVAM_MISSING_MESSAGE } from './sarvam';
+import { listenToReel, type ListenResult } from './listen';
 import type { CreativeScript, Shot } from './types';
+
+export { MAX_SILENCE_GAP_SEC, MAX_SILENT_SHARE } from './listen';
 
 /**
  * Shot assembly + finishing.
@@ -26,14 +29,6 @@ import type { CreativeScript, Shot } from './types';
 
 export const FRAME = { w: 1080, h: 1920, fps: 30 };
 
-/**
- * Dead-air limits, enforced in verifyOutput(). A reel is consumed with sound on a phone;
- * silence reads as a broken file long before it reads as "atmosphere". 1.2s is about the
- * longest pause that still feels like a beat rather than a fault; 25% caps the cumulative
- * total so many short gaps cannot add up to a mute reel either.
- */
-export const MAX_SILENCE_GAP_SEC = 1.2;
-export const MAX_SILENT_SHARE = 0.25;
 const AUDIO = { rate: 48000, channels: 2 };
 
 /**
@@ -557,46 +552,36 @@ export interface VerifyResult {
   probe: Probe;
   problems: string[];
   frames: string[];
+  listen: ListenResult;
 }
 
 /**
- * Post-render checks. Metadata alone is NOT proof, so this also extracts frames at even
- * intervals for a human (or an agent with eyes) to actually look at.
+ * Post-render checks as a phone viewer: listen to the waveform, then look at frames.
+ * An AAC stream of digital silence is not audio. Dry placeholders never pass.
  */
-export async function verifyOutput(file: string, expectSec: number, framesDir: string, frameCount = 6): Promise<VerifyResult> {
+export async function verifyOutput(
+  file: string,
+  expectSec: number,
+  framesDir: string,
+  frameCount = 6,
+  opts: { dry?: boolean } = {},
+): Promise<VerifyResult> {
   const { ffmpeg, ffprobe } = resolveTools();
   const probe = await probeVideo(ffprobe, file);
   const problems: string[] = [];
 
+  if (opts.dry) {
+    problems.push(
+      'dry placeholder — navy/gold storyboard cards with silent AAC. Not a watchable reel. Do not post.',
+    );
+  }
+
   if (probe.width !== FRAME.w || probe.height !== FRAME.h) problems.push(`expected ${FRAME.w}x${FRAME.h}, got ${probe.width}x${probe.height}`);
   if (Math.abs(probe.fps - FRAME.fps) > 0.6) problems.push(`expected ~${FRAME.fps}fps, got ${probe.fps}`);
-  if (!probe.hasAudio) problems.push('no audio stream');
 
-  // An audio STREAM is not AUDIO. On 2026-08-16 a reel shipped to the owner with a single
-  // unbroken 15.2s silence out of 31.2s — the product section, the part meant to sell, played
-  // mute — and every gate passed it because `hasAudio` was true. A reel is watched with sound
-  // on a phone; dead air reads as a broken file and the viewer leaves. Measure the actual
-  // waveform and FAIL, never warn.
-  {
-    const sil = await runCapture(ffmpeg, ['-i', file, '-af', 'silencedetect=n=-35dB:d=0.6', '-f', 'null', '-']);
-    const blob = sil.stderr + sil.stdout;
-    const gaps = [...blob.matchAll(/silence_duration:\s*([0-9.]+)/g)].map((m) => Number(m[1]));
-    const longest = gaps.length ? Math.max(...gaps) : 0;
-    const totalSilent = gaps.reduce((a, b) => a + b, 0);
-    const silentShare = probe.durationSec > 0 ? totalSilent / probe.durationSec : 0;
-    if (longest > MAX_SILENCE_GAP_SEC) {
-      problems.push(
-        `dead air: a single ${longest.toFixed(1)}s silence (limit ${MAX_SILENCE_GAP_SEC}s). ` +
-          'Either the shot needs a spoken line or the reel needs a music bed under it.',
-      );
-    }
-    if (silentShare > MAX_SILENT_SHARE) {
-      problems.push(
-        `${Math.round(silentShare * 100)}% of the reel is silent (limit ${Math.round(MAX_SILENT_SHARE * 100)}%), ` +
-          `${totalSilent.toFixed(1)}s of ${probe.durationSec.toFixed(1)}s.`,
-      );
-    }
-  }
+  const listen = await listenToReel(file, probe.durationSec, probe.hasAudio);
+  problems.push(...listen.problems);
+
   if (Math.abs(probe.durationSec - expectSec) > 1.2) problems.push(`duration ${probe.durationSec.toFixed(2)}s vs expected ${expectSec.toFixed(2)}s`);
   if (probe.codec !== 'h264') problems.push(`expected h264, got ${probe.codec}`);
 
@@ -612,5 +597,5 @@ export async function verifyOutput(file: string, expectSec: number, framesDir: s
     const m = /YAVG=([0-9.]+)/.exec(sig.stderr + sig.stdout);
     if (m && Number(m[1]) < 6) problems.push(`frame ${i + 1} at ${t.toFixed(1)}s is essentially black (YAVG ${m[1]})`);
   }
-  return { ok: problems.length === 0, probe, problems, frames };
+  return { ok: problems.length === 0, probe, problems, frames, listen };
 }

@@ -6,7 +6,7 @@ import { isKilled, killInfo } from '../safety/killswitch';
 import { writeHeartbeat } from '../scheduler/heartbeat';
 import { lint, jargonHits } from '../policy/linter';
 import { activeLessons } from '../lessons';
-import { BRAND, utm } from '../brand';
+import { buildPublishPack, verifyNoteFrom } from './publish-pack';
 import { validateCreative, SPOKEN_SITE, type CreativeScript, type Shot, type ShotProvider } from '../render/types';
 import { PRICE_TABLE, ROLE_ROUTING, estimateCost, providerFor, hasFalKey, quantizeSeconds } from '../render/providers';
 import { checkBudget, recordSpend, caps, budgetLine, spendSnapshot } from '../render/budget';
@@ -257,64 +257,18 @@ function printEstimate(c: CreativeScript, est: ReturnType<typeof estimateReel>, 
 // PUBLISH.md
 // ---------------------------------------------------------------------------
 
-function landingFor(product: string): string {
-  if (product === 'matchmaking') return BRAND.links.synastry;
-  if (product === 'forecast') return BRAND.links.pricing;
-  if (product === 'kundali') return BRAND.links.kundali;
-  return BRAND.links.freeKundli;
-}
-
-function spokenText(c: CreativeScript): string {
-  return c.shots.map((s) => s.dialogue ?? s.vo ?? '').filter(Boolean).join(' ');
-}
-
-function buildPublishPack(c: CreativeScript, videoPath: string, durationSec: number, costUsd: number, dry: boolean) {
-  const landing = landingFor(c.product);
-  const p = c.publish ?? {};
-  const hashtags = p.hashtags ?? ['#vedichour', '#vedicastrology', '#jyotish', '#kundli', '#planetaryhours', '#hora', '#astrologyindia', '#timing', '#panchang', '#dailyastrology'];
-  const tags = p.tags ?? ['vedic astrology', 'jyotish', 'planetary hours', 'hora', 'kundli', 'panchang', 'astrology timing', 'vedichour'];
-  const caption =
-    p.caption ??
-    `${c.hook}\n\n${spokenText(c).slice(0, 320)}\n\n${BRAND.taglineClose}\n\n${hashtags.join(' ')}`;
-  const description =
-    p.description ??
-    // Ad copy uses the plain-English differentiators — the engine names (Swiss Ephemeris,
-    // Lahiri) are blog/site language only. Owner ruling 2026-07-26.
-    `${c.hook}\n\n${spokenText(c)}\n\nVedicHour ${BRAND.adSafeDifferentiators[0]}, ${BRAND.adSafeDifferentiators[1]}, ${BRAND.adSafeDifferentiators[2]}.\n\n` +
-      `Start free: ${utm(BRAND.links.freeKundli, 'youtube', 'short', 'launch_video', c.slug)}\n` +
-      `Full report: ${utm(landing, 'youtube', 'short', 'launch_video', c.slug)}\n` +
-      `Use ${BRAND.promoPublic} for 30% off your first paid report.\n\n` +
-      `${BRAND.disclaimer}\n\n${tags.map((t) => `#${t.replace(/\s+/g, '')}`).join(' ')}`;
-
-  return {
-    slug: c.slug,
-    title: c.title,
-    product: c.product,
-    video: videoPath,
-    durationSec,
-    generationCostUsd: costUsd,
-    dryRun: dry,
-    youtubeTitle: p.youtubeTitle ?? `${c.hook} | VedicHour`,
-    description,
-    tags,
-    hashtags,
-    caption,
-    links: {
-      instagram: utm(landing, 'instagram', 'reel', 'launch_video', c.slug),
-      youtube: utm(landing, 'youtube', 'short', 'launch_video', c.slug),
-      tiktok: utm(landing, 'tiktok', 'video', 'launch_video', c.slug),
-      facebook: utm(landing, 'facebook', 'reel', 'launch_video', c.slug),
-    },
-    status: 'ready_to_post_manually',
-  };
-}
-
 function writePublishMd(dir: string, pack: ReturnType<typeof buildPublishPack>, est: ReturnType<typeof estimateReel>, verifyNote: string): void {
+  const doNotPost = pack.status !== 'ready_to_post_manually';
+  const banner = doNotPost
+    ? `\n> **DO NOT POST** — status \`${pack.status}\`. Play the mp4 with sound on before anything else. ${pack.dryRun ? 'This is a dry placeholder (navy cards, silent AAC), not a reel.' : 'Verification failed or the waveform is not audible.'}\n`
+    : pack.dryRun
+      ? '\n> **DRY RUN** — the picture is placeholder footage, not generated shots. Do not publish this file.\n'
+      : '';
   const md = `# PUBLISH — ${pack.title}
 
 **Manual publish sheet.** API posting is not wired yet (no OAuth approvals), so everything below
 is copy-paste ready. Video: \`${pack.video}\` · ${pack.durationSec.toFixed(1)}s · 1080x1920
-${pack.dryRun ? '\n> **DRY RUN** — the picture is placeholder footage, not generated shots. Do not publish this file.\n' : ''}
+${banner}
 ## YouTube Short
 
 **Title**
@@ -651,10 +605,8 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
 
     // ---- 6. verify --------------------------------------------------------------------
     const framesDir = resolve(outDir, 'frames');
-    const v = await verifyOutput(finalPath, totalSec, framesDir, 6);
-    const verifyNote = v.ok
-      ? `PASS — ${v.probe.width}x${v.probe.height}, ${v.probe.fps}fps, ${v.probe.durationSec.toFixed(2)}s, ${v.probe.codec}, audio present. ${v.frames.length} frames extracted to \`frames/\` for visual review.`
-      : `PROBLEMS: ${v.problems.join('; ')}`;
+    const v = await verifyOutput(finalPath, totalSec, framesDir, 6, { dry });
+    const verifyNote = verifyNoteFrom(v);
     console.log(`[render] verify: ${verifyNote}`);
     for (const f of v.frames) console.log(`[render]   frame: ${f}`);
     if (!v.ok) {
@@ -663,7 +615,7 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     }
 
     // ---- 7. publish pack --------------------------------------------------------------
-    const pack = buildPublishPack(creative, finalPath, v.probe.durationSec, Math.round(spentUsd * 10000) / 10000, dry);
+    const pack = buildPublishPack(creative, finalPath, v.probe.durationSec, Math.round(spentUsd * 10000) / 10000, { dry, verified: v.ok });
     writeFileSync(resolve(outDir, 'publish.json'), JSON.stringify({ ...pack, verification: { ok: v.ok, problems: v.problems, probe: v.probe, frames: v.frames }, shots: est.shots }, null, 2));
     writePublishMd(outDir, pack, est, verifyNote);
 
@@ -835,11 +787,11 @@ async function localizeReel(ctx: LocalizeCtx, langs: LangSpec[]): Promise<void> 
       });
 
       // 5. verify visually
-      const v = await verifyOutput(finalPath, ctx.totalSec, resolve(langDir, 'frames'), 4);
+      const v = await verifyOutput(finalPath, ctx.totalSec, resolve(langDir, 'frames'), 4, { dry: ctx.dry });
       console.log(`[localize]   verify ${l.label}: ${v.ok ? 'PASS' : 'PROBLEMS — ' + v.problems.join('; ')} (${v.probe.width}x${v.probe.height})`);
 
       // 6. per-language publish pack
-      const pack = buildPublishPack(ctx.creative, finalPath, v.probe.durationSec, langCost, false);
+      const pack = buildPublishPack(ctx.creative, finalPath, v.probe.durationSec, langCost, { dry: ctx.dry, verified: v.ok });
       pack.youtubeTitle = script.youtubeTitle;
       pack.description = `${script.description}\n\n${pack.description}`;
       if (script.hashtags.length) pack.hashtags = script.hashtags;
