@@ -64,7 +64,7 @@ function LoginInner() {
     if (qErr) {
       setError(humanizeAuthError(decodeURIComponent(qErr)));
     }
-  }, [searchParams]);
+  }, [searchParams, fromOnboard]);
 
   async function handleGoogleLogin() {
     setGoogleLoading(true);
