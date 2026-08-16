@@ -681,7 +681,22 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       await localizeReel({ runId, creative, prepared, outDir, totalSec, music, est, dry, endCard: card }, langs);
     }
 
-    if (!opts.keepIntermediates && v.ok) rmSync(work, { recursive: true, force: true });
+    // Cleanup on success keeps the PAID shots and deletes only the cheap derived files.
+    //
+    // The `*.raw.mp4` clips are the single most expensive thing this pipeline produces (~$3 a
+    // reel) and they are the ONLY way to re-cut a reel for $0 afterwards. Wiping `work/`
+    // wholesale turned a caption/pan fix into a full re-render — the exact waste CLAUDE.md §1
+    // exists to prevent. Everything else here (norm/stitched/endcard/vo/plates/concat lists) is
+    // regenerated for free from those raws, so it is the only thing worth reclaiming disk for.
+    // Product shots are re-captured every run regardless (see the `role === 'product'` branch
+    // above), so a kept product raw can never go stale into a later `--resume`.
+    if (!opts.keepIntermediates && v.ok) {
+      for (const entry of readdirSync(work)) {
+        if (entry.endsWith('.raw.mp4')) continue;
+        rmSync(resolve(work, entry), { recursive: true, force: true });
+      }
+      console.log('[render] cleanup: derived intermediates removed; the paid *.raw.mp4 shots stay in `work/` so this reel can be re-cut for $0 with --resume.');
+    }
 
     const secs = ((Date.now() - t0) / 1000).toFixed(1);
     console.log(`\n[render] ${v.ok ? 'OK' : 'DONE WITH PROBLEMS'} ${finalPath}`);

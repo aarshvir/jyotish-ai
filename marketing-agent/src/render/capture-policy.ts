@@ -53,6 +53,15 @@ export const DEFAULT_CAPTURE_TARGETS: CaptureTarget[] = [
     // wants the pan to land ON the slots. #main-content is the site-wide layout anchor and is
     // verified to exist on every live page, so it is a safe placeholder that never hangs.
     waitForSelector: '#main-content',
+    // Measured on the LIVE page at the capture viewport (360 CSS px, deviceScaleFactor 3) on
+    // 2026-08-16: the full-page shot is 1080x16950 and the 18 hour-slot cards occupy
+    // 2289..11979px. Without these the pan defaulted to the page bottom (15030px) and ran
+    // straight through the CTA block (13125px), the newsletter signup (13904px) and the footer —
+    // which is the owner-law violation in CLAUDE.md §1. Start on the first card's top edge, end
+    // on the 4–5 pm card's top edge so the closing frame holds 4–5 pm / 5–6 pm / 6–7 pm whole.
+    // Re-measure if /sample-report is restructured.
+    scrollPx: 2289,
+    panToPx: 7563,
     note: 'primary target — the full sample report with the 18 hour-slots',
   },
   {

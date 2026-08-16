@@ -3,7 +3,7 @@
   "slug": "same-tuesday-two-windows",
   "title": "Same Tuesday, two windows",
   "product": "forecast",
-  "status": "ready_to_render",
+  "status": "rendered",
   "rank": 0.97,
   "hook": "Same Tuesday. Two windows.",
   "cta": "Free Kundli — VedicHour.com. Your Life, Decoded Hour by Hour.",
@@ -29,7 +29,9 @@
         "url": "https://www.vedichour.com/sample-report",
         "libraryKey": "sample_report_page",
         "waitForSelector": "#main-content",
-        "scrollPx": 400
+        "_pan_comment": "MEASURED on the live page at the pipeline's own capture viewport (360 CSS px, deviceScaleFactor 3 -> 1080x16950 full-page shot) on 2026-08-16. The 18 hour-slot cards occupy 2289..11979px. The pan starts on the top edge of the first card (6-7 am, Strong 84) and ends on the top edge of the 4-5 pm card, so the last frame holds 4-5 pm / 5-6 pm (Strong 98) / 6-7 pm complete. Both terminal frames sit wholly inside the cards; the pan never reaches the CTA block (13125px), the newsletter signup (13904px) or the footer. Re-measure with tmp/measure-stw-cards.mjs if /sample-report is restructured.",
+        "scrollPx": 2289,
+        "panToPx": 7563
       }
     },
     {
@@ -42,8 +44,9 @@
       "id": "s5-close",
       "role": "presenter_close",
       "seconds": 6,
-      "prompt": "Same Indian man, same apartment and lighting, medium close-up, vertical 9:16, warm relaxed smile, speaking directly to camera",
+      "prompt": "Medium close-up of a warm, natural Indian man in his late twenties, short hair, light stubble, navy shirt, soft window light from camera left, calm modern apartment blurred behind him, shallow depth of field, warm relaxed smile, speaking directly to camera, vertical 9:16",
       "dialogue": "Free kundli VedicHour.com pe. Apna timing grid dekho."
     }
-  ]
+  ],
+  "rendered_at": "2026-08-16T18:04:08.119Z"
 }
