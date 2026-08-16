@@ -474,6 +474,13 @@ test('Semantic: identical commentaries trigger fallback warning', () => {
   assert(warnings.some((w) => w.includes('fallback')), 'should warn about fallback leakage');
 });
 
+test('Semantic: short nativity lagna_analysis triggers stub warning', () => {
+  const report = makeMinimalReport();
+  report.nativity.lagna_analysis = 'Too short.';
+  const warnings = validateReportSemantics(report);
+  assert(warnings.some((w) => w.includes('lagna_analysis')), 'should warn about short nativity stub');
+});
+
 // ── 10. Backward compatibility ───────────────────────────────────────────────
 
 test('Old report without guidance_v2 still passes validation', () => {

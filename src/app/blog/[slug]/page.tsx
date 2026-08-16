@@ -134,12 +134,13 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
         {post.faqs && post.faqs.length > 0 && <FaqSection faqs={post.faqs} heading="Frequently asked" />}
 
         <div className="mt-14 card border border-amber/30 rounded-card p-6 text-center">
-          <p className="font-display text-headline-sm text-star mb-3">Ready to decode your own chart?</p>
-          <div className="flex justify-center">
-            <Link href="/free-kundli" className="btn-primary">Get your free Kundli →</Link>
+          <p className="font-display text-headline-sm text-star mb-3">Ready to decode your own hours?</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href="/onboard?plan=7day" className="btn-primary">Unlock my hour-by-hour forecast →</Link>
+            <Link href="/free-kundli" className="btn-secondary">Or generate a free Kundli first</Link>
           </div>
           <p className="font-body text-body-sm text-dust mt-4">
-            Use code NEWUSER30 for <Link href="/pricing" className="text-amber underline">30% off</Link> <Link href="/pricing" className="text-amber underline">your first report</Link>.
+            Use code NEWUSER30 for <Link href="/pricing" className="text-amber underline">30% off</Link> your first paid report. 24-hour money-back.
           </p>
         </div>
 

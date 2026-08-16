@@ -7,31 +7,11 @@ import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { createClient } from '@/lib/supabase/client';
 import { track } from '@/components/analytics/PostHogProvider';
-
-// Draft of the birth details + chosen plan, stashed to sessionStorage before a Ziina
-// redirect so a cancelled/declined payment can restore the form instead of a blank slate.
-const DRAFT_KEY = 'vh_onboard_draft';
-interface OnboardDraft {
-  name: string;
-  birthDate: string;
-  birthTime: string;
-  birthCity: string;
-  reportType: ReportPlanId;
-  promoCode: string;
-}
-function readDraft(): OnboardDraft | null {
-  try {
-    const raw = typeof window !== 'undefined' ? sessionStorage.getItem(DRAFT_KEY) : null;
-    if (!raw) return null;
-    return JSON.parse(raw) as OnboardDraft;
-  } catch { return null; }
-}
-function writeDraft(d: OnboardDraft) {
-  try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch { /* private mode/quota */ }
-}
-function clearDraft() {
-  try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-}
+import {
+  readOnboardDraft as readDraft,
+  writeOnboardDraft as writeDraft,
+  clearOnboardDraft as clearDraft,
+} from '@/lib/onboard/draft';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -697,6 +677,8 @@ function OnboardPageInner() {
         birthDate: prev.birthDate || draft.birthDate || '',
         birthTime: prev.birthTime || draft.birthTime || '',
         birthCity: prev.birthCity || draft.birthCity || '',
+        birthLat: prev.birthLat ?? draft.birthLat ?? prev.birthLat,
+        birthLng: prev.birthLng ?? draft.birthLng ?? prev.birthLng,
         reportType: draft.reportType || prev.reportType,
       };
     });
@@ -784,6 +766,8 @@ function OnboardPageInner() {
           birthDate: prev.birthDate || draft.birthDate || '',
           birthTime: prev.birthTime || draft.birthTime || '',
           birthCity: prev.birthCity || draft.birthCity || '',
+          birthLat: prev.birthLat ?? draft.birthLat ?? prev.birthLat,
+          birthLng: prev.birthLng ?? draft.birthLng ?? prev.birthLng,
           reportType: draft.reportType || prev.reportType,
         }));
         if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);
@@ -1114,6 +1098,8 @@ function OnboardPageInner() {
           birthDate: form.birthDate,
           birthTime: form.birthTime,
           birthCity: form.birthCity,
+          birthLat: form.birthLat,
+          birthLng: form.birthLng,
           reportType: effectiveType,
           promoCode,
         });

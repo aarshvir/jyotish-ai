@@ -22,6 +22,7 @@ import { CorrelationsPanel } from '@/components/report/CorrelationsPanel';
 import { MobileSectionNav } from '@/components/report/MobileSectionNav';
 import { PersonalizedAnswer } from '@/components/report/PersonalizedAnswer';
 import { ExitIntentUpsell } from '@/components/report/ExitIntentUpsell';
+import { ProductCrossSell } from '@/components/report/ProductCrossSell';
 import { PreviewValueStrip } from '@/components/report/PreviewValueStrip';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { Glossary } from '@/components/report/Glossary';
@@ -1511,6 +1512,10 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           </div>
         )}
 
+        {!isPreviewPlan && (
+          <ProductCrossSell exclude="forecast" className="mb-6" />
+        )}
+
         <div id="report-content">
           {/* Last-chance offer when a free reader signals they're leaving (preview only). */}
           {isPreviewPlan && <ExitIntentUpsell unlockHref="/onboard?plan=7day&promo=NEWUSER30" />}
@@ -1835,6 +1840,8 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             </div>
           </div>
         )}
+
+        {isPreviewPlan && <ProductCrossSell exclude="forecast" className="mt-8" />}
       </div>
     </motion.div>
   );

@@ -19,6 +19,7 @@ import {
   type PlanetPositionsPayload,
 } from '@/lib/commentary/planetPositionsPrompt';
 import { buildSlotGuidance } from '@/lib/guidance/builder';
+import { sanitizeRahuKaalCommentary } from '@/lib/commentary/rahuKaalSanitize';
 import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
 const DEFAULT_BATCH_MODEL = 'claude-haiku-4-5-20251001';
@@ -36,14 +37,14 @@ interface SlotShape {
 
 function finalizeHourlyCommentary(raw: string | undefined, slot: SlotShape): string {
   const body = (raw ?? '').trim();
-  if (body.length >= 25) return body;
-  // Fallback: produce a minimal 3-paragraph stub when LLM returned nothing meaningful
+  const filled = body.length >= 25 ? body : fallbackHourlyBody(slot);
+  return sanitizeRahuKaalCommentary(filled, Boolean(slot?.is_rahu_kaal));
+}
+
+function fallbackHourlyBody(slot: SlotShape): string {
   const hora = String(slot?.dominant_hora ?? 'Sun');
   const chog = String(slot?.dominant_choghadiya ?? 'Shubh');
   const rkPrefix = slot?.is_rahu_kaal ? 'Rahu Kaal is active — ' : '';
-  // Plain-English fallback: NO Sanskrit functional-role jargon (yogakaraka/maraka/
-  // badhaka) and NO "H{n}" house notation — both are forbidden by this route's own
-  // LANGUAGE RULES and can otherwise surface untranslated in paid reports.
   return `${rkPrefix}The ${hora} planetary hour shapes the tone of this window for you. Lean into the kind of work it naturally supports.\n\nThis hour highlights a specific area of your life — check your strongest windows in the hourly table and put your important work there.\n\n${chog} window — ${slot?.is_rahu_kaal ? 'avoid starting anything new during this Rahu Kaal window; finish existing work only.' : 'match your activity to the quality of this window.'}`;
 }
 
@@ -211,7 +212,7 @@ PARAGRAPH 2 — WINDOW QUALITY (35-50 words): State the transit lagna sign and w
 
 PARAGRAPH 3 — TIMING VERDICT (20-30 words): Name the choghadiya in ALL CAPS. Give one sharp directive: what to do or absolutely avoid. For KAAL: open with ⚠⚠ and give a strong warning in plain English.
 
-Rahu Kaal slots: open Paragraph 1 with "RAHU KAAL —" and tell them in plain terms what to stop doing and why.
+Rahu Kaal slots (RK=true): HARD RULE — never recommend starting, signing, committing, launching, or initiating anything. Open Paragraph 1 with "RAHU KAAL —" and tell them to finish existing work, review, and wait. Forbidden in Rahu Kaal slots: start, launch, sign, commit, initiate, "begin new", "open new", negotiate (unless preceded by "do not" / "avoid").
 
 Return ONLY valid JSON. No markdown. No preamble.`;
 

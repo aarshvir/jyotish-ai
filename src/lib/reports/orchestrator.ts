@@ -1502,7 +1502,7 @@ export async function generateReportPipeline(
           });
 
           const nativityHasText =
-            (np?.lagna_analysis?.trim().length ?? 0) >= 80 &&
+            (np?.lagna_analysis?.trim().length ?? 0) >= 400 &&
             (np?.current_dasha_interpretation?.trim().length ?? 0) >= 80;
 
           // Node 22+ rejects `new Response('', { status: 204 })` (null-body status).
@@ -1544,6 +1544,33 @@ export async function generateReportPipeline(
             const natTextData = await natTextRes.json();
             if (natTextData.lagna_analysis) nativityData.lagna_analysis = natTextData.lagna_analysis;
             if (natTextData.dasha_interpretation) nativityData.current_dasha_interpretation = natTextData.dasha_interpretation;
+          }
+          // Paid reports: a short template stub (historically ~159 chars) used to pass
+          // the non-empty check and skip a retry. If the first pass is still thin, retry
+          // nativity-text once; if still thin, fail closed so Inngest retries the step.
+          const nativityTooShort = (nativityData.lagna_analysis?.trim().length ?? 0) < 400;
+          if (nativityTooShort && !allowPartialLlmFallbackForPlan(input) && !nativityHasText) {
+            const retryRes = await commentaryLimit(() =>
+              traceAgentRun('nativity-text-retry', 'llm', () =>
+                fetch(`${base}/api/commentary/nativity-text`, {
+                  method: 'POST',
+                  headers: h,
+                  body: natTextBody,
+                  signal: AbortSignal.any([AbortSignal.timeout(80_000), budgetSignal]),
+                }),
+              ),
+            );
+            assertNoPartialLlmForPaid(retryRes, 'nativity-text-retry', input);
+            if (retryRes.ok) {
+              const retryData = await retryRes.json();
+              if (retryData.lagna_analysis) nativityData.lagna_analysis = retryData.lagna_analysis;
+              if (retryData.dasha_interpretation) nativityData.current_dasha_interpretation = retryData.dasha_interpretation;
+            }
+            if ((nativityData.lagna_analysis?.trim().length ?? 0) < 400) {
+              throw new Error(
+                `nativity-text: lagna_analysis too short (${nativityData.lagna_analysis?.trim().length ?? 0} chars) after retry — refusing template stub on paid report.`,
+              );
+            }
           }
           // Always inject deterministic fallback if text is still empty after any LLM attempt
           {

@@ -16,6 +16,7 @@ const PROTECTED_PREFIXES = [
   '/api/user',
   '/onboard',
   '/report',
+  '/upsell',
 ];
 
 function isProtectedRoute(pathname: string): boolean {

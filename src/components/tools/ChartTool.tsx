@@ -6,6 +6,7 @@ import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDe
 import { isValidLat, isValidLng } from '@/lib/utils/coords';
 import { ShareResult } from '@/components/shared/ShareResult';
 import { TimingBridge } from '@/components/tools/TimingBridge';
+import { writeOnboardDraft } from '@/lib/onboard/draft';
 
 export type ToolView =
   | 'manglik'
@@ -121,6 +122,16 @@ export function ChartTool({
       const data = await r.json().catch(() => ({}));
       if (!r.ok) { setErr((data as { error?: string }).error ?? 'Could not calculate. Please try again.'); return; }
       setRes(data as ChartResult);
+      writeOnboardDraft({
+        name: d.name?.trim() || '',
+        birthDate: d.birth_date,
+        birthTime: d.birth_time || '12:00:00',
+        birthCity: d.birth_city,
+        birthLat: d.birth_lat,
+        birthLng: d.birth_lng,
+        reportType: '7day',
+        promoCode: '',
+      });
     } catch {
       setErr('Network error. Please try again.');
     } finally {
@@ -152,16 +163,28 @@ export function ChartTool({
             utmCampaign="calculator_share"
             className="mt-7"
           />
-          <Link
-            href={ctaHref}
-            className="inline-block mt-6 px-7 py-2.5 rounded-button border border-horizon text-dust hover:text-star hover:border-dust transition-colors duration-250"
-          >
-            {ctaLabel} →
-          </Link>
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href="/onboard?plan=7day"
+              data-track="calculator-unlock-hours"
+              className="btn-primary inline-block px-7 py-3"
+            >
+              Unlock my hour-by-hour forecast →
+            </Link>
+            <Link
+              href={ctaHref}
+              className="inline-block px-7 py-2.5 rounded-button border border-horizon text-dust hover:text-star hover:border-amber/40 transition-colors duration-250"
+            >
+              {ctaLabel} →
+            </Link>
+          </div>
+          <p className="mt-3 font-mono text-mono-sm text-dust">
+            Your birth details are saved on this device — no re-typing on the next step.
+          </p>
         </div>
       )}
 
-      {res && <TimingBridge anchorLabel={anchorLabelFor(view)} />}
+      {res && <TimingBridge anchorLabel={anchorLabelFor(view)} href="/onboard?plan=7day" />}
     </div>
   );
 }

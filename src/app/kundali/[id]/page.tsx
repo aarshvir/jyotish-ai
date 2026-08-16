@@ -26,8 +26,11 @@ export default async function KundaliResultPage({ params }: Props) {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-space text-star p-8 flex items-center justify-center">
-        <Link href="/login" className="btn-amber">Sign in to view your Kundali</Link>
+      <div className="min-h-screen bg-space text-star flex flex-col items-center justify-center p-8">
+        <p className="font-body text-dust mb-4">This Kundli reading is saved to your account.</p>
+        <Link href={`/login?next=${encodeURIComponent(`/kundali/${params.id}`)}`} className="btn-primary">
+          Sign in to view your Kundali
+        </Link>
       </div>
     );
   }

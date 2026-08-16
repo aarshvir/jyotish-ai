@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 import { ShareResult } from '@/components/shared/ShareResult';
+import { ProductCrossSell } from '@/components/report/ProductCrossSell';
 
 const NAKSHATRA_NATURES: Record<string, string> = {
   Ashwini: 'Dynamic & Healing', Bharani: 'Creative & Intense', Krittika: 'Sharp & Purifying',
@@ -128,6 +129,8 @@ export function SynastryResultDisplay({ score, breakdown, commentary, partnerA, 
           ))}
         </div>
       </div>
+
+      <ProductCrossSell exclude="synastry" className="mb-16" />
 
       <p className="text-mono-xs text-dust text-center">
         Ashtakoot Guna Milan computed with Parashari standards · {createdAt ? new Date(createdAt).toLocaleDateString() : 'Recent'}

@@ -940,7 +940,7 @@ function DashboardInner() {
               <div className="card p-10 text-center">
                 <div className="mb-4 text-4xl opacity-20">✦</div>
                 <p className="font-body text-body-lg text-dust mb-5">
-                  {reportFilter === 'all' ? 'Your cosmic timeline is empty.' : `No ${reportFilter} reports.`}
+                  {reportFilter === 'all' ? 'No reports yet — generate your first forecast.' : `No ${reportFilter} reports.`}
                 </p>
                 {reportFilter === 'all' && (
                   <Link href="/onboard" className="btn-primary px-8 py-3">Generate your first report →</Link>

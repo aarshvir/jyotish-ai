@@ -300,6 +300,11 @@ export function validateReportData(report: ReportData): string[] {
 export function validateReportSemantics(report: ReportData): string[] {
   const warnings: string[] = [];
 
+  const lagnaLen = report.nativity?.lagna_analysis?.trim().length ?? 0;
+  if (lagnaLen > 0 && lagnaLen < 400) {
+    warnings.push(`nativity.lagna_analysis is suspiciously short (${lagnaLen} chars) — likely a template stub`);
+  }
+
   if (!Array.isArray(report.days)) return warnings;
 
   for (const day of report.days) {
