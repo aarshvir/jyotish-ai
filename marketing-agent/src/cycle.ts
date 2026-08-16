@@ -1,17 +1,19 @@
 import { pathToFileURL } from 'node:url';
 import { runBlogLoop } from './loops/blog';
-import { runReelLoop } from './loops/video';
 import { runPublishPrep } from './loops/publish-prep';
 import { runSocialLoop } from './loops/social';
+import { runCreativeLoop } from './loops/creative';
+import { runSenseLoop } from './loops/sense';
 import { isKilled, killInfo } from './safety/killswitch';
 import { logRun } from './db/index';
 import { writeHeartbeat } from './scheduler/heartbeat';
 
 /**
- * The daily content cycle — one kill-aware pass over the organic loops.
- * This is what the Windows scheduler runs; it's the "hands-off engine" entrypoint.
- * Each loop is independently kill-aware and policy-gated; one failing loop never
- * stops the others (logged, then continue).
+ * The daily content cycle — drafts only. Nothing paid, nothing posted.
+ *
+ * Faceless edge-tts reels (`loop:reel`) are intentionally NOT in this cycle: they look cheap
+ * next to the presenter-led fal.ai pipeline, and the owner law is that a visible human opens
+ * every ad. Paid render happens only after `npm run approvals` → human OK → `npm run loop:render`.
  */
 export async function runCycle(): Promise<void> {
   if (isKilled()) {
@@ -20,14 +22,15 @@ export async function runCycle(): Promise<void> {
     return;
   }
   const t0 = Date.now();
-  console.log('[cycle] === VedicHour daily content cycle ===');
+  console.log('[cycle] === VedicHour daily content cycle (draft + audit, no spend, no post) ===');
   logRun({ loop: 'cycle', status: 'started' });
 
   const steps: [string, () => Promise<void>][] = [
-    ['blog', () => runBlogLoop({})],
-    ['reel', () => runReelLoop({})],
-    ['publish', () => runPublishPrep()],
-    ['social', () => runSocialLoop()],
+    ['sense', async () => { await runSenseLoop(); }],
+    ['creative', async () => { await runCreativeLoop({}); }],
+    ['blog', async () => { await runBlogLoop({}); }],
+    ['social', async () => { await runSocialLoop(); }],
+    ['publish-prep', async () => { await runPublishPrep(); }],
   ];
 
   for (const [name, fn] of steps) {
@@ -46,7 +49,7 @@ export async function runCycle(): Promise<void> {
   }
 
   const secs = ((Date.now() - t0) / 1000).toFixed(0);
-  console.log(`\n[cycle] done in ${secs}s. Run \`npm run report\` for the inventory.`);
+  console.log(`\n[cycle] done in ${secs}s. Review: npm run cockpit  |  approve: npm run approvals`);
   logRun({ loop: 'cycle', status: 'ok', detail: `completed in ${secs}s`, duration_ms: Date.now() - t0 });
   writeHeartbeat('cycle', `completed in ${secs}s`);
 }
