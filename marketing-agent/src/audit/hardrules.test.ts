@@ -64,8 +64,12 @@ test('verification silence problems are blockers not majors', () => {
 });
 
 test('resolvePlayableVideo ignores a Windows path that is not on this machine', () => {
+  // The fixture must be a path that can NEVER exist locally. It originally pointed at a real
+  // reel under output/reels/, which passed only until that reel was actually rendered — after
+  // which this test could never pass on the owner's own machine. A test that cannot pass is
+  // worse than no test: it trains everyone to ignore a red suite.
   const hit = resolvePlayableVideo('/tmp/does-not-exist-reel-dir', {
-    video: 'C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\final.mp4',
+    video: 'Q:\\not-a-real-drive\\vedichour\\reels\\some-other-machine\\final.mp4',
   });
   assert.equal(hit.path, null);
   assert.ok(hit.tried.some((p) => /final\.mp4$/.test(p)));
