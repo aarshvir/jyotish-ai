@@ -622,7 +622,7 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     // Owner law 2026-07-26 — see END_CARD in src/render/assemble.ts.
     const bodySec = cursor;
     const endCardPath = resolve(work, 'endcard.mp4');
-    const card = await renderEndCard(work, endCardPath);
+    const card = await renderEndCard(work, endCardPath, { dry });
     console.log(
       `[render] end card: ${card.seconds}s — vedichour.com + the "${'Try Vedic Hour dot com'}" sign-off at +${card.tagStartSec}s` +
         `${card.costUsd > 0 ? ` (tag synthesized once, $${card.costUsd.toFixed(5)}, cached for every future reel)` : ' (cached tag — $0)'}`,
