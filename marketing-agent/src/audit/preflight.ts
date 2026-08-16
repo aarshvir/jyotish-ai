@@ -389,7 +389,9 @@ export async function runPreflight(
   // -- 6. LESSONS (LAW §4) ------------------------------------------------------------------
   const lessons = await activeLessons();
   const allCopy = adCopyFields(creative);
-  const { blocked_reason: _blocked, status: _status, ...planForLessons } = creative ?? {};
+  const planForLessons = { ...(creative ?? {}) };
+  delete planForLessons.blocked_reason;
+  delete planForLessons.status;
   const planText = JSON.stringify(planForLessons);
   for (const l of lessons) {
     const m = lessonMatcher(l);
