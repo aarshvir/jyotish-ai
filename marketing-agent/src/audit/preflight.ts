@@ -117,6 +117,29 @@ function dedupeIssues(issues: PreflightIssue[]): PreflightIssue[] {
 }
 
 /**
+ * Visible copy a viewer can actually read in the product shot.
+ *
+ * Head/meta/JSON-LD, site chrome (`nav`/`footer`), and scripts are not on the report
+ * grid. Scanning them blocked every capture of vedichour.com because the global footer
+ * says "Vimshottari Dasha" and the default meta description names Swiss Ephemeris.
+ * Prefer `<main>` when present — that is the hour-slot canvas the ad is meant to show.
+ */
+export function visiblePageText(html: string): string {
+  const withoutChrome = html
+    .replace(/<head[\s\S]*?<\/head>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, ' ');
+  const main = withoutChrome.match(/<main\b[\s\S]*?<\/main>/i)?.[0] ?? withoutChrome;
+  return main
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Fetch a capture target and return its visible text.
  *
  * The owner's third defect — "Swiss Ephemeris" on screen — was never in the script: it was in
@@ -131,13 +154,7 @@ async function pageText(url: string): Promise<string | null> {
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
-    const html = await res.text();
-    return html
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&[a-z]+;/gi, ' ')
-      .replace(/\s+/g, ' ');
+    return visiblePageText(await res.text());
   } catch {
     return null;
   }
@@ -372,7 +389,8 @@ export async function runPreflight(
   // -- 6. LESSONS (LAW §4) ------------------------------------------------------------------
   const lessons = await activeLessons();
   const allCopy = adCopyFields(creative);
-  const planText = JSON.stringify(creative);
+  const { blocked_reason: _blocked, status: _status, ...planForLessons } = creative ?? {};
+  const planText = JSON.stringify(planForLessons);
   for (const l of lessons) {
     const m = lessonMatcher(l);
     if (!m) {

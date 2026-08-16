@@ -427,9 +427,13 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       console.error(`[render] PRE-FLIGHT FAILED (${preflightProblems.length}) — nothing generated, nothing charged:`);
       for (const p of preflightProblems) console.error(`[render]   ✗ ${p}`);
       logRun({ loop, status: 'skipped', detail: `pre-flight: ${preflightProblems[0].slice(0, 160)}` });
-      writeFileSync(picked.file, JSON.stringify({ ...picked.raw, status: 'blocked', blocked_reason: preflightProblems.join(' | ').slice(0, 900) }, null, 2));
-      enqueueApproval({ item: `Reel BLOCKED by pre-flight: ${creative.title} — ${preflightProblems[0]}`, lane: 'B', linter_verdict: 'block', linter_reason: 'pre-flight', channel: 'reel' });
       writeHeartbeat(loop, `pre-flight blocked: ${creative.slug}`);
+      // --estimate is a price printout. Do not mutate the creative to `blocked` or the
+      // blocked_reason string (which often quotes jargon) will fail the next lesson scan.
+      if (!opts.estimateOnly) {
+        writeFileSync(picked.file, JSON.stringify({ ...picked.raw, status: 'blocked', blocked_reason: preflightProblems.join(' | ').slice(0, 900) }, null, 2));
+        enqueueApproval({ item: `Reel BLOCKED by pre-flight: ${creative.title} — ${preflightProblems[0]}`, lane: 'B', linter_verdict: 'block', linter_reason: 'pre-flight', channel: 'reel' });
+      }
       return;
     }
     console.log('[render] pre-flight: PASS — capture targets, voice plan and jargon all clean ($0 spent so far)');
@@ -438,8 +442,10 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     if (verdict.verdict === 'block') {
       console.log(`[render] BLOCKED by policy linter — ${verdict.reason}. Not rendering, not spending.`);
       logRun({ loop, status: 'skipped', detail: `blocked: ${verdict.reason}` });
-      writeFileSync(picked.file, JSON.stringify({ ...picked.raw, status: 'blocked', blocked_reason: verdict.reason }, null, 2));
       writeHeartbeat(loop, `blocked: ${creative.slug}`);
+      if (!opts.estimateOnly) {
+        writeFileSync(picked.file, JSON.stringify({ ...picked.raw, status: 'blocked', blocked_reason: verdict.reason }, null, 2));
+      }
       return;
     }
     console.log(`[render] linter: ${verdict.verdict} — ${verdict.reason}`);
