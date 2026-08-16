@@ -1,0 +1,105 @@
+{
+  "slug": "2026-07-25-sign-abhi-ya-subah",
+  "title": "No cosmic green signal, bas timing awareness",
+  "product": "forecast",
+  "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-sign-abhi-ya-subah\\final.mp4",
+  "durationSec": 33,
+  "generationCostUsd": 3.156,
+  "dryRun": false,
+  "youtubeTitle": "No cosmic green signal, bas timing awareness",
+  "description": "Yeh star-sign mood forecast nahi, balki Swiss Ephemeris aur Lahiri ayanamsa se computed personal hora grid hai. NEWUSER30 se first paid report par 30% off explore karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=offer-letter-pen-hovering",
+  "tags": [
+    "vedic astrology",
+    "jyotish",
+    "planetary hours",
+    "hora",
+    "kundli",
+    "panchang",
+    "astrology timing",
+    "vedichour"
+  ],
+  "hashtags": [
+    "#vedichour",
+    "#jyotishindia",
+    "#skepticalbutcurious",
+    "#offerdecision",
+    "#horatiming",
+    "#swissephemeris",
+    "#lahiriayanamsa",
+    "#plainenglish",
+    "#worklifeindia",
+    "#careerreels",
+    "#desiprofessionals",
+    "#timingmatters"
+  ],
+  "caption": "No cosmic green signal Tonight feels heavier Morning reads clearer Pause, then decide",
+  "links": {
+    "instagram": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-25-sign-abhi-ya-subah",
+    "youtube": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=2026-07-25-sign-abhi-ya-subah",
+    "tiktok": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video&utm_content=2026-07-25-sign-abhi-ya-subah",
+    "facebook": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-25-sign-abhi-ya-subah"
+  },
+  "status": "ready_to_post_manually",
+  "verification": {
+    "ok": true,
+    "problems": [],
+    "probe": {
+      "width": 1080,
+      "height": 1920,
+      "durationSec": 33,
+      "fps": 30,
+      "hasAudio": true,
+      "codec": "h264"
+    },
+    "frames": [
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-sign-abhi-ya-subah\\frames\\frame1.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-sign-abhi-ya-subah\\frames\\frame2.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-sign-abhi-ya-subah\\frames\\frame3.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-sign-abhi-ya-subah\\frames\\frame4.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-sign-abhi-ya-subah\\frames\\frame5.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-sign-abhi-ya-subah\\frames\\frame6.jpg"
+    ]
+  },
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "provider": "veo31_fast",
+      "label": "Google Veo 3.1 Fast",
+      "requestedSec": 7,
+      "billedSec": 8,
+      "usd": 1.2,
+      "priceVerified": true
+    },
+    {
+      "id": "s2",
+      "role": "product",
+      "provider": "screencap",
+      "label": "Product screen capture",
+      "requestedSec": 8,
+      "billedSec": 8,
+      "usd": 0,
+      "priceVerified": true
+    },
+    {
+      "id": "s3",
+      "role": "broll_hero",
+      "provider": "kling30",
+      "label": "Kling 3.0 Standard",
+      "requestedSec": 9,
+      "billedSec": 9,
+      "usd": 0.756,
+      "priceVerified": true
+    },
+    {
+      "id": "s4",
+      "role": "presenter_close",
+      "provider": "veo31_fast",
+      "label": "Google Veo 3.1 Fast",
+      "requestedSec": 8,
+      "billedSec": 8,
+      "usd": 1.2,
+      "priceVerified": true
+    }
+  ]
+}

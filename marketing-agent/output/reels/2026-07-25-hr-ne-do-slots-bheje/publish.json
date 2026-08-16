@@ -1,0 +1,105 @@
+{
+  "slug": "2026-07-25-hr-ne-do-slots-bheje",
+  "title": "HR Ne 10 AM Aur 5 PM Diya: Ab Kya Dekhein?",
+  "product": "forecast",
+  "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje\\final.mp4",
+  "durationSec": 27,
+  "generationCostUsd": 1.404,
+  "dryRun": false,
+  "youtubeTitle": "HR Ne 10 AM Aur 5 PM Diya: Ab Kya Dekhein?",
+  "description": "Interview slot ke liye poore din ka 18-hora grid dekho aur har window ka plain-English context samjho. VedicHour ko yahan explore karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=interview-slot-morning-or-evening",
+  "tags": [
+    "vedic astrology",
+    "jyotish",
+    "planetary hours",
+    "hora",
+    "kundli",
+    "panchang",
+    "astrology timing",
+    "vedichour"
+  ],
+  "hashtags": [
+    "#hrmessage",
+    "#interviewslot",
+    "#jobinterviewindia",
+    "#jyotish",
+    "#vedicwisdom",
+    "#planetaryhours",
+    "#timingawareness",
+    "#hinglishcontent",
+    "#pune",
+    "#hyderabad",
+    "#bengaluru",
+    "#delhincr"
+  ],
+  "caption": "Reply bhejun? Interview task select karo Hora card kholo Plain-English timing context",
+  "links": {
+    "instagram": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-25-hr-ne-do-slots-bheje",
+    "youtube": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=2026-07-25-hr-ne-do-slots-bheje",
+    "tiktok": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video&utm_content=2026-07-25-hr-ne-do-slots-bheje",
+    "facebook": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-25-hr-ne-do-slots-bheje"
+  },
+  "status": "ready_to_post_manually",
+  "verification": {
+    "ok": true,
+    "problems": [],
+    "probe": {
+      "width": 1080,
+      "height": 1920,
+      "durationSec": 27,
+      "fps": 30,
+      "hasAudio": true,
+      "codec": "h264"
+    },
+    "frames": [
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje\\frames\\frame1.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje\\frames\\frame2.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje\\frames\\frame3.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje\\frames\\frame4.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje\\frames\\frame5.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje\\frames\\frame6.jpg"
+    ]
+  },
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "provider": "veo31_fast",
+      "label": "Google Veo 3.1 Fast",
+      "requestedSec": 5,
+      "billedSec": 6,
+      "usd": 0.9,
+      "priceVerified": true
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "provider": "kling30",
+      "label": "Kling 3.0 Standard",
+      "requestedSec": 6,
+      "billedSec": 6,
+      "usd": 0.504,
+      "priceVerified": true
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "provider": "screencap",
+      "label": "Product screen capture",
+      "requestedSec": 8,
+      "billedSec": 8,
+      "usd": 0,
+      "priceVerified": true
+    },
+    {
+      "id": "s4",
+      "role": "product",
+      "provider": "screencap",
+      "label": "Product screen capture",
+      "requestedSec": 7,
+      "billedSec": 7,
+      "usd": 0,
+      "priceVerified": true
+    }
+  ]
+}

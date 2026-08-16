@@ -19,7 +19,7 @@
       "id": "s2-hero",
       "role": "broll_hero",
       "seconds": 5,
-      "prompt": "Slow cinematic push-in on a quiet city morning from a high window, warm gold light on buildings, no text, no graphics, vertical 9:16"
+      "prompt": "Vertical portrait composition, camera held upright in 9:16. Slow cinematic push-in through a high apartment window at sunrise over an Indian city skyline — low-rise rooftops with water tanks, a few mid-rise towers, warm golden haze, birds. Tall vertical framing with sky filling the upper half and rooftops the lower half. No text, no graphics, no people."
     },
     {
       "id": "s3-product",
@@ -48,5 +48,5 @@
       "dialogue": "Free kundli VedicHour.com pe. Apna timing grid dekho."
     }
   ],
-  "rendered_at": "2026-08-16T18:04:08.119Z"
+  "rendered_at": "2026-08-16T18:15:01.589Z"
 }

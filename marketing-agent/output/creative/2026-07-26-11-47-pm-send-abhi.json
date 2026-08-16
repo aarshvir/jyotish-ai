@@ -1,0 +1,132 @@
+{
+  "slug": "2026-07-26-11-47-pm-send-abhi",
+  "title": "Raat 11:47 par resignation mail bhejun?",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.84,
+  "hook": "11:47 PM. Send abhi?",
+  "cta": "NEWUSER30 ke saath apna pehla paid report 30% off par dekho.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 7,
+      "prompt": "Young Indian woman in a soft grey sweater seated alone at a dining table late at night, hand resting beside an open laptop as she looks toward the camera, very slow camera push-in, single warm pendant light with deep shadows, vulnerable quiet mood; laptop screen is heavily out of focus, glowing softly, no legible characters",
+      "dialogue": "Raat ke 11:47. Draft khula hai."
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "seconds": 8,
+      "prompt": "A small analogue desk clock with its second hand moving beside a cooling cup of tea, slow macro camera arc, low warm late-night lighting, hushed contemplative mood",
+      "vo": "Send karna suddenly bahut loud lag raha hai. Main kal ka outcome nahi pooch raha; sirf aaj aur kal ki timing ka texture dekh raha hoon."
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 10,
+      "vo": "VedicHour all 18 horas ko mere birth chart ke against clearer ya heavier score karta hai, Swiss Ephemeris aur Lahiri ayanamsa se. Explanation plain English mein hai.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s4",
+      "role": "presenter_close",
+      "seconds": 8.5,
+      "prompt": "The same young Indian woman in the same soft grey sweater gently leaning back from the table and exhaling, slow camera pull-back, same warm late-night pendant lighting, relieved reflective mood; laptop screen is heavily out of focus, glowing softly, no legible characters",
+      "dialogue": "Pause lena bhi decision process ka hissa hai. Your Life, Decoded Hour by Hour."
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Raat 11:47 par resignation mail bhejun?",
+    "description": "VedicHour Swiss Ephemeris aur Lahiri ayanamsa ke saath all 18 horas ko plain English mein samjhata hai. NEWUSER30 ke saath timing grid dekhein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=resignation-mail-draft-ho-gayi",
+    "hashtags": [
+      "#latenightthoughts",
+      "#resignationdraft",
+      "#corporatelife",
+      "#jyotishindia",
+      "#vedicastrology",
+      "#horatiming",
+      "#rukkarsocho",
+      "#mindfulchoices",
+      "#workingwomenindia",
+      "#decisionmoment",
+      "#selfreflection",
+      "#timingawareness"
+    ],
+    "caption": "11:47 PM Outcome nahi poochna Timing ka texture dekho Clearer ya heavier Pause bhi process hai"
+  },
+  "batchId": "2026-07-26-ms15y9je",
+  "scores": {
+    "hookStrength": 85,
+    "specificity": 83,
+    "credibility": 84,
+    "brandSafety": 92,
+    "producibility": 73,
+    "total": 84,
+    "notes": "Analogue clock with moving second hand is a text-to-video reliability risk; swap for a simpler prop.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing awareness copy avoids certainty, luck, and specific outcome promises."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "resignation-mail-draft-ho-gayi",
+  "family": "decision_moment",
+  "angle": "Presenter has a resignation email fully drafted and open — finger hovering over Send, but the hora grid shows tonight and tomorrow morning look completely different",
+  "variantIndex": 4,
+  "hookText": "11:47 PM. Send abhi?",
+  "spokenScript": "Raat ke 11:47. Draft khula hai. Send karna suddenly bahut loud lag raha hai. Main kal ka outcome nahi pooch raha; sirf aaj aur kal ki timing ka texture dekh raha hoon. VedicHour all 18 horas ko mere birth chart ke against clearer ya heavier score karta hai, Swiss Ephemeris aur Lahiri ayanamsa se. Explanation plain English mein hai. Pause lena bhi decision process ka hissa hai. Your Life, Decoded Hour by Hour.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 7,
+      "visualPrompt": "Young Indian woman in a soft grey sweater seated alone at a dining table late at night, hand resting beside an open laptop as she looks toward the camera, very slow camera push-in, single warm pendant light with deep shadows, vulnerable quiet mood; laptop screen is heavily out of focus, glowing softly, no legible characters"
+    },
+    {
+      "kind": "broll",
+      "seconds": 8,
+      "visualPrompt": "A small analogue desk clock with its second hand moving beside a cooling cup of tea, slow macro camera arc, low warm late-night lighting, hushed contemplative mood"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 10,
+      "visualPrompt": "one hora card tapped open, showing its plain-English line about what that window suits"
+    },
+    {
+      "kind": "presenter",
+      "seconds": 8.5,
+      "visualPrompt": "The same young Indian woman in the same soft grey sweater gently leaning back from the table and exhaling, slow camera pull-back, same warm late-night pendant lighting, relieved reflective mood; laptop screen is heavily out of focus, glowing softly, no legible characters"
+    }
+  ],
+  "onScreenCaptions": [
+    "11:47 PM",
+    "Outcome nahi poochna",
+    "Timing ka texture dekho",
+    "Clearer ya heavier",
+    "Pause bhi process hai"
+  ],
+  "hashtags": [
+    "#latenightthoughts",
+    "#resignationdraft",
+    "#corporatelife",
+    "#jyotishindia",
+    "#vedicastrology",
+    "#horatiming",
+    "#rukkarsocho",
+    "#mindfulchoices",
+    "#workingwomenindia",
+    "#decisionmoment",
+    "#selfreflection",
+    "#timingawareness"
+  ],
+  "youtubeTitle": "Raat 11:47 par resignation mail bhejun?",
+  "youtubeDescription": "VedicHour Swiss Ephemeris aur Lahiri ayanamsa ke saath all 18 horas ko plain English mein samjhata hai. NEWUSER30 ke saath timing grid dekhein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=resignation-mail-draft-ho-gayi",
+  "language": "hinglish"
+}

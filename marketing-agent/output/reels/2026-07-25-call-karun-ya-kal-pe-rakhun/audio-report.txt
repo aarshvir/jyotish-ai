@@ -1,0 +1,27 @@
+=== AUDIO REPORT — 2026-07-25-call-karun-ya-kal-pe-rakhun/final.mp4 ===
+
+--- mux duration vs expected ---
+container duration: 29.000s
+expected: s1 presenter 7s bills/renders 8s (Veo tier) + s2 6s + s3 7s + s4 8s = 29s. MATCH.
+
+--- loudnorm (measured on file) ---
+Input Integrated:    -20.0 LUFS   (QUIET: ~6 LU under the -14 social norm; platforms will boost, but flagged)
+Input True Peak:      -3.8 dBTP   (no clipping risk; unused headroom)
+Input LRA:             6.4 LU
+Input Threshold:     -31.0 LUFS
+
+--- astats key lines ---
+Peak level dB: -3.84 | RMS level dB: -24.11 | RMS peak dB: -13.03 | Flat factor: 0.0 | Peak count: 2
+verdict: zero clipping, zero flat runs.
+
+--- dead-air: silencedetect n=-35dB d=0.7 ---
+1) 0.00-1.42s  (1.42s)  silent cold open before hook line
+2) 4.73-6.65s  (1.92s)  \
+3) 6.81-8.28s  (1.48s)  / back-to-back: only a 0.15s sound blip between them -> ~3.5s NEAR-SILENT stretch
+                          spanning the s1->s2 cut. Worst pacing hole; no music bed to cover it.
+4) 12.76-14.28s (1.52s)  s2->s3 transition
+5) 19.31-21.28s (1.96s)  mid s3->s4
+
+--- hard audio cut in last 1.5s? ---
+last 1.5s RMS -25.0 dB; last 0.4s peak -15.6 dB, RMS -39.8 dB -> speech ends ~28.3s and decays.
+VERDICT: NO hard tail cut.

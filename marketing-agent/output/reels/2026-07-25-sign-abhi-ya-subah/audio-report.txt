@@ -1,0 +1,26 @@
+=== AUDIO REPORT — 2026-07-25-sign-abhi-ya-subah/final.mp4 ===
+
+--- mux duration vs expected ---
+container duration: 33.000s
+expected: shots 7+8+9+8=32s requested; s1 presenter 7s bills/renders as 8s (Veo tier) -> 33s planned. MATCH.
+
+--- loudnorm (measured on file = Input lines) ---
+Input Integrated:    -16.3 LUFS   (social target ~-14; slightly quiet, acceptable)
+Input True Peak:      +0.1 dBTP   (marginal intersample over; astats abs-peak count 1 of 1.58M samples)
+Input LRA:            10.8 LU
+Input Threshold:     -27.1 LUFS
+
+--- astats key lines (whole file) ---
+Peak level dB: 0.06 | RMS level dB: -20.84 | RMS peak dB: -8.43 | Flat factor: 0.0 | Peak count: 2 | Noise floor: -inf
+verdict: no audible clipping expected (peak count 2 samples), no flat/clipped runs.
+
+--- dead-air: silencedetect n=-35dB d=0.7 ---
+1) 1.70-2.53s   (0.83s)  gap after hook line
+2) 6.11-7.60s   (1.50s)  s1->s2 transition
+3) 13.67-16.28s (2.61s)  mid s2 product screencap — LONGEST GAP, no music bed to cover it
+4) 23.57-25.03s (1.46s)  s3->s4 transition
+note: media/ has no music bed, so these gaps are fully silent — flagged in defects.md.
+
+--- hard audio cut in last 1.5s? ---
+last 1.5s RMS -16.7 dB (final CTA word lands ~32.3s); last 0.4s: peak -34.7 dB, RMS -53.4 dB -> natural decay.
+VERDICT: NO hard tail cut.

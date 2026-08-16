@@ -1,0 +1,47 @@
+{
+  "batchId": "2026-07-26-ms15y9je",
+  "date": "2026-07-26",
+  "winners": [
+    {
+      "rank": 1,
+      "hookText": "11:47 PM. Send abhi?",
+      "total": 84,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-26-11-47-pm-send-abhi.json"
+    },
+    {
+      "rank": 2,
+      "hookText": "Teen baar draft padh chuka hoon.",
+      "total": 84,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-26-teen-baar-draft-padh-chuka-hoon.json"
+    },
+    {
+      "rank": 3,
+      "hookText": "Resignation mail: aaj bhejun ya kal?",
+      "total": 80,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-26-resignation-mail-aaj-bhejun-ya-kal.json"
+    }
+  ],
+  "rejected": [
+    {
+      "ideaId": "resignation-mail-draft-ho-gayi",
+      "variantIndex": 2,
+      "hookText": "Send karun, ya subah tak rukoon?",
+      "reason": "hostile reviewer rejected: Hook buries the resignation frame; coin-place gesture is too choreographically precise for text-to-video."
+    },
+    {
+      "ideaId": "resignation-mail-draft-ho-gayi",
+      "variantIndex": 3,
+      "hookText": "Mail ready. Timing ready hai?",
+      "reason": "hostile reviewer rejected: 'Astrology nahi' opener risks alienating the Jyotish-aware audience this product depends on."
+    },
+    {
+      "ideaId": "resignation-mail-draft-ho-gayi",
+      "variantIndex": 6,
+      "hookText": "Kal subah ka grid alag kyun?",
+      "reason": "hostile reviewer rejected: 'Kal subah ka grid' presupposes product knowledge; cold-scroll audience exits before the concept lands."
+    }
+  ]
+}

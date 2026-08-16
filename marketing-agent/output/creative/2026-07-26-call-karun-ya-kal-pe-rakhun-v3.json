@@ -1,0 +1,105 @@
+{
+  "slug": "2026-07-26-call-karun-ya-kal-pe-rakhun-v3",
+  "title": "Call karun ya kal pe rakhun? Apna din dekho",
+  "product": "forecast",
+  "status": "rendered",
+  "rank": 0.75,
+  "hook": "Call karun... ya kal pe rakhun?",
+  "cta": "vedichour.com - free chart. Your Life, Decoded Hour by Hour.",
+  "voice": "veo_native",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 6,
+      "voice": "veo_native",
+      "prompt": "Medium close-up of a young Indian man in his late twenties, plain navy kurta, short neat hair, sitting by a window at golden hour, holding a phone he is not tapping, warm apartment behind him, soft side light, static vertical 9:16 framing, speaking to camera",
+      "dialogue": "Call karun... ya kal pe rakhun? Do din se yehi sawaal hai."
+    },
+    {
+      "id": "s2",
+      "role": "presenter",
+      "seconds": 8,
+      "voice": "veo_native",
+      "prompt": "Medium close-up of a young Indian man in his late twenties, plain navy kurta, short neat hair, sitting by a window at golden hour, glancing down at the phone in his hand, warm apartment behind him, soft side light, static vertical 9:16 framing, speaking to camera",
+      "dialogue": "Har ghante ka score, aur ek line - kis kaam ke liye theek hai. Asli astronomical data se."
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 8,
+      "capture": {
+        "url": "https://www.vedichour.com/sample-report",
+        "libraryKey": "sample_report_page",
+        "waitForSelector": "#main-content",
+        "scrollPx": 8000,
+        "panToPx": 8566
+      }
+    },
+    {
+      "id": "s4",
+      "role": "presenter_close",
+      "seconds": 4,
+      "voice": "veo_native",
+      "prompt": "Medium close-up of a young Indian man in his late twenties, plain navy kurta, short neat hair, sitting by a window at golden hour, shoulders relaxed and a small settled smile, warm apartment behind him, soft side light, static vertical 9:16 framing, speaking to camera",
+      "dialogue": "Call se pehle apna din dekho - free hai."
+    }
+  ],
+  "voicePlan": {
+    "adVoice": "veo_native",
+    "nativeShots": [
+      "s1",
+      "s2",
+      "s4"
+    ],
+    "narratedShots": [],
+    "maxNarrationWords": 0
+  },
+  "publish": {
+    "youtubeTitle": "Call karun... ya kal pe rakhun?",
+    "description": "Woh call jo aap do din se taal rahe ho. VedicHour aapke din ke saare 18 ghanton ko aapki apni birth chart ke against score karta hai, aur har ghante ke saath ek plain line deta hai - ki woh window kis kaam ke liye theek hai. Kuch windows clearer hote hain, kuch heavier. Sab kuch asli astronomical data se nikalta hai, andaaze se nahi, aur plain English mein likha jata hai.\n\nApna free chart banao: https://www.vedichour.com/free-kundli?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=call-karun-v3\nSample din poora dekho: https://www.vedichour.com/sample-report\n\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.\n\nYour Life, Decoded Hour by Hour.",
+    "tags": [
+      "vedic astrology",
+      "jyotish",
+      "planetary hours",
+      "hora",
+      "kundli",
+      "timing",
+      "hinglish",
+      "vedichour"
+    ],
+    "hashtags": [
+      "#sorrybolna",
+      "#aajyakal",
+      "#jyotish",
+      "#vedicjyotish",
+      "#horatiming",
+      "#birthchart",
+      "#mindfuldecisions",
+      "#selfreflection",
+      "#hindireels",
+      "#urbanindia",
+      "#vedichour"
+    ],
+    "caption": "Call karun... ya kal pe rakhun?\n\nDin ke 18 ghante, har ek ka score, aur ek line - kis kaam ke liye theek hai. Kuch windows clearer, kuch heavier.\n\nFree chart: vedichour.com\n\nYour Life, Decoded Hour by Hour."
+  },
+  "ideaId": "sorry-call-aaj-ya-kal",
+  "family": "decision_moment",
+  "angle": "The apology call he keeps not making - today or tomorrow - answered by looking at how the day's own hours are scored for a hard conversation.",
+  "hookText": "Call karun... ya kal pe rakhun?",
+  "spokenScript": "Call karun... ya kal pe rakhun? Do din se yehi sawaal hai. Har ghante ka score, aur ek line - kis kaam ke liye theek hai. Asli astronomical data se. Call se pehle apna din dekho - free hai.",
+  "onScreenCaptions": [
+    "Do din se yehi sawaal",
+    "Har ghante ka score",
+    "Ek line - kis kaam ke liye",
+    "Call se pehle apna din dekho"
+  ],
+  "language": "hinglish",
+  "v3Of": "2026-07-25-call-karun-ya-kal-pe-rakhun-v2",
+  "v3Notes": "Owner kept the HOOK and the apology-call premise; everything else rebuilt under current law. (1) The v2 engine-name line is gone - the same idea now reads 'Asli astronomical data se' in the presenter's own words. (2) Presenter-first: every word is Veo native on-camera dialogue; there is no narrator track at all, so no second voice can appear. (3) Product shot scrolls https://www.vedichour.com/sample-report (18 scored hour-windows, one plain line each), panning 8000->8566px so the 5-6 pm 'the hard conversation, the ask - do it here' window and the 7-8 pm heavier window are both readable; the pan deliberately excludes the 9-10 am card, whose page copy uses off-brand best/worst wording. Never pricing, never checkout, and no free-kundli scroll (that page is a form, not the report).",
+  "linter": {
+    "verdict": "pass",
+    "reason": "Timing awareness with clearer/heavier framing, user decides, no promised outcome."
+  },
+  "rendered_at": "2026-07-26T14:42:51.088Z"
+}

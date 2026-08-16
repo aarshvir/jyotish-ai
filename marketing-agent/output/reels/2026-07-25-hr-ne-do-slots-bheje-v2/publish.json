@@ -1,0 +1,99 @@
+{
+  "slug": "2026-07-25-hr-ne-do-slots-bheje-v2",
+  "title": "HR Ne 10 AM Aur 5 PM Diya: Ab Kya Dekhein?",
+  "product": "forecast",
+  "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje-v2\\final.mp4",
+  "durationSec": 33.4,
+  "generationCostUsd": 0,
+  "dryRun": false,
+  "youtubeTitle": "HR Ne 10 AM Aur 5 PM Diya: Ab Kya Dekhein?",
+  "description": "Interview slot ke liye poore din ka 18-hora grid dekho aur har window ka plain-English context samjho. VedicHour ko yahan explore karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=interview-slot-morning-or-evening",
+  "tags": [
+    "vedic astrology",
+    "jyotish",
+    "planetary hours",
+    "hora",
+    "kundli",
+    "panchang",
+    "astrology timing",
+    "vedichour"
+  ],
+  "hashtags": [
+    "#hrmessage",
+    "#interviewslot",
+    "#jobinterviewindia",
+    "#jyotish",
+    "#vedicwisdom",
+    "#planetaryhours",
+    "#timingawareness",
+    "#hinglishcontent",
+    "#pune",
+    "#hyderabad",
+    "#bengaluru",
+    "#delhincr"
+  ],
+  "caption": "Reply bhejun? Interview task select karo Hora card kholo Plain-English timing context",
+  "links": {
+    "instagram": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-25-hr-ne-do-slots-bheje",
+    "youtube": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=2026-07-25-hr-ne-do-slots-bheje",
+    "tiktok": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video&utm_content=2026-07-25-hr-ne-do-slots-bheje",
+    "facebook": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-25-hr-ne-do-slots-bheje"
+  },
+  "status": "ready_to_post_manually",
+  "verification": {
+    "ok": true,
+    "problems": [],
+    "probe": {
+      "width": 1080,
+      "height": 1920,
+      "durationSec": 33.4,
+      "fps": 30,
+      "hasAudio": true,
+      "codec": "h264"
+    },
+    "frames": [
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje-v2\\frames\\frame1.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje-v2\\frames\\frame2.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje-v2\\frames\\frame3.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje-v2\\frames\\frame4.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje-v2\\frames\\frame5.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-hr-ne-do-slots-bheje-v2\\frames\\frame6.jpg"
+    ]
+  },
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "label": "Recovered Veo 3.1 Fast raw (paid in v1)",
+      "billedSec": 6,
+      "usd": 0
+    },
+    {
+      "id": "s2",
+      "role": "product",
+      "label": "Product screen capture (homepage hero)",
+      "billedSec": 3.3,
+      "usd": 0
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "label": "Product screen capture (report excerpts)",
+      "billedSec": 15.2,
+      "usd": 0
+    },
+    {
+      "id": "s4",
+      "role": "product",
+      "label": "Product screen capture (free-kundli hero)",
+      "billedSec": 8.9,
+      "usd": 0
+    }
+  ],
+  "v2Notes": {
+    "rebuiltAtZeroCost": true,
+    "kept": "s1 recovered Veo 3.1 Fast presenter raw (already paid in v1: $0.90)",
+    "replaced": "s2 Kling gibberish-keyboard close-up -> free homepage-hero screencap",
+    "retimed": "s3 15.2s (was 8s vs 14.9s VO), s4 8.9s, ends on a HELD clean free-kundli hero (banner/Feedback pill stripped, pan completes 3s early, CTA on opaque band)"
+  }
+}

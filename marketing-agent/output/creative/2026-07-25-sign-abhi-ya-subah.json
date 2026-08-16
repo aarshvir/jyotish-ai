@@ -1,0 +1,132 @@
+{
+  "slug": "2026-07-25-sign-abhi-ya-subah",
+  "title": "No cosmic green signal, bas timing awareness",
+  "product": "forecast",
+  "status": "rendered",
+  "rank": 0.78,
+  "hook": "Sign abhi, ya subah?",
+  "cta": "Explore karo; NEWUSER30 first paid report par.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 7,
+      "prompt": "Sceptical young Indian professional holds an offer letter and pauses with a pen near the signature line, subtle handheld camera move, crisp apartment lighting at night, candid questioning mood, no legible text",
+      "dialogue": "Kal deadline hai, aur honestly, main kisi cosmic green signal ka wait nahi kar raha."
+    },
+    {
+      "id": "s2",
+      "role": "product",
+      "seconds": 8,
+      "vo": "Main bas dekh raha hoon ki mere chart ke liye tonight heavier hai, aur early morning clearer.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s3",
+      "role": "broll_hero",
+      "seconds": 9,
+      "prompt": "Brass astronomical instrument rotates slowly on a dark wooden table, macro camera orbit, controlled amber side lighting, precise modern mood",
+      "vo": "VedicHour Swiss Ephemeris aur Lahiri ayanamsa se 18 horas score karta hai, phir plain English context deta hai."
+    },
+    {
+      "id": "s4",
+      "role": "presenter_close",
+      "seconds": 8,
+      "prompt": "Young Indian professional lowers the pen and looks directly into camera with a small knowing nod, locked medium close-up, balanced soft lighting, calmly sceptical mood, no legible text",
+      "dialogue": "Contract samajhna meri responsibility; timing grid pause ko structure karta hai. Your Life, Decoded Hour by Hour."
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "No cosmic green signal, bas timing awareness",
+    "description": "Yeh star-sign mood forecast nahi, balki Swiss Ephemeris aur Lahiri ayanamsa se computed personal hora grid hai. NEWUSER30 se first paid report par 30% off explore karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=offer-letter-pen-hovering",
+    "hashtags": [
+      "#vedichour",
+      "#jyotishindia",
+      "#skepticalbutcurious",
+      "#offerdecision",
+      "#horatiming",
+      "#swissephemeris",
+      "#lahiriayanamsa",
+      "#plainenglish",
+      "#worklifeindia",
+      "#careerreels",
+      "#desiprofessionals",
+      "#timingmatters"
+    ],
+    "caption": "No cosmic green signal Tonight feels heavier Morning reads clearer Pause, then decide"
+  },
+  "batchId": "2026-07-25-ms0xt778",
+  "scores": {
+    "hookStrength": 74,
+    "specificity": 78,
+    "credibility": 80,
+    "brandSafety": 88,
+    "producibility": 76,
+    "total": 78,
+    "notes": "9-second brass-instrument b-roll is theatrical filler that displaces a second product screen.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing awareness; avoids certainty and leaves contract judgment to the reader."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "offer-letter-pen-hovering",
+  "family": "decision_moment",
+  "angle": "Presenter holds a printed offer letter with a pen hovering over the signature line — deadline is tomorrow, and the hora grid shows tonight runs heavier than early morning",
+  "variantIndex": 2,
+  "hookText": "Sign abhi, ya subah?",
+  "spokenScript": "Kal deadline hai, aur honestly, main kisi cosmic green signal ka wait nahi kar raha. Main bas dekh raha hoon ki mere chart ke liye tonight heavier hai, aur early morning clearer. VedicHour Swiss Ephemeris aur Lahiri ayanamsa se 18 horas score karta hai, phir plain English context deta hai. Contract samajhna meri responsibility; timing grid pause ko structure karta hai. Your Life, Decoded Hour by Hour.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 7,
+      "visualPrompt": "Sceptical young Indian professional holds an offer letter and pauses with a pen near the signature line, subtle handheld camera move, crisp apartment lighting at night, candid questioning mood, no legible text"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 8,
+      "visualPrompt": "two windows side by side on the same day — one clearer, one heavier — for the same task"
+    },
+    {
+      "kind": "broll",
+      "seconds": 9,
+      "visualPrompt": "Brass astronomical instrument rotates slowly on a dark wooden table, macro camera orbit, controlled amber side lighting, precise modern mood"
+    },
+    {
+      "kind": "presenter",
+      "seconds": 8,
+      "visualPrompt": "Young Indian professional lowers the pen and looks directly into camera with a small knowing nod, locked medium close-up, balanced soft lighting, calmly sceptical mood, no legible text"
+    }
+  ],
+  "onScreenCaptions": [
+    "No cosmic green signal",
+    "Tonight feels heavier",
+    "Morning reads clearer",
+    "Pause, then decide"
+  ],
+  "hashtags": [
+    "#vedichour",
+    "#jyotishindia",
+    "#skepticalbutcurious",
+    "#offerdecision",
+    "#horatiming",
+    "#swissephemeris",
+    "#lahiriayanamsa",
+    "#plainenglish",
+    "#worklifeindia",
+    "#careerreels",
+    "#desiprofessionals",
+    "#timingmatters"
+  ],
+  "youtubeTitle": "No cosmic green signal, bas timing awareness",
+  "youtubeDescription": "Yeh star-sign mood forecast nahi, balki Swiss Ephemeris aur Lahiri ayanamsa se computed personal hora grid hai. NEWUSER30 se first paid report par 30% off explore karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=offer-letter-pen-hovering",
+  "language": "hinglish",
+  "rendered_at": "2026-07-25T23:15:28.384Z"
+}

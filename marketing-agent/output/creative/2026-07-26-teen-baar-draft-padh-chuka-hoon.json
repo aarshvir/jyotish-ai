@@ -1,0 +1,132 @@
+{
+  "slug": "2026-07-26-teen-baar-draft-padh-chuka-hoon",
+  "title": "Draft teen baar padha, Send kab karun?",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.84,
+  "hook": "Teen baar draft padh chuka hoon.",
+  "cta": "NEWUSER30 lagao aur pehla paid report 30% off par explore karo.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 5,
+      "prompt": "Young Indian man in a rust-coloured T-shirt seated at a home-office desk, raising one eyebrow at his open laptop before looking into the camera, quick gentle camera push-in, bright overcast afternoon lighting, lightly exasperated playful mood; laptop screen is heavily out of focus, glowing softly, no legible characters",
+      "dialogue": "Send button ne aaj full personality test le liya."
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "seconds": 7,
+      "prompt": "The same person as the presenter shot: young Indian man, same rust-coloured T-shirt, same afternoon time of day, slowly lowering the laptop lid and rubbing his forehead once, smooth side camera slide, soft natural lighting, relatable indecisive mood; laptop screen is heavily out of focus, glowing softly, no legible characters",
+      "vo": "Teen baar draft padha, do baar laptop band kiya, phir maine timing compare ki."
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 12,
+      "vo": "VedicHour ek din ke all 18 horas ko meri birth chart ke against score karta hai, is task ke liye clearer aur heavier windows dikhata hai. Plain English, no certainty theatre.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s4",
+      "role": "presenter_close",
+      "seconds": 7.5,
+      "prompt": "The same young Indian man in the same rust-coloured T-shirt sitting back with relaxed shoulders and gesturing toward himself, steady medium camera framing, same soft afternoon lighting, warm grounded mood",
+      "dialogue": "Aaj ya kal, choice meri rahegi. Your Life, Decoded Hour by Hour."
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Draft teen baar padha, Send kab karun?",
+    "description": "All 18 horas ka grid ek hi task ke liye clearer aur heavier windows compare karne mein madad karta hai. NEWUSER30 ke saath pehla paid report dekhein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=resignation-mail-draft-ho-gayi",
+    "hashtags": [
+      "#officehumourindia",
+      "#resignationletter",
+      "#corporateindia",
+      "#jyotish",
+      "#vedictiming",
+      "#faislakab",
+      "#careerreflection",
+      "#workplaceindia",
+      "#hinglishcontent",
+      "#mindfultiming",
+      "#planetaryhours",
+      "#urbanprofessionals"
+    ],
+    "caption": "Draft padha Laptop band kiya Phir timing compare ki Clearer vs heavier Choice meri"
+  },
+  "batchId": "2026-07-26-ms15y9je",
+  "scores": {
+    "hookStrength": 81,
+    "specificity": 87,
+    "credibility": 85,
+    "brandSafety": 89,
+    "producibility": 78,
+    "total": 84,
+    "notes": "'Gesturing toward himself' in the final shot is directionally vague for a render model; needs tighter action.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing awareness, clearer/heavier framing, user choice, and no promised outcome."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "resignation-mail-draft-ho-gayi",
+  "family": "decision_moment",
+  "angle": "Presenter has a resignation email fully drafted and open — finger hovering over Send, but the hora grid shows tonight and tomorrow morning look completely different",
+  "variantIndex": 5,
+  "hookText": "Teen baar draft padh chuka hoon.",
+  "spokenScript": "Send button ne aaj full personality test le liya. Teen baar draft padha, do baar laptop band kiya, phir maine timing compare ki. VedicHour ek din ke all 18 horas ko meri birth chart ke against score karta hai, is task ke liye clearer aur heavier windows dikhata hai. Plain English, no certainty theatre. Aaj ya kal, choice meri rahegi. Your Life, Decoded Hour by Hour.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 5,
+      "visualPrompt": "Young Indian man in a rust-coloured T-shirt seated at a home-office desk, raising one eyebrow at his open laptop before looking into the camera, quick gentle camera push-in, bright overcast afternoon lighting, lightly exasperated playful mood; laptop screen is heavily out of focus, glowing softly, no legible characters"
+    },
+    {
+      "kind": "broll",
+      "seconds": 7,
+      "visualPrompt": "The same person as the presenter shot: young Indian man, same rust-coloured T-shirt, same afternoon time of day, slowly lowering the laptop lid and rubbing his forehead once, smooth side camera slide, soft natural lighting, relatable indecisive mood; laptop screen is heavily out of focus, glowing softly, no legible characters"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 12,
+      "visualPrompt": "two windows side by side on the same day — one clearer, one heavier — for the same task"
+    },
+    {
+      "kind": "presenter",
+      "seconds": 7.5,
+      "visualPrompt": "The same young Indian man in the same rust-coloured T-shirt sitting back with relaxed shoulders and gesturing toward himself, steady medium camera framing, same soft afternoon lighting, warm grounded mood"
+    }
+  ],
+  "onScreenCaptions": [
+    "Draft padha",
+    "Laptop band kiya",
+    "Phir timing compare ki",
+    "Clearer vs heavier",
+    "Choice meri"
+  ],
+  "hashtags": [
+    "#officehumourindia",
+    "#resignationletter",
+    "#corporateindia",
+    "#jyotish",
+    "#vedictiming",
+    "#faislakab",
+    "#careerreflection",
+    "#workplaceindia",
+    "#hinglishcontent",
+    "#mindfultiming",
+    "#planetaryhours",
+    "#urbanprofessionals"
+  ],
+  "youtubeTitle": "Draft teen baar padha, Send kab karun?",
+  "youtubeDescription": "All 18 horas ka grid ek hi task ke liye clearer aur heavier windows compare karne mein madad karta hai. NEWUSER30 ke saath pehla paid report dekhein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=resignation-mail-draft-ho-gayi",
+  "language": "hinglish"
+}

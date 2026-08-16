@@ -1,0 +1,41 @@
+AUDIO REPORT — 2026-07-25-hr-ne-do-slots-bheje-v2 (2026-07-26T00:42:45.156Z)
+final: C:\Users\aarsh\Downloads\jyotish-ai\marketing-agent\output\reels\2026-07-25-hr-ne-do-slots-bheje-v2\final.mp4
+duration: 33.40s · target loudness -16 LUFS (two-pass linear loudnorm in finish())
+
+== loudnorm measurement of the FINAL mix (input_* = what the file measures now) ==
+{
+	"input_i" : "-16.20",
+	"input_tp" : "-1.45",
+	"input_lra" : "5.90",
+	"input_thresh" : "-27.05",
+	"output_i" : "-16.32",
+	"output_tp" : "-2.33",
+	"output_lra" : "5.30",
+	"output_thresh" : "-27.15",
+	"normalization_type" : "dynamic",
+	"target_offset" : "0.32"
+}
+
+== silencedetect (noise=-35dB, min 0.7s) ==
+silence_start: 5.196417
+silence_end: 6.280271 | silence_duration: 1.083854
+frame=  216 fps=0.0 q=-0.0 size=N/A time=00:00:07.20 bitrate=N/A speed=13.8x elapsed=0:00:00.52    [Parsed_silencedetect_0 @ 00000173fae84e80] silence_start: 8.150479
+silence_end: 9.577417 | silence_duration: 1.426937
+silence_start: 15.641
+silence_end: 16.663625 | silence_duration: 1.022625
+frame=  499 fps=483 q=-0.0 size=N/A time=00:00:16.63 bitrate=N/A speed=16.1x elapsed=0:00:01.03    [Parsed_silencedetect_0 @ 00000173fae84e80] silence_start: 23.227458
+silence_end: 24.783833 | silence_duration: 1.556375
+frame=  797 fps=516 q=-0.0 size=N/A time=00:00:26.56 bitrate=N/A speed=17.2x elapsed=0:00:01.54    [Parsed_silencedetect_0 @ 00000173fae84e80] silence_start: 31.356979
+silence_end: 33.417333 | silence_duration: 2.060354
+
+== astats (overall) ==
+Max difference: 0.729707
+Peak level dB: -1.446938
+RMS level dB: -20.360989
+Flat factor: 0.000000
+
+== narration fit (the v1 defect: s3 VO 14.9s was cut at 8s) ==
+s2 VO 3.00s in a 3.3s shot -> tail margin 0.30s
+s3 VO 14.88s in a 15.2s shot -> tail margin 0.32s
+s4 VO 7.63s in a 8.9s shot -> tail margin 1.27s
+Shot boundaries: s1 0-6s (Veo native voice) · s2 6-9.3s · s3 9.3-24.5s · s4 24.5-33.4s
