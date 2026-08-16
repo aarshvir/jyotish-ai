@@ -510,6 +510,10 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       if (dry) {
         providerUsed = 'placeholder';
         await renderPlaceholder(shot, billedSec, rawClip, `${spec.label} (dry)`);
+        // Placeholder clips have no Veo in-shot audio. Still treat presenter lines as native
+        // so --dry never bills Sarvam (or throws for a missing SARVAM_API_KEY). Captions
+        // still come from nativeVo(); b-roll/product stay silent unless they carry `vo`.
+        nativeAudio = isPresenter && spec.nativeAudio;
         recordSpend({ run_id: runId, slug: creative.slug, shot_id: shot.id, provider: 'placeholder', model: spec.endpoint, seconds: billedSec, cost_usd: 0, estimated_usd: est.shots.find((s) => s.id === shot.id)?.usd ?? 0, status: 'dry', detail: `stand-in for ${spec.label}` });
       } else if (shot.role === 'product') {
         if (engine.ok && shot.capture?.url) {
