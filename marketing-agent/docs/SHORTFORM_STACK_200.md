@@ -1,5 +1,7 @@
 # VedicHour — $200/month best-in-class short-form stack (Aug 2026)
 
+> **Launch-night override:** follow `launch-deliverables/TONIGHT_MARKETING_LOOP.md`. Do **not** buy Post Bridge or a Hetzner VPS tonight. Post from the native IG / YouTube / GBP apps until you are shipping **>1 approved Reel/day**. This file is the month-1 stack once *posting* (not ideation) is the bottleneck. Machine-readable split: `config/stack-budget.json`.
+
 **Control plane:** this `marketing-agent/` (CLI brains, SQLite memory, policy linter, approval queue, fal.ai render, Sarvam VO, ffmpeg assembly).
 **Founder job:** review/approve Reels. Nothing else.
 **Hard cap:** **$200/month** for every paid tool in this document (AI APIs, TTS, video gen, scheduling, captions). CLI subscriptions the founder already pays (Gemini / Codex / optional Claude Code) are **sunk** and not counted.

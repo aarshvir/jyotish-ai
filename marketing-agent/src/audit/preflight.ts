@@ -10,6 +10,7 @@ import {
 } from './policy';
 import { activeLessons, lessonMatcher, SCOPES_ENFORCED_BY_RULE } from './lessons-bridge';
 import { recordPreflight } from './store';
+import { cheapTropeHits } from './cheap-tropes';
 
 /**
  * STAGE 0 — THE PRE-FLIGHT GATE.  ($0, runs BEFORE any render.)
@@ -351,6 +352,21 @@ export async function runPreflight(
         fix: 'Review the wording before spending on a render.',
       });
     }
+  }
+
+  // -- 5b. Cheap visual tropes — stock spiritual wallpaper / fake proof ----------
+  const visualBlob = shots
+    .map((s) => String((s as { prompt?: string; visualPrompt?: string })?.prompt ?? (s as { visualPrompt?: string })?.visualPrompt ?? ''))
+    .join(' ');
+  const copyBlob = adCopyFields(creative).map((f) => f.text).join(' ');
+  for (const t of cheapTropeHits(visualBlob, copyBlob)) {
+    block({
+      rule: 'cheap-visual',
+      law: 'config/reel-craft.json neverGenerateVisual',
+      where: 'shots[].prompt / ad copy',
+      detail: `cheap trope "${t}" — stock spiritual wallpaper or fake social proof.`,
+      fix: 'Use a real presenter room + report screencap. Never mandala spam or invented proof.',
+    });
   }
 
   // -- 6. LESSONS (LAW §4) ------------------------------------------------------------------

@@ -10,6 +10,8 @@ import { runConsentSync } from './loops/consent-sync';
 import { runReelLoop } from './loops/video';
 import { runRenderLoop, printBudgetStatus } from './loops/render';
 import { runPublishPrep } from './loops/publish-prep';
+import { runPackageLoop } from './loops/package';
+import { runContentOpsLoop } from './loops/content-ops';
 import { runSocialLoop } from './loops/social';
 import { runSyncLoop } from './loops/sync';
 import { runStatsLoop } from './loops/stats';
@@ -86,6 +88,13 @@ async function main() {
         dry: flags.dry === 'true',
       });
       break;
+    case 'loop:content-ops':
+      await runContentOpsLoop({
+        count: flags.count ? Number(flags.count) : undefined,
+        dry: flags.dry === 'true',
+        skipSense: flags['skip-sense'] === 'true',
+      });
+      break;
     case 'loop:reel':
       await runReelLoop({ slug: text || undefined });
       break;
@@ -134,6 +143,9 @@ async function main() {
     case 'loop:publish':
       await runPublishPrep();
       break;
+    case 'loop:package':
+      await runPackageLoop({ slug: pos[0] });
+      break;
     case 'loop:social':
       await runSocialLoop();
       break;
@@ -172,6 +184,8 @@ async function main() {
           `  npm run blog:promote [slug]    publish a staged post into the live site\n` +
           `  npm run loop:creative          ideate -> variants -> adversarial audit -> tournament (L4)\n` +
           `                                 [--count N ideas] [--tier] [--dry no writes]\n` +
+          `  npm run loop:content-ops       FREE pipeline: sense + creative → Approve queue (never spends)\n` +
+          `                                 [--count N] [--dry] [--skip-sense]\n` +
           `  npm run loop:reel [slug]       render a faceless 9:16 reel (L2, edge-tts + ffmpeg)\n` +
           `  npm run loop:render [slug]     render a PRESENTER-LED AI reel (L2b, fal.ai + ffmpeg)\n` +
           `                                 --dry stubs only the paid calls · --estimate prices it and stops\n` +
@@ -187,6 +201,7 @@ async function main() {
           `  npm run approve <slug>         approve for publishing\n` +
           `  npm run reject <slug> "why"    reject + file the reason as a lesson\n\n` +
           `  npm run loop:publish           package reels into post-ready platform posts (L3)\n` +
+          `  npm run loop:package [slug]    IG Reels / YT Shorts / YT 8-12m / GBP / IG carousel (L3b)\n` +
           `  npm run loop:social            generate platform social posts (L3 organic)\n` +
           `  npm run loop:consent           sync Supabase signups into the consent ledger (L8)\n` +
           `  npm run loop:sync              mirror campaign assets up to Supabase + pull admin kills down\n` +

@@ -58,15 +58,17 @@ The agent already bills video through **one key (`FAL_KEY`)** and TTS through **
 |---|---|---|---|
 | Trend sense (Google Trends IN, Reddit, YouTube) | `npm run loop:sense` | $0 | No |
 | Ideate → 6 variants → audit → tournament | `npm run loop:creative` | $0 | No |
+| **Free orchestrator (sense + creative, stops at Approve)** | `npm run loop:content-ops` | $0 | No |
 | Adversarial review (11 lenses) | `npm run loop:review` | $0 CLI | No |
 | Approval queue | `npm run cockpit` / `approvals` | $0 | **Yes — only tap** |
 | Presenter render (Veo + product screencap + Sarvam + end card) | `npm run loop:render <slug>` | fal + Sarvam | No (after approve) |
 | Per-platform pack + UTM | `npm run loop:publish` | $0 | No |
+| IG / YT Shorts / YT 8–12m / GBP / carousel drafts | `npm run loop:package` | $0 | Paste into native apps |
 | IG/X/FB/LinkedIn captions | `npm run loop:social` | $0 | Review in cockpit |
 | Email/WhatsApp sequences | `npm run loop:lifecycle` | $0 until Resend/Twilio | Review |
 | Kill switch | `npm run kill "reason"` | — | Instant halt |
 
-Daily scheduler entrypoint `npm run cycle` now runs **sense → creative → blog → social → publish-prep**. It no longer auto-renders faceless edge-tts reels (those look cheap next to the presenter pipeline).
+Daily scheduler entrypoint `npm run cycle` now runs **sense → creative → blog → social → publish-prep**. It no longer auto-renders faceless edge-tts reels (those look cheap next to the presenter pipeline). SOP: `marketing-agent/docs/CONTENT_OPS_SOP.md`.
 
 ---
 
@@ -75,6 +77,8 @@ Daily scheduler entrypoint `npm run cycle` now runs **sense → creative → blo
 ### 1. Sense (06:00 IST, $0)
 `cd marketing-agent && npm run loop:sense`  
 Kill if digest is empty — still ideate from `creative-seeds.json`. Never scrape Instagram.
+
+Or run the free half in one shot: `npm run loop:content-ops` (sense → creative → parked at Approve).
 
 ### 2. Ideate (06:10, $0)
 `npm run loop:creative`  
