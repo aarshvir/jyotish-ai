@@ -238,6 +238,8 @@ Laptop is fine for signups. After step 7 the VPS is the always-on box; the lapto
 
 ### T0 — Keys you must have in `marketing-agent/.env`
 
+That file is the **only** secrets source. It wins over `../.env.local` and over `process.env`. Confirm with `npm run doctor` (prints set/unset + which file, never values).
+
 ```
 FAL_KEY=...
 SARVAM_API_KEY=...

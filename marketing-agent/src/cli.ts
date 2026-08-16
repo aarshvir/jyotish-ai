@@ -22,6 +22,7 @@ import { runReviewLoop } from './audit/index';
 import { preflightCli } from './audit/preflight';
 import { approve, printPending, reject } from './audit/approvals';
 import { parse } from './cli-parse';
+import { printEnvDoctor } from './env';
 
 async function main() {
   const [cmd, ...rest] = process.argv.slice(2);
@@ -40,6 +41,7 @@ async function main() {
       console.log(`\nKill-switch: ${isKilled() ? `ENGAGED (${killInfo()?.reason})` : 'off'}`);
       const hb = readHeartbeat();
       console.log(`Last heartbeat: ${hb._last ? `${hb._last.loop} @ ${hb._last.at}` : 'none yet'}`);
+      printEnvDoctor();
       break;
     }
     case 'db:init': {
