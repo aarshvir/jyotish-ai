@@ -60,6 +60,23 @@ function spawnShim(cmd: string, args: string[], input: string, timeoutMs: number
 
 const RATE_RE = /\b429\b|rate.?limit|RESOURCE_EXHAUSTED|No capacity|quota exceeded|usage limit|too many requests/i;
 
+/**
+ * Some CLIs report a failed session on STDOUT with EXIT CODE 0 — the failure looks like a
+ * successful, very short answer. On 2026-08-16 the claude CLI returned exactly
+ * "Failed to authenticate: OAuth session expired and could not be refreshed" (72 chars, exit 0),
+ * the router accepted it as the model's reply, and because it "succeeded" the fallback to codex
+ * never fired: the creative loop wrote that string into its ideate/script stages and produced
+ * zero variants. An unusable engine must FAIL so the next one gets a turn.
+ */
+const AUTH_FAIL_RE =
+  /failed to authenticate|oauth session expired|could not be refreshed|not logged in|please (run )?login|session (has )?expired|invalid api key|unauthoriz/i;
+
+/** True when a "successful" CLI reply is really an auth/session failure rather than content. */
+function looksLikeAuthFailure(text: string): boolean {
+  // Only judge SHORT replies: real generated copy can legitimately discuss logins.
+  return text.trim().length <= 400 && AUTH_FAIL_RE.test(text);
+}
+
 function firstLine(s: string): string {
   const l = (s || '')
     .split('\n')
@@ -101,6 +118,7 @@ export async function callGemini(prompt: string, model: string | null, timeoutMs
   if (r.timedOut) throw new CliError(`gemini timed out after ${timeoutMs}ms`);
   if (RATE_RE.test(r.stderr) || RATE_RE.test(r.stdout)) throw new RateLimitError(`gemini: ${firstLine(r.stderr) || 'rate limited'}`);
   if (!out) throw new CliError(`gemini empty output (code ${r.code}): ${firstLine(r.stderr)}`);
+  if (looksLikeAuthFailure(out)) throw new CliError(`gemini not authenticated: ${firstLine(out)}`);
   return { text: out, cli: 'gemini', model: m, durationMs: Date.now() - t0 };
 }
 
@@ -122,6 +140,7 @@ export async function callCodex(prompt: string, model: string | null, timeoutMs:
   }
   if (!text) text = stripNoise(r.stdout || '');
   if (!text) throw new CliError(`codex empty output (code ${r.code}): ${firstLine(r.stderr)}`);
+  if (looksLikeAuthFailure(text)) throw new CliError(`codex not authenticated: ${firstLine(text)}`);
   return { text, cli: 'codex', model, durationMs: Date.now() - t0 };
 }
 
@@ -134,6 +153,7 @@ export async function callClaude(prompt: string, model: string | null, timeoutMs
   if (RATE_RE.test(r.stderr)) throw new RateLimitError(`claude: ${firstLine(r.stderr) || 'rate limited'}`);
   const out = (r.stdout || '').trim();
   if (!out) throw new CliError(`claude empty output (code ${r.code}): ${firstLine(r.stderr)}`);
+  if (looksLikeAuthFailure(out)) throw new CliError(`claude not authenticated: ${firstLine(out)}`);
   try {
     const j = JSON.parse(out);
     const text = String(j.result ?? j.text ?? '').trim();
