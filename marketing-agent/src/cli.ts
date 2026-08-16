@@ -10,6 +10,8 @@ import { runConsentSync } from './loops/consent-sync';
 import { runReelLoop } from './loops/video';
 import { runRenderLoop, printBudgetStatus } from './loops/render';
 import { runPublishPrep } from './loops/publish-prep';
+import { runPackageLoop } from './loops/package';
+import { runContentOpsLoop } from './loops/content-ops';
 import { runSocialLoop } from './loops/social';
 import { runSyncLoop } from './loops/sync';
 import { runStatsLoop } from './loops/stats';
@@ -86,6 +88,13 @@ async function main() {
         dry: flags.dry === 'true',
       });
       break;
+    case 'loop:content-ops':
+      await runContentOpsLoop({
+        count: flags.count ? Number(flags.count) : undefined,
+        dry: flags.dry === 'true',
+        skipSense: flags['skip-sense'] === 'true',
+      });
+      break;
     case 'loop:reel':
       await runReelLoop({ slug: text || undefined });
       break;
@@ -117,7 +126,7 @@ async function main() {
     case 'approve': {
       if (!pos[0]) return console.error('usage: npm run approve <slug> ["note"]');
       const r = approve(pos[0], pos.slice(1).join(' '));
-      console.log(r ? `APPROVED ${pos[0]} — it may now be published.` : `Nothing pending for "${pos[0]}". Run: npm run approvals`);
+      console.log(r ? `APPROVED ${pos[0]} — unlocked for PAID render. Next: npm run loop:render -- ${pos[0]}` : `Nothing pending for "${pos[0]}". Run: npm run approvals`);
       break;
     }
     case 'reject': {
@@ -133,6 +142,9 @@ async function main() {
     }
     case 'loop:publish':
       await runPublishPrep();
+      break;
+    case 'loop:package':
+      await runPackageLoop({ slug: pos[0] });
       break;
     case 'loop:social':
       await runSocialLoop();

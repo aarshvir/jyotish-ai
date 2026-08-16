@@ -353,6 +353,26 @@ export async function runPreflight(
     }
   }
 
+  // -- 5b. Cheap visual tropes — stock spiritual wallpaper / fake proof ----------
+  const visualBlob = shots.map((s) => String((s as { prompt?: string; visualPrompt?: string })?.prompt ?? (s as { visualPrompt?: string })?.visualPrompt ?? '')).join(' ').toLowerCase();
+  const copyBlob = adCopyFields(creative).map((f) => f.text).join(' ').toLowerCase();
+  const tropes = [
+    'mandala', 'lotus swirl', 'yantra', 'neon purple', 'floating om',
+    'sacred geometry background', 'galaxy mandala', 'fake testimonial',
+    'five-star', '5-star', '10k users',
+  ];
+  for (const t of tropes) {
+    if (visualBlob.includes(t) || copyBlob.includes(t)) {
+      block({
+        rule: 'cheap-visual',
+        law: 'config/reel-craft.json neverGenerateVisual',
+        where: 'shots[].prompt / ad copy',
+        detail: `cheap trope "${t}" — stock spiritual wallpaper or fake social proof.`,
+        fix: 'Use a real presenter room + report screencap. Never mandala spam or invented proof.',
+      });
+    }
+  }
+
   // -- 6. LESSONS (LAW §4) ------------------------------------------------------------------
   const lessons = await activeLessons();
   const allCopy = adCopyFields(creative);

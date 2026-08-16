@@ -14,6 +14,8 @@ import { comboKey, normalizeTags, taxonomyPromptSpec, taxonomyPromptSpecCompact,
 import { aggregatePerformance, exploreTargets, renderBrief, type ComboCoverage, type PerformanceSnapshot } from '../performance';
 import { senseDigest } from './sense';
 import { playbookBlock } from '../playbook';
+import { runPreflight, formatPreflight } from '../audit/preflight';
+import { queueApproval as queueRenderApproval } from '../audit/approvals';
 
 const OUT_DIR = resolve(ROOT, 'output', 'creative');
 const SEEDS_FILE = resolve(ROOT, 'config', 'creative-seeds.json');
@@ -21,7 +23,8 @@ const SEEDS_FILE = resolve(ROOT, 'config', 'creative-seeds.json');
 const IDEAS_REQUESTED = 10; // ideation asks for 8-12; 10 is the ask
 const IDEAS_SCRIPTED = 3; // how many ideas advance to scripting (--count)
 const VARIANTS_PER_IDEA = 6;
-const WINNERS_KEPT = 3;
+/** Content Ops: only ONE tournament survivor reaches paid render. */
+const WINNERS_KEPT = 1;
 const BRAND_SAFETY_FLOOR = 80; // ANY brand-safety failure is a hard reject
 const HOOK_MAX_WORDS = 8; // spec; 10 is the hard reject line
 const HOOK_REJECT_WORDS = 10;
@@ -122,7 +125,7 @@ interface Judged {
   scores: Scores;
   lintVerdict: string;
   lintReason: string;
-  status: 'ready_to_render' | 'needs_review' | 'rejected';
+  status: 'ready_to_render' | 'awaiting_approval' | 'needs_review' | 'rejected';
   rejectionReason: string | null;
   rank: number | null;
   assetPath: string | null;
@@ -613,6 +616,14 @@ function preflight(v: Variant): string | null {
   const closing = closingPresenterLine(v);
   if (!SPOKEN_SITE.test(closing))
     return `the closing presenter line never says the site out loud ("${closing.slice(0, 60)}") — the owner's ruling is that a listener must hear "VedicHour.com"; end on e.g. "…VedicHour.com pe dekh lo."`;
+
+  const visualBlob = v.shotList.map((sh) => sh.visualPrompt).join(' ').toLowerCase();
+  const tropes = ['mandala', 'lotus swirl', 'yantra', 'neon purple', 'floating om', 'sacred geometry background', 'galaxy mandala', 'fake testimonial', 'five-star', '5-star', '10k users'];
+  for (const t of tropes) {
+    if (visualBlob.includes(t) || `${v.hookText} ${v.spokenScript} ${v.cta}`.toLowerCase().includes(t)) {
+      return `cheap visual/social-proof trope "${t}" — use a real presenter room + report screencap, never stock spiritual wallpaper or fake proof`;
+    }
+  }
   return null;
 }
 
@@ -652,7 +663,7 @@ Score EVERY variant 0-100 on each axis:
 - hookStrength: does the FIRST on-screen line stop a thumb inside one second? Generic slogans, "unlock/discover your...", or anything a viewer has read a thousand times scores under 40.
 - specificity: a named, concrete decision moment scores high. An abstraction about "cosmic energy" or "your timing" scores under 30.
 - credibility: would an Indian viewer who actually knows some astrology find this embarrassing to be seen watching? Cringe, guru-voice, over-claiming, or fake-deep = low. ENGINE JARGON IS A CREDIBILITY FAILURE, not a credential: "Swiss Ephemeris", "Lahiri", "ayanamsa", "sidereal", "whole-sign", "vimshottari" mean nothing to this viewer and read as a nerd flex — the owner's words: "No one gives a shit. I don't even know what this is." Any variant using one scores under 35 here. The credible version of the same claim is "real astronomical data, the same math a careful astrologer uses".
-- brandSafety: score 0-100, and be ruthless. Score BELOW 60 if there is ANY of: a guarantee or certainty claim; "100%" or miracle framing; a health, money, legal, or relationship OUTCOME promise; fear-mongering; a deterministic "THE best hour / worst hour" stated as fact; invented social proof (fake testimonials, made-up user numbers, star ratings); competitor bashing or mockery of astrology or astrologers; any rupee or dollar figure. Calibrate carefully: a script with NO violation at all should score 90-100, and anything you score under ${BRAND_SAFETY_FLOOR} is automatically rejected and never rendered.
+- producibility ALSO penalises CHEAP VISUALS: mandala/lotus/yantra wallpaper, neon purple galaxy, floating Om, or fake UI text.\n- brandSafety: score 0-100, and be ruthless. Score BELOW 60 if there is ANY of: a guarantee or certainty claim; "100%" or miracle framing; a health, money, legal, or relationship OUTCOME promise; fear-mongering; a deterministic "THE best hour / worst hour" stated as fact; invented social proof (fake testimonials, made-up user numbers, star ratings); competitor bashing or mockery of astrology or astrologers; any rupee or dollar figure. Calibrate carefully: a script with NO violation at all should score 90-100, and anything you score under ${BRAND_SAFETY_FLOOR} is automatically rejected and never rendered.
 - producibility: can a text-to-video model actually render the presenter/broll shots, AND does the reel sound like one human? Readable on-screen text, logos, specific real places, crowds of faces, complex hand interactions, or multi-subject choreography = low. Screencap shots are free (they are real recordings) — judge only what a model must generate. VOICE STRUCTURE IS PART OF THIS SCORE: the presenter's on-camera dialogue is performed by the video model itself in a real voice, while every other line has to be synthesized afterwards and a viewer hears the switch. Judge this on a GRADED scale, not a cliff: 85-100% on camera is excellent; 60-85% is perfectly acceptable PROVIDED every off-camera line is a short connective (the 12-word cap already enforced elsewhere) — do not penalise a variant merely for landing in that band; below 50%, or any single off-camera paragraph, scores under 40 however pretty the visuals are. The "on-camera share" figure is given for each variant above — use it, but weigh the LENGTH of the off-camera lines more than the raw percentage.
 
 HARD RULE, ABOVE ALL FIVE AXES — THE SPOKEN CTA. The last presenter shot's on-camera dialogue must NAME THE SITE OUT LOUD ("…VedicHour.com pe dekh lo"). The owner's ruling, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Each variant above is annotated with "closing line says the site out loud: YES/NO". Any variant marked NO is verdict "reject" — no exceptions, however good the hook is — and score its hookStrength no higher than 45, because a reel nobody can act on is not doing the job a hook exists to start.
@@ -795,7 +806,7 @@ async function judge(idea: Idea, variants: Variant[], tier: Tier): Promise<Judge
       scores,
       lintVerdict,
       lintReason,
-      status: rejection ? 'rejected' : lintVerdict === 'flag' ? 'needs_review' : 'ready_to_render',
+      status: rejection ? 'rejected' : lintVerdict === 'flag' ? 'needs_review' : 'awaiting_approval',
       rejectionReason: rejection,
       rank: null,
       assetPath: null,
@@ -983,7 +994,7 @@ function renderContract(j: Judged, slug: string) {
     slug,
     title: v.youtubeTitle || v.hookText,
     product: 'forecast',
-    status: j.status === 'ready_to_render' ? 'ready_to_render' : 'draft',
+    status: j.status === 'ready_to_render' ? 'ready_to_render' : j.status === 'awaiting_approval' ? 'awaiting_approval' : 'draft',
     // The render pipeline renders the HIGHEST rank first, so this is a 0-1 quality
     // score, not the integer placement (which lives in creative_variants.tournament_rank).
     rank: Number((j.scores.total / 100).toFixed(2)),
@@ -1192,7 +1203,7 @@ async function persist(judged: Judged[], winners: Judged[], batchId: string): Pr
 /**
  * L4 — the creative engine. Ideate → 5-6 scripted variants per idea → adversarial
  * audit (policy-linter + a hostile reviewer paid to reject) → head-to-head
- * tournament → the top 3 land as 'ready_to_render' for the expensive video stage.
+ * tournament → the SINGLE winner lands as 'awaiting_approval' for the expensive video stage.
  * Every brain() call is $0 (CLI subscriptions, not APIs) and every stage degrades
  * rather than throwing, so one bad model response never kills the run.
  */
@@ -1260,21 +1271,50 @@ export async function runCreativeLoop(opts: CreativeOpts = {}): Promise<void> {
       console.log(`             ✗ "${j.variant.hookText}" — ${j.rejectionReason}`);
     }
 
-    // 4. TOURNAMENT
+    // 4. TOURNAMENT — only ONE winner may ever reach paid render.
     const ordered = survivors.length ? await tournament(survivors, tier) : [];
     const winners = ordered.slice(0, WINNERS_KEPT);
     for (const j of ordered.slice(WINNERS_KEPT)) {
       j.status = 'rejected';
       j.rejectionReason = `lost the tournament (rank ${j.rank})`;
     }
+    for (const w of winners) {
+      if (w.status !== 'rejected' && w.status !== 'needs_review') w.status = 'awaiting_approval';
+    }
 
-    // 5. PERSIST
+    // 5. PERSIST + $0 preflight + queue founder Approve (never auto ready_to_render).
     if (dry) {
       console.log('[creative] --dry: skipping SQLite + output/creative writes.');
     } else {
       await persist(judged, winners, batchId);
-      for (const w of winners.filter((x) => x.status === 'needs_review')) {
-        enqueueApproval({ item: `Creative: ${w.variant.hookText}`, lane: 'B', linter_verdict: w.lintVerdict, linter_reason: w.lintReason, channel: 'creative' });
+      for (const w of winners) {
+        if (!w.assetPath) continue;
+        if (w.status === 'needs_review') {
+          enqueueApproval({ item: `Creative (flagged): ${w.variant.hookText}`, lane: 'B', linter_verdict: w.lintVerdict, linter_reason: w.lintReason, channel: 'creative' });
+          continue;
+        }
+        if (w.status !== 'awaiting_approval') continue;
+        try {
+          const rawText = readFileSync(w.assetPath, 'utf8');
+          const creativeJson = JSON.parse(rawText);
+          const pf = await runPreflight(creativeJson, { file: w.assetPath, raw: rawText });
+          console.log(formatPreflight(pf));
+          if (!pf.ok) {
+            w.status = 'rejected';
+            w.rejectionReason = `preflight blocked: ${pf.blocks.map((b) => b.rule).join(', ')}`;
+            creativeJson.status = 'rejected';
+            writeFileSync(w.assetPath, JSON.stringify(creativeJson, null, 2));
+            console.log('[creative] WINNER KILLED by preflight — will not reach Approve/render.');
+            continue;
+          }
+          const slug = String(creativeJson.slug ?? '');
+          const mdPath = w.assetPath.replace(/\.json$/, '.md');
+          queueRenderApproval(slug, 'pre_render_plan', mdPath);
+          enqueueApproval({ item: `Approve to RENDER: ${w.variant.hookText} (~$${pf.estimatedUsd.toFixed(2)})`, lane: 'A', linter_verdict: 'pass', linter_reason: `tournament winner · preflight clean · est $${pf.estimatedUsd.toFixed(2)}`, channel: 'creative' });
+          console.log(`[creative] queued for founder Approve → npm run approve ${slug}`);
+        } catch (e: any) {
+          console.warn(`[creative] post-tournament preflight failed: ${String(e?.message ?? e).slice(0, 120)}`);
+        }
       }
     }
 

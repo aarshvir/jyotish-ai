@@ -243,3 +243,9 @@ powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1 -Unregister
 
 **Media path for Phase 2** is free by default (edge-tts + Pexels/Pixabay + ffmpeg);
 ElevenLabs/HeyGen are opt-in config flags, never on by default.
+
+**$200/month short-form stack (Aug 2026):** keep this agent as the control plane,
+fund fal.ai + Sarvam, buy Post Bridge Agent+$5 API and a Hetzner CX23, do not buy
+ElevenLabs / Hedra / Creatify / Submagic. Hard budget table and tonight checklist:
+[`docs/SHORTFORM_STACK_200.md`](docs/SHORTFORM_STACK_200.md) · caps in
+[`config/stack-budget.json`](config/stack-budget.json).

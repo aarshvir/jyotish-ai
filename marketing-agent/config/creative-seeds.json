@@ -1,12 +1,8 @@
 {
-  "_comment": "Seed material for L4, the creative engine (src/loops/creative.ts). This is the ONLY place the creative loop learns what VedicHour actually does, who it talks to, and what it may never say. Edit freely — read fresh on every run, no restart needed.",
-
-  "valueProp": "VedicHour scores all 18 planetary hours (horas) of a given day against YOUR birth chart, and tells you which windows run clearer and which run heavier — for a specific kind of task (a negotiation, a first meeting, focused study, publishing something). Computed from real astronomical data — the same math a careful astrologer uses — and explained in plain English. It is a timing grid for your day, not a mood forecast for your star sign.",
-
+  "_comment": "Seed material for L4, the creative engine (src/loops/creative.ts). This is the ONLY place the creative loop learns what VedicHour actually does, who it talks to, and what it may never say. Edit freely \u2014 read fresh on every run, no restart needed.",
+  "valueProp": "VedicHour scores all 18 planetary hours (horas) of a given day against YOUR birth chart, and tells you which windows run clearer and which run heavier \u2014 for a specific kind of task (a negotiation, a first meeting, focused study, publishing something). Computed from real astronomical data \u2014 the same math a careful astrologer uses \u2014 and explained in plain English. It is a timing grid for your day, not a mood forecast for your star sign.",
   "audience": "Urban Indians aged 24-40 (Bengaluru / Delhi NCR / Mumbai / Pune / Hyderabad) plus the diaspora (US, UK, UAE, Singapore, Australia). Phone-first, scroll-fast, sceptical-but-curious. Many grew up around Jyotish at home and take it semi-seriously; they will instantly cringe at anything that sounds like a WhatsApp-forward astrologer, a doom prophecy, or a get-rich promise.",
-
-  "register": "HINGLISH written in ROMAN / LATIN letters ONLY. Natural code-switching, the way people actually text: 'kal 11 baje meeting rakhun ya 4 baje?'. Never Devanagari or any non-Latin script — the downstream text-to-video and caption models reject non-Latin input.",
-
+  "register": "HINGLISH written in ROMAN / LATIN letters ONLY. Natural code-switching, the way people actually text: 'kal 11 baje meeting rakhun ya 4 baje?'. Never Devanagari or any non-Latin script \u2014 the downstream text-to-video and caption models reject non-Latin input.",
   "families": [
     {
       "key": "decision_moment",
@@ -18,13 +14,13 @@
         "partner ke parents se pehli baar milna hai",
         "padhai actually kis time hoti hai, 6am ya 11pm",
         "launch / post kab karun ki log dekhein",
-        "wo mushkil baat karni hai — aaj ya weekend pe"
+        "wo mushkil baat karni hai \u2014 aaj ya weekend pe"
       ]
     },
     {
       "key": "cost_time_anchor",
       "brief": "Contrast the EFFORT and TIME of getting a personal timing read the old way (finding a good astrologer, coordinating a sitting, waiting days for a written reply, going back for follow-ups) against roughly 90 seconds here, on your phone, on your own chart.",
-      "hardConstraint": "NEVER state, imply, or hint at any rupee or dollar figure, discount comparison, or 'cheaper than X' claim — we cannot defend a price claim about anyone else. Compare TIME and EFFORT only."
+      "hardConstraint": "NEVER state, imply, or hint at any rupee or dollar figure, discount comparison, or 'cheaper than X' claim \u2014 we cannot defend a price claim about anyone else. Compare TIME and EFFORT only."
     },
     {
       "key": "respectful_contrarian",
@@ -32,63 +28,90 @@
       "hardConstraint": "Respect the tradition and everyone in it. Never mock Jyotish, never mock astrologers, never name or knock a competitor app, never call believers gullible. The enemy is the GENERIC, never the practice."
     }
   ],
-
-  "_screencap_comment": "OWNER LAW 2026-07-26: 'when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day.' The pricing page, checkout, payment and onboarding are FORBIDDEN capture targets — src/render/capture-policy.ts throws if a resolved URL matches /pricing|checkout|payment|onboard/. Every entry below shows the report itself.",
-
+  "_screencap_comment": "OWNER LAW 2026-07-26: 'when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day.' The pricing page, checkout, payment and onboarding are FORBIDDEN capture targets \u2014 src/render/capture-policy.ts throws if a resolved URL matches /pricing|checkout|payment|onboard/. Every entry below shows the report itself.",
   "screencapLibrary": [
     "the report's 18-hour day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim",
     "one hour slot tapped open, showing its plain-English line about what that window suits",
     "the report scrolling from one hour slot to the next, each with its own what-to-do line",
     "the week view inside the report, where the same hour reads differently on different days",
     "the free kundli chart wheel drawing itself in",
-    "two windows side by side on the same day — one clearer, one heavier — for the same task"
+    "two windows side by side on the same day \u2014 one clearer, one heavier \u2014 for the same task"
   ],
-
   "screencapTargets": [
     {
       "key": "sample_report_page",
-      "keywords": ["hora", "hour", "slot", "grid", "report", "window", "day", "card", "week", "timing"],
+      "keywords": [
+        "hora",
+        "hour",
+        "slot",
+        "grid",
+        "report",
+        "window",
+        "day",
+        "card",
+        "week",
+        "timing"
+      ],
       "path": "/sample-report",
       "waitForSelector": "#main-content",
       "note": "PRIMARY. The full sample report with the 18 hour-slots. A sibling agent is shipping this page; while it 404s the render falls back to landing_sample_report automatically. TODO: tighten waitForSelector to the hour-slot container once the page ships."
     },
     {
       "key": "landing_sample_report",
-      "keywords": ["sample", "preview", "excerpt"],
+      "keywords": [
+        "sample",
+        "preview",
+        "excerpt"
+      ],
       "path": "/#sample-report",
       "waitForSelector": "#sample-report",
       "scrollPx": 24939,
       "panToPx": 27417,
-      "note": "FALLBACK, live today: the homepage report preview ('Hourly windows — 18 precision slots per day'). Offsets measured at the capture viewport (360 CSS px, deviceScaleFactor 3) on 2026-07-26."
+      "note": "FALLBACK, live today: the homepage report preview ('Hourly windows \u2014 18 precision slots per day'). Offsets measured at the capture viewport (360 CSS px, deviceScaleFactor 3) on 2026-07-26."
     },
     {
       "key": "free_kundli_chart",
-      "keywords": ["kundli", "chart wheel", "birth chart", "wheel"],
+      "keywords": [
+        "kundli",
+        "chart wheel",
+        "birth chart",
+        "wheel"
+      ],
       "path": "/free-kundli",
       "waitForSelector": "#main-content",
-      "note": "The free chart wheel. Allowed — it is the product, not a checkout."
+      "note": "The free chart wheel. Allowed \u2014 it is the product, not a checkout."
     }
   ],
-
   "shotKinds": {
     "presenter": "a real person on camera, talking to the phone. Give the video model a subject, an action, a camera move, lighting and mood.",
     "broll": "no dialogue, atmosphere or metaphor. Give the video model a subject, an action, a camera move, lighting and mood.",
-    "screencap": "a real screen recording of the live product. The prompt is simply WHAT TO CAPTURE, pulled from screencapLibrary — no cinematography, because it is a recording, not a generation."
+    "screencap": "a real screen recording of the live product. The prompt is simply WHAT TO CAPTURE, pulled from screencapLibrary \u2014 no cinematography, because it is a recording, not a generation."
   },
-
   "hardRules": [
-    "Latin script only, everywhere — hook, script, captions, CTA.",
+    "Latin script only, everywhere \u2014 hook, script, captions, CTA.",
     "No guarantees, no '100%', no 'miracle', no 'will definitely'.",
-    "Never 'the best hour' or 'the worst hour' as fact — VedicHour says 'clearer' and 'heavier' windows.",
-    "No health, money, legal, or relationship outcome promises. Not 'you'll get the raise' — instead 'you'll know which window runs clearer for asking'.",
+    "Never 'the best hour' or 'the worst hour' as fact \u2014 VedicHour says 'clearer' and 'heavier' windows.",
+    "No health, money, legal, or relationship outcome promises. Not 'you'll get the raise' \u2014 instead 'you'll know which window runs clearer for asking'.",
     "No fear-mongering, no doom, no curses, no 'bad luck'.",
-    "No invented social proof — no fake testimonials, no made-up user counts, no star ratings.",
+    "No invented social proof \u2014 no fake testimonials, no made-up user counts, no star ratings.",
     "No competitor names and no mocking of astrology or astrologers.",
     "No rupee or dollar figures of any kind.",
-    "Hook text must be readable in under one second — about 8 words maximum.",
-    "Shot 1 is always a presenter shot — a visible human opens every reel.",
-    "No engine or astrology jargon in ad copy — never Swiss Ephemeris, Lahiri, ayanamsa, sidereal, whole-sign or vimshottari. If credibility is needed, say 'real astronomical data, the same math a careful astrologer uses'.",
+    "Shot 1 is always a presenter shot \u2014 a visible human opens every reel.",
+    "No engine or astrology jargon in ad copy \u2014 never Swiss Ephemeris, Lahiri, ayanamsa, sidereal, whole-sign or vimshottari. If credibility is needed, say 'real astronomical data, the same math a careful astrologer uses'.",
     "The presenter carries the message on camera. Narration over a non-presenter shot is a short connective line of 12 words or fewer, or nothing at all.",
-    "Screencap shots show the REPORT and its hour-slots. Never the pricing page, checkout, payment or onboarding."
+    "Screencap shots show the REPORT and its hour-slots. Never the pricing page, checkout, payment or onboarding.",
+    "Hook text must land in under 0.8s \u2014 about 8 words maximum (10 is a hard reject).",
+    "No cheap spiritual stock as hero or filler: mandala loops, lotus swirls, rotating yantras, neon purple galaxy, floating Om particles.",
+    "Brand color language: deep night + gold. Avoid purple glow stacks.",
+    "Closing presenter dialogue must say VedicHour.com out loud; the end card will repeat vedichour.com on screen."
+  ],
+  "bannedVisualTropes": [
+    "mandala",
+    "lotus swirl",
+    "yantra spin",
+    "neon purple galaxy",
+    "floating om",
+    "fake five-star testimonial card",
+    "invented user-count badge"
   ]
 }

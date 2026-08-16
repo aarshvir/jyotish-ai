@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { logRun } from '../db/index';
+import { logRun, ROOT, db } from '../db/index';
 import { auditDb } from './store';
 import { addLessonSafe, toLessonScope, toLessonSeverity } from './lessons-bridge';
 import { reelDir } from './artifacts';
@@ -22,6 +22,42 @@ export interface ApprovalRow {
   owner_note: string | null;
   created_at: string;
   decided_at: string | null;
+}
+
+
+const CREATIVE_DIR = resolve(ROOT, 'output', 'creative');
+
+function resolveCreative(slug: string): string | null {
+  const direct = resolve(CREATIVE_DIR, `${slug}.json`);
+  if (existsSync(direct)) return direct;
+  const base = slug.replace(/-v\d+$/, '');
+  const byBase = resolve(CREATIVE_DIR, `${base}.json`);
+  if (existsSync(byBase)) return byBase;
+  if (!existsSync(CREATIVE_DIR)) return null;
+  const hit = readdirSync(CREATIVE_DIR).find((f) => f.startsWith(base) && f.endsWith('.json') && !f.startsWith('_'));
+  return hit ? resolve(CREATIVE_DIR, hit) : null;
+}
+
+/** Flip creative JSON so loop:render may spend. */
+function unlockRender(slug: string): boolean {
+  const file = resolveCreative(slug);
+  if (!file) {
+    console.warn(`[approvals] no creative JSON for ${slug} — Approve recorded, render unlock skipped.`);
+    return false;
+  }
+  try {
+    const raw = JSON.parse(readFileSync(file, 'utf8'));
+    raw.status = 'ready_to_render';
+    writeFileSync(file, JSON.stringify(raw, null, 2));
+    try {
+      db().prepare(`UPDATE content_library SET status='ready_to_render' WHERE asset LIKE ? OR meta LIKE ?`).run(`%${slug}%`, `%${slug}%`);
+    } catch { /* optional */ }
+    console.log(`[approvals] unlocked render → ${file} (status=ready_to_render)`);
+    return true;
+  } catch (e: any) {
+    console.warn(`[approvals] could not unlock ${file}: ${String(e?.message ?? e).slice(0, 120)}`);
+    return false;
+  }
 }
 
 /** Queue a reel for the owner. Any earlier pending row for the same slug is superseded. */
@@ -69,7 +105,10 @@ function decide(slug: string, status: 'approved' | 'rejected', note: string): Ap
 
 export function approve(slug: string, note = ''): ApprovalRow | null {
   const r = decide(slug, 'approved', note);
-  if (r) logRun({ loop: 'approvals', status: 'ok', detail: `APPROVED ${slug}${note ? ` — ${note}` : ''}` });
+  if (r) {
+    unlockRender(slug);
+    logRun({ loop: 'approvals', status: 'ok', detail: `APPROVED ${slug}${note ? ` — ${note}` : ''}` });
+  }
   return r;
 }
 
@@ -125,7 +164,7 @@ export async function fileFindingLessons(
 export function printPending(): void {
   const rows = pendingApprovals();
   if (!rows.length) {
-    console.log('\nNothing is waiting for you. (Run `npm run loop:review -- <slug>` to review a rendered reel.)\n');
+    console.log('\nNothing is waiting for you. (Run `npm run loop:content-ops` to produce a winner.)\n');
     return;
   }
   console.log(`\n${rows.length} reel(s) waiting for your decision:\n`);

@@ -13,7 +13,7 @@ import { hardRules } from './hardrules';
 import { runPreflight } from './preflight';
 import { synthesize, writeReview } from './synthesize';
 import { writeFixQueue, reviewSpent } from './store';
-import { fileFindingLessons, queueApproval } from './approvals';
+import { fileFindingLessons, queueApproval, latestFor } from './approvals';
 import type { Finding, LensReport } from './types';
 
 /**
@@ -132,7 +132,17 @@ export async function runReviewLoop(opts: ReviewOpts = {}): Promise<void> {
   const bundle = synthesize(a, lenses, runId);
   writeReview(a, bundle);
   writeFixQueue(slug, runId, bundle.fixQueue);
-  queueApproval(slug, bundle.verdict, bundle.reviewPath);
+  // Content Ops: founder already Approved the plan. Ship keeps that Approve (one tap).
+  // Only re-queue when post-render review BLOCKs.
+  const prior = latestFor(slug);
+  if (bundle.verdict === 'block') {
+    queueApproval(slug, bundle.verdict, bundle.reviewPath);
+    console.log('[review] BLOCK — re-queued for founder decision.');
+  } else if (prior?.status === 'approved') {
+    console.log(`[review] ${bundle.verdict} — prior Approve stands; no second tap required.`);
+  } else {
+    queueApproval(slug, bundle.verdict, bundle.reviewPath);
+  }
   const lessons = await fileFindingLessons(slug, bundle.findings);
 
   const spent = reviewSpent(slug);

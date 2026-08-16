@@ -394,6 +394,13 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       writeHeartbeat(loop, msg);
       return;
     }
+    if (picked.raw?.status && picked.raw.status !== 'ready_to_render' && !opts.dry && !opts.estimateOnly) {
+      const msg = `creative status is "${picked.raw.status}" — Approve first: npm run approve ${picked.raw.slug ?? opts.slug}`;
+      console.log(`[render] BLOCKED — ${msg}`);
+      logRun({ loop, status: 'skipped', detail: msg });
+      writeHeartbeat(loop, msg);
+      return;
+    }
     const { ok, issues, creative } = validateCreative(picked.raw);
     for (const i of issues) console.log(`[render] ${i.level === 'error' ? 'ERROR' : 'warn '} ${i.where}: ${i.message}`);
     if (!ok || !creative) {

@@ -1,10 +1,8 @@
 {
-  "_comment": "THE LIVING PLAYBOOK — the craft research the creative prompts are written from. It lives here, as data, and NOT inside a prompt string, because research goes stale and a principle frozen in code can only be changed by a developer. src/playbook.ts renders these into the ideate + script prompts at runtime. `npm run playbook:review` re-examines each entry against what the engine has actually observed and PROPOSES changes to an approvals queue — it never edits this file, because a hallucinated 'best practice' written straight in here would silently poison every future reel.",
+  "_comment": "THE LIVING PLAYBOOK \u2014 the craft research the creative prompts are written from. It lives here, as data, and NOT inside a prompt string, because research goes stale and a principle frozen in code can only be changed by a developer. src/playbook.ts renders these into the ideate + script prompts at runtime. `npm run playbook:review` re-examines each entry against what the engine has actually observed and PROPOSES changes to an approvals queue \u2014 it never edits this file, because a hallucinated 'best practice' written straight in here would silently poison every future reel.",
   "_editing": "Edit freely by hand. Every entry needs a `source` (who says so) and a `verifiedOn` (when we last checked). `confidence` is one of: verified (we or a platform measured it) | inherited (industry consensus we have not tested) | contested (our own data disagrees or the field disagrees).",
-
-  "version": "1.0.0",
-  "updatedOn": "2026-07-26",
-
+  "version": "1.1.0",
+  "updatedOn": "2026-08-16",
   "entries": [
     {
       "id": "hook-1s-window",
@@ -37,7 +35,7 @@
       "id": "presenter-led-native-voice",
       "category": "format",
       "principle": "A visible human opens the reel and carries the message ON CAMERA.",
-      "detail": "Platforms deprioritise fully AI-generated reels with no human layer, while AI-ASSISTED content with a visible presenter performs normally. The video model performs presenter dialogue natively, lip-synced, in a real voice, at no extra cost — that in-shot voice is the quality bar. Every line NOT spoken by the presenter has to be synthesized afterwards and a viewer hears the switch instantly.",
+      "detail": "Platforms deprioritise fully AI-generated reels with no human layer, while AI-ASSISTED content with a visible presenter performs normally. The video model performs presenter dialogue natively, lip-synced, in a real voice, at no extra cost \u2014 that in-shot voice is the quality bar. Every line NOT spoken by the presenter has to be synthesized afterwards and a viewer hears the switch instantly.",
       "source": "Owner review 2026-07-26, verbatim: \"the second voice, when it comes, looks very AI-generated, the woman's voice... the first 6 seconds are good.\" Encoded as the presenter-opener gate in src/render/types.ts.",
       "verifiedOn": "2026-07-26",
       "confidence": "verified"
@@ -46,8 +44,8 @@
       "id": "short-duration-bias",
       "category": "format",
       "principle": "Bias short: reels of 15 seconds or less tend to complete, and completion is what gets re-served.",
-      "detail": "UNSETTLED, AND DELIBERATELY FLAGGED AS SUCH. The current VedicHour format spec is a 22-32 second read (55-80 words), which contradicts this bias. Both cannot be right. Do not silently resolve it — this is exactly the question the performance evidence exists to settle, so keep generating across duration buckets until the data can speak.",
-      "source": "Industry consensus on short-form completion rate. NOT yet verified against VedicHour's own posted reels — zero measured at the time of writing.",
+      "detail": "UNSETTLED, AND DELIBERATELY FLAGGED AS SUCH. The current VedicHour format spec is a 22-32 second read (55-80 words), which contradicts this bias. Both cannot be right. Do not silently resolve it \u2014 this is exactly the question the performance evidence exists to settle, so keep generating across duration buckets until the data can speak.",
+      "source": "Industry consensus on short-form completion rate. NOT yet verified against VedicHour's own posted reels \u2014 zero measured at the time of writing.",
       "verifiedOn": "2026-07-26",
       "confidence": "contested"
     },
@@ -55,7 +53,7 @@
       "id": "subject-continuity",
       "category": "format",
       "principle": "Every shot is generated independently, so an under-described person gets re-cast at random.",
-      "detail": "Any b-roll shot featuring a person must explicitly describe them as the same person as the presenter shot — same gender, same clothing, same time of day. A b-roll that silently swaps the protagonist for a different-looking stranger breaks the first-person story and kills the reel.",
+      "detail": "Any b-roll shot featuring a person must explicitly describe them as the same person as the presenter shot \u2014 same gender, same clothing, same time of day. A b-roll that silently swaps the protagonist for a different-looking stranger breaks the first-person story and kills the reel.",
       "source": "Text-to-video model behaviour observed across VedicHour render runs (each shot is a separate model call with no shared state).",
       "verifiedOn": "2026-07-26",
       "confidence": "verified"
@@ -73,9 +71,54 @@
       "id": "proof-is-the-product",
       "category": "platform",
       "principle": "Show the real product, and show the part that is the promise.",
-      "detail": "Every variant carries at least one screencap of the live report and its hour-slots. The pricing page, checkout, payment and onboarding are forbidden capture targets — the proof shot is the thing the viewer would get, not the till.",
+      "detail": "Every variant carries at least one screencap of the live report and its hour-slots. The pricing page, checkout, payment and onboarding are forbidden capture targets \u2014 the proof shot is the thing the viewer would get, not the till.",
       "source": "Owner ruling 2026-07-26: \"when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day.\" Enforced in src/render/capture-policy.ts.",
       "verifiedOn": "2026-07-26",
+      "confidence": "verified"
+    },
+    {
+      "id": "hook-08s-window",
+      "category": "hook",
+      "principle": "First frame must stop a thumb in under 0.8s.",
+      "detail": "\u22648 words; 10 is hard reject. Moment/question, never slogan.",
+      "source": "Content Ops SOP 2026-08-16",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "no-cheap-mandala-spam",
+      "category": "format",
+      "principle": "Never use stock Indian spiritual wallpaper as hero visual.",
+      "detail": "No mandala/lotus/yantra/neon purple galaxy/floating Om as primary content. Prefer presenter room + report screencap.",
+      "source": "Content Ops SOP",
+      "verifiedOn": "2026-08-16",
+      "confidence": "inherited"
+    },
+    {
+      "id": "no-fake-social-proof",
+      "category": "platform",
+      "principle": "No invented testimonials, star ratings, or user counts.",
+      "detail": "Proof is the report on screen.",
+      "source": "creative-seeds + ads policy",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "brand-type-color",
+      "category": "format",
+      "principle": "Quietly premium type/color \u2014 deep night + gold.",
+      "detail": "#0a0a1a / #0d0d2b + #D4AF37. Not purple glow or cream-terracotta clich\u00e9.",
+      "source": "brand.ts",
+      "verifiedOn": "2026-08-16",
+      "confidence": "verified"
+    },
+    {
+      "id": "one-winner-to-render",
+      "category": "platform",
+      "principle": "Only tournament winner reaches paid render.",
+      "detail": "WINNERS_KEPT=1; Approve unlocks spend.",
+      "source": "Content Ops SOP",
+      "verifiedOn": "2026-08-16",
       "confidence": "verified"
     }
   ]

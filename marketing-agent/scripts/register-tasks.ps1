@@ -33,8 +33,10 @@ $AgentDir = Split-Path -Parent $PSScriptRoot
 # name / npm script / repeat interval (min) / first-run offset from now (min)
 $Tasks = @(
   @{ Name = 'VedicHour-Marketing-Cycle'; Script = 'cycle';         Interval = $IntervalMinutes; Offset = 0;  Limit = 30 },
-  @{ Name = 'VedicHour-Loop-Creative';   Script = 'loop:creative'; Interval = 120;              Offset = 0;  Limit = 30 },
+  @{ Name = 'VedicHour-Loop-ContentOps'; Script = 'loop:content-ops'; Interval = 120;              Offset = 0;  Limit = 55 },
+  @{ Name = 'VedicHour-Loop-Creative';   Script = 'loop:creative'; Interval = 120;              Offset = 5;  Limit = 45 },
   @{ Name = 'VedicHour-Loop-Render';     Script = 'loop:render';   Interval = 120;              Offset = 60; Limit = 55 },
+  @{ Name = 'VedicHour-Loop-Package';    Script = 'loop:package';  Interval = 120;              Offset = 90; Limit = 20 },
   @{ Name = 'VedicHour-Loop-Sync';       Script = 'loop:sync';     Interval = 30;               Offset = 5;  Limit = 15 },
   @{ Name = 'VedicHour-Loop-Stats';      Script = 'loop:stats';    Interval = 60;               Offset = 10; Limit = 15 },
   @{ Name = 'VedicHour-Loop-Insights';   Script = 'loop:insights'; Interval = 120;              Offset = 20; Limit = 25 },
