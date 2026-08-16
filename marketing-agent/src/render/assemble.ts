@@ -283,6 +283,9 @@ async function measureLoudness(ffmpeg: string, inputs: string[], mixChain: strin
   if (!m) return null;
   try {
     const j = JSON.parse(m[0]);
+    const i = Number(j?.input_i);
+    // Silent dry placeholders measure as -inf; loudnorm rejects measured_I outside [-99, 0].
+    if (!Number.isFinite(i) || i < -99 || i > 0) return null;
     return typeof j?.input_i === 'string' ? j : null;
   } catch {
     return null;
