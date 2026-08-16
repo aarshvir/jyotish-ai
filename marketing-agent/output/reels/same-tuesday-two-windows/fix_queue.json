@@ -1,0 +1,31 @@
+{
+  "slug": "same-tuesday-two-windows",
+  "runId": "c75c8b7d",
+  "createdAt": "2026-08-16T20:00:31.709Z",
+  "fixes": [
+    {
+      "timestamp": "n/a",
+      "severity": "blocker",
+      "issue": "render verification: cannot watch: claimed video path is not on this machine and output/reels/same-tuesday-two-windows/final.mp4 is missing",
+      "fix": "Play the mp4. If it is mute or a placeholder, re-render with audible speech. Do not post.",
+      "lens": "hard-rules",
+      "stage": "deterministic",
+      "lenses": [
+        "hard-rules"
+      ],
+      "fixClass": "auto_fixable"
+    },
+    {
+      "timestamp": "n/a",
+      "severity": "blocker",
+      "issue": "render verification: legacy PASS — audio present was a mute-AAC lie (hasAudio on the container)",
+      "fix": "Play the mp4. If it is mute or a placeholder, re-render with audible speech. Do not post.",
+      "lens": "hard-rules",
+      "stage": "deterministic",
+      "lenses": [
+        "hard-rules"
+      ],
+      "fixClass": "auto_fixable"
+    }
+  ]
+}

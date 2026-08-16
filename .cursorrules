@@ -77,3 +77,9 @@ This is a Vedic astrology SaaS platform that generates personalized birth chart 
 - Provide context/tooltips for non-expert users
 - Follow authentic Vedic astrology principles
 - Cite classical texts when relevant
+
+## Marketing reels (human-view)
+
+- Audit every reel as a person watching on a phone with sound on. Never ship from `publish.json` or still frames alone.
+- An audio stream is not audio. Mute AAC, dry placeholders, and `/pricing` landing links are blockers.
+- Work stays on `main` unless the owner asks for a branch.

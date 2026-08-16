@@ -1,0 +1,161 @@
+{
+  "slug": "same-tuesday-two-windows",
+  "runId": "c75c8b7d",
+  "createdAt": "2026-08-16T20:00:31.709Z",
+  "verdict": "block",
+  "reason": "3 blocker-severity finding(s); 2 lens(es) returned \"block\" (human-view (play + listen), hard-rules (deterministic))",
+  "lenses": [
+    {
+      "lens": "human-view (play + listen)",
+      "stage": "deterministic",
+      "source": "ffmpeg",
+      "verdict": "block",
+      "findings": [
+        {
+          "timestamp": "n/a",
+          "severity": "blocker",
+          "issue": "Cannot watch this reel like a human. No playable final.mp4. Looked at: /workspace/marketing-agent/output/reels/same-tuesday-two-windows/final.mp4 · MISSING on this machine. Claimed laptop file: C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\final.mp4. Reading publish.json is not viewing — that is how a mute dry card shipped as \"PASS — audio present\".",
+          "fix": "Render a live presenter reel, keep final.mp4 next to publish.json, play it with sound on, then re-run `npm run loop:review`. Never mark ready_to_post from metadata.",
+          "lens": "human-view",
+          "stage": "deterministic"
+        }
+      ],
+      "oneLiner": "Unwatchable as a phone viewer: 1 listen/watch blocker(s).",
+      "ok": true,
+      "costUsd": 0,
+      "durationMs": 0
+    },
+    {
+      "lens": "hard-rules (deterministic)",
+      "stage": "deterministic",
+      "source": "regex",
+      "verdict": "block",
+      "findings": [
+        {
+          "timestamp": "n/a",
+          "severity": "blocker",
+          "issue": "render verification: cannot watch: claimed video path is not on this machine and output/reels/same-tuesday-two-windows/final.mp4 is missing",
+          "fix": "Play the mp4. If it is mute or a placeholder, re-render with audible speech. Do not post.",
+          "lens": "hard-rules",
+          "stage": "deterministic"
+        },
+        {
+          "timestamp": "n/a",
+          "severity": "blocker",
+          "issue": "render verification: legacy PASS — audio present was a mute-AAC lie (hasAudio on the container)",
+          "fix": "Play the mp4. If it is mute or a placeholder, re-render with audible speech. Do not post.",
+          "lens": "hard-rules",
+          "stage": "deterministic"
+        },
+        {
+          "timestamp": "n/a",
+          "severity": "major",
+          "issue": "render verification: human-view: do not post until a live audible presenter reel exists next to this pack",
+          "fix": "Re-render or re-encode to spec.",
+          "lens": "hard-rules",
+          "stage": "deterministic"
+        }
+      ],
+      "oneLiner": "2 owner hard-rule violation(s) proven from the artifacts.",
+      "ok": true,
+      "costUsd": 0,
+      "durationMs": 0
+    },
+    {
+      "lens": "pre-flight (retro, on the creative plan)",
+      "stage": "deterministic",
+      "source": "rules",
+      "verdict": "ship",
+      "findings": [],
+      "oneLiner": "The plan this reel came from passes pre-flight.",
+      "ok": true,
+      "costUsd": 0,
+      "durationMs": 0
+    }
+  ],
+  "findings": [
+    {
+      "timestamp": "n/a",
+      "severity": "blocker",
+      "issue": "Cannot watch this reel like a human. No playable final.mp4. Looked at: /workspace/marketing-agent/output/reels/same-tuesday-two-windows/final.mp4 · MISSING on this machine. Claimed laptop file: C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\final.mp4. Reading publish.json is not viewing — that is how a mute dry card shipped as \"PASS — audio present\".",
+      "fix": "Render a live presenter reel, keep final.mp4 next to publish.json, play it with sound on, then re-run `npm run loop:review`. Never mark ready_to_post from metadata.",
+      "lens": "human-view",
+      "stage": "deterministic",
+      "lenses": [
+        "human-view"
+      ],
+      "fixClass": "needs_rerender"
+    },
+    {
+      "timestamp": "n/a",
+      "severity": "blocker",
+      "issue": "render verification: cannot watch: claimed video path is not on this machine and output/reels/same-tuesday-two-windows/final.mp4 is missing",
+      "fix": "Play the mp4. If it is mute or a placeholder, re-render with audible speech. Do not post.",
+      "lens": "hard-rules",
+      "stage": "deterministic",
+      "lenses": [
+        "hard-rules"
+      ],
+      "fixClass": "auto_fixable"
+    },
+    {
+      "timestamp": "n/a",
+      "severity": "blocker",
+      "issue": "render verification: legacy PASS — audio present was a mute-AAC lie (hasAudio on the container)",
+      "fix": "Play the mp4. If it is mute or a placeholder, re-render with audible speech. Do not post.",
+      "lens": "hard-rules",
+      "stage": "deterministic",
+      "lenses": [
+        "hard-rules"
+      ],
+      "fixClass": "auto_fixable"
+    },
+    {
+      "timestamp": "n/a",
+      "severity": "major",
+      "issue": "render verification: human-view: do not post until a live audible presenter reel exists next to this pack",
+      "fix": "Re-render or re-encode to spec.",
+      "lens": "hard-rules",
+      "stage": "deterministic",
+      "lenses": [
+        "hard-rules"
+      ],
+      "fixClass": "needs_rerender"
+    }
+  ],
+  "counts": {
+    "blocker": 3,
+    "major": 1,
+    "minor": 0,
+    "nit": 0
+  },
+  "costUsd": 0,
+  "degraded": [],
+  "fixQueue": [
+    {
+      "timestamp": "n/a",
+      "severity": "blocker",
+      "issue": "render verification: cannot watch: claimed video path is not on this machine and output/reels/same-tuesday-two-windows/final.mp4 is missing",
+      "fix": "Play the mp4. If it is mute or a placeholder, re-render with audible speech. Do not post.",
+      "lens": "hard-rules",
+      "stage": "deterministic",
+      "lenses": [
+        "hard-rules"
+      ],
+      "fixClass": "auto_fixable"
+    },
+    {
+      "timestamp": "n/a",
+      "severity": "blocker",
+      "issue": "render verification: legacy PASS — audio present was a mute-AAC lie (hasAudio on the container)",
+      "fix": "Play the mp4. If it is mute or a placeholder, re-render with audible speech. Do not post.",
+      "lens": "hard-rules",
+      "stage": "deterministic",
+      "lenses": [
+        "hard-rules"
+      ],
+      "fixClass": "auto_fixable"
+    }
+  ],
+  "reviewPath": "/workspace/marketing-agent/output/reels/same-tuesday-two-windows/REVIEW.md"
+}

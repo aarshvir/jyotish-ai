@@ -1,46 +1,48 @@
 {
   "slug": "same-tuesday-two-windows",
-  "title": "Same Tuesday, two windows",
+  "title": "HR sent two slots",
   "product": "forecast",
-  "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\final.mp4",
+  "video": "MISSING on this machine. Claimed laptop file: C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\final.mp4",
   "durationSec": 31.2,
   "generationCostUsd": 0.42,
   "dryRun": false,
-  "youtubeTitle": "Same Tuesday. Two windows. | VedicHour",
-  "description": "Same Tuesday. Two windows.\n\nAapka din ek mood nahi hai. Same Tuesday, do alag windows. Free kundli VedicHour.com pe. Apna timing grid dekho.\n\nVedicHour rates all 18 hours of your day against your own birth chart, real astronomical data — the same math a careful astrologer uses, explained in plain English, no jargon.\n\nStart free: https://www.vedichour.com/free-kundli?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=same-tuesday-two-windows\nFull report: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=same-tuesday-two-windows\nUse NEWUSER30 for 30% off your first paid report.\n\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.\n\n#vedicastrology #jyotish #planetaryhours #hora #kundli #panchang #astrologytiming #vedichour",
+  "youtubeTitle": "HR sent 10am and 5pm. Same Tuesday.",
+  "description": "HR sent two slots.\n\nHR sent 10am and 5pm. Same Tuesday. Same call. Not the same hour. See both windows on VedicHour.com. Free to start.\n\nVedicHour rates all 18 hours of your day against your own birth chart, real astronomical data — the same math a careful astrologer uses, explained in plain English, no jargon.\n\nStart free: https://www.vedichour.com/onboard?plan=free&utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=same-tuesday-two-windows\nSee the sample: https://www.vedichour.com/sample-report?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=same-tuesday-two-windows\nUse NEWUSER30 for 30% off your first paid report.\n\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.\n\n#vedicastrology #hourlytiming #kundli #vedichour",
   "tags": [
     "vedic astrology",
-    "jyotish",
-    "planetary hours",
-    "hora",
+    "hourly timing",
     "kundli",
-    "panchang",
-    "astrology timing",
     "vedichour"
   ],
   "hashtags": [
     "#vedichour",
-    "#vedicastrology",
-    "#jyotish",
-    "#kundli",
-    "#planetaryhours",
-    "#hora",
-    "#astrologyindia",
-    "#timing",
-    "#panchang",
-    "#dailyastrology"
+    "#vedictiming"
   ],
-  "caption": "Same Tuesday. Two windows.\n\nAapka din ek mood nahi hai. Same Tuesday, do alag windows. Free kundli VedicHour.com pe. Apna timing grid dekho.\n\nYour Life, Decoded Hour by Hour.\n\n#vedichour #vedicastrology #jyotish #kundli #planetaryhours #hora #astrologyindia #timing #panchang #dailyastrology",
+  "caption": "HR sent two slots. Same Tuesday. Same call. Not the same hour.\n\nYour chart already knows which window is clearer. VedicHour scores all 18 hours of your day against your birth chart — real astronomical data, the same math a careful astrologer uses.\n\nRead the sample: vedichour.com/sample-report\n\nYour Life, Decoded Hour by Hour.",
   "links": {
-    "instagram": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video&utm_content=same-tuesday-two-windows",
-    "youtube": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=same-tuesday-two-windows",
-    "tiktok": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video&utm_content=same-tuesday-two-windows",
-    "facebook": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video&utm_content=same-tuesday-two-windows"
+    "instagram": "https://www.vedichour.com/sample-report?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video&utm_content=same-tuesday-two-windows",
+    "youtube": "https://www.vedichour.com/sample-report?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=same-tuesday-two-windows",
+    "tiktok": "https://www.vedichour.com/sample-report?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video&utm_content=same-tuesday-two-windows",
+    "facebook": "https://www.vedichour.com/sample-report?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video&utm_content=same-tuesday-two-windows"
   },
-  "status": "ready_to_post_manually",
+  "status": "failed_verification",
+  "humanView": {
+    "ok": false,
+    "watched": "cloud dry placeholder (31.2s, mean -91 dB, silence 0-31.2s) plus this tracked pack. Could not play the Windows live file.",
+    "problems": [
+      "cannot watch the claimed laptop final.mp4 from this machine",
+      "legacy verification.ok true was container hasAudio, not a listen",
+      "cloud dry cut of the same duration is navy/gold PRESENTER FRAME cards, mute AAC, stub Hinglish captions (DO ALAG WINDOWS)",
+      "tracked caption was stub Hinglish; links went to /pricing"
+    ]
+  },
   "verification": {
-    "ok": true,
-    "problems": [],
+    "ok": false,
+    "problems": [
+      "cannot watch: claimed video path is not on this machine and output/reels/same-tuesday-two-windows/final.mp4 is missing",
+      "legacy PASS — audio present was a mute-AAC lie (hasAudio on the container)",
+      "human-view: do not post until a live audible presenter reel exists next to this pack"
+    ],
     "probe": {
       "width": 1080,
       "height": 1920,
@@ -49,14 +51,11 @@
       "hasAudio": true,
       "codec": "h264"
     },
-    "frames": [
-      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\frames\\frame1.jpg",
-      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\frames\\frame2.jpg",
-      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\frames\\frame3.jpg",
-      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\frames\\frame4.jpg",
-      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\frames\\frame5.jpg",
-      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\same-tuesday-two-windows\\frames\\frame6.jpg"
-    ]
+    "frames": [],
+    "listen": {
+      "audible": false,
+      "note": "Not re-listened on the Windows file. Cloud dry sibling measured mean_volume -91.0 dB, silence_duration 31.204s."
+    }
   },
   "shots": [
     {

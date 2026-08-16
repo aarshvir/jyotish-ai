@@ -2,7 +2,23 @@
 
 **Goal:** every Reel is audited before any paid render, looks best-in-class (not cheap), and the founder only taps **Approve** once. Everything else is CLI / cron.
 
-**One-sentence model:** over-produce text ($0) → kill most of it → approve the survivor → spend on render → package → learn.
+**One-sentence model:** over-produce text ($0) → kill most of it → approve the survivor → spend on render → **watch the mp4 like a human** → package → learn.
+
+---
+
+## Human-view law (non-negotiable)
+
+A reel is a **phone video with sound on**. Audit and fix from that seat every time. `publish.json` is not a viewing. Extracted frames are not a viewing. An AAC track of digital silence is not audio.
+
+**Before anyone claims the reel is ready:**
+
+1. **Play `output/reels/<slug>/final.mp4` with sound on** (or ask an agent with eyes/ears to watch the actual file). If the file is a Windows path on another machine, you have not watched it.
+2. **Listen.** If you hear nothing, hear a gap longer than ~1s, or the product section goes mute — **BLOCK**. Do not post. Do not write `PASS — audio present`.
+3. **Look.** If you see navy/gold cards, `PRESENTER FRAME` boxes, or `(dry)` labels — that is a placeholder, not a reel. **BLOCK**.
+4. `npm run loop:review -- <slug>` now runs a **play + listen gate first**. Mute, missing `final.mp4`, or dry placeholders skip the LLM lenses and verdict **BLOCK**.
+5. Status `ready_to_post_manually` is only legal when verify listened to an audible live render. Dry → `dry_placeholder_do_not_post`. Failed listen → `failed_verification`.
+
+Paid re-render stays on the laptop that has `marketing-agent/.env` (`FAL_KEY`, `SARVAM_API_KEY`): CLEAN preflight → `npm run approve` → estimate → `loop:render` under the $4/run cap. Cloud VMs without keys must not fake a live reel.
 
 ---
 
@@ -129,6 +145,9 @@ Configs: `playbook.json`, `creative-seeds.json`, `banned-claims.json`.
 |---|---|
 | `awaiting_approval` | Winner + preflight clean — waiting for Approve |
 | `ready_to_render` | Approved — render may spend |
+| `dry_placeholder_do_not_post` | Navy cards / silent AAC — never paste |
+| `failed_verification` | Listen/watch gate failed — never paste |
+| `ready_to_post_manually` | Live audible render + human-view pass — paste after founder watch |
 | `rejected` / `draft` | Never spend |
 | `needs_review` | Linter flagged |
 
