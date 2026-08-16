@@ -14,6 +14,10 @@ import {
 
 export type { SupportedCurrency };
 
+/** Canonical free→paid unlock. Every preview/report CTA must use this so NEWUSER30 cannot drift. */
+export const UNLOCK_7DAY_HREF = '/onboard?plan=7day&promo=NEWUSER30';
+export const UNLOCK_FREE_HREF = '/onboard?plan=free';
+
 /** Display string for a single plan in the requested currency. */
 export function getDisplayPrice(planId: string, currency: SupportedCurrency): string {
   const amount = getPlanAmount(planId, currency);

@@ -1,0 +1,105 @@
+{
+  "slug": "2026-07-26-same-pitch-do-alag-windows-v2",
+  "title": "Same pitch, do alag windows - apna din dekho",
+  "product": "forecast",
+  "status": "rendered",
+  "rank": 0.89,
+  "hook": "Same pitch. Do alag windows.",
+  "cta": "vedichour.com - free chart. Your Life, Decoded Hour by Hour.",
+  "voice": "veo_native",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 6,
+      "voice": "veo_native",
+      "prompt": "Medium close-up of an Indian man in his early thirties, light grey shirt, short neat hair, standing in a bright modern meeting room holding a slim presentation folder, soft daylight from a window, static vertical 9:16 framing, speaking to camera",
+      "dialogue": "Deck same hai. Client same hai. Bas window alag hai - kaunsa lun?"
+    },
+    {
+      "id": "s2",
+      "role": "presenter",
+      "seconds": 8,
+      "voice": "veo_native",
+      "prompt": "Medium close-up of an Indian man in his early thirties, light grey shirt, short neat hair, standing in a bright modern meeting room glancing at the phone in his hand, soft daylight from a window, static vertical 9:16 framing, speaking to camera",
+      "dialogue": "Har ghante ka score, ek line - kaunsa ghanta pitch ke liye theek hai. Asli astronomical data se."
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 8,
+      "capture": {
+        "url": "https://www.vedichour.com/sample-report",
+        "libraryKey": "sample_report_page",
+        "waitForSelector": "#main-content",
+        "scrollPx": 4330,
+        "panToPx": 4820
+      }
+    },
+    {
+      "id": "s4",
+      "role": "presenter_close",
+      "seconds": 4,
+      "voice": "veo_native",
+      "prompt": "Medium close-up of an Indian man in his early thirties, light grey shirt, short neat hair, standing in a bright modern meeting room, shoulders relaxed with a small confident nod, soft daylight from a window, static vertical 9:16 framing, speaking to camera",
+      "dialogue": "Pitch se pehle apna din dekho - free hai."
+    }
+  ],
+  "voicePlan": {
+    "adVoice": "veo_native",
+    "nativeShots": [
+      "s1",
+      "s2",
+      "s4"
+    ],
+    "narratedShots": [],
+    "maxNarrationWords": 0
+  },
+  "publish": {
+    "youtubeTitle": "Same pitch. Do alag windows.",
+    "description": "Same deck, same client - alag window. VedicHour aapke din ke saare 18 ghanton ko aapki apni birth chart ke against score karta hai, aur har ghante ke saath ek plain line deta hai - ki woh window kis kaam ke liye theek hai. Ek window clearer nikal sakta hai, doosra heavier. Sab kuch asli astronomical data se nikalta hai, andaaze se nahi, aur plain English mein likha jata hai. Decide phir bhi aap karte ho.\n\nApna free chart banao: https://www.vedichour.com/free-kundli?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=same-pitch-v2\nSample din poora dekho: https://www.vedichour.com/sample-report\n\nFor reflection and planning only. Not medical, legal, financial, or emergency advice.\n\nYour Life, Decoded Hour by Hour.",
+    "tags": [
+      "vedic astrology",
+      "jyotish",
+      "planetary hours",
+      "hora",
+      "kundli",
+      "timing",
+      "hinglish",
+      "vedichour"
+    ],
+    "hashtags": [
+      "#clientpitch",
+      "#pitchdeck",
+      "#jyotish",
+      "#vedicjyotish",
+      "#horatiming",
+      "#worksmarter",
+      "#meetingstrategy",
+      "#corporateindia",
+      "#hinglishcontent",
+      "#founderlifeindia",
+      "#vedichour"
+    ],
+    "caption": "Same pitch. Do alag windows.\n\nDin ke 18 ghante, har ek ka score, aur ek line - kaunsa ghanta pitch ke liye theek hai. Ek clearer, doosra heavier. Decide phir bhi aap karte ho.\n\nFree chart: vedichour.com\n\nYour Life, Decoded Hour by Hour."
+  },
+  "ideaId": "client-pitch-tuesday-or-thursday",
+  "family": "decision_moment",
+  "angle": "Same deck, same client, two possible windows - answered by how the day's own hours are scored for being seen and pitching.",
+  "hookText": "Same pitch. Do alag windows.",
+  "spokenScript": "Deck same hai. Client same hai. Bas window alag hai - kaunsa lun? Har ghante ka score, ek line - kaunsa ghanta pitch ke liye theek hai. Asli astronomical data se. Pitch se pehle apna din dekho - free hai.",
+  "onScreenCaptions": [
+    "Deck same, client same",
+    "Bas window alag",
+    "Har ghante ka score",
+    "Pitch se pehle apna din dekho"
+  ],
+  "language": "hinglish",
+  "v2Of": "2026-07-25-same-pitch-do-alag-windows",
+  "v2Notes": "Selected as the highest-ranked banked decision-moment creative that could be made to pass pre-flight with a faithful edit. HOOK kept verbatim ('Same pitch. Do alag windows.') and so is the opening line ('Deck same hai. Client same hai.'). Three law fixes, no hook weakening: (1) every narrated shot removed - the whole script is now Veo native on-camera dialogue, so the reel has one voice and no synthetic narrator; (2) both product shots pointed away from the payment page to https://www.vedichour.com/sample-report, panning 4330->4820px so the 10-11 am 'Good for being seen - a pitch, a demo, or asking your boss for something' window and the 11-12 'pleasant but unfocused' window are both readable, and the pan deliberately starts below the 9-10 am card whose page copy uses off-brand best/worst wording; (3) the dilemma is stated as two windows rather than two weekdays so the proof on screen is exactly what the script claims - the sample report shows one real day's 18 windows.",
+  "linter": {
+    "verdict": "pass",
+    "reason": "Timing comparison with clearer/heavier framing, user decides, no promised outcome."
+  },
+  "rendered_at": "2026-07-26T14:47:57.470Z"
+}

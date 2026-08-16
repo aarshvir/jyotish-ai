@@ -1,0 +1,134 @@
+{
+  "slug": "2026-07-25-call-karun-ya-kal-pe-rakhun",
+  "title": "Sorry call aaj karun ya kal? Timing grid dekho",
+  "product": "forecast",
+  "status": "rendered",
+  "rank": 0.75,
+  "hook": "Call karun... ya kal pe rakhun?",
+  "cta": "NEWUSER30 ke saath explore karo. Your Life, Decoded Hour by Hour.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 7,
+      "prompt": "A young Indian presenter sits alone with their thumb hovering over a phone, staring at it without tapping; slow push-in; soft evening window lighting; intimate, hesitant mood; the phone screen is heavily out of focus, glowing softly, no legible characters; no logos.",
+      "dialogue": "Sorry bolna hai, par call button dekhte hi thumb freeze ho jata hai."
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "seconds": 6,
+      "prompt": "A single person takes a slow breath and lowers their tense hand onto a wooden table; gentle sideward camera slide; warm apartment lighting; reflective, quietly anxious mood.",
+      "vo": "Aaj karun, ya kal, sirf anxiety se decide karna zaroori nahi."
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 7,
+      "vo": "VedicHour tumhari birth chart ke against din ke saare 18 horas rate karta hai.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s4",
+      "role": "product",
+      "seconds": 8,
+      "vo": "Clearer aur heavier conversation windows plain English mein dikhte hain, Swiss Ephemeris aur Lahiri ayanamsa ke saath.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Sorry call aaj karun ya kal? Timing grid dekho",
+    "description": "Apni birth chart ke against clearer aur heavier conversation windows explore karo. First paid report par 30% off ke liye NEWUSER30 use karo: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=sorry-call-aaj-ya-kal Your Life, Decoded Hour by Hour.",
+    "hashtags": [
+      "#sorrybolna",
+      "#aajyakal",
+      "#dostibaatein",
+      "#jyotish",
+      "#vedicjyotish",
+      "#horatiming",
+      "#birthchart",
+      "#mindfuldecisions",
+      "#selfreflection",
+      "#hindireels",
+      "#urbanindia",
+      "#vedichour"
+    ],
+    "caption": "Thumb freeze ho gaya? Aaj ya kal? Saare 18 horas rated Clearer aur heavier windows"
+  },
+  "batchId": "2026-07-25-ms0xt778",
+  "scores": {
+    "hookStrength": 68,
+    "specificity": 76,
+    "credibility": 71,
+    "brandSafety": 88,
+    "producibility": 79,
+    "total": 75,
+    "notes": "Screencap shots 3 and 4 show the same grid twice; 15s of near-duplicate footage wastes the back half.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing awareness using approved clearer/heavier framing; no promised personal outcome."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "sorry-call-aaj-ya-kal",
+  "family": "decision_moment",
+  "angle": "Presenter stares at an open contact on their phone, thumb hovering over the call button, stuck — the hora grid shows which window runs clearer for a conversation that actually needs to go well",
+  "variantIndex": 1,
+  "hookText": "Call karun... ya kal pe rakhun?",
+  "spokenScript": "Sorry bolna hai, par call button dekhte hi thumb freeze ho jata hai. Aaj karun, ya kal, sirf anxiety se decide karna zaroori nahi. VedicHour tumhari birth chart ke against din ke saare 18 horas rate karta hai. Clearer aur heavier conversation windows plain English mein dikhte hain, Swiss Ephemeris aur Lahiri ayanamsa ke saath.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 7,
+      "visualPrompt": "A young Indian presenter sits alone with their thumb hovering over a phone, staring at it without tapping; slow push-in; soft evening window lighting; intimate, hesitant mood; the phone screen is heavily out of focus, glowing softly, no legible characters; no logos."
+    },
+    {
+      "kind": "broll",
+      "seconds": 6,
+      "visualPrompt": "A single person takes a slow breath and lowers their tense hand onto a wooden table; gentle sideward camera slide; warm apartment lighting; reflective, quietly anxious mood."
+    },
+    {
+      "kind": "screencap",
+      "seconds": 7,
+      "visualPrompt": "the 18-hora day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 8,
+      "visualPrompt": "two windows side by side on the same day — one clearer, one heavier — for the same task"
+    }
+  ],
+  "onScreenCaptions": [
+    "Thumb freeze ho gaya?",
+    "Aaj ya kal?",
+    "Saare 18 horas rated",
+    "Clearer aur heavier windows"
+  ],
+  "hashtags": [
+    "#sorrybolna",
+    "#aajyakal",
+    "#dostibaatein",
+    "#jyotish",
+    "#vedicjyotish",
+    "#horatiming",
+    "#birthchart",
+    "#mindfuldecisions",
+    "#selfreflection",
+    "#hindireels",
+    "#urbanindia",
+    "#vedichour"
+  ],
+  "youtubeTitle": "Sorry call aaj karun ya kal? Timing grid dekho",
+  "youtubeDescription": "Apni birth chart ke against clearer aur heavier conversation windows explore karo. First paid report par 30% off ke liye NEWUSER30 use karo: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=sorry-call-aaj-ya-kal Your Life, Decoded Hour by Hour.",
+  "language": "hinglish",
+  "rendered_at": "2026-07-25T23:28:10.844Z"
+}

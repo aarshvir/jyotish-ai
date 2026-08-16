@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { sendWelcomeEmail } from '@/lib/notify/welcome';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { referralCodeFor } from '@/lib/referral';
+import { safeInternalPath } from '@/lib/url/safeInternalPath';
 
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim();
 const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
@@ -17,12 +18,14 @@ export async function GET(request: NextRequest) {
   const origin = url.origin;
 
   if (!code) {
-    return NextResponse.redirect(origin + '/login?error=auth');
+    const fail = new URL('/login', origin);
+    fail.searchParams.set('error', 'auth');
+    const keepNext = safeInternalPath(next, '');
+    if (keepNext) fail.searchParams.set('next', keepNext);
+    return NextResponse.redirect(fail);
   }
 
-  // Guard against open redirect via //evil.com — allow only paths starting with a single slash
-  // followed by a non-slash character (no protocol-relative URLs).
-  const safePath = /^\/[^/]/.test(next) ? next : '/dashboard';
+  const safePath = safeInternalPath(next);
   const dest = origin + safePath;
   let response = NextResponse.redirect(dest);
 
@@ -42,7 +45,10 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     console.error('auth callback exchange:', error.message);
-    return NextResponse.redirect(origin + '/login?error=auth');
+    const fail = new URL('/login', origin);
+    fail.searchParams.set('error', 'auth');
+    fail.searchParams.set('next', safePath);
+    return NextResponse.redirect(fail);
   }
 
   const { data: { user } } = await supabase.auth.getUser();

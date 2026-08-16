@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UNLOCK_7DAY_HREF } from '@/lib/pricing';
 
 /**
  * TimingBridge — the calculator → product bridge.
@@ -22,7 +23,7 @@ const MOMENTS = [
 
 export function TimingBridge({
   anchorLabel = 'Your chart',
-  href = '/free-kundli',
+  href = UNLOCK_7DAY_HREF,
 }: {
   /** What the visitor just calculated, e.g. "Your Lagna" — keeps the copy specific. */
   anchorLabel?: string;
@@ -73,10 +74,10 @@ export function TimingBridge({
           data-track="timing-bridge-cta"
           className="btn-primary inline-block px-7 py-3"
         >
-          See my hours for today &mdash; free &rarr;
+          Unlock my hour-by-hour forecast &rarr;
         </Link>
         <span className="font-mono text-mono-sm text-dust">
-          Free &middot; no login &middot; no card
+          Free Kundli first &middot; 24h money-back on paid
         </span>
       </div>
     </section>

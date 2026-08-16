@@ -14,6 +14,11 @@ describe('safeInternalPath', () => {
     expect(safeInternalPath('/\\evil.com')).toBe('/dashboard');
   });
 
+  it('empty fallback lets callers omit next on error redirects', () => {
+    expect(safeInternalPath('https://evil.com', '')).toBe('');
+    expect(safeInternalPath('/login/reset', '')).toBe('/login/reset');
+  });
+
   it('falls back on empty, missing, or non-path input', () => {
     expect(safeInternalPath('')).toBe('/dashboard');
     expect(safeInternalPath(null)).toBe('/dashboard');

@@ -74,20 +74,35 @@ export async function sendFounderDigest(): Promise<{ ok: boolean; skipped?: bool
 }
 
 // ── Abandoned-checkout recovery ───────────────────────────────────────────
-function abandonedHtml(name: string): string {
+/**
+ * Where an abandoned checkout actually resumes. NOT /pricing — that is a plan
+ * chooser, so the reader lands one step further from finishing than the copy
+ * promises. The real unlock is the onboard checkout for the plan they abandoned
+ * (same shape as UNLOCK_7DAY_HREF in src/lib/pricing.ts).
+ */
+const PAID_PLANS = new Set(['7day', 'monthly', 'annual']);
+function abandonedUnlockUrl(planType: string | null | undefined): string {
+  const plan = planType && PAID_PLANS.has(planType) ? planType : '7day';
+  return `${SITE}/onboard?plan=${plan}&promo=NEWUSER30`;
+}
+
+// Copy note: the recovery job SKIPS reports with status 'complete', so at send
+// time the chart has NOT been computed — only the birth details were saved with
+// the checkout draft. Never claim a finished reading is waiting.
+function abandonedHtml(name: string, unlockUrl: string): string {
   const content = `
     <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#15131f">${name}, your reading is one step away</h1>
-    <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#2a2730">You started unlocking your VedicHour reading but didn't finish. Your chart is already computed and ready &mdash; pick up where you left off, and use code <strong>NEWUSER30</strong> for 30% off.</p>
-    ${emailButton('Finish &amp; unlock', `${SITE}/pricing?promo=NEWUSER30`)}
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#2a2730">You started unlocking your VedicHour reading but didn't finish. Your birth details are still saved &mdash; pick up right where you left off, and use code <strong>NEWUSER30</strong> for 30% off. Your reading starts generating the moment checkout completes.</p>
+    ${emailButton('Finish &amp; unlock', unlockUrl)}
     <p style="margin:18px 0 0;font-size:13px;color:#6b6776">24-hour money-back guarantee.</p>`;
-  return emailShell({ preheader: `${name}, your reading is computed and ready to unlock.`, contentHtml: content });
+  return emailShell({ preheader: `${name}, your details are saved — finish unlocking your reading.`, contentHtml: content });
 }
-function abandonedText(name: string): string {
+function abandonedText(name: string, unlockUrl: string): string {
   return plainText([
     `${name}, your VedicHour reading is one step away.`,
     '',
-    `Your chart is computed and ready. Finish unlocking it and use code NEWUSER30 for 30% off:`,
-    `${SITE}/pricing?promo=NEWUSER30`,
+    `Your birth details are still saved. Finish unlocking your reading and use code NEWUSER30 for 30% off:`,
+    unlockUrl,
     '',
     '24-hour money-back guarantee.',
   ]);
@@ -225,7 +240,7 @@ export async function runAbandonedCheckoutRecovery(): Promise<{ ok: boolean; sen
     const to = new Date(Date.now() - 20 * 3600_000).toISOString();
     const { data: pending } = await db
       .from('ziina_payments')
-      .select('report_id, user_id, created_at')
+      .select('report_id, user_id, plan_type, created_at')
       .eq('status', 'pending')
       .gte('created_at', from)
       .lte('created_at', to)
@@ -242,9 +257,10 @@ export async function runAbandonedCheckoutRecovery(): Promise<{ ok: boolean; sen
       if (!rep || rep.status === 'complete') continue;
       const email = (rep.user_email ?? '').trim();
       const name = ((rep.native_name ?? '').trim().split(' ')[0]) || 'there';
-      if (email && !suppressed.has(email.toLowerCase())) await sendEmail({ to: email, subject: `${name}, your VedicHour reading is one step away`, html: abandonedHtml(name), text: abandonedText(name), listUnsubscribeUrl: unsubscribeUrl(email) });
+      const unlockUrl = abandonedUnlockUrl((p as { plan_type?: string }).plan_type);
+      if (email && !suppressed.has(email.toLowerCase())) await sendEmail({ to: email, subject: `${name}, your VedicHour reading is one step away`, html: abandonedHtml(name, unlockUrl), text: abandonedText(name, unlockUrl), listUnsubscribeUrl: unsubscribeUrl(email) });
       const phone = (rep.phone ?? '').trim();
-      if (phone) await sendWhatsApp({ to: phone, body: `Namaste ${name} 🙏 Your VedicHour reading is computed and ready to unlock — finish here: ${SITE}/pricing?promo=NEWUSER30 (NEWUSER30 = 30% off).` });
+      if (phone) await sendWhatsApp({ to: phone, body: `Namaste ${name} 🙏 Your birth details are saved — finish unlocking your VedicHour reading here: ${unlockUrl} (NEWUSER30 = 30% off).` });
       sent++;
     }
     return { ok: true, sent };

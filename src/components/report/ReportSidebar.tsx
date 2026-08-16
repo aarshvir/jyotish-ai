@@ -47,8 +47,6 @@ export function ReportSidebar({ reportLoaded = false, preview = false }: { repor
   };
 
   return (
-    <>
-      {/* Desktop sidebar */}
       <nav
         className="pdf-exclude hidden lg:block fixed left-0 top-[var(--header-height,var(--nav-height))] w-48 h-[calc(100vh-var(--header-height,var(--nav-height)))] overflow-y-auto scrollbar-thin z-40"
         aria-label="Report sections"
@@ -70,28 +68,5 @@ export function ReportSidebar({ reportLoaded = false, preview = false }: { repor
           ))}
         </div>
       </nav>
-
-      {/* Mobile/Tablet tabs */}
-      <div className="pdf-exclude lg:hidden sticky top-[var(--header-height,var(--nav-height))] z-40 bg-space/95 backdrop-blur-sm border-b border-horizon/40">
-        <div className="overflow-x-auto scrollbar-thin" role="group" aria-label="Report sections">
-          <div className="flex gap-1.5 px-5 py-3 min-w-max">
-            {items.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => scrollToSection(item.id)}
-                aria-current={activeSection === item.id ? 'location' : undefined}
-                className={`px-3.5 py-2 rounded-button font-mono text-label-sm uppercase tracking-wider whitespace-nowrap transition-all min-h-[44px] ${
-                  activeSection === item.id
-                    ? 'bg-amber text-space'
-                    : 'bg-cosmos border border-horizon text-dust hover:border-amber/30 hover:text-star'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
   );
 }

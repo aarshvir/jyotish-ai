@@ -1,0 +1,243 @@
+{
+  "_comment": "VedicHour short-form tool stack \u2014 hard monthly cap $200 USD. Prices snapshotted 2026-08-16. Founder must verify before paying. Control plane = this marketing-agent. See docs/SHORTFORM_STACK_200.md. Launch-night split vs month-1: launchNight object. Do not buy Post Bridge/Hetzner tonight.",
+  "monthUsdCap": 200,
+  "currency": "USD",
+  "pricedOn": "2026-08-16",
+  "verifyBeforePay": true,
+  "envCaps": {
+    "VIDEO_BUDGET_RUN_USD": 4.0,
+    "VIDEO_BUDGET_DAY_USD": 6.0,
+    "VIDEO_BUDGET_WEEK_USD": 35.0,
+    "INR_PER_USD": 87
+  },
+  "lines": [
+    {
+      "id": "fal",
+      "vendor": "fal.ai",
+      "sku": "prepaid credits (no seat)",
+      "monthUsd": 140,
+      "kind": "usage_cap",
+      "keep": true,
+      "unitPrices": {
+        "veo31_fast_audio_on": {
+          "usdPerSecond": 0.15,
+          "source": "https://fal.ai/models/fal-ai/veo3.1/fast",
+          "verifiedInRepo": "src/render/providers.ts"
+        },
+        "kling30_standard_audio_off": {
+          "usdPerSecond": 0.084,
+          "source": "https://fal.ai/models/fal-ai/kling-video/v3/standard/text-to-video/llms.txt",
+          "note": "Pro pages may quote 0.112/s \u2014 do not switch this stack to Pro by default"
+        },
+        "wan27": {
+          "usdPerSecond": 0.1,
+          "source": "https://fal.ai/wan-2.7"
+        },
+        "seedance2_fast": {
+          "usdPerSecond": 0.2419,
+          "role": "fallback_only"
+        },
+        "flux_schnell": {
+          "usdPerImage": 0.003,
+          "source": "fal FLUX.1 [schnell]"
+        }
+      }
+    },
+    {
+      "id": "postbridge",
+      "vendor": "Post Bridge",
+      "sku": "Agent plan + API add-on",
+      "listUsd": 14,
+      "monthUsd": 14,
+      "kind": "seat",
+      "buyTonight": false,
+      "note": "Agent page $9 + API add-on $5. Creator page is $29 \u2014 do not buy that. Fallback: Upload-Post Basic $16/mo.",
+      "verify": "https://support.post-bridge.com/api/post-bridge-api-overview-access-and-pricing",
+      "buyWhen": "after volume > 1 approved reel/day; native apps until then",
+      "monthUsdLaunchNight": 0
+    },
+    {
+      "id": "hetzner",
+      "vendor": "Hetzner Cloud",
+      "sku": "CX23 EU + IPv4",
+      "listUsd": 8,
+      "monthUsd": 8,
+      "kind": "seat",
+      "buyTonight": false,
+      "note": "CX23 $6.49/mo post 2026-06-15 adjustment + ~$0.60 IPv4. Do not pick Singapore.",
+      "buyWhen": "after volume > 1 approved reel/day; native apps until then",
+      "monthUsdLaunchNight": 0
+    },
+    {
+      "id": "sarvam",
+      "vendor": "Sarvam AI",
+      "sku": "payg Bulbul v3 + Translate + Dubbing Starter",
+      "monthUsd": 6,
+      "kind": "usage_cap",
+      "keep": true,
+      "unitPrices": {
+        "bulbul_v3": {
+          "inrPer10kChars": 30,
+          "beta": true,
+          "source": "https://docs.sarvam.ai/api/getting-started/pricing"
+        },
+        "translate": {
+          "inrPer10kChars": 20
+        },
+        "dubbing_starter": {
+          "inrPerMinute": 40,
+          "editor_flow": false
+        }
+      },
+      "voice": "shubh"
+    },
+    {
+      "id": "r2",
+      "vendor": "Cloudflare R2",
+      "sku": "Standard free tier",
+      "monthUsd": 0,
+      "kind": "free_tier"
+    },
+    {
+      "id": "youtube",
+      "vendor": "YouTube Data API v3",
+      "sku": "default quota 10000 units/day",
+      "monthUsd": 0,
+      "kind": "free"
+    },
+    {
+      "id": "gbp",
+      "vendor": "Google Business Profile Local Posts API",
+      "sku": "access request then $0",
+      "monthUsd": 0,
+      "kind": "free"
+    },
+    {
+      "id": "buffer_free",
+      "vendor": "Buffer",
+      "sku": "Free \u2014 3 channels \u00d7 10 scheduled posts",
+      "monthUsd": 0,
+      "kind": "free",
+      "role": "backup_only"
+    },
+    {
+      "id": "reserve",
+      "vendor": "unallocated",
+      "sku": "retries / FX / one breakout week",
+      "monthUsd": 32,
+      "kind": "reserve"
+    }
+  ],
+  "sumMonthUsd": 200,
+  "doNotBuy": [
+    {
+      "vendor": "ElevenLabs",
+      "sku": "Creator $22/mo (first month $11) / Pro $99",
+      "why": "Hindi loses to Sarvam; second voice trips hardrules"
+    },
+    {
+      "vendor": "PlayHT",
+      "sku": "~$31\u201347/mo Creator-class",
+      "why": "Duplicate TTS seat"
+    },
+    {
+      "vendor": "Hedra",
+      "sku": "Basic $15 / Creator $30 / Pro $75",
+      "why": "Avatar look; fights locked Veo face"
+    },
+    {
+      "vendor": "Creatify",
+      "sku": "~$39\u201399/mo",
+      "why": "UGC-ad factory, wrong brand"
+    },
+    {
+      "vendor": "Arcads",
+      "sku": "~$110/mo for 10 videos",
+      "why": "Half the stack"
+    },
+    {
+      "vendor": "Runway",
+      "sku": "seat ~$12\u201395",
+      "why": "Second video bill, no Veo"
+    },
+    {
+      "vendor": "Luma",
+      "sku": "seat + per-gen",
+      "why": "Same as Runway"
+    },
+    {
+      "vendor": "Submagic",
+      "sku": "Business+API $69/yr-view or $120 monthly",
+      "why": "Karaoke slop; Hindi plates already built"
+    },
+    {
+      "vendor": "Captions.ai",
+      "sku": "Max $24.99 / Scale $69.99",
+      "why": "iOS app, no agent API"
+    },
+    {
+      "vendor": "Blotato",
+      "sku": "Starter $29",
+      "why": "Pays for writing/video this agent already does"
+    },
+    {
+      "vendor": "Buffer",
+      "sku": "Essentials $6/channel ($30 for 5)",
+      "why": "Duplicates Post Bridge"
+    },
+    {
+      "vendor": "Later",
+      "sku": "Starter $25",
+      "why": "Weak API, Instagram-shaped"
+    },
+    {
+      "vendor": "Canva",
+      "sku": "Pro ~$15; Connect Autofill is Enterprise",
+      "why": "Founder does not design Reels"
+    },
+    {
+      "vendor": "sync.so",
+      "sku": "Creator $19 + $0.05/s; Hobbyist $5 is watermarked",
+      "why": "Sarvam Dubbing \u20b940/min replaces it in month 1"
+    },
+    {
+      "vendor": "Remotion",
+      "sku": "company license TBD \u2014 verify remotion.dev/license",
+      "why": "ffmpeg already emits 9:16"
+    },
+    {
+      "vendor": "CapCut",
+      "sku": "no public agent render API",
+      "why": "Does not exist for this control plane"
+    },
+    {
+      "vendor": "Kling O3 4K",
+      "sku": "$0.42/s on fal",
+      "why": "5x Standard; we upscale in ffmpeg"
+    },
+    {
+      "vendor": "Ayrshare",
+      "sku": "~$149/mo",
+      "why": "Agency tax"
+    }
+  ],
+  "productionMix": {
+    "presenterHeroPerWeek": 4,
+    "screencapYoutubeOnlyPerWeek": 3,
+    "hindiDubsPerMonth": 4,
+    "gbpImagePostsPerWeek": 3,
+    "platformsPerHero": [
+      "youtube_shorts",
+      "instagram_reels",
+      "facebook_reels"
+    ]
+  },
+  "launchNight": {
+    "comment": "Follow launch-deliverables/TONIGHT_MARKETING_LOOP.md. Native IG/YT/GBP apps. No Post Bridge, no VPS tonight.",
+    "falAiPresenter": 140,
+    "sarvamBulbulV3": 5,
+    "posting": 0,
+    "hetzner": 0,
+    "reserve": 55
+  }
+}

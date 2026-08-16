@@ -3,18 +3,7 @@
 import { motion } from 'framer-motion';
 import { ScoreBadge } from './ScoreBadge';
 import { isDevFallback } from '@/lib/utils/plainify';
-
-interface WeekData {
-  week_label: string;
-  week_start: string;
-  score: number;
-  theme: string;
-  commentary: string;
-  daily_scores?: number[];
-  moon_journey?: string[];
-  peak_days_count?: number;
-  caution_days_count?: number;
-}
+import { selectComputedWeeks, type WeekData } from '@/lib/reports/weeklyWeeks';
 
 interface WeeklyAnalysisProps {
   weeks: WeekData[];
@@ -26,33 +15,25 @@ const MOON_SIGN_ABBREVIATIONS: Record<string, string> = {
   Sagittarius: 'Sag', Capricorn: 'Cap', Aquarius: 'Aqu', Pisces: 'Pis',
 };
 
-const WEEK_FALLBACK: WeekData = {
-  week_label: '',
-  week_start: '',
-  score: 65,
-  theme: '',
-  commentary: '',
-  daily_scores: [],   // empty avoids fake flat 65/65/65 sparkline
-  moon_journey: [],
-  peak_days_count: 0,
-  caution_days_count: 0,
-};
-
 export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
-  const weeksData = Array.from({ length: 6 }, (_, i) => {
-    const w = (weeks ?? [])[i];
-    const base = w ? { ...WEEK_FALLBACK, ...w } : { ...WEEK_FALLBACK };
-    return {
-      ...base,
-      week_label: (base.week_label ?? '').trim() || `Week ${i + 1} of 6`,
-      theme: (base.theme ?? '').trim() || 'Weekly energy arc.',
-      commentary: (() => {
-        const c = (base.commentary ?? '').trim();
-        if (!c || isDevFallback(c)) return 'Use the daily score calendar below to find your best days this week, and the hourly table for precision timing.';
-        return c;
-      })(),
-    };
-  });
+  // ONLY weeks the pipeline actually computed — see selectComputedWeeks.
+  const realWeeks = selectComputedWeeks(weeks);
+  const total = realWeeks.length;
+  const weeksData = realWeeks.map((w, i) => ({
+    ...w,
+    week_label: (w.week_label ?? '').trim() || `Week ${i + 1} of ${total}`,
+    // Empty/dev-fallback theme renders nothing rather than filler prose.
+    theme: (() => {
+      const t = (w.theme ?? '').trim();
+      return !t || isDevFallback(t) ? '' : t;
+    })(),
+    commentary: (() => {
+      const c = (w.commentary ?? '').trim();
+      // Navigational pointer, not a claim about their chart — safe when prose is missing.
+      if (!c || isDevFallback(c)) return 'Use the daily score calendar below to find your best days this week, and the hourly table for precision timing.';
+      return c;
+    })(),
+  }));
   const getBarBg = (score: number) => {
     if (score >= 75) return { backgroundColor: '#10b981' };
     if (score >= 55) return { backgroundColor: '#f59e0b' };
@@ -63,7 +44,7 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
   // No weeks computed (stripped preview, or a partial report) → render nothing
   // rather than a bare "Weekly data unavailable." panel, which reads as a broken
   // product. The preview's value/upsell surfaces live in the snapshot hero.
-  if (!weeks || weeks.length === 0) return null;
+  if (total === 0) return null;
 
   return (
     <motion.div
@@ -75,7 +56,7 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
       className="space-y-6 mb-12"
     >
       <h2 className="font-display font-semibold text-star text-3xl">
-        The Next 6 Weeks
+        {total === 1 ? 'The Next Week' : `The Next ${total} Weeks`}
       </h2>
 
       <div className="grid sm:grid-cols-2 gap-6">
@@ -133,10 +114,12 @@ export function WeeklyAnalysis({ weeks }: WeeklyAnalysisProps) {
                 </div>
               )}
 
-              {/* Theme */}
-              <p className="font-display italic text-amber text-base mb-3">
-                {week.theme}
-              </p>
+              {/* Theme — omitted entirely when the pipeline produced none */}
+              {week.theme && (
+                <p className="font-display italic text-amber text-base mb-3">
+                  {week.theme}
+                </p>
+              )}
 
               {/* Commentary */}
               <p className="font-display text-star text-body-sm leading-[1.8] mb-4">

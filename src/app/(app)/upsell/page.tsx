@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/server';
 import { headers } from 'next/headers';
 import { currencyFromHeader } from '@/lib/pricing';
 import { getMonthlyUpgradeAmount, formatAmount } from '@/lib/ziina/server';
+import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,7 @@ export default async function UpsellPage({ searchParams }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    redirect(`/login?next=/upsell?reportId=${encodeURIComponent(reportId)}`);
+    redirect(`/login?next=${encodeURIComponent(`/upsell?reportId=${reportId}`)}`);
   }
 
   const { data: rep } = await supabase
@@ -36,7 +37,9 @@ export default async function UpsellPage({ searchParams }: Props) {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (!rep || (rep.payment_status !== 'paid' && rep.payment_status !== 'promo')) {
+  // Entitlement, not revenue — must match /api/ziina/upgrade or the page offers an
+  // upgrade the API then refuses (or vice-versa).
+  if (!rep || !isEntitledPaymentStatus(rep.payment_status)) {
     redirect('/onboard');
   }
   if (rep.plan_type !== '7day') {

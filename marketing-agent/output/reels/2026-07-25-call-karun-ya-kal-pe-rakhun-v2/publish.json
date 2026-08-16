@@ -1,0 +1,105 @@
+{
+  "slug": "2026-07-25-call-karun-ya-kal-pe-rakhun-v2",
+  "title": "Sorry call aaj karun ya kal? Timing grid dekho",
+  "product": "forecast",
+  "video": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-call-karun-ya-kal-pe-rakhun-v2\\final.mp4",
+  "durationSec": 29,
+  "generationCostUsd": 1.704,
+  "dryRun": false,
+  "youtubeTitle": "Sorry call aaj karun ya kal? Timing grid dekho",
+  "description": "Apni birth chart ke against clearer aur heavier conversation windows explore karo. First paid report par 30% off ke liye NEWUSER30 use karo: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=sorry-call-aaj-ya-kal Your Life, Decoded Hour by Hour.",
+  "tags": [
+    "vedic astrology",
+    "jyotish",
+    "planetary hours",
+    "hora",
+    "kundli",
+    "panchang",
+    "astrology timing",
+    "vedichour"
+  ],
+  "hashtags": [
+    "#sorrybolna",
+    "#aajyakal",
+    "#dostibaatein",
+    "#jyotish",
+    "#vedicjyotish",
+    "#horatiming",
+    "#birthchart",
+    "#mindfuldecisions",
+    "#selfreflection",
+    "#hindireels",
+    "#urbanindia",
+    "#vedichour"
+  ],
+  "caption": "Thumb freeze ho gaya? Aaj ya kal? Saare 18 horas rated Clearer aur heavier windows",
+  "links": {
+    "instagram": "https://www.vedichour.com/pricing?utm_source=instagram&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-25-call-karun-ya-kal-pe-rakhun-v2",
+    "youtube": "https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=launch_video&utm_content=2026-07-25-call-karun-ya-kal-pe-rakhun-v2",
+    "tiktok": "https://www.vedichour.com/pricing?utm_source=tiktok&utm_medium=video&utm_campaign=launch_video&utm_content=2026-07-25-call-karun-ya-kal-pe-rakhun-v2",
+    "facebook": "https://www.vedichour.com/pricing?utm_source=facebook&utm_medium=reel&utm_campaign=launch_video&utm_content=2026-07-25-call-karun-ya-kal-pe-rakhun-v2"
+  },
+  "status": "ready_to_post_manually",
+  "verification": {
+    "ok": true,
+    "problems": [],
+    "probe": {
+      "width": 1080,
+      "height": 1920,
+      "durationSec": 29,
+      "fps": 30,
+      "hasAudio": true,
+      "codec": "h264"
+    },
+    "frames": [
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-call-karun-ya-kal-pe-rakhun-v2\\frames\\frame1.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-call-karun-ya-kal-pe-rakhun-v2\\frames\\frame2.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-call-karun-ya-kal-pe-rakhun-v2\\frames\\frame3.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-call-karun-ya-kal-pe-rakhun-v2\\frames\\frame4.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-call-karun-ya-kal-pe-rakhun-v2\\frames\\frame5.jpg",
+      "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\reels\\2026-07-25-call-karun-ya-kal-pe-rakhun-v2\\frames\\frame6.jpg"
+    ]
+  },
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "provider": "veo31_fast",
+      "label": "Google Veo 3.1 Fast",
+      "requestedSec": 7,
+      "billedSec": 8,
+      "usd": 1.2,
+      "priceVerified": true
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "provider": "kling30",
+      "label": "Kling 3.0 Standard",
+      "requestedSec": 6,
+      "billedSec": 6,
+      "usd": 0.504,
+      "priceVerified": true
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "provider": "screencap",
+      "label": "Product screen capture",
+      "requestedSec": 7,
+      "billedSec": 7,
+      "usd": 0,
+      "priceVerified": true
+    },
+    {
+      "id": "s4",
+      "role": "product",
+      "provider": "screencap",
+      "label": "Product screen capture",
+      "requestedSec": 8,
+      "billedSec": 8,
+      "usd": 0,
+      "priceVerified": true
+    }
+  ]
+}

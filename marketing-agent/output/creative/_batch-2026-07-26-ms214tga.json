@@ -1,0 +1,43 @@
+{
+  "batchId": "2026-07-26-ms214tga",
+  "date": "2026-07-26",
+  "winners": [],
+  "rejected": [
+    {
+      "ideaId": "teen-din-ya-90-second",
+      "variantIndex": 1,
+      "hookText": "Teen din wait, ya 90 second?",
+      "reason": "policy-linter BLOCK: Paid ad implies a timing-access problem and pressure around an important meeting."
+    },
+    {
+      "ideaId": "teen-din-ya-90-second",
+      "variantIndex": 2,
+      "hookText": "Monday 11 ya 4? Reply Wednesday.",
+      "reason": "hostile reviewer rejected: Hook 'Monday 11 ya 4' requires context before landing — cold viewer won't pause to decode it. · producibility capped — only 65% of the words are spoken on camera"
+    },
+    {
+      "ideaId": "teen-din-ya-90-second",
+      "variantIndex": 3,
+      "hookText": "Teen messages. Appointment abhi bhi pending?",
+      "reason": "policy-linter BLOCK: Paid ad implies viewer anxiety and hardship around a pending appointment."
+    },
+    {
+      "ideaId": "teen-din-ya-90-second",
+      "variantIndex": 4,
+      "hookText": "Reply Wednesday. Meeting Monday.",
+      "reason": "policy-linter BLOCK: Paid ad implies the viewer faces an urgent timing problem."
+    },
+    {
+      "ideaId": "teen-din-ya-90-second",
+      "variantIndex": 5,
+      "hookText": "Call do minute mein. Timing?",
+      "reason": "hostile reviewer rejected: Female presenter + Sarvam male dub = timbre switch; 'Timing?' hook-closer reads as category label. · producibility capped — only 65% of the words are spoken on camera"
+    },
+    {
+      "ideaId": "teen-din-ya-90-second",
+      "variantIndex": 6,
+      "hookText": "Astrologer busy. Monday call fixed.",
+      "reason": "hostile reviewer rejected: 'Routine timing check' undersells; opening screen blurred against [script] opening lesson requirement. · producibility capped — only 65% of the words are spoken on camera"
+    }
+  ]
+}

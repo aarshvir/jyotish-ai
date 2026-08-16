@@ -24,7 +24,7 @@ function LoginShell() {
           <p className="font-body text-sm text-dust mt-2">Sign in to your account</p>
         </div>
 
-        <form method="POST" action="/api/auth/signin" noValidate>
+        <form method="GET" action="/login" noValidate>
           <div className="mb-4">
             <label htmlFor="shell-email" className="block font-body text-xs font-medium text-dust mb-1.5">
               Email

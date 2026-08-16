@@ -16,6 +16,7 @@ const PROTECTED_PREFIXES = [
   '/api/user',
   '/onboard',
   '/report',
+  '/upsell',
 ];
 
 function isProtectedRoute(pathname: string): boolean {
@@ -76,9 +77,17 @@ export async function updateSession(
 
   if (!user && !hasValidBypass && isProtectedRoute(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
-    const returnTo = request.nextUrl.pathname + request.nextUrl.search;
+    // Never leak BYPASS_SECRET into login `next=` (history, Referer, CDN logs).
+    const returnUrl = request.nextUrl.clone();
+    returnUrl.searchParams.delete('bypass');
+    const returnTo = returnUrl.pathname + returnUrl.search;
     url.pathname = '/login';
-    url.search = `?next=${encodeURIComponent(returnTo)}`;
+    url.search = '';
+    url.searchParams.set('next', returnTo);
+    // Unauthenticated /onboard is account-capture: land on Sign Up, not Sign In.
+    if (returnUrl.pathname === '/onboard' || returnUrl.pathname.startsWith('/onboard/')) {
+      url.searchParams.set('mode', 'signup');
+    }
     return NextResponse.redirect(url);
   }
 

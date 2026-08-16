@@ -1,0 +1,119 @@
+{
+  "batchId": "2026-07-25-ms0xt778",
+  "date": "2026-07-25",
+  "winners": [
+    {
+      "rank": 1,
+      "hookText": "Sign abhi, ya subah?",
+      "total": 78,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-25-sign-abhi-ya-subah.json"
+    },
+    {
+      "rank": 2,
+      "hookText": "Call karun... ya kal pe rakhun?",
+      "total": 75,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-25-call-karun-ya-kal-pe-rakhun.json"
+    },
+    {
+      "rank": 3,
+      "hookText": "Thesis 11 PM ya 7 AM?",
+      "total": 76,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-25-thesis-11-pm-ya-7-am.json"
+    }
+  ],
+  "rejected": [
+    {
+      "ideaId": "thesis-raat-ya-subah",
+      "variantIndex": 2,
+      "hookText": "Submit now ya sleep on it?",
+      "reason": "hostile reviewer rejected: English hook mid-Hinglish video is a register mismatch; 'sleep on it' cliché; T2V will mangle the eye-rubbing micro-expression."
+    },
+    {
+      "ideaId": "thesis-raat-ya-subah",
+      "variantIndex": 3,
+      "hookText": "Deadline se pehle ka last click",
+      "reason": "hostile reviewer rejected: Clock showing a specific time plus suspended-finger-above-trackpad are standard T2V failure points; hook is theatrical not visceral."
+    },
+    {
+      "ideaId": "thesis-raat-ya-subah",
+      "variantIndex": 4,
+      "hookText": "Rashifal nahi. Thesis ka timing hai.",
+      "reason": "lost the tournament (rank 5)"
+    },
+    {
+      "ideaId": "thesis-raat-ya-subah",
+      "variantIndex": 5,
+      "hookText": "Kal subah shayad clearer lage?",
+      "reason": "hostile reviewer rejected: Hook opens with 'shayad' — uncertainty as a thumb-stopper is self-defeating; passive energy never recovers."
+    },
+    {
+      "ideaId": "thesis-raat-ya-subah",
+      "variantIndex": 6,
+      "hookText": "Bro, submit dabau ya so jaun?",
+      "reason": "hostile reviewer rejected: Group-chat framing reduces a serious timing tool to a meme punchline; credibility collapses for the 30-40 half of the target."
+    },
+    {
+      "ideaId": "offer-letter-pen-hovering",
+      "variantIndex": 1,
+      "hookText": "Offer letter: aaj ya kal subah?",
+      "reason": "hostile reviewer rejected: Label-colon hook reads like a WhatsApp subject line; 'extra lens' framing is workshopped, not felt."
+    },
+    {
+      "ideaId": "offer-letter-pen-hovering",
+      "variantIndex": 3,
+      "hookText": "Pen ruk gaya? Do checks karo.",
+      "reason": "hostile reviewer rejected: 'Do checks karo' hook sounds like a compliance SOP; tab-placement b-roll is a generation trap."
+    },
+    {
+      "ideaId": "offer-letter-pen-hovering",
+      "variantIndex": 4,
+      "hookText": "Deadline kal. Dimaag abhi tired.",
+      "reason": "lost the tournament (rank 6)"
+    },
+    {
+      "ideaId": "offer-letter-pen-hovering",
+      "variantIndex": 5,
+      "hookText": "Maine pen kyun rok diya?",
+      "reason": "hostile reviewer rejected: Past-tense curiosity hook is too soft; thumb won't wait for the 'because'."
+    },
+    {
+      "ideaId": "offer-letter-pen-hovering",
+      "variantIndex": 6,
+      "hookText": "Aaj raat vs kal subah?",
+      "reason": "hostile reviewer rejected: Best brand-safety language in the batch wasted behind the set's weakest hook."
+    },
+    {
+      "ideaId": "sorry-call-aaj-ya-kal",
+      "variantIndex": 2,
+      "hookText": "Apology ready. Timing?",
+      "reason": "lost the tournament (rank 4)"
+    },
+    {
+      "ideaId": "sorry-call-aaj-ya-kal",
+      "variantIndex": 3,
+      "hookText": "Thumb call button par kyun rukta hai?",
+      "reason": "hostile reviewer rejected: Eyebrow-raise plus immediate comedic nerve-loss in one 5s shot requires micro-expression sequencing text-to-video cannot deliver."
+    },
+    {
+      "ideaId": "sorry-call-aaj-ya-kal",
+      "variantIndex": 4,
+      "hookText": "Sorry bolun, par kab?",
+      "reason": "lost the tournament (rank 7)"
+    },
+    {
+      "ideaId": "sorry-call-aaj-ya-kal",
+      "variantIndex": 5,
+      "hookText": "Aaj call ya kal?",
+      "reason": "hostile reviewer rejected: Alternating phone-lift-lower loops robotically in renders; two-chair broll reads staged-analytical instead of emotionally felt."
+    },
+    {
+      "ideaId": "sorry-call-aaj-ya-kal",
+      "variantIndex": 6,
+      "hookText": "Answer nahi. Timing lens chahiye?",
+      "reason": "hostile reviewer rejected: Hook opens on product philosophy instead of a human moment; no thumb stops for a rhetorical reframe."
+    }
+  ]
+}

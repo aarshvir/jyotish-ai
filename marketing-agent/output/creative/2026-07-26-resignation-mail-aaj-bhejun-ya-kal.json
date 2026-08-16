@@ -1,0 +1,134 @@
+{
+  "slug": "2026-07-26-resignation-mail-aaj-bhejun-ya-kal",
+  "title": "Resignation mail aaj bhejun ya kal subah?",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.8,
+  "hook": "Resignation mail: aaj bhejun ya kal?",
+  "cta": "NEWUSER30 se pehla paid report 30% off par explore karo.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 7,
+      "prompt": "Young Indian man in a charcoal overshirt seated at a desk, finger hovering nervously above a laptop trackpad, slow camera push-in, warm late-evening apartment lighting, tense reflective mood; laptop screen is heavily out of focus, glowing softly, no legible characters",
+      "dialogue": "Resignation mail ready hai."
+    },
+    {
+      "id": "s2",
+      "role": "product",
+      "seconds": 6.5,
+      "vo": "Cursor Send par hai, aur haath honestly freeze ho gaya.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 9,
+      "vo": "VedicHour ka aaj raat aur kal subah ka grid ek jaisa nahi dikh raha. Ye mere birth chart ke against saare 18 horas ko, isi task ke liye, clearer ya heavier rate karta hai.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s4",
+      "role": "broll_hero",
+      "seconds": 8,
+      "prompt": "The same person as the presenter shot: young Indian man, same charcoal overshirt, same late-evening time of day, standing quietly beside a window and taking one slow breath, gentle sideward camera slide, warm practical lighting, calm contemplative mood",
+      "vo": "Decision mera; grid bas timing ko plain English mein visible banata hai. Your Life, Decoded Hour by Hour."
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Resignation mail aaj bhejun ya kal subah?",
+    "description": "VedicHour aapke birth chart ke against saare 18 horas ko clearer aur heavier windows mein explain karta hai. NEWUSER30 ke saath pehla paid report explore karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=resignation-mail-draft-ho-gayi",
+    "hashtags": [
+      "#resignation",
+      "#corporatelifeindia",
+      "#jyotish",
+      "#vedicastrology",
+      "#planetaryhours",
+      "#timingawareness",
+      "#sochsamajhkar",
+      "#workdecisions",
+      "#mindfuldecisions",
+      "#hinglishreels",
+      "#urbanindia",
+      "#careerreflection"
+    ],
+    "caption": "Draft ready Aaj raat ya kal subah? Saare 18 horas rated Clearer aur heavier windows Decision phir bhi mera"
+  },
+  "batchId": "2026-07-26-ms15y9je",
+  "scores": {
+    "hookStrength": 74,
+    "specificity": 76,
+    "credibility": 80,
+    "brandSafety": 90,
+    "producibility": 84,
+    "total": 80,
+    "notes": "Solid anchor but spoken body settles into generic rhythm; V4/V5 outperform on emotional precision.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing awareness; emphasizes personal choice and clearer/heavier windows."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "resignation-mail-draft-ho-gayi",
+  "family": "decision_moment",
+  "angle": "Presenter has a resignation email fully drafted and open — finger hovering over Send, but the hora grid shows tonight and tomorrow morning look completely different",
+  "variantIndex": 1,
+  "hookText": "Resignation mail: aaj bhejun ya kal?",
+  "spokenScript": "Resignation mail ready hai. Cursor Send par hai, aur haath honestly freeze ho gaya. VedicHour ka aaj raat aur kal subah ka grid ek jaisa nahi dikh raha. Ye mere birth chart ke against saare 18 horas ko, isi task ke liye, clearer ya heavier rate karta hai. Decision mera; grid bas timing ko plain English mein visible banata hai. Your Life, Decoded Hour by Hour.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 7,
+      "visualPrompt": "Young Indian man in a charcoal overshirt seated at a desk, finger hovering nervously above a laptop trackpad, slow camera push-in, warm late-evening apartment lighting, tense reflective mood; laptop screen is heavily out of focus, glowing softly, no legible characters"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 6.5,
+      "visualPrompt": "the week view, where the same hour reads differently on different days"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 9,
+      "visualPrompt": "the 18-hora day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim"
+    },
+    {
+      "kind": "broll",
+      "seconds": 8,
+      "visualPrompt": "The same person as the presenter shot: young Indian man, same charcoal overshirt, same late-evening time of day, standing quietly beside a window and taking one slow breath, gentle sideward camera slide, warm practical lighting, calm contemplative mood"
+    }
+  ],
+  "onScreenCaptions": [
+    "Draft ready",
+    "Aaj raat ya kal subah?",
+    "Saare 18 horas rated",
+    "Clearer aur heavier windows",
+    "Decision phir bhi mera"
+  ],
+  "hashtags": [
+    "#resignation",
+    "#corporatelifeindia",
+    "#jyotish",
+    "#vedicastrology",
+    "#planetaryhours",
+    "#timingawareness",
+    "#sochsamajhkar",
+    "#workdecisions",
+    "#mindfuldecisions",
+    "#hinglishreels",
+    "#urbanindia",
+    "#careerreflection"
+  ],
+  "youtubeTitle": "Resignation mail aaj bhejun ya kal subah?",
+  "youtubeDescription": "VedicHour aapke birth chart ke against saare 18 horas ko clearer aur heavier windows mein explain karta hai. NEWUSER30 ke saath pehla paid report explore karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=resignation-mail-draft-ho-gayi",
+  "language": "hinglish"
+}

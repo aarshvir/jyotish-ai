@@ -22,6 +22,7 @@ import { CorrelationsPanel } from '@/components/report/CorrelationsPanel';
 import { MobileSectionNav } from '@/components/report/MobileSectionNav';
 import { PersonalizedAnswer } from '@/components/report/PersonalizedAnswer';
 import { ExitIntentUpsell } from '@/components/report/ExitIntentUpsell';
+import { ProductCrossSell } from '@/components/report/ProductCrossSell';
 import { PreviewValueStrip } from '@/components/report/PreviewValueStrip';
 import { PeriodSynthesis } from '@/components/report/PeriodSynthesis';
 import { Glossary } from '@/components/report/Glossary';
@@ -39,6 +40,7 @@ import { lagnaSignToIndex } from '@/lib/engine/horaBase';
 import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog';
 import { generationErrorCtaKind } from '@/lib/reports/reportErrors';
 import { resolveLocalSlotTimes } from '@/lib/time/localTime';
+import { UNLOCK_7DAY_HREF } from '@/lib/pricing';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -1321,8 +1323,15 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
   // gates. type defaults to 'free' (line ~141), so unknown free-origin loads fail CLOSED
   // (preview) rather than leaking the paid report; a paid `type` keeps fail-open.
   const reportPlanType = dbBirthRef.current?.plan_type ?? (type === 'free' ? 'preview' : type);
+  const paymentStatus = dbBirthRef.current?.payment_status;
+  const paidPlanLocked =
+    (reportPlanType === '7day' || reportPlanType === 'monthly' || reportPlanType === 'annual') &&
+    paymentStatus != null &&
+    paymentStatus !== 'paid' &&
+    paymentStatus !== 'promo' &&
+    paymentStatus !== 'bypass';
   const isPreviewPlan =
-    !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview');
+    !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview' || paidPlanLocked);
 
   // `synthesis` is a PeriodSynthesis OBJECT, not a string — interpolating it
   // directly yielded "[object Object]" and dropped the richest report context
@@ -1511,6 +1520,10 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           </div>
         )}
 
+        {!isPreviewPlan && (
+          <ProductCrossSell exclude="forecast" className="mb-6" />
+        )}
+
         <div id="report-content">
           {/* Last-chance offer when a free reader signals they're leaving (preview only). */}
           {isPreviewPlan && <ExitIntentUpsell unlockHref="/onboard?plan=7day&promo=NEWUSER30" />}
@@ -1684,7 +1697,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
                   ))}
                 </ul>
                 <div className="flex flex-wrap items-center gap-3">
-                  <Link href="/onboard?plan=7day" className="btn-primary px-6 py-3 text-sm">
+                  <Link href={UNLOCK_7DAY_HREF} className="btn-primary px-6 py-3 text-sm">
                     Unlock my full report →
                   </Link>
                   <Link href="/pricing" className="btn-secondary px-5 py-2.5 text-sm">
@@ -1817,7 +1830,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
               </p>
               <div className="flex flex-wrap items-center gap-3">
                 <Link
-                  href="/onboard?plan=7day"
+                  href={UNLOCK_7DAY_HREF}
                   className="btn-primary px-5 py-2.5 text-sm"
                 >
                   Generate my full report →
@@ -1835,6 +1848,8 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             </div>
           </div>
         )}
+
+        {isPreviewPlan && <ProductCrossSell exclude="forecast" className="mt-8" />}
       </div>
     </motion.div>
   );

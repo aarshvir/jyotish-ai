@@ -124,8 +124,10 @@ async function main() {
       signal: AbortSignal.timeout(30000),
     });
     const json = await res.json();
-    const ok = res.status === 200 && json.doshas && json.current_dasha;
-    record('POST /api/tools/chart', ok, ok ? 'doshas+current_dasha present' : JSON.stringify(json).slice(0, 150));
+    // Anonymous callers get the free facts; the three dosha verdicts are soft-gated
+    // behind an email (see src/lib/kundli/doshaGate.ts), so `doshas` must be null here.
+    const ok = res.status === 200 && json.current_dasha && json.doshas === null && json.doshas_locked === true;
+    record('POST /api/tools/chart', ok, ok ? 'facts free, doshas gated' : JSON.stringify(json).slice(0, 150));
   } catch (e) {
     record('POST /api/tools/chart', false, e.message);
   }

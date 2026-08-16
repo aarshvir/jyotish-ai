@@ -10,6 +10,7 @@ import {
 } from './policy';
 import { activeLessons, lessonMatcher, SCOPES_ENFORCED_BY_RULE } from './lessons-bridge';
 import { recordPreflight } from './store';
+import { cheapTropeHits } from './cheap-tropes';
 
 /**
  * STAGE 0 — THE PRE-FLIGHT GATE.  ($0, runs BEFORE any render.)
@@ -116,6 +117,29 @@ function dedupeIssues(issues: PreflightIssue[]): PreflightIssue[] {
 }
 
 /**
+ * Visible copy a viewer can actually read in the product shot.
+ *
+ * Head/meta/JSON-LD, site chrome (`nav`/`footer`), and scripts are not on the report
+ * grid. Scanning them blocked every capture of vedichour.com because the global footer
+ * says "Vimshottari Dasha" and the default meta description names Swiss Ephemeris.
+ * Prefer `<main>` when present — that is the hour-slot canvas the ad is meant to show.
+ */
+export function visiblePageText(html: string): string {
+  const withoutChrome = html
+    .replace(/<head[\s\S]*?<\/head>/gi, ' ')
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, ' ')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, ' ');
+  const main = withoutChrome.match(/<main\b[\s\S]*?<\/main>/i)?.[0] ?? withoutChrome;
+  return main
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
  * Fetch a capture target and return its visible text.
  *
  * The owner's third defect — "Swiss Ephemeris" on screen — was never in the script: it was in
@@ -130,13 +154,7 @@ async function pageText(url: string): Promise<string | null> {
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
-    const html = await res.text();
-    return html
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&[a-z]+;/gi, ' ')
-      .replace(/\s+/g, ' ');
+    return visiblePageText(await res.text());
   } catch {
     return null;
   }
@@ -353,10 +371,28 @@ export async function runPreflight(
     }
   }
 
+  // -- 5b. Cheap visual tropes — stock spiritual wallpaper / fake proof ----------
+  const visualBlob = shots
+    .map((s) => String((s as { prompt?: string; visualPrompt?: string })?.prompt ?? (s as { visualPrompt?: string })?.visualPrompt ?? ''))
+    .join(' ');
+  const copyBlob = adCopyFields(creative).map((f) => f.text).join(' ');
+  for (const t of cheapTropeHits(visualBlob, copyBlob)) {
+    block({
+      rule: 'cheap-visual',
+      law: 'config/reel-craft.json neverGenerateVisual',
+      where: 'shots[].prompt / ad copy',
+      detail: `cheap trope "${t}" — stock spiritual wallpaper or fake social proof.`,
+      fix: 'Use a real presenter room + report screencap. Never mandala spam or invented proof.',
+    });
+  }
+
   // -- 6. LESSONS (LAW §4) ------------------------------------------------------------------
   const lessons = await activeLessons();
   const allCopy = adCopyFields(creative);
-  const planText = JSON.stringify(creative);
+  const planForLessons = { ...(creative ?? {}) };
+  delete planForLessons.blocked_reason;
+  delete planForLessons.status;
+  const planText = JSON.stringify(planForLessons);
   for (const l of lessons) {
     const m = lessonMatcher(l);
     if (!m) {

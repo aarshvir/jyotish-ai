@@ -427,9 +427,13 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       console.error(`[render] PRE-FLIGHT FAILED (${preflightProblems.length}) — nothing generated, nothing charged:`);
       for (const p of preflightProblems) console.error(`[render]   ✗ ${p}`);
       logRun({ loop, status: 'skipped', detail: `pre-flight: ${preflightProblems[0].slice(0, 160)}` });
-      writeFileSync(picked.file, JSON.stringify({ ...picked.raw, status: 'blocked', blocked_reason: preflightProblems.join(' | ').slice(0, 900) }, null, 2));
-      enqueueApproval({ item: `Reel BLOCKED by pre-flight: ${creative.title} — ${preflightProblems[0]}`, lane: 'B', linter_verdict: 'block', linter_reason: 'pre-flight', channel: 'reel' });
       writeHeartbeat(loop, `pre-flight blocked: ${creative.slug}`);
+      // --estimate is a price printout. Do not mutate the creative to `blocked` or the
+      // blocked_reason string (which often quotes jargon) will fail the next lesson scan.
+      if (!opts.estimateOnly) {
+        writeFileSync(picked.file, JSON.stringify({ ...picked.raw, status: 'blocked', blocked_reason: preflightProblems.join(' | ').slice(0, 900) }, null, 2));
+        enqueueApproval({ item: `Reel BLOCKED by pre-flight: ${creative.title} — ${preflightProblems[0]}`, lane: 'B', linter_verdict: 'block', linter_reason: 'pre-flight', channel: 'reel' });
+      }
       return;
     }
     console.log('[render] pre-flight: PASS — capture targets, voice plan and jargon all clean ($0 spent so far)');
@@ -438,8 +442,10 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     if (verdict.verdict === 'block') {
       console.log(`[render] BLOCKED by policy linter — ${verdict.reason}. Not rendering, not spending.`);
       logRun({ loop, status: 'skipped', detail: `blocked: ${verdict.reason}` });
-      writeFileSync(picked.file, JSON.stringify({ ...picked.raw, status: 'blocked', blocked_reason: verdict.reason }, null, 2));
       writeHeartbeat(loop, `blocked: ${creative.slug}`);
+      if (!opts.estimateOnly) {
+        writeFileSync(picked.file, JSON.stringify({ ...picked.raw, status: 'blocked', blocked_reason: verdict.reason }, null, 2));
+      }
       return;
     }
     console.log(`[render] linter: ${verdict.verdict} — ${verdict.reason}`);
@@ -504,6 +510,10 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       if (dry) {
         providerUsed = 'placeholder';
         await renderPlaceholder(shot, billedSec, rawClip, `${spec.label} (dry)`);
+        // Placeholder clips have no Veo in-shot audio. Still treat presenter lines as native
+        // so --dry never bills Sarvam (or throws for a missing SARVAM_API_KEY). Captions
+        // still come from nativeVo(); b-roll/product stay silent unless they carry `vo`.
+        nativeAudio = isPresenter && spec.nativeAudio;
         recordSpend({ run_id: runId, slug: creative.slug, shot_id: shot.id, provider: 'placeholder', model: spec.endpoint, seconds: billedSec, cost_usd: 0, estimated_usd: est.shots.find((s) => s.id === shot.id)?.usd ?? 0, status: 'dry', detail: `stand-in for ${spec.label}` });
       } else if (shot.role === 'product') {
         if (engine.ok && shot.capture?.url) {
@@ -612,7 +622,7 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     // Owner law 2026-07-26 — see END_CARD in src/render/assemble.ts.
     const bodySec = cursor;
     const endCardPath = resolve(work, 'endcard.mp4');
-    const card = await renderEndCard(work, endCardPath);
+    const card = await renderEndCard(work, endCardPath, { dry });
     console.log(
       `[render] end card: ${card.seconds}s — vedichour.com + the "${'Try Vedic Hour dot com'}" sign-off at +${card.tagStartSec}s` +
         `${card.costUsd > 0 ? ` (tag synthesized once, $${card.costUsd.toFixed(5)}, cached for every future reel)` : ' (cached tag — $0)'}`,
@@ -671,7 +681,22 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       await localizeReel({ runId, creative, prepared, outDir, totalSec, music, est, dry, endCard: card }, langs);
     }
 
-    if (!opts.keepIntermediates && v.ok) rmSync(work, { recursive: true, force: true });
+    // Cleanup on success keeps the PAID shots and deletes only the cheap derived files.
+    //
+    // The `*.raw.mp4` clips are the single most expensive thing this pipeline produces (~$3 a
+    // reel) and they are the ONLY way to re-cut a reel for $0 afterwards. Wiping `work/`
+    // wholesale turned a caption/pan fix into a full re-render — the exact waste CLAUDE.md §1
+    // exists to prevent. Everything else here (norm/stitched/endcard/vo/plates/concat lists) is
+    // regenerated for free from those raws, so it is the only thing worth reclaiming disk for.
+    // Product shots are re-captured every run regardless (see the `role === 'product'` branch
+    // above), so a kept product raw can never go stale into a later `--resume`.
+    if (!opts.keepIntermediates && v.ok) {
+      for (const entry of readdirSync(work)) {
+        if (entry.endsWith('.raw.mp4')) continue;
+        rmSync(resolve(work, entry), { recursive: true, force: true });
+      }
+      console.log('[render] cleanup: derived intermediates removed; the paid *.raw.mp4 shots stay in `work/` so this reel can be re-cut for $0 with --resume.');
+    }
 
     const secs = ((Date.now() - t0) / 1000).toFixed(1);
     console.log(`\n[render] ${v.ok ? 'OK' : 'DONE WITH PROBLEMS'} ${finalPath}`);
@@ -856,6 +881,7 @@ export function printBudgetStatus(): void {
   console.log(`  per-day   cap $${c.perDayUsd.toFixed(2)}   spent (rolling 24h) $${s.dayUsd.toFixed(2)}   (env VIDEO_BUDGET_DAY_USD)`);
   console.log(`  per-week  cap $${c.perWeekUsd.toFixed(2)}  spent (rolling 7d)  $${s.weekUsd.toFixed(2)}  (env VIDEO_BUDGET_WEEK_USD)`);
   console.log(`\nFAL_KEY: ${hasFalKey() ? 'set — live generation enabled' : 'NOT set — loop runs in dry mode'}`);
+  console.log(`SARVAM_API_KEY: ${hasSarvamKey() ? 'set' : 'NOT set — live narration / end-card tag will refuse'}`);
   console.log('\nPrice table (fal.ai, verified July 2026):');
   for (const spec of Object.values(PRICE_TABLE)) {
     if (!spec.costPerSecond) continue;

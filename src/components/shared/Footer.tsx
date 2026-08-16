@@ -22,7 +22,7 @@ const TOOLS = [
 const LEARN = [
   { href: '/blog', label: 'Blog' },
   { href: '/nakshatra', label: 'The 27 Nakshatras' },
-  { href: '/dasha', label: 'Vimshottari Dasha' },
+  { href: '/dasha', label: 'Dasha periods' },
   { href: '/predictions', label: 'Life Predictions' },
   { href: '/compare/best-free-ai-kundli', label: 'Compare alternatives' },
 ];

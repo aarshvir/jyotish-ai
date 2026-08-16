@@ -7,31 +7,12 @@ import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { createClient } from '@/lib/supabase/client';
 import { track } from '@/components/analytics/PostHogProvider';
-
-// Draft of the birth details + chosen plan, stashed to sessionStorage before a Ziina
-// redirect so a cancelled/declined payment can restore the form instead of a blank slate.
-const DRAFT_KEY = 'vh_onboard_draft';
-interface OnboardDraft {
-  name: string;
-  birthDate: string;
-  birthTime: string;
-  birthCity: string;
-  reportType: ReportPlanId;
-  promoCode: string;
-}
-function readDraft(): OnboardDraft | null {
-  try {
-    const raw = typeof window !== 'undefined' ? sessionStorage.getItem(DRAFT_KEY) : null;
-    if (!raw) return null;
-    return JSON.parse(raw) as OnboardDraft;
-  } catch { return null; }
-}
-function writeDraft(d: OnboardDraft) {
-  try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch { /* private mode/quota */ }
-}
-function clearDraft() {
-  try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
-}
+import {
+  readOnboardDraft as readDraft,
+  writeOnboardDraft as writeDraft,
+  clearOnboardDraft as clearDraft,
+} from '@/lib/onboard/draft';
+import { applyDiscount, formatAmount, type SupportedCurrency } from '@/lib/ziina/amounts';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -460,26 +441,10 @@ function Step3({
     if (!promoDiscount || promoDiscount <= 0) return { original, discounted: null };
     if (promoDiscount >= 100) return { original, discounted: 'Free' };
     if (!geoEntry) return { original, discounted: null };
-    // Compute discounted amount client-side with same rounding logic
-    const currency = geoEntry.currency as 'AED' | 'USD' | 'INR';
-    const rawDiscounted = geoEntry.amount * (1 - promoDiscount / 100);
-    let pretty: number;
-    if (currency === 'INR') {
-      const rupees = rawDiscounted / 100;
-      const rounded = Math.round(rupees / 100) * 100;
-      pretty = (Math.max(99, rounded - 1)) * 100;
-    } else {
-      const major = rawDiscounted / 100;
-      const rounded = Math.round(major);
-      pretty = Math.round(Math.max(0.99, rounded - 0.01) * 100);
-    }
-    const majorPretty = pretty / 100;
-    let discounted: string;
-    if (currency === 'AED') discounted = `AED ${majorPretty.toFixed(2)}`;
-    // Indian grouping so the discounted price matches the struck-through original
-    // (formatAmount uses toLocaleString('en-IN')) — e.g. ₹1,048 not ₹1048.
-    else if (currency === 'INR') discounted = `₹${Math.round(majorPretty).toLocaleString('en-IN')}`;
-    else discounted = `$${majorPretty.toFixed(2)}`;
+    // Same applyDiscount/formatAmount the create-intent route uses to set the Ziina
+    // charge — one implementation, so the shown price IS the charged price.
+    const currency = geoEntry.currency as SupportedCurrency;
+    const discounted = formatAmount(applyDiscount(geoEntry.amount, promoDiscount, currency), currency);
     return { original, discounted };
   }
 
@@ -630,6 +595,7 @@ function OnboardPageInner() {
   const [currentGeo, setCurrentGeo] = useState<GeoResult | null>(null);
   const [currentGeoLoading, setCurrentGeoLoading] = useState(false);
   const [currentGeoError, setCurrentGeoError] = useState<string | null>(null);
+  const checkoutInFlight = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
   const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -697,6 +663,8 @@ function OnboardPageInner() {
         birthDate: prev.birthDate || draft.birthDate || '',
         birthTime: prev.birthTime || draft.birthTime || '',
         birthCity: prev.birthCity || draft.birthCity || '',
+        birthLat: prev.birthLat ?? draft.birthLat ?? prev.birthLat,
+        birthLng: prev.birthLng ?? draft.birthLng ?? prev.birthLng,
         reportType: draft.reportType || prev.reportType,
       };
     });
@@ -784,6 +752,8 @@ function OnboardPageInner() {
           birthDate: prev.birthDate || draft.birthDate || '',
           birthTime: prev.birthTime || draft.birthTime || '',
           birthCity: prev.birthCity || draft.birthCity || '',
+          birthLat: prev.birthLat ?? draft.birthLat ?? prev.birthLat,
+          birthLng: prev.birthLng ?? draft.birthLng ?? prev.birthLng,
           reportType: draft.reportType || prev.reportType,
         }));
         if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);
@@ -949,6 +919,8 @@ function OnboardPageInner() {
   }
 
   async function goToReportGeneration(opts?: { forcePaidPlan?: boolean; adminFree?: boolean }) {
+    if (checkoutInFlight.current) return;
+    checkoutInFlight.current = true;
     // Gate: refuse to dispatch a report when geocoding did not resolve.
     // Falling back to 0,0 silently produces a chart anchored near the Gulf of
     // Guinea, which contradicts the marketing promise of "sub-degree precision".
@@ -961,6 +933,7 @@ function OnboardPageInner() {
         message: `We're pinning "${form.birthCity || 'your birth city'}" to a precise location — give it a moment, then tap continue again. If it persists, add the country (e.g. "Lucknow, India").`,
       });
       setStep(1);
+      checkoutInFlight.current = false;
       return;
     }
 
@@ -1092,6 +1065,7 @@ function OnboardPageInner() {
           const errMsg = errBody.error ?? `Payment setup failed (${intentRes.status}). Please try again or contact support@vedichour.com.`;
           setPaymentReturnBanner({ type: 'error', message: errMsg });
           setIsLoading(false);
+          checkoutInFlight.current = false;
           // Scroll the user back to the top so they see the banner
           if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
           return;
@@ -1114,6 +1088,8 @@ function OnboardPageInner() {
           birthDate: form.birthDate,
           birthTime: form.birthTime,
           birthCity: form.birthCity,
+          birthLat: form.birthLat,
+          birthLng: form.birthLng,
           reportType: effectiveType,
           promoCode,
         });
@@ -1132,6 +1108,7 @@ function OnboardPageInner() {
           message: 'Payment setup failed. Please try again or contact support@vedichour.com.',
         });
         setIsLoading(false);
+        checkoutInFlight.current = false;
         if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
@@ -1192,6 +1169,7 @@ function OnboardPageInner() {
               : (errBody.error ?? 'Failed to start report generation. Please try again.'),
         });
         setIsLoading(false);
+        checkoutInFlight.current = false;
         if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }

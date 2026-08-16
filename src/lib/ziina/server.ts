@@ -10,6 +10,14 @@
  *   INR: 1 INR = 100 paise → 799 INR   = 79900
  */
 
+import { applyDiscount, formatAmount, type SupportedCurrency } from './amounts';
+
+// Re-exported so existing server-side imports keep working. The implementations
+// live in ./amounts (pure, client-safe) so the price the buyer SEES on onboard
+// step 3 is computed by the exact same function that sets the Ziina charge.
+export { applyDiscount, formatAmount };
+export type { SupportedCurrency };
+
 const ZIINA_BASE_URL = 'https://api-v2.ziina.com/api';
 
 // ── Plan pricing ─────────────────────────────────────────────────────────────
@@ -53,8 +61,6 @@ export const ZIINA_PLANS: Record<string, ZiinaPlan> = {
 /** 10% off the upgrade delta vs paying full monthly after already owning 7-day */
 export const UPGRADE_DELTA_DISCOUNT_PCT = 10;
 
-export type SupportedCurrency = 'AED' | 'USD' | 'INR';
-
 /** Map Vercel's x-vercel-ip-country header to a currency. */
 export function countryToCurrency(country: string | null): SupportedCurrency {
   if (!country) return 'USD';
@@ -77,45 +83,6 @@ export function getPlanAmount(planType: string, currency: SupportedCurrency): nu
 export function getMonthlyUpgradeAmount(currency: SupportedCurrency): number {
   const raw = getPlanAmount('monthly_upgrade', currency);
   return applyDiscount(raw, UPGRADE_DELTA_DISCOUNT_PCT, currency);
-}
-
-/** Format amount as display string for the given currency. */
-export function formatAmount(amountBaseUnits: number, currency: SupportedCurrency): string {
-  const major = amountBaseUnits / 100;
-  // INR uses Indian-grouped thousands (₹1,499) so the landing switcher, /api/geo,
-  // pricing page, dashboard, and upsell all render the SAME string for the same amount.
-  if (currency === 'AED') return `AED ${major.toFixed(2)}`;
-  if (currency === 'INR') return `₹${Math.round(major).toLocaleString('en-IN')}`;
-  return `$${major.toFixed(2)}`;
-}
-
-/**
- * Apply a percentage discount to a base-unit amount and round to the
- * nearest "pretty" price for the given currency:
- *   INR → nearest 99 paise  (e.g. 559.30 → 49900 → ₹499)
- *   AED → nearest .99 fils  (e.g. 2659 → 2699 AED fils → AED 26.99)
- *   USD → nearest .99 cents (e.g. 699 → 699 → $6.99)
- */
-export function applyDiscount(amountBaseUnits: number, discountPct: number, currency: SupportedCurrency): number {
-  if (discountPct <= 0) return amountBaseUnits;
-  if (discountPct >= 100) return 0;
-
-  const raw = amountBaseUnits * (1 - discountPct / 100);
-
-  if (currency === 'INR') {
-    // Round to nearest 100 (1 INR), then subtract 1 to get XX99
-    const rupees = raw / 100;
-    const rounded = Math.round(rupees / 100) * 100;
-    // Ensure minimum of 99 paise (₹1 minimum)
-    const pretty = Math.max(99, rounded - 1);
-    return pretty * 100;
-  }
-
-  // AED and USD: round to nearest 100 base units (1 major unit), then subtract 1 cent/fil
-  const major = raw / 100;
-  const rounded = Math.round(major);
-  const pretty = Math.max(0.99, rounded - 0.01);
-  return Math.round(pretty * 100);
 }
 
 // ── Ziina API client ──────────────────────────────────────────────────────────

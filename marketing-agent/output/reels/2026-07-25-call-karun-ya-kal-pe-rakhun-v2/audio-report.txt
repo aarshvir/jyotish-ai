@@ -1,0 +1,32 @@
+=== AUDIO REPORT — 2026-07-25-call-karun-ya-kal-pe-rakhun-v2/final.mp4 ===
+(quality-trial re-render of candidate B; render pipeline now runs two-pass loudnorm to -16 LUFS)
+
+--- mux duration vs expected ---
+container duration: 29.000s
+expected: s1 presenter 7s bills/renders 8s (Veo tier) + s2 6s + s3 7s + s4 8s = 29s. MATCH.
+
+--- loudnorm (measured on the finished file) ---
+Input Integrated:    -16.03 LUFS   (TARGET HIT — was -20.0 on candidate B; render log: "measured -20.02 LUFS -> normalizing linearly to -16")
+Input True Peak:      -1.64 dBTP   (safe; two-pass ran linear, no dynamic pumping)
+Input LRA:             5.4 LU
+Input Threshold:     -26.91 LUFS
+
+--- astats key lines ---
+Peak level dB: -1.67 | RMS level dB: -20.15 | RMS peak dB: -10.64 | Flat factor: 0.0 | Peak count: 2
+verdict: zero clipping, zero flat runs.
+
+--- dead-air: silencedetect n=-35dB d=0.7 ---
+1)  4.02-5.34s  (1.32s)  breath gap inside s1 — candidate B's 3.5s NEAR-SILENT stretch at
+                          4.7-8.3s is GONE (new Veo take paces the line differently and carries room tone)
+2) 12.78-14.28s (1.50s)  s2->s3 transition
+3) 19.32-21.27s (1.95s)  s3->s4 transition — longest gap in the reel
+NO silent cold open (candidate B had 1.42s of dead air before the hook line).
+No music bed: media/music/ does not exist, so per the no-synthesized-tones rule the reel is
+voice-only. The three ~1.3-2.0s gaps above are the residual cost of that.
+
+--- hard audio cut in last 1.5s? ---
+per-100ms RMS trace: speech peaks -16.8 dB at 28.61-28.65, decays -38 dB @28.74, -68 dB @28.80,
+below -85 dB after 28.91. Final 150ms RMS -48.4 dB.
+s4 narration synthesized 8.6s for an 8.0s slot (render warned); the overrun was edge-tts
+trailing padding — the last word completes by ~28.75s and decays naturally.
+VERDICT: NO hard tail cut.

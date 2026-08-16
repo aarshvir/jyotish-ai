@@ -57,6 +57,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
   }, [searchParams]);
 
   async function startCheckout() {
+    if (paying) return;
     setErr(null);
     setPaying(true);
     try {

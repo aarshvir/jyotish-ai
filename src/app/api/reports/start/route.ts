@@ -16,7 +16,8 @@ export const dynamic = 'force-dynamic';
 
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth, BYPASS_SECRET } from '@/lib/api/requireAuth';
+import { requireAuth, BYPASS_SECRET, BYPASS_USER_ID } from '@/lib/api/requireAuth';
+import { isProductionRuntime } from '@/lib/env';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { isAdmin } from '@/lib/admin/isAdmin';
 import { generateReportPipeline, type PipelineInput } from '@/lib/reports/orchestrator';
@@ -28,12 +29,13 @@ import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/server';
+import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
  * 10 minutes — Inngest jobs can take that long.
  */
-const YOUNG_GENERATING_MS = 10 * 60 * 1000;
+const YOUNG_GENERATING_MS = 90 * 60 * 1000;
 const REPORT_START_LIMIT = 3;
 const REPORT_START_WINDOW_MS = 60_000;
 
@@ -211,9 +213,17 @@ async function resolveTrustedPaymentStatus(
   body: StartRequestBody,
   existing: ExistingReportForStart | null,
   isAdmin: boolean,
+  allowE2ESelfGrant: boolean,
 ): Promise<string> {
   if (isAdmin && typeof body.payment_status === 'string' && body.payment_status.trim() !== '') {
     return body.payment_status.trim();
+  }
+
+  // Non-production e2e only: the bypass/service principal may grant itself 'bypass'
+  // on its OWN synthetic account. It can never claim 'paid'/'promo' (those feed
+  // revenue reporting), and never on a real user's row.
+  if (allowE2ESelfGrant && typeof body.payment_status === 'string' && body.payment_status.trim() === 'bypass') {
+    return 'bypass';
   }
 
   if (await hasCompletedZiinaPayment(db, reportId, userId)) {
@@ -416,6 +426,11 @@ export async function POST(request: NextRequest) {
         : 0;
 
   const nowIso = new Date().toISOString();
+  // The bypass / service-key principal running the e2e scripts (never a real user:
+  // it authenticates as the synthetic BYPASS_USER_ID and is refused on production
+  // unless BYPASS_ALLOW_IN_PRODUCTION is set).
+  const isE2EServicePrincipal =
+    auth.user.role === 'service' && auth.user.id === BYPASS_USER_ID && !isProductionRuntime();
   let trustedPaymentStatus: string;
   try {
     trustedPaymentStatus = await resolveTrustedPaymentStatus(
@@ -425,6 +440,7 @@ export async function POST(request: NextRequest) {
       body,
       existing,
       auth.isAdmin === true,
+      isE2EServicePrincipal,
     );
   } catch (e) {
     // Transient payment-verification failure (e.g. DB lookup error). Fail closed, but
@@ -510,7 +526,10 @@ export async function POST(request: NextRequest) {
     promoOncePerUser = promo.oncePerUser === true;
   }
 
-  if (!isFreePlan && trustedPaymentStatus !== 'paid' && trustedPaymentStatus !== 'promo' && !userIsAdmin) {
+  // `trustedPaymentStatus` is server-derived: a client-claimed 'promo'/'bypass' was
+  // already collapsed to 'unpaid' by safeNonPaidPaymentStatus, so accepting the full
+  // entitled set here cannot be forged by a buyer.
+  if (!isFreePlan && !isEntitledPaymentStatus(trustedPaymentStatus) && !userIsAdmin) {
     await releaseOwnedLock();
     return NextResponse.json(
       {

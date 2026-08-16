@@ -1,0 +1,134 @@
+{
+  "slug": "2026-07-25-thesis-11-pm-ya-7-am",
+  "title": "Thesis 11 PM Ya 7 AM? Timing Grid Dekho",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.76,
+  "hook": "Thesis 11 PM ya 7 AM?",
+  "cta": "Apna timing grid dekho. Your Life, Decoded Hour by Hour.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 6,
+      "prompt": "Young Indian graduate student presenter sits at a desk and turns from a laptop toward the camera, slow push-in, cool midnight desk lighting, tense but relatable mood; laptop screen is heavily out of focus, glowing softly, no legible characters",
+      "dialogue": "Yaar, thesis submit karna hai."
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "seconds": 8,
+      "prompt": "One student's hand pauses above a laptop trackpad beside a closed thesis notebook, gentle camera slide, soft blue night lighting, suspended decision mood; laptop screen is heavily out of focus, glowing softly, no legible characters",
+      "vo": "Raat ke 11 ya subah 7? Same file hai, par dono moments ka timing grid bilkul alag dikh sakta hai."
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 9,
+      "vo": "VedicHour tumhari birth chart ke against din ki saari 18 horas score karta hai, specifically publishing jaise task ke liye. Swiss Ephemeris aur Lahiri ayanamsa se, plain English mein: kaunsa window clearer, kaunsa heavier.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s4",
+      "role": "product",
+      "seconds": 8,
+      "vo": "Decision phir bhi tumhara.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Thesis 11 PM Ya 7 AM? Timing Grid Dekho",
+    "description": "Thesis bhejne se pehle apne clearer aur heavier timing windows ko plain English mein samjho. First paid report par NEWUSER30 se 30% off: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=thesis-raat-ya-subah",
+    "hashtags": [
+      "#thesislife",
+      "#studentlifeindia",
+      "#phdindia",
+      "#latenightstudy",
+      "#submissionday",
+      "#jyotish",
+      "#vedicastrology",
+      "#horatiming",
+      "#timingawareness",
+      "#padhai",
+      "#desistudents",
+      "#researchlife"
+    ],
+    "caption": "11 PM ya 7 AM? Same thesis, different timing Saari 18 horas scored Clearer ya heavier Final call tumhari"
+  },
+  "batchId": "2026-07-25-ms0xt778",
+  "scores": {
+    "hookStrength": 65,
+    "specificity": 82,
+    "credibility": 78,
+    "brandSafety": 90,
+    "producibility": 76,
+    "total": 76,
+    "notes": "Hook is a flat A-or-B question; the real insight 'same thesis, different timing' is buried in caption two.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing awareness, approved clearer/heavier framing, and user retains final decision."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "thesis-raat-ya-subah",
+  "family": "decision_moment",
+  "angle": "A student stares at a submit button late at night — should they send the thesis now or wait for morning, and their hora grid for tonight versus tomorrow 7am looks completely different",
+  "variantIndex": 1,
+  "hookText": "Thesis 11 PM ya 7 AM?",
+  "spokenScript": "Yaar, thesis submit karna hai. Raat ke 11 ya subah 7? Same file hai, par dono moments ka timing grid bilkul alag dikh sakta hai. VedicHour tumhari birth chart ke against din ki saari 18 horas score karta hai, specifically publishing jaise task ke liye. Swiss Ephemeris aur Lahiri ayanamsa se, plain English mein: kaunsa window clearer, kaunsa heavier. Decision phir bhi tumhara.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 6,
+      "visualPrompt": "Young Indian graduate student presenter sits at a desk and turns from a laptop toward the camera, slow push-in, cool midnight desk lighting, tense but relatable mood; laptop screen is heavily out of focus, glowing softly, no legible characters"
+    },
+    {
+      "kind": "broll",
+      "seconds": 8,
+      "visualPrompt": "One student's hand pauses above a laptop trackpad beside a closed thesis notebook, gentle camera slide, soft blue night lighting, suspended decision mood; laptop screen is heavily out of focus, glowing softly, no legible characters"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 9,
+      "visualPrompt": "the week view, where the same hour reads differently on different days"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 8,
+      "visualPrompt": "one hora card tapped open, showing its plain-English line about what that window suits"
+    }
+  ],
+  "onScreenCaptions": [
+    "11 PM ya 7 AM?",
+    "Same thesis, different timing",
+    "Saari 18 horas scored",
+    "Clearer ya heavier",
+    "Final call tumhari"
+  ],
+  "hashtags": [
+    "#thesislife",
+    "#studentlifeindia",
+    "#phdindia",
+    "#latenightstudy",
+    "#submissionday",
+    "#jyotish",
+    "#vedicastrology",
+    "#horatiming",
+    "#timingawareness",
+    "#padhai",
+    "#desistudents",
+    "#researchlife"
+  ],
+  "youtubeTitle": "Thesis 11 PM Ya 7 AM? Timing Grid Dekho",
+  "youtubeDescription": "Thesis bhejne se pehle apne clearer aur heavier timing windows ko plain English mein samjho. First paid report par NEWUSER30 se 30% off: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=thesis-raat-ya-subah",
+  "language": "hinglish"
+}

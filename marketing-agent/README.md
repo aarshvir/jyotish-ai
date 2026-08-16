@@ -38,20 +38,24 @@ npm run brain "Draft a 1-line hook about timing your week" --tier bulk
 npm run linter "We guarantee you will get rich"     # -> block
 npm run loop:blog      # L1: draft + lint + stage an SEO article
 npm run blog:promote <slug>   # publish a staged post into the live site (src/content/blog)
-npm run loop:creative         # L4: ideate -> 6 variants/idea -> adversarial audit -> tournament
-                              #     [--count N ideas] [--tier] [--dry] -> output/creative/
+npm run loop:creative         # L4: ideate -> 6 variants -> audit -> tournament (1 winner → awaiting_approval)
+npm run loop:content-ops      # FREE pipeline: sense + creative → Approve queue (never spends fal.ai)
 npm run loop:reel [slug]      # L2: render a faceless 9:16 reel (edge-tts + ffmpeg) -> media/reels/
-npm run loop:render [slug]    # L2b: PRESENTER-LED AI reel (fal.ai + ffmpeg) -> output/reels/<slug>/
-                              #      --dry stubs only the paid calls (default when FAL_KEY is absent)
-                              #      --estimate prices the reel and stops
-                              #      --languages hi,ta,te  real DUBBED variants (winners only)
+npm run loop:render [slug]    # L2b: PRESENTER-LED AI reel — REQUIRES npm run approve <slug> first
+                              #      --dry stubs paid calls · --estimate · --languages hi,ta,te
 npm run render:budget         # caps, spend so far, and the audited fal.ai price table
-npm run loop:publish          # L3: package rendered reels into per-platform posts + UTM
+npm run preflight -- <slug>   # $0 hard gate on the creative PLAN before any spend
+npm run approvals / approve / reject   # founder ONE-tap gate (unlocks render)
+npm run loop:review -- <slug> # post-render machine gate (ship keeps prior Approve)
+npm run loop:publish          # L3: package faceless reels into per-platform posts + UTM
+npm run loop:package [slug]   # L3b: IG Reels / YT Shorts / YT 8-12m / GBP / IG carousel
 npm run loop:social           # L3: generate IG/X/FB/LinkedIn posts -> output/social/
 npm run loop:lifecycle        # L8: generate email/WhatsApp sequence copy -> output/lifecycle/ (no send)
 npm run loop:outreach         # L7: B2B cold-email + Reddit/Quora value bank -> output/outreach/ (no send)
 npm run loop:consent   # L8: sync Supabase signups -> consent ledger (reads prod; sends nothing)
 npm run loop:sense     # free trend sensing (Google Trends RSS + Reddit Atom + YouTube) -> state/sense.json
+npm run cycle          # daily drafts: sense → creative tournament → blog → social → publish-prep
+                       # does NOT spend fal.ai and does NOT post. Approve in cockpit, then loop:render.
 npm run perf           # the exact per-tag performance brief the creative prompts receive
 npm run playbook       # print the craft principles the prompts are currently reading
 npm run playbook:review# re-examine each principle against observed evidence -> proposals (never auto-edits)
@@ -124,14 +128,14 @@ and only survivors reach the paid render stage.
    presenter opener) → `lint()` → a `brain()` call cast as a hostile reviewer paid to reject.
    Scores hookStrength / specificity / credibility / brandSafety / producibility.
    **Any brand-safety failure is a hard reject, whatever else it scored.**
-4. **Tournament** — survivors go head-to-head in small brackets on one question: would a
-   scrolling Indian viewer watch this to the end? Top 3 are kept.
-5. **Persist** — winners land in `creative_variants` and `content_library` as
-   `ready_to_render`, plus a `.json` and a readable `.md` in `output/creative/`. Losers are
-   stored with the exact reason they died, so the next batch can learn from them.
+4. **Tournament** — survivors go head-to-head. **Only 1 winner** is kept (`WINNERS_KEPT=1`).
+5. **Preflight + Approve queue** — winner is `$0`-preflighted, then status `awaiting_approval`.
+   Founder taps `npm run approve <slug>` once → `ready_to_render`. Losers store the exact kill reason.
+
+See **`docs/CONTENT_OPS_SOP.md`** for the full 10-step nightly/hourly pipeline.
 
 Each winner's `.json` satisfies the `CreativeScript` contract in `src/render/types.ts`, so
-the render pipeline consumes it directly. `--dry` skips all writes; `--count N` sets how many
+the render pipeline consumes it directly after Approve. `--dry` skips all writes; `--count N` sets how many
 ideas advance to scripting. Every call is $0 (CLI subscriptions, not APIs).
 
 ## The closed learning loop
@@ -243,3 +247,9 @@ powershell -ExecutionPolicy Bypass -File scripts\register-tasks.ps1 -Unregister
 
 **Media path for Phase 2** is free by default (edge-tts + Pexels/Pixabay + ffmpeg);
 ElevenLabs/HeyGen are opt-in config flags, never on by default.
+
+**$200/month short-form stack (Aug 2026):** keep this agent as the control plane,
+fund fal.ai + Sarvam, buy Post Bridge Agent+$5 API and a Hetzner CX23, do not buy
+ElevenLabs / Hedra / Creatify / Submagic. Hard budget table and tonight checklist:
+[`docs/SHORTFORM_STACK_200.md`](docs/SHORTFORM_STACK_200.md) · caps in
+[`config/stack-budget.json`](config/stack-budget.json).

@@ -117,7 +117,12 @@ export default function Navbar() {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            {/* Desktop: auth only */}
+            <Link
+              href="/onboard?plan=free"
+              className="hidden lg:inline-flex btn-primary px-4 py-2 text-sm"
+            >
+              Get free Kundli
+            </Link>
             <div className="hidden lg:block">
               <AuthButton />
             </div>
@@ -154,6 +159,13 @@ export default function Navbar() {
             className="lg:hidden border-t border-horizon/40 bg-space/95 backdrop-blur-md"
           >
             <div className="mx-auto max-w-6xl px-5 py-5 flex flex-col gap-4">
+              <Link
+                href="/onboard?plan=free"
+                onClick={() => setMobileOpen(false)}
+                className="btn-primary text-center py-3"
+              >
+                Get free Kundli
+              </Link>
               {NAV_LINKS.map((l) => (
                 <Link
                   key={l.href}

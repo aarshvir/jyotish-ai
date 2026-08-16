@@ -6,6 +6,8 @@ import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDe
 import { isValidLat, isValidLng } from '@/lib/utils/coords';
 import { ShareResult } from '@/components/shared/ShareResult';
 import { TimingBridge } from '@/components/tools/TimingBridge';
+import { writeOnboardDraft } from '@/lib/onboard/draft';
+import { UNLOCK_7DAY_HREF } from '@/lib/pricing';
 
 export type ToolView =
   | 'manglik'
@@ -30,7 +32,9 @@ type ChartResult = {
   mars_sign: string | null;
   current_dasha: { mahadasha: string; antardasha: string; start_date: string; end_date: string } | null;
   dasha_sequence: Dasha[];
-  doshas: { manglik: Dosha; kaalSarpa: Dosha; sadeSati: Dosha };
+  /** null until the dosha soft gate is satisfied (signed in, or email left). */
+  doshas: { manglik: Dosha; kaalSarpa: Dosha; sadeSati: Dosha } | null;
+  doshas_locked?: boolean;
 };
 
 const DEFAULT: BirthDetails = {
@@ -59,11 +63,17 @@ function shareTextFor(view: ToolView, res: ChartResult): string {
     `${label}: ${dosha.present ? `present (${dosha.severity})` : 'not present'}`;
   switch (view) {
     case 'manglik':
-      return `${doshaLine('Manglik (Mangal) Dosha', res.doshas.manglik)} — computed free on VedicHour.`;
+      return res.doshas
+        ? `${doshaLine('Manglik (Mangal) Dosha', res.doshas.manglik)} — computed free on VedicHour.`
+        : 'Checked my Manglik (Mangal) Dosha free on VedicHour.';
     case 'kaalsarp':
-      return `${doshaLine('Kaal Sarpa Dosha', res.doshas.kaalSarpa)} — computed free on VedicHour.`;
+      return res.doshas
+        ? `${doshaLine('Kaal Sarpa Dosha', res.doshas.kaalSarpa)} — computed free on VedicHour.`
+        : 'Checked my Kaal Sarpa Dosha free on VedicHour.';
     case 'sadesati':
-      return `${doshaLine('Sade Sati', res.doshas.sadeSati)} — computed free on VedicHour.`;
+      return res.doshas
+        ? `${doshaLine('Sade Sati', res.doshas.sadeSati)} — computed free on VedicHour.`
+        : 'Checked my Sade Sati free on VedicHour.';
     case 'dasha':
       return `My current Mahadasha is ${res.current_dasha?.mahadasha ?? '—'} — computed free on VedicHour.`;
     case 'nakshatra':
@@ -92,11 +102,34 @@ export function ChartTool({
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [res, setRes] = useState<ChartResult | null>(null);
+  const [gateEmail, setGateEmail] = useState('');
+  const [revealing, setRevealing] = useState(false);
+  const [revealErr, setRevealErr] = useState<string | null>(null);
 
   const valid = !!d.birth_date && isValidLat(d.birth_lat) && isValidLng(d.birth_lng);
   // Lagna (ascendant) and the full chart depend on an exact birth time, so the
   // "use noon" shortcut would defeat the calculation — hide it for those views.
   const requiresExactBirthTime = view === 'lagna' || view === 'fullchart';
+
+  async function postChart(email?: string): Promise<ChartResult> {
+    const r = await fetch('/api/tools/chart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        person: {
+          birth_date: d.birth_date,
+          birth_time: d.birth_time || '12:00:00',
+          birth_city: d.birth_city,
+          birth_lat: d.birth_lat,
+          birth_lng: d.birth_lng,
+        },
+        ...(email ? { email } : {}),
+      }),
+    });
+    const data = (await r.json().catch(() => ({}))) as ChartResult & { error?: string };
+    if (!r.ok) throw new Error(data.error ?? 'Could not calculate. Please try again.');
+    return data;
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,28 +138,52 @@ export function ChartTool({
     if (!valid) { setErr('Enter your birth date and confirm your birth city.'); return; }
     setLoading(true);
     try {
-      const r = await fetch('/api/tools/chart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          person: {
-            birth_date: d.birth_date,
-            birth_time: d.birth_time || '12:00:00',
-            birth_city: d.birth_city,
-            birth_lat: d.birth_lat,
-            birth_lng: d.birth_lng,
-          },
-        }),
+      setRes(await postChart());
+      writeOnboardDraft({
+        name: d.name?.trim() || '',
+        birthDate: d.birth_date,
+        birthTime: d.birth_time || '12:00:00',
+        birthCity: d.birth_city,
+        birthLat: d.birth_lat,
+        birthLng: d.birth_lng,
+        reportType: '7day',
+        promoCode: '',
       });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) { setErr((data as { error?: string }).error ?? 'Could not calculate. Please try again.'); return; }
-      setRes(data as ChartResult);
-    } catch {
-      setErr('Network error. Please try again.');
+    } catch (e2) {
+      setErr(e2 instanceof Error ? e2.message : 'Network error. Please try again.');
     } finally {
       setLoading(false);
     }
   }
+
+  /** Re-runs the same calculation with the email attached, which unlocks the doshas. */
+  async function onReveal(e: React.FormEvent) {
+    e.preventDefault();
+    setRevealErr(null);
+    const email = gateEmail.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      setRevealErr('Enter a valid email address.');
+      return;
+    }
+    setRevealing(true);
+    try {
+      setRes(await postChart(email));
+    } catch (e2) {
+      setRevealErr(e2 instanceof Error ? e2.message : 'Network error. Please try again.');
+    } finally {
+      setRevealing(false);
+    }
+  }
+
+  const lock = (
+    <DoshaLock
+      email={gateEmail}
+      onEmailChange={setGateEmail}
+      onSubmit={onReveal}
+      busy={revealing}
+      error={revealErr}
+    />
+  );
 
   return (
     <div className="max-w-xl mx-auto">
@@ -144,7 +201,7 @@ export function ChartTool({
 
       {res && (
         <div className="mt-6 rounded-card border border-amber/30 bg-gradient-to-br from-amber/[0.07] via-cosmos to-cosmos p-6 sm:p-8 text-center">
-          <ResultView view={view} res={res} />
+          <ResultView view={view} res={res} lock={lock} />
           <ShareResult
             title="My Vedic chart · VedicHour"
             text={shareTextFor(view, res)}
@@ -152,16 +209,28 @@ export function ChartTool({
             utmCampaign="calculator_share"
             className="mt-7"
           />
-          <Link
-            href={ctaHref}
-            className="inline-block mt-6 px-7 py-2.5 rounded-button border border-horizon text-dust hover:text-star hover:border-dust transition-colors duration-250"
-          >
-            {ctaLabel} →
-          </Link>
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href={UNLOCK_7DAY_HREF}
+              data-track="calculator-unlock-hours"
+              className="btn-primary inline-block px-7 py-3"
+            >
+              Unlock my hour-by-hour forecast →
+            </Link>
+            <Link
+              href={ctaHref}
+              className="inline-block px-7 py-2.5 rounded-button border border-horizon text-dust hover:text-star hover:border-amber/40 transition-colors duration-250"
+            >
+              {ctaLabel} →
+            </Link>
+          </div>
+          <p className="mt-3 font-mono text-mono-sm text-dust">
+            Your birth details are saved on this device — no re-typing on the next step.
+          </p>
         </div>
       )}
 
-      {res && <TimingBridge anchorLabel={anchorLabelFor(view)} />}
+      {res && <TimingBridge anchorLabel={anchorLabelFor(view)} href={UNLOCK_7DAY_HREF} />}
     </div>
   );
 }
@@ -183,6 +252,59 @@ function Flag({ d }: { d: Dosha }) {
       )}
       <p className="font-body text-body-sm text-dust leading-relaxed max-w-md mx-auto">{d.note}</p>
     </>
+  );
+}
+
+/**
+ * Soft gate for the dosha verdicts: the answer is already computed server-side but is
+ * withheld until an email is left (or the visitor is signed in). The verdict itself is
+ * never sent to the browser while locked, so the blur is a real lock, not CSS theatre.
+ */
+function DoshaLock({
+  email,
+  onEmailChange,
+  onSubmit,
+  busy,
+  error,
+}: {
+  email: string;
+  onEmailChange: (v: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  busy: boolean;
+  error: string | null;
+}) {
+  return (
+    <div className="mt-1">
+      <div aria-hidden className="select-none blur-md opacity-60 pointer-events-none">
+        <p className="font-display font-bold text-5xl text-amber mb-2">Yes</p>
+        <p className="font-mono text-mono-sm text-dust/70 uppercase tracking-wider">partial · from Mars</p>
+      </div>
+      <p className="mt-4 font-body text-body-sm text-dust leading-relaxed max-w-md mx-auto">
+        Your result is ready. Enter your email to see it — free, no card.
+      </p>
+      <form onSubmit={onSubmit} className="mt-4 max-w-sm mx-auto space-y-2">
+        <label className="block text-left text-body-sm text-dust">
+          Email
+          <input
+            type="email"
+            required
+            autoComplete="email"
+            value={email}
+            onChange={(e) => onEmailChange(e.target.value)}
+            placeholder="you@example.com"
+            className="mt-1 w-full rounded-md bg-cosmos border border-horizon px-3 py-2.5 text-star focus:border-amber/60 focus:outline-none transition-colors"
+          />
+        </label>
+        {error && <p className="text-caution text-body-sm text-left">{error}</p>}
+        <button type="submit" disabled={busy} className="btn-primary w-full py-3 disabled:opacity-50">
+          {busy ? 'Revealing…' : 'Show my result'}
+        </button>
+      </form>
+      <p className="mt-3 font-mono text-mono-sm text-dust">
+        Want the full written analysis? That is the{' '}
+        <Link href="/kundali" className="text-amber hover:underline">Kundli report</Link>.
+      </p>
+    </div>
   );
 }
 
@@ -228,7 +350,7 @@ function DashaView({ res }: { res: ChartResult }) {
   );
 }
 
-function FullChart({ res }: { res: ChartResult }) {
+function FullChart({ res, lock }: { res: ChartResult; lock: React.ReactNode }) {
   const rows = [
     ['Ascendant (Lagna)', res.lagna ?? '—'],
     ['Moon sign (Rashi)', res.moon_sign ?? '—'],
@@ -248,21 +370,28 @@ function FullChart({ res }: { res: ChartResult }) {
           </div>
         ))}
       </div>
-      <p className="font-mono text-mono-sm text-dust">
-        {doshaLine('Manglik', res.doshas.manglik)} · {doshaLine('Kaal Sarpa', res.doshas.kaalSarpa)} · {doshaLine('Sade Sati', res.doshas.sadeSati)}
-      </p>
+      {res.doshas ? (
+        <p className="font-mono text-mono-sm text-dust">
+          {doshaLine('Manglik', res.doshas.manglik)} · {doshaLine('Kaal Sarpa', res.doshas.kaalSarpa)} · {doshaLine('Sade Sati', res.doshas.sadeSati)}
+        </p>
+      ) : (
+        <>
+          <Eyebrow>Manglik · Kaal Sarpa · Sade Sati</Eyebrow>
+          {lock}
+        </>
+      )}
     </>
   );
 }
 
-function ResultView({ view, res }: { view: ToolView; res: ChartResult }) {
+function ResultView({ view, res, lock }: { view: ToolView; res: ChartResult; lock: React.ReactNode }) {
   switch (view) {
     case 'manglik':
-      return <><Eyebrow>Manglik (Mangal) Dosha</Eyebrow><Flag d={res.doshas.manglik} /></>;
+      return <><Eyebrow>Manglik (Mangal) Dosha</Eyebrow>{res.doshas ? <Flag d={res.doshas.manglik} /> : lock}</>;
     case 'kaalsarp':
-      return <><Eyebrow>Kaal Sarpa Dosha</Eyebrow><Flag d={res.doshas.kaalSarpa} /></>;
+      return <><Eyebrow>Kaal Sarpa Dosha</Eyebrow>{res.doshas ? <Flag d={res.doshas.kaalSarpa} /> : lock}</>;
     case 'sadesati':
-      return <><Eyebrow>Sade Sati</Eyebrow><Flag d={res.doshas.sadeSati} /></>;
+      return <><Eyebrow>Sade Sati</Eyebrow>{res.doshas ? <Flag d={res.doshas.sadeSati} /> : lock}</>;
     case 'dasha':
       return <DashaView res={res} />;
     case 'nakshatra':
@@ -284,7 +413,7 @@ function ResultView({ view, res }: { view: ToolView; res: ChartResult }) {
         />
       );
     case 'fullchart':
-      return <FullChart res={res} />;
+      return <FullChart res={res} lock={lock} />;
     default:
       return null;
   }

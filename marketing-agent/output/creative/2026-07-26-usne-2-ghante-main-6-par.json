@@ -1,0 +1,146 @@
+{
+  "slug": "2026-07-26-usne-2-ghante-main-6-par",
+  "title": "Same Chapter: 2 Ghante vs 6 Ghante",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.76,
+  "hook": "Usne 2 ghante. Main 6 par.",
+  "cta": "VedicHour.com dekho. Your Life, Decoded Hour by Hour.",
+  "tags": {
+    "hookFamily": "curiosity_gap",
+    "decisionDomain": "study",
+    "emotionalRegister": "hopeful",
+    "durationTargetSec": 25
+  },
+  "explore": true,
+  "voice": "shubh",
+  "voicePlan": {
+    "adVoice": "shubh",
+    "nativeShots": [
+      "s1",
+      "s3"
+    ],
+    "narratedShots": [
+      "s2"
+    ],
+    "maxNarrationWords": 12
+  },
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 10,
+      "prompt": "Young Indian man in a charcoal T-shirt at a Bengaluru apartment study desk, glancing between an open textbook and his softly glowing phone while his thumb hesitates above it; slow push-in, warm late-evening lamp light, puzzled but hopeful mood. Phone screen heavily out of focus, no legible characters. Leave clean negative space for a post-production real VedicHour hour score beside an editorial 'Call now?' prompt.",
+      "dialogue": "Usne chapter do ghante mein khatam kiya. Main chhe ghante baad bhi atka tha. Difference sirf ability nahi; shayad starting window bhi thi.",
+      "voice": "veo_native"
+    },
+    {
+      "id": "s2",
+      "role": "product",
+      "seconds": 6,
+      "vo": "VedicHour tumhare birth chart par sabhi 18 planetary hours score karta hai.",
+      "voice": "shubh",
+      "capture": {
+        "url": "https://www.vedichour.com/sample-report",
+        "libraryKey": "sample_report_page",
+        "waitForSelector": "#main-content"
+      }
+    },
+    {
+      "id": "s3",
+      "role": "presenter_close",
+      "seconds": 9,
+      "prompt": "The same person as the opening presenter shot: young Indian man in the same charcoal T-shirt at the same desk and same late-evening light, closing his notebook and addressing the camera; gentle locked medium shot, warm practical lighting, quietly encouraging mood. Any phone screen is heavily out of focus, glowing softly, no legible characters.",
+      "dialogue": "Study ke liye clearer aur heavier windows plain English mein dekho. VedicHour.com pe aao. Your Life, Decoded Hour by Hour.",
+      "voice": "veo_native"
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Same Chapter: 2 Ghante vs 6 Ghante",
+    "description": "Do ghante aur chhe ghante ka gap kabhi sirf ability ka sawaal nahi hota; timing ko reflection layer ki tarah dekho. VedicHour aapke birth chart ke against sabhi 18 planetary hours score karke clearer aur heavier study windows plain English mein dikhata hai. First paid report par 30% off ke liye NEWUSER30 use karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=padhai-2-ghante-vs-6-ghante",
+    "hashtags": [
+      "#vedichour",
+      "#padhai",
+      "#studytiming",
+      "#focusedstudy",
+      "#studentlife",
+      "#jyotish",
+      "#modernjyotish",
+      "#indiastudents",
+      "#studywithme",
+      "#timingawareness",
+      "#hindireels",
+      "#reelsindia"
+    ],
+    "caption": "Usne: 2 ghante Main: 6 ghante, still stuck Sirf ability ka gap? Sabhi 18 hours scored Clearer ya heavier window"
+  },
+  "batchId": "2026-07-26-ms21s7qm",
+  "scores": {
+    "hookStrength": 76,
+    "specificity": 71,
+    "credibility": 78,
+    "brandSafety": 91,
+    "producibility": 66,
+    "total": 76,
+    "notes": "Screencap scrolls when lesson requires holding two complete cards; the strongest keeper by default.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing-awareness copy using approved clearer/heavier framing without promised outcomes."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "padhai-2-ghante-vs-6-ghante",
+  "family": "decision_moment",
+  "angle": "Curiosity gap: two students, same chapter — one done in 2 hours, one still going at hour 6. The reveal is not ability but the window they started in",
+  "variantIndex": 1,
+  "hookText": "Usne 2 ghante. Main 6 par.",
+  "spokenScript": "Usne chapter do ghante mein khatam kiya. Main chhe ghante baad bhi atka tha. Difference sirf ability nahi; shayad starting window bhi thi. VedicHour tumhare birth chart par sabhi 18 planetary hours score karta hai. Study ke liye clearer aur heavier windows plain English mein dekho. VedicHour.com pe aao. Your Life, Decoded Hour by Hour.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 10,
+      "visualPrompt": "Young Indian man in a charcoal T-shirt at a Bengaluru apartment study desk, glancing between an open textbook and his softly glowing phone while his thumb hesitates above it; slow push-in, warm late-evening lamp light, puzzled but hopeful mood. Phone screen heavily out of focus, no legible characters. Leave clean negative space for a post-production real VedicHour hour score beside an editorial 'Call now?' prompt.",
+      "dialogue": "Usne chapter do ghante mein khatam kiya. Main chhe ghante baad bhi atka tha. Difference sirf ability nahi; shayad starting window bhi thi."
+    },
+    {
+      "kind": "screencap",
+      "seconds": 6,
+      "visualPrompt": "the report's 18-hour day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim",
+      "narration": "VedicHour tumhare birth chart par sabhi 18 planetary hours score karta hai."
+    },
+    {
+      "kind": "presenter",
+      "seconds": 9,
+      "visualPrompt": "The same person as the opening presenter shot: young Indian man in the same charcoal T-shirt at the same desk and same late-evening light, closing his notebook and addressing the camera; gentle locked medium shot, warm practical lighting, quietly encouraging mood. Any phone screen is heavily out of focus, glowing softly, no legible characters.",
+      "dialogue": "Study ke liye clearer aur heavier windows plain English mein dekho. VedicHour.com pe aao. Your Life, Decoded Hour by Hour."
+    }
+  ],
+  "onScreenCaptions": [
+    "Usne: 2 ghante",
+    "Main: 6 ghante, still stuck",
+    "Sirf ability ka gap?",
+    "Sabhi 18 hours scored",
+    "Clearer ya heavier window"
+  ],
+  "hashtags": [
+    "#vedichour",
+    "#padhai",
+    "#studytiming",
+    "#focusedstudy",
+    "#studentlife",
+    "#jyotish",
+    "#modernjyotish",
+    "#indiastudents",
+    "#studywithme",
+    "#timingawareness",
+    "#hindireels",
+    "#reelsindia"
+  ],
+  "youtubeTitle": "Same Chapter: 2 Ghante vs 6 Ghante",
+  "youtubeDescription": "Do ghante aur chhe ghante ka gap kabhi sirf ability ka sawaal nahi hota; timing ko reflection layer ki tarah dekho. VedicHour aapke birth chart ke against sabhi 18 planetary hours score karke clearer aur heavier study windows plain English mein dikhata hai. First paid report par 30% off ke liye NEWUSER30 use karein: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=padhai-2-ghante-vs-6-ghante",
+  "language": "hinglish"
+}

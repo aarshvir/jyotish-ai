@@ -1,8 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import Navbar from '@/components/shared/Navbar';
-import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
 import { COMPARISONS, getComparison } from '@/content/comparisons';
 import { JsonLd } from '@/components/seo/JsonLd';
@@ -44,7 +42,6 @@ export default function ComparePage({ params }: { params: { slug: string } }) {
   return (
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
-      <Navbar />
       <main id="main-content" className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
         <Link href="/free-kundli" className="font-body text-body-sm text-dust hover:text-star transition-colors">← Free Kundli &amp; tools</Link>
         <h1 className="text-display-md font-display text-star mt-3 mb-4">{c.h1}</h1>
@@ -83,7 +80,6 @@ export default function ComparePage({ params }: { params: { slug: string } }) {
           faqPageLd(c.faqs),
         ]}
       />
-      <Footer />
     </div>
   );
 }

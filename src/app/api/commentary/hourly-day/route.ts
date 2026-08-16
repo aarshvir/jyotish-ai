@@ -11,6 +11,7 @@ import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 import { buildSlotGuidance } from '@/lib/guidance/builder';
+import { sanitizeRahuKaalCommentary } from '@/lib/commentary/rahuKaalSanitize';
 
 interface SlotShape {
   slot_index?: number;
@@ -53,7 +54,7 @@ function finalizeHourlyCommentary(raw: string | undefined, slot: SlotShape): str
     body = `${hora} hora with ${chog} choghadiya; transit emphasis H${th}.`;
     body = clipWords(body, 30);
   }
-  return `${directive}\n\n${body}`;
+  return sanitizeRahuKaalCommentary(`${directive}\n\n${body}`, Boolean(slot?.is_rahu_kaal));
 }
 
 function buildFallbackSlot(slot: SlotShape): { slot_index: number; commentary: string } {
@@ -201,7 +202,7 @@ MANDATORY RULES for each slot commentary (enforce without exception):
 1. FIRST line: ONE ALL-CAPS action directive, max 15 words (e.g. "DRAFT PLANS BUT DELAY SIGNING.").
 2. Then ONE or TWO short sentences (total body max ~40 words) unique to this slot: hora ruler role, choghadiya quality, transit lagna house, Rahu Kaal if flagged. Do NOT repeat the same planet-by-planet boilerplate across slots.
 3. Total max ~50 words per slot including the caps line.
-4. Rahu Kaal slots: caps line must start with "RAHU KAAL —".
+4. Rahu Kaal slots: caps line must start with "RAHU KAAL —". Never recommend starting, signing, committing, or launching anything in a Rahu Kaal slot. Tell them to finish existing work only.
 5. Never use these words: generally, may, could, might, perhaps, various, often.
 6. The highest-score slot is the primary opportunity of the day — say so briefly in that slot only.
 
@@ -237,12 +238,15 @@ Respond with ONLY a JSON object. No preamble. No markdown. Start with { directly
         console.error('[HOURLY] All JSON parse attempts failed, using fallback');
         console.error('[HOURLY] Raw text sample:', rawText.slice(0, 200));
         return NextResponse.json({
-          slots: normalizedSlots.map((s, i) => ({
-            slot_index: s.slot_index ?? i,
-            display_label: s.display_label ?? '',
-            commentary: `${s.dominant_hora} hora with ${s.dominant_choghadiya} choghadiya. Score: ${s.score}/100.`,
-            score: s.score ?? 50,
-          })),
+          slots: normalizedSlots.map((s, i) => {
+            const fb = buildFallbackSlot(s);
+            return {
+              slot_index: s.slot_index ?? i,
+              display_label: s.display_label ?? '',
+              commentary: fb.commentary,
+              score: s.score ?? 50,
+            };
+          }),
           partial: true,
         });
       }

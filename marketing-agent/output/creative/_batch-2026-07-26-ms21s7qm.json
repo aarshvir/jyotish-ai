@@ -1,0 +1,46 @@
+{
+  "batchId": "2026-07-26-ms21s7qm",
+  "date": "2026-07-26",
+  "winners": [
+    {
+      "rank": 1,
+      "hookText": "Usne 2 ghante. Main 6 par.",
+      "total": 76,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-26-usne-2-ghante-main-6-par.json"
+    },
+    {
+      "rank": 2,
+      "hookText": "Plot twist: problem chapter nahi tha.",
+      "total": 66,
+      "status": "ready_to_render",
+      "file": "C:\\Users\\aarsh\\Downloads\\jyotish-ai\\marketing-agent\\output\\creative\\2026-07-26-plot-twist-problem-chapter-nahi-tha.json"
+    }
+  ],
+  "rejected": [
+    {
+      "ideaId": "padhai-2-ghante-vs-6-ghante",
+      "variantIndex": 2,
+      "hookText": "Same chapter. 4 ghante ka gap kyun?",
+      "reason": "hostile reviewer rejected: Female presenter forces Sarvam male screencap narration — timbre switches mid-reel; owner lesson violated."
+    },
+    {
+      "ideaId": "padhai-2-ghante-vs-6-ghante",
+      "variantIndex": 3,
+      "hookText": "Chapter same tha. Time triple kyun?",
+      "reason": "hostile reviewer rejected: Screencap shows one slot when script claims 18 hours scored; owner lesson requires full-day 18-window overview."
+    },
+    {
+      "ideaId": "padhai-2-ghante-vs-6-ghante",
+      "variantIndex": 4,
+      "hookText": "2 ghante uske. 6 mere. Kya badla?",
+      "reason": "hostile reviewer rejected: Female presenter plus mandatory male Sarvam narration equals timbre switch mid-reel; prop choreography also risky."
+    },
+    {
+      "ideaId": "padhai-2-ghante-vs-6-ghante",
+      "variantIndex": 6,
+      "hookText": "Same notes. Phir 4 ghante extra kyun?",
+      "reason": "hostile reviewer rejected: Female presenter mandates male Sarvam narration, switching timbre mid-reel; self-compassionate mood also hard to render."
+    }
+  ]
+}

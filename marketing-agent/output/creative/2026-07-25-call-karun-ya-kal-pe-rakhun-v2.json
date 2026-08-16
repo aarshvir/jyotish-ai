@@ -1,0 +1,134 @@
+{
+  "slug": "2026-07-25-call-karun-ya-kal-pe-rakhun-v2",
+  "title": "Sorry call aaj karun ya kal? Timing grid dekho",
+  "product": "forecast",
+  "status": "rendered",
+  "rank": 0.75,
+  "hook": "Call karun... ya kal pe rakhun?",
+  "cta": "NEWUSER30 ke saath explore karo. Your Life, Decoded Hour by Hour.",
+  "voice": "en-IN-NeerjaNeural",
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 7,
+      "prompt": "A young Indian man in his late twenties wearing a navy kurta sits alone with his thumb hovering over a phone, staring at it without tapping; slow push-in; soft golden-hour evening window lighting; intimate, hesitant mood; the phone screen is heavily out of focus, glowing softly, no legible characters; no logos.",
+      "dialogue": "Sorry bolna hai, par call button dekhte hi thumb freeze ho jata hai."
+    },
+    {
+      "id": "s2",
+      "role": "broll_hero",
+      "seconds": 6,
+      "prompt": "The same person as the presenter shot: a young Indian man in his late twenties, same navy kurta, same soft golden-hour evening window light, takes a slow breath and lowers his tense hand onto a wooden table; gentle sideward camera slide; warm apartment; reflective, quietly anxious mood.",
+      "vo": "Aaj karun, ya kal, sirf anxiety se decide karna zaroori nahi."
+    },
+    {
+      "id": "s3",
+      "role": "product",
+      "seconds": 7,
+      "vo": "VedicHour tumhari birth chart ke against din ke saare 18 horas rate karta hai.",
+      "capture": {
+        "url": "https://www.vedichour.com/pricing"
+      }
+    },
+    {
+      "id": "s4",
+      "role": "product",
+      "seconds": 8,
+      "vo": "Clearer aur heavier conversation windows plain English mein dikhte hain, Swiss Ephemeris aur Lahiri ayanamsa ke saath.",
+      "capture": {
+        "url": "https://www.vedichour.com/free-kundli",
+        "scrollPx": 900,
+        "panToPx": 0
+      }
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Sorry call aaj karun ya kal? Timing grid dekho",
+    "description": "Apni birth chart ke against clearer aur heavier conversation windows explore karo. First paid report par 30% off ke liye NEWUSER30 use karo: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=sorry-call-aaj-ya-kal Your Life, Decoded Hour by Hour.",
+    "hashtags": [
+      "#sorrybolna",
+      "#aajyakal",
+      "#dostibaatein",
+      "#jyotish",
+      "#vedicjyotish",
+      "#horatiming",
+      "#birthchart",
+      "#mindfuldecisions",
+      "#selfreflection",
+      "#hindireels",
+      "#urbanindia",
+      "#vedichour"
+    ],
+    "caption": "Thumb freeze ho gaya? Aaj ya kal? Saare 18 horas rated Clearer aur heavier windows"
+  },
+  "batchId": "2026-07-25-ms0xt778",
+  "scores": {
+    "hookStrength": 68,
+    "specificity": 76,
+    "credibility": 71,
+    "brandSafety": 88,
+    "producibility": 79,
+    "total": 75,
+    "notes": "v2 fixes: s4 now captures /free-kundli (was a near-duplicate pricing pan) and ends on the hero.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing awareness using approved clearer/heavier framing; no promised personal outcome."
+  },
+  "ideaId": "sorry-call-aaj-ya-kal",
+  "family": "decision_moment",
+  "angle": "Presenter stares at an open contact on their phone, thumb hovering over the call button, stuck — the hora grid shows which window runs clearer for a conversation that actually needs to go well",
+  "variantIndex": 1,
+  "hookText": "Call karun... ya kal pe rakhun?",
+  "spokenScript": "Sorry bolna hai, par call button dekhte hi thumb freeze ho jata hai. Aaj karun, ya kal, sirf anxiety se decide karna zaroori nahi. VedicHour tumhari birth chart ke against din ke saare 18 horas rate karta hai. Clearer aur heavier conversation windows plain English mein dikhte hain, Swiss Ephemeris aur Lahiri ayanamsa ke saath.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 7,
+      "visualPrompt": "A young Indian man in his late twenties wearing a navy kurta sits alone with his thumb hovering over a phone, staring at it without tapping; slow push-in; soft golden-hour evening window lighting; intimate, hesitant mood; the phone screen is heavily out of focus, glowing softly, no legible characters; no logos."
+    },
+    {
+      "kind": "broll",
+      "seconds": 6,
+      "visualPrompt": "The same person as the presenter shot: a young Indian man in his late twenties, same navy kurta, same soft golden-hour evening window light, takes a slow breath and lowers his tense hand onto a wooden table; gentle sideward camera slide; warm apartment; reflective, quietly anxious mood."
+    },
+    {
+      "kind": "screencap",
+      "seconds": 7,
+      "visualPrompt": "the 18-hora day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim"
+    },
+    {
+      "kind": "screencap",
+      "seconds": 8,
+      "visualPrompt": "the free-kundli page panning back up to its hero — a clean end-frame instead of a mid-scroll footer"
+    }
+  ],
+  "onScreenCaptions": [
+    "Thumb freeze ho gaya?",
+    "Aaj ya kal?",
+    "Saare 18 horas rated",
+    "Clearer aur heavier windows"
+  ],
+  "hashtags": [
+    "#sorrybolna",
+    "#aajyakal",
+    "#dostibaatein",
+    "#jyotish",
+    "#vedicjyotish",
+    "#horatiming",
+    "#birthchart",
+    "#mindfuldecisions",
+    "#selfreflection",
+    "#hindireels",
+    "#urbanindia",
+    "#vedichour"
+  ],
+  "youtubeTitle": "Sorry call aaj karun ya kal? Timing grid dekho",
+  "youtubeDescription": "Apni birth chart ke against clearer aur heavier conversation windows explore karo. First paid report par 30% off ke liye NEWUSER30 use karo: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=sorry-call-aaj-ya-kal Your Life, Decoded Hour by Hour.",
+  "language": "hinglish",
+  "v2Of": "2026-07-25-call-karun-ya-kal-pe-rakhun",
+  "v2Notes": "Quality-trial re-render: s1/s2 pinned to the same subject (young Indian man, navy kurta, golden hour) for cross-shot continuity; s4 switched to /free-kundli with an upward pan ending on the hero (clean end-frame); render pipeline now places captions in the top zone during product shots and normalizes the mix to -16 LUFS.",
+  "rendered_at": "2026-07-25T23:49:48.821Z"
+}

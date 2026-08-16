@@ -1,0 +1,146 @@
+{
+  "slug": "2026-07-26-plot-twist-problem-chapter-nahi-tha",
+  "title": "Plot Twist: Chapter Problem Nahi Tha",
+  "product": "forecast",
+  "status": "ready_to_render",
+  "rank": 0.66,
+  "hook": "Plot twist: problem chapter nahi tha.",
+  "cta": "VedicHour.com try karo. Your Life, Decoded Hour by Hour.",
+  "tags": {
+    "hookFamily": "curiosity_gap",
+    "decisionDomain": "study",
+    "emotionalRegister": "hopeful",
+    "durationTargetSec": 25
+  },
+  "explore": true,
+  "voice": "shubh",
+  "voicePlan": {
+    "adVoice": "shubh",
+    "nativeShots": [
+      "s1",
+      "s3"
+    ],
+    "narratedShots": [
+      "s2"
+    ],
+    "maxNarrationWords": 12
+  },
+  "shots": [
+    {
+      "id": "s1",
+      "role": "presenter",
+      "seconds": 10,
+      "prompt": "Young Indian man in a rust overshirt at a Hyderabad apartment study desk, tapping a small desk timer with no legible digits and raising one eyebrow toward camera while his other hand pauses above a softly glowing phone; quick subtle push-in, bright afternoon window light, playful and curious mood. Phone screen heavily out of focus, no legible characters. Leave clean negative space for a post-production real VedicHour hour score beside an editorial 'Call now?' prompt.",
+      "dialogue": "Uska timer do ghante par band. Mera chhe par bhi chal raha tha. Same chapter. Plot twist: focus ke saath start window dekho.",
+      "voice": "veo_native"
+    },
+    {
+      "id": "s2",
+      "role": "product",
+      "seconds": 6,
+      "vo": "VedicHour 18 planetary hours ko tumhare birth chart se compare karta hai.",
+      "voice": "shubh",
+      "capture": {
+        "url": "https://www.vedichour.com/sample-report",
+        "libraryKey": "sample_report_page",
+        "waitForSelector": "#main-content"
+      }
+    },
+    {
+      "id": "s3",
+      "role": "presenter_close",
+      "seconds": 9,
+      "prompt": "The same person as the opening presenter shot: young Indian man in the same rust overshirt at the same desk and same afternoon light, sliding the timer aside and speaking directly to camera; smooth medium close-up, crisp natural lighting, lightly playful and hopeful mood. Any phone screen is heavily out of focus, glowing softly, no legible characters.",
+      "dialogue": "Focused study ke clearer aur heavier slots plain English mein dekho. VedicHour.com try karo. Your Life, Decoded Hour by Hour.",
+      "voice": "veo_native"
+    }
+  ],
+  "publish": {
+    "youtubeTitle": "Plot Twist: Chapter Problem Nahi Tha",
+    "description": "Timer ka gap ek naya sawaal poochta hai: focus ke saath starting window kaisi thi? VedicHour aapke birth chart se 18 planetary hours compare karke clearer aur heavier study slots plain English mein dikhata hai. NEWUSER30 se first paid report par 30% off: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=padhai-2-ghante-vs-6-ghante",
+    "hashtags": [
+      "#vedichour",
+      "#plottwist",
+      "#padhai",
+      "#studytimer",
+      "#focusstudy",
+      "#studybreak",
+      "#jyotishindia",
+      "#productivitytips",
+      "#indianreels",
+      "#studyreels",
+      "#timinggrid",
+      "#curiousmind"
+    ],
+    "caption": "Timer abhi bhi chal raha? Chapter same tha Focus ke saath timing 18 hours compared Clearer ya heavier?"
+  },
+  "batchId": "2026-07-26-ms21s7qm",
+  "scores": {
+    "hookStrength": 52,
+    "specificity": 67,
+    "credibility": 71,
+    "brandSafety": 90,
+    "producibility": 63,
+    "total": 66,
+    "notes": "Plot twist: hook labels the reveal instead of doing it — this audience clocks the formula and exits.",
+    "degraded": false
+  },
+  "linter": {
+    "verdict": "pass",
+    "reason": "Calm timing-awareness copy using approved clearer/heavier study-window framing."
+  },
+  "renderValidation": {
+    "ok": true,
+    "issues": []
+  },
+  "ideaId": "padhai-2-ghante-vs-6-ghante",
+  "family": "decision_moment",
+  "angle": "Curiosity gap: two students, same chapter — one done in 2 hours, one still going at hour 6. The reveal is not ability but the window they started in",
+  "variantIndex": 5,
+  "hookText": "Plot twist: problem chapter nahi tha.",
+  "spokenScript": "Uska timer do ghante par band. Mera chhe par bhi chal raha tha. Same chapter. Plot twist: focus ke saath start window dekho. VedicHour 18 planetary hours ko tumhare birth chart se compare karta hai. Focused study ke clearer aur heavier slots plain English mein dekho. VedicHour.com try karo. Your Life, Decoded Hour by Hour.",
+  "shotList": [
+    {
+      "kind": "presenter",
+      "seconds": 10,
+      "visualPrompt": "Young Indian man in a rust overshirt at a Hyderabad apartment study desk, tapping a small desk timer with no legible digits and raising one eyebrow toward camera while his other hand pauses above a softly glowing phone; quick subtle push-in, bright afternoon window light, playful and curious mood. Phone screen heavily out of focus, no legible characters. Leave clean negative space for a post-production real VedicHour hour score beside an editorial 'Call now?' prompt.",
+      "dialogue": "Uska timer do ghante par band. Mera chhe par bhi chal raha tha. Same chapter. Plot twist: focus ke saath start window dekho."
+    },
+    {
+      "kind": "screencap",
+      "seconds": 6,
+      "visualPrompt": "the report's 18-hour day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim",
+      "narration": "VedicHour 18 planetary hours ko tumhare birth chart se compare karta hai."
+    },
+    {
+      "kind": "presenter",
+      "seconds": 9,
+      "visualPrompt": "The same person as the opening presenter shot: young Indian man in the same rust overshirt at the same desk and same afternoon light, sliding the timer aside and speaking directly to camera; smooth medium close-up, crisp natural lighting, lightly playful and hopeful mood. Any phone screen is heavily out of focus, glowing softly, no legible characters.",
+      "dialogue": "Focused study ke clearer aur heavier slots plain English mein dekho. VedicHour.com try karo. Your Life, Decoded Hour by Hour."
+    }
+  ],
+  "onScreenCaptions": [
+    "Timer abhi bhi chal raha?",
+    "Chapter same tha",
+    "Focus ke saath timing",
+    "18 hours compared",
+    "Clearer ya heavier?"
+  ],
+  "hashtags": [
+    "#vedichour",
+    "#plottwist",
+    "#padhai",
+    "#studytimer",
+    "#focusstudy",
+    "#studybreak",
+    "#jyotishindia",
+    "#productivitytips",
+    "#indianreels",
+    "#studyreels",
+    "#timinggrid",
+    "#curiousmind"
+  ],
+  "youtubeTitle": "Plot Twist: Chapter Problem Nahi Tha",
+  "youtubeDescription": "Timer ka gap ek naya sawaal poochta hai: focus ke saath starting window kaisi thi? VedicHour aapke birth chart se 18 planetary hours compare karke clearer aur heavier study slots plain English mein dikhata hai. NEWUSER30 se first paid report par 30% off: https://www.vedichour.com/pricing?utm_source=youtube&utm_medium=short&utm_campaign=creative_engine&utm_content=padhai-2-ghante-vs-6-ghante",
+  "language": "hinglish"
+}

@@ -12,7 +12,7 @@ import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { redeemPromoCode } from '@/lib/promo/server';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
-const YOUNG_GENERATING_MS = 10 * 60 * 1000;
+const YOUNG_GENERATING_MS = 90 * 60 * 1000;
 
 function birthTimeToPipelineTime(s: string): string {
   const raw = (s || '12:00:00').trim();

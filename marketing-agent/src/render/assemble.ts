@@ -283,6 +283,9 @@ async function measureLoudness(ffmpeg: string, inputs: string[], mixChain: strin
   if (!m) return null;
   try {
     const j = JSON.parse(m[0]);
+    const i = Number(j?.input_i);
+    // Silent dry placeholders measure as -inf; loudnorm rejects measured_I outside [-99, 0].
+    if (!Number.isFinite(i) || i < -99 || i > 0) return null;
     return typeof j?.input_i === 'string' ? j : null;
   } catch {
     return null;
@@ -437,11 +440,19 @@ function drawPath(p: string): string {
  * (CLAUDE.md §2). A cache MISS with no SARVAM_API_KEY fails loudly rather than shipping a silent
  * card that quietly drops half the owner's ruling.
  */
-export async function endCardTagAudio(): Promise<{ path: string; seconds: number; costUsd: number; cached: boolean }> {
+export async function endCardTagAudio(opts: { dry?: boolean; work?: string } = {}): Promise<{ path: string; seconds: number; costUsd: number; cached: boolean }> {
   const { ffmpeg, ffprobe } = resolveTools();
-  if (existsSync(END_CARD_TAG_WAV)) {
+  if (!opts.dry && existsSync(END_CARD_TAG_WAV)) {
     const seconds = await probeDuration(ffprobe, END_CARD_TAG_WAV).catch(() => 0);
     if (seconds > 0.4) return { path: END_CARD_TAG_WAV, seconds, costUsd: 0, cached: true };
+  }
+  if (opts.dry) {
+    const dir = opts.work ?? resolve(ROOT, 'tmp');
+    mkdirSync(dir, { recursive: true });
+    const silent = resolve(dir, 'end-card-tag.dry.wav');
+    await run(ffmpeg, ['-y', '-f', 'lavfi', '-i', `anullsrc=r=${AUDIO.rate}:cl=stereo`, '-t', '1.6', silent]);
+    const seconds = await probeDuration(ffprobe, silent).catch(() => 1.6);
+    return { path: silent, seconds: seconds || 1.6, costUsd: 0, cached: false };
   }
   if (!hasSarvamKey()) throw new Error(`end card tag: ${SARVAM_MISSING_MESSAGE}`);
 
@@ -485,9 +496,9 @@ export interface EndCardResult {
  * gold hairlines, with one short human line under it. Motion is a 0.4s fade up and nothing else:
  * the frame's whole job is to be read and remembered.
  */
-export async function renderEndCard(work: string, outPath: string, opts: { seconds?: number } = {}): Promise<EndCardResult> {
+export async function renderEndCard(work: string, outPath: string, opts: { seconds?: number; dry?: boolean } = {}): Promise<EndCardResult> {
   const { ffmpeg } = resolveTools();
-  const tag = await endCardTagAudio();
+  const tag = await endCardTagAudio({ dry: opts.dry, work });
   const lead = END_CARD.tagLeadSec;
   // Never clip the tag: the card is at least long enough to hold it, plus a beat to land on.
   const seconds = Math.round(Math.max(opts.seconds ?? END_CARD.seconds, lead + tag.seconds + 0.2) * 100) / 100;
