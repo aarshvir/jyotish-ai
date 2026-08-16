@@ -220,6 +220,8 @@ Volume target: **1 approved presenter reel/day**, not 8 slop reels. Best-in-clas
 
 ## 8. Keys to set tonight (nothing else)
 
+They live in **one file**: `marketing-agent/.env` (gitignored). That file wins over Cloud Agent dummy `process.env`. Copy `marketing-agent/.env.example`. A Cloud Agent clone will **not** receive this file — run paid render on the laptop that has it.
+
 ```
 FAL_KEY=                 # presenter + b-roll
 SARVAM_API_KEY=          # the only TTS allowed in ads

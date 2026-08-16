@@ -866,6 +866,7 @@ export function printBudgetStatus(): void {
   console.log(`  per-day   cap $${c.perDayUsd.toFixed(2)}   spent (rolling 24h) $${s.dayUsd.toFixed(2)}   (env VIDEO_BUDGET_DAY_USD)`);
   console.log(`  per-week  cap $${c.perWeekUsd.toFixed(2)}  spent (rolling 7d)  $${s.weekUsd.toFixed(2)}  (env VIDEO_BUDGET_WEEK_USD)`);
   console.log(`\nFAL_KEY: ${hasFalKey() ? 'set — live generation enabled' : 'NOT set — loop runs in dry mode'}`);
+  console.log(`SARVAM_API_KEY: ${hasSarvamKey() ? 'set' : 'NOT set — live narration / end-card tag will refuse'}`);
   console.log('\nPrice table (fal.ai, verified July 2026):');
   for (const spec of Object.values(PRICE_TABLE)) {
     if (!spec.costPerSecond) continue;

@@ -4,37 +4,9 @@
 // a browser. All callers must fail SOFT until the owner runs RUN_IN_SUPABASE.sql
 // (missing tables surface as MissingTableError, not a crash).
 
-import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { ROOT } from './db/index';
+import { parseEnvFile, CANONICAL_ENV_FILE, APP_ENV_FILE } from './env';
 
-function parseEnvFile(file: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  if (!existsSync(file)) return out;
-  for (const line of readFileSync(file, 'utf8').split(/\r?\n/)) {
-    if (line.trim().startsWith('#')) continue;
-    const m = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
-    if (!m) continue;
-    let v = m[2];
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-    out[m[1]] = v;
-  }
-  return out;
-}
-
-let _env: Record<string, string> | null = null;
-
-/** Merged env: ../.env.local < marketing-agent/.env < process.env */
-export function loadEnv(): Record<string, string> {
-  if (_env) return _env;
-  const merged: Record<string, string> = {
-    ...parseEnvFile(resolve(ROOT, '..', '.env.local')),
-    ...parseEnvFile(resolve(ROOT, '.env')),
-  };
-  for (const [k, v] of Object.entries(process.env)) if (typeof v === 'string' && v) merged[k] = v;
-  _env = merged;
-  return merged;
-}
+export { loadEnv } from './env';
 
 export interface Sb {
   base: string;
@@ -48,8 +20,8 @@ function credCandidates(): { source: string; sb: Sb }[] {
     const key = env.SUPABASE_SERVICE_ROLE_KEY || '';
     if (base && key && !out.some((c) => c.sb.base === base && c.sb.key === key)) out.push({ source, sb: { base, key } });
   };
-  push('marketing-agent/.env', parseEnvFile(resolve(ROOT, '.env')));
-  push('../.env.local', parseEnvFile(resolve(ROOT, '..', '.env.local')));
+  push('marketing-agent/.env', parseEnvFile(CANONICAL_ENV_FILE));
+  push('../.env.local', parseEnvFile(APP_ENV_FILE));
   push('process.env', process.env as Record<string, string | undefined>);
   return out;
 }
