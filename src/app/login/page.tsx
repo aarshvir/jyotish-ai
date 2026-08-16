@@ -12,10 +12,10 @@ export const metadata: Metadata = {
 /**
  * Visual shell for SSR / crawlers / the useSearchParams Suspense fallback.
  *
- * This is the FIRST HTML paint of /login. It must never be a submitting <form>
- * with named credential fields: a GET form with name="password" puts the
- * password in the query string (history, Referer, CDN/access logs) if the user
- * or a password manager submits before LoginForm hydrates.
+ * This is the FIRST HTML paint of /login. It must never be a submitting form
+ * with named credential fields: a GET form whose password input is submitted
+ * as a query parameter leaks the secret into history, Referer, and access logs
+ * if the user or a password manager submits before LoginForm hydrates.
  */
 function LoginShell() {
   return (
