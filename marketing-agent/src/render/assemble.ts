@@ -25,6 +25,15 @@ import type { CreativeScript, Shot } from './types';
  */
 
 export const FRAME = { w: 1080, h: 1920, fps: 30 };
+
+/**
+ * Dead-air limits, enforced in verifyOutput(). A reel is consumed with sound on a phone;
+ * silence reads as a broken file long before it reads as "atmosphere". 1.2s is about the
+ * longest pause that still feels like a beat rather than a fault; 25% caps the cumulative
+ * total so many short gaps cannot add up to a mute reel either.
+ */
+export const MAX_SILENCE_GAP_SEC = 1.2;
+export const MAX_SILENT_SHARE = 0.25;
 const AUDIO = { rate: 48000, channels: 2 };
 
 /**
@@ -562,6 +571,32 @@ export async function verifyOutput(file: string, expectSec: number, framesDir: s
   if (probe.width !== FRAME.w || probe.height !== FRAME.h) problems.push(`expected ${FRAME.w}x${FRAME.h}, got ${probe.width}x${probe.height}`);
   if (Math.abs(probe.fps - FRAME.fps) > 0.6) problems.push(`expected ~${FRAME.fps}fps, got ${probe.fps}`);
   if (!probe.hasAudio) problems.push('no audio stream');
+
+  // An audio STREAM is not AUDIO. On 2026-08-16 a reel shipped to the owner with a single
+  // unbroken 15.2s silence out of 31.2s — the product section, the part meant to sell, played
+  // mute — and every gate passed it because `hasAudio` was true. A reel is watched with sound
+  // on a phone; dead air reads as a broken file and the viewer leaves. Measure the actual
+  // waveform and FAIL, never warn.
+  {
+    const sil = await runCapture(ffmpeg, ['-i', file, '-af', 'silencedetect=n=-35dB:d=0.6', '-f', 'null', '-']);
+    const blob = sil.stderr + sil.stdout;
+    const gaps = [...blob.matchAll(/silence_duration:\s*([0-9.]+)/g)].map((m) => Number(m[1]));
+    const longest = gaps.length ? Math.max(...gaps) : 0;
+    const totalSilent = gaps.reduce((a, b) => a + b, 0);
+    const silentShare = probe.durationSec > 0 ? totalSilent / probe.durationSec : 0;
+    if (longest > MAX_SILENCE_GAP_SEC) {
+      problems.push(
+        `dead air: a single ${longest.toFixed(1)}s silence (limit ${MAX_SILENCE_GAP_SEC}s). ` +
+          'Either the shot needs a spoken line or the reel needs a music bed under it.',
+      );
+    }
+    if (silentShare > MAX_SILENT_SHARE) {
+      problems.push(
+        `${Math.round(silentShare * 100)}% of the reel is silent (limit ${Math.round(MAX_SILENT_SHARE * 100)}%), ` +
+          `${totalSilent.toFixed(1)}s of ${probe.durationSec.toFixed(1)}s.`,
+      );
+    }
+  }
   if (Math.abs(probe.durationSec - expectSec) > 1.2) problems.push(`duration ${probe.durationSec.toFixed(2)}s vs expected ${expectSec.toFixed(2)}s`);
   if (probe.codec !== 'h264') problems.push(`expected h264, got ${probe.codec}`);
 
