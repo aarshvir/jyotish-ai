@@ -10,13 +10,32 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  * first. Transactional mail (report-ready, admin alerts) does NOT suppress.
  */
 
-function secret(): string {
+/**
+ * Signing key, or null when none is configured.
+ *
+ * There is deliberately NO hardcoded fallback: a literal in a repo anyone can read is
+ * a publicly-known HMAC key, and with it a stranger can mint a valid token for ANY
+ * address and suppress it (or forge a bulk unsubscribe of the whole list).
+ * Missing key ⇒ verification fails closed and minting throws.
+ */
+function secretOrNull(): string | null {
   return (
     process.env.UNSUBSCRIBE_SECRET?.trim() ||
     process.env.CRON_SECRET?.trim() ||
     process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ||
-    'vedichour-unsub-fallback'
+    null
   );
+}
+
+function requireSecret(): string {
+  const s = secretOrNull();
+  if (!s) {
+    throw new Error(
+      'UNSUBSCRIBE_SECRET (or CRON_SECRET / SUPABASE_SERVICE_ROLE_KEY) is required to sign ' +
+      'unsubscribe tokens. Refusing to send mail we cannot honour an unsubscribe for.',
+    );
+  }
+  return s;
 }
 
 function b64url(buf: Buffer): string {
@@ -26,12 +45,18 @@ function b64url(buf: Buffer): string {
 /** Opaque token = base64url(email) + "." + hmac, so the route can recover + verify the email. */
 export function makeUnsubToken(email: string): string {
   const e = email.trim().toLowerCase();
-  const mac = createHmac('sha256', secret()).update(e).digest();
+  const mac = createHmac('sha256', requireSecret()).update(e).digest();
   return `${b64url(Buffer.from(e, 'utf8'))}.${b64url(mac)}`;
 }
 
 /** Returns the verified email, or null if the token is malformed/forged. */
 export function verifyUnsubToken(token: string): string | null {
+  const signingKey = secretOrNull();
+  // Fail CLOSED: with no key there is no forgery-resistant token to verify.
+  if (!signingKey) {
+    console.error('[suppression] no unsubscribe signing key configured — rejecting token');
+    return null;
+  }
   const parts = String(token ?? '').split('.');
   if (parts.length !== 2) return null;
   let email: string;
@@ -41,7 +66,7 @@ export function verifyUnsubToken(token: string): string | null {
     return null;
   }
   if (!email || !email.includes('@')) return null;
-  const expected = createHmac('sha256', secret()).update(email).digest();
+  const expected = createHmac('sha256', signingKey).update(email).digest();
   let given: Buffer;
   try {
     given = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64');
