@@ -33,7 +33,7 @@ import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
  * 10 minutes — Inngest jobs can take that long.
  */
-const YOUNG_GENERATING_MS = 10 * 60 * 1000;
+const YOUNG_GENERATING_MS = 90 * 60 * 1000;
 const REPORT_START_LIMIT = 3;
 const REPORT_START_WINDOW_MS = 60_000;
 

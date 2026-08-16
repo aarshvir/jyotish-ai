@@ -18,7 +18,11 @@ export async function GET(request: NextRequest) {
   const origin = url.origin;
 
   if (!code) {
-    return NextResponse.redirect(origin + '/login?error=auth');
+    const fail = new URL('/login', origin);
+    fail.searchParams.set('error', 'auth');
+    const keepNext = safeInternalPath(next, '');
+    if (keepNext) fail.searchParams.set('next', keepNext);
+    return NextResponse.redirect(fail);
   }
 
   const safePath = safeInternalPath(next);
@@ -41,7 +45,10 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) {
     console.error('auth callback exchange:', error.message);
-    return NextResponse.redirect(origin + '/login?error=auth');
+    const fail = new URL('/login', origin);
+    fail.searchParams.set('error', 'auth');
+    fail.searchParams.set('next', safePath);
+    return NextResponse.redirect(fail);
   }
 
   const { data: { user } } = await supabase.auth.getUser();

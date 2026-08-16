@@ -68,6 +68,7 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
   }
 
   async function startCheckout() {
+    if (paying) return;
     setErr(null);
     setPaying(true);
     try {

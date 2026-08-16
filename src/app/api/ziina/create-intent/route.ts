@@ -292,6 +292,7 @@ export async function POST(request: NextRequest) {
       );
       if (draftErr) {
         console.error('[ziina/create-intent] draft report upsert failed:', draftErr.message);
+        return NextResponse.json({ error: 'Could not create checkout draft' }, { status: 500 });
       }
 
       // Optional column: phone (migration 20260614_user_phone). Tolerant of older DBs;

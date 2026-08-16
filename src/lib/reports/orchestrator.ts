@@ -1549,7 +1549,7 @@ export async function generateReportPipeline(
           // the non-empty check and skip a retry. If the first pass is still thin, retry
           // nativity-text once; if still thin, fail closed so Inngest retries the step.
           const nativityTooShort = (nativityData.lagna_analysis?.trim().length ?? 0) < 400;
-          if (nativityTooShort && !allowPartialLlmFallbackForPlan(input) && !nativityHasText) {
+          if (nativityTooShort && !allowPartialLlmFallbackForPlan(input)) {
             const retryRes = await commentaryLimit(() =>
               traceAgentRun('nativity-text-retry', 'llm', () =>
                 fetch(`${base}/api/commentary/nativity-text`, {
@@ -1572,12 +1572,11 @@ export async function generateReportPipeline(
               );
             }
           }
-          // Always inject deterministic fallback if text is still empty after any LLM attempt
-          {
+          // Free/preview only: never inject the template stub on a paid report.
+          if (allowPartialLlmFallbackForPlan(input)) {
             const lagna = ephemerisData.lagna ?? 'Unknown';
             const md = ephemerisData.current_dasha?.mahadasha ?? 'Unknown';
             const ad = ephemerisData.current_dasha?.antardasha ?? 'Unknown';
-            // Also replace stubs that are suspiciously short (<200 chars) — known to happen on 30-day plans
             if (!nativityData.lagna_analysis?.trim() || nativityData.lagna_analysis.trim().length < 200) {
               nativityData.lagna_analysis = `Your birth chart has ${lagna} as the rising sign — this shapes how you naturally approach life, relationships, and opportunity. You are in your ${md} period right now${ad !== 'Unknown' ? `, with ${ad} as the active sub-period` : ''}: a chapter that brings ${md}'s qualities and themes to the foreground. Use your highest-scoring days and best hourly windows for decisions that require clarity and commitment.`;
             }
@@ -1599,15 +1598,17 @@ export async function generateReportPipeline(
             if (!day.day_theme) day.day_theme = 'Check your hourly table for the best windows today.';
           });
         } finally {
-          // Guarantee nativity text is never blank regardless of LLM outcome or abort
-          const lagna = ephemerisData.lagna ?? 'Unknown';
-          const md = ephemerisData.current_dasha?.mahadasha ?? 'Unknown';
-          const ad = ephemerisData.current_dasha?.antardasha ?? 'Unknown';
-          if (!nativityData.lagna_analysis?.trim() || nativityData.lagna_analysis.trim().length < 200) {
-            nativityData.lagna_analysis = `Your birth chart has ${lagna} as the rising sign — this shapes how you naturally approach life, relationships, and opportunity. You are in your ${md} period right now${ad !== 'Unknown' ? `, with ${ad} as the active sub-period` : ''}: a chapter that brings ${md}'s qualities and themes to the foreground. Use your highest-scoring days and best hourly windows for decisions that require clarity and commitment.`;
-          }
-          if (!nativityData.current_dasha_interpretation?.trim()) {
-            nativityData.current_dasha_interpretation = `Your ${md} main period${ad !== 'Unknown' ? ` and ${ad} sub-period are` : ' is'} active right now — a chapter that shapes what feels most pressing and rewarding. Use your peak-scoring days for important decisions and the best hourly windows for precision timing.`;
+          // Free/preview only — paid already threw above if nativity was still a stub.
+          if (allowPartialLlmFallbackForPlan(input)) {
+            const lagna = ephemerisData.lagna ?? 'Unknown';
+            const md = ephemerisData.current_dasha?.mahadasha ?? 'Unknown';
+            const ad = ephemerisData.current_dasha?.antardasha ?? 'Unknown';
+            if (!nativityData.lagna_analysis?.trim() || nativityData.lagna_analysis.trim().length < 200) {
+              nativityData.lagna_analysis = `Your birth chart has ${lagna} as the rising sign — this shapes how you naturally approach life, relationships, and opportunity. You are in your ${md} period right now${ad !== 'Unknown' ? `, with ${ad} as the active sub-period` : ''}: a chapter that brings ${md}'s qualities and themes to the foreground. Use your highest-scoring days and best hourly windows for decisions that require clarity and commitment.`;
+            }
+            if (!nativityData.current_dasha_interpretation?.trim()) {
+              nativityData.current_dasha_interpretation = `Your ${md} main period${ad !== 'Unknown' ? ` and ${ad} sub-period are` : ' is'} active right now — a chapter that shapes what feels most pressing and rewarding. Use your peak-scoring days for important decisions and the best hourly windows for precision timing.`;
+            }
           }
         }
         })();

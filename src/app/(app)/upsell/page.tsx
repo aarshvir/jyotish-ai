@@ -26,7 +26,7 @@ export default async function UpsellPage({ searchParams }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    redirect(`/login?next=/upsell?reportId=${encodeURIComponent(reportId)}`);
+    redirect(`/login?next=${encodeURIComponent(`/upsell?reportId=${reportId}`)}`);
   }
 
   const { data: rep } = await supabase

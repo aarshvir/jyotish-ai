@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { UNLOCK_7DAY_HREF } from '@/lib/pricing';
 
 /**
  * TimingBridge — the calculator → product bridge.
@@ -22,7 +23,7 @@ const MOMENTS = [
 
 export function TimingBridge({
   anchorLabel = 'Your chart',
-  href = '/onboard?plan=7day',
+  href = UNLOCK_7DAY_HREF,
 }: {
   /** What the visitor just calculated, e.g. "Your Lagna" — keeps the copy specific. */
   anchorLabel?: string;

@@ -222,7 +222,8 @@ function buildStatusPayload(reportId: string, data: Record<string, unknown>, use
     planType === 'free' ||
     planType === 'preview' ||
     data?.payment_status === 'paid' ||
-    data?.payment_status === 'promo';
+    data?.payment_status === 'promo' ||
+    data?.payment_status === 'bypass';
 
   // Server-side paywall: free/preview reports are generated in full (same pipeline as
   // paid), but only the advertised preview — natal chart + ONE sample day — may cross

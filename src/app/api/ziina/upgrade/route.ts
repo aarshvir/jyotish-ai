@@ -166,7 +166,11 @@ export async function POST(request: NextRequest) {
       .eq('plan_type', 'monthly_upgrade')
       .eq('status', 'pending');
 
-    await db.from('ziina_payments').insert(insertPayload);
+    const { error: bindErr } = await db.from('ziina_payments').insert(insertPayload);
+    if (bindErr) {
+      console.error('[ziina/upgrade] payment bind insert failed:', bindErr.message);
+      return NextResponse.json({ error: 'Failed to bind upgrade checkout' }, { status: 500 });
+    }
 
     await emitUpsellEvent(auth.user.id, 'upsell_checkout_started', { reportId, intentId: intent.id });
 

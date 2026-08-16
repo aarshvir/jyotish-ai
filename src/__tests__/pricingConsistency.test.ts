@@ -5,6 +5,7 @@ import {
   formatAmount,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
+import { PLAN_CARDS, UNLOCK_7DAY_HREF } from '@/lib/pricing';
 
 /**
  * Locks the canonical displayed prices so the amount a customer SEES always equals
@@ -35,5 +36,20 @@ describe('pricing consistency — display == charge', () => {
         expect(amt).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('unlock and plan-card honesty', () => {
+  it('unlocks 7-day with the public launch promo', () => {
+    expect(UNLOCK_7DAY_HREF).toBe('/onboard?plan=7day&promo=NEWUSER30');
+  });
+
+  it('Annual card is access + support, not a year of hourly windows', () => {
+    const annual = PLAN_CARDS.find((p) => p.id === 'annual');
+    expect(annual).toBeTruthy();
+    const blob = `${annual?.description ?? ''} ${annual?.features.join(' ') ?? ''}`.toLowerCase();
+    expect(blob).toMatch(/1-year report access/);
+    expect(blob).not.toMatch(/full year of hours/);
+    expect(blob).not.toMatch(/dasha transitions across the year/);
   });
 });

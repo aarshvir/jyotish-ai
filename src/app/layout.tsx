@@ -237,7 +237,7 @@ export default function RootLayout({
                       name: 'Annual Jyotish Oracle',
                       price: '49.99',
                       priceCurrency: 'USD',
-                      description: 'Full-year Jyotish forecast — 12-month Vedic astrology report with dasha timing.',
+                      description: '30-day hourly forecast plus a 12-month thematic outlook and 1-year access.',
                       url: `${SITE_URL}/onboard?plan=annual`,
                     },
                   ],

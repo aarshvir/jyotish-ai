@@ -7,6 +7,7 @@ import { isValidLat, isValidLng } from '@/lib/utils/coords';
 import { ShareResult } from '@/components/shared/ShareResult';
 import { TimingBridge } from '@/components/tools/TimingBridge';
 import { writeOnboardDraft } from '@/lib/onboard/draft';
+import { UNLOCK_7DAY_HREF } from '@/lib/pricing';
 
 export type ToolView =
   | 'manglik'
@@ -165,7 +166,7 @@ export function ChartTool({
           />
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              href="/onboard?plan=7day"
+              href={UNLOCK_7DAY_HREF}
               data-track="calculator-unlock-hours"
               className="btn-primary inline-block px-7 py-3"
             >
@@ -184,7 +185,7 @@ export function ChartTool({
         </div>
       )}
 
-      {res && <TimingBridge anchorLabel={anchorLabelFor(view)} href="/onboard?plan=7day" />}
+      {res && <TimingBridge anchorLabel={anchorLabelFor(view)} href={UNLOCK_7DAY_HREF} />}
     </div>
   );
 }

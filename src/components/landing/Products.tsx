@@ -15,7 +15,7 @@ const PRODUCTS = [
     plain: 'Hour-by-hour timing',
     title: 'Life Forecast',
     body:
-      'Our flagship. Every day mapped into 18 scored hourly windows in plain English — across 7 days, a month, or a full year. Know the best hour to act and the window to avoid.',
+      'Our flagship. Every day mapped into 18 scored hourly windows in plain English — 7 days or 30 days, plus a 12-month thematic outlook. Clearer windows to act; heavier ones to leave alone.',
     tag: '7-day · Monthly · Annual',
     cta: 'See forecast plans',
     icon: (

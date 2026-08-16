@@ -2,84 +2,8 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
-import { currencyFromHeader, getPricesForCurrency, type SupportedCurrency } from '@/lib/pricing';
+import { currencyFromHeader, getPricesForCurrency, PLAN_CARDS, type SupportedCurrency } from '@/lib/pricing';
 import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
-
-
-const BASE_PLANS = [
-  {
-    id: 'free',
-    name: 'Free Kundli',
-    description: 'Discover your cosmic blueprint',
-    features: [
-      'Free Kundli (Janam Kundali)',
-      'Complete natal birth chart',
-      'Lagna (rising sign) analysis',
-      'Sample Jyotish hora schedule for today',
-      'Vimshottari Dasha period',
-      'Planetary strength indicators',
-    ],
-    cta: 'Get Free Kundli',
-    href: '/onboard?plan=free',
-    highlight: false,
-    badge: null,
-  },
-  {
-    id: '7day',
-    name: '7-Day Forecast',
-    description: 'Hour-by-hour cosmic timing for a week',
-    features: [
-      'Full natal chart & Kundli analysis',
-      '7-day Jyotish hourly forecast',
-      '126 hourly slots (18/day) with scores',
-      'Choghadiya & hora timing',
-      'Daily strategy section',
-      'Auspicious window identification',
-      'Rahu Kaal warnings',
-      'PDF download',
-    ],
-    cta: 'Get 7-Day Forecast',
-    href: '/onboard?plan=7day',
-    highlight: false,
-    badge: null,
-  },
-  {
-    id: 'monthly',
-    name: 'Monthly Oracle',
-    description: '30 days of precision cosmic guidance',
-    features: [
-      'Everything in 7-Day Forecast',
-      '30-day complete forecast',
-      'Monthly theme analysis',
-      'Weekly synthesis',
-      'Career, wealth, health windows',
-      'Best muhurta dates highlighted',
-      'Nativity deep analysis',
-      'High-resolution PDF report',
-    ],
-    cta: 'Get Monthly Oracle',
-    href: '/onboard?plan=monthly',
-    highlight: true,
-    badge: 'Recommended',
-  },
-  {
-    id: 'annual',
-    name: 'Annual Oracle',
-    description: 'Our deepest annual reading',
-    features: [
-      'Everything in Monthly Oracle',
-      '30-day hour-by-hour forecast',
-      'Full 12-month thematic outlook',
-      'Dasha transitions across the year',
-      'Priority email support',
-      '1-year report access + PDF',
-    ],
-    cta: 'Get Annual Oracle',
-    href: '/onboard?plan=annual',
-    highlight: false,
-    badge: 'Best Value',
-  },
-];
 
 const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
   USD: 'USD',
@@ -118,8 +42,9 @@ export default async function PricingPage({
     : rawUrl
   ).replace(/\/+$/, '');
 
-  const plans = BASE_PLANS.map((p) => ({
+  const plans = PLAN_CARDS.map((p) => ({
     ...p,
+    highlight: p.featured,
     // Carry a valid recovery-email/blog promo through the click so /onboard
     // (which auto-applies ?promo=) doesn't drop the discount that drew the visit.
     href: promo ? `${p.href}&promo=${promo}` : p.href,

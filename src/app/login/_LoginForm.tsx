@@ -9,6 +9,9 @@ import { safeInternalPath } from '@/lib/url/safeInternalPath';
 function humanizeAuthError(raw: string | null | undefined): string {
   if (!raw) return '';
   const msg = raw.toLowerCase();
+  if (msg === 'auth' || msg.includes('error=auth')) {
+    return 'Sign-in did not complete. Please try again.';
+  }
   if (msg.includes('invalid login') || msg.includes('invalid credentials')) {
     return 'That email and password don\u2019t match. Try again or reset your password.';
   }
@@ -43,7 +46,11 @@ function LoginInner() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [mode, setMode] = useState<'login' | 'signup'>(() => {
+    const m = searchParams.get('mode');
+    const next = searchParams.get('next') ?? '';
+    return m === 'signup' || next.includes('/onboard') ? 'signup' : 'login';
+  });
   const [resetSending, setResetSending] = useState(false);
   // When the user was sent here from the free-Kundli / onboarding flow, show
   // welcoming "create your free account" framing instead of a bare sign-in wall.
@@ -51,7 +58,7 @@ function LoginInner() {
 
   useEffect(() => {
     const m = searchParams.get('mode');
-    if (m === 'signup') setMode('signup');
+    if (m === 'signup' || fromOnboard) setMode('signup');
 
     const qErr = searchParams.get('error_description') || searchParams.get('error');
     if (qErr) {
@@ -124,7 +131,7 @@ function LoginInner() {
     const { data: { user } } = await supabase.auth.getUser();
     if (user?.id && user.email) {
       await supabase.from('user_profiles').upsert(
-        { id: user.id, email: user.email, display_name: user.email.split('@')[0] },
+        { id: user.id, email: user.email },
         { onConflict: 'id' }
       );
     }
@@ -145,7 +152,7 @@ function LoginInner() {
     try {
       const supabase = createClient();
       const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/login/reset')}`,
       });
       if (resetErr) {
         setError(humanizeAuthError(resetErr.message));

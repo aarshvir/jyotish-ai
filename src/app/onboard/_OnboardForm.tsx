@@ -610,6 +610,7 @@ function OnboardPageInner() {
   const [currentGeo, setCurrentGeo] = useState<GeoResult | null>(null);
   const [currentGeoLoading, setCurrentGeoLoading] = useState(false);
   const [currentGeoError, setCurrentGeoError] = useState<string | null>(null);
+  const checkoutInFlight = useRef(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState(0);
   const stageTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -933,6 +934,8 @@ function OnboardPageInner() {
   }
 
   async function goToReportGeneration(opts?: { forcePaidPlan?: boolean; adminFree?: boolean }) {
+    if (checkoutInFlight.current) return;
+    checkoutInFlight.current = true;
     // Gate: refuse to dispatch a report when geocoding did not resolve.
     // Falling back to 0,0 silently produces a chart anchored near the Gulf of
     // Guinea, which contradicts the marketing promise of "sub-degree precision".
@@ -945,6 +948,7 @@ function OnboardPageInner() {
         message: `We're pinning "${form.birthCity || 'your birth city'}" to a precise location — give it a moment, then tap continue again. If it persists, add the country (e.g. "Lucknow, India").`,
       });
       setStep(1);
+      checkoutInFlight.current = false;
       return;
     }
 
@@ -1076,6 +1080,7 @@ function OnboardPageInner() {
           const errMsg = errBody.error ?? `Payment setup failed (${intentRes.status}). Please try again or contact support@vedichour.com.`;
           setPaymentReturnBanner({ type: 'error', message: errMsg });
           setIsLoading(false);
+          checkoutInFlight.current = false;
           // Scroll the user back to the top so they see the banner
           if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
           return;
@@ -1118,6 +1123,7 @@ function OnboardPageInner() {
           message: 'Payment setup failed. Please try again or contact support@vedichour.com.',
         });
         setIsLoading(false);
+        checkoutInFlight.current = false;
         if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
@@ -1178,6 +1184,7 @@ function OnboardPageInner() {
               : (errBody.error ?? 'Failed to start report generation. Please try again.'),
         });
         setIsLoading(false);
+        checkoutInFlight.current = false;
         if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
