@@ -708,6 +708,7 @@ THE SPINE — ${SHOTS_MIN} to ${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX
   3. presenter, up to ${LONG_BEAT_MAX_SEC}s — the ONE long beat in the reel: the real, specific thing that actually happened. Only one shot may be this long.
   4. presenter again, BACK TO BACK with shot 3, different shot size — the turn. Do not cut to the product here. This is the reel's unbroken stretch of human thought and it is where the writing has to be good.
   5. screencap, ${PRODUCT_HOLD_MIN_SEC}-${SHOT_MAX_SEC}s — THE HOLD. The screen answers the question he just asked, and NOBODY EXPLAINS IT. This is the punchline of the reel.
+     THE HOLD MUST BE LEGIBLE AND IT MUST CONTRAST. A reviewer killed a whole batch over this: "the payoff scrolls 18 tiny windows but never holds two contrasting cards long enough to prove the claim", "the payoff is an unreadable grid scroll instead of two legible contrasting windows". Four seconds of a moving list on a phone proves nothing — the viewer cannot read a single row of it, so the one shot that was supposed to be evidence becomes wallpaper. The HOLD is STILL, and it shows TWO specific hours for the same task, one clearer and one heavier, close enough to read. The scrolling grid is fine for the opening INSERT, where it is only a glance and the motion is the point. It is the wrong choice for the payoff.
   last. presenter — closes, says vedichour.com out loud, and lands on the thing the cold open opened.
 
 THE RULES THAT ARE CHECKED MECHANICALLY (a variant that breaks one is rejected before it costs anything):
