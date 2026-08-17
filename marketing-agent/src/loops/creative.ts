@@ -264,6 +264,8 @@ interface Scores {
 interface Judged {
   variant: Variant;
   scores: Scores;
+  /** The taste lens's raw autopsy — kept whole because reviseTop() writes from `oneFix`. */
+  eye: HumanEyeVerdict;
   lintVerdict: string;
   lintReason: string;
   status: 'ready_to_render' | 'needs_review' | 'rejected';
@@ -1231,6 +1233,7 @@ async function judge(idea: Idea, variants: Variant[], tier: Tier): Promise<Judge
     out.push({
       variant: v,
       scores,
+      eye: he,
       lintVerdict,
       lintReason,
       // A script the human-eye lens never saw is not cleared, it is unreviewed — it goes to the
@@ -1242,6 +1245,147 @@ async function judge(idea: Idea, variants: Variant[], tier: Tier): Promise<Judge
     });
   }
   return out;
+}
+
+// ---------------------------------------------------------------- 3b. revise
+
+/**
+ * THE REVISION PASS — the loop that was missing, and the reason nothing ever got past "good".
+ *
+ * The human-eye lens has always been asked for TWO things: the second the reel dies, and `oneFix`,
+ * "the single change that would make you stop". It has been answering both, precisely and for
+ * free, since the day it was written — "Kill the baithak defense; go straight from the binary
+ * choice to the answer", "Add one real consequence: what actually went wrong the last time he
+ * guessed", "Stay on his face after 'pandit ji'; let the scheduling panic breathe first" — and
+ * every single one of those notes was written to a log and thrown away. The engine generated six
+ * variants, scored them, picked the least bad, and shipped it at 73.
+ *
+ * That is not iteration; it is selection, and selection cannot exceed the best thing luck produced
+ * in one shot. So the top few reels now go back to the writer WITH THEIR OWN AUTOPSY attached and
+ * are rewritten against it, then re-scored on the same scale. The revision competes with the
+ * original in the tournament and only wins if it actually scores higher — a rewrite that ignores
+ * the note and drifts loses to the draft it came from.
+ *
+ * Cost: two extra $0 CLI calls per batch, both bounded by the same stage deadline.
+ */
+const REVISE_TOP_N = 3;
+/** Variant indexes of revisions are offset by this, so a revision is identifiable in SQLite. */
+const REVISION_INDEX_OFFSET = 100;
+
+function revisePrompt(entries: Judged[], link: string): string {
+  const blocks = entries
+    .map((j) => {
+      const v = j.variant;
+      return `--- REEL ${v.variantIndex} · "${v.hookText}" ---
+WHAT THE VIEWER SAW AND HEARD:
+${playbackTimeline(v)}
+burned-in captions: ${v.onScreenCaptions.join(' | ')}
+
+WHAT THE VIEWER SAID, verbatim:
+  score ${j.eye.overall}/100 — stopped watching at: ${j.eye.diesAt || '(watched it through, but was not moved)'}
+  the ONE change that would have made him stop scrolling: ${j.eye.oneFix || '(none given — then find the weakest line yourself and replace it)'}
+  the hostile reviewer's harshest objection: ${j.scores.notes || '(none)'}`;
+    })
+    .join('\n\n');
+
+  return `${BRAND_BRIEF}
+
+You wrote these reels. A real viewer watched them and told you exactly where he stopped and what would have held him. Rewrite each one so that specific thing is fixed.
+
+THIS IS A REVISION, NOT A NEW IDEA. The moment, the person and the situation stay. Do not start over, do not swap the decision for a different one, and do not "improve" the lines the viewer did not complain about — a rewrite that drifts loses to the draft it came from, because both are scored against each other and the higher score wins.
+
+Change what he named, and change whatever that change makes necessary. If he says the product screen felt like an ad pivot, the fix is not a better sentence over it — it is moving or shortening the screen so it answers the line before it. If he says a line sounds like a product deck, replace that line with something a person would actually say about their own evening. If he says nothing happens for three seconds, cut the three seconds.
+
+AND THEN GO ONE STEP FURTHER THAN HE ASKED. He is describing the thing that made him leave; you are trying to make something he would send to a friend. The bar is not "no longer boring". Ask of your rewrite the question the founder asked: does this look like a real advert that a billion-dollar company would launch? If the answer is "it is fine", it is not there yet.
+
+${blocks}
+
+${formatSpecBlock()}
+
+${LITERALISM_BAN_BLOCK}
+
+RULES YOUR REWRITE STILL HAS TO OBEY (unchanged, and all of them are hard rejects):
+- The shot list follows the FORMAT above exactly: cold open <= ${FIRST_SHOT_MAX_SEC}s, shot 2 a screencap of <= ${FIRST_PRODUCT_MAX_SEC}s, a later screencap of ${PRODUCT_HOLD_MIN_SEC}s+, two presenter shots back to back somewhere, last shot a presenter.
+- NO NARRATION ANYWHERE. Screencap and b-roll shots carry "narration": "". Every word is on camera.
+- The closing presenter line says "VedicHour.com" out loud.
+- ${SCRIPT_WORDS_MIN}-${SCRIPT_WORDS_MAX} spoken words total; no shot's line may exceed (its seconds x ${WORDS_PER_SECOND}) words, rounded down. Count them.
+- Latin letters only. No jargon. No promises, no fear, no invented proof.
+- youtubeDescription contains this link exactly once, verbatim: ${link}
+
+Return STRICT JSON — an array with ONE object per reel above, in the same order, nothing before or after it, no fences. Same shape you wrote originally:
+[{"revisionOf":<the reel number>,"whatIChanged":"<max 20 words, name the fix you made>","hookText":"...","spokenScript":"...","shotList":[{"kind":"presenter","seconds":3,"visualPrompt":"...","dialogue":"..."},{"kind":"screencap","seconds":2,"visualPrompt":"...","narration":""}],"onScreenCaptions":["..."],"cta":"...","hashtags":["#..."],"youtubeTitle":"...","youtubeDescription":"...","language":"hinglish"}]`;
+}
+
+/**
+ * Rewrite the strongest few reels against their own autopsies and judge the results on the same
+ * scale. Returns the revisions as fully-judged entries; never throws, and returns [] when the
+ * writer or the reviewers are unreachable, so the batch degrades to selection-only.
+ */
+async function reviseTop(survivors: Judged[], tier: Tier): Promise<Judged[]> {
+  // Only reels the lens actually watched can be revised — a degraded verdict carries no note, so
+  // there is nothing to rewrite against and a "revision" would just be a second random draw.
+  const candidates = [...survivors]
+    .filter((j) => !j.eye.degraded && (j.eye.oneFix || j.eye.diesAt))
+    .sort((a, b) => b.scores.total - a.scores.total)
+    .slice(0, REVISE_TOP_N);
+  if (!candidates.length) return [];
+
+  const first = candidates[0].variant;
+  const link = utm(BRAND.links.pricing, 'youtube', 'short', 'creative_engine', first.ideaId);
+  const raw = await tryBrain(revisePrompt(candidates, link), tier, 'revise');
+  const parsed = raw ? extractJson<any[]>(raw) : null;
+  if (!Array.isArray(parsed) || !parsed.length) {
+    console.warn('[creative] revise: no parsable rewrites — keeping the originals only.');
+    return [];
+  }
+
+  // Map each rewrite back to the reel it came from: by the model's own `revisionOf` when it gave
+  // one, otherwise by position, which is safe because we asked for the same order.
+  const byIndex = new Map(candidates.map((c) => [c.variant.variantIndex, c]));
+  const revisions: { source: Judged; variant: Variant; note: string }[] = [];
+  parsed.forEach((rawVariant, i) => {
+    const source = byIndex.get(Number(rawVariant?.revisionOf)) ?? candidates[i];
+    if (!source) return;
+    const idea: Idea = {
+      id: source.variant.ideaId,
+      family: source.variant.family,
+      angle: source.variant.angle,
+      decisionMoment: '',
+      whyItStops: '',
+      tags: source.variant.tags,
+      explore: source.variant.explore,
+    };
+    const v = normalizeVariant(rawVariant, idea, source.variant.variantIndex + REVISION_INDEX_OFFSET, link);
+    if (!v.hookText || !v.spokenScript) return;
+    revisions.push({ source, variant: v, note: String(rawVariant?.whatIChanged ?? '').slice(0, 120) });
+  });
+  if (!revisions.length) return [];
+
+  for (const r of revisions) {
+    console.log(`[creative] revise → "${r.source.variant.hookText}" (${r.source.scores.total}) rewritten: ${r.note || 'no note given'}`);
+  }
+
+  // Judged on exactly the same scale as the originals, so the tournament compares like with like.
+  const idea: Idea = {
+    id: revisions[0].source.variant.ideaId,
+    family: revisions[0].source.variant.family,
+    angle: 'revisions of this batch’s strongest reels, rewritten against the viewer’s own notes',
+    decisionMoment: '',
+    whyItStops: '',
+    tags: revisions[0].source.variant.tags,
+    explore: false,
+  };
+  const judgedRevisions = await judge(idea, revisions.map((r) => r.variant), tier);
+  for (const j of judgedRevisions) {
+    const src = revisions.find((r) => r.variant.variantIndex === j.variant.variantIndex)?.source;
+    const delta = src ? j.scores.total - src.scores.total : 0;
+    console.log(
+      `             ${j.status === 'rejected' ? '✗' : '✓'} "${j.variant.hookText}" → ${j.scores.total} (human eye ${j.scores.humanEye})` +
+        (src ? ` · ${delta >= 0 ? '+' : ''}${delta} vs the draft it came from` : '') +
+        (j.rejectionReason ? ` · ${j.rejectionReason.slice(0, 90)}` : ''),
+    );
+  }
+  return judgedRevisions;
 }
 
 // ---------------------------------------------------------------- 4. tournament
@@ -1711,8 +1855,14 @@ export async function runCreativeLoop(opts: CreativeOpts = {}): Promise<void> {
       console.log(`             ✗ "${j.variant.hookText}" — ${j.rejectionReason}`);
     }
 
+    // 3b. REVISE — the strongest reels rewritten against their own autopsies, then re-scored.
+    // Selection alone can never beat the best draft luck produced; this is the part that iterates.
+    const revisions = survivors.length && !isKilled() ? await reviseTop(survivors, tier) : [];
+    judged.push(...revisions);
+    const pool = [...survivors, ...revisions.filter((j) => j.status !== 'rejected')];
+
     // 4. TOURNAMENT
-    const ordered = survivors.length ? await tournament(survivors, tier) : [];
+    const ordered = pool.length ? await tournament(pool, tier) : [];
     const winners = ordered.slice(0, WINNERS_KEPT);
     for (const j of ordered.slice(WINNERS_KEPT)) {
       j.status = 'rejected';
