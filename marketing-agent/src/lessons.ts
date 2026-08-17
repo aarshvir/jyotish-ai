@@ -178,9 +178,9 @@ export const OWNER_SEED_LESSONS: NewLesson[] = [
     // Phrased with "must" on purpose: lessonMatcher() refuses to turn a REQUIREMENT into a banned
     // substring, so this can never invert into a gate that blocks the shape it is demanding.
     rule:
-      'Every reel must open on a presenter cold open of 3 seconds or less — already mid-answer, no greeting and no setup — and must show the real report by second EIGHT at the latest, then keep cutting back to it. 5-8 shots in 20-28 seconds, at most one presenter beat over 4s, at most one b-roll shot.',
+      'Every reel must open on a presenter cold open of 3 seconds or less — already mid-answer, no greeting and no setup — then give the remembered detail its own presenter beat, and show the real report by second NINE at the latest, then keep cutting back to it. 5-8 shots in 20-28 seconds, at most one presenter beat over 4s, at most one b-roll shot.',
     evidence:
-      'Owner, 2026-08-16: "this reel is shit" / "this should look like a real advert that a $1B saas platform will launch". Measured: the rejected reel ran 29s in 5 shots and spent its first 13 seconds on a talking head before the product appeared. AMENDED 2026-08-17 by the owner ("the rule is mine and it is wrong as an absolute"): the deadline was "second three", which nailed the product to shot 2, and the taste lens then rejected that placement in 24 consecutive variants — "unexplained product grid interrupts the story before it develops". The deadline is what the 13-second failure justifies; the SLOT was an over-correction.',
+      'Owner, 2026-08-16: "this reel is shit" / "this should look like a real advert that a $1B saas platform will launch". Measured: the rejected reel ran 29s in 5 shots and spent its first 13 seconds on a talking head before the product appeared. AMENDED 2026-08-17 by the owner ("the rule is mine and it is wrong as an absolute"): the earlier deadline nailed the product to shot 2, and the taste lens then rejected that placement in 36 consecutive variants ("unexplained product grid interrupts the story before it develops"). What the 13-second failure justifies is a DEADLINE; the SLOT was an over-correction and is gone.',
   },
   {
     source: 'owner',
