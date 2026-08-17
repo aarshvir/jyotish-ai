@@ -1,18 +1,16 @@
 {
   "_comment": "THE LIVING PLAYBOOK — the craft research the creative prompts are written from. It lives here, as data, and NOT inside a prompt string, because research goes stale and a principle frozen in code can only be changed by a developer. src/playbook.ts renders these into the ideate + script prompts at runtime. `npm run playbook:review` re-examines each entry against what the engine has actually observed and PROPOSES changes to an approvals queue — it never edits this file, because a hallucinated 'best practice' written straight in here would silently poison every future reel.",
   "_editing": "Edit freely by hand. Every entry needs a `source` (who says so) and a `verifiedOn` (when we last checked). `confidence` is one of: verified (we or a platform measured it) | inherited (industry consensus we have not tested) | contested (our own data disagrees or the field disagrees).",
-
-  "version": "1.1.0",
-  "updatedOn": "2026-08-16",
-
+  "version": "1.2.0",
+  "updatedOn": "2026-08-17",
   "entries": [
     {
       "id": "cold-open-proof-early",
       "category": "format",
-      "principle": "The presenter does not introduce the product. He answers a question the product is already on screen answering.",
-      "detail": "The reel the owner rejected ran 29s in 5 shots with THIRTEEN SECONDS of talking head before anything happened; the hour grid — the most interesting thing the company owns — arrived at second 13, long after the viewer left. The replacement shape is a cold open of 3 seconds or less (presenter already mid-thought, no greeting, no setup), the real product as shot 2 so proof lands before second three, then short presenter beats cut against the product for 20-28 seconds total across 5-8 shots. Only one presenter beat may run past 4s. This is also the cheapest shape we have: screencaps are free and generated shots are not.",
-      "source": "Owner ruling 2026-08-16, verbatim: \"this reel is shit\" / \"this should look like a real advert that a $1B saas platform will launch\", plus a shot-level measurement of the rejected reel (output/creative/same-tuesday-two-windows.json). Enforced in src/loops/creative.ts formatSpecViolation().",
-      "verifiedOn": "2026-08-16",
+      "principle": "The presenter does not introduce the product. The product is GLANCED at inside his sentence, and HELD later as the payoff.",
+      "detail": "The reel the owner rejected ran 29s with THIRTEEN SECONDS of talking head before anything happened, so proof was moved to shot 2. That fix then over-corrected: shot 2 became a four-second narrated product demo parked three seconds into a confession, and the taste lens killed draft after draft in its own words - \"product screen breaks emotional setup before tension peaks\", \"product screen after stairwell scene feels like an ad pivot\", \"same amber-room-presenter-then-screen pattern; I've already seen this reel\". The shape that survives both failures distinguishes an INSERT from a HOLD. The first product shot is an insert: at most 2s, no words, cut inside the sentence, so proof still lands before second three as a glance rather than as an interruption. A later product shot is the hold: 3-4s, still wordless, where the screen answers the question the presenter just asked and is the punchline of the reel. Between them, two presenter shots run back to back so one human thought has room to land without a screen cutting it in half.",
+      "source": "Owner ruling 2026-08-16, verbatim: \"this reel is shit\" / \"this should look like a real advert that a $1B saas platform will launch\", plus the human-eye lens's own autopsies of batches msw9p6a0 / mswa2g38 / mswau5tn. Enforced in src/loops/creative.ts formatSpecViolation().",
+      "verifiedOn": "2026-08-17",
       "confidence": "verified"
     },
     {
@@ -72,10 +70,10 @@
     {
       "id": "presenter-led-native-voice",
       "category": "format",
-      "principle": "A visible human opens the reel and carries the message ON CAMERA.",
-      "detail": "Platforms deprioritise fully AI-generated reels with no human layer, while AI-ASSISTED content with a visible presenter performs normally. The video model performs presenter dialogue natively, lip-synced, in a real voice, at no extra cost — that in-shot voice is the quality bar. Every line NOT spoken by the presenter has to be synthesized afterwards and a viewer hears the switch instantly.",
-      "source": "Owner review 2026-07-26, verbatim: \"the second voice, when it comes, looks very AI-generated, the woman's voice... the first 6 seconds are good.\" Encoded as the presenter-opener gate in src/render/types.ts.",
-      "verifiedOn": "2026-07-26",
+      "principle": "A visible human opens the reel and says EVERY word in it on camera. There is no narrator.",
+      "detail": "Platforms deprioritise fully AI-generated reels with no human layer, while AI-ASSISTED content with a visible presenter performs normally. The video model performs presenter dialogue natively, lip-synced, in a real voice, at no extra cost - that in-shot voice is the quality bar, and a synthesized second voice is audible the instant it arrives. This used to be a ratio (most words on camera, short connective lines allowed elsewhere) because the renderer failed any reel with a silence longer than a second. That constraint is gone: src/render/assemble.ts now mixes a mandatory music bed under the whole reel and refuses to render without one, so a wordless product beat is a CUT, not dead air. The ratio is therefore 100%. Every off-camera line the engine ever wrote turned out to be a product feature in a Hindi coat (\"Har ghanta samjhaya hai\", \"Tumhara poora din yahan hai\") delivered by an obviously synthetic voice at the most fragile moment of the reel, so removing narration is simultaneously the cheaper path, the one-voice fix, and the taste fix.",
+      "source": "Owner review 2026-07-26, verbatim: \"the second voice, when it comes, looks very AI-generated, the woman's voice... the first 6 seconds are good.\" Presenter-opener gate in src/render/types.ts; zero-narration enforced by MAX_NARRATED_SHOTS in src/loops/creative.ts; the bed that makes silence safe is verified by src/render/silence.test.ts (\"a bed under the gap makes the reel pass\").",
+      "verifiedOn": "2026-08-17",
       "confidence": "verified"
     },
     {
@@ -112,6 +110,15 @@
       "detail": "Every variant carries at least one screencap of the live report and its hour-slots. The pricing page, checkout, payment and onboarding are forbidden capture targets — the proof shot is the thing the viewer would get, not the till.",
       "source": "Owner ruling 2026-07-26: \"when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day.\" Enforced in src/render/capture-policy.ts.",
       "verifiedOn": "2026-07-26",
+      "confidence": "verified"
+    },
+    {
+      "id": "cold-open-must-stand-alone",
+      "category": "hook",
+      "principle": "A cold open must be mid-thought AND complete. A first line that points at something the viewer cannot see is worth nothing.",
+      "detail": "\"Cold open, already mid-answer, no setup\" is right, and the writer kept satisfying it with a sentence whose subject is a pronoun: \"Haan, isi baat pe atka hoon\" - stuck on WHICH thing? A viewer arriving cold has no antecedent, so the single second the reel gets is spent parsing instead of watching, and the burned-in hook has to do all the work alone. The test is not \"could this be the second sentence of a conversation\" but \"would a total stranger understand this sentence completely, on its own\". Both are true of \"Teen hafte se yeh message draft mein pada hai\". Checked mechanically for $0 by coldOpenDefect() in src/audit/human-eye.ts, which also blocks the openers the reviewers have already killed at second zero (\"POV:\", \"Shayad\", greetings).",
+      "source": "Human-eye lens verdicts on batch mswau5tn (\"POV:\" - \"a scroll-past signal before anything plays\"; \"Shayad\" - \"passive and implies nothing worth watching\") and the 2026-08-16 winner's own 67/100.",
+      "verifiedOn": "2026-08-17",
       "confidence": "verified"
     }
   ]

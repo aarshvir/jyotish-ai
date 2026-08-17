@@ -189,6 +189,64 @@ The video model has no idea a "window" is a stretch of TIME. If your copy uses a
 This is checked MECHANICALLY before any money is spent: if a distinctive noun from your hook or script also appears in a generated shot's visualPrompt, the variant is rejected automatically. Write the visual as the literal true SUBJECT of the moment, not as an illustration of the words.
 Also never generate any of these props at all: ${LITERAL_PROP_BAN.slice(0, 14).join(', ')}.`;
 
+// ---------------------------------------------------------------- the cold open
+
+/**
+ * COLD OPENS THAT POINT AT NOTHING.
+ *
+ * The format asks for a line that starts mid-thought, and the writer keeps answering that with a
+ * sentence whose subject is a pronoun: "Haan, isi baat pe atka hoon." — stuck on WHICH thing? A
+ * viewer arriving cold has no antecedent, so the sentence carries no information at all and the
+ * first second is spent parsing instead of watching. Mid-thought is not the same as referentially
+ * empty: "Teen hafte se yeh message draft mein pada hai" is also mid-thought and a stranger
+ * understands it completely.
+ *
+ * Every entry below is a phrase from a draft the human-eye lens or the hostile reviewer actually
+ * killed, so this list is evidence rather than taste.
+ */
+const EMPTY_REFERENT_OPENERS = [
+  /\b(isi|is|us|usi|yeh|ye|wahi|wo)\s+(baat|cheez|chakkar|soch|sawaal)\b/i,
+  /\bsame\s+thing\b/i,
+  /\b(yeh|ye|wo)\s+wala\b/i,
+] as const;
+
+/**
+ * Opening moves the reviewers have already thrown out by name. "POV:" was killed at 0s ("a
+ * scroll-past signal before anything plays"); "Shayad" was killed at 0s ("passive and implies
+ * nothing worth watching"); the rest are the greeting-and-warm-up openers the format forbids in
+ * prose but never checked.
+ */
+const TIRED_OPENERS = [
+  /^\s*pov\b/i,
+  /^\s*shayad\b/i,
+  /^\s*maybe\b/i,
+  /^\s*(kya)\s+(aapko|tumhe|tumhein)\b/i,
+  /^\s*(imagine|socho\s+zara)\b/i,
+  /^\s*(namaste|hello|hi|guys|dosto)\b/i,
+  /^\s*aaj\s+main\b/i,
+] as const;
+
+/**
+ * The cold open, checked as plain text for $0. Returns the defect as a sentence, or null.
+ *
+ * This runs on shot 1's dialogue only. It is deliberately a short, evidence-backed list rather
+ * than a general "is this line good" heuristic — the lens below is what judges quality; this
+ * catches the two failures that have now recurred across four consecutive batches.
+ */
+export function coldOpenDefect(line: string): string | null {
+  const s = (line ?? '').trim();
+  if (!s) return 'the cold open has no dialogue — the reel opens on a silent face';
+  for (const re of TIRED_OPENERS) {
+    const m = re.exec(s);
+    if (m) return `the cold open starts with "${m[0].trim()}" — an opener the reviewers have already killed at second 0; open on the sentence the viewer has said in their own head, not on a format signal or a hedge`;
+  }
+  for (const re of EMPTY_REFERENT_OPENERS) {
+    const m = re.exec(s);
+    if (m) return `the cold open says "${m[0].trim()}" — it points at something the viewer cannot see. A stranger arriving cold has no antecedent, so the first second is spent parsing. Name the actual thing: not "isi baat pe atka hoon" but "Teen hafte se yeh message draft mein pada hai"`;
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------- the lens
 
 export const HUMAN_EYE_FLOOR = 62;
@@ -230,7 +288,10 @@ function timeline(r: HumanEyeReel): string {
       const from = t;
       t += sh.seconds || 0;
       const what = sh.kind === 'screencap' ? `REAL PRODUCT SCREEN: ${sh.visualPrompt}` : `${sh.kind.toUpperCase()}: ${sh.visualPrompt}`;
-      const say = sh.line ? ` — you HEAR: "${sh.line}"` : ' — silent, captions only';
+      // A wordless product beat is not dead air: src/render/assemble.ts mixes a music bed under
+      // the WHOLE reel and refuses to render without one. Describing it as "silent" made the lens
+      // score a deliberate cut as a broken file, so it is described as what the viewer gets.
+      const say = sh.line ? ` — you HEAR: "${sh.line}"` : ' — NO WORDS: just the music bed and the screen, you read it yourself';
       return `  ${from.toFixed(1)}s-${t.toFixed(1)}s  ${what}${say}`;
     })
     .join('\n');
@@ -258,12 +319,17 @@ You are a 29-year-old in Bengaluru, lying in bed at 11pm, thumb moving, three re
 
 Watch each reel below and answer honestly, as a viewer, not as a marketer.
 
+HOW THESE PLAY, so you judge what a viewer actually gets: one music bed runs unbroken under the entire reel, and the presenter's lines are performed on camera by the man himself. A beat marked NO WORDS is therefore not a broken file or dead air — it is a cut to the screen with the music still running and nobody explaining it. Judge whether that beat earns its silence, not whether silence is allowed.
+
 1. THE FIRST SECOND. The first frame is on screen and you have not decided yet. Does anything make you stop? A hook that describes a feeling, states a benefit, or sounds like a company talking is a scroll-past. A specific human sentence you have said yourself is a stop.
-2. THE FIRST THREE SECONDS. Is there a moment of genuine interest — something happening, something shown, a real thing on screen — or is it a person warming up before the content starts? Talking-head preamble is the most common way a reel dies. Say the exact second at which you would have flicked away.
-3. DOES IT LOOK EXPENSIVE? Picture the actual frames. Does this look like an ad a funded company paid for — considered, specific, one idea, a real product on screen — or does it look like generic AI b-roll cut to a voiceover? Stock-feeling atmosphere shots, an illustration of the words rather than the subject, and pretty-but-empty imagery are all CHEAP, however tasteful they read on paper.
-4. DOES THE HUMAN RING TRUE? The presenter is a real face saying these words. Does the line sound like a person who has actually had this problem, or like a script being performed? Would the expression the shot asks for match what he is saying? Anyone who sounds like an ad read is a scroll-past.
-5. THE SLOP TEST. Be blunt. Does this look like AI slop — the kind of reel a viewer scrolls past while thinking "another one of these"? Would you be faintly embarrassed to be seen watching it?
-6. WOULD YOU FINISH IT? And if it were your own money, would you put it behind this?
+2. DO YOU EVEN KNOW WHAT HE IS TALKING ABOUT? You arrive with ZERO context. The reel opens mid-thought on purpose — but mid-thought is not the same as empty. If his first sentence points at something with "this" / "yeh" / "isi baat" and you cannot tell what it is, you spent your one second parsing instead of watching, and you are gone. Judge the first line the way a stranger would: does it stand completely on its own?
+3. THE FIRST THREE SECONDS. Is there a moment of genuine interest — something happening, something shown, a real thing on screen — or is it a person warming up before the content starts? Talking-head preamble is the most common way a reel dies. Say the exact second at which you would have flicked away.
+4. WHEN THE PRODUCT APPEARS — IS IT THE ANSWER, OR AN INTERRUPTION? This is the failure you have named more than any other and it is the one that matters most. He says something real, and then the reel cuts away to a product demo and a voice explains a feature at you. That is an AD PIVOT: the emotional beat is broken and a commercial has started, and you scroll. The version that works is the opposite — he says the thing, the screen answers it WITHOUT A WORD, and he is still talking two seconds later. Ask specifically: does this screen arrive because the sentence before it needed answering, or because it was time to show the product? If it is the second one, that alone is a reject, however good the writing is.
+5. DOES IT LOOK EXPENSIVE? Picture the actual frames. Does this look like an ad a funded company paid for — considered, specific, one idea, a real product on screen — or does it look like generic AI b-roll cut to a voiceover? Stock-feeling atmosphere shots, an illustration of the words rather than the subject, and pretty-but-empty imagery are all CHEAP, however tasteful they read on paper. So is a metronome: face, screen, face, screen, face, in equal beats. You have written "I've already seen this reel" about that pattern before — say it again if it is true.
+6. DOES THE HUMAN RING TRUE? The presenter is a real face saying these words. Does the line sound like a person who has actually had this problem, or like a script being performed? Would the expression the shot asks for match what he is saying? Anyone who sounds like an ad read is a scroll-past. Watch in particular for a FEATURE WEARING A HINDI COAT — a sentence with the rhythm of speech but the content of a landing page ("har ghanta samjhaya hai", "birth chart se rate hote hain", "saare 18 personal hours"). Nobody talks like that about their own life.
+7. THE SLOP TEST. Be blunt. Does this look like AI slop — the kind of reel a viewer scrolls past while thinking "another one of these"? Would you be faintly embarrassed to be seen watching it?
+8. DOES THE END PAY OFF THE BEGINNING? The last thing he says should land on the thing the first thing he said opened. If the closing line is just a place to put the website, the reel stopped being about anything a few seconds before it ended, and you felt it.
+9. WOULD YOU FINISH IT? And if it were your own money, would you put it behind this?
 
 SCORE HONESTLY. Most short-form ads deserve 40-60. A score above 80 means you genuinely stopped and watched to the end, and you should give that to almost nothing. A reel that breaks no rule but that you would scroll past is a "reject" — that verdict is the entire reason you exist.
 

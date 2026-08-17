@@ -38,7 +38,7 @@
     "loop:outreach": "tsx src/loops/outreach.ts",
     "report": "tsx src/report.ts",
     "relint": "tsx src/relint.ts",
-    "test": "tsx --test src/audit/cheap-tropes.test.ts src/audit/visible-page-text.test.ts src/audit/hardrules.test.ts src/loops/package.test.ts src/loops/publish-pack.test.ts src/cli-parse.test.ts src/env.test.ts src/brand.test.ts src/render/listen.test.ts src/render/silence.test.ts",
+    "test": "tsx --test src/audit/cheap-tropes.test.ts src/audit/cold-open.test.ts src/audit/visible-page-text.test.ts src/audit/hardrules.test.ts src/loops/format-spec.test.ts src/loops/package.test.ts src/loops/publish-pack.test.ts src/cli-parse.test.ts src/env.test.ts src/brand.test.ts src/render/listen.test.ts src/render/silence.test.ts",
     "cycle": "tsx src/cycle.ts",
     "email:launch": "tsx src/email/send-launch.ts",
     "kill": "tsx src/cli.ts kill",
