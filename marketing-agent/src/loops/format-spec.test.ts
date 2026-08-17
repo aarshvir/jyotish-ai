@@ -15,6 +15,8 @@ import { preflight, type Variant } from './creative';
 const PRESENTER = 'Warm natural young Indian man in his late twenties in a parked car at night, speaking to camera, soft available light, no signs or legible screens';
 const GRID = "the report's 18-hour day grid scrolling on a phone, clearer windows glowing amber, heavier ones dim";
 const SLOT = 'one hour slot tapped open, showing its plain-English line about what that window suits';
+/** The legible insert: two hours for the same task, readable in the two seconds it is on screen. */
+const PAIR = 'two hours side by side on the same day - one clearer, one heavier - for the same task';
 
 /** The spine the prompt tells the writer to produce: 6 shots, 23s, insert then hold, no narration. */
 function canonical(over: Partial<Variant> = {}): Variant {
@@ -63,37 +65,40 @@ test('the canonical spine from the prompt passes preflight', () => {
 function delayedSpine(): Variant {
   const shotList: Variant['shotList'] = [
     { kind: 'presenter', seconds: 3, visualPrompt: PRESENTER, dialogue: 'Resignation likh li hai.' },
-    { kind: 'presenter', seconds: 4, visualPrompt: PRESENTER, dialogue: 'Bhejne ka time abhi tak nahi mila.' },
-    { kind: 'screencap', seconds: 2, visualPrompt: GRID },
+    // The remembered detail, in front of the product — the reel's one long beat.
     { kind: 'presenter', seconds: 6, visualPrompt: PRESENTER, dialogue: 'Pichli baar Monday subah bheji thi, boss ne shaam tak khola nahi.' },
+    { kind: 'screencap', seconds: 2, visualPrompt: PAIR },
+    { kind: 'presenter', seconds: 4, visualPrompt: PRESENTER, dialogue: 'Iss baar poochh ke bhejunga, tuk ke nahi.' },
     { kind: 'screencap', seconds: 4, visualPrompt: SLOT },
     { kind: 'presenter', seconds: 4, visualPrompt: PRESENTER, dialogue: 'Aaj ka din VedicHour.com pe dekh liya.' },
   ];
   return canonical({ shotList, spokenScript: shotList.map((s) => s.dialogue ?? '').filter(Boolean).join(' ') });
 }
 
-test('the product may wait one presenter beat and land at shot 3', () => {
+test('the default spine — detail first, product answering it at shot 3 — passes preflight', () => {
   assert.equal(preflight(delayedSpine()), null);
 });
 
 test('the product may not land at shot 4 — earned is not the same as eventually', () => {
   const v = delayedSpine();
-  // Split the delaying beat in two, so the insert slides one shot later and nothing else changes.
+  // Split the detail beat in two, so the insert slides one shot later and nothing else changes.
+  v.shotList[1].seconds = 4;
   v.shotList.splice(2, 0, { kind: 'presenter', seconds: 2, visualPrompt: PRESENTER, dialogue: 'Draft khula pada hai.' });
-  v.shotList[4].seconds = 4;
-  v.spokenScript = v.shotList.map((s) => s.dialogue ?? '').filter(Boolean).join(' ');
   const r = preflight(v);
   assert.ok(r);
   assert.match(r!, /by shot 3/);
 });
 
-test('the delaying beat may not run so long that the proof arrives after second 8', () => {
+test('the detail beat may not run so long that the proof arrives after second 9', () => {
   const v = delayedSpine();
-  v.shotList[1].seconds = 6; // the long beat moves up front: proof now starts at second 9
-  v.shotList[3].seconds = 4;
+  v.shotList[0].seconds = 3;
+  v.shotList[1].seconds = 6; // legal on its own (3+6 = 9, exactly the ceiling)
+  assert.equal(preflight(v), null);
+  // ...but one second more and the reel is drifting back toward the 13-second failure.
+  v.shotList[1].seconds = 7;
   const r = preflight(v);
   assert.ok(r);
-  assert.match(r!, /second 9/);
+  assert.match(r!, /ceiling is 6s|second 10/);
 });
 
 test('only the presenter may delay the proof — b-roll before it is throat-clearing', () => {
