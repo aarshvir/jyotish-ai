@@ -628,8 +628,17 @@ async function ideate(s: Seeds, tier: Tier, count: number, learned: LearnedConte
  * exists to stop one lucky early winner monopolising a BATCH; with one slot there is no batch to
  * protect, so the model's own best idea is the honest pick.
  */
-function reservedSlots(count: number): number {
+function reservedSlots(count: number, hasEvidence: boolean): number {
   if (count <= 1) return 0;
+  // AND NOTHING IS RESERVED UNTIL THERE IS SOMETHING TO BE BIASED BY.
+  //
+  // The bandit exists to stop one lucky early result monopolising the engine. With zero posted
+  // reels carrying stats there IS no early result: exploration is collecting evidence for a
+  // feedback loop that does not yet exist, and it is not free. On 2026-08-17 the floor of one, at
+  // count 2, made HALF the batch explore and spent that half on the least-tested combination —
+  // which was study/exam timing, the exact low-stakes domain the seeds file tells the writer
+  // nobody loses sleep over. That is a real reel's worth of capacity bought with nothing.
+  if (!hasEvidence) return 0;
   return Math.min(count, Math.max(1, Math.round(count * EXPLORE_SHARE)));
 }
 
@@ -650,8 +659,9 @@ function selectForScripting(
   ideas: Idea[],
   count: number,
   targets: ComboCoverage[],
+  hasEvidence: boolean,
 ): { chosen: Idea[]; exploreChosen: number; reserved: number } {
-  const reserved = reservedSlots(count);
+  const reserved = reservedSlots(count, hasEvidence);
   const targetKeys = new Set(targets.map((t) => t.key));
   const isExplore = (i: Idea) => targetKeys.has(comboKey(i.tags.hookFamily, i.tags.decisionDomain));
 
@@ -1850,12 +1860,14 @@ export async function runCreativeLoop(opts: CreativeOpts = {}): Promise<void> {
     console.log(`             ${learned.performance.split('\n')[0]}`);
 
     // 1. IDEATE
-    const reservedAsk = reservedSlots(count);
+    // Exploration is only worth paying for once there are posted results it could be correcting.
+    const hasEvidence = (learned.snapshot?.assets.length ?? 0) > 0;
+    const reservedAsk = reservedSlots(count, hasEvidence);
     const { ideas, fallback } = await ideate(seeds, tier, IDEAS_REQUESTED, learned, reservedAsk);
     console.log(`[creative] ideate → ${ideas.length} candidate hooks${fallback ? ' (SEED FALLBACK — brain was unreachable)' : ''}`);
 
     // 1b. EXPLORE/EXPLOIT — enforced on OUR coverage counts, not on the model's self-label.
-    const { chosen, exploreChosen, reserved } = selectForScripting(ideas, count, learned.explore);
+    const { chosen, exploreChosen, reserved } = selectForScripting(ideas, count, learned.explore, hasEvidence);
     console.log(
       `[creative] explore/exploit → ${exploreChosen}/${reserved} reserved explore slot(s) filled, ${chosen.length - exploreChosen} exploit` +
         (exploreChosen < reserved ? ' — QUOTA UNMET: no candidate idea landed in an under-tested combination this batch (not faked)' : ''),
