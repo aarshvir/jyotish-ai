@@ -144,6 +144,47 @@ export async function callCodex(prompt: string, model: string | null, timeoutMs:
   return { text, cli: 'codex', model, durationMs: Date.now() - t0 };
 }
 
+/**
+ * Turn the claude CLI's `--output-format json` stdout into the model's actual answer, or throw.
+ *
+ * THE ENVELOPE IS NOT THE ANSWER — the failure that silently emptied a whole batch on 2026-08-17.
+ *
+ * An expired session comes back on STDOUT as ~880 characters of perfectly well-formed JSON whose
+ * `result` is the 72-character string "Failed to authenticate: OAuth session expired and could not
+ * be refreshed", alongside `"is_error": true` and `"terminal_reason": "api_error"` — and,
+ * unhelpfully, `"subtype": "success"`.
+ *
+ * Both existing guards missed it. looksLikeAuthFailure() deliberately only judges replies under
+ * 400 characters, because real ad copy can legitimately talk about logins — and the ENVELOPE is
+ * 880 characters, so the check was asking the wrong string. The error text was then unwrapped out
+ * of `result` and returned as the model's answer, with a cheerful runs_log row reading "72 chars".
+ *
+ * The consequence is worse than one bad reply: brain() only walks to the next CLI when a call
+ * THROWS, so a "successful" auth error silently disables the entire fallback chain. That turned a
+ * creative run into zero variants in eighteen seconds — ideate fell back to config seeds and every
+ * scripting stage "succeeded" with the same 72 characters, which reads in the log exactly like a
+ * model having a bad day rather than like a login that needs renewing.
+ *
+ * So the envelope's own error flags are honoured first, and the auth check is re-run on the
+ * EXTRACTED text, where the 400-character rule is finally being applied to a reply rather than to
+ * its packaging.
+ */
+export function interpretClaudeStdout(out: string): string {
+  if (looksLikeAuthFailure(out)) throw new CliError(`claude not authenticated: ${firstLine(out)}`);
+  let parsed: any;
+  try {
+    parsed = JSON.parse(out);
+  } catch {
+    return stripNoise(out); // not JSON — the CLI printed plain text
+  }
+  const text = String(parsed?.result ?? parsed?.text ?? '').trim();
+  if (parsed?.is_error === true || parsed?.terminal_reason === 'api_error') {
+    throw new CliError(`claude returned an error result (${String(parsed?.terminal_reason ?? 'is_error')}): ${firstLine(text || out)}`);
+  }
+  if (looksLikeAuthFailure(text)) throw new CliError(`claude not authenticated: ${firstLine(text)}`);
+  return text || stripNoise(out);
+}
+
 export async function callClaude(prompt: string, model: string | null, timeoutMs: number): Promise<CliResult> {
   const t0 = Date.now();
   const args = ['-p', '--output-format', 'json'];
@@ -153,13 +194,5 @@ export async function callClaude(prompt: string, model: string | null, timeoutMs
   if (RATE_RE.test(r.stderr)) throw new RateLimitError(`claude: ${firstLine(r.stderr) || 'rate limited'}`);
   const out = (r.stdout || '').trim();
   if (!out) throw new CliError(`claude empty output (code ${r.code}): ${firstLine(r.stderr)}`);
-  if (looksLikeAuthFailure(out)) throw new CliError(`claude not authenticated: ${firstLine(out)}`);
-  try {
-    const j = JSON.parse(out);
-    const text = String(j.result ?? j.text ?? '').trim();
-    if (text) return { text, cli: 'claude', model, durationMs: Date.now() - t0 };
-  } catch {
-    // not JSON — fall through to raw
-  }
-  return { text: stripNoise(out), cli: 'claude', model, durationMs: Date.now() - t0 };
+  return { text: interpretClaudeStdout(out), cli: 'claude', model, durationMs: Date.now() - t0 };
 }
