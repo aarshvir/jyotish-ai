@@ -37,8 +37,8 @@
       "model": null,
       "dailyCap": 300,
       "minIntervalMs": 3000,
-      "timeoutMs": 300000,
-      "_timeout_why": "300s: vision review of 10 frames exceeds 180s (audit lens c timed out)."
+      "timeoutMs": 480000,
+      "_timeout_why": "300s covered vision review of 10 frames (audit lens c timed out at 180s). Raised to 480s on 2026-08-17: the creative script stage writes six full reels against a ~35k-char brief and now needs 300-400s, so codex was timing out at exactly 300s on EVERY script stage — run 2026-08-17-mswozohk burned ~30 minutes of wall clock failing the whole tier twice and surviving only on the tier-'code' retry. Kept below creative.ts STAGE_DEADLINE_MS so claude(300s)+codex(480s) still fits inside one stage."
     },
     "claude": {
       "enabled": "auto",

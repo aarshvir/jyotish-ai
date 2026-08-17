@@ -177,10 +177,16 @@ const EXPLORE_SHARE = 0.3;
  * tier never gets a turn — the stage just dies. That is exactly what happened on 2026-07-26:
  * the CLI timeouts were raised 180s -> 300s for 10-frame vision review, which silently made
  * them equal to this deadline, and the script stage then failed every run for a day (08:21,
- * 10:19, 12:20, 14:21) producing zero variants. 660s = codex 300 + claude 300 + overhead.
- * Still bounded, so an unattended 2-hourly loop can never wedge forever.
+ * 10:19, 12:20, 14:21) producing zero variants.
+ *
+ * Raised again on 2026-08-17 for the same class of reason, in the other direction: codex's own
+ * timeout went 300s -> 480s because the script stage genuinely needs it, and 660s could no longer
+ * hold claude(300) + codex(480). 840s = 300 + 480 + 60 overhead. Still bounded, so an unattended
+ * 2-hourly loop can never wedge forever. THESE TWO NUMBERS MOVE TOGETHER — a per-CLI timeout that
+ * sums past this deadline means the stage dies before the second CLI can finish, which is exactly
+ * the failure documented above.
  */
-const STAGE_DEADLINE_MS = 660_000;
+const STAGE_DEADLINE_MS = 840_000;
 
 /**
  * Weighted total. The hook still carries the most single weight — the first second is the whole
@@ -1441,8 +1447,18 @@ async function tournament(survivors: Judged[], tier: Tier): Promise<Judged[]> {
     return [...ranked, ...group.filter((g) => !seen.has(keyOf(g)))];
   };
 
-  const brackets: Judged[][] = [];
-  for (let i = 0; i < byScore.length; i += BRACKET_SIZE) brackets.push(byScore.slice(i, i + BRACKET_SIZE));
+  /**
+   * THE GROUP OF DEATH, fixed. Brackets used to be consecutive slices of the score order, so the
+   * four best variants met in round one and two of them were eliminated by each other. Batch
+   * 2026-08-17-mswozohk is the proof: an 83 and an 82 were drawn against the 86, finished third and
+   * fourth in that bracket, and were then ranked BELOW a 74 that had an easy group — so two of the
+   * batch's four strongest reels never reached the founder's queue at all.
+   *
+   * Seeding round-robin instead spreads the top seeds one per bracket, which is what seeding is for.
+   */
+  const bracketCount = Math.max(1, Math.ceil(byScore.length / BRACKET_SIZE));
+  const brackets: Judged[][] = Array.from({ length: bracketCount }, () => []);
+  byScore.forEach((j, i) => brackets[i % bracketCount].push(j));
 
   const finalists: Judged[] = [];
   const alsoRans: Judged[] = [];
@@ -1453,7 +1469,9 @@ async function tournament(survivors: Judged[], tier: Tier): Promise<Judged[]> {
   }
 
   const podium = finalists.length > 1 ? await rankGroup(finalists) : finalists;
-  const ordered = [...podium, ...alsoRans];
+  // Everything below the podium is ordered by its own score rather than by which bracket it lost
+  // in — a bracket placing is only meaningful against the three reels it was actually compared to.
+  const ordered = [...podium, ...alsoRans.sort((a, b) => b.scores.total - a.scores.total)];
   ordered.forEach((j, i) => (j.rank = i + 1));
   return ordered;
 }
