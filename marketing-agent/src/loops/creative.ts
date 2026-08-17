@@ -730,6 +730,16 @@ EVERY SPOKEN LINE MUST BE A SENTENCE A PERSON WOULD SAY OUT LOUD. This is where 
 - "yahaan clearer, wahaan heavier" recited as a feature — "the fourth reel making the same point."
 Test: read the line aloud. If it is a noun phrase, a feature, or something that could only appear on a landing page, rewrite it as what a friend would actually say. Not "Farq personal birth chart fit ka" but "Tera chart alag hai, mera alag." Not "Real data, simple what-to-do line" but "Yahaan likha hai kis ghante mein kya karna hai."
 
+LEAD WITH YOUR BEST LINE. THE COLD OPEN IS THE CONSEQUENCE, NOT THE PLAN. This is now the most common way these scripts fail, and the viewer-reviewer has said it in almost the same words on every batch:
+- "Best detail — midnight paragraph sent, deleted by morning — is buried at shot 3, not earning hook duty."
+- "Move 'late utha, revision aadha reh gaya' to second 1, then earn the screen."
+- "'Chaar baar same paragraph' is the hook; make it line one."
+- "Lead with '11:40 pe kiya; kal?' — earn the timing screen after that."
+- "'Teen hafton baad call karunga' is a plan, not a hook; gone." / "'timing choose karunga' is a plan."
+Every one of those scripts had a real, specific, human line in it — and put it THIRD, behind a sentence announcing what the person intends to do. Announcing an intention is not a hook: nothing has happened yet, so there is nothing to be curious about, and the product screen that follows arrives before the viewer cares about this person at all. That is why the reviewer keeps saying the screen has not been "earned".
+So: write the whole script, find the line only a real person could have written, and MOVE IT TO SHOT ONE. Then rebuild the rest around it.
+A stated intention CAN open a reel, but only when the intention is itself the shocking specific thing — "Aaj girlfriend ka naam lunga" works because saying her name at home IS the event. "Teen hafton baad call karunga" does not, because the event is still hypothetical. If you cannot tell which one you have written, assume it is the second and lead with the consequence instead.
+
 PUT ONE CONCRETE CONSEQUENCE IN THE SCRIPT — the single most useful note we have received. Somewhere in the middle, one line must name a REAL THING THAT HAPPENED when this person guessed the timing before: the message sent at 1am that got a one-word reply, the appraisal he opened right after his boss's worst meeting, the call he made from the car park because he could not wait. One specific past detail is worth more than every adjective in the script, and it is the difference between a reel about a product and a reel about a person.
 The one line the last batch got RIGHT was exactly this: "Last Diwali seedha bol diya tha; Mummy poori shaam relatives mein busy thi." Nobody could have invented that from a brief — it has a real evening in it. The rest of that script did not live up to it, and that is the gap you are closing. Write four more lines of that quality, not one good line surrounded by product copy.
 
@@ -1339,14 +1349,25 @@ Return STRICT JSON — an array with ONE object per reel above, in the same orde
  * scale. Returns the revisions as fully-judged entries; never throws, and returns [] when the
  * writer or the reviewers are unreachable, so the batch degrades to selection-only.
  */
-async function reviseTop(survivors: Judged[], tier: Tier): Promise<Judged[]> {
+/** Identity of a judged reel across stages — variantIndex alone repeats across ideas. */
+const judgedKey = (j: Judged) => `${j.variant.ideaId}#${j.variant.variantIndex}`;
+
+export interface RevisionOutcome {
+  /** Rewrites that beat the draft they came from, judged in the same pass as it. */
+  rewrites: Judged[];
+  /** Re-judgments of the originals from that same pass, keyed by judgedKey, to replace the stale ones. */
+  refreshed: Map<string, Judged>;
+}
+
+async function reviseTop(survivors: Judged[], tier: Tier): Promise<RevisionOutcome> {
   // Only reels the lens actually watched can be revised — a degraded verdict carries no note, so
   // there is nothing to rewrite against and a "revision" would just be a second random draw.
   const candidates = [...survivors]
     .filter((j) => !j.eye.degraded && (j.eye.oneFix || j.eye.diesAt))
     .sort((a, b) => b.scores.total - a.scores.total)
     .slice(0, REVISE_TOP_N);
-  if (!candidates.length) return [];
+  const empty: RevisionOutcome = { rewrites: [], refreshed: new Map() };
+  if (!candidates.length) return empty;
 
   const first = candidates[0].variant;
   const link = utm(BRAND.links.pricing, 'youtube', 'short', 'creative_engine', first.ideaId);
@@ -1354,7 +1375,7 @@ async function reviseTop(survivors: Judged[], tier: Tier): Promise<Judged[]> {
   const parsed = raw ? extractJson<any[]>(raw) : null;
   if (!Array.isArray(parsed) || !parsed.length) {
     console.warn('[creative] revise: no parsable rewrites — keeping the originals only.');
-    return [];
+    return empty;
   }
 
   // Map each rewrite back to the reel it came from: by the model's own `revisionOf` when it gave
@@ -1377,33 +1398,58 @@ async function reviseTop(survivors: Judged[], tier: Tier): Promise<Judged[]> {
     if (!v.hookText || !v.spokenScript) return;
     revisions.push({ source, variant: v, note: String(rawVariant?.whatIChanged ?? '').slice(0, 120) });
   });
-  if (!revisions.length) return [];
+  if (!revisions.length) return empty;
 
   for (const r of revisions) {
     console.log(`[creative] revise → "${r.source.variant.hookText}" (${r.source.scores.total}) rewritten: ${r.note || 'no note given'}`);
   }
 
-  // Judged on exactly the same scale as the originals, so the tournament compares like with like.
+  /**
+   * THE DRAFT AND ITS REWRITE ARE JUDGED IN THE SAME BREATH.
+   *
+   * The first version of this stage scored the revisions in a fresh call and compared the number
+   * against the original's score from an earlier call. That is not a comparison: the taste lens is
+   * a language model reading a batch, and its calibration moves between invocations — on
+   * 2026-08-17 two rewrites came back at human-eye 55 against originals of 81 and 75, which would
+   * mean every rewrite made things dramatically worse rather than that the two batches were scored
+   * against different neighbours.
+   *
+   * So both go into ONE judging call, as one batch, and the fresh scores are used for BOTH sides.
+   * Whatever the absolute numbers are, they are now internally consistent, which is the only thing
+   * the head-to-head needs. The refreshed original replaces its earlier judgment in the pool.
+   */
   const idea: Idea = {
     id: revisions[0].source.variant.ideaId,
     family: revisions[0].source.variant.family,
-    angle: 'revisions of this batch’s strongest reels, rewritten against the viewer’s own notes',
+    angle: 'this batch’s strongest reels and their rewrites, judged side by side',
     decisionMoment: '',
     whyItStops: '',
     tags: revisions[0].source.variant.tags,
     explore: false,
   };
-  const judgedRevisions = await judge(idea, revisions.map((r) => r.variant), tier);
-  for (const j of judgedRevisions) {
-    const src = revisions.find((r) => r.variant.variantIndex === j.variant.variantIndex)?.source;
-    const delta = src ? j.scores.total - src.scores.total : 0;
+  const paired = await judge(idea, [...revisions.map((r) => r.source.variant), ...revisions.map((r) => r.variant)], tier);
+  const freshByIndex = new Map(paired.map((j) => [j.variant.variantIndex, j]));
+
+  const rewrites: Judged[] = [];
+  const refreshed = new Map<string, Judged>();
+  for (const r of revisions) {
+    const fresh = freshByIndex.get(r.variant.variantIndex);
+    const original = freshByIndex.get(r.source.variant.variantIndex);
+    if (!fresh) continue;
+    const before = original ? original.scores.total : r.source.scores.total;
+    const delta = fresh.scores.total - before;
+    const won = fresh.status !== 'rejected' && delta > 0;
     console.log(
-      `             ${j.status === 'rejected' ? '✗' : '✓'} "${j.variant.hookText}" → ${j.scores.total} (human eye ${j.scores.humanEye})` +
-        (src ? ` · ${delta >= 0 ? '+' : ''}${delta} vs the draft it came from` : '') +
-        (j.rejectionReason ? ` · ${j.rejectionReason.slice(0, 90)}` : ''),
+      `             ${won ? '✓ KEPT' : '·  lost'} "${fresh.variant.hookText}" → ${fresh.scores.total} (human eye ${fresh.scores.humanEye}) · ` +
+        `${delta >= 0 ? '+' : ''}${delta} vs the same draft scored in the same pass` +
+        (fresh.rejectionReason ? ` · ${fresh.rejectionReason.slice(0, 90)}` : ''),
     );
+    // The rewrite enters the pool on its own merits; the refreshed original goes in either way so
+    // the tournament never sees two differently-calibrated scores for the same reel.
+    if (won) rewrites.push(fresh);
+    if (original) refreshed.set(judgedKey(original), original);
   }
-  return judgedRevisions;
+  return { rewrites, refreshed };
 }
 
 // ---------------------------------------------------------------- 4. tournament
@@ -1904,9 +1950,11 @@ export async function runCreativeLoop(opts: CreativeOpts = {}): Promise<void> {
 
     // 3b. REVISE — the strongest reels rewritten against their own autopsies, then re-scored.
     // Selection alone can never beat the best draft luck produced; this is the part that iterates.
-    const revisions = survivors.length && !isKilled() ? await reviseTop(survivors, tier) : [];
-    judged.push(...revisions);
-    const pool = [...survivors, ...revisions.filter((j) => j.status !== 'rejected')];
+    const { rewrites, refreshed } = survivors.length && !isKilled() ? await reviseTop(survivors, tier) : { rewrites: [], refreshed: new Map<string, Judged>() };
+    judged.push(...rewrites);
+    // A reel that was re-judged alongside its rewrite carries the score from THAT pass, so the
+    // tournament never ranks two differently-calibrated numbers against each other.
+    const pool = [...survivors.map((j) => refreshed.get(judgedKey(j)) ?? j), ...rewrites].filter((j) => j.status !== 'rejected');
 
     // 4. TOURNAMENT
     const ordered = pool.length ? await tournament(pool, tier) : [];
