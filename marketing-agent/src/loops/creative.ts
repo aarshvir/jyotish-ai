@@ -723,7 +723,9 @@ Test: read the line aloud. If it is a noun phrase, a feature, or something that 
 PUT ONE CONCRETE CONSEQUENCE IN THE SCRIPT — the single most useful note we have received. Somewhere in the middle, one line must name a REAL THING THAT HAPPENED when this person guessed the timing before: the message sent at 1am that got a one-word reply, the appraisal he opened right after his boss's worst meeting, the call he made from the car park because he could not wait. One specific past detail is worth more than every adjective in the script, and it is the difference between a reel about a product and a reel about a person.
 The one line the last batch got RIGHT was exactly this: "Last Diwali seedha bol diya tha; Mummy poori shaam relatives mein busy thi." Nobody could have invented that from a brief — it has a real evening in it. The rest of that script did not live up to it, and that is the gap you are closing. Write four more lines of that quality, not one good line surrounded by product copy.
 
-THE LAST LINE MUST LAND ON THE FIRST. The closing beat is not a place to park the website — it is the payoff of the sentence the reel opened with, and the site name rides along inside it. If the cold open was "Teen hafte se yeh message draft mein pada hai", the close is about THAT message, and it is better if it is quieter than the opening rather than louder. A closing line that would fit equally well on the end of any other reel we have written is a failed closing line.
+THE LAST LINE MUST LAND ON THE FIRST. The closing beat is not a place to park the website — it is the payoff of the sentence the reel opened with. If the cold open was "Teen hafte se yeh message draft mein pada hai", the close is about THAT message, and it is better if it is quieter than the opening rather than louder. A closing line that would fit equally well on the end of any other reel we have written is a failed closing line.
+
+AND SAY THE SITE AS ITS OWN BEAT, NOT WELDED INTO A VERB. Every closing line the last batch produced had the name jammed into the middle of an action, and all three read as translated: "VedicHour.com pe time dekh liya", "VedicHour.com dekhkar reply bhejunga", "Birthday message VedicHour.com dekhkar hi bhejunga". Nobody speaks a URL mid-sentence. Land the human sentence first, then say the name almost as an afterthought, as a separate short clause — "Aaj nahi. Kal subah. VedicHour.com." or "Time dekh liya hai. VedicHour.com pe." The name is the last thing the viewer hears either way, which is the whole point of saying it aloud, and it stops sounding like an ad read the moment it stops being grammar.
 
 DO NOT WRITE THE SAME REEL SIX TIMES. The reviewer's exact complaint on the last batch: "same amber-room-presenter-then-screen pattern; I've already seen this reel." The MAN is fixed — same face, same clothes, that is brand law and it does not change. Everything else must not be: each variant picks its own room and hour (kitchen at night, balcony at first light, parked car, empty office at 8pm, stairwell), its own physical action (not sitting and talking — pouring tea and stopping, standing up mid-thought, putting the phone face-down), and its own shot sizes. Within one reel, three identical medium close-ups of a man in a booth is a slideshow of one shot.
 
@@ -1653,6 +1655,18 @@ function variantMarkdown(j: Judged, batchId: string): string {
 | human eye (taste, can reject alone) | ${s.humanEye} |
 | **weighted total** | **${s.total}** |
 
+## The viewer
+_The taste lens's four sub-scores. These were being computed and thrown away, which made "why is this only a 76" unanswerable — the overall alone cannot tell you whether a reel failed to stop a thumb or merely looked cheap once it had._
+
+| what he was asked | score |
+| --- | --- |
+| would you stop scrolling | ${j.eye.stopScroll} |
+| does it look expensive | ${j.eye.looksExpensive} |
+| does the human ring true | ${j.eye.humanTruth} |
+| is it free of AI slop | ${j.eye.notSlop} |
+
+${j.eye.degraded ? '> The lens was unreachable for this reel — these are neutral placeholders, not a verdict.' : `**Where he would have flicked away:** ${j.eye.diesAt || '(he watched it through)'}\n\n**The one change he asked for:** ${j.eye.oneFix || '(none given)'}`}
+
 Policy-linter: **${j.lintVerdict}** — ${j.lintReason}
 Hostile reviewer: ${s.notes || 'no objection recorded'}${s.degraded ? '\n\n> Scored by the heuristic fallback — the hostile reviewer was unreachable.' : ''}
 
@@ -1713,6 +1727,9 @@ async function persist(judged: Judged[], winners: Judged[], batchId: string): Pr
           ...contract, // render pipeline reads these (src/render/types.ts CreativeScript)
           batchId,
           scores: w.scores,
+          // The whole taste verdict, not just the number it rolled up to — `oneFix` is the note the
+          // revision stage rewrites against, and it is the most useful sentence in this file.
+          humanEye: w.eye,
           linter: { verdict: w.lintVerdict, reason: w.lintReason },
           renderValidation: validation,
           ...w.variant, // creative engine's own fields
