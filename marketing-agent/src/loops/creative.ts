@@ -1301,10 +1301,13 @@ const REVISE_TOP_N = 3;
 const REVISION_INDEX_OFFSET = 100;
 
 function revisePrompt(entries: Judged[], link: string): string {
+  // Reels are numbered by SLOT (1..N of what we sent), never by variantIndex: two ideas each
+  // produce variants 1-6, so "REEL 5" would be ambiguous and `revisionOf` would map a rewrite
+  // onto the wrong draft — silently attributing one idea's autopsy to another idea's script.
   const blocks = entries
-    .map((j) => {
+    .map((j, slot) => {
       const v = j.variant;
-      return `--- REEL ${v.variantIndex} · "${v.hookText}" ---
+      return `--- REEL ${slot + 1} · "${v.hookText}" ---
 WHAT THE VIEWER SAW AND HEARD:
 ${playbackTimeline(v)}
 burned-in captions: ${v.onScreenCaptions.join(' | ')}
@@ -1378,12 +1381,12 @@ async function reviseTop(survivors: Judged[], tier: Tier): Promise<RevisionOutco
     return empty;
   }
 
-  // Map each rewrite back to the reel it came from: by the model's own `revisionOf` when it gave
-  // one, otherwise by position, which is safe because we asked for the same order.
-  const byIndex = new Map(candidates.map((c) => [c.variant.variantIndex, c]));
-  const revisions: { source: Judged; variant: Variant; note: string }[] = [];
+  // Map each rewrite back to the reel it came from by SLOT — the model's own `revisionOf` when it
+  // gave one, otherwise by position, which is safe because we asked for the same order.
+  const revisions: { source: Judged; slot: number; variant: Variant; note: string }[] = [];
   parsed.forEach((rawVariant, i) => {
-    const source = byIndex.get(Number(rawVariant?.revisionOf)) ?? candidates[i];
+    const slot = Number.isFinite(Number(rawVariant?.revisionOf)) ? Number(rawVariant.revisionOf) - 1 : i;
+    const source = candidates[slot] ?? candidates[i];
     if (!source) return;
     const idea: Idea = {
       id: source.variant.ideaId,
@@ -1394,9 +1397,12 @@ async function reviseTop(survivors: Judged[], tier: Tier): Promise<RevisionOutco
       tags: source.variant.tags,
       explore: source.variant.explore,
     };
-    const v = normalizeVariant(rawVariant, idea, source.variant.variantIndex + REVISION_INDEX_OFFSET, link);
+    // judge() keys its audit rows by variantIndex, so every reel in that one call must carry a
+    // DISTINCT index. Slot numbering gives that: draft n is n, its rewrite is n + the offset.
+    const n = candidates.indexOf(source) + 1;
+    const v = normalizeVariant(rawVariant, idea, n + REVISION_INDEX_OFFSET, link);
     if (!v.hookText || !v.spokenScript) return;
-    revisions.push({ source, variant: v, note: String(rawVariant?.whatIChanged ?? '').slice(0, 120) });
+    revisions.push({ source, slot: n, variant: v, note: String(rawVariant?.whatIChanged ?? '').slice(0, 120) });
   });
   if (!revisions.length) return empty;
 
@@ -1427,14 +1433,18 @@ async function reviseTop(survivors: Judged[], tier: Tier): Promise<RevisionOutco
     tags: revisions[0].source.variant.tags,
     explore: false,
   };
-  const paired = await judge(idea, [...revisions.map((r) => r.source.variant), ...revisions.map((r) => r.variant)], tier);
+  const draftsForJudging = revisions.map((r) => ({ ...r.source.variant, variantIndex: r.slot }));
+  const paired = await judge(idea, [...draftsForJudging, ...revisions.map((r) => r.variant)], tier);
   const freshByIndex = new Map(paired.map((j) => [j.variant.variantIndex, j]));
 
   const rewrites: Judged[] = [];
   const refreshed = new Map<string, Judged>();
   for (const r of revisions) {
     const fresh = freshByIndex.get(r.variant.variantIndex);
-    const original = freshByIndex.get(r.source.variant.variantIndex);
+    // Restore the draft's real variantIndex — it was renumbered only so the judging call could
+    // key it — so judgedKey() still matches the entry this is replacing in the pool.
+    const judgedDraft = freshByIndex.get(r.slot);
+    const original = judgedDraft ? { ...judgedDraft, variant: r.source.variant } : undefined;
     if (!fresh) continue;
     const before = original ? original.scores.total : r.source.scores.total;
     const delta = fresh.scores.total - before;
