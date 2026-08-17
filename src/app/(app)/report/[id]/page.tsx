@@ -41,6 +41,7 @@ import type { ReportGenerationLogEntry } from '@/lib/observability/generationLog
 import { generationErrorCtaKind } from '@/lib/reports/reportErrors';
 import { resolveLocalSlotTimes } from '@/lib/time/localTime';
 import { UNLOCK_7DAY_HREF } from '@/lib/pricing';
+import { clientWritablePaymentStatus } from '@/lib/reports/entitlement';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -400,7 +401,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       timezone_offset: cached?.timezone_offset ?? currentTzOffset,
       plan_type: planType,
       status: 'generating',
-      payment_status: cached?.payment_status ?? 'bypass',
+      payment_status: clientWritablePaymentStatus(cached?.payment_status),
     });
 
     if (error && error.code !== '23505') {
@@ -755,8 +756,9 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
       timezone_offset: tz,
       plan_type: planType,
       forecast_start: forecastStartParam || undefined,
-      // The server derives "paid" from completed Ziina rows; URL params are presentation-only.
-      payment_status: cached?.payment_status ?? 'bypass',
+      // The server derives entitlement from Ziina / promo / admin grants.
+      // Never send 'bypass' from the browser — #208 treated it as paid.
+      payment_status: clientWritablePaymentStatus(cached?.payment_status),
       ...(opts?.forceRestart ? { forceRestart: true } : {}),
     };
 
