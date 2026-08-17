@@ -61,6 +61,9 @@ const BRACKET_SIZE = 4;
  *   s5  product    3-4s   THE HOLD — the screen is the payoff, and nobody narrates it.
  *   s6  presenter  ~4s    close, names vedichour.com out loud, lands on where s1 opened.
  *
+ * ...OR the insert waits one beat and lands at s3, once the cold open has actually asked
+ * something. See PROOF_BY_SHOT_MAX — that choice is the writer's, and the taste lens adjudicates.
+ *
  * Why these numbers and not others:
  *  - PRODUCT SHOTS ARE FREE (real screen recordings) and GENERATED SHOTS ARE NOT. So the format
  *    that retains best is also the cheapest: ~$2.40 of Veo for four presenter beats, versus $3.02
@@ -90,7 +93,39 @@ const FIRST_SHOT_MAX_SEC = 3;
 const SHOT_MAX_SEC = 4;
 /** Exactly one presenter beat may run to this — the reel's only pause for breath. */
 const LONG_BEAT_MAX_SEC = 6;
-/** The product must be on screen by here. Shot 2 being a product shot enforces it structurally. */
+/**
+ * WHEN THE PROOF ARRIVES — an EARNED deadline, not a fixed slot. Changed 2026-08-17.
+ *
+ * The rule this replaces was "shot 2 is always the product", and it was the owner's own rule. It
+ * came from a real measurement (the rejected reel showed the product at second 13) and it fixed
+ * that. But it then fought the taste lens on EVERY subsequent batch, in the lens's own words:
+ * "the grid cuts in before any question forms in my head", "product screen breaks emotional setup
+ * before tension peaks", "product screen after stairwell scene feels like an ad pivot". The engine
+ * threaded that needle roughly once in twelve variants. A constraint that the quality judge rejects
+ * eleven times in twelve is not a quality constraint; it is a lottery.
+ *
+ * The owner's ruling, verbatim: "The rule is mine and it is wrong as an absolute."
+ *
+ * So the deadline is kept and the SLOT is not. The product may land at shot 2 or shot 3, and the
+ * writer chooses on one question: has the cold open created a question worth answering yet? If the
+ * first line already asks something, the screen answers it immediately and shot 2 is right. If the
+ * first line needs one more beat before anyone cares, the screen waits for that beat — and the
+ * reel opens on two presenter shots instead, which is the unbroken run of human thought the format
+ * already wanted.
+ *
+ * What does NOT move, because these are the parts that survived every batch:
+ *  - the product is still on screen inside the first third of the reel (PROOF_STARTS_BY_SEC),
+ *  - it still returns at least MIN_PRODUCT_SHOTS times for at least MIN_PRODUCT_SEC,
+ *  - the first product beat is still an INSERT (<= FIRST_PRODUCT_MAX_SEC) and the HOLD still
+ *    comes later. Delaying by one beat buys a reason to look, not a longer look.
+ *
+ * PROOF_STARTS_BY_SEC is the real floor here and it is what keeps this from drifting back to the
+ * reel the owner threw out: 8s allows a 3s cold open plus one 5s beat, or a 2s open plus the 6s
+ * long beat. It does not allow a 3s open plus a 6s beat, and it is nowhere near 13.
+ */
+const PROOF_BY_SHOT_MAX = 3;
+const PROOF_STARTS_BY_SEC = 8;
+/** Kept for the copy that still describes the immediate case, and for the cold-open ceiling. */
 const PROOF_BY_SEC = 3;
 const MIN_PRODUCT_SHOTS = 2;
 const MIN_PRODUCT_SEC = 5;
@@ -265,6 +300,8 @@ interface Scores {
   total: number;
   notes: string;
   degraded: boolean;
+  /** The CLI that produced `humanEye` — see stageCli. "unavailable" when the lens never answered. */
+  judgedBy: string;
 }
 
 interface Judged {
@@ -432,6 +469,22 @@ Notice what almost all of them have in common: the writing stopped being a perso
  * keeps walking its tier list in the background and still writes its own runs_log rows.
  * It costs a little daily-cap quota; it cannot block or corrupt the stage that moved on.
  */
+/**
+ * WHICH ENGINE ACTUALLY ANSWERED EACH STAGE — judge provenance, recorded because it changed
+ * underneath us without anyone noticing.
+ *
+ * brain() walks a tier list, so the model behind a stage is whichever CLI happened to be healthy.
+ * On 2026-08-17 the owner's claude login expired mid-day; every human-eye call before ~17:54 UTC
+ * was answered by claude and every one after it fell through to codex. The taste score is the exit
+ * criterion for this whole loop, and for several hours "human eye 76" and "human eye 71" were two
+ * different reviewers' opinions being compared as if they were one reviewer's trend. Nothing in
+ * the artifact said so.
+ *
+ * The score is now stamped with the engine that produced it. A number without its judge is not a
+ * measurement, and round-over-round comparison across a change of judge is not evidence.
+ */
+const stageCli = new Map<string, string>();
+
 async function brainOnce(prompt: string, tier: Tier, stage: string): Promise<string | null> {
   const t0 = Date.now();
   try {
@@ -439,6 +492,7 @@ async function brainOnce(prompt: string, tier: Tier, stage: string): Promise<str
       brain(prompt, { tier, loop: `creative:${stage}` }),
       new Promise<never>((_, rej) => setTimeout(() => rej(new Error(`stage deadline ${STAGE_DEADLINE_MS}ms exceeded`)), STAGE_DEADLINE_MS).unref()),
     ]);
+    stageCli.set(stage, res.cli);
     return res.text;
   } catch (e: any) {
     const msg = String(e?.message ?? e).slice(0, 200);
@@ -704,7 +758,11 @@ THE SPINE — ${SHOTS_MIN} to ${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX
   1. presenter, at most ${FIRST_SHOT_MAX_SEC}s — THE COLD OPEN. He is already mid-thought, answering the question the hook asks. NO greeting, NO "kya aapko pata hai", NO "aaj main baat karunga", NO setup of any kind. If the line would work as the SECOND sentence of a conversation, it is right; if it would work as the first, it is warm-up and you must delete it.
      BUT MID-THOUGHT IS NOT THE SAME AS EMPTY, and this is where the last batch died. "Haan, isi baat pe atka hoon" is mid-thought and it is worthless: stuck on WHICH thing? The viewer has no antecedent, so the one second you get is spent parsing. The cold open must be a COMPLETE sentence that a total stranger understands on its own, with the actual subject named in it. "Teen hafte se yeh message draft mein pada hai." — mid-thought AND complete. That is the bar.
      THE COLD OPEN IS ABOUT THE MOMENT, NOT ABOUT US. It may not name the product, the site, an app, a chart, a report or a score — those words in the first three seconds are a company clearing its throat, and the viewer is gone. It is the sentence the VIEWER has said in their own head. Say the human thing first; the product answers it at second three, on screen, where it is far more convincing than a claim.
-  2. screencap, at most ${FIRST_PRODUCT_MAX_SEC}s — THE INSERT. Proof lands before second ${PROOF_BY_SEC}, as a glance: the real report, hour slots down the day, clearer windows lit, heavier ones dim. NO WORDS OVER IT.
+  2. screencap, at most ${FIRST_PRODUCT_MAX_SEC}s — THE INSERT. A glance: the real report, hour slots down the day, clearer windows lit, heavier ones dim. NO WORDS OVER IT.
+     BUT YOU MAY MOVE THIS TO SHOT 3, AND CHOOSING WELL IS NOW PART OF THE JOB. This used to be a fixed slot and it was wrong as an absolute: the viewer-reviewer killed batch after batch with "the grid cuts in before any question forms in my head". The product must arrive AT THE MOMENT THE VIEWER WANTS IT, AND NEVER BEFORE. So ask yourself one question about your own cold open, honestly:
+       — Does the first line already ask something a screen could answer? ("Aaj girlfriend ka naam lunga." — the viewer immediately wants to know when, and how this goes.) Then cut to the report on shot 2. The screen is the answer and it arrives while he is still in the sentence.
+       — Or does the first line need one more beat before anyone cares? Then shot 2 is HIM AGAIN — the beat that turns the opening into a real question — and the report lands on shot 3, answering it. The reel then opens on two presenter shots back to back, which is the unbroken run of human thought this format wants anyway.
+     Never later than shot 3, and the product must be on screen by second ${PROOF_STARTS_BY_SEC} either way. A whole third of the reel spent on a talking head before anything is shown is the exact failure this format was built to delete. And no b-roll may stand between the cold open and the proof — the only thing allowed to delay the product is the presenter earning it.
   3. presenter, up to ${LONG_BEAT_MAX_SEC}s — the ONE long beat in the reel: the real, specific thing that actually happened. Only one shot may be this long.
   4. presenter again, BACK TO BACK with shot 3, different shot size — the turn. Do not cut to the product here. This is the reel's unbroken stretch of human thought and it is where the writing has to be good.
   5. screencap, ${PRODUCT_HOLD_MIN_SEC}-${SHOT_MAX_SEC}s — THE HOLD. The screen answers the question he just asked, and NOBODY EXPLAINS IT. This is the punchline of the reel.
@@ -713,7 +771,7 @@ THE SPINE — ${SHOTS_MIN} to ${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX
 
 THE RULES THAT ARE CHECKED MECHANICALLY (a variant that breaks one is rejected before it costs anything):
 - ${SHOTS_MIN}-${SHOTS_MAX} shots. ${REEL_SEC_MIN}-${REEL_SEC_MAX}s total. Not 4 long shots — ${SHOTS_MIN}+ short ones.
-- Shot 1 is a presenter shot of at most ${FIRST_SHOT_MAX_SEC}s. Shot 2 is a screencap. The last shot is a presenter shot.
+- Shot 1 is a presenter shot of at most ${FIRST_SHOT_MAX_SEC}s. The FIRST screencap is shot 2 or shot 3 (your choice, see above), it starts by second ${PROOF_STARTS_BY_SEC}, and only presenter shots may come before it. The last shot is a presenter shot.
 - No shot may run longer than ${SHOT_MAX_SEC}s, except exactly ONE presenter beat which may reach ${LONG_BEAT_MAX_SEC}s.
 - At least ${MIN_PRODUCT_SHOTS} screencap shots, at least ${MIN_PRODUCT_SEC}s of product on screen in total. The product is the proof AND it is free to film, so it should be the most-seen thing in the reel.
 - THE FIRST screencap shot runs at most ${FIRST_PRODUCT_MAX_SEC}s (it is an insert), and at least one LATER screencap shot runs ${PRODUCT_HOLD_MIN_SEC}s or more (it is the hold).
@@ -741,8 +799,20 @@ Every one of those scripts had a real, specific, human line in it — and put it
 So: write the whole script, find the line only a real person could have written, and MOVE IT TO SHOT ONE. Then rebuild the rest around it.
 A stated intention CAN open a reel, but only when the intention is itself the shocking specific thing — "Aaj girlfriend ka naam lunga" works because saying her name at home IS the event. "Teen hafton baad call karunga" does not, because the event is still hypothetical. If you cannot tell which one you have written, assume it is the second and lead with the consequence instead.
 
-PUT ONE CONCRETE CONSEQUENCE IN THE SCRIPT — the single most useful note we have received. Somewhere in the middle, one line must name a REAL THING THAT HAPPENED when this person guessed the timing before: the message sent at 1am that got a one-word reply, the appraisal he opened right after his boss's worst meeting, the call he made from the car park because he could not wait. One specific past detail is worth more than every adjective in the script, and it is the difference between a reel about a product and a reel about a person.
-The one line the last batch got RIGHT was exactly this: "Last Diwali seedha bol diya tha; Mummy poori shaam relatives mein busy thi." Nobody could have invented that from a brief — it has a real evening in it. The rest of that script did not live up to it, and that is the gap you are closing. Write four more lines of that quality, not one good line surrounded by product copy.
+START FROM ONE REMEMBERED DETAIL AND BUILD THE WHOLE REEL OUT OF IT. This is the most important instruction on this page and it changes the ORDER in which you work.
+
+Every good line these scripts have ever produced was a specific thing that happened to a specific person on a specific day:
+  "Last month Mummy ne rishta photo bheja; main sirf topic badalta raha."
+  "Last Diwali seedha bol diya tha; Mummy poori shaam relatives mein busy thi."
+Nobody could have invented either of those from a brief. They have a real evening in them. And every script that contained one of them scored well ON THAT LINE and was marked down for everything around it — because the line was found late, dropped into a slot, and surrounded by copy.
+
+So do not assemble six beats and hope one of them lands. Work in this order instead:
+  1. BEFORE YOU WRITE ANY SHOTS, invent ONE remembered detail: a real moment, with a person in it, a time or a date attached, and something small and slightly embarrassing that actually occurred. Not a feeling — an event. "Mummy ne rishta photo bheja aur maine topic badal diya" is an event. "Main nervous tha" is not. It should be the kind of thing you would only know if you had been there.
+  2. Now ask what that moment is EVIDENCE OF. Someone guessed a moment wrong. That is the reel.
+  3. THE COLD OPEN IS THAT DETAIL'S CONSEQUENCE — what he has decided to do about it today, or the sentence he is in the middle of because of it.
+  4. THE LONG BEAT IS THE DETAIL ITSELF, said plainly, once, with the specifics intact. Do not summarise it and do not explain what it means.
+  5. THE TURN AND THE CLOSE ARE THE SAME MOMENT, DIFFERENT OUTCOME. He is doing the thing again — but this time he knows when.
+Every one of the four spoken lines belongs to that one moment. If a line you have written would fit equally well in a reel about a different detail, it is filler and you must rewrite it or cut it. Four lines from one real evening beats one good line surrounded by product copy, and that gap is the entire distance between the scripts that get rejected and the one that does not.
 
 THE LAST LINE MUST LAND ON THE FIRST. The closing beat is not a place to park the website — it is the payoff of the sentence the reel opened with. If the cold open was "Teen hafte se yeh message draft mein pada hai", the close is about THAT message, and it is better if it is quieter than the opening rather than louder. A closing line that would fit equally well on the end of any other reel we have written is a failed closing line.
 
@@ -805,7 +875,7 @@ PER-FIELD SPEC — follow exactly (the WHY behind these lives in the playbook ab
   - presenter / broll → visualPrompt is a concrete cinematic prompt for a text-to-video model: SUBJECT, ACTION, CAMERA MOVE, LIGHTING, MOOD. It must be physically renderable — one clear subject, one clear action. Apply the playbook's "no legible screens" and "subject continuity" principles literally: no text-in-video, no logos, no crowds of faces, no readable UI; any screen in shot is described as "heavily out of focus, glowing softly, no legible characters"; and any person in a b-roll shot is described as "the same man as the presenter shot: young Indian man in his late twenties, same clothing, same time of day", matching the presenter shot's outfit and lighting exactly.
   - screencap → this is a REAL screen recording of the live product, so visualPrompt is simply WHAT TO CAPTURE, chosen from: ${s.screencapLibrary.map((x) => `"${x}"`).join('; ')}
   - SCREENCAP HARD RULE (owner, verbatim): "when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day." Never ask to capture pricing, plans, checkout, payment or the signup/onboarding form. The screen we show is the report and its hour-slots.
-  - SHOT 1 MUST BE kind "presenter", at most ${FIRST_SHOT_MAX_SEC} seconds, and it is a COLD OPEN — see the FORMAT SPEC above. SHOT 2 MUST BE kind "screencap" of at most ${FIRST_PRODUCT_MAX_SEC} seconds (the insert). A later screencap must run ${PRODUCT_HOLD_MIN_SEC}s or more (the hold). All hard rejects.
+  - SHOT 1 MUST BE kind "presenter", at most ${FIRST_SHOT_MAX_SEC} seconds, and it is a COLD OPEN — see the FORMAT SPEC above. The FIRST "screencap" is shot 2 OR shot 3 — at most ${FIRST_PRODUCT_MAX_SEC} seconds either way (it is the insert), starting no later than second ${PROOF_STARTS_BY_SEC}, with only presenter shots before it. A later screencap must run ${PRODUCT_HOLD_MIN_SEC}s or more (the hold). All hard rejects.
   - The LAST shot MUST be a presenter shot, so the reel closes on a face saying the closing line rather than on synthesized narration over a scroll.
   - THE CLOSING PRESENTER LINE MUST SAY "VedicHour.com" OUT LOUD. This is a hard reject, not a preference. The owner, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Half this audience is LISTENING with their eyes somewhere else, so a CTA that only exists on screen reaches nobody. Put it in the final presenter shot's \`dialogue\`, in his own words, e.g. "…VedicHour.com pe dekh lo." or "…VedicHour.com — free hai." Budget the words: the site name costs 1-2 of that shot's word allowance, so keep the rest of the closing line short. The renderer already ends every reel on a branded card showing vedichour.com — your job is the SPOKEN half, which only the presenter can deliver.
   - Every variant needs at least ${MIN_PRODUCT_SHOTS} screencap shots totalling at least ${MIN_PRODUCT_SEC}s. Shot seconds must sum to ${REEL_SEC_MIN}-${REEL_SEC_MAX}s.
@@ -915,8 +985,23 @@ function formatSpecViolation(v: Variant): string | null {
   if (shots[0].kind !== 'presenter') return `opens on a ${shots[0].kind} shot — a reel must open on a presenter`;
   if ((shots[0].seconds || 0) > FIRST_SHOT_MAX_SEC)
     return `opening presenter shot is ${shots[0].seconds}s — the cold open is ${FIRST_SHOT_MAX_SEC}s at most, or the product cannot land by second ${PROOF_BY_SEC} (the rejected reel spent 13s here)`;
-  if (shots[1]?.kind !== 'screencap')
-    return `shot 2 is a ${shots[1]?.kind ?? 'missing'} shot — it must be the product, so proof is on screen before second ${PROOF_BY_SEC}`;
+
+  // THE EARNED PROOF DEADLINE. The product lands at shot 2 or shot 3 — see PROOF_BY_SHOT_MAX for
+  // why the fixed slot was retired. Whichever the writer picks, two things stay true: nothing but
+  // the presenter may delay it (a b-roll shot buying time before the proof is the slop path), and
+  // it must START by PROOF_STARTS_BY_SEC, which is what stops "earned" from becoming "eventually".
+  const firstProductIdx = shots.findIndex((sh) => sh.kind === 'screencap');
+  if (firstProductIdx < 0) return 'no product shot at all — the reel has no proof in it';
+  if (firstProductIdx + 1 > PROOF_BY_SHOT_MAX)
+    return `the product first appears at shot ${firstProductIdx + 1} — it must arrive by shot ${PROOF_BY_SHOT_MAX}. Shot 2 if the cold open already asks a question; shot 3 if it needed one more beat to become one. Later than that is the reel the owner threw out`;
+  for (let i = 1; i < firstProductIdx; i++) {
+    if (shots[i].kind !== 'presenter')
+      return `shot ${i + 1} is a ${shots[i].kind} shot standing between the cold open and the proof — only the presenter may delay the product, and only to earn it. B-roll here is the throat-clearing this format exists to delete`;
+  }
+  const proofStartsAt = shots.slice(0, firstProductIdx).reduce((n, sh) => n + (sh.seconds || 0), 0);
+  if (proofStartsAt > PROOF_STARTS_BY_SEC)
+    return `the product does not appear until second ${proofStartsAt.toFixed(1)} — the ceiling is ${PROOF_STARTS_BY_SEC}s. Delaying the proof by one beat is allowed so the beat can ask a question; spending the whole first third of the reel on a talking head is the 13-second failure again, one third smaller`;
+
   if (shots[shots.length - 1].kind !== 'presenter')
     return `closes on a ${shots[shots.length - 1].kind} shot — the reel must end on a face saying the site out loud`;
 
@@ -1070,7 +1155,7 @@ closing line says the site out loud: ${SPOKEN_SITE.test(closingPresenterLine(v))
 
 The product: VedicHour scores all 18 planetary hours of a day against a person's birth chart and says which windows run clearer or heavier for a given task. Audience: urban Indian and diaspora viewers, aged 24-40, who grew up around Jyotish and will cringe hard at anything that sounds like a WhatsApp-forward astrologer.
 
-THE FORMAT THESE WERE WRITTEN TO — judge them INSIDE it, do not object to it. Every reel opens on a presenter COLD OPEN of ${FIRST_SHOT_MAX_SEC}s or less (the render pipeline requires a human opener; platforms deprioritise faceless AI reels), flashes the real product as a ${FIRST_PRODUCT_MAX_SEC}s wordless INSERT before second ${PROOF_BY_SEC}, runs two presenter beats back to back, then HOLDS on the product for ${PRODUCT_HOLD_MIN_SEC}s+ as the payoff, and closes on a face saying the site. ${SHOTS_MIN}-${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX}s. A brief opening face is therefore CORRECT and must not be marked down as "the presenter should be secondary" or "open on the product instead" — that shape is impossible here.
+THE FORMAT THESE WERE WRITTEN TO — judge them INSIDE it, do not object to it. Every reel opens on a presenter COLD OPEN of ${FIRST_SHOT_MAX_SEC}s or less (the render pipeline requires a human opener; platforms deprioritise faceless AI reels), flashes the real product as a ${FIRST_PRODUCT_MAX_SEC}s wordless INSERT at shot 2 or shot 3 (the writer chooses, based on whether the cold open has yet asked a question worth answering; either is correct, so do not mark one down for the other), runs two presenter beats back to back, then HOLDS on the product for ${PRODUCT_HOLD_MIN_SEC}s+ as the payoff, and closes on a face saying the site. ${SHOTS_MIN}-${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX}s. A brief opening face is therefore CORRECT and must not be marked down as "the presenter should be secondary" or "open on the product instead" — that shape is impossible here.
 AND DO NOT ASK FOR AN END CARD. The renderer appends a branded card carrying vedichour.com to every reel automatically, after the last shot — it is not the writer's job and it is not in the shot list you are shown. A script that ends on the presenter's face is therefore CORRECT and required; rejecting one for "not ending on the branded card" throws away a compliant reel over a stage you cannot see, which has already happened once.
 ALSO DO NOT OBJECT TO THE SILENT PRODUCT BEATS. There is no narrator in this format by design: a music bed runs under the whole reel and every spoken word is performed on camera by the presenter. A product shot with no line is a deliberate cut, not a missing voiceover, and marking it down as "needs narration" is the defect, not the fix — every narration line this brief ever produced was a feature bullet in a Hindi coat and was rejected.
 What you SHOULD punish is a cold open that warms up instead of answering, a cold open that points at something the viewer cannot see ("isi baat pe", "yeh cheez"), a reel that names the product in the first three seconds, and any line that sounds like the landing page rather than the man.
@@ -1109,7 +1194,7 @@ function degradedScores(v: Variant, lintVerdict: string, humanEye: number): Scor
     brandSafety * WEIGHTS.brandSafety +
     producibility * WEIGHTS.producibility +
     humanEye * WEIGHTS.humanEye;
-  return { hookStrength, specificity, credibility, brandSafety, producibility, humanEye, total: Math.round(total), notes: 'heuristic fallback — hostile reviewer unavailable', degraded: true };
+  return { hookStrength, specificity, credibility, brandSafety, producibility, humanEye, total: Math.round(total), notes: 'heuristic fallback — hostile reviewer unavailable', degraded: true, judgedBy: stageCli.get('human-eye') ?? 'unavailable' };
 }
 
 /**
@@ -1247,7 +1332,7 @@ async function judge(idea: Idea, variants: Variant[], tier: Tier): Promise<Judge
               s.humanEye * WEIGHTS.humanEye,
           );
           const eyeNote = he.degraded ? 'human eye: UNAVAILABLE (neutral score)' : `human eye ${he.overall}: ${he.diesAt || 'watched it through'}`;
-          return { ...s, total, notes: [String(a.notes ?? '').slice(0, 160), eyeNote].filter(Boolean).join(' · '), degraded: false };
+          return { ...s, total, notes: [String(a.notes ?? '').slice(0, 160), eyeNote].filter(Boolean).join(' · '), degraded: false, judgedBy: he.degraded ? 'unavailable' : (stageCli.get('human-eye') ?? 'unknown') };
         })()
       : degradedScores(v, lintVerdict, he.overall);
     const scores = applyOwnerLaws(v, rawScores);
@@ -1344,7 +1429,7 @@ ${formatSpecBlock()}
 ${LITERALISM_BAN_BLOCK}
 
 RULES YOUR REWRITE STILL HAS TO OBEY (unchanged, and all of them are hard rejects):
-- The shot list follows the FORMAT above exactly: cold open <= ${FIRST_SHOT_MAX_SEC}s, shot 2 a screencap of <= ${FIRST_PRODUCT_MAX_SEC}s, a later screencap of ${PRODUCT_HOLD_MIN_SEC}s+, two presenter shots back to back somewhere, last shot a presenter.
+- The shot list follows the FORMAT above exactly: cold open <= ${FIRST_SHOT_MAX_SEC}s, then the first screencap at shot 2 or shot 3 (<= ${FIRST_PRODUCT_MAX_SEC}s, starting by second ${PROOF_STARTS_BY_SEC}, nothing but presenter shots before it), a later screencap of ${PRODUCT_HOLD_MIN_SEC}s+, two presenter shots back to back somewhere, last shot a presenter.
 - NO NARRATION ANYWHERE. Screencap and b-roll shots carry "narration": "". Every word is on camera.
 - The closing presenter line says "VedicHour.com" out loud.
 - ${SCRIPT_WORDS_MIN}-${SCRIPT_WORDS_MAX} spoken words total; no shot's line may exceed (its seconds x ${WORDS_PER_SECOND}) words, rounded down. Count them.
@@ -1728,6 +1813,8 @@ function variantMarkdown(j: Judged, batchId: string): string {
 | producibility | ${s.producibility} |
 | human eye (taste, can reject alone) | ${s.humanEye} |
 | **weighted total** | **${s.total}** |
+
+_Taste judged by \`${s.judgedBy}\`. brain() falls through its tier list, so the reviewer behind this number is whichever CLI was healthy — on 2026-08-17 an expired login moved it from claude to codex mid-day and the scores kept being compared as one trend. **A human-eye score is only comparable to another one carrying the same judge.**_
 
 ## The viewer
 _The taste lens's four sub-scores. These were being computed and thrown away, which made "why is this only a 76" unanswerable — the overall alone cannot tell you whether a reel failed to stop a thumb or merely looked cheap once it had._
