@@ -55,14 +55,13 @@ const BRACKET_SIZE = 4;
  * that the product is already on screen answering. Concretely:
  *
  *   s1  presenter  <=3s   COLD OPEN, mid-sentence. Hook burned in from frame 0.
- *   s2  product    <=2s   THE INSERT — a wordless flash of the real report, inside his sentence.
- *   s3  presenter  <=6s   the one long beat: the real, specific, human thing that happened.
- *   s4  presenter  ~4s    still him, no cut away — the turn.
- *   s5  product    3-4s   THE HOLD — the screen is the payoff, and nobody narrates it.
- *   s6  presenter  ~4s    close, names vedichour.com out loud, lands on where s1 opened.
+ *   s2  presenter  <=6s   the one long beat: the real, specific, human thing that happened.
+ *   s3  presenter  ~4s    still him, no cut away — the turn.
+ *   s4  product    5-6s   THE HOLD — the only screen in the reel, and nobody narrates it.
+ *   s5  presenter  ~4s    close, says the brand name out loud, lands on where s1 opened.
  *
- * ...OR the insert waits one beat and lands at s3, once the cold open has actually asked
- * something. See PROOF_BY_SHOT_MAX — that choice is the writer's, and the taste lens adjudicates.
+ * ...OR the writer spends a second product beat on an early <=2s INSERT, which is allowed and is
+ * never required. See MIN_PRODUCT_SHOTS: requiring two beats cost 21 points of measured taste.
  *
  * Why these numbers and not others:
  *  - PRODUCT SHOTS ARE FREE (real screen recordings) and GENERATED SHOTS ARE NOT. So the format
@@ -114,10 +113,10 @@ const LONG_BEAT_MAX_SEC = 6;
  * already wanted.
  *
  * What does NOT move, because these are the parts that survived every batch:
- *  - the product is still on screen inside the first third of the reel (PROOF_STARTS_BY_SEC),
- *  - it still returns at least MIN_PRODUCT_SHOTS times for at least MIN_PRODUCT_SEC,
- *  - the first product beat is still an INSERT (<= FIRST_PRODUCT_MAX_SEC) and the HOLD still
- *    comes later. Delaying by one beat buys a reason to look, not a longer look.
+ *  - the product is still on screen for at least MIN_PRODUCT_SEC,
+ *  - the HOLD is still the last product beat and still gets time to be read.
+ * (AMENDED 2026-08-18 — see MIN_PRODUCT_SHOTS. The early insert this paragraph assumed is now
+ * optional, and PROOF_BY_SHOT_MAX / PROOF_STARTS_BY_SEC bind only a reel that chooses to have one.)
  *
  * PROOF_STARTS_BY_SEC is the real floor here and it is what keeps this from drifting back to the
  * reel the owner threw out: 8s allows a 3s cold open plus one 5s beat, or a 2s open plus the 6s
@@ -134,8 +133,62 @@ const PROOF_BY_SHOT_MAX = 3;
 const PROOF_STARTS_BY_SEC = 9;
 /** Kept for the copy that still describes the immediate case, and for the cold-open ceiling. */
 const PROOF_BY_SEC = 3;
-const MIN_PRODUCT_SHOTS = 2;
-const MIN_PRODUCT_SEC = 5;
+/**
+ * ONE PRODUCT BEAT IS ENOUGH. Owner ruling 2026-08-18, and it is worth ~21 points of taste.
+ *
+ * THE EXPERIMENT. The previous session ran a controlled A/B/C on ONE idea: identical words,
+ * identical judge, one call, so the only variable was the shape.
+ *   A  two product beats, wordless (the shape this file mandated)      -> human eye 55, reject
+ *   B  the same, plus an L-cut across the picture cut                  -> human eye 62, reject
+ *   C  ONE product beat, late, answering the question already asked    -> human eye 76, KEEP
+ * 76 was the first `keep` in sixty-plus variants. The floor of two was not a quality rule; it was
+ * the reason the reel had to cut to a screen before it had earned one, and the lens said so in
+ * every batch ("the grid cuts in before any question forms in my head", "an ad pivot").
+ *
+ * SO THE FLOOR IS ONE, AND THE SECOND BEAT IS AN OPTION. A reel may still run insert-then-hold —
+ * that shape is unchanged and still legal — but it must now EARN the extra cut instead of being
+ * required to make it. What survives, because the evidence for these never wavered:
+ *  - the product is still on screen for MIN_PRODUCT_SEC in total. Fewer beats does not mean less
+ *    proof; it means the proof is one uninterrupted look instead of two glances.
+ *  - a reel with no product beat at all is still nothing (see formatSpecViolation).
+ *  - when there ARE two, the first is still an insert (<= FIRST_PRODUCT_MAX_SEC) and lands early.
+ */
+const MIN_PRODUCT_SHOTS = 1;
+/**
+ * AMENDED 2026-08-19 (5 -> 3). The floor of five, with PRODUCT_HOLD_MAX_SEC at six and every
+ * non-presenter shot silent by voice law, MANDATED a five-to-six-second still, wordless screen.
+ * The taste lens then rejected that exact block, in its own words, in six of the ten scripts it
+ * killed on 2026-08-18: "six-second silent grid feels like the commercial finally starting", "the
+ * long static product hold turns honest discomfort into an ad", "the silent demo feels scheduled,
+ * not emotionally necessary". Its prescription never varied: "keep the screen under two seconds
+ * and let his decision finish the story."
+ *
+ * One gate ordering the thing another gate kills is a closed valve, not quality control. The
+ * legibility evidence that set the floor at five was about a SCROLL — "the payoff scrolls 18 tiny
+ * windows", "an unreadable grid scroll" — and it was answered by making the hold STILL and
+ * showing TWO cards, not by making it long. A still frame of two hour-slots is read in three
+ * seconds; the extra three only ever bought the silence in which the reel stops being a story.
+ */
+const MIN_PRODUCT_SEC = 3;
+/**
+ * WHERE THE SOLE BEAT SITS, when a reel chooses one. "Late" is the whole point of variant C: the
+ * screen is not shown, it is ANSWERED WITH. A single product shot parked at second three is just
+ * the old insert with the hold deleted, which is strictly worse than either shape.
+ *
+ * 0.4 rather than 0.5 because a 6-shot reel's natural payoff slot (shot 5 of 6, ~second 13 of 23)
+ * sits at 0.57 and its earliest defensible slot — after the cold open, the remembered detail and
+ * the turn — is around 0.45. A floor at 0.4 rejects "product at shot 2" without prescribing which
+ * of the two late slots the writer picks, and the taste lens adjudicates the rest.
+ */
+const SOLE_PRODUCT_MIN_START_FRAC = 0.4;
+/**
+ * ...and how late is too late. This is the ONE thing the 13-second reel the owner threw out still
+ * governs. That reel put its product at second 13 of 29 — 45% in, with 16 seconds of reel left to
+ * carry it. A single beat that starts at second 14 of a 20-28s reel is followed by the hold itself
+ * plus the close, i.e. it owns the entire back third, which is the opposite failure. Past that and
+ * the reel is a talking head with a screenshot stapled on.
+ */
+const SOLE_PRODUCT_STARTS_BY_SEC = 14;
 const MIN_PRESENTER_SHOTS = 3;
 const MAX_BROLL_SHOTS = 1;
 /**
@@ -150,13 +203,33 @@ const MAX_BROLL_SHOTS = 1;
  *
  * The distinction the format was missing is the one every real ad makes:
  *   INSERT — a flash of the thing, cut INSIDE the sentence, no words. It does not break the beat;
- *            it is part of it. The FIRST product shot is always this.
- *   HOLD   — the later beat where the screen is the payoff and gets time to be read. Never first.
+ *            it is part of it. When a reel has TWO product beats, the first is always this.
+ *   HOLD   — the beat where the screen is the payoff and gets time to be read. It is the LAST
+ *            product beat in the reel, and in a one-beat reel it is the only one.
+ *
+ * AMENDED 2026-08-18: the insert is now an OPTION, not a mandate. See MIN_PRODUCT_SHOTS — a reel
+ * that opens the screen once, late, out-scored insert-then-hold by 21 points on the same words.
+ * The distinction is kept because when a writer DOES take a second beat this is the only version
+ * of it that has ever worked; what is gone is the requirement to take it.
  * Proof still lands before second three, as owner law requires, but as a glance rather than as an
  * interruption.
  */
 const FIRST_PRODUCT_MAX_SEC = 2;
 const PRODUCT_HOLD_MIN_SEC = 3;
+/**
+ * A HOLD MAY BREATHE. The sole product beat has to carry MIN_PRODUCT_SEC on its own and
+ * SHOT_MAX_SEC is 4 — so without this the one-beat shape is arithmetically impossible and the
+ * "floor of one" would be a lie the writer only discovers after a whole rejected batch.
+ *
+ * AMENDED 2026-08-19 (6 -> 4), with MIN_PRODUCT_SEC. The ceiling used to match the presenter's
+ * long beat, on the reasoning that a screencap is free. It is free to FILM; it is not free to
+ * WATCH. The presenter's six seconds are six seconds of someone talking to you, and the screen's
+ * six were six seconds of nobody talking at all — which is what the taste lens kept naming as the
+ * moment the reel turned into an advert. The hold is now 3-4s: long enough to read two still
+ * cards, short enough to be a cut rather than a slot, and it hands the two reclaimed seconds back
+ * to the face, where the writing is.
+ */
+const PRODUCT_HOLD_MAX_SEC = 4;
 /**
  * ONE UNBROKEN RUN OF HUMAN THOUGHT — at least one pair of ADJACENT presenter shots.
  *
@@ -756,12 +829,25 @@ So the reel no longer INTRODUCES the product. It opens in the middle of the answ
 
 AND THEN THE FIX FOR THAT FIX, which is why this block has changed again. "Product by shot 2" was right; what it produced was not. Shot 2 became a four-second product demo with a synthesized voice explaining a feature over it, parked three seconds into a confession — and the viewer-reviewer killed draft after draft in these exact words: "product screen breaks emotional setup before tension peaks", "product screen after stairwell scene feels like an ad pivot", "same amber-room-presenter-then-screen pattern; I've already seen this reel". A commercial interrupted a story, and the story never came back.
 
-So the reel now makes the distinction every real ad makes, and it is the single most important thing on this page:
-  AN INSERT is a GLANCE. One or two seconds, no words, cut INSIDE his sentence — the thing he is talking about, flashed, while the thought keeps running. It does not break the beat; it is part of the beat.
-  A HOLD is the PAYOFF. Later, once the reel has earned it, the screen gets three or four seconds to be read, and nobody says anything over it.
-The first product shot is ALWAYS an insert. The hold ALWAYS comes later.
+AND THEN THE FIX FOR THAT FIX'S FIX, which is the newest law on this page and it OVERRIDES anything below that contradicts it. The format used to require TWO product beats. It was measured, on 2026-08-18, with a controlled experiment: the same words, the same reviewer, one call, three shapes.
+  A. two product beats, wordless — the shape this brief demanded for two months. Human eye 55. REJECT.
+  B. the same, plus the audio carrying across the cut. Human eye 62. REJECT.
+  C. ONE product beat, late, arriving as the answer to a question the reel had already made the viewer ask. Human eye 76. KEEP — the first keep in sixty-plus variants.
+Twenty-one points, bought by DELETING a shot. The second screen was never proof, it was interruption; showing the product twice was the reason a screen always had to cut in before the story had said anything worth answering.
 
-THE SPINE — ${SHOTS_MIN} to ${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX} seconds total:
+So: ONE product beat is the default, and it is the payoff.
+  A HOLD is the PAYOFF. Late in the reel, after he has said the thing that makes you want it, the screen gets ${PRODUCT_HOLD_MIN_SEC}-${PRODUCT_HOLD_MAX_SEC} seconds to be read, and NOBODY says anything over it. Every reel has exactly one.
+  AN INSERT is a GLANCE, and it is now OPTIONAL. One or two seconds, no words, cut INSIDE an early sentence. Take it only if the reel is genuinely better with it — and it usually is not, because the whole 21-point gap above is what happens when you take it out. If you do take it, it comes early, it is a DIFFERENT capture from the hold, and the hold still comes last.
+
+THE SPINE — ${SHOTS_MIN} to ${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX} seconds total. Write THIS unless you have a reason:
+  1. presenter, at most ${FIRST_SHOT_MAX_SEC}s — THE COLD OPEN (see below).
+  2. presenter, up to ${LONG_BEAT_MAX_SEC}s — THE REMEMBERED DETAIL (see below).
+  3. presenter, ~4s — THE TURN (see below).
+  4. screencap, ${MIN_PRODUCT_SEC}-${PRODUCT_HOLD_MAX_SEC}s — THE HOLD. The only screen in the reel, and it answers what he just asked.
+  5. presenter, ~4s — the close, on his face, saying the brand name.
+That is 5 shots and ~22 seconds and it is the shape that scored 76. The 6-shot version with an early insert is legal and is what the numbered notes below describe; it is not the default any more.
+
+THE BEATS IN DETAIL — ${SHOTS_MIN} to ${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX} seconds total:
   1. presenter, at most ${FIRST_SHOT_MAX_SEC}s — THE COLD OPEN. He is already mid-thought, answering the question the hook asks. NO greeting, NO "kya aapko pata hai", NO "aaj main baat karunga", NO setup of any kind. If the line would work as the SECOND sentence of a conversation, it is right; if it would work as the first, it is warm-up and you must delete it.
      BUT MID-THOUGHT IS NOT THE SAME AS EMPTY, and this is where the last batch died. "Haan, isi baat pe atka hoon" is mid-thought and it is worthless: stuck on WHICH thing? The viewer has no antecedent, so the one second you get is spent parsing. The cold open must be a COMPLETE sentence that a total stranger understands on its own, with the actual subject named in it. "Teen hafte se yeh message draft mein pada hai." — mid-thought AND complete. That is the bar.
      THE COLD OPEN IS ABOUT THE MOMENT, NOT ABOUT US. It may not name the product, the site, an app, a chart, a report or a score — those words in the first three seconds are a company clearing its throat, and the viewer is gone. It is the sentence the VIEWER has said in their own head. Say the human thing first; the product answers it a beat later, on screen, where it is far more convincing than a claim.
@@ -769,21 +855,22 @@ THE SPINE — ${SHOTS_MIN} to ${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX
      WHY THE BEST LINE MOVED IN FRONT OF THE PRODUCT, because this is the correction that matters most and the evidence for it is the most one-sided this engine has produced. The product used to be nailed to shot 2. The viewer-reviewer killed TWENTY-FOUR consecutive variants at the 3-second mark for it. The product was then moved to shot 3, and the reviewer killed twelve more at the 7-second mark — same sentence, new timestamp: "unexplained product grid interrupts the surname conflict before its consequence lands", "the grid arrives ON SCHEDULE, not because the story needs it", "the product interrupts before the genuinely human mic-mute detail arrives".
      Read that last one again, because it is the whole diagnosis. The format was putting the reel's BEST LINE after its first product shot, every single time, by construction. So the screen always cut in on the way to the good part instead of arriving because of it. Moving the screen later did not fix that; it just moved the complaint later. The fix is to move the GOOD PART EARLIER.
      So: he says the thing that only a real person could have said, in full, and THEN the screen answers it. The rule is THE PRODUCT ARRIVES THE MOMENT THE VIEWER WANTS IT, NEVER BEFORE — and nobody wants it until they have heard something worth answering.
-  3. screencap, at most ${FIRST_PRODUCT_MAX_SEC}s — THE INSERT. A glance, no words over it, arriving as the answer to what he just said.
-     THE INSERT IS THE SCROLL AND THE HOLD IS THE PROOF — they must be DIFFERENT CAPTURES, and using the same one twice is a reject. The insert's job is scale: the day going past in hour slots, so the viewer registers in one glance that this is a whole real day and not a horoscope. It does not have to be readable, because it is a glance. The HOLD's job is evidence, and that one must be readable: two hours for the same task, side by side, one clearly lighter and one clearly heavier, held still long enough to actually read. A reel that shows the same capture twice has shown the viewer nothing the second time, and a reel where the 18-hour day never appears at all has not proved the thing it is claiming.
-     When the reviewer called an early insert "unexplained" and "contextless", that was about STORY, not about pixels — nothing had been said yet that the screen could answer. Shot 2 is what fixes that. Do not try to fix it by changing the capture.
-     YOU MAY PULL THE INSERT FORWARD TO SHOT 2 — but only if your cold open ALREADY asks something a screen can answer, all by itself, to a stranger with zero context. "Aaj girlfriend ka naam lunga" qualifies. Almost nothing else does, and thirty-six rejections say guess the other way. Either way the product is on screen by second ${PROOF_STARTS_BY_SEC}, and no b-roll may stand in front of it — only the presenter may delay the product, and only by being worth listening to.
-  4. presenter, ~4s — THE TURN. Still him, no cut away: the same moment, but now he knows when. This is where the reel stops being a complaint and becomes a decision.
-  5. screencap, ${PRODUCT_HOLD_MIN_SEC}-${SHOT_MAX_SEC}s — THE HOLD. The screen answers the question he just asked, and NOBODY EXPLAINS IT. This is the punchline of the reel.
-     THE HOLD MUST BE LEGIBLE AND IT MUST CONTRAST. A reviewer killed a whole batch over this: "the payoff scrolls 18 tiny windows but never holds two contrasting cards long enough to prove the claim", "the payoff is an unreadable grid scroll instead of two legible contrasting windows". Four seconds of a moving list on a phone proves nothing — the viewer cannot read a single row of it, so the one shot that was supposed to be evidence becomes wallpaper. The HOLD is STILL, and it shows TWO specific hours for the same task, one clearer and one heavier, close enough to read. The scrolling grid is fine for the opening INSERT, where it is only a glance and the motion is the point. It is the wrong choice for the payoff.
-  last. presenter — closes, says vedichour.com out loud, and lands on the thing the cold open opened.
+  3. presenter, ~4s — THE TURN. Still him, no cut away: the same moment, but now he knows when. This is where the reel stops being a complaint and becomes a decision, and it is the line the screen is about to answer.
+  4. screencap, ${MIN_PRODUCT_SEC}-${PRODUCT_HOLD_MAX_SEC}s — THE HOLD. The screen answers the question he just asked, and NOBODY EXPLAINS IT. This is the punchline of the reel and, by default, the ONLY time the product is on screen.
+     THE HOLD MUST BE LEGIBLE AND IT MUST CONTRAST. A reviewer killed a whole batch over this: "the payoff scrolls 18 tiny windows but never holds two contrasting cards long enough to prove the claim", "the payoff is an unreadable grid scroll instead of two legible contrasting windows". Four seconds of a moving list on a phone proves nothing — the viewer cannot read a single row of it, so the one shot that was supposed to be evidence becomes wallpaper. The HOLD is STILL, and it shows TWO specific hours for the same task, one clearer and one heavier, close enough to read. It runs at least ${MIN_PRODUCT_SEC}s precisely because it is the only look the viewer gets: it has to be long enough to actually read.
+     IT MUST FOLLOW A PRESENTER SHOT, always. The hold works because it is a REPLY — he asks, the screen answers, wordlessly. A screen that follows an atmosphere shot is answering nobody.
+  last. presenter — closes, says the brand name out loud, and lands on the thing the cold open opened.
+
+  OPTIONAL, AND ONLY IF IT GENUINELY EARNS ITSELF: an INSERT — one screencap of at most ${FIRST_PRODUCT_MAX_SEC}s, wordless, at shot 2 or shot 3, cut inside a sentence. It buys ONE thing: scale, the day going past in hour slots so the viewer registers in a glance that this is a whole real day and not a horoscope. It costs the reel the 21 points measured above, so take it only when the cold open ALREADY asks something a screen can answer, all by itself, to a stranger with zero context. "Aaj girlfriend ka naam lunga" qualifies. Almost nothing else does, and thirty-six rejections say guess the other way. If you take it: it starts by second ${PROOF_STARTS_BY_SEC}, only presenter shots may stand in front of it, it must be a DIFFERENT capture from the hold, and the hold still comes last and still runs ${PRODUCT_HOLD_MIN_SEC}s or more.
 
 THE RULES THAT ARE CHECKED MECHANICALLY (a variant that breaks one is rejected before it costs anything):
 - ${SHOTS_MIN}-${SHOTS_MAX} shots. ${REEL_SEC_MIN}-${REEL_SEC_MAX}s total. Not 4 long shots — ${SHOTS_MIN}+ short ones.
-- Shot 1 is a presenter shot of at most ${FIRST_SHOT_MAX_SEC}s. The FIRST screencap is shot 3 by default, shot 2 only if the cold open already earns it (see above); it starts by second ${PROOF_STARTS_BY_SEC}, and only presenter shots may come before it. The last shot is a presenter shot.
-- No shot may run longer than ${SHOT_MAX_SEC}s, except exactly ONE presenter beat which may reach ${LONG_BEAT_MAX_SEC}s.
-- At least ${MIN_PRODUCT_SHOTS} screencap shots, at least ${MIN_PRODUCT_SEC}s of product on screen in total. The product is the proof AND it is free to film, so it should be the most-seen thing in the reel.
-- THE FIRST screencap shot runs at most ${FIRST_PRODUCT_MAX_SEC}s (it is an insert), and at least one LATER screencap shot runs ${PRODUCT_HOLD_MIN_SEC}s or more (it is the hold).
+- Shot 1 is a presenter shot of at most ${FIRST_SHOT_MAX_SEC}s. The last shot is a presenter shot.
+- No shot may run longer than ${SHOT_MAX_SEC}s, except exactly ONE presenter beat which may reach ${LONG_BEAT_MAX_SEC}s and the ONE product HOLD which may reach ${PRODUCT_HOLD_MAX_SEC}s. A b-roll shot may never exceed ${SHOT_MAX_SEC}s.
+- At least ${MIN_PRODUCT_SHOTS} screencap shot, at least ${MIN_PRODUCT_SEC}s of product on screen in total.
+- THE LAST screencap shot is the HOLD and runs ${PRODUCT_HOLD_MIN_SEC}s or more, always.
+- IF THE REEL HAS ONE SCREENCAP: it starts no earlier than 40% of the way through the reel and no later than second ${SOLE_PRODUCT_STARTS_BY_SEC}, and the shot immediately before it is a presenter shot. A single screen at second three is an insert with the payoff deleted and is rejected.
+- IF THE REEL HAS TWO OR MORE: the first is the insert — at most ${FIRST_PRODUCT_MAX_SEC}s, arriving by shot ${PROOF_BY_SHOT_MAX} and by second ${PROOF_STARTS_BY_SEC}, with only presenter shots in front of it.
 - At least ${MIN_PRESENTER_SHOTS} presenter shots, and at least ${MIN_ADJACENT_PRESENTER_PAIRS} pair of them must be ADJACENT — two presenter shots back to back, no product screen between them. A reel that alternates face/screen/face/screen the whole way through is a metronome, and the reviewer has already thrown one out as "I've already seen this reel".
 - At most ${MAX_BROLL_SHOTS} broll shot in the whole reel, and it is optional — prefer zero.
 - NOBODY NARRATES. ${MAX_NARRATED_SHOTS === 0 ? 'ZERO' : String(MAX_NARRATED_SHOTS)} shots may carry an off-camera line: ${Math.round(NATIVE_RATIO_FLOOR * 100)}% of the spoken words are said by the presenter, on camera. A screencap or b-roll shot carries NO line at all — leave "narration" empty or omit it.
@@ -825,12 +912,22 @@ Every one of the four spoken lines belongs to that one moment. If a line you hav
 
 THE LAST LINE MUST LAND ON THE FIRST. The closing beat is not a place to park the website — it is the payoff of the sentence the reel opened with. If the cold open was "Teen hafte se yeh message draft mein pada hai", the close is about THAT message, and it is better if it is quieter than the opening rather than louder. A closing line that would fit equally well on the end of any other reel we have written is a failed closing line.
 
-AND SAY THE SITE AS ITS OWN BEAT, NOT WELDED INTO A VERB. Every closing line one batch produced had the name jammed into the middle of an action, and all three read as translated: "VedicHour.com pe time dekh liya", "VedicHour.com dekhkar reply bhejunga", "Birthday message VedicHour.com dekhkar hi bhejunga". Nobody speaks a URL mid-sentence. Land the human sentence first, then say the name almost as an afterthought, as a separate short clause. The name is the last thing the viewer hears either way, which is the whole point of saying it aloud, and it stops sounding like an ad read the moment it stops being grammar.
+SAY THE BRAND NAME. DO NOT READ OUT A URL. This changed on 2026-08-18 and it is the second half of the same correction.
+The owner's law is unchanged and it stands: the closing line MUST say the name out loud, because half this audience is LISTENING with their eyes elsewhere and his words are "people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." A reel that only shows the name on a card reaches nobody who is listening.
+What changed is WHICH WORDS. He says "VedicHour". He does not say "dot com". Nobody speaks a URL out loud in a sentence, and every closing line that tried read as an ad the instant it arrived: "VedicHour.com pe time dekh liya", "VedicHour.com dekhkar reply bhejunga", "Birthday message VedicHour.com dekhkar hi bhejunga" — all three were marked as translated ad-copy. The full vedichour.com is on the end card, in writing, where a URL belongs.
+So: "VedicHour pe dekh liya tha." "VedicHour kholi thi raat ko." "Aaj nahi. Kal subah. VedicHour pe dekha." Land the human sentence first, then the name, almost as an afterthought, as a separate short clause. The name is still the last thing the viewer hears, which is the entire point — it just stops sounding like an ad read the moment it stops being a web address.
+
+  AND HE IS NOT ALLOWED TO TELL ANYONE TO GO THERE. THIS IS NOW A HARD REJECT, CHECKED MECHANICALLY, and it is the single most expensive mistake on this page: on 2026-08-18 it killed the FIVE best scripts of the day, and nothing else was wrong with any of them. The viewer-reviewer, on the five highest taste scores in the batch, in his own words — "I got the payoff; the brand CTA adds nothing." / "the mandatory-sounding CTA kills the chai payoff." / "the generic VedicHour instruction wastes the stairwell story's payoff." / "the generic brand CTA interrupts a satisfying resolution." / "the stiff branded instruction turns a private moment into an ad."
+  The law says a LISTENER MUST HEAR THE NAME. It has never said the reel must issue an order. Those are different sentences and only one of them is an ad read.
+  So the closing line is FIRST PERSON, PAST TENSE, about what HE did — and the name is a fact inside his own sentence, not a summons pointed at the viewer:
+    RIGHT: "Aaj nahi. Kal subah. VedicHour pe dekha." · "Poochne se pehle VedicHour kholi thi." · "Iss baar pehle dekh liya. VedicHour pe."
+    REJECTED, MECHANICALLY, EVERY TIME: anything containing "dekh lo", "dekho", "khol lo", "try karo", "check karo", "download karo", "sign up", "visit" — or the words "tum", "tumhara", "aap", "aapko", "your". The moment the last line changes person from HIM to YOU, the film ends and a commercial starts, and the viewer feels the seam.
+  Say what he did. The viewer can work out that he did it somewhere.
 
   NOW COUNT THE WORDS, BECAUSE THIS INSTRUCTION HAS ALREADY DESTROYED A WHOLE BATCH. Asked for two clauses, the writer produced ELEVEN WORDS in a 4-second closing shot — in all six variants of one idea — and every one of them was rejected before it cost anything, for a budget of 9. Two clauses means SHORTER clauses, not a longer line. A 4s closing shot holds NINE WORDS TOTAL and the site name spends one of them:
-    "Aaj nahi. Kal subah. VedicHour.com." — 5 words. Fits, and it lands on the opening.
-    "Baat toh karni hi hai. VedicHour.com pe dekha." — 8 words. Fits.
-    "Iss baar time soch ke bolunga, aur VedicHour.com pe dekh bhi liya." — 12 words. REJECTED, never rendered, idea wasted.
+    "Aaj nahi. Kal subah. VedicHour." — 5 words. Fits, and it lands on the opening.
+    "Baat toh karni hi hai. VedicHour pe dekha." — 8 words. Fits.
+    "Iss baar time soch ke bolunga, aur VedicHour pe dekh bhi liya." — 12 words. REJECTED, never rendered, idea wasted.
   Write the closing line, count it on your fingers, and cut it until it fits. Short is better here anyway: the quietest line in the reel should be the last one.
 
 DO NOT WRITE THE SAME REEL SIX TIMES. The reviewer's exact complaint on the last batch: "same amber-room-presenter-then-screen pattern; I've already seen this reel." The MAN is fixed — same face, same clothes, that is brand law and it does not change. Everything else must not be: each variant picks its own room and hour (kitchen at night, balcony at first light, parked car, empty office at 8pm, stairwell), its own physical action (not sitting and talking — pouring tea and stopping, standing up mid-thought, putting the phone face-down), and its own shot sizes. Within one reel, three identical medium close-ups of a man in a booth is a slideshow of one shot.
@@ -875,19 +972,21 @@ ${LITERALISM_BAN_BLOCK}
 
 PER-FIELD SPEC — follow exactly (the WHY behind these lives in the playbook above, which is versioned and dated; what follows is the mechanical contract):
 - hookText: the burned-in on-screen text of the FIRST frame. Maximum ${HOOK_MAX_WORDS} words — see the 1-second hook window in the playbook. Make it a moment or a question, not a slogan. It must be understood on ONE read by someone who knows nothing: if it has to be decoded, even cleverly, it has failed ("Diwali wali timing phir nahi" was marked down for exactly that — "needs a beat to parse").
-  AND IT MUST NOT BE THE SAME SENTENCE HE SAYS. A reviewer killed a variant because "presenter re-reads the title card instead of advancing the story". The hook and the cold open are two different pieces of information that arrive at the same moment — reading one while hearing the other is what makes the first second feel dense.
+  AND IT MUST NOT BE THE SAME SENTENCE HE SAYS. THIS IS NOW A HARD REJECT, CHECKED MECHANICALLY. A reviewer killed a variant because "presenter re-reads the title card instead of advancing the story", and a later script that scored 89 shipped the cold open verbatim as its hook card anyway. The hook and the cold open are two different pieces of information that arrive at the same moment — reading one while hearing the other is what makes the first second feel dense. If 80% of the hook's words are also in the first spoken line, the variant is thrown away before it costs anything.
+  AND SHOT 2 MAY NOT SAY SHOT 1 AGAIN, also a hard reject. The long beat exists to ADD the specifics three seconds could not carry — who, when, what was actually said. "Savings poochi. Maine menu khol diya." followed by "Friday dinner pe usne savings poochi; maine menu teen baar khola" is one sentence stretched over eight seconds, and it is the most common way a good detail gets wasted.
 - spokenScript: every spoken word in the reel, in order (all of it presenter dialogue — there is no narration), as one paragraph. Hinglish in Latin letters. ${REEL_SEC_MIN}-${REEL_SEC_MAX} seconds read aloud — that is ${SCRIPT_WORDS_MIN} to ${SCRIPT_WORDS_MAX} words. Conversational, like a friend texting you back, not an ad. Fewer words than you think: the product on screen is doing half the talking.
 - shotList: ${SHOTS_MIN} to ${SHOTS_MAX} shots, following the FORMAT SPEC above exactly. Each: kind = "presenter" | "broll" | "screencap"; seconds (number); visualPrompt; PLUS the line for that shot:
   - presenter shots MUST carry "dialogue" — the exact words said on camera, Hinglish in Latin letters.
   - broll / screencap shots MUST carry NO LINE AT ALL: "narration": "". A line on a non-presenter shot is an automatic reject in this format. The music bed covers the beat; the screen does the talking.
   - HARD ARITHMETIC: spoken Hinglish runs ~${WORDS_PER_SECOND} words/second, so any shot's line must be at most (seconds x ${WORDS_PER_SECOND}) words, rounded DOWN. A 2s shot holds 4 words. A 3s shot holds 6. A 4s shot holds 9. A 5s shot holds 11. A 6s shot holds 13. Over that, the renderer cuts the line off mid-sentence and the reel is thrown away. Count the words in every single line before you return it.
-  - presenter / broll → visualPrompt is a concrete cinematic prompt for a text-to-video model: SUBJECT, ACTION, CAMERA MOVE, LIGHTING, MOOD. It must be physically renderable — one clear subject, one clear action. Apply the playbook's "no legible screens" and "subject continuity" principles literally: no text-in-video, no logos, no crowds of faces, no readable UI; any screen in shot is described as "heavily out of focus, glowing softly, no legible characters"; and any person in a b-roll shot is described as "the same man as the presenter shot: young Indian man in his late twenties, same clothing, same time of day", matching the presenter shot's outfit and lighting exactly.
+  - presenter / broll → visualPrompt is a concrete cinematic prompt for a text-to-video model: SUBJECT, ACTION, CAMERA MOVE, LIGHTING, MOOD. It must be physically renderable — one clear subject, one clear action. Apply the playbook's "no legible screens" and "subject continuity" principles literally: no text-in-video, no logos, no crowds of faces, no readable UI; any screen in shot is described as "heavily out of focus, glowing softly, no legible characters"; NEVER ask for a logo, wordmark, brand lockup, title card, end card or text overlay — that is a HARD REJECT, because the model renders lettering as gibberish and the renderer already appends the branded end card itself after your last shot; and any person in a b-roll shot is described as "the same man as the presenter shot: young Indian man in his late twenties, same clothing, same time of day", matching the presenter shot's outfit and lighting exactly.
   - screencap → this is a REAL screen recording of the live product, so visualPrompt is simply WHAT TO CAPTURE, chosen from: ${s.screencapLibrary.map((x) => `"${x}"`).join('; ')}
   - SCREENCAP HARD RULE (owner, verbatim): "when it shows the platform scrolling, it should show the REPORT and not the payment section... how all slots are coming and tell you what to do at what time of day." Never ask to capture pricing, plans, checkout, payment or the signup/onboarding form. The screen we show is the report and its hour-slots.
-  - SHOT 1 MUST BE kind "presenter", at most ${FIRST_SHOT_MAX_SEC} seconds, and it is a COLD OPEN — see the FORMAT SPEC above. The FIRST "screencap" is shot 3 BY DEFAULT (shot 2 stays a presenter beat that earns it), and may be pulled forward to shot 2 only when the cold open already asks a question a screen can answer — at most ${FIRST_PRODUCT_MAX_SEC} seconds either way (it is the insert), starting no later than second ${PROOF_STARTS_BY_SEC}, with only presenter shots before it. A later screencap must run ${PRODUCT_HOLD_MIN_SEC}s or more (the hold). All hard rejects.
+  - SHOT 1 MUST BE kind "presenter", at most ${FIRST_SHOT_MAX_SEC} seconds, and it is a COLD OPEN — see the FORMAT SPEC above.
+  - THE DEFAULT IS ONE "screencap", and it is the HOLD: ${MIN_PRODUCT_SEC}-${PRODUCT_HOLD_MAX_SEC} seconds, placed LATE (no earlier than 40% into the reel, no later than second ${SOLE_PRODUCT_STARTS_BY_SEC}), immediately after a presenter shot, never last. A second "screencap" is ALLOWED but never required, and only as an early INSERT of at most ${FIRST_PRODUCT_MAX_SEC} seconds arriving by shot ${PROOF_BY_SHOT_MAX} and by second ${PROOF_STARTS_BY_SEC}, with only presenter shots before it and a DIFFERENT capture from the hold. All hard rejects.
   - The LAST shot MUST be a presenter shot, so the reel closes on a face saying the closing line rather than on synthesized narration over a scroll.
-  - THE CLOSING PRESENTER LINE MUST SAY "VedicHour.com" OUT LOUD. This is a hard reject, not a preference. The owner, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Half this audience is LISTENING with their eyes somewhere else, so a CTA that only exists on screen reaches nobody. Put it in the final presenter shot's \`dialogue\`, in his own words, e.g. "…VedicHour.com pe dekh lo." or "…VedicHour.com — free hai." Budget the words: the site name costs 1-2 of that shot's word allowance, so keep the rest of the closing line short. The renderer already ends every reel on a branded card showing vedichour.com — your job is the SPOKEN half, which only the presenter can deliver.
-  - Every variant needs at least ${MIN_PRODUCT_SHOTS} screencap shots totalling at least ${MIN_PRODUCT_SEC}s. Shot seconds must sum to ${REEL_SEC_MIN}-${REEL_SEC_MAX}s.
+  - THE CLOSING PRESENTER LINE MUST SAY THE BRAND NAME "VedicHour" OUT LOUD. This is a hard reject, not a preference. The owner, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Half this audience is LISTENING with their eyes somewhere else, so a CTA that only exists on screen reaches nobody. Put it in the final presenter shot's \`dialogue\`, in his own words, e.g. "…VedicHour pe dekh liya." or "…VedicHour, free hai." SAY THE NAME, NOT THE URL: he does not say "dot com" — the full vedichour.com is on the branded end card the renderer appends, in writing, where a web address belongs. Budget the words: the name costs 1 of that shot's word allowance, so keep the rest of the closing line short.
+  - Every variant needs at least ${MIN_PRODUCT_SHOTS} screencap shot totalling at least ${MIN_PRODUCT_SEC}s. Shot seconds must sum to ${REEL_SEC_MIN}-${REEL_SEC_MAX}s.
 - onScreenCaptions: 3-6 short burned-in caption lines that track the script. Punchy, Latin letters.
 - cta: one short line, and it names vedichour.com. Invite, never promise.
 - hashtags: 10-15, mixed romanised-Hindi and English, targeted at India. Lowercase, with the # prefix.
@@ -906,7 +1005,7 @@ ${lessonBlock(['script', 'voice'])}
 PLAIN ENGLISH ONLY — the owner's ruling, verbatim: "some jargon like Swiss Ephemeris, Lahiri... No one gives a shit. I don't even know what this is." A script containing Swiss Ephemeris, Lahiri, ayanamsa, sidereal, whole-sign or vimshottari is rejected automatically and never renders. Where the script needs credibility, the approved phrasing is "real astronomical data, the same math a careful astrologer uses".
 
 Return STRICT JSON — an array of exactly ${n} objects, nothing before or after it, no markdown fences:
-[{"hookText":"...","spokenScript":"...","shotList":[{"kind":"presenter","seconds":3,"visualPrompt":"...","dialogue":"<cold open: one complete sentence a stranger understands, max 6 words>"},{"kind":"presenter","seconds":5,"visualPrompt":"<same man, same place, DIFFERENT shot size>","dialogue":"<THE REMEMBERED DETAIL, in full, specifics intact — the best line in the reel, and it comes BEFORE any product screen>"},{"kind":"screencap","seconds":2,"visualPrompt":"<the 18-hour day going past in slots - a glance that shows the scale>","narration":""},{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"<the turn — same moment, but now he knows when>"},{"kind":"screencap","seconds":4,"visualPrompt":"<a DIFFERENT capture from the insert: two hours for the same task side by side, one lighter one heavier, held still and readable>","narration":""},{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"<lands on the cold open, and says vedichour.com>"}],"onScreenCaptions":["..."],"cta":"...","hashtags":["#..."],"youtubeTitle":"...","youtubeDescription":"...","language":"hinglish","hookFamily":"${idea.tags.hookFamily}","decisionDomain":"${idea.tags.decisionDomain}","emotionalRegister":"${idea.tags.emotionalRegister}","durationTargetSec":${idea.tags.durationTargetSec}}]`;
+[{"hookText":"...","spokenScript":"...","shotList":[{"kind":"presenter","seconds":3,"visualPrompt":"...","dialogue":"<cold open: one complete sentence a stranger understands, max 6 words>"},{"kind":"presenter","seconds":5,"visualPrompt":"<same man, same place, DIFFERENT shot size>","dialogue":"<THE REMEMBERED DETAIL, in full, specifics intact — the best line in the reel, and it comes BEFORE any product screen>"},{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"<the turn — same moment, but now he knows when>"},{"kind":"screencap","seconds":5,"visualPrompt":"<THE HOLD, the only screen in the reel: two hours for the same task side by side, one lighter one heavier, held still and readable>","narration":""},{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"<lands on the cold open, and says VedicHour — the name, not the URL>"}],"onScreenCaptions":["..."],"cta":"...","hashtags":["#..."],"youtubeTitle":"...","youtubeDescription":"...","language":"hinglish","hookFamily":"${idea.tags.hookFamily}","decisionDomain":"${idea.tags.decisionDomain}","emotionalRegister":"${idea.tags.emotionalRegister}","durationTargetSec":${idea.tags.durationTargetSec}}]`;
 }
 
 function normalizeVariant(raw: any, idea: Idea, index: number, link: string): Variant {
@@ -1001,41 +1100,75 @@ function formatSpecViolation(v: Variant): string | null {
   // it must START by PROOF_STARTS_BY_SEC, which is what stops "earned" from becoming "eventually".
   const firstProductIdx = shots.findIndex((sh) => sh.kind === 'screencap');
   if (firstProductIdx < 0) return 'no product shot at all — the reel has no proof in it';
-  if (firstProductIdx + 1 > PROOF_BY_SHOT_MAX)
-    return `the product first appears at shot ${firstProductIdx + 1} — it must arrive by shot ${PROOF_BY_SHOT_MAX}. Shot 2 if the cold open already asks a question; shot 3 if it needed one more beat to become one. Later than that is the reel the owner threw out`;
-  for (let i = 1; i < firstProductIdx; i++) {
-    if (shots[i].kind !== 'presenter')
-      return `shot ${i + 1} is a ${shots[i].kind} shot standing between the cold open and the proof — only the presenter may delay the product, and only to earn it. B-roll here is the throat-clearing this format exists to delete`;
+  const productCount = shots.filter((sh) => sh.kind === 'screencap').length;
+  // The early deadline is the INSERT's deadline, so it only binds a reel that chose to have an
+  // insert. A one-beat reel has no insert to be late — its single beat is the HOLD, and where a
+  // hold belongs is late, which is checked on its own terms below.
+  if (productCount > 1) {
+    if (firstProductIdx + 1 > PROOF_BY_SHOT_MAX)
+      return `the product first appears at shot ${firstProductIdx + 1} — an INSERT must arrive by shot ${PROOF_BY_SHOT_MAX}. Shot 2 if the cold open already asks a question; shot 3 if it needed one more beat to become one. If you meant the screen to arrive later than that, write ONE product beat and make it the hold`;
+    const proofStartsAt = shots.slice(0, firstProductIdx).reduce((n, sh) => n + (sh.seconds || 0), 0);
+    if (proofStartsAt > PROOF_STARTS_BY_SEC)
+      return `the insert does not appear until second ${proofStartsAt.toFixed(1)} — the ceiling for a FIRST-of-two product beat is ${PROOF_STARTS_BY_SEC}s. A glance this late is neither a glance nor a payoff; either move it forward or drop it and let the hold carry the proof alone`;
+    for (let i = 1; i < firstProductIdx; i++) {
+      if (shots[i].kind !== 'presenter')
+        return `shot ${i + 1} is a ${shots[i].kind} shot standing between the cold open and the insert — only the presenter may delay the product, and only to earn it. B-roll here is the throat-clearing this format exists to delete`;
+    }
   }
-  const proofStartsAt = shots.slice(0, firstProductIdx).reduce((n, sh) => n + (sh.seconds || 0), 0);
-  if (proofStartsAt > PROOF_STARTS_BY_SEC)
-    return `the product does not appear until second ${proofStartsAt.toFixed(1)} — the ceiling is ${PROOF_STARTS_BY_SEC}s. Delaying the proof by one beat is allowed so the beat can ask a question; spending the whole first third of the reel on a talking head is the 13-second failure again, one third smaller`;
 
   if (shots[shots.length - 1].kind !== 'presenter')
     return `closes on a ${shots[shots.length - 1].kind} shot — the reel must end on a face saying the site out loud`;
 
-  // At most one shot may pause for breath, and only a presenter beat may do it.
-  const long = shots.filter((sh) => (sh.seconds || 0) > SHOT_MAX_SEC);
-  if (long.length > 1)
-    return `${long.length} shots run longer than ${SHOT_MAX_SEC}s — exactly one presenter beat may reach ${LONG_BEAT_MAX_SEC}s, everything else is ${SHOT_MAX_SEC}s or under`;
-  if (long.length === 1 && long[0].kind !== 'presenter')
-    return `a ${long[0].kind} shot runs ${long[0].seconds}s — only a presenter beat may exceed ${SHOT_MAX_SEC}s`;
-  if (long.length === 1 && (long[0].seconds || 0) > LONG_BEAT_MAX_SEC)
-    return `the long presenter beat is ${long[0].seconds}s — the ceiling is ${LONG_BEAT_MAX_SEC}s`;
+  // TWO SHOTS MAY PAUSE FOR BREATH: one presenter beat (the remembered detail) and one product
+  // beat (the hold). Nothing else may, and a b-roll shot never may — a long atmosphere shot is
+  // the single most reliable way to make a reel look cheap.
+  const longPresenters = shots.filter((sh) => sh.kind === 'presenter' && (sh.seconds || 0) > SHOT_MAX_SEC);
+  const longProduct = shots.filter((sh) => sh.kind === 'screencap' && (sh.seconds || 0) > SHOT_MAX_SEC);
+  const longOther = shots.filter((sh) => sh.kind !== 'presenter' && sh.kind !== 'screencap' && (sh.seconds || 0) > SHOT_MAX_SEC);
+  if (longOther.length)
+    return `a ${longOther[0].kind} shot runs ${longOther[0].seconds}s — only a presenter beat (${LONG_BEAT_MAX_SEC}s) or the product hold (${PRODUCT_HOLD_MAX_SEC}s) may exceed ${SHOT_MAX_SEC}s`;
+  if (longPresenters.length > 1)
+    return `${longPresenters.length} presenter shots run longer than ${SHOT_MAX_SEC}s — exactly one presenter beat may reach ${LONG_BEAT_MAX_SEC}s, and it is the remembered detail`;
+  if (longPresenters.length === 1 && (longPresenters[0].seconds || 0) > LONG_BEAT_MAX_SEC)
+    return `the long presenter beat is ${longPresenters[0].seconds}s — the ceiling is ${LONG_BEAT_MAX_SEC}s`;
+  if (longProduct.length > 1)
+    return `${longProduct.length} product shots run longer than ${SHOT_MAX_SEC}s — a reel has ONE hold, not two. Free footage is not a reason to show more of it`;
+  if (longProduct.length === 1 && (longProduct[0].seconds || 0) > PRODUCT_HOLD_MAX_SEC)
+    return `the product hold is ${longProduct[0].seconds}s — the ceiling is ${PRODUCT_HOLD_MAX_SEC}s`;
 
   const product = shots.filter((sh) => sh.kind === 'screencap');
   const productSec = product.reduce((n, sh) => n + (sh.seconds || 0), 0);
   if (product.length < MIN_PRODUCT_SHOTS)
-    return `${product.length} product shot(s) — the proof must return at least ${MIN_PRODUCT_SHOTS} times; screencaps are free and they are the most interesting thing we own`;
+    return `${product.length} product shot(s) — a reel with no proof in it is a man talking; at least ${MIN_PRODUCT_SHOTS} screencap shot, and screencaps are free`;
   if (productSec < MIN_PRODUCT_SEC) return `only ${productSec}s of product on screen — the floor is ${MIN_PRODUCT_SEC}s`;
 
-  // THE INSERT AND THE HOLD. The first product beat is a glance cut inside his sentence; the beat
-  // that gets time to be read comes later, once the reel has earned it. A long product shot at
-  // second three is the "ad pivot" the taste lens has now rejected in four consecutive batches.
-  if ((product[0].seconds || 0) > FIRST_PRODUCT_MAX_SEC)
-    return `the first product shot is ${product[0].seconds}s — it is an INSERT and the ceiling is ${FIRST_PRODUCT_MAX_SEC}s. A longer screen this early stops being a glance and becomes a demo; the lens has killed that as "product screen breaks emotional setup before tension peaks". Hold the product LATER, where it is the payoff`;
-  if (!product.slice(1).some((sh) => (sh.seconds || 0) >= PRODUCT_HOLD_MIN_SEC))
-    return `no product HOLD — after the opening insert, one later product shot must run at least ${PRODUCT_HOLD_MIN_SEC}s and be the payoff of the reel, not another flash`;
+  // THE HOLD is the last product beat, and it is the payoff. This is the only product rule that
+  // binds every reel: whatever else happens, one screen gets long enough to actually be read.
+  const hold = product[product.length - 1];
+  if ((hold.seconds || 0) < PRODUCT_HOLD_MIN_SEC)
+    return `the last product shot is ${hold.seconds}s — the HOLD must run at least ${PRODUCT_HOLD_MIN_SEC}s and be the payoff of the reel, not another flash. Four seconds of scrolling proves nothing; two hours side by side, held still, proves everything`;
+
+  if (product.length === 1) {
+    // ONE BEAT, AND IT IS THE ANSWER. A single screen at second three is the old insert with the
+    // hold deleted — strictly worse than either shape, and the thing this relaxation must not
+    // become. It has to land after the reel has made the viewer ask something.
+    const total = shots.reduce((n, sh) => n + (sh.seconds || 0), 0);
+    const startsAt = shots.slice(0, firstProductIdx).reduce((n, sh) => n + (sh.seconds || 0), 0);
+    if (startsAt < total * SOLE_PRODUCT_MIN_START_FRAC)
+      return `the reel's only product beat starts at second ${startsAt.toFixed(1)} of ${total} — a single screen this early is an insert with the hold deleted. One beat means it ARRIVES AS THE ANSWER, after the remembered detail and the turn, or you need two beats: a glance early and the hold late`;
+    if (startsAt > SOLE_PRODUCT_STARTS_BY_SEC)
+      return `the reel's only product beat does not start until second ${startsAt.toFixed(1)} — the ceiling is ${SOLE_PRODUCT_STARTS_BY_SEC}s. Late is the point; a talking head with a screenshot stapled to the end is the 29-second reel the owner threw out`;
+    // It answers a SENTENCE. A single hold that follows an atmosphere shot is answering nothing —
+    // the viewer has to have just heard the question for the screen to be the reply.
+    if (shots[firstProductIdx - 1]?.kind !== 'presenter')
+      return `the reel's only product beat follows a ${shots[firstProductIdx - 1]?.kind} shot — one late hold works because it ANSWERS the line said immediately before it. Put the presenter's question directly in front of it`;
+  } else {
+    // THE INSERT. Only meaningful when a second beat exists: a glance cut inside his sentence,
+    // never a demo parked at second three ("product screen breaks emotional setup before tension
+    // peaks").
+    if ((product[0].seconds || 0) > FIRST_PRODUCT_MAX_SEC)
+      return `the first of ${product.length} product shots is ${product[0].seconds}s — an INSERT is capped at ${FIRST_PRODUCT_MAX_SEC}s. A longer screen this early stops being a glance and becomes a demo; the lens has killed that as "product screen breaks emotional setup before tension peaks". Either shorten it to a glance, or delete it and let one late hold carry the proof`;
+  }
 
   const presenters = shots.filter((sh) => sh.kind === 'presenter').length;
   if (presenters < MIN_PRESENTER_SHOTS)
@@ -1050,6 +1183,82 @@ function formatSpecViolation(v: Variant): string | null {
   if (broll > MAX_BROLL_SHOTS)
     return `${broll} b-roll shots — at most ${MAX_BROLL_SHOTS}; generic atmosphere footage is what makes an ad look cheap`;
 
+  return null;
+}
+
+/**
+ * ────────────────────────────────────────────────────────────────────────────────────────────
+ * THE THREE THINGS THE PROMPT ALREADY FORBIDS AND NOTHING WAS CHECKING. Added 2026-08-18.
+ * ────────────────────────────────────────────────────────────────────────────────────────────
+ *
+ * The first batch written under the one-beat format produced a survivor that scored 89 total and
+ * 82 human eye — above every bar this loop has — and it was still not a reel I would defend:
+ *   1. hookText was the SAME SENTENCE as the cold open, word for word. The prompt says "IT MUST
+ *      NOT BE THE SAME SENTENCE HE SAYS" and cites a reviewer killing a variant for exactly it.
+ *   2. the reel's one long beat then RESTATED the cold open ("Savings poochi. Maine menu khol
+ *      diya." -> "Friday dinner pe usne savings poochi; maine menu teen baar khola."). Eight of
+ *      twenty seconds spent saying one thing three times. The taste lens's own oneFix was "cut
+ *      the repeated savings line" — it saw it, scored 82 anyway, and passed it through.
+ *   3. the closing presenter shot asked the video model for a "subtle premium brand lockup". The
+ *      playbook forbids text and logos in generated shots because models render them as gibberish,
+ *      and the renderer appends its own branded end card. Nothing blocked it.
+ *
+ * All three are plain text in the creative JSON, which is CLAUDE.md §1 exactly: a defect that is
+ * decidable for $0 on the INPUT must not be left to a model's opinion on the output. A score is
+ * not a gate — the lens saw defect 2 and passed it anyway.
+ */
+
+/** Hinglish + English function words. Dropped before comparing two lines for restatement. */
+const STOPWORDS = new Set([
+  'the', 'and', 'for', 'that', 'this', 'with', 'you', 'was', 'are', 'but', 'not',
+  'hai', 'hain', 'tha', 'thi', 'the', 'ka', 'ki', 'ke', 'ko', 'se', 'me', 'mein', 'pe', 'par',
+  'aur', 'ya', 'yeh', 'woh', 'main', 'maine', 'mera', 'meri', 'ne', 'hi', 'bhi', 'toh', 'nahi',
+  'ab', 'phir', 'kya', 'kar', 'karna', 'raha', 'rahi', 'diya', 'liya', 'gaya',
+]);
+
+/** Content words of a spoken line: lowercase, punctuation stripped, 3+ letters, not a stopword. */
+function contentWords(s: string): Set<string> {
+  return new Set(
+    (s ?? '')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+      .split(/\s+/)
+      .filter((w) => w.length >= 3 && !STOPWORDS.has(w)),
+  );
+}
+
+/** Share of `a`'s content words that also appear in `b`. 0 when `a` has nothing to compare. */
+function overlapShare(a: string, b: string): { share: number; size: number; shared: string[] } {
+  const A = contentWords(a);
+  const B = contentWords(b);
+  if (!A.size) return { share: 0, size: 0, shared: [] };
+  const shared = [...A].filter((w) => B.has(w));
+  return { share: shared.length / A.size, size: A.size, shared };
+}
+
+/** The hook and the cold open are two pieces of information arriving at once, not one twice. */
+const HOOK_ECHO_MAX_SHARE = 0.8;
+/** The long beat is the reel's best line. Saying the cold open again is not a best line. */
+const RESTATEMENT_MAX_SHARE = 0.6;
+
+/**
+ * Burned-in branding or text requested inside a GENERATED shot. Video models render text as
+ * gibberish, a paused frame of gibberish destroys credibility, and the renderer already appends a
+ * branded end card — so every one of these is both unrenderable and redundant.
+ */
+const BURNED_IN_BRANDING = /\b(brand\s+lockup|lockup|logo|wordmark|watermark|end\s+card|title\s+card|lower\s+third|text\s+overlay|on-?screen\s+text|burned-?in\s+text|caption\s+overlay)\b/i;
+/** "no logos", "without any wordmark", "never a title card" are the CORRECT phrasing, not a hit. */
+const NEGATED_BEFORE = /\b(no|without|never|not|avoid|zero)\b[^.]{0,24}$/i;
+
+function burnedInBrandingHit(shots: Shot[]): { shotIndex: number; excerpt: string } | null {
+  for (let i = 0; i < shots.length; i++) {
+    if (shots[i].kind === 'screencap') continue; // a real recording of the real site, logo and all
+    const p = shots[i].visualPrompt ?? '';
+    const m = BURNED_IN_BRANDING.exec(p);
+    if (!m) continue;
+    if (NEGATED_BEFORE.test(p.slice(0, m.index))) continue;
+    return { shotIndex: i + 1, excerpt: p.slice(Math.max(0, m.index - 40), m.index + 50).trim() };
+  }
   return null;
 }
 
@@ -1098,6 +1307,31 @@ export function preflight(v: Variant): string | null {
   const openDefect = coldOpenDefect(speechFor(v)[0] ?? '');
   if (openDefect) return openDefect;
 
+  // THE HOOK AND THE COLD OPEN CARRY DIFFERENT INFORMATION. Burned-in text the viewer READS while
+  // hearing the same words spoken is one beat's worth of content stretched over the only second
+  // the reel gets. A reviewer already killed a variant as "presenter re-reads the title card
+  // instead of advancing the story"; nothing enforced it until a 89/82 script did it verbatim.
+  const spoken = speechFor(v);
+  const echo = overlapShare(v.hookText, spoken[0] ?? '');
+  if (echo.size >= 3 && echo.share >= HOOK_ECHO_MAX_SHARE)
+    return `the hook card and the cold open are the same sentence ("${v.hookText}") — the viewer READS one while HEARING the other, so saying it twice wastes the densest second in the reel. Make the hook the question and the spoken line the answer, or the other way round, but never the same words`;
+
+  // THE LONG BEAT IS THE BEST LINE IN THE REEL, NOT THE COLD OPEN AGAIN. The remembered detail
+  // exists to add the specifics the cold open could not fit in three seconds. When it re-tells the
+  // opening instead, the reel spends its first eight seconds saying one thing three times.
+  const secondLine = spoken[1] ?? '';
+  if (v.shotList[1]?.kind === 'presenter' && secondLine) {
+    const again = overlapShare(spoken[0] ?? '', secondLine);
+    if (again.size >= 4 && again.share >= RESTATEMENT_MAX_SHARE)
+      return `the long beat restates the cold open (both say ${again.shared.map((w) => `"${w}"`).join(', ')}) — shot 2 is the reel's ONE long beat and its best line, so it must ADD the specifics the 3-second open could not carry (who, when, what was actually said), never repeat it in more words`;
+  }
+
+  // NO BURNED-IN BRANDING INSIDE A GENERATED SHOT. Playbook "no-legible-screens": models render
+  // text as gibberish, and the renderer appends its own branded end card after the last shot.
+  const branding = burnedInBrandingHit(v.shotList);
+  if (branding)
+    return `shot ${branding.shotIndex} asks the video model to render branding or text ("${branding.excerpt}") — a text-to-video model renders lettering as gibberish and a paused frame of gibberish destroys the credibility the reel just built. The renderer appends the branded end card itself, after your last shot; describe only what the CAMERA sees`;
+
   // Voice law: every word rides on camera. A non-presenter shot carries NO line at all — the music
   // bed keeps it from being dead air — and no line may outrun its shot (the renderer would cut it).
   const lines = speechFor(v);
@@ -1132,9 +1366,40 @@ export function preflight(v: Variant): string | null {
   // which refuses to spend on a creative that fails this.
   const closing = closingPresenterLine(v);
   if (!SPOKEN_SITE.test(closing))
-    return `the closing presenter line never says the site out loud ("${closing.slice(0, 60)}") — the owner's ruling is that a listener must hear "VedicHour.com"; end on e.g. "…VedicHour.com pe dekh lo."`;
+    return `the closing presenter line never says the site out loud ("${closing.slice(0, 60)}") — the owner's ruling is that a listener must hear the name "VedicHour"; end on e.g. "…VedicHour pe dekh liya." The URL belongs on the end card, not in his mouth`;
+
+  // ...AND HE MAY NOT ORDER THE VIEWER TO GO THERE. See CTA_IMPERATIVE: the owner's law is that
+  // the name is HEARD, never that the reel issues an instruction, and the instruction is what
+  // killed the five highest-scoring scripts of 2026-08-18.
+  const bossy = CTA_IMPERATIVE.exec(closing) ?? CTA_SECOND_PERSON.exec(closing);
+  if (bossy)
+    return `the closing line tells the viewer what to do ("${bossy[0]}" in "${closing.slice(0, 60)}") — the law is that a listener HEARS the name "VedicHour", not that the reel issues an order. An instruction is what the taste lens killed the five best scripts of 2026-08-18 for ("I got the payoff; the brand CTA adds nothing"). He finishes HIS OWN story in the first person and the name is a fact inside it: "Aaj nahi. Kal subah. VedicHour pe dekha." Never "dekh lo", never "try karo", never "aap".`;
   return null;
 }
+
+/**
+ * THE CLOSING LINE IS HIS, NOT THE BRAND'S — added 2026-08-19.
+ *
+ * The owner's law is that a LISTENER must hear the word "VedicHour". It has never been that the
+ * reel must tell anyone to do anything. But the writer kept discharging the obligation as an
+ * instruction, and on 2026-08-18 that single beat killed the five best scripts of the day — every
+ * one of the highest taste scores in the batch died on it and on nothing else:
+ *   human eye 77  "I got the payoff; the brand CTA adds nothing."
+ *   human eye 75  "the mandatory-sounding CTA kills the chai payoff."
+ *   human eye 73  "the generic VedicHour instruction wastes the stairwell story's payoff."
+ *   human eye 72  "the generic brand CTA interrupts a satisfying resolution."
+ *   human eye 69  (same idea) "the stiff branded instruction turns a private moment into an ad."
+ * Five scripts within eight points of the bar, all rejected for obeying a rule that never asked
+ * for what they gave it.
+ *
+ * So the name stays and the imperative goes. The man finishes HIS OWN story — first person, past
+ * tense, what he actually did — and the brand name is a fact inside that sentence, not a summons
+ * addressed to the viewer. "Aaj nahi. Kal subah. VedicHour pe dekha." is the whole requirement.
+ * Checked here, for $0, because a note in a prompt has now failed at this five times.
+ */
+const CTA_IMPERATIVE =
+  /\b(?:dekh\s*lo|dekho|dekhiye|dekh\s*lena|khol\s*lo|kholo|kholiye|(?:try|check|use|download|open)\s+kar(?:o|lo|na|lena)?|try\s+vedichour|check\s+vedichour|visit|sign\s*up)\b/i;
+const CTA_SECOND_PERSON = /\b(?:tum|tumhe|tumhein|tumhara|tumhari|aap|aapko|aapka|aapki|your)\b/i;
 
 /** The line the LAST presenter shot says on camera — the reel's only spoken CTA surface. */
 function closingPresenterLine(v: Variant): string {
@@ -1164,8 +1429,9 @@ closing line says the site out loud: ${SPOKEN_SITE.test(closingPresenterLine(v))
 
 The product: VedicHour scores all 18 planetary hours of a day against a person's birth chart and says which windows run clearer or heavier for a given task. Audience: urban Indian and diaspora viewers, aged 24-40, who grew up around Jyotish and will cringe hard at anything that sounds like a WhatsApp-forward astrologer.
 
-THE FORMAT THESE WERE WRITTEN TO — judge them INSIDE it, do not object to it. Every reel opens on a presenter COLD OPEN of ${FIRST_SHOT_MAX_SEC}s or less (the render pipeline requires a human opener; platforms deprioritise faceless AI reels), flashes the real product as a ${FIRST_PRODUCT_MAX_SEC}s wordless INSERT at shot 2 or shot 3 (the writer chooses, based on whether the cold open has yet asked a question worth answering; either is correct, so do not mark one down for the other), runs two presenter beats back to back, then HOLDS on the product for ${PRODUCT_HOLD_MIN_SEC}s+ as the payoff, and closes on a face saying the site. ${SHOTS_MIN}-${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX}s. A brief opening face is therefore CORRECT and must not be marked down as "the presenter should be secondary" or "open on the product instead" — that shape is impossible here.
-AND DO NOT JUDGE WHEN THE PRODUCT APPEARS. That is enforced mechanically before you ever see the script, and the rule you may be remembering - "the report by second three" - was AMENDED by the owner on 2026-08-17 ("the rule is mine and it is wrong as an absolute") after the taste lens rejected the second-three placement in thirty-six consecutive variants. The current law is: the remembered detail comes FIRST, the product answers it, and it is on screen by second nine. A reel whose product arrives at second seven, eight or nine is CORRECT, and rejecting one for "violating the second-three reveal" throws away a compliant reel over a rule that no longer exists - which has now happened to six.
+THE FORMAT THESE WERE WRITTEN TO — judge them INSIDE it, do not object to it. Every reel opens on a presenter COLD OPEN of ${FIRST_SHOT_MAX_SEC}s or less (the render pipeline requires a human opener; platforms deprioritise faceless AI reels), runs two presenter beats back to back, HOLDS on the real product for ${MIN_PRODUCT_SEC}s+ late in the reel as the payoff, and closes on a face saying the brand name. ${SHOTS_MIN}-${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX}s. A brief opening face is therefore CORRECT and must not be marked down as "the presenter should be secondary" or "open on the product instead" — that shape is impossible here.
+AND DO NOT COUNT THE PRODUCT BEATS. A reel with ONE product shot is CORRECT and is now the default — that was measured on 2026-08-18 with identical words and one reviewer: two beats scored 55, one late beat scored 76. An optional early ${FIRST_PRODUCT_MAX_SEC}s insert is also allowed. Both shapes are compliant, so never mark a variant down for "showing the product only once" or for "not showing it early enough"; placement is enforced mechanically before you see it.
+AND DO NOT JUDGE WHEN THE PRODUCT APPEARS. That is enforced mechanically before you ever see the script, and the rule you may be remembering - "the report by second three" - was AMENDED by the owner on 2026-08-17 ("the rule is mine and it is wrong as an absolute") after the taste lens rejected the second-three placement in thirty-six consecutive variants. The current law is: the remembered detail comes FIRST, the product answers it, and it is on screen by second ${SOLE_PRODUCT_STARTS_BY_SEC}. A reel whose sole product beat starts at second seven, ten, twelve or ${SOLE_PRODUCT_STARTS_BY_SEC} is CORRECT and COMPLIANT. Rejecting one for "violating the second-three reveal" throws away a compliant reel over a rule that no longer exists - which has now happened to six - and on 2026-08-18 a reviewer invented a second-NINE deadline that has never existed in this pipeline and killed all six variants of one idea with it, two of which were the highest-scoring scripts of that day. THERE IS NO DEADLINE FOR YOU TO ENFORCE. The number is checked in code before you are shown anything, so "the report arrives too late" is not an objection you are permitted to make, in any wording, for any second.
 AND DO NOT ASK FOR AN END CARD. The renderer appends a branded card carrying vedichour.com to every reel automatically, after the last shot — it is not the writer's job and it is not in the shot list you are shown. A script that ends on the presenter's face is therefore CORRECT and required; rejecting one for "not ending on the branded card" throws away a compliant reel over a stage you cannot see, which has already happened once.
 ALSO DO NOT OBJECT TO THE SILENT PRODUCT BEATS. There is no narrator in this format by design: a music bed runs under the whole reel and every spoken word is performed on camera by the presenter. A product shot with no line is a deliberate cut, not a missing voiceover, and marking it down as "needs narration" is the defect, not the fix — every narration line this brief ever produced was a feature bullet in a Hindi coat and was rejected.
 What you SHOULD punish is a cold open that warms up instead of answering, a cold open that points at something the viewer cannot see ("isi baat pe", "yeh cheez"), a reel that names the product in the first three seconds, and any line that sounds like the landing page rather than the man.
@@ -1181,7 +1447,8 @@ Score EVERY variant 0-100 on each axis:
 - brandSafety: score 0-100, and be ruthless. Score BELOW 60 if there is ANY of: a guarantee or certainty claim; "100%" or miracle framing; a health, money, legal, or relationship OUTCOME promise; fear-mongering; a deterministic "THE best hour / worst hour" stated as fact; invented social proof (fake testimonials, made-up user numbers, star ratings); competitor bashing or mockery of astrology or astrologers; any rupee or dollar figure. Calibrate carefully: a script with NO violation at all should score 90-100, and anything you score under ${BRAND_SAFETY_FLOOR} is automatically rejected and never rendered.
 - producibility: can a text-to-video model actually render the presenter/broll shots? Readable on-screen text, logos, specific real places, crowds of faces, complex hand interactions, or multi-subject choreography = low. A presenter shot whose described EXPRESSION does not match the line he is saying is also low — the model will render the words and the face separately and the mismatch is visible. Screencap shots are free (they are real recordings) — judge only what a model must generate. Note that every variant here is 100% on camera by construction, so do not spend this score on voice structure; it is already guaranteed.
 
-HARD RULE, ABOVE ALL FIVE AXES — THE SPOKEN CTA. The last presenter shot's on-camera dialogue must NAME THE SITE OUT LOUD ("…VedicHour.com pe dekh lo"). The owner's ruling, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Each variant above is annotated with "closing line says the site out loud: YES/NO". Any variant marked NO is verdict "reject" — no exceptions, however good the hook is — and score its hookStrength no higher than 45, because a reel nobody can act on is not doing the job a hook exists to start.
+HARD RULE, ABOVE ALL FIVE AXES — THE SPOKEN CTA. The last presenter shot's on-camera dialogue must NAME THE BRAND OUT LOUD ("…VedicHour pe dekh liya"). Saying the bare name is CORRECT and preferred — he is not required to read out "dot com", and a line that does is the ad-read version, not the better one; the full vedichour.com is on the branded end card. The owner's ruling, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Each variant above is annotated with "closing line says the site out loud: YES/NO". Any variant marked NO is verdict "reject" — no exceptions, however good the hook is — and score its hookStrength no higher than 45, because a reel nobody can act on is not doing the job a hook exists to start.
+AND THE FORM OF THAT LINE IS SETTLED, SO DO NOT RE-LITIGATE IT. It is first person, past tense, about what HE did, with the name sitting inside his own sentence — "Aaj nahi. Kal subah. VedicHour pe dekha." Every closing line you are shown has ALREADY been checked mechanically for the instruction form: "dekh lo", "try karo", "aap", "tum" and the rest are rejected before you see them, so a viewer-directed command cannot reach you. What CAN reach you is the correct version, and on 2026-08-18 five scripts — the five highest-scoring of that day, one of them at 77 — were thrown away for "the generic brand CTA", "the mandatory-sounding CTA", "the stiff branded instruction". A man naming the thing he opened last night is not a CTA and is not promotional; it is the last beat of his story and it is REQUIRED. Reject a closing line for being limp, for being longer than the beat holds, or for not landing on the reel's opening sentence — never for containing the brand name.
 
 ${lessonBlock(['script', 'voice', 'caption'], 'LESSONS THE OWNER HAS ALREADY RULED ON — a variant that violates one is a reject, not a note')}
 Return STRICT JSON — an array, one object per variant, nothing before or after it, no fences:
@@ -1439,9 +1706,9 @@ ${formatSpecBlock()}
 ${LITERALISM_BAN_BLOCK}
 
 RULES YOUR REWRITE STILL HAS TO OBEY (unchanged, and all of them are hard rejects):
-- The shot list follows the FORMAT above exactly: cold open <= ${FIRST_SHOT_MAX_SEC}s, then the first screencap at shot 2 or shot 3 (<= ${FIRST_PRODUCT_MAX_SEC}s, starting by second ${PROOF_STARTS_BY_SEC}, nothing but presenter shots before it), a later screencap of ${PRODUCT_HOLD_MIN_SEC}s+, two presenter shots back to back somewhere, last shot a presenter.
+- The shot list follows the FORMAT above exactly: cold open <= ${FIRST_SHOT_MAX_SEC}s, ONE screencap HOLD of ${MIN_PRODUCT_SEC}-${PRODUCT_HOLD_MAX_SEC}s placed late (no earlier than 40% in, no later than second ${SOLE_PRODUCT_STARTS_BY_SEC}, directly after a presenter shot), two presenter shots back to back somewhere, last shot a presenter. An early <= ${FIRST_PRODUCT_MAX_SEC}s insert is optional, never required — and if the reviewer's complaint was about the product interrupting, deleting it IS the fix.
 - NO NARRATION ANYWHERE. Screencap and b-roll shots carry "narration": "". Every word is on camera.
-- The closing presenter line says "VedicHour.com" out loud.
+- The closing presenter line says the brand name "VedicHour" out loud — the name, not the URL.
 - ${SCRIPT_WORDS_MIN}-${SCRIPT_WORDS_MAX} spoken words total; no shot's line may exceed (its seconds x ${WORDS_PER_SECOND}) words, rounded down. Count them.
 - Latin letters only. No jargon. No promises, no fear, no invented proof.
 - youtubeDescription contains this link exactly once, verbatim: ${link}

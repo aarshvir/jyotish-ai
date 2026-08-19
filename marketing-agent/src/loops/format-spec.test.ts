@@ -54,6 +54,77 @@ test('the canonical spine from the prompt passes preflight', () => {
 });
 
 /**
+ * THE ONE-BEAT SPINE — the default from 2026-08-18, and the shape that scored 76.
+ *
+ * The controlled experiment (identical words, identical judge, one call) put two product beats at
+ * human eye 55 and ONE late beat at 76. MIN_PRODUCT_SHOTS came down to 1, which is only real if
+ * the arithmetic works: the sole beat has to carry MIN_PRODUCT_SEC on its own, so it also has to
+ * be allowed past SHOT_MAX_SEC. A relaxation that the spec cannot actually express is a lie the
+ * writer only discovers after a whole rejected batch, which is what this asserts against.
+ */
+function soleHoldSpine(over: Partial<Variant> = {}): Variant {
+  const shotList: Variant['shotList'] = [
+    { kind: 'presenter', seconds: 3, visualPrompt: PRESENTER, dialogue: 'Resignation likh li hai.' },
+    { kind: 'presenter', seconds: 5, visualPrompt: PRESENTER, dialogue: 'Pichli baar Monday bheji thi, boss ne shaam tak khola nahi.' },
+    { kind: 'presenter', seconds: 4, visualPrompt: PRESENTER, dialogue: 'Iss baar poochh ke bhejunga, tuk ke nahi.' },
+    { kind: 'screencap', seconds: 4, visualPrompt: PAIR },
+    { kind: 'presenter', seconds: 4, visualPrompt: PRESENTER, dialogue: 'Kal subah bhejunga. VedicHour pe dekha.' },
+  ];
+  return canonical({ shotList, spokenScript: shotList.map((s) => s.dialogue ?? '').filter(Boolean).join(' '), ...over });
+}
+
+test('ONE late product beat is legal — the shape that scored 76', () => {
+  assert.equal(preflight(soleHoldSpine()), null);
+});
+
+test('a closing line that says only the brand name, no ".com", passes', () => {
+  const v = soleHoldSpine();
+  assert.match(v.shotList[4].dialogue!, /VedicHour(?!\.com)/);
+  assert.equal(preflight(v), null);
+});
+
+test('the sole product beat may not be parked early — that is an insert with the payoff deleted', () => {
+  const v = soleHoldSpine();
+  // Same shots, same seconds, the screen simply moved to shot 2.
+  const hold = v.shotList.splice(3, 1)[0];
+  v.shotList.splice(1, 0, hold);
+  const r = preflight(v);
+  assert.ok(r);
+  assert.match(r!, /only product beat starts at second/);
+});
+
+test('the sole product beat must answer a spoken line, not an atmosphere shot', () => {
+  const v = soleHoldSpine();
+  // An atmosphere beat wedged between the turn and the hold. Every other rule still holds — one
+  // b-roll, 23s, the hold still late — so only the "it must be a REPLY" rule can catch this.
+  v.shotList.splice(3, 0, { kind: 'broll', seconds: 2, visualPrompt: 'The same young Indian man in the same clothes and light, putting his phone face-down on the kitchen counter' });
+  const r = preflight(v);
+  assert.ok(r);
+  assert.match(r!, /follows a broll shot|ANSWERS the line/);
+});
+
+test('a second product beat is allowed but must be a short early insert', () => {
+  const v = soleHoldSpine();
+  v.shotList.splice(2, 0, { kind: 'screencap', seconds: 2, visualPrompt: GRID });
+  assert.equal(preflight(v), null);
+  // ...and a four-second "glance" is still the ad pivot that killed four batches.
+  v.shotList[2].seconds = 4;
+  v.shotList[4].seconds = 3;
+  const r = preflight(v);
+  assert.ok(r);
+  assert.match(r!, /INSERT/);
+});
+
+test('two long product shots are rejected — a reel has one hold, not two', () => {
+  const v = soleHoldSpine();
+  v.shotList[3].seconds = 5; // the hold, over its own ceiling...
+  v.shotList.splice(2, 0, { kind: 'screencap', seconds: 5, visualPrompt: GRID }); // ...twice over
+  const r = preflight(v);
+  assert.ok(r);
+  assert.match(r!, /ONE hold|one hold/);
+});
+
+/**
  * THE EARNED PROOF DEADLINE — the change of 2026-08-17, and the reason it needs its own spine.
  *
  * "Shot 2 is the product" was a fixed slot, and the taste lens rejected it on every batch ("the
@@ -151,7 +222,7 @@ test('strict face/screen alternation is rejected as a metronome', () => {
   // Swap the second presenter beat for a product beat, so no two presenter shots are adjacent.
   v.shotList[3] = { kind: 'screencap', seconds: 4, visualPrompt: GRID };
   v.shotList[2].dialogue = 'Pichli baar Monday subah bheji thi, boss ne shaam tak khola hi nahi.';
-  v.shotList[5].dialogue = 'Ab poochh ke bhejunga, tuk ke nahi. VedicHour.com dekho.';
+  v.shotList[5].dialogue = 'Ab poochh ke bhejunga. Kal subah. VedicHour pe dekha.';
   v.spokenScript = v.shotList.map((s) => s.dialogue ?? '').filter(Boolean).join(' ');
   const r = preflight(v);
   assert.ok(r);
@@ -165,6 +236,79 @@ test('a cold open that points at nothing is rejected before any model sees it', 
   const r = preflight(v);
   assert.ok(r);
   assert.match(r!, /isi baat/);
+});
+
+/**
+ * THE THREE DEFECTS THAT SURVIVED AN 89. Added 2026-08-18 from a real artifact:
+ * output/creative/2026-08-17-savings-poochi-maine-menu-khol-diya.json scored 89 total / 82 human
+ * eye and shipped all three. Each is plain text in the creative JSON, so each is now a $0 reject.
+ */
+test('a hook card that repeats the cold open verbatim is rejected', () => {
+  const v = soleHoldSpine();
+  // The real 89-scoring artifact's own hook and cold open, byte for byte.
+  v.shotList[0].dialogue = 'Savings poochi. Maine menu khol diya.';
+  v.hookText = v.shotList[0].dialogue;
+  v.spokenScript = v.shotList.map((s) => s.dialogue ?? '').filter(Boolean).join(' ');
+  const r = preflight(v);
+  assert.ok(r);
+  assert.match(r!, /same sentence/);
+});
+
+test('a hook that merely shares a word with the cold open is fine', () => {
+  const v = soleHoldSpine();
+  v.hookText = 'Bheji nahi hai abhi tak.';
+  assert.equal(preflight(v), null);
+});
+
+test('a long beat that restates the cold open in more words is rejected', () => {
+  const v = soleHoldSpine();
+  v.shotList[0].dialogue = 'Savings poochi. Menu khol diya.';
+  v.shotList[1].dialogue = 'Friday dinner pe savings poochi thi; menu teen baar khola.';
+  v.hookText = 'Teen baar. Same page.';
+  v.spokenScript = v.shotList.map((s) => s.dialogue ?? '').filter(Boolean).join(' ') + ' Ek aur baat thi jo main bolna bhool gaya tha.';
+  const r = preflight(v);
+  assert.ok(r);
+  assert.match(r!, /restates the cold open/);
+});
+
+test('a generated shot may not ask for a brand lockup — the renderer adds the end card', () => {
+  const v = soleHoldSpine();
+  v.shotList[4].visualPrompt = `${PRESENTER}. Subtle premium brand lockup appears at the end.`;
+  const r = preflight(v);
+  assert.ok(r);
+  assert.match(r!, /branding or text/);
+});
+
+test('"no logos" in a visual prompt is the CORRECT phrasing and must not be rejected', () => {
+  const v = soleHoldSpine();
+  v.shotList[4].visualPrompt = `${PRESENTER}, no logos and no legible text anywhere in frame`;
+  assert.equal(preflight(v), null);
+});
+
+/**
+ * THE CLOSING LINE MAY NAME THE BRAND BUT MAY NOT COMMAND THE VIEWER.
+ *
+ * On 2026-08-18 the five highest-scoring scripts of the day (human eye 77, 75, 73, 72, 69) were
+ * all rejected on this one beat and nothing else — "the mandatory-sounding CTA kills the chai
+ * payoff", "I got the payoff; the brand CTA adds nothing". The owner's law is that a LISTENER
+ * HEARS THE NAME, never that the reel issues an order, and the difference is now mechanical.
+ */
+test('a closing line that orders the viewer to go and look is rejected', () => {
+  for (const bossy of ['Kal subah bhejunga. VedicHour pe dekh lo.', 'Kal bhejunga. Aap bhi VedicHour dekhna.', 'Kal bhejunga. VedicHour try karo.']) {
+    const v = soleHoldSpine();
+    v.shotList[4].dialogue = bossy;
+    v.spokenScript = v.shotList.map((sh) => sh.dialogue ?? '').filter(Boolean).join(' ');
+    const r = preflight(v);
+    assert.ok(r, `expected a reject for: ${bossy}`);
+    assert.match(r!, /tells the viewer what to do/);
+  }
+});
+
+test('the same line in the first person, naming the brand, passes', () => {
+  const v = soleHoldSpine();
+  v.shotList[4].dialogue = 'Kal subah bhejunga. VedicHour pe dekha.';
+  v.spokenScript = v.shotList.map((sh) => sh.dialogue ?? '').filter(Boolean).join(' ');
+  assert.equal(preflight(v), null);
 });
 
 test('a closing line that never says the site out loud is still rejected', () => {
