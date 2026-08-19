@@ -703,8 +703,15 @@ ${lessonBlock(['script', 'voice'])}
 PLAIN ENGLISH ONLY — the owner's ruling, verbatim: "some jargon like Swiss Ephemeris, Lahiri... No one gives a shit. I don't even know what this is." Never put an engine or technical term in an ad: no Swiss Ephemeris, no Lahiri, no ayanamsa, no sidereal, no whole-sign, no vimshottari. When an idea needs credibility, the phrase is "real astronomical data, the same math a careful astrologer uses".
 ${recent.length ? `\nDO NOT repeat these angles, we already used them recently:\n${recent.slice(0, 25).map((a) => `- ${a}`).join('\n')}` : ''}
 
+AN ANGLE IS A MOMENT, NOT A SHOT PLAN. THIS COST A WHOLE BATCH, SO IT IS A HARD RULE.
+On 2026-08-19 an angle came back reading "a late 5.5-second wordless hold compares Saturday 6:20 pm and Sunday 10:10 am... He closes aloud, 'Proposal poochhne se pehle VedicHour dekho.' End card: vedichour.com/sample-report, NEWUSER30, 30% off first paid report". The writer treated that as the brief and obeyed it over the format spec, and ALL SIX variants were destroyed by one number: the hold ceiling is 4s, and the angle had ordered 5.5.
+You do not know the format. You are not being asked for it. Shot counts, durations, second-by-second timing, which beat the product lands on, the closing line, the end card, the URL, discount codes and taglines are ALL decided downstream by a spec you cannot see and that changes without telling you. Any of them in your output is not extra detail, it is an instruction that overrides a rule you do not know exists.
+So the angle is ONE LINE describing the human moment and the decision inside it — who, what happened, and what he is deciding WHEN to do. Nothing about how it is filmed.
+  GOOD: "The ring is bought and the receipt keeps nearly being found; he is deciding which evening to actually ask."
+  BAD:  anything containing a number of seconds, a shot list, a closing line, an end card, a promo code, or the word VedicHour.
+
 Return exactly ${count} ideas as STRICT JSON — an array, nothing before or after it, no markdown fences:
-[{"id":"kebab-case-slug","family":"decision_moment|cost_time_anchor|respectful_contrarian","angle":"<the creative angle in one line>","decisionMoment":"<the concrete moment; Hinglish in Latin letters if it is a spoken line>","whyItStops":"<why a scrolling viewer stops inside the first second, max 20 words>","hookFamily":"<one of the six>","decisionDomain":"<one of the seven>","emotionalRegister":"<one of the four>","durationTargetSec":22,"explore":false}]`;
+[{"id":"kebab-case-slug","family":"decision_moment|cost_time_anchor|respectful_contrarian","angle":"<the creative angle in one line — the MOMENT only, never seconds, shots, a closing line or an end card>","decisionMoment":"<the concrete moment; Hinglish in Latin letters if it is a spoken line>","whyItStops":"<why a scrolling viewer stops inside the first second, max 20 words>","hookFamily":"<one of the six>","decisionDomain":"<one of the seven>","emotionalRegister":"<one of the four>","durationTargetSec":22,"explore":false}]`;
 }
 
 function seedFallbackIdeas(s: Seeds, count: number): Idea[] {
@@ -964,6 +971,8 @@ So: EVERY WORD IN THIS REEL IS SAID BY THE PRESENTER, ON CAMERA. There is no nar
 - THE PRESENTER IS A RECURRING BRAND FACE, not a fresh casting each time: always a warm, natural young Indian MAN in his late twenties, softly lit, at home or in a cafe. Describe him that way in every presenter and person-carrying b-roll shot. A viewer who meets the same face across reels starts recognising VedicHour.
 - THE MIDDLE SHOTS (screencap / broll) SAY NOTHING. Leave their "narration" empty or omit the field. A music bed runs unbroken under the entire reel, so a wordless beat is not a broken file — it is a cut, and the viewer reads the screen themselves.
 - If you feel a product shot needs a line to explain it, the line is wrong, not the shot. Either the presenter says it on camera BEFORE the cut, or the screen was not showing the right thing. Every narration line these scripts have ever produced turned out to be a feature bullet in a Hindi coat ("Har ghanta samjhaya hai", "Tumhara poora din yahan hai", "birth chart se rate hote hain") and every one of them was killed by a reviewer. Do not write another.
+
+THE IDEA ABOVE IS A MOMENT, NOT A BRIEF FOR HOW TO FILM IT. If the angle or decision moment names a number of seconds, a shot count, where the product lands, a closing line, an end card or a URL, IGNORE ALL OF IT — the ideation stage does not know this format and has no authority over it. On 2026-08-19 an angle said "a late 5.5-second wordless hold" and all six variants were thrown away against a 4-second ceiling. The FORMAT SPEC below is the only source of truth for structure and timing.
 
 ${formatSpecBlock()}
 
