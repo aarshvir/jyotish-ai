@@ -1490,7 +1490,7 @@ const MISSING_SPOKEN_CTA_PENALTY = 20;
  *   credibility  <- engine jargon is a credibility failure, not a credential.
  *   producibility <- a reel whose words are spoken ON CAMERA needs no TTS and sounds like one
  *                    human; a narration-heavy variant is the defect the owner rejected.
- *   total        <- a closing line that never says "VedicHour.com" out loud is penalised, because
+ *   total        <- a closing line that never says the brand name out loud is penalised, because
  *                    a listener with their eyes elsewhere never learns where to go.
  */
 function applyOwnerLaws(v: Variant, s: Scores): Scores {
@@ -1510,7 +1510,7 @@ function applyOwnerLaws(v: Variant, s: Scores): Scores {
     s.notes,
     jargon.length ? `credibility capped at 30 — ad-copy jargon: ${jargon.join(', ')}` : '',
     ratio < NATIVE_RATIO_FLOOR ? `producibility capped — only ${Math.round(ratio * 100)}% of the words are spoken on camera` : '',
-    noSpokenCta ? `total −${MISSING_SPOKEN_CTA_PENALTY} — the closing line never says "VedicHour.com" out loud (owner law)` : '',
+    noSpokenCta ? `total −${MISSING_SPOKEN_CTA_PENALTY} — the closing line never says the name "VedicHour" out loud (owner law). Say the name, not the URL, and never as an instruction` : '',
   ]
     .filter(Boolean)
     .join(' · ')
