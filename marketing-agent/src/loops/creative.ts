@@ -9,7 +9,7 @@ import { lessonBlock } from '../lessons';
 import { BRAND, BRAND_BRIEF, utm } from '../brand';
 import { resolveCapture } from '../render/capture-policy';
 import { AD_VO_VOICE, NATIVE_VOICE } from '../render/sarvam';
-import { WORDS_PER_SECOND, SPOKEN_SITE } from '../render/types';
+import { WORDS_PER_SECOND, SPOKEN_SITE, LCUT_MAX_SEC, LCUT_MIN_PICTURE_SEC, LCUT_MIN_SPEECH_MARGIN_SEC, LCUT_SPEECH_LEAD_SEC } from '../render/types';
 import { comboKey, normalizeTags, taxonomyPromptSpec, taxonomyPromptSpecCompact, type CreativeTags } from '../taxonomy';
 import { aggregatePerformance, exploreTargets, renderBrief, type ComboCoverage, type PerformanceSnapshot } from '../performance';
 import { senseDigest } from './sense';
@@ -348,6 +348,13 @@ interface Shot {
   dialogue?: string;
   /** NON-presenter shots: always empty. This format has no narration — see MAX_NARRATED_SHOTS. */
   narration?: string;
+  /**
+   * THE L-CUT, presenter shots only. His picture leaves this many seconds early and his own voice
+   * keeps running under the NEXT shot's picture — so the screen arrives inside his sentence rather
+   * than after it. Renderer capability, not a description: see Shot.audioExtendsSec in
+   * src/render/types.ts. Optional, and deliberately the writer's choice, not a mandate.
+   */
+  audioExtendsSec?: number;
 }
 
 export interface Variant {
@@ -870,6 +877,13 @@ THE BEATS IN DETAIL — ${SHOTS_MIN} to ${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${RE
   4. screencap, ${MIN_PRODUCT_SEC}-${PRODUCT_HOLD_MAX_SEC}s — THE HOLD. The screen answers the question he just asked, and NOBODY EXPLAINS IT. This is the punchline of the reel and, by default, the ONLY time the product is on screen.
      THE HOLD MUST BE LEGIBLE AND IT MUST CONTRAST. A reviewer killed a whole batch over this: "the payoff scrolls 18 tiny windows but never holds two contrasting cards long enough to prove the claim", "the payoff is an unreadable grid scroll instead of two legible contrasting windows". Four seconds of a moving list on a phone proves nothing — the viewer cannot read a single row of it, so the one shot that was supposed to be evidence becomes wallpaper. The HOLD is STILL, and it shows TWO specific hours for the same task, one clearer and one heavier, close enough to read. It runs at least ${MIN_PRODUCT_SEC}s precisely because it is the only look the viewer gets: it has to be long enough to actually read.
      IT MUST FOLLOW A PRESENTER SHOT, always. The hold works because it is a REPLY — he asks, the screen answers, wordlessly. A screen that follows an atmosphere shot is answering nobody.
+
+     THE L-CUT — NEW, AND IT IS THE ONE THING THE VIEWER-REVIEWER HAS ASKED FOR MORE THAN ANYTHING ELSE. On the presenter shot that comes IMMEDIATELY BEFORE the hold you may add the field "audioExtendsSec": <seconds>. His picture then leaves that many seconds early and HIS OWN VOICE KEEPS RUNNING over the screen. The screen arrives INSIDE his sentence instead of after it, and he finishes the thought while the viewer is already reading the answer.
+     WHY THIS IS HERE. This is not a stylistic option somebody thought of; it is a renderer capability built on 2026-08-19 for one reason. The viewer-reviewer asked for it, in these words, about twenty-one times across every batch this engine has ever run: "Show Thursday 7:30 emerging clearly while he continues talking over the screen." · "Overlay the screen briefly during his sentence." · "Show Friday 8 immediately after reply box closed, WITHOUT LEAVING HIS FACE." · "the silent product insert breaks the tension instead of resolving it." On the last batch, SIX OF SIX variants died at exactly the same second asking for it. The hold was shortened from 6s to 4s to 3s and the complaint never moved, because it was never about how long the screen was there — it was that the reel stopped talking when it appeared.
+     HOW TO WRITE IT. Put it on the TURN (beat 3), the line that the screen is about to answer, and give it 1 to ${LCUT_MAX_SEC} seconds.
+     HARD ARITHMETIC, AND THIS IS WHERE YOU WILL GET IT WRONG: an "audioExtendsSec" of 1.5 makes that shot 1.5 seconds SHORTER TO WATCH, because those seconds are heard over the next shot instead of seen. The ${REEL_SEC_MIN}-${REEL_SEC_MAX}s total is measured on what the viewer WATCHES. So if you take a 1.5s L-cut you must ADD 1.5s back somewhere — usually to the shot you took it from. A 4s turn with "audioExtendsSec": 1.5 should be written as a 5.5s turn, and then 2.5s of him on camera plus 1.5s of his voice over the screen still leaves the reel the length you planned. Count the ON-SCREEN seconds before you return. The end of that sentence lands over the screen; the rest of the hold plays with the music alone, so the viewer still gets a beat to read it for themselves. Example: the turn is 4s and says "Ab wording nahi, bhejne ka waqt soch raha hoon." — with "audioExtendsSec": 1.5, the cut to the screen happens on "bhejne ka" and "waqt soch raha hoon" is heard over the two hours he is choosing between.
+     THIS IS NOT NARRATION AND IT DOES NOT BREAK THE NARRATION RULE. There is no second voice, no voiceover and nothing synthesized: it is the same man's same on-camera take, still playing, while the picture is somewhere else. That is ordinary film grammar and it is what makes a cut feel like one moment instead of two.
+     IT IS YOUR CHOICE. Nothing requires it. A hold that lands cleanly in silence is still a legal and often better reel, and the viewer-reviewer judges the result either way. Take it when the sentence in front of the screen is worth still hearing.
   last. presenter — closes, says the brand name out loud, and lands on the thing the cold open opened.
 
   OPTIONAL, AND ONLY IF IT GENUINELY EARNS ITSELF: an INSERT — one screencap of at most ${FIRST_PRODUCT_MAX_SEC}s, wordless, at shot 2 or shot 3, cut inside a sentence. It buys ONE thing: scale, the day going past in hour slots so the viewer registers in a glance that this is a whole real day and not a horoscope. It costs the reel the 21 points measured above, so take it only when the cold open ALREADY asks something a screen can answer, all by itself, to a stranger with zero context. "Aaj girlfriend ka naam lunga" qualifies. Almost nothing else does, and thirty-six rejections say guess the other way. If you take it: it starts by second ${PROOF_STARTS_BY_SEC}, only presenter shots may stand in front of it, it must be a DIFFERENT capture from the hold, and the hold still comes last and still runs ${PRODUCT_HOLD_MIN_SEC}s or more.
@@ -879,13 +893,14 @@ THE RULES THAT ARE CHECKED MECHANICALLY (a variant that breaks one is rejected b
 - Shot 1 is a presenter shot of at most ${FIRST_SHOT_MAX_SEC}s. The last shot is a presenter shot.
 - No shot may run longer than ${SHOT_MAX_SEC}s, except exactly ONE presenter beat which may reach ${LONG_BEAT_MAX_SEC}s and the ONE product HOLD which may reach ${PRODUCT_HOLD_MAX_SEC}s. A b-roll shot may never exceed ${SHOT_MAX_SEC}s.
 - At least ${MIN_PRODUCT_SHOTS} screencap shot, at least ${MIN_PRODUCT_SEC}s of product on screen in total.
+- "audioExtendsSec" is optional, presenter shots only, at most ${LCUT_MAX_SEC}s, and the shot after it must be a screencap or b-roll with no line of its own. It must leave at least ${LCUT_MIN_PICTURE_SEC}s of him on camera and it may not swallow his whole line — it carries the TAIL of a sentence, not the sentence.
 - THE LAST screencap shot is the HOLD and runs ${PRODUCT_HOLD_MIN_SEC}s or more, always.
 - IF THE REEL HAS ONE SCREENCAP: it starts no earlier than 40% of the way through the reel and no later than second ${SOLE_PRODUCT_STARTS_BY_SEC}, and the shot immediately before it is a presenter shot. A single screen at second three is an insert with the payoff deleted and is rejected.
 - IF THE REEL HAS TWO OR MORE: the first is the insert — at most ${FIRST_PRODUCT_MAX_SEC}s, arriving by shot ${PROOF_BY_SHOT_MAX} and by second ${PROOF_STARTS_BY_SEC}, with only presenter shots in front of it.
 - At least ${MIN_PRESENTER_SHOTS} presenter shots, and at least ${MIN_ADJACENT_PRESENTER_PAIRS} pair of them must be ADJACENT — two presenter shots back to back, no product screen between them. A reel that alternates face/screen/face/screen the whole way through is a metronome, and the reviewer has already thrown one out as "I've already seen this reel".
 - At most ${MAX_BROLL_SHOTS} broll shot in the whole reel, and it is optional — prefer zero.
 - NOBODY NARRATES. ${MAX_NARRATED_SHOTS === 0 ? 'ZERO' : String(MAX_NARRATED_SHOTS)} shots may carry an off-camera line: ${Math.round(NATIVE_RATIO_FLOOR * 100)}% of the spoken words are said by the presenter, on camera. A screencap or b-roll shot carries NO line at all — leave "narration" empty or omit it.
-  THIS IS NOT A LIMITATION, IT IS THE TECHNIQUE. A music bed runs unbroken under the whole reel, so a wordless product beat is not dead air — it is a cut, with the score still running, and the viewer reading the screen for themselves. Every time a previous draft put a voice over the product it produced a sentence like "Har ghanta samjhaya hai" or "Tumhara poora din yahan hai" — a feature bullet wearing a Hindi coat, in a second, obviously synthetic voice, at the most fragile moment of the reel. Say nothing. The screen is more convincing than the sentence you were going to write over it.
+  THIS IS NOT A LIMITATION, IT IS THE TECHNIQUE. A music bed runs unbroken under the whole reel, so a wordless product beat is not dead air — it is a cut, with the score still running, and the viewer reading the screen for themselves. And if you want the presenter heard over that screen, the way to get it is the L-CUT above — his own take carrying across the cut — never a written line on the screencap shot. Every time a previous draft put a voice over the product it produced a sentence like "Har ghanta samjhaya hai" or "Tumhara poora din yahan hai" — a feature bullet wearing a Hindi coat, in a second, obviously synthetic voice, at the most fragile moment of the reel. Say nothing. The screen is more convincing than the sentence you were going to write over it.
 
 WHY SO LITTLE B-ROLL. Generic atmosphere footage is what makes an ad look cheap: it is the visual equivalent of clearing your throat, and it is where a generated shot quietly turns your words into props. A face and a real screen, cut tightly against each other, is what a funded company's ad looks like. If you use your one b-roll shot, it must show the ACTUAL human moment of the script — the same man, same clothes, same light, doing the real thing the words describe — never an illustration of the idea.
 
@@ -1023,7 +1038,8 @@ PER-FIELD SPEC — follow exactly (the WHY behind these lives in the playbook ab
   - THE DEFAULT IS ONE "screencap", and it is the HOLD: ${MIN_PRODUCT_SEC}-${PRODUCT_HOLD_MAX_SEC} seconds, placed LATE (no earlier than 40% into the reel, no later than second ${SOLE_PRODUCT_STARTS_BY_SEC}), immediately after a presenter shot, never last. A second "screencap" is ALLOWED but never required, and only as an early INSERT of at most ${FIRST_PRODUCT_MAX_SEC} seconds arriving by shot ${PROOF_BY_SHOT_MAX} and by second ${PROOF_STARTS_BY_SEC}, with only presenter shots before it and a DIFFERENT capture from the hold. All hard rejects.
   - The LAST shot MUST be a presenter shot, so the reel closes on a face saying the closing line rather than on synthesized narration over a scroll.
   - THE CLOSING PRESENTER LINE MUST SAY THE BRAND NAME "VedicHour" OUT LOUD. This is a hard reject, not a preference. The owner, verbatim: "at the end there should be a call to action: Try VedicHour.com... because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour." Half this audience is LISTENING with their eyes somewhere else, so a CTA that only exists on screen reaches nobody. Put it in the final presenter shot's \`dialogue\`, in his own words, e.g. "…VedicHour pe dekh liya." or "…VedicHour, free hai." SAY THE NAME, NOT THE URL: he does not say "dot com" — the full vedichour.com is on the branded end card the renderer appends, in writing, where a web address belongs. Budget the words: the name costs 1 of that shot's word allowance, so keep the rest of the closing line short.
-  - Every variant needs at least ${MIN_PRODUCT_SHOTS} screencap shot totalling at least ${MIN_PRODUCT_SEC}s. Shot seconds must sum to ${REEL_SEC_MIN}-${REEL_SEC_MAX}s.
+  - OPTIONAL, ON THE PRESENTER SHOT DIRECTLY BEFORE THE SCREENCAP: "audioExtendsSec": <1 to ${LCUT_MAX_SEC}> — THE L-CUT. His picture leaves that many seconds early and his own voice keeps running over the screen, so the product arrives inside his sentence. No narration is involved: it is his same on-camera take, still playing. Use it when the line in front of the screen is worth still hearing; leave it out when the hold is better landing in silence. Both are legal. If you use it, the shot after it must be a screencap or b-roll with no line of its own, and it must carry the END of his sentence, not all of it.
+  - Every variant needs at least ${MIN_PRODUCT_SHOTS} screencap shot totalling at least ${MIN_PRODUCT_SEC}s. Shot seconds must sum to ${REEL_SEC_MIN}-${REEL_SEC_MAX}s ON SCREEN — and an "audioExtendsSec" of N makes its own shot N seconds shorter to watch, so add those N seconds back to that shot or the reel comes up short.
 - onScreenCaptions: 3-6 short burned-in caption lines that track the script. Punchy, Latin letters.
 - cta: one short line, and it names vedichour.com. Invite, never promise.
 - hashtags: 10-15, mixed romanised-Hindi and English, targeted at India. Lowercase, with the # prefix.
@@ -1042,7 +1058,7 @@ ${lessonBlock(['script', 'voice'])}
 PLAIN ENGLISH ONLY — the owner's ruling, verbatim: "some jargon like Swiss Ephemeris, Lahiri... No one gives a shit. I don't even know what this is." A script containing Swiss Ephemeris, Lahiri, ayanamsa, sidereal, whole-sign or vimshottari is rejected automatically and never renders. Where the script needs credibility, the approved phrasing is "real astronomical data, the same math a careful astrologer uses".
 
 Return STRICT JSON — an array of exactly ${n} objects, nothing before or after it, no markdown fences:
-[{"hookText":"...","spokenScript":"...","shotList":[{"kind":"presenter","seconds":3,"visualPrompt":"...","dialogue":"<cold open: one complete sentence a stranger understands, max 6 words>"},{"kind":"presenter","seconds":5,"visualPrompt":"<same man, same place, DIFFERENT shot size>","dialogue":"<THE REMEMBERED DETAIL, in full, specifics intact — the best line in the reel, and it comes BEFORE any product screen>"},{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"<the turn — same moment, but now he knows when>"},{"kind":"screencap","seconds":5,"visualPrompt":"<THE HOLD, the only screen in the reel: two hours for the same task side by side, one lighter one heavier, held still and readable>","narration":""},{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"<lands on the cold open, and says VedicHour — the name, not the URL>"}],"onScreenCaptions":["..."],"cta":"...","hashtags":["#..."],"youtubeTitle":"...","youtubeDescription":"...","language":"hinglish","hookFamily":"${idea.tags.hookFamily}","decisionDomain":"${idea.tags.decisionDomain}","emotionalRegister":"${idea.tags.emotionalRegister}","durationTargetSec":${idea.tags.durationTargetSec}}]`;
+[{"hookText":"...","spokenScript":"...","shotList":[{"kind":"presenter","seconds":3,"visualPrompt":"...","dialogue":"<cold open: one complete sentence a stranger understands, max 6 words>"},{"kind":"presenter","seconds":5,"visualPrompt":"<same man, same place, DIFFERENT shot size>","dialogue":"<THE REMEMBERED DETAIL, in full, specifics intact — the best line in the reel, and it comes BEFORE any product screen>"},{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"<the turn — same moment, but now he knows when>","audioExtendsSec":1.5},{"kind":"screencap","seconds":5,"visualPrompt":"<THE HOLD, the only screen in the reel: two hours for the same task side by side, one lighter one heavier, held still and readable>","narration":""},{"kind":"presenter","seconds":4,"visualPrompt":"...","dialogue":"<lands on the cold open, and says VedicHour — the name, not the URL>"}],"onScreenCaptions":["..."],"cta":"...","hashtags":["#..."],"youtubeTitle":"...","youtubeDescription":"...","language":"hinglish","hookFamily":"${idea.tags.hookFamily}","decisionDomain":"${idea.tags.decisionDomain}","emotionalRegister":"${idea.tags.emotionalRegister}","durationTargetSec":${idea.tags.durationTargetSec}}]`;
 }
 
 function normalizeVariant(raw: any, idea: Idea, index: number, link: string): Variant {
@@ -1052,6 +1068,9 @@ function normalizeVariant(raw: any, idea: Idea, index: number, link: string): Va
     visualPrompt: String(sh?.visualPrompt ?? '').trim(),
     dialogue: String(sh?.dialogue ?? '').trim() || undefined,
     narration: String(sh?.narration ?? sh?.vo ?? '').trim() || undefined,
+    // THE L-CUT. Only meaningful on a presenter shot; lcutViolation() rejects it anywhere else
+    // rather than dropping it here, so the writer is told why instead of silently losing it.
+    audioExtendsSec: Number(sh?.audioExtendsSec) > 0 ? Number(sh.audioExtendsSec) : undefined,
   }));
   let desc = String(raw?.youtubeDescription ?? '').trim();
   if (desc && !desc.includes(link)) desc = `${desc}\n\n${link}`;
@@ -1107,6 +1126,42 @@ function nativeDialogueRatio(v: Variant): number {
   return total ? native / total : 1;
 }
 
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/** How long a shot is ON SCREEN. An L-cut hands its last seconds to the next shot's picture. */
+const onScreenSec = (sh: Shot) => (sh.seconds || 0) - (sh.kind === 'presenter' ? Number(sh.audioExtendsSec) || 0 : 0);
+
+/**
+ * THE L-CUT, checked for $0 — the same rules src/render/types.ts hard-blocks on, asserted here so
+ * the writer is told in its own vocabulary instead of being rejected by the render contract two
+ * stages later. Returns the first violation as a sentence, or null.
+ */
+function lcutViolation(shots: Shot[]): string | null {
+  for (let i = 0; i < shots.length; i++) {
+    const e = Number(shots[i].audioExtendsSec) || 0;
+    if (!e) continue;
+    const sh = shots[i];
+    const next = shots[i + 1];
+    if (sh.kind !== 'presenter')
+      return `shot ${i + 1} is a ${sh.kind} shot with "audioExtendsSec" on it — only a presenter has a voice of his own to carry over the next picture`;
+    if (e > LCUT_MAX_SEC)
+      return `shot ${i + 1} carries its voice ${e}s past its picture — the ceiling is ${LCUT_MAX_SEC}s. An L-cut is the tail of one sentence landing over the screen, not a voiceover`;
+    if (!next) return `the last shot has "audioExtendsSec" on it — there is nothing after it for his voice to play over`;
+    if (next.kind === 'presenter')
+      return `shot ${i + 1} L-cuts into shot ${i + 2}, which is another presenter — his lips would be moving to the previous shot's words. An L-cut runs over the screencap`;
+    if ((next.narration ?? '').trim())
+      return `shot ${i + 1} L-cuts over shot ${i + 2}, which has a line of its own — that is two voices at once. The shot his voice plays over must be silent`;
+    if (e > (next.seconds || 0))
+      return `shot ${i + 1} carries ${e}s of voice over shot ${i + 2}, which is only ${next.seconds}s long — his sentence would be cut off at the join`;
+    const speechSec = words(sh.dialogue ?? '') / WORDS_PER_SECOND;
+    if (speechSec < e + LCUT_MIN_SPEECH_MARGIN_SEC)
+      return `shot ${i + 1}'s L-cut of ${e}s would carry the WHOLE line ("${(sh.dialogue ?? '').slice(0, 40)}" is about ${speechSec.toFixed(1)}s of speech) — then he says nothing on camera at all. An L-cut carries the END of a sentence`;
+    if (LCUT_SPEECH_LEAD_SEC + speechSec - e < LCUT_MIN_PICTURE_SEC)
+      return `shot ${i + 1}'s L-cut of ${e}s would leave about ${(LCUT_SPEECH_LEAD_SEC + speechSec - e).toFixed(1)}s of him on camera — under ${LCUT_MIN_PICTURE_SEC}s that is a flash frame, not a beat. Shorten it or give him more to say first`;
+  }
+  return null;
+}
+
 /**
  * THE FORMAT SPEC, enforced. Every rule the writer was given in formatSpecBlock() is asserted
  * here, on plain text, for $0. Returns the first violation as a sentence, or null.
@@ -1120,7 +1175,14 @@ function formatSpecViolation(v: Variant): string | null {
   if (shots.length < SHOTS_MIN || shots.length > SHOTS_MAX)
     return `${shots.length} shots — the format is ${SHOTS_MIN}-${SHOTS_MAX} short shots, not a few long ones`;
 
-  const total = shots.reduce((n, sh) => n + (sh.seconds || 0), 0);
+  // THE L-CUT, checked before anything that counts seconds. An L-cut relocates that many seconds
+  // of a presenter's voice onto the NEXT shot's picture, so his own picture is shorter and the
+  // reel is shorter — every duration rule below therefore runs on ON-SCREEN seconds, which is
+  // what a viewer experiences, not on the seconds we buy from the video model.
+  const lcut = lcutViolation(shots);
+  if (lcut) return lcut;
+
+  const total = round1(shots.reduce((n, sh) => n + onScreenSec(sh), 0));
   if (total < REEL_SEC_MIN || total > REEL_SEC_MAX)
     return `${total}s total — the format is ${REEL_SEC_MIN}-${REEL_SEC_MAX}s`;
 
@@ -1128,8 +1190,8 @@ function formatSpecViolation(v: Variant): string | null {
   // deprioritise fully AI reels with no human layer). The COLD OPEN is how that coexists with
   // getting the product on screen inside three seconds — the face gets one sentence, not a warm-up.
   if (shots[0].kind !== 'presenter') return `opens on a ${shots[0].kind} shot — a reel must open on a presenter`;
-  if ((shots[0].seconds || 0) > FIRST_SHOT_MAX_SEC)
-    return `opening presenter shot is ${shots[0].seconds}s — the cold open is ${FIRST_SHOT_MAX_SEC}s at most, or the product cannot land by second ${PROOF_BY_SEC} (the rejected reel spent 13s here)`;
+  if (onScreenSec(shots[0]) > FIRST_SHOT_MAX_SEC)
+    return `opening presenter shot is ${round1(onScreenSec(shots[0]))}s on screen — the cold open is ${FIRST_SHOT_MAX_SEC}s at most, or the product cannot land by second ${PROOF_BY_SEC} (the rejected reel spent 13s here)`;
 
   // THE EARNED PROOF DEADLINE. The product lands at shot 2 or shot 3 — see PROOF_BY_SHOT_MAX for
   // why the fixed slot was retired. Whichever the writer picks, two things stay true: nothing but
@@ -1144,7 +1206,7 @@ function formatSpecViolation(v: Variant): string | null {
   if (productCount > 1) {
     if (firstProductIdx + 1 > PROOF_BY_SHOT_MAX)
       return `the product first appears at shot ${firstProductIdx + 1} — an INSERT must arrive by shot ${PROOF_BY_SHOT_MAX}. Shot 2 if the cold open already asks a question; shot 3 if it needed one more beat to become one. If you meant the screen to arrive later than that, write ONE product beat and make it the hold`;
-    const proofStartsAt = shots.slice(0, firstProductIdx).reduce((n, sh) => n + (sh.seconds || 0), 0);
+    const proofStartsAt = shots.slice(0, firstProductIdx).reduce((n, sh) => n + onScreenSec(sh), 0);
     if (proofStartsAt > PROOF_STARTS_BY_SEC)
       return `the insert does not appear until second ${proofStartsAt.toFixed(1)} — the ceiling for a FIRST-of-two product beat is ${PROOF_STARTS_BY_SEC}s. A glance this late is neither a glance nor a payoff; either move it forward or drop it and let the hold carry the proof alone`;
     for (let i = 1; i < firstProductIdx; i++) {
@@ -1159,22 +1221,24 @@ function formatSpecViolation(v: Variant): string | null {
   // TWO SHOTS MAY PAUSE FOR BREATH: one presenter beat (the remembered detail) and one product
   // beat (the hold). Nothing else may, and a b-roll shot never may — a long atmosphere shot is
   // the single most reliable way to make a reel look cheap.
-  const longPresenters = shots.filter((sh) => sh.kind === 'presenter' && (sh.seconds || 0) > SHOT_MAX_SEC);
-  const longProduct = shots.filter((sh) => sh.kind === 'screencap' && (sh.seconds || 0) > SHOT_MAX_SEC);
-  const longOther = shots.filter((sh) => sh.kind !== 'presenter' && sh.kind !== 'screencap' && (sh.seconds || 0) > SHOT_MAX_SEC);
+  // ON SCREEN, again: a 5.5s take with 1.5s of its voice carried forward is a 4s beat to watch,
+  // and these ceilings are about how long the viewer looks at one thing.
+  const longPresenters = shots.filter((sh) => sh.kind === 'presenter' && onScreenSec(sh) > SHOT_MAX_SEC);
+  const longProduct = shots.filter((sh) => sh.kind === 'screencap' && onScreenSec(sh) > SHOT_MAX_SEC);
+  const longOther = shots.filter((sh) => sh.kind !== 'presenter' && sh.kind !== 'screencap' && onScreenSec(sh) > SHOT_MAX_SEC);
   if (longOther.length)
-    return `a ${longOther[0].kind} shot runs ${longOther[0].seconds}s — only a presenter beat (${LONG_BEAT_MAX_SEC}s) or the product hold (${PRODUCT_HOLD_MAX_SEC}s) may exceed ${SHOT_MAX_SEC}s`;
+    return `a ${longOther[0].kind} shot runs ${round1(onScreenSec(longOther[0]))}s on screen — only a presenter beat (${LONG_BEAT_MAX_SEC}s) or the product hold (${PRODUCT_HOLD_MAX_SEC}s) may exceed ${SHOT_MAX_SEC}s`;
   if (longPresenters.length > 1)
     return `${longPresenters.length} presenter shots run longer than ${SHOT_MAX_SEC}s — exactly one presenter beat may reach ${LONG_BEAT_MAX_SEC}s, and it is the remembered detail`;
-  if (longPresenters.length === 1 && (longPresenters[0].seconds || 0) > LONG_BEAT_MAX_SEC)
-    return `the long presenter beat is ${longPresenters[0].seconds}s — the ceiling is ${LONG_BEAT_MAX_SEC}s`;
+  if (longPresenters.length === 1 && onScreenSec(longPresenters[0]) > LONG_BEAT_MAX_SEC)
+    return `the long presenter beat is ${round1(onScreenSec(longPresenters[0]))}s on screen — the ceiling is ${LONG_BEAT_MAX_SEC}s`;
   if (longProduct.length > 1)
     return `${longProduct.length} product shots run longer than ${SHOT_MAX_SEC}s — a reel has ONE hold, not two. Free footage is not a reason to show more of it`;
-  if (longProduct.length === 1 && (longProduct[0].seconds || 0) > PRODUCT_HOLD_MAX_SEC)
-    return `the product hold is ${longProduct[0].seconds}s — the ceiling is ${PRODUCT_HOLD_MAX_SEC}s`;
+  if (longProduct.length === 1 && onScreenSec(longProduct[0]) > PRODUCT_HOLD_MAX_SEC)
+    return `the product hold is ${round1(onScreenSec(longProduct[0]))}s on screen — the ceiling is ${PRODUCT_HOLD_MAX_SEC}s`;
 
   const product = shots.filter((sh) => sh.kind === 'screencap');
-  const productSec = product.reduce((n, sh) => n + (sh.seconds || 0), 0);
+  const productSec = product.reduce((n, sh) => n + onScreenSec(sh), 0);
   if (product.length < MIN_PRODUCT_SHOTS)
     return `${product.length} product shot(s) — a reel with no proof in it is a man talking; at least ${MIN_PRODUCT_SHOTS} screencap shot, and screencaps are free`;
   if (productSec < MIN_PRODUCT_SEC) return `only ${productSec}s of product on screen — the floor is ${MIN_PRODUCT_SEC}s`;
@@ -1189,8 +1253,8 @@ function formatSpecViolation(v: Variant): string | null {
     // ONE BEAT, AND IT IS THE ANSWER. A single screen at second three is the old insert with the
     // hold deleted — strictly worse than either shape, and the thing this relaxation must not
     // become. It has to land after the reel has made the viewer ask something.
-    const total = shots.reduce((n, sh) => n + (sh.seconds || 0), 0);
-    const startsAt = shots.slice(0, firstProductIdx).reduce((n, sh) => n + (sh.seconds || 0), 0);
+    const total = shots.reduce((n, sh) => n + onScreenSec(sh), 0);
+    const startsAt = shots.slice(0, firstProductIdx).reduce((n, sh) => n + onScreenSec(sh), 0);
     if (startsAt < total * SOLE_PRODUCT_MIN_START_FRAC)
       return `the reel's only product beat starts at second ${startsAt.toFixed(1)} of ${total} — a single screen this early is an insert with the hold deleted. One beat means it ARRIVES AS THE ANSWER, after the remembered detail and the turn, or you need two beats: a glance early and the hold late`;
     if (startsAt > SOLE_PRODUCT_STARTS_BY_SEC)
@@ -1456,7 +1520,7 @@ hook: ${v.hookText}
 spoken: ${v.spokenScript}
 captions: ${v.onScreenCaptions.join(' | ')}
 cta: ${v.cta}
-shots: ${v.shotList.map((s, i) => `[${s.kind} ${s.seconds}s${lines[i] ? `, ${s.kind === 'presenter' ? 'ON CAMERA' : 'SYNTHESIZED NARRATION'}: "${lines[i]}"` : ', silent'}] ${s.visualPrompt}`).join(' || ')}
+shots: ${v.shotList.map((s, i) => `[${s.kind} ${s.seconds}s${lines[i] ? `, ${s.kind === 'presenter' ? 'ON CAMERA' : 'SYNTHESIZED NARRATION'}: "${lines[i]}"` : v.shotList[i - 1]?.audioExtendsSec ? `, NO NEW VOICE — the previous shot's presenter is still talking over this picture for ${v.shotList[i - 1]!.audioExtendsSec}s (an L-cut, his own take)` : ', silent'}${s.audioExtendsSec ? `, and his voice runs ${s.audioExtendsSec}s PAST this picture into the next shot` : ''}] ${s.visualPrompt}`).join(' || ')}
 on-camera share of spoken words: ${Math.round(nativeDialogueRatio(v) * 100)}%
 closing line says the site out loud: ${SPOKEN_SITE.test(closingPresenterLine(v)) ? 'YES' : 'NO'}`;
     })
@@ -1466,7 +1530,7 @@ closing line says the site out loud: ${SPOKEN_SITE.test(closingPresenterLine(v))
 
 The product: VedicHour scores all 18 planetary hours of a day against a person's birth chart and says which windows run clearer or heavier for a given task. Audience: urban Indian and diaspora viewers, aged 24-40, who grew up around Jyotish and will cringe hard at anything that sounds like a WhatsApp-forward astrologer.
 
-THE FORMAT THESE WERE WRITTEN TO — judge them INSIDE it, do not object to it. Every reel opens on a presenter COLD OPEN of ${FIRST_SHOT_MAX_SEC}s or less (the render pipeline requires a human opener; platforms deprioritise faceless AI reels), runs two presenter beats back to back, HOLDS on the real product for ${MIN_PRODUCT_SEC}s+ late in the reel as the payoff, and closes on a face saying the brand name. ${SHOTS_MIN}-${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX}s. A brief opening face is therefore CORRECT and must not be marked down as "the presenter should be secondary" or "open on the product instead" — that shape is impossible here.
+THE FORMAT THESE WERE WRITTEN TO — judge them INSIDE it, do not object to it. Every reel opens on a presenter COLD OPEN of ${FIRST_SHOT_MAX_SEC}s or less (the render pipeline requires a human opener; platforms deprioritise faceless AI reels), runs two presenter beats back to back, HOLDS on the real product for ${MIN_PRODUCT_SEC}s+ late in the reel as the payoff, and closes on a face saying the brand name. A shot may also carry an L-CUT — the presenter's own on-camera take continuing over the cut to the product screen. That is ordinary film grammar and it is NOT narration or a voiceover: there is one voice in the reel and it is his. Do not object to it as "a voice over the product" or as "two audio sources". ${SHOTS_MIN}-${SHOTS_MAX} shots, ${REEL_SEC_MIN}-${REEL_SEC_MAX}s. A brief opening face is therefore CORRECT and must not be marked down as "the presenter should be secondary" or "open on the product instead" — that shape is impossible here.
 AND DO NOT COUNT THE PRODUCT BEATS. A reel with ONE product shot is CORRECT and is now the default — that was measured on 2026-08-18 with identical words and one reviewer: two beats scored 55, one late beat scored 76. An optional early ${FIRST_PRODUCT_MAX_SEC}s insert is also allowed. Both shapes are compliant, so never mark a variant down for "showing the product only once" or for "not showing it early enough"; placement is enforced mechanically before you see it.
 AND DO NOT JUDGE WHEN THE PRODUCT APPEARS. That is enforced mechanically before you ever see the script, and the rule you may be remembering - "the report by second three" - was AMENDED by the owner on 2026-08-17 ("the rule is mine and it is wrong as an absolute") after the taste lens rejected the second-three placement in thirty-six consecutive variants. The current law is: the remembered detail comes FIRST, the product answers it, and it is on screen by second ${SOLE_PRODUCT_STARTS_BY_SEC}. A reel whose sole product beat starts at second seven, ten, twelve or ${SOLE_PRODUCT_STARTS_BY_SEC} is CORRECT and COMPLIANT. Rejecting one for "violating the second-three reveal" throws away a compliant reel over a rule that no longer exists - which has now happened to six - and on 2026-08-18 a reviewer invented a second-NINE deadline that has never existed in this pipeline and killed all six variants of one idea with it, two of which were the highest-scoring scripts of that day. THERE IS NO DEADLINE FOR YOU TO ENFORCE. The number is checked in code before you are shown anything, so "the report arrives too late" is not an objection you are permitted to make, in any wording, for any second.
 AND DO NOT ASK FOR AN END CARD. The renderer appends a branded card carrying vedichour.com to every reel automatically, after the last shot — it is not the writer's job and it is not in the shot list you are shown. A script that ends on the presenter's face is therefore CORRECT and required; rejecting one for "not ending on the branded card" throws away a compliant reel over a stage you cannot see, which has already happened once.
@@ -1580,7 +1644,7 @@ async function humanEyeReview(variants: Variant[], tier: Tier): Promise<Map<numb
       hookText: v.hookText,
       spokenScript: v.spokenScript,
       captions: v.onScreenCaptions,
-      shots: v.shotList.map((sh, i) => ({ kind: sh.kind, seconds: sh.seconds, visualPrompt: sh.visualPrompt, line: lines[i] ?? '' })),
+      shots: v.shotList.map((sh, i) => ({ kind: sh.kind, seconds: sh.seconds, visualPrompt: sh.visualPrompt, line: lines[i] ?? '', audioExtendsSec: sh.audioExtendsSec })),
     };
   });
   const raw = await tryBrain(humanEyePrompt(reels), tier, 'human-eye');
@@ -1970,6 +2034,8 @@ interface RenderShot {
   id: string;
   role: 'presenter' | 'broll_hero' | 'broll' | 'product' | 'presenter_close';
   seconds: number;
+  /** THE L-CUT — this presenter's voice keeps running under the next shot. See render/types.ts. */
+  audioExtendsSec?: number;
   prompt?: string;
   dialogue?: string;
   vo?: string;
@@ -2051,7 +2117,8 @@ function toRenderShots(v: Variant): RenderShot[] {
     }
     if (sh.kind === 'presenter') {
       const role = i === 0 ? ('presenter' as const) : ('presenter_close' as const);
-      return { id: `s${i + 1}`, role, seconds: sh.seconds, prompt: sh.visualPrompt, dialogue: line, voice: NATIVE_VOICE };
+      const lcut = Number(sh.audioExtendsSec) || 0;
+      return { id: `s${i + 1}`, role, seconds: sh.seconds, prompt: sh.visualPrompt, dialogue: line, voice: NATIVE_VOICE, ...(lcut > 0 ? { audioExtendsSec: lcut } : {}) };
     }
     const role = heroUsed ? ('broll' as const) : ((heroUsed = true), 'broll_hero' as const);
     return { id: `s${i + 1}`, role, seconds: sh.seconds, prompt: sh.visualPrompt, vo: line, voice: line ? AD_VO_VOICE : undefined };

@@ -320,3 +320,60 @@ test('a closing line that never says the site out loud is still rejected', () =>
   assert.ok(r);
   assert.match(r!, /site out loud/);
 });
+
+/**
+ * THE L-CUT — the presenter's own on-camera take continuing over the cut to the product screen.
+ *
+ * Built in the renderer on 2026-08-19 because the taste lens had asked for it about twenty-one
+ * times ("show the hour while he continues talking over the screen", "without leaving his face")
+ * and six of six variants of the best round died at the same second asking for it again. The spec
+ * OFFERS it and does not require it, so the first thing asserted here is that the offer is real:
+ * the canonical spine passes both with and without it. The rest assert that each way of getting it
+ * wrong is refused for $0, in the writer's own vocabulary, rather than by the render contract two
+ * stages later.
+ */
+function lcutSpine(sec = 1.5, over: Partial<Variant> = {}): Variant {
+  const v = soleHoldSpine(over);
+  // The turn is lengthened by exactly the L-cut, which is what the spec tells the writer to do:
+  // those seconds move from being WATCHED to being HEARD over the next picture, so the reel keeps
+  // the on-screen length it was planned at.
+  v.shotList[2] = { ...v.shotList[2], seconds: (v.shotList[2].seconds || 0) + sec, audioExtendsSec: sec };
+  return v;
+}
+
+test('the same spine passes WITH an L-cut and WITHOUT one — it is an offer, not a mandate', () => {
+  assert.equal(preflight(soleHoldSpine()), null);
+  assert.equal(preflight(lcutSpine()), null);
+});
+
+test('the reel is measured on what the viewer WATCHES, so an uncompensated L-cut comes up short', () => {
+  // The 20s spine with 1.5s of the turn HEARD over the hold rather than watched runs 18.5s. That
+  // is a real defect — the viewer gets a short reel — and the writer must be told, not silently
+  // allowed. This is the arithmetic the spec spells out under HARD ARITHMETIC.
+  const v = soleHoldSpine();
+  v.shotList[2] = { ...v.shotList[2], audioExtendsSec: 1.5 };
+  assert.match(preflight(v)!, /18\.5s total/);
+});
+
+test('an L-cut on a screencap shot is refused — it has no voice of its own', () => {
+  const v = soleHoldSpine();
+  v.shotList[3] = { ...v.shotList[3], audioExtendsSec: 1 };
+  assert.match(preflight(v)!, /only a presenter has a voice of his own/);
+});
+
+test('an L-cut into another presenter is refused', () => {
+  const v = soleHoldSpine();
+  v.shotList[1] = { ...v.shotList[1], audioExtendsSec: 1.5 };
+  assert.match(preflight(v)!, /another presenter/);
+});
+
+test('an L-cut past the ceiling is refused', () => {
+  assert.match(preflight(lcutSpine(4))!, /the ceiling is 3s/);
+});
+
+test('an L-cut that swallows the whole line is refused — it carries the END of a sentence', () => {
+  const v = soleHoldSpine();
+  // Seven words is about 3.0s of speech; taking 3s of it leaves him saying nothing on camera.
+  v.shotList[2] = { kind: 'presenter', seconds: 7, visualPrompt: PRESENTER, dialogue: 'Iss baar poochh ke hi bhejunga.', audioExtendsSec: 3 };
+  assert.match(preflight(v)!, /would carry the WHOLE line/);
+});

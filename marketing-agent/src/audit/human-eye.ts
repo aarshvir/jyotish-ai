@@ -258,6 +258,14 @@ export interface HumanEyeShot {
   seconds: number;
   visualPrompt: string;
   line: string;
+  /**
+   * THE L-CUT. Seconds of THIS presenter's own on-camera voice that keep running over the NEXT
+   * shot's picture, so his picture is that much shorter and the screen after it is not silent.
+   * A renderer capability since 2026-08-19 (Shot.audioExtendsSec in src/render/types.ts), built
+   * because this lens asked for it about twenty-one times. It has to be SHOWN the thing: a lens
+   * cannot reward what the timeline never told it happened.
+   */
+  audioExtendsSec?: number;
 }
 
 export interface HumanEyeReel {
@@ -286,12 +294,23 @@ function timeline(r: HumanEyeReel): string {
   return r.shots
     .map((sh, i) => {
       const from = t;
-      t += sh.seconds || 0;
+      // An L-cut hands this shot's last seconds to the NEXT shot's picture, so it is on screen for
+      // less time than it was filmed for. The timeline must be what a viewer WATCHES.
+      const lcut = Number(sh.audioExtendsSec) || 0;
+      t += Math.max(0, (sh.seconds || 0) - lcut);
       const what = sh.kind === 'screencap' ? `REAL PRODUCT SCREEN: ${sh.visualPrompt}` : `${sh.kind.toUpperCase()}: ${sh.visualPrompt}`;
       // A wordless product beat is not dead air: src/render/assemble.ts mixes a music bed under
       // the WHOLE reel and refuses to render without one. Describing it as "silent" made the lens
       // score a deliberate cut as a broken file, so it is described as what the viewer gets.
-      const say = sh.line ? ` — you HEAR: "${sh.line}"` : ' — NO WORDS: just the music bed and the screen, you read it yourself';
+      const carried = Number(r.shots[i - 1]?.audioExtendsSec) || 0;
+      const say = sh.line
+        ? ` — you HEAR: "${sh.line}"` +
+          (lcut
+            ? ` — AND HIS VOICE DOES NOT STOP AT THE CUT: the last ${lcut.toFixed(1)}s of this same on-camera line keep playing over the NEXT shot's picture. That is an L-cut — his own take, no voiceover, no second voice.`
+            : '')
+        : carried
+          ? ` — NO NEW VOICE, BUT NOT SILENT: the previous shot's presenter is still finishing his sentence over this picture for the first ${carried.toFixed(1)}s; then the music bed carries the rest and you read the screen yourself`
+          : ' — NO WORDS: just the music bed and the screen, you read it yourself';
       return `  ${from.toFixed(1)}s-${t.toFixed(1)}s  ${what}${say}`;
     })
     .join('\n');
@@ -320,6 +339,8 @@ You are a 29-year-old in Bengaluru, lying in bed at 11pm, thumb moving, three re
 Watch each reel below and answer honestly, as a viewer, not as a marketer.
 
 HOW THESE PLAY, so you judge what a viewer actually gets: one music bed runs unbroken under the entire reel, and the presenter's lines are performed on camera by the man himself. A beat marked NO WORDS is therefore not a broken file or dead air — it is a cut to the screen with the music still running and nobody explaining it. Judge whether that beat earns its silence, not whether silence is allowed.
+
+SOME REELS WILL DO SOMETHING NEW, and you should know what you are looking at. A beat may say HIS VOICE DOES NOT STOP AT THE CUT, or NO NEW VOICE BUT NOT SILENT. That is an L-cut: the picture cuts to the product screen while the SAME man's SAME on-camera sentence keeps playing over it, so the screen lands inside his thought instead of after it. There is no voiceover, no narrator and no second voice anywhere in these reels — it is his one take, still running, while you are looking at something else. It exists because it is the thing you have asked for more than any other. It is OPTIONAL: a reel that lets the screen land in clean silence is equally legal, and you should say which one this reel needed. Judge whether the sentence carrying over is worth still hearing, and whether the screen underneath it is answering that sentence — not whether the technique is present.
 
 1. THE FIRST SECOND. The first frame is on screen and you have not decided yet. Does anything make you stop? A hook that describes a feeling, states a benefit, or sounds like a company talking is a scroll-past. A specific human sentence you have said yourself is a stop.
 2. DO YOU EVEN KNOW WHAT HE IS TALKING ABOUT? You arrive with ZERO context. The reel opens mid-thought on purpose — but mid-thought is not the same as empty. If his first sentence points at something with "this" / "yeh" / "isi baat" and you cannot tell what it is, you spent your one second parsing instead of watching, and you are gone. Judge the first line the way a stranger would: does it stand completely on its own?
