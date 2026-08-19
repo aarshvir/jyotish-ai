@@ -169,7 +169,7 @@ const MIN_PRODUCT_SHOTS = 1;
  * showing TWO cards, not by making it long. A still frame of two hour-slots is read in three
  * seconds; the extra three only ever bought the silence in which the reel stops being a story.
  */
-const MIN_PRODUCT_SEC = 3;
+const MIN_PRODUCT_SEC = 2;
 /**
  * WHERE THE SOLE BEAT SITS, when a reel chooses one. "Late" is the whole point of variant C: the
  * screen is not shown, it is ANSWERED WITH. A single product shot parked at second three is just
@@ -215,7 +215,7 @@ const MAX_BROLL_SHOTS = 1;
  * interruption.
  */
 const FIRST_PRODUCT_MAX_SEC = 2;
-const PRODUCT_HOLD_MIN_SEC = 3;
+const PRODUCT_HOLD_MIN_SEC = 2;
 /**
  * A HOLD MAY BREATHE. The sole product beat has to carry MIN_PRODUCT_SEC on its own and
  * SHOT_MAX_SEC is 4 — so without this the one-beat shape is arithmetically impossible and the
@@ -229,7 +229,7 @@ const PRODUCT_HOLD_MIN_SEC = 3;
  * cards, short enough to be a cut rather than a slot, and it hands the two reclaimed seconds back
  * to the face, where the writing is.
  */
-const PRODUCT_HOLD_MAX_SEC = 4;
+const PRODUCT_HOLD_MAX_SEC = 3;
 /**
  * ONE UNBROKEN RUN OF HUMAN THOUGHT — at least one pair of ADJACENT presenter shots.
  *

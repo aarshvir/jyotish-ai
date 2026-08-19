@@ -209,9 +209,10 @@ test('a long product screen at second three is rejected as an ad pivot', () => {
 
 test('a reel with no later product HOLD is rejected', () => {
   const v = canonical();
-  // Three flashes and no hold: still 5s+ of product on screen, so only the HOLD rule can catch it.
-  v.shotList[4].seconds = 2;
-  v.shotList.splice(5, 0, { kind: 'screencap', seconds: 2, visualPrompt: GRID });
+  // Three flashes and no hold: plenty of product on screen, so only the HOLD rule can catch it.
+  // The flashes must sit UNDER PRODUCT_HOLD_MIN_SEC or they would each qualify as a hold.
+  v.shotList[4].seconds = 1;
+  v.shotList.splice(5, 0, { kind: 'screencap', seconds: 1, visualPrompt: GRID });
   const r = preflight(v);
   assert.ok(r);
   assert.match(r!, /HOLD|hold/);
