@@ -1738,6 +1738,12 @@ AND THEN GO ONE STEP FURTHER THAN HE ASKED. He is describing the thing that made
 
 ${blocks}
 
+THE THREE MECHANICAL HARD REJECTS — CHECK YOUR REWRITE AGAINST THESE BEFORE YOU RETURN IT.
+These live in the writer's per-field spec, which you are not shown, and NOT knowing them has now destroyed three rewrites of drafts that had already scored 85, 86 and 88 — the best scripts this engine has produced. A rewrite that trips one is thrown away and the draft you were improving dies with it.
+1. THE HOOK CARD MAY NOT BE THE COLD OPEN. The burned-in first-frame text and the first spoken line are two different pieces of information arriving together — the viewer READS one while HEARING the other. If most of the hook's words are also in the first spoken line, the rewrite is rejected outright. This is what killed all three: "Maine uski kursi hataayi nahi.", "Purana voicemail abhi bhi saved hai.", "Ex ka naam dekha, phone rakha." — each used as the hook card AND said aloud first. Make one the question and the other the answer.
+2. SHOT 2 MAY NOT RESTATE SHOT 1. The long beat adds the specifics the 3-second open could not carry — who, when, what was actually said. Saying the opening again in more words is a reject.
+3. THE CLOSING LINE NAMES THE BRAND AND COMMANDS NOBODY. It must contain "VedicHour", in the first person, past tense, as part of his own sentence — "Sunday subah. VedicHour pe dekha." It may NOT contain "dekh lo", "dekho", "try karo", "check karo", "visit", "sign up", "tum", "tumhara", "aap", "aapko" or "your". Count its words: a 4s closing shot holds nine.
+
 ${formatSpecBlock()}
 
 ${LITERALISM_BAN_BLOCK}
