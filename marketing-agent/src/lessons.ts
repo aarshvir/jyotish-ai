@@ -144,9 +144,11 @@ export const OWNER_SEED_LESSONS: NewLesson[] = [
     // every creative that obeys it. Kept positive and unquoted; the gate itself is deterministic
     // (SPOKEN_SITE, asserted in creative.ts preflight() and render.ts preflight()).
     rule:
-      'Every reel MUST close by naming the site out loud AND on screen: the final presenter shot says vedichour.com in his own ' +
-      'on-camera dialogue (Veo performs it, so it is free and stays in the reel one voice), and the reel ends on the branded ' +
-      'card where vedichour.com is the largest element. A viewer who only LISTENS must still learn where to go.',
+      'Every reel MUST close by naming the brand out loud AND showing the address on screen: the final presenter shot says the ' +
+      'name VedicHour in his own on-camera dialogue (Veo performs it, so it is free and stays in the reel one voice), and the ' +
+      'reel ends on the branded card where vedichour.com is the largest element. He says the NAME, not the URL — reading a web ' +
+      'address aloud is what makes a closing line sound like an ad read, and the card carries the address anyway. A viewer who ' +
+      'only LISTENS must still learn where to go.',
     evidence:
       'Owner, 2026-07-26, reviewing the two finished reels: "at the end there should be a call to action: Try VedicHour.com... ' +
       'because people who are listening to the reel will figure out, Oh, I found this new platform, VedicHour."',
@@ -178,9 +180,9 @@ export const OWNER_SEED_LESSONS: NewLesson[] = [
     // Phrased with "must" on purpose: lessonMatcher() refuses to turn a REQUIREMENT into a banned
     // substring, so this can never invert into a gate that blocks the shape it is demanding.
     rule:
-      'Every reel must open on a presenter cold open of 3 seconds or less — already mid-answer, no greeting and no setup — then give the remembered detail its own presenter beat, and show the real report by second NINE at the latest, then keep cutting back to it. 5-8 shots in 20-28 seconds, at most one presenter beat over 4s, at most one b-roll shot.',
+      'Every reel must open on a presenter cold open of 3 seconds or less — already mid-answer, no greeting and no setup — then give the remembered detail its own presenter beat, and show the real report before the reel is two thirds over. 5-8 shots in 20-28 seconds, at most one presenter beat over 4s, at most one b-roll shot. The exact deadline is a number in code (SOLE_PRODUCT_STARTS_BY_SEC) and is checked before any reviewer sees a script, so no reviewer may reject a variant for showing the product too late.',
     evidence:
-      'Owner, 2026-08-16: "this reel is shit" / "this should look like a real advert that a $1B saas platform will launch". Measured: the rejected reel ran 29s in 5 shots and spent its first 13 seconds on a talking head before the product appeared. AMENDED 2026-08-17 by the owner ("the rule is mine and it is wrong as an absolute"): the earlier deadline nailed the product to shot 2, and the taste lens then rejected that placement in 36 consecutive variants ("unexplained product grid interrupts the story before it develops"). What the 13-second failure justifies is a DEADLINE; the SLOT was an over-correction and is gone.',
+      'Owner, 2026-08-16: "this reel is shit" / "this should look like a real advert that a $1B saas platform will launch". Measured: the rejected reel ran 29s in 5 shots and spent its first 13 seconds on a talking head before the product appeared. AMENDED 2026-08-17 by the owner ("the rule is mine and it is wrong as an absolute"): the earlier deadline nailed the product to shot 2, and the taste lens then rejected that placement in 36 consecutive variants ("unexplained product grid interrupts the story before it develops"). What the 13-second failure justifies is a DEADLINE; the SLOT was an over-correction and is gone. AMENDED AGAIN 2026-08-19: this row said "by second NINE" and "keep cutting back to it", and both were injected verbatim into the hostile reviewer. It killed all six variants of one idea on 2026-08-18 for "the report arrives at second 14, beyond the explicit deadline" — but the deadline in code is fourteen, so second 14 was legal, and two of the six were the highest taste scores of the day. "Keep cutting back to it" was already dead too: the controlled experiment of 2026-08-18 put two product beats at human eye 55 and one late beat at 76. A lesson carrying a number the code does not enforce is a gate nobody can see.',
   },
   {
     source: 'owner',
@@ -193,6 +195,27 @@ export const OWNER_SEED_LESSONS: NewLesson[] = [
   },
 ];
 
+/**
+ * SUPERSEDED SEED TEXT — retired by exact rule string.
+ *
+ * `rule` is the primary key here, so REWORDING a seed lesson does not update it: addLesson()
+ * inserts a second row and the old wording stays `active = 1` and keeps being injected into every
+ * prompt forever. That is how the writer ends up obeying two contradictory rules at once, which is
+ * the exact failure the previous session diagnosed ("the prompt was arguing with itself"). Any
+ * edit to a rule string above must add its OLD string here in the same commit.
+ */
+const RETIRED_LESSON_RULES: string[] = [
+  // Reworded 2026-08-19. Carried a hardcoded "second NINE" that the code has never enforced
+  // (SOLE_PRODUCT_STARTS_BY_SEC is 14) and a "keep cutting back to it" that the one-beat
+  // experiment retired. Injected into the hostile reviewer, it cost six compliant variants.
+  'Every reel must open on a presenter cold open of 3 seconds or less — already mid-answer, no greeting and no setup — then give the remembered detail its own presenter beat, and show the real report by second NINE at the latest, then keep cutting back to it. 5-8 shots in 20-28 seconds, at most one presenter beat over 4s, at most one b-roll shot.',
+  // Reworded 2026-08-18: the owner's intent is that a LISTENER learns the brand name. Reading the
+  // URL aloud is the ad-speak the taste lens objects to, and the end card carries the address.
+  'Every reel MUST close by naming the site out loud AND on screen: the final presenter shot says vedichour.com in his own ' +
+    'on-camera dialogue (Veo performs it, so it is free and stays in the reel one voice), and the reel ends on the branded ' +
+    'card where vedichour.com is the largest element. A viewer who only LISTENS must still learn where to go.',
+];
+
 let seeded = false;
 
 /** Insert the owner's rulings once per process. Idempotent at the DB level too (rule is UNIQUE). */
@@ -200,6 +223,8 @@ export function ensureSeeded(): void {
   if (seeded) return;
   seeded = true;
   for (const l of OWNER_SEED_LESSONS) addLesson(l);
+  const retire = db().prepare(`UPDATE lessons SET active = 0 WHERE rule = ?`);
+  for (const r of RETIRED_LESSON_RULES) retire.run(r);
 }
 
 /**
