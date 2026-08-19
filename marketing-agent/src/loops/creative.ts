@@ -904,6 +904,19 @@ LEAD WITH YOUR BEST LINE. THE COLD OPEN IS THE CONSEQUENCE, NOT THE PLAN. This i
 - "'Teen hafton baad call karunga' is a plan, not a hook; gone." / "'timing choose karunga' is a plan."
 Every one of those scripts had a real, specific, human line in it — and put it THIRD, behind a sentence announcing what the person intends to do. Announcing an intention is not a hook: nothing has happened yet, so there is nothing to be curious about, and the product screen that follows arrives before the viewer cares about this person at all. That is why the reviewer keeps saying the screen has not been "earned".
 So: write the whole script, find the line only a real person could have written, and MOVE IT TO SHOT ONE. Then rebuild the rest around it.
+DO NOT WRITE A QUESTION WHOSE ONLY JOB IS TO SUMMON THE SCREEN. This is now the single most repeated objection in this repo's history — it has killed variants in every batch since 2026-08-18 and three of six in the batch before this line was written:
+  "compare karunga is a transparent runway into the product demo"
+  "his self-correction sounds scripted solely to tee up comparison"
+  "the neat Tuesday-or-Friday setup sounds engineered solely to reveal the product"
+  "Sunday afternoon bhi compare karna hai is naked product-demo language"
+  "the timing question feels engineered solely to summon the product"
+  "astrology screen turns a believable confession into a contrived product setup"
+The format tells you the screen ANSWERS the line before it, and the lazy way to satisfy that is to have him ask a tidy either/or — "aaj ya kal?", "Tuesday ya Friday?", "compare karna hai" — so the product has something to answer. A viewer feels that instantly: nobody narrates their own dilemma as a multiple-choice question, and the moment he does, the reel stops being a confession and becomes a demo with a cue line.
+THE LINE BEFORE THE SCREEN IS A STATEMENT, NOT A QUESTION, and it is about the thing he is stuck on — not about choosing between two times. The two times are what the SCREEN shows. He never says them.
+  WRONG: "Aaj bolun ya kal subah?" then the screen shows two hours.
+  RIGHT:  "Bologa toh aaj hi. Bas aise nahi jaise pichli baar." then the screen shows two hours, and the viewer does the arithmetic themselves.
+If you have written a line that would be meaningless without the screen that follows it, you have written a cue, not a sentence. Cut it and say what he actually feels instead; let the screen be the first place the choice appears.
+
 AND A CANCELLED PLAN IS NOT AN EVENT. This is the newest way the cold open dies and it took a whole batch on 2026-08-19 — six variants, human eye 34 to 50, and the reviewer named it in every single one: "the cold open wastes three seconds on a cancelled dinner", "a cancelled Thursday call is contextless administrative detail, not tension", "another forgettable rescheduling update", "the opening dinner postponement is dead air", "Engagement notes archive kiye is bloodless app housekeeping".
 A dinner moved, a call cancelled, a meeting pushed, a reminder snoozed, a note archived — these are the LOGISTICS AROUND the moment, not the moment. Nothing happened. Nobody felt anything. They are the easiest sentences to write because they are true of every version of the story, which is exactly why they carry no information.
 The charged thing is what someone SAID, SENT, ASKED or SAW. "Aunty boli" is an event. "Mummy ne rishta photo bheja" is an event. "Dinner cancel ho gaya" is a calendar entry. If your first line could be replaced by a notification, it is admin and you must open on the thing the admin was hiding from instead.
