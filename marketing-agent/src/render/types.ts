@@ -52,6 +52,42 @@ export interface Shot {
    *  cleanly on the hero instead of mid-scroll footer. `libraryKey` names the resolved
    *  config/creative-seeds.json screencapTarget, so a reviewer can see WHAT was meant. */
   capture?: { url: string; libraryKey?: string; waitForSelector?: string; scrollPx?: number; panToPx?: number };
+  /**
+   * THE L-CUT. Presenter shots only.
+   *
+   * The last `audioExtendsSec` seconds of this presenter's own in-shot Veo take keep playing
+   * underneath the NEXT shot's picture. His picture leaves that much earlier; his voice does not.
+   * The product screen therefore arrives INSIDE his sentence instead of after it.
+   *
+   * MEASURED AGAINST WHERE HE STOPS TALKING, NOT AGAINST `seconds`. Veo bills whole seconds and
+   * routinely finishes the line early — an 8s take measured on 2026-08-19 stopped at 7.15s — so
+   * the renderer runs a silence detector over the delivered clip and puts the picture cut
+   * `audioExtendsSec` before the LAST WORD. The carried tail is then all speech, and the take's
+   * dead tail is discarded rather than screened. See lastSpeechEndSec() in ./assemble.ts.
+   *
+   * WHY THIS EXISTS. The taste lens (src/audit/human-eye.ts) asked for exactly this ~21 times
+   * across every batch this engine has run, and on 2026-08-19 all six variants of the best round
+   * died at the same 13.0s mark asking for it in these words: "Show Thursday 7:30 emerging clearly
+   * while he continues talking over the screen", "Overlay the screen briefly during his sentence",
+   * "without leaving his face", "the silent product insert breaks the tension instead of resolving
+   * it". Shortening the hold was tried at 6s, 4s and 2-3s; the lens flagged all three, always at
+   * the same second, because duration was never the complaint. Every product beat was a HARD
+   * SILENCE — the renderer composed audio strictly per clip and had no carry-over at all.
+   *
+   * IT DOES NOT TOUCH THE VOICE LAW (CLAUDE.md §2). There is no TTS here and no second narrator:
+   * it is the same man's same free Veo take, still playing, while the picture is elsewhere. That
+   * is why the receiving shot must be SILENT — an L-cut over a shot that has its own `vo` would be
+   * two voices at once, which is the defect the owner rejected.
+   *
+   * WHY THE NUMBER LIVES ON THE SPEAKER, not as `audioFrom` on the receiver: `seconds` is what the
+   * line was written to fill, so at `seconds - audioExtendsSec` he is demonstrably still talking.
+   * A receiver-side pointer would let two shots disagree, or point somewhere the renderer cannot
+   * reach; one number on the shot that owns the voice cannot be inconsistent with itself.
+   *
+   * The reel gets SHORTER by this many seconds, and quieter for fewer of them — an L-cut always
+   * improves the dead-air numbers in src/render/listen.ts, it never needs an exemption from them.
+   */
+  audioExtendsSec?: number;
   /** Override the default provider routing for this role. */
   provider?: ShotProvider;
   /** Optional reference image (data URL or https) for image-to-video subject consistency. */
@@ -116,6 +152,36 @@ export const WORDS_PER_SECOND = 2.3;
  */
 export const NARRATION_MAX_WORDS = 12;
 
+// ---------------------------------------------------------------------------------------------
+// L-CUT LIMITS — see Shot.audioExtendsSec
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Longest a presenter's voice may run over the following picture. Three seconds is the product
+ * HOLD's own ceiling (PRODUCT_HOLD_MAX_SEC in src/loops/creative.ts), so this allows an L-cut
+ * across the whole hold and nothing beyond it — the renderer only ever carries audio into the
+ * IMMEDIATELY next shot, and a longer tail would be silently truncated rather than heard.
+ */
+export const LCUT_MAX_SEC = 3;
+
+/**
+ * Picture a presenter shot must keep after the cut. Below about a second and a bit the beat stops
+ * being a shot and becomes a flash frame — the viewer registers a cut, not a face.
+ */
+export const LCUT_MIN_PICTURE_SEC = 1.2;
+
+/** Veo takes start speaking about here. Same figure nativeVo() uses to place the first caption. */
+export const LCUT_SPEECH_LEAD_SEC = 0.3;
+
+/**
+ * How much speech must still be left when the picture leaves. An L-cut whose audio tail is the
+ * presenter having already finished is not an L-cut, it is the same silence one shot earlier —
+ * and it would read to the taste lens exactly as the thing it has been rejecting.
+ */
+export const LCUT_MIN_SPEECH_MARGIN_SEC = 0.2;
+
+
+
 /**
  * THE SITE NAME, AS A LISTENER MUST HEAR IT.
  *
@@ -129,8 +195,17 @@ export const NARRATION_MAX_WORDS = 12;
  * Asserted for $0 twice before any spend — in the creative engine's own reject gate and again in
  * the render pre-flight (src/loops/render.ts).
  *
- * Deliberately loose about the space and the .com: "VedicHour.com pe dekh lo", "Vedic Hour pe
- * dekh lo" and "vedichour dot com" all satisfy it, because all three SOUND like the brand.
+ * WHAT MUST BE SPOKEN IS THE NAME, NOT THE URL (amended 2026-08-18). The owner's INTENT is the
+ * sentence above: a listener has to come away knowing the platform is called VedicHour. His example
+ * happened to include ".com" because that is how he types the address — but reading a web address
+ * out loud is the single thing the taste lens names as ad-speak, and the branded end card already
+ * carries the full vedichour.com in writing, which is where an address belongs. So "VedicHour pe
+ * dekh liya" satisfies the law completely and is the preferred form.
+ *
+ * The pattern is therefore deliberately loose about the space AND about the .com: "VedicHour pe
+ * dekh liya", "Vedic Hour kholi thi", "VedicHour.com pe dekh lo" and "vedichour dot com" all pass,
+ * because all four put the brand name in the listener's ear. Saying ".com" is not a failure — it is
+ * simply no longer required, and the script prompts now steer away from it.
  */
 export const SPOKEN_SITE = /vedic\s*hour/i;
 
@@ -197,6 +272,48 @@ export function validateCreative(c: any): { ok: boolean; issues: ValidationIssue
         err(w, `voice "${declared}" is an edge-tts voice — the owner rejected it as sounding AI-generated`);
     }
 
+    // ---- the L-cut ---------------------------------------------------------------------------
+    // Hard blocks, never warnings (CLAUDE.md §1): every one of these is decidable from the JSON,
+    // and every one of them would otherwise be discovered in rendered pixels that cost money.
+    if (s.audioExtendsSec !== undefined && s.audioExtendsSec !== null) {
+      const e = Number(s.audioExtendsSec);
+      const next = c.shots[i + 1];
+      if (!isPresenter) {
+        err(w, `only a presenter shot may declare audioExtendsSec — a ${s.role} shot has no voice of its own to carry`);
+      } else if (!Number.isFinite(e) || e <= 0) {
+        err(w, 'audioExtendsSec must be a positive number of seconds');
+      } else if (e > LCUT_MAX_SEC) {
+        err(w, `audioExtendsSec ${e}s exceeds the ${LCUT_MAX_SEC}s ceiling — the renderer carries audio into the NEXT shot only, so a longer tail would be cut, not heard`);
+      } else if (!next) {
+        err(w, 'audioExtendsSec on the LAST shot — there is nothing after it for the voice to play over');
+      } else if (next.role === 'presenter' || next.role === 'presenter_close') {
+        err(w, `audioExtendsSec carries this voice over shot "${next.id}", which is another presenter — his lips would be moving to someone else's words. An L-cut runs over a product or b-roll shot`);
+      } else if (String(next.vo ?? '').trim()) {
+        err(w, `audioExtendsSec carries this voice over shot "${next.id}", which has its own narration ("${String(next.vo).trim().slice(0, 40)}") — two voices at once is the exact defect the owner rejected. The receiving shot must be silent`);
+      } else if (e > Number(next.seconds)) {
+        err(w, `audioExtendsSec ${e}s is longer than the following shot "${next.id}" (${next.seconds}s) — the voice would be cut at the shot boundary`);
+      } else {
+        // The renderer anchors the picture cut on the WAVEFORM — `audioExtendsSec` seconds before
+        // he actually stops talking — so these two checks are about the LINE, not the clip: is
+        // there a tail to carry, and is there a shot left in front of it? Same words-per-second
+        // model the narration-fit check below already trusts.
+        const speechSec = wordCount(s.dialogue) / WORDS_PER_SECOND;
+        const pictureEst = LCUT_SPEECH_LEAD_SEC + speechSec - e;
+        if (speechSec < e + LCUT_MIN_SPEECH_MARGIN_SEC)
+          err(
+            w,
+            `an L-cut of ${e}s would carry the WHOLE line: "${String(s.dialogue ?? '').slice(0, 40)}" is about ${speechSec.toFixed(1)}s of speech. ` +
+              'An L-cut carries the TAIL of a sentence over the next picture — if it starts before he does, the shot has no on-camera line left in it. Shorten audioExtendsSec.',
+          );
+        else if (pictureEst < LCUT_MIN_PICTURE_SEC)
+          err(
+            w,
+            `an L-cut of ${e}s would leave about ${pictureEst.toFixed(1)}s of picture on a ${s.seconds}s shot — below ${LCUT_MIN_PICTURE_SEC}s it is a flash frame, not a beat. ` +
+              'Shorten the L-cut, or give him more to say before the screen takes over.',
+          );
+      }
+    }
+
     // ---- narration fit + connective-line cap ------------------------------------------------
     const spoken = isPresenter ? s.dialogue : s.vo;
     const n = wordCount(spoken);
@@ -224,7 +341,9 @@ export function validateCreative(c: any): { ok: boolean; issues: ValidationIssue
     err('shots[0]', 'reel must OPEN on a `presenter` shot — faceless/slideshow reels are rejected by policy');
   }
 
-  const total = c.shots.reduce((a: number, s: any) => a + (Number(s.seconds) || 0), 0);
+  // ON-SCREEN duration: an L-cut relocates its seconds of audio onto the next shot's picture, so
+  // those seconds are heard but never seen twice. The reel is that much shorter than sum(seconds).
+  const total = c.shots.reduce((a: number, s: any) => a + (Number(s.seconds) || 0) - (Number(s.audioExtendsSec) || 0), 0);
   if (total > 90) warn('shots', `${total}s total — short-form ranks best under ~45s`);
   if (total < 8) warn('shots', `${total}s total — too short to land a hook + proof + CTA`);
 

@@ -60,6 +60,13 @@ export interface PreparedShot {
   segments: Seg[];
   /** Did this shot's audio come from the model itself (Veo) rather than TTS? */
   nativeAudio: boolean;
+  /**
+   * L-CUT: seconds of this shot's own voice that play under the FOLLOWING shot's picture.
+   * `seconds` above is the picture only, so `seconds + audioTailSec` is how long he is heard.
+   */
+  audioTailSec?: number;
+  /** L-CUT: this shot's picture is carrying the previous shot's voice — it is not silent. */
+  carriesVoiceFrom?: string;
   /** Voice this shot speaks with: `veo_native`, the Sarvam ad voice, or null when silent. */
   voiceId: string | null;
   costUsd: number;
@@ -205,6 +212,71 @@ export async function normalizeClip(src: string, outPath: string, seconds: numbe
     outPath,
   );
   await run(ffmpeg, args);
+}
+
+/**
+ * WHERE THE SPEAKER ACTUALLY STOPS TALKING, in seconds from the head of the clip. Null when the
+ * clip is silent throughout (a --dry placeholder) or the detector says nothing useful.
+ *
+ * THE L-CUT IS ANCHORED ON THIS, NOT ON THE CLIP LENGTH, and that distinction is the whole
+ * difference between the feature working and looking like it works. Veo bills whole seconds and
+ * routinely finishes the line early: measured on 2026-08-19, an 8-second take stopped speaking at
+ * 7.15s. Cutting `audioExtendsSec` back from the NOMINAL end therefore carried 0.85s of the take's
+ * own trailing silence onto the product screen — the exact thing an L-cut exists to delete, merely
+ * relocated. Cutting back from where he ACTUALLY stops makes the carried tail all speech, and
+ * throws the dead tail away instead of putting it on screen.
+ */
+export async function lastSpeechEndSec(file: string): Promise<number | null> {
+  const { ffprobe } = resolveTools();
+  const durationSec = await probeDuration(ffprobe, file).catch(() => 0);
+  if (!durationSec) return null;
+  const r = await analyzeSilence(file);
+  // A silence run that reaches the end of the file IS the trailing pad; he stopped where it began.
+  const trailing = r.gaps.find((g) => g.endSec >= durationSec - 0.06);
+  if (trailing) return trailing.startSec > 0 ? trailing.startSec : null;
+  return durationSec;
+}
+
+/**
+ * THE L-CUT, mechanically: lift the TAIL of a shot's own audio off its raw clip so the next shot
+ * can be normalized with it in place of silence.
+ *
+ * That is the whole feature. Everything else was already here — normalizeClip() has always been
+ * able to lay an arbitrary wav under a clip (it is how TTS narration reaches b-roll), and its
+ * `apad,atrim=0:seconds` tail pads the carried voice out to the receiving shot's full length, so
+ * the picture keeps running after he stops with the music bed underneath. No new mixing, no new
+ * graph, no exemption from any gate.
+ *
+ * atrim rather than -ss: sample-accurate, and it keeps the cut aligned with the picture cut the
+ * caller made with the same number. asetpts rebases the timestamps so the wav starts at zero.
+ */
+export async function extractCarryAudio(src: string, fromSec: number, seconds: number, outPath: string): Promise<number> {
+  const { ffmpeg, ffprobe } = resolveTools();
+  await run(ffmpeg, [
+    '-y', '-i', src, '-vn',
+    '-af', `atrim=start=${fromSec}:end=${fromSec + seconds},asetpts=N/SR/TB,aresample=${AUDIO.rate}`,
+    '-ac', String(AUDIO.channels),
+    '-c:a', 'pcm_s16le',
+    outPath,
+  ]);
+  return await probeDuration(ffprobe, outPath).catch(() => 0);
+}
+
+/**
+ * Did the tail we just lifted actually contain a VOICE? The whole point of an L-cut is that the
+ * product screen arrives under a sentence still in progress; if Veo happened to finish the line
+ * early, this carries silence and the reel is no better than before. Pre-flight predicts that
+ * from word counts for $0 — this is the same question asked of the real waveform, which is the
+ * only place the answer is actually known (CLAUDE.md §7).
+ */
+export async function carryIsAudible(wav: string): Promise<{ audible: boolean; meanDb: number | null }> {
+  const { ffmpeg } = resolveTools();
+  const res = await runCapture(ffmpeg, ['-i', wav, '-af', 'volumedetect', '-f', 'null', '-'], 120000);
+  const blob = res.stderr + res.stdout;
+  if (/mean_volume:\s*-inf/i.test(blob)) return { audible: false, meanDb: null };
+  const m = /mean_volume:\s*(-?[\d.]+)\s*dB/i.exec(blob);
+  const meanDb = m ? Number(m[1]) : null;
+  return { audible: meanDb !== null && meanDb > SILENCE_FLOOR_DB, meanDb };
 }
 
 /** Concatenate normalized clips losslessly (they already share codec/format). */

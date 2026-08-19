@@ -7,7 +7,7 @@ import { writeHeartbeat } from '../scheduler/heartbeat';
 import { lint, jargonHits } from '../policy/linter';
 import { activeLessons } from '../lessons';
 import { buildPublishPack, verifyNoteFrom } from './publish-pack';
-import { validateCreative, SPOKEN_SITE, type CreativeScript, type Shot, type ShotProvider } from '../render/types';
+import { validateCreative, SPOKEN_SITE, LCUT_MIN_PICTURE_SEC, type CreativeScript, type Shot, type ShotProvider } from '../render/types';
 import { PRICE_TABLE, ROLE_ROUTING, estimateCost, providerFor, hasFalKey, quantizeSeconds } from '../render/providers';
 import { checkBudget, recordSpend, caps, budgetLine, spendSnapshot } from '../render/budget';
 import { captureProductShot, browserEngineAvailable } from '../render/screencap';
@@ -15,7 +15,8 @@ import { assertCaptureAllowed, resolveLiveCapture } from '../render/capture-poli
 import { AD_VO_VOICE, NATIVE_VOICE, assertSingleAdVoice, SARVAM_PRICING } from '../render/sarvam';
 import {
   FRAME, PRESENTER_LAYOUT, renderPlaceholder, normalizeClip, concatClips, finish,
-  synthesizeVo, nativeVo, requireMusicBed, verifyOutput, renderEndCard, type PreparedShot,
+  synthesizeVo, nativeVo, requireMusicBed, verifyOutput, renderEndCard,
+  extractCarryAudio, carryIsAudible, lastSpeechEndSec, type PreparedShot,
 } from '../render/assemble';
 import { resolveTools, probeVideo, type Seg } from '../render/ffmpeg';
 import {
@@ -126,15 +127,16 @@ export function preflight(creative: CreativeScript, scriptText: string): string[
   const closer = presenterShots[presenterShots.length - 1];
   if (!closer) {
     problems.push(
-      'no presenter shot to close on — the reel cannot say the site out loud in its own voice. ' +
-        'End on a presenter whose dialogue names vedichour.com.',
+      'no presenter shot to close on — the reel cannot say the brand name out loud in its own voice. ' +
+        'End on a presenter whose dialogue says VedicHour.',
     );
   } else if (!SPOKEN_SITE.test(closer.dialogue ?? '')) {
     problems.push(
-      `the closing presenter shot (${closer.id}) never says the site out loud: "${(closer.dialogue ?? '').slice(0, 80)}". ` +
+      `the closing presenter shot (${closer.id}) never says the brand name out loud: "${(closer.dialogue ?? '').slice(0, 80)}". ` +
         'Owner law 2026-07-26: "at the end there should be a call to action: Try VedicHour.com... because people who are ' +
         'LISTENING to the reel will figure out, Oh, I found this new platform, VedicHour." Rewrite the last on-camera line to ' +
-        'name it, e.g. "…VedicHour.com pe dekh lo." — Veo performs it, so it costs nothing and stays in the one voice.',
+        'say the NAME — e.g. "…VedicHour pe dekh liya." Veo performs it, so it costs nothing and stays in the one voice. ' +
+        'He does not have to read out "dot com"; the branded end card carries the full vedichour.com in writing (amended 2026-08-18).',
     );
   }
 
@@ -400,6 +402,16 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
       return;
     }
     console.log('[render] pre-flight: PASS — capture targets, voice plan and jargon all clean ($0 spent so far)');
+    // The L-cut plan, stated out loud before any spend: validateCreative() has already refused
+    // every illegal shape (see Shot.audioExtendsSec), so what is printed here is what will render.
+    for (let i = 0; i < creative.shots.length; i++) {
+      const e = Number(creative.shots[i].audioExtendsSec) || 0;
+      if (e > 0)
+        console.log(
+          `[render] pre-flight: L-CUT — ${creative.shots[i].id} keeps ${(Number(creative.shots[i].seconds) - e).toFixed(1)}s of picture ` +
+            `and its last ${e}s of voice play under ${creative.shots[i + 1]?.id} (${creative.shots[i + 1]?.role}). No TTS: his own take, still running.`,
+        );
+    }
 
     const verdict = await lint(scriptText, { context: 'ad' });
     if (verdict.verdict === 'block') {
@@ -455,6 +467,11 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
     const prepared: PreparedShot[] = [];
     let cursor = 0;
     let spentUsd = 0;
+    /**
+     * THE L-CUT, in flight: the tail of the previous presenter shot's own Veo take, waiting for
+     * the next shot's picture to be laid under. See Shot.audioExtendsSec in src/render/types.ts.
+     */
+    let pendingCarry: { fromId: string; wav: string; seconds: number } | null = null;
 
     for (const shot of creative.shots) {
       const key = providerForShot(shot);
@@ -525,17 +542,58 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
         }
       }
 
+      // 4a-bis. THE L-CUT, geometry first — see Shot.audioExtendsSec in src/render/types.ts.
+      //
+      // `pictureSec` is what is on screen; `audioSec` is how long he is heard for (his picture
+      // plus the tail that plays under the next shot). Both are derived from where he ACTUALLY
+      // stops talking, because the clip's nominal length includes Veo's trailing pad and cutting
+      // against that carries silence instead of speech. Captions are timed against `audioSec`, so
+      // the line finishes over the product screen rather than running off the end of the reel.
+      const lcutSec = nativeAudio && Number(shot.audioExtendsSec) > 0 ? Number(shot.audioExtendsSec) : 0;
+      let pictureSec = billedSec;
+      let audioSec = billedSec;
+      if (lcutSec > 0) {
+        const speechEnd = await lastSpeechEndSec(rawClip);
+        const anchor = speechEnd ?? billedSec;
+        audioSec = Math.round(anchor * 100) / 100;
+        pictureSec = Math.round((anchor - lcutSec) * 100) / 100;
+        console.log(
+          `[render]   L-cut: ${shot.id} stops speaking at ${speechEnd === null ? `?s (silent clip — assuming ${billedSec}s)` : `${anchor.toFixed(2)}s`} ` +
+            `of ${billedSec}s; picture out at ${pictureSec}s, ${lcutSec}s of voice carries forward.`,
+        );
+        if (pictureSec < LCUT_MIN_PICTURE_SEC) {
+          throw new Error(
+            `shot ${shot.id}: an L-cut of ${lcutSec}s would leave only ${pictureSec}s of picture (he stops speaking at ${anchor.toFixed(2)}s), ` +
+              `below the ${LCUT_MIN_PICTURE_SEC}s floor — that is a flash frame, not a beat. The take is shorter than the line was written for: ` +
+              'shorten audioExtendsSec, or lengthen the dialogue so his picture has something to be on screen for.',
+          );
+        }
+      }
+
       // 4b. audio for this shot — the voice ladder (see src/render/sarvam.ts)
       let voPath: string | null = null;
       let segments: Seg[] = [];
       let actualSec = billedSec;
       let voiceId: string | null = null;
+      // The previous presenter shot handed its voice forward; this shot's picture plays under it.
+      const carried = pendingCarry;
+      pendingCarry = null;
 
       if (nativeAudio) {
         // (a) Veo performed the line in-shot. Free, and the quality bar — never overdubbed.
-        const vo = nativeVo(shot.dialogue!, billedSec);
+        // `audioSec` is the length of the PERFORMANCE, which under an L-cut is longer than this
+        // shot's picture — so the caption segments correctly run over the shot that follows.
+        const vo = nativeVo(shot.dialogue!, audioSec);
         segments = vo.segments;
         voiceId = vo.voiceId;
+      } else if (carried) {
+        // (a2) THE L-CUT. This shot is silent of its own accord and inherits the tail of the
+        // previous presenter's take. Not a new voice — the same man, still mid-sentence — so it
+        // reports NATIVE_VOICE and cannot trip the one-reel-one-narrator assertion. Its captions
+        // belong to the shot that is speaking, so it contributes none of its own.
+        voPath = carried.wav;
+        voiceId = NATIVE_VOICE;
+        console.log(`[render]   L-cut: ${carried.seconds}s of ${carried.fromId}'s own voice plays under this picture — the screen arrives inside his sentence.`);
       } else {
         // (b) Sarvam Bulbul v3, one male voice for the whole reel. (c) No key -> this throws.
         const speak = isPresenter ? shot.dialogue : shot.vo;
@@ -560,18 +618,45 @@ export async function runRenderLoop(opts: RenderOpts = {}): Promise<void> {
         }
       }
 
-      // 4c. normalize to the house format
-      await normalizeClip(rawClip, normClip, actualSec, voPath, nativeAudio);
+      // 4c. normalize to the house format.
+      //
+      // THE L-CUT IS A PICTURE CUT, NOT AN AUDIO EDIT: the shot is normalized to a SHORTER
+      // duration than it was generated at (`pictureSec`, set above), and the seconds trimmed off
+      // the picture are lifted back out of the raw clip as a wav for the next shot.
+      if (lcutSec === 0) pictureSec = actualSec;
+      await normalizeClip(rawClip, normClip, pictureSec, voPath, nativeAudio);
       const p = await probeVideo(resolveTools().ffprobe, normClip);
       if (p.width !== FRAME.w || p.height !== FRAME.h) throw new Error(`shot ${shot.id} normalized to ${p.width}x${p.height}`);
 
+      if (lcutSec > 0) {
+        const wav = resolve(work, `${shot.id}.lcut.wav`);
+        const got = await extractCarryAudio(rawClip, pictureSec, lcutSec, wav);
+        const heard = await carryIsAudible(wav);
+        console.log(
+          `[render]   L-cut: lifted ${got.toFixed(2)}s of ${shot.id}'s voice (mean ${heard.meanDb === null ? '-inf' : heard.meanDb.toFixed(1)} dB) ` +
+            'to play under the next picture.',
+        );
+        // Pre-flight predicts this from word counts for $0; this is the waveform's own answer, and
+        // it is the difference between an L-cut and the same silence one shot earlier. Loud in dry
+        // mode only — a placeholder clip is silent by construction and that is not a defect.
+        if (!heard.audible) {
+          const msg = `L-cut on ${shot.id} carries SILENCE (mean ${heard.meanDb === null ? '-inf' : heard.meanDb.toFixed(1)} dB): the line "${(shot.dialogue ?? '').slice(0, 50)}" had already finished before the picture left at ${pictureSec}s. Shorten audioExtendsSec or lengthen the line.`;
+          if (dry) console.log(`[render]   note (dry): ${msg}`);
+          else throw new Error(msg);
+        }
+        pendingCarry = { fromId: shot.id, wav, seconds: lcutSec };
+      }
+
       prepared.push({
-        shot, path: normClip, seconds: actualSec, startSec: cursor,
+        shot, path: normClip, seconds: pictureSec, startSec: cursor,
         segments: segments.map((s) => ({ ...s, start: s.start + cursor, end: s.end + cursor })),
         nativeAudio, voiceId, costUsd, provider: providerUsed,
+        audioTailSec: lcutSec > 0 ? lcutSec : undefined,
+        carriesVoiceFrom: carried?.fromId,
       });
-      cursor = Math.round((cursor + actualSec) * 100) / 100;
+      cursor = Math.round((cursor + pictureSec) * 100) / 100;
     }
+    if (pendingCarry) throw new Error(`shot ${pendingCarry.fromId} declares an L-cut but nothing followed it — validateCreative should have refused this creative.`);
 
     // ---- 5. assemble ------------------------------------------------------------------
     // Post-generation restatement of the voice law: whatever the shots actually ended up
