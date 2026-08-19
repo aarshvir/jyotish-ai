@@ -917,6 +917,13 @@ THE LINE BEFORE THE SCREEN IS A STATEMENT, NOT A QUESTION, and it is about the t
   RIGHT:  "Bologa toh aaj hi. Bas aise nahi jaise pichli baar." then the screen shows two hours, and the viewer does the arithmetic themselves.
 If you have written a line that would be meaningless without the screen that follows it, you have written a cue, not a sentence. Cut it and say what he actually feels instead; let the screen be the first place the choice appears.
 
+  BUT HE MUST STILL CHOOSE, OUT LOUD, AFTER THE SCREEN. Read this or you will break the reel the other way, which is what happened on 2026-08-19: told not to pre-announce the options, the writer stopped naming a decision anywhere, and five of six variants died on it — "the promised timing decision never arrives, leaving VedicHour ornamental", "the script never chooses a window; the product payoff answers nothing", "the report produces no visible narrative consequence", "no chosen speaking window ever lands".
+  The rule is about WHERE the choice appears, not whether it does:
+    BEFORE the screen — he never lists the options. No "aaj ya Sunday?".
+    THE SCREEN — the two hours appear here, for the first time, and nobody explains them.
+    AFTER the screen — HE NAMES THE ONE HE PICKED, in his own words, as the last thing that happens. "Sunday subah. VedicHour pe dekha." That single line is the entire payoff: it is the visible consequence of the screen, and without it the product is decoration and the story has no ending.
+  A reel that asks a question and never answers it is worse than one that asked it clumsily.
+
 AND A CANCELLED PLAN IS NOT AN EVENT. This is the newest way the cold open dies and it took a whole batch on 2026-08-19 — six variants, human eye 34 to 50, and the reviewer named it in every single one: "the cold open wastes three seconds on a cancelled dinner", "a cancelled Thursday call is contextless administrative detail, not tension", "another forgettable rescheduling update", "the opening dinner postponement is dead air", "Engagement notes archive kiye is bloodless app housekeeping".
 A dinner moved, a call cancelled, a meeting pushed, a reminder snoozed, a note archived — these are the LOGISTICS AROUND the moment, not the moment. Nothing happened. Nobody felt anything. They are the easiest sentences to write because they are true of every version of the story, which is exactly why they carry no information.
 The charged thing is what someone SAID, SENT, ASKED or SAW. "Aunty boli" is an event. "Mummy ne rishta photo bheja" is an event. "Dinner cancel ho gaya" is a calendar entry. If your first line could be replaced by a notification, it is admin and you must open on the thing the admin was hiding from instead.
