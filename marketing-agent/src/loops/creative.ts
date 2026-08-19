@@ -2368,6 +2368,21 @@ export async function runCreativeLoop(opts: CreativeOpts = {}): Promise<void> {
     // tournament never ranks two differently-calibrated numbers against each other.
     const pool = [...survivors.map((j) => refreshed.get(judgedKey(j)) ?? j), ...rewrites].filter((j) => j.status !== 'rejected');
 
+    // ...AND THE BATCH REPORT HAS TO CARRY THAT PASS'S VERDICT TOO.
+    // `judged` still held the draft's FIRST-pass entry, so a draft the paired pass rejected was
+    // filtered out of the pool while remaining `needs_review` in the report: not a winner, never
+    // listed as rejected, simply gone. On 2026-08-19 that swallowed a draft that had scored 88 —
+    // the run printed "top 0" and accounted for five of six variants, with no reason recorded for
+    // the sixth. A batch whose numbers do not add up is why "0 winners" stayed unreadable for
+    // three sessions, so the refreshed verdict is written back before anything is persisted.
+    for (const j of judged) {
+      const fresh = refreshed.get(judgedKey(j));
+      if (!fresh || fresh === j) continue;
+      j.scores = fresh.scores;
+      j.status = fresh.status;
+      j.rejectionReason = fresh.rejectionReason;
+    }
+
     // 4. TOURNAMENT
     const ordered = pool.length ? await tournament(pool, tier) : [];
     const winners = ordered.slice(0, WINNERS_KEPT);
