@@ -10,7 +10,7 @@ import { sendFounderDigest, runAbandonedCheckoutRecovery, runPreviewNurture } fr
 
 /**
  * GET /api/cron/reconcile-payments
- * Scans ziina_payments with status=pending older than 5 minutes.
+ * Scans ziina_payments with recoverable non-completed statuses older than 5 minutes.
  * Calls Ziina API and finalizes completed intents.
  * Recovery path for users who closed browser before redirect completed.
  */
@@ -34,7 +34,10 @@ export async function GET(request: NextRequest) {
   const { data: pending, error } = await db
     .from('ziina_payments')
     .select('ziina_intent_id, report_id, plan_type')
-    .eq('status', 'pending')
+    // create-intent supersedes older rows to cancelled, but an old checkout tab can
+    // still complete at Ziina. The finalizer can claim any non-completed row, so the
+    // recovery scan must include those superseded rows too.
+    .in('status', ['pending', 'cancelled'])
     .lt('updated_at', cutoff)
     .limit(20);
 
