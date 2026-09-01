@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { finalizeCompletedZiinaIntent } from './finalizeIntent';
+import { inngest } from '@/lib/inngest/client';
 
 vi.mock('@/lib/ziina/server', () => ({
   getPaymentIntent: vi.fn(),
@@ -160,5 +161,53 @@ describe('finalizeCompletedZiinaIntent', () => {
     expect(result).toEqual({ ok: true, action: 'processed' });
     expect(tables.ziina_payments[0].status).toBe('completed');
     expect(tables.reports).toEqual([]);
+  });
+
+  it('does not label an upgrade monthly before its 30 days are persisted', async () => {
+    const previousEventKey = process.env.INNGEST_EVENT_KEY;
+    process.env.INNGEST_EVENT_KEY = 'test-key';
+    vi.mocked(inngest.send).mockResolvedValue(undefined as never);
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'report_1',
+          plan_type: 'monthly_upgrade',
+          status: 'pending',
+          user_id: 'buyer_user',
+        },
+      ],
+      reports: [
+        {
+          id: 'report_1',
+          user_id: 'buyer_user',
+          payment_status: 'paid',
+          plan_type: '7day',
+        },
+      ],
+      analytics_events: [],
+    };
+
+    try {
+      const result = await finalizeCompletedZiinaIntent(
+        createMockDb(tables) as never,
+        'intent_1',
+        'https://example.test',
+        { intent: completedIntent as never },
+      );
+
+      expect(result).toEqual({ ok: true, action: 'processed' });
+      expect(tables.ziina_payments[0].status).toBe('completed');
+      expect(tables.reports[0].plan_type).toBe('7day');
+      expect(tables.reports[0].upsell_converted_at).toEqual(expect.any(String));
+      expect(inngest.send).toHaveBeenCalledWith({
+        id: 'report-extend:report_1',
+        name: 'report/extend',
+        data: { reportId: 'report_1', baseUrl: 'https://example.test' },
+      });
+    } finally {
+      if (previousEventKey === undefined) delete process.env.INNGEST_EVENT_KEY;
+      else process.env.INNGEST_EVENT_KEY = previousEventKey;
+    }
   });
 });

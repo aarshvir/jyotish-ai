@@ -30,6 +30,7 @@ import {
   type PipelinePhaseName,
 } from '@/lib/reports/orchestrator';
 import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
+import { assertMonthlyExtensionSucceeded } from '@/lib/ziina/monthlyUpgradeSafety';
 import { runScriptureEmbedRefresh } from '@/lib/rag/embedChunksJob';
 import { createReportRun, updateReportRun } from '@/lib/observability/reportRuns';
 import { withReportRunContext } from '@/lib/observability/context';
@@ -290,6 +291,9 @@ export const extendReportToMonthlyJob = inngest.createFunction(
     const { reportId, baseUrl } = (event as unknown as { data: ReportExtendEvent['data'] }).data;
     const result = await extendReportToMonthly(baseUrl, reportId);
     console.log(`[inngest] extend monthly reportId=${reportId}`, result);
+    // Returning { ok: false } marks an Inngest run successful. Throw so transient
+    // database/downstream failures consume the configured retries instead.
+    assertMonthlyExtensionSucceeded(result);
     return result;
   },
 );
