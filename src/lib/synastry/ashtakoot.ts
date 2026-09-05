@@ -1,7 +1,7 @@
 /**
  * Ashtakoot / Guna Milan — 8 kootas, 36 points max.
- * Uses Moon nakshatra indices 0..26 (Ashwini=0 … Revati=26).
- * Classical groupings follow common North-Indian parashari tables used in software kundli.
+ * Uses Moon nakshatra indices 0..26 (Ashwini=0 … Revati=26) and Moon sign indices 0..11.
+ * Classical North-Indian parashari tables (Bhakoot house counts, Graha Maitri via rashi lords).
  */
 
 export const NAKSHATRA_NAMES = [
@@ -12,19 +12,68 @@ export const NAKSHATRA_NAMES = [
   'Uttara Bhadrapada', 'Revati',
 ] as const;
 
-/** 0 Deva, 1 Manushya, 2 Rakshasa */
+/** Moon-sign lords (Aries=0 … Pisces=11). */
+const SIGN_LORDS = [
+  'Mars', 'Venus', 'Mercury', 'Moon', 'Sun', 'Mercury',
+  'Venus', 'Mars', 'Jupiter', 'Saturn', 'Saturn', 'Jupiter',
+] as const;
+
+type PlanetRel = 'friend' | 'neutral' | 'enemy';
+
+/** Natural (naisargika) friendship — used for Graha Maitri. */
+const PLANET_REL: Record<string, Record<string, PlanetRel>> = {
+  Sun: { Sun: 'friend', Moon: 'friend', Mars: 'friend', Jupiter: 'friend', Mercury: 'neutral', Venus: 'enemy', Saturn: 'enemy' },
+  Moon: { Moon: 'friend', Sun: 'friend', Mercury: 'friend', Mars: 'neutral', Jupiter: 'neutral', Venus: 'neutral', Saturn: 'neutral' },
+  Mars: { Mars: 'friend', Sun: 'friend', Moon: 'friend', Jupiter: 'friend', Venus: 'neutral', Saturn: 'neutral', Mercury: 'enemy' },
+  Mercury: { Mercury: 'friend', Sun: 'friend', Venus: 'friend', Mars: 'neutral', Jupiter: 'neutral', Saturn: 'neutral', Moon: 'enemy' },
+  Jupiter: { Jupiter: 'friend', Sun: 'friend', Moon: 'friend', Mars: 'friend', Saturn: 'neutral', Mercury: 'enemy', Venus: 'enemy' },
+  Venus: { Venus: 'friend', Mercury: 'friend', Saturn: 'friend', Mars: 'neutral', Jupiter: 'neutral', Sun: 'enemy', Moon: 'enemy' },
+  Saturn: { Saturn: 'friend', Mercury: 'friend', Venus: 'friend', Jupiter: 'neutral', Sun: 'enemy', Moon: 'enemy', Mars: 'enemy' },
+};
+
+/**
+ * 0 Deva, 1 Manushya, 2 Rakshasa.
+ * Ardra is Manushya (was incorrectly Rakshasa, corrupting Gana for Ardra Moons).
+ */
 const GANA: number[] = [
-  0, 1, 2, 1, 0, 2, 0, 0, 2, 2, 1, 1, 0, 2, 0, 2, 0, 2, 2, 1, 1, 0, 2, 2, 1, 1, 0,
+  0, 1, 2, 1, 0, 1, 0, 0, 2, 2, 1, 1, 0, 2, 0, 2, 0, 2, 2, 1, 1, 0, 2, 2, 1, 1, 0,
 ];
 
-/** 0 Vata, 1 Pitta, 2 Kapha (simplified nadi groups) */
+/**
+ * Classical Ashtakoot Nadi (Adi=0 / Madhya=1 / Antya=2) by Moon nakshatra.
+ * Was a bogus repeating 0,0,1,1,1,2,2,2… block that mislabeled 18/27 stars and
+ * flipped Nadi Dosha (±8 pts) for ~44% of Moon pairs.
+ *
+ * Adi: Ashwini, Ardra, Punarvasu, Uttara Phalguni, Hasta, Jyeshtha, Mula,
+ *      Shatabhisha, Purva Bhadrapada
+ * Madhya: Bharani, Mrigashira, Pushya, Purva Phalguni, Chitra, Anuradha,
+ *         Purva Ashadha, Dhanishta, Uttara Bhadrapada
+ * Antya: Krittika, Rohini, Ashlesha, Magha, Swati, Vishakha, Uttara Ashadha,
+ *        Shravana, Revati
+ */
 const NADI: number[] = [
-  0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 1,
+  0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2, 2, 1, 0, 0, 1, 2,
 ];
 
+/**
+ * Classical Yoni animal id per nakshatra (14 animals, not a 0..8 cycle).
+ * 0 Horse, 1 Elephant, 2 Sheep, 3 Snake, 4 Dog, 5 Cat, 6 Rat, 7 Cow,
+ * 8 Buffalo, 9 Tiger, 10 Deer, 11 Monkey, 12 Mongoose, 13 Lion.
+ */
 const YONI_MAP: number[] = [
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8, 0, 1, 2, 3, 4, 5, 6, 7, 8,
+  0, 1, 2, 3, 3, 4, 5, 2, 5, 6, 6, 7, 8, 9, 8, 9, 10, 10, 4, 11, 12, 11, 13, 0, 13, 7, 1,
 ];
+
+/** Mahavaira (bitter foe) yoni pairs — classical 0 points. Sorted lo-hi keys. */
+const YONI_MAHAVIRA = new Set([
+  '0-8', // Horse–Buffalo
+  '1-13', // Elephant–Lion
+  '2-11', // Sheep–Monkey
+  '3-12', // Snake–Mongoose
+  '4-10', // Dog–Deer
+  '5-6', // Cat–Rat
+  '7-9', // Cow–Tiger
+]);
 
 export interface KootaLine {
   name: string;
@@ -83,31 +132,54 @@ function scoreTara(nakA: number, nakB: number): KootaLine {
   };
 }
 
+function yoniPoints(animalA: number, animalB: number): number {
+  if (animalA === animalB) return 4;
+  const lo = Math.min(animalA, animalB);
+  const hi = Math.max(animalA, animalB);
+  if (YONI_MAHAVIRA.has(`${lo}-${hi}`)) return 0;
+  // Non-foe different animals: classical tables span 1–3; neutral 2 is the
+  // honest middle (old code used adjacent-index=2 / else=0, which invented foes).
+  return 2;
+}
+
 function scoreYoni(nakA: number, nakB: number): KootaLine {
   const ya = YONI_MAP[nakA] ?? 0;
   const yb = YONI_MAP[nakB] ?? 0;
-  const score = ya === yb ? 4 : Math.abs(ya - yb) === 1 ? 2 : 0;
+  const score = yoniPoints(ya, yb);
   return {
     name: 'Yoni',
     max: 4,
     score,
-    note: ya === yb ? 'Same yoni animal' : 'Different instincts',
+    note:
+      score === 4
+        ? 'Same yoni animal'
+        : score === 0
+          ? 'Mahavaira yoni — classical 0'
+          : 'Different yoni animals',
   };
 }
 
-function scoreGrahaMaitri(nakA: number, nakB: number): KootaLine {
-  const ga = GANA[nakA] ?? 0;
-  const gb = GANA[nakB] ?? 0;
-  let score = 0;
-  if (ga === gb) score = 5;
-  else if ((ga === 0 && gb === 1) || (ga === 1 && gb === 0)) score = 4;
-  else if ((ga === 0 && gb === 2) || (ga === 2 && gb === 0)) score = 1;
-  else score = 3;
+function grahaMaitriPoints(signA: number, signB: number): number {
+  const la = SIGN_LORDS[((signA % 12) + 12) % 12];
+  const lb = SIGN_LORDS[((signB % 12) + 12) % 12];
+  if (la === lb) return 5;
+  const ab = PLANET_REL[la]?.[lb] ?? 'neutral';
+  const ba = PLANET_REL[lb]?.[la] ?? 'neutral';
+  if (ab === 'friend' && ba === 'friend') return 5;
+  if ((ab === 'friend' && ba === 'neutral') || (ab === 'neutral' && ba === 'friend')) return 4;
+  if (ab === 'neutral' && ba === 'neutral') return 3;
+  if ((ab === 'friend' && ba === 'enemy') || (ab === 'enemy' && ba === 'friend')) return 1;
+  if ((ab === 'neutral' && ba === 'enemy') || (ab === 'enemy' && ba === 'neutral')) return 0.5;
+  return 0;
+}
+
+function scoreGrahaMaitri(signA: number, signB: number): KootaLine {
+  const score = grahaMaitriPoints(signA, signB);
   return {
     name: 'Graha Maitri',
     max: 5,
     score,
-    note: 'Friendship of lunar constellations (gana)',
+    note: 'Friendship of Moon-sign lords',
   };
 }
 
@@ -123,15 +195,20 @@ function scoreGana(nakA: number, nakB: number): KootaLine {
   };
 }
 
+/**
+ * Bhakoot dosha when Moon signs stand in 2/12, 5/9, or 6/8 from each other.
+ * Whole-sign house count from A to B is `diff + 1`, so bad modular diffs are
+ * 1 & 11 (2/12), 4 & 8 (5/9), 5 & 7 (6/8). Diff 6 is the 7th (opposition) — full points.
+ */
 function scoreBhakoot(signA: number, signB: number): KootaLine {
   const diff = (signB - signA + 12) % 12;
-  const bad = [6, 8];
+  const bad = [1, 4, 5, 7, 8, 11];
   const score = bad.includes(diff) ? 0 : 7;
   return {
     name: 'Bhakoot',
     max: 7,
     score,
-    note: score === 7 ? 'Rashi relationship supportive' : 'Bhakoot dosha risk (2/12, 5/12, 6/8)',
+    note: score === 7 ? 'Rashi relationship supportive' : 'Bhakoot dosha risk (2/12, 5/9, 6/8)',
   };
 }
 
@@ -166,7 +243,7 @@ export function computeAshtakoot(params: {
     scoreVashya(sa, sb),
     scoreTara(a, b),
     scoreYoni(a, b),
-    scoreGrahaMaitri(a, b),
+    scoreGrahaMaitri(sa, sb),
     scoreGana(a, b),
     scoreBhakoot(sa, sb),
     scoreNadi(a, b),

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { computeAshtakoot } from './ashtakoot';
 
+function koota(name: string, r: ReturnType<typeof computeAshtakoot>) {
+  return r.breakdown.find((k) => k.name === name);
+}
+
 describe('computeAshtakoot', () => {
   it('matches golden total for identical Moons (Ashwini, Aries / Ashwini, Aries)', () => {
     const r = computeAshtakoot({
@@ -21,7 +25,7 @@ describe('computeAshtakoot', () => {
       moonSignIndexA: 0,
       moonSignIndexB: 0,
     });
-    const nadi = r.breakdown.find((k) => k.name === 'Nadi');
+    const nadi = koota('Nadi', r);
     expect(nadi?.score).toBe(8);
   });
 
@@ -34,5 +38,122 @@ describe('computeAshtakoot', () => {
     });
     expect(r.total).toBeGreaterThan(0);
     expect(r.total).toBeLessThanOrEqual(36);
+  });
+
+  it('flags Bhakoot dosha for 2/12 Moon signs (Aries–Taurus), not for 7th (Aries–Libra)', () => {
+    const dosha = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 3,
+      moonSignIndexA: 0, // Aries
+      moonSignIndexB: 1, // Taurus — 2/12
+    });
+    expect(koota('Bhakoot', dosha)?.score).toBe(0);
+
+    const opposition = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 14,
+      moonSignIndexA: 0, // Aries
+      moonSignIndexB: 6, // Libra — 7th, full points
+    });
+    expect(koota('Bhakoot', opposition)?.score).toBe(7);
+  });
+
+  it('flags Bhakoot dosha for 5/9 and 6/8 Moon signs', () => {
+    const fiveNine = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 10,
+      moonSignIndexA: 0, // Aries
+      moonSignIndexB: 4, // Leo — 5/9
+    });
+    expect(koota('Bhakoot', fiveNine)?.score).toBe(0);
+
+    const sixEight = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 12,
+      moonSignIndexA: 0, // Aries
+      moonSignIndexB: 5, // Virgo — 6/8
+    });
+    expect(koota('Bhakoot', sixEight)?.score).toBe(0);
+  });
+
+  it('scores Graha Maitri from Moon-sign lords, not gana', () => {
+    // Same Mars lord (Aries + Scorpio) → full 5 even when ganas differ
+    // Ashwini=Deva, Jyeshtha=Rakshasa
+    const sameLord = computeAshtakoot({
+      moonNakshatraIndexA: 0, // Ashwini / Aries / Mars
+      moonNakshatraIndexB: 17, // Jyeshtha / Scorpio / Mars
+      moonSignIndexA: 0,
+      moonSignIndexB: 7,
+    });
+    expect(koota('Graha Maitri', sameLord)?.score).toBe(5);
+
+    // Sun (Leo) vs Venus (Libra) — mutual enemies → 0
+    const enemies = computeAshtakoot({
+      moonNakshatraIndexA: 10,
+      moonNakshatraIndexB: 14,
+      moonSignIndexA: 4, // Leo / Sun
+      moonSignIndexB: 6, // Libra / Venus
+    });
+    expect(koota('Graha Maitri', enemies)?.score).toBe(0);
+  });
+
+  it('treats Ardra as Manushya gana (not Rakshasa)', () => {
+    // Ardra (5) + Bharani (1) — both Manushya → full Gana 6
+    const r = computeAshtakoot({
+      moonNakshatraIndexA: 5,
+      moonNakshatraIndexB: 1,
+      moonSignIndexA: 2, // Gemini (Ardra spans Gemini)
+      moonSignIndexB: 0, // Aries (Bharani)
+    });
+    expect(koota('Gana', r)?.score).toBe(6);
+  });
+
+  it('uses classical Adi/Madhya/Antya Nadi (not the old repeating block)', () => {
+    // Ashwini (Adi) + Ardra (Adi) → Nadi Dosha 0 (old table wrongly awarded 8)
+    const sameAdi = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 5,
+      moonSignIndexA: 0,
+      moonSignIndexB: 2,
+    });
+    expect(koota('Nadi', sameAdi)?.score).toBe(0);
+
+    // Ashwini (Adi) + Bharani (Madhya) → full 8 (old table false-dosha'd both as 0)
+    const different = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 1,
+      moonSignIndexA: 0,
+      moonSignIndexB: 0,
+    });
+    expect(koota('Nadi', different)?.score).toBe(8);
+  });
+
+  it('scores Yoni from classical animal pairs, not adjacent nakshatra indices', () => {
+    // Rohini + Mrigashira — both Snake → full 4 (old map gave adjacent-index 2)
+    const sameSnake = computeAshtakoot({
+      moonNakshatraIndexA: 3,
+      moonNakshatraIndexB: 4,
+      moonSignIndexA: 1,
+      moonSignIndexB: 1,
+    });
+    expect(koota('Yoni', sameSnake)?.score).toBe(4);
+
+    // Ashwini + Shatabhisha — both Horse → full 4
+    const sameHorse = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 23,
+      moonSignIndexA: 0,
+      moonSignIndexB: 10,
+    });
+    expect(koota('Yoni', sameHorse)?.score).toBe(4);
+
+    // Ashwini (Horse) + Hasta (Buffalo) — Mahavaira → 0
+    const foe = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 12,
+      moonSignIndexA: 0,
+      moonSignIndexB: 5,
+    });
+    expect(koota('Yoni', foe)?.score).toBe(0);
   });
 });
