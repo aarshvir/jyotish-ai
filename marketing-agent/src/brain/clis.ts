@@ -130,7 +130,12 @@ export async function callCodex(prompt: string, model: string | null, timeoutMs:
   const args = ['exec', '-s', 'read-only', '--skip-git-repo-check', '--color', 'never'];
   if (model) args.push('-m', model);
   args.push('-o', `"${outFile}"`, '-');
-  const r = await spawnShim('codex', args, prompt, timeoutMs);
+  // CODEX_BIN: the Codex desktop app installs its own (older) CLI first on PATH and shadows the
+  // npm one. On 2026-09-06 the app's 0.152.0 rejected the account's default model while npm's
+  // 0.153.4 accepted it, and because spawnShim resolves via PATH the engine kept getting the
+  // broken one. An explicit binary beats PATH order; unset, behaviour is unchanged.
+  const codexBin = (process.env.CODEX_BIN ?? '').trim() || 'codex';
+  const r = await spawnShim(codexBin, args, prompt, timeoutMs);
   if (r.timedOut) throw new CliError(`codex timed out after ${timeoutMs}ms`);
   if (RATE_RE.test(r.stderr)) throw new RateLimitError(`codex: ${firstLine(r.stderr) || 'rate limited'}`);
   let text = '';
