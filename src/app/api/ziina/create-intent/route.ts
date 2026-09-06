@@ -10,11 +10,12 @@ import {
   isZiinaConfigured,
   type SupportedCurrency,
 } from '@/lib/ziina/server';
-import { getPromoDiscount, redeemPromoCode, hasUserRedeemed } from '@/lib/promo/server';
+import { getPromoDiscount, redeemPromoCode, hasUserRedeemed, oncePerUserOrderId } from '@/lib/promo/server';
 import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
 import { decideStandaloneUnlockCheckout } from '@/lib/ziina/standaloneUnlockGuards';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
+import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 
 /**
  * POST /api/ziina/create-intent
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest) {
   if (promoResult.valid && promoResult.oncePerUser && promoResult.codeId) {
     let alreadyRedeemed: boolean;
     try {
-      alreadyRedeemed = await hasUserRedeemed(promoResult.codeId, auth.user.id);
+      alreadyRedeemed = await hasUserRedeemed(promoResult.codeId, auth.user.id, auth.user.email);
     } catch {
       // Fail closed on a transient lookup error (retryable), never silently allow reuse.
       return NextResponse.json({ error: 'Could not verify your coupon — please try again.' }, { status: 503 });
@@ -129,8 +130,12 @@ export async function POST(request: NextRequest) {
     if (promoResult.codeId) {
       try {
         // Stable order_id so the atomic RPC + its partial-unique index dedupe concurrent
-        // / refreshed unlock POSTs (one redemption per user per standalone product).
-        await redeemPromoCode(promoResult.codeId, auth.user.id, `unlock:${planType}:${auth.user.id}`);
+        // / refreshed unlock POSTs. Once-per-user codes use an email-durable key so
+        // account delete cannot reset redemption; unlimited codes stay per-product.
+        const orderId = promoResult.oncePerUser
+          ? oncePerUserOrderId(promoResult.codeId, auth.user.id, auth.user.email)
+          : `unlock:${planType}:${auth.user.id}`;
+        await redeemPromoCode(promoResult.codeId, auth.user.id, orderId);
       } catch (e) {
         console.warn('[ziina/create-intent] promo redeem failed (non-fatal):', e);
       }
@@ -271,7 +276,7 @@ export async function POST(request: NextRequest) {
     } else if (reportId) {
       const { data: reportRow, error: reportErr } = await db
         .from('reports')
-        .select('user_id, payment_status')
+        .select('user_id, payment_status, status, plan_type')
         .eq('id', reportId)
         .maybeSingle();
 
@@ -290,6 +295,24 @@ export async function POST(request: NextRequest) {
           alreadyPaid: true,
           redirectUrl: `/report/${reportId}?payment_status=paid`,
         });
+      }
+      // Refuse checkout against an already-complete free/preview row. Paying on that
+      // same id used to mark the row paid while skipping regeneration (preview stub
+      // left as the "paid" product). Require a fresh reportId for paid plans.
+      const existingPlan = String(reportRow?.plan_type ?? '').toLowerCase();
+      const isFreeOrPreview =
+        existingPlan === 'free' ||
+        existingPlan === 'preview' ||
+        reportRow?.payment_status === 'free';
+      if (reportRow && reportRow.status === 'complete' && isFreeOrPreview) {
+        return NextResponse.json(
+          {
+            error:
+              'This preview report is already complete. Start a new checkout to unlock a full paid forecast.',
+            code: 'PREVIEW_ALREADY_COMPLETE',
+          },
+          { status: 409 },
+        );
       }
 
       const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();
@@ -341,6 +364,19 @@ export async function POST(request: NextRequest) {
         const n = parseFloat(String(v ?? ''));
         return Number.isFinite(n) ? n : null;
       };
+      const birthLat = toCoord(body.birth_lat);
+      const birthLng = toCoord(body.birth_lng);
+      const currentLat = toCoord(body.current_lat);
+      const currentLng = toCoord(body.current_lng);
+      // Prefer timed-location estimate over client/browser TZ (onboard used to send
+      // getTimezoneOffset() when "live elsewhere" was unchecked).
+      const timezoneOffset = resolveReportTimezoneOffset({
+        clientOffset: body.timezone_offset,
+        birthCity: body.birth_city,
+        birthLng,
+        currentCity: body.current_city,
+        currentLng,
+      });
       const { error: draftErr } = await db.from('reports').upsert(
         {
           id: reportId,
@@ -350,15 +386,12 @@ export async function POST(request: NextRequest) {
           birth_date: body.birth_date ?? '2000-01-01',
           birth_time: body.birth_time ?? '12:00:00',
           birth_city: body.birth_city ?? 'Unknown',
-          birth_lat: toCoord(body.birth_lat),
-          birth_lng: toCoord(body.birth_lng),
+          birth_lat: birthLat,
+          birth_lng: birthLng,
           current_city: body.current_city ?? null,
-          current_lat: toCoord(body.current_lat),
-          current_lng: toCoord(body.current_lng),
-          timezone_offset:
-            typeof body.timezone_offset === 'number'
-              ? body.timezone_offset
-              : parseInt(String(body.timezone_offset ?? '0'), 10) || 0,
+          current_lat: currentLat,
+          current_lng: currentLng,
+          timezone_offset: timezoneOffset,
           plan_type: planType,
           // Persist the buyer's chosen forecast start date so the post-payment
           // auto-dispatch (finalizeIntent) generates from it instead of defaulting to today.

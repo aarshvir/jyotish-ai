@@ -26,6 +26,21 @@ export interface PromoResult {
 }
 
 /**
+ * Stable once-per-user redemption key. Prefer email so account delete + re-signup
+ * cannot reset once_per_user enforcement (user_id changes; email usually does not).
+ * Falls back to user_id when no email is available.
+ */
+export function oncePerUserOrderId(
+  codeId: string,
+  userId: string,
+  email?: string | null,
+): string {
+  const normalized = (email ?? '').trim().toLowerCase();
+  if (normalized) return `promo:${codeId}:email:${normalized}`;
+  return `promo:${codeId}:${userId}`;
+}
+
+/**
  * Look up a promo code from the DB and validate it.
  * Optionally pass the requesting email to enforce the allowlist.
  */
@@ -69,21 +84,38 @@ export async function getPromoDiscount(
   };
 }
 
-/** True if this user has already redeemed this code (for once-per-user enforcement). */
-export async function hasUserRedeemed(codeId: string, userId: string): Promise<boolean> {
+/** True if this user (or the same email) has already redeemed this code. */
+export async function hasUserRedeemed(
+  codeId: string,
+  userId: string,
+  email?: string | null,
+): Promise<boolean> {
   const supabase = createServiceClient();
-  const { data, error } = await supabase
+  // Two lookups (not a raw .or() string) so an email with commas/special chars cannot
+  // break PostgREST filter parsing — and so account delete → re-signup with the same
+  // email still matches the durable email-scoped order_id.
+  const { data: byUser, error: userErr } = await supabase
     .from('promo_redemptions')
     .select('id')
     .eq('code_id', codeId)
     .eq('user_id', userId)
     .limit(1)
     .maybeSingle();
-  // Fail CLOSED: on a transient lookup error, throw so the caller returns a retryable
-  // error instead of silently treating it as "not redeemed" and granting a second
-  // once-per-user discount/free report.
-  if (error) throw new Error(`promo redemption lookup failed: ${error.message}`);
-  return Boolean(data);
+  if (userErr) throw new Error(`promo redemption lookup failed: ${userErr.message}`);
+  if (byUser) return true;
+
+  const emailOrderId = oncePerUserOrderId(codeId, userId, email);
+  const legacyOrderId = `promo:${codeId}:${userId}`;
+  const orderIds = emailOrderId === legacyOrderId ? [emailOrderId] : [emailOrderId, legacyOrderId];
+  const { data: byOrder, error: orderErr } = await supabase
+    .from('promo_redemptions')
+    .select('id')
+    .eq('code_id', codeId)
+    .in('order_id', orderIds)
+    .limit(1)
+    .maybeSingle();
+  if (orderErr) throw new Error(`promo redemption lookup failed: ${orderErr.message}`);
+  return Boolean(byOrder);
 }
 
 /**

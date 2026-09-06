@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
-import { isValidLat, isValidLng } from '@/lib/utils/coords';
+import { hasValidBirthCoords } from '@/lib/utils/coords';
 import { track } from '@/components/analytics/PostHogProvider';
 
 const DEFAULT_A: BirthDetails = {
@@ -64,7 +64,7 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
   }, [searchParams]);
 
   function valid(p: BirthDetails): boolean {
-    return !!p.birth_date && isValidLat(p.birth_lat) && isValidLng(p.birth_lng);
+    return !!p.birth_date && hasValidBirthCoords(p);
   }
 
   async function startCheckout() {

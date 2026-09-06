@@ -41,7 +41,11 @@ const CAL = {
     ['2026-10-14', '2026-11-03'],
   ] as Array<[string, string]>,
   jupiter_direct: ['2026-03-10', '2026-03-11'],
-  jupiter_retrograde_start: '2026-10-09',
+  // Bounded periods — never open-ended. Civil dates match trop. station windows
+  // (Jupiter Rx ~2026-12-13 → 2027-04-13). Keep in lockstep with main.py.
+  jupiter_retrograde_periods: [
+    ['2026-12-13', '2027-04-13'],
+  ] as Array<[string, string]>,
   jupiter_enters_cancer: ['2026-06-01', '2026-06-02'],
   mercury_direct: ['2026-03-20', '2026-07-12', '2026-11-03'],
   ugadi: ['2026-03-19'],
@@ -77,12 +81,18 @@ export function getSpecialEventsForDate(dateStr: string): string[] {
   const events: string[] = [];
   if (!isValidDate(dateStr)) return events;
 
+  const isMercuryDirect = CAL.mercury_direct.includes(dateStr);
+  // Station-direct days are celebrated as mercury_direct; do not also apply the
+  // mercury_retrograde penalty (+tier2 stacking) on the same civil date.
   for (const [start, end] of CAL.mercury_retrograde_periods) {
-    if (start <= dateStr && dateStr <= end) { events.push('mercury_retrograde'); break; }
+    if (start <= dateStr && dateStr <= end) {
+      if (!isMercuryDirect) events.push('mercury_retrograde');
+      break;
+    }
   }
   if (CAL.jupiter_direct.includes(dateStr)) events.push('jupiter_direct');
   if (CAL.jupiter_enters_cancer.includes(dateStr)) events.push('jupiter_enters_cancer');
-  if (CAL.mercury_direct.includes(dateStr)) events.push('mercury_direct');
+  if (isMercuryDirect) events.push('mercury_direct');
   if (CAL.ugadi.includes(dateStr)) events.push('ugadi');
   if (CAL.ram_navami.includes(dateStr)) events.push('ram_navami');
   if (CAL.akshaya_tritiya.includes(dateStr)) events.push('akshaya_tritiya');
@@ -103,7 +113,12 @@ export function getSpecialEventsForDate(dateStr: string): string[] {
   if (CAL.ekadashi_dates.includes(dateStr)) events.push('ekadashi');
   if (CAL.solar_eclipse.includes(dateStr)) events.push('solar_eclipse');
   if (CAL.lunar_eclipse.includes(dateStr)) events.push('lunar_eclipse');
-  if (dateStr >= CAL.jupiter_retrograde_start) events.push('jupiter_retrograde');
+  for (const [start, end] of CAL.jupiter_retrograde_periods) {
+    if (start <= dateStr && dateStr <= end) {
+      events.push('jupiter_retrograde');
+      break;
+    }
+  }
 
   return events;
 }

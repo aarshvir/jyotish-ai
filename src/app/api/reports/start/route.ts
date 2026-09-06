@@ -28,8 +28,12 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
-import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/server';
+import { getPromoDiscount, hasUserRedeemed, redeemPromoCode, oncePerUserOrderId } from '@/lib/promo/server';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
+import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
+import { decideAfterPromoRedeem } from '@/lib/promo/redeemGate';
+import { decideFreeReportClaim } from '@/lib/reports/freeReportGate';
+import { minForecastDaysForPlan } from '@/lib/reports/forecastDayCount';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -353,10 +357,16 @@ export async function POST(request: NextRequest) {
   }
 
   const rd = existing?.report_data as { days?: unknown[] } | null | undefined;
+  const forceRestart = body.forceRestart === true;
+  const dayCount = Array.isArray(rd?.days) ? (rd!.days as unknown[]).length : 0;
+  const planForDone = String(body.plan_type ?? existing?.plan_type ?? '7day');
+  // A complete free/preview stub (1 day) must not block paid regeneration or an
+  // explicit Try Again — otherwise paying on the same reportId (or forceRestart)
+  // returns skipped forever with preview content.
   const alreadyDone =
+    !forceRestart &&
     existing?.status === 'complete' &&
-    Array.isArray(rd?.days) &&
-    (rd!.days as unknown[]).length > 0;
+    dayCount >= minForecastDaysForPlan(planForDone);
 
   if (alreadyDone) {
     return NextResponse.json({
@@ -369,8 +379,6 @@ export async function POST(request: NextRequest) {
       dispatch_mode: (useInngest ? 'inngest' : 'inline_fallback') as ReportStartDispatchMode,
     });
   }
-
-  const forceRestart = body.forceRestart === true;
 
   if (
     existing?.status === 'generating' &&
@@ -420,13 +428,21 @@ export async function POST(request: NextRequest) {
 
   const generationTraceId = randomUUID();
 
-  const tzBody = body.timezone_offset;
-  const timezoneOffset =
-    typeof tzBody === 'number' && Number.isFinite(tzBody)
-      ? tzBody
-      : typeof tzBody === 'string' && tzBody.trim() !== ''
-        ? parseInt(tzBody, 10) || 0
-        : 0;
+  // Prefer an estimate from the timed location (current city if set, else birth)
+  // over a client/browser timezone_offset. Onboard historically sent
+  // -getTimezoneOffset() whenever "I live elsewhere" was unchecked, which shifted
+  // every paid hourly window for travelers (e.g. Dubai browser + Delhi birth).
+  const parseLng = (v: unknown): number | null => {
+    const n = typeof v === 'number' ? v : parseFloat(String(v ?? ''));
+    return Number.isFinite(n) ? n : null;
+  };
+  const timezoneOffset = resolveReportTimezoneOffset({
+    clientOffset: body.timezone_offset,
+    birthCity: body.birth_city,
+    birthLng: parseLng(body.birth_lng),
+    currentCity: body.current_city,
+    currentLng: parseLng(body.current_lng),
+  });
 
   const nowIso = new Date().toISOString();
   // The bypass / service-key principal running the e2e scripts (never a real user:
@@ -507,7 +523,7 @@ export async function POST(request: NextRequest) {
     if (promo.oncePerUser && promo.codeId) {
       let alreadyRedeemed: boolean;
       try {
-        alreadyRedeemed = await hasUserRedeemed(promo.codeId, auth.user.id);
+        alreadyRedeemed = await hasUserRedeemed(promo.codeId, auth.user.id, auth.user.email);
       } catch {
         // Fail closed on a transient lookup error — retryable, not a silent free grant.
         await releaseOwnedLock();
@@ -611,23 +627,32 @@ export async function POST(request: NextRequest) {
   // so a code that hit its max_uses cap blocks generation instead of granting a free
   // report past the cap (the read-time check in getPromoDiscount is racy at the
   // boundary; the RPC enforces the cap atomically). The RPC returns FALSE for BOTH a
-  // genuine cap-reached AND an idempotent duplicate (same order_id) — disambiguate by
-  // re-reading the cap, so only a full cap blocks; a duplicate (race/retry) proceeds.
-  // Once-per-user codes use the stable promo:{codeId}:{userId} order_id (the unique
-  // index enforces once-per-user across the free + checkout paths); unlimited codes
-  // use the per-report id so legitimate repeat use is allowed.
+  // genuine cap-reached AND an idempotent duplicate (same order_id). Cap-reached
+  // blocks; once-per-user duplicates only proceed for the SAME report already marked
+  // promo (retry). A concurrent second reportId that raced past hasUserRedeemed must
+  // NOT proceed — that was an unbounded free paid-report grant. Unlimited codes use
+  // a per-report order_id so duplicate ⇒ same-report retry and may proceed.
   if (promoCodeIdToRedeem) {
     const orderId = promoOncePerUser
-      ? `promo:${promoCodeIdToRedeem}:${auth.user.id}`
+      ? oncePerUserOrderId(promoCodeIdToRedeem, auth.user.id, auth.user.email)
       : reportId;
-    let booked = true;
+    let booked: boolean;
     try {
       booked = await redeemPromoCode(promoCodeIdToRedeem, auth.user.id, orderId);
     } catch (e) {
-      // Redemption bookkeeping hiccup: don't fail the report over it; the atomic cap
-      // still held in the RPC. (Matches prior fail-open-on-bookkeeping behavior.)
-      console.warn('[reports/start] promo redeem failed (non-fatal):', e);
-      booked = true;
+      // Fail CLOSED: a throw here means we could not prove the coupon was booked.
+      // Proceeding would hand out free paid-tier reports without burning the code.
+      console.warn('[reports/start] promo redeem failed:', e);
+      await releaseOwnedLock();
+      return NextResponse.json(
+        {
+          error: 'Could not apply your coupon — please try again.',
+          code: 'PROMO_REDEEM_FAILED',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 503 },
+      );
     }
     if (!booked) {
       const { data: capRow } = await db
@@ -637,19 +662,36 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       const cap = capRow as { used_count?: number; max_uses?: number | null } | null;
       const capReached = cap?.max_uses != null && (cap.used_count ?? 0) >= cap.max_uses;
-      if (capReached) {
+      // Re-read this report's payment_status: concurrent same-report retries may have
+      // been granted promo by the winning twin between our initial `existing` read and now.
+      let reportAlreadyPromo = existing?.payment_status === 'promo';
+      if (!reportAlreadyPromo) {
+        const { data: fresh } = await db
+          .from('reports')
+          .select('payment_status')
+          .eq('id', reportId)
+          .eq('user_id', auth.user.id)
+          .maybeSingle();
+        reportAlreadyPromo = (fresh as { payment_status?: string } | null)?.payment_status === 'promo';
+      }
+      const decision = decideAfterPromoRedeem({
+        booked: false,
+        oncePerUser: promoOncePerUser,
+        capReached,
+        reportAlreadyPromo,
+      });
+      if (decision.action === 'block') {
         await releaseOwnedLock();
         return NextResponse.json(
           {
-            error: 'This code has reached its usage limit.',
-            code: 'PROMO_LIMIT_REACHED',
+            error: decision.error,
+            code: decision.code,
             engine: 'none' as ReportStartEngine,
             dispatch_mode: 'blocked' as ReportStartDispatchMode,
           },
-          { status: 409 },
+          { status: decision.code === 'PROMO_LIMIT_REACHED' ? 409 : 400 },
         );
       }
-      // else: idempotent duplicate (concurrent retry / replay) — proceed to generate.
     }
   }
 
@@ -700,6 +742,65 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 },
     );
+  }
+
+  // Close the free-report TOCTOU race: two concurrent starts can both pass the
+  // pre-upsert count check. Re-read free/preview rows and keep only the oldest.
+  if (isFreePlan && !userIsAdmin) {
+    const { data: freeRows, error: freeRaceErr } = await db
+      .from('reports')
+      .select('id')
+      .eq('user_id', auth.user.id)
+      .in('plan_type', ['free', 'preview'])
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true });
+    if (freeRaceErr) {
+      // Don't leave the row pinned 'generating' — the client will retry.
+      await db
+        .from('reports')
+        .update({
+          status: 'error',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reportId)
+        .eq('user_id', auth.user.id);
+      await releaseOwnedLock();
+      console.error('[reports/start] free-report race re-check failed:', freeRaceErr.message);
+      return NextResponse.json(
+        {
+          error: 'Unable to verify free report entitlement. Please retry in a moment.',
+          code: 'FREE_LIMIT_CHECK_FAILED',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 503 },
+      );
+    }
+    const freeIds = ((freeRows ?? []) as { id: string }[]).map((r) => r.id);
+    if (decideFreeReportClaim({ reportId, freeReportIdsOldestFirst: freeIds }) === 'limit_reached') {
+      // Drop this row out of the free/preview set so it cannot block a later retry
+      // of a different id, and so the oldest winner remains the sole entitlement.
+      await db
+        .from('reports')
+        .update({
+          status: 'error',
+          plan_type: '7day',
+          payment_status: 'unpaid',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reportId)
+        .eq('user_id', auth.user.id);
+      await releaseOwnedLock();
+      return NextResponse.json(
+        {
+          error: 'You have already used your one free report. Choose a plan to unlock more.',
+          code: 'FREE_LIMIT_REACHED',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 402 },
+      );
+    }
   }
 
   // Optional columns (see migrations 20260426 / 20260427) — omit from upsert so older DBs work.

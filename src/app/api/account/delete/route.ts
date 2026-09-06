@@ -55,7 +55,9 @@ export async function POST(req: NextRequest) {
   const secondary: Array<[string, PromiseLike<{ error: { message: string } | null }>]> = [
     ['user_kundali_unlock', db.from('user_kundali_unlock').delete().eq('user_id', uid)],
     ['user_synastry_unlock', db.from('user_synastry_unlock').delete().eq('user_id', uid)],
-    ['promo_redemptions', db.from('promo_redemptions').delete().eq('user_id', uid)],
+    // Keep promo_redemptions (user_id SET NULL via FK on auth delete) so once-per-user
+    // order_id rows remain as an audit trail. Deleting them let the same person
+    // re-signup and re-redeem once_per_user codes. used_count is never decremented.
     ['analytics_events', db.from('analytics_events').delete().eq('user_id', uid)],
     ['ziina_payments', db.from('ziina_payments').update({ user_id: null }).eq('user_id', uid)],
     ['feedback', db.from('feedback').update({ user_id: null, email: null }).eq('user_id', uid)],
