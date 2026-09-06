@@ -12,6 +12,7 @@ import {
 } from '@/lib/ziina/server';
 import { getPromoDiscount, redeemPromoCode, hasUserRedeemed } from '@/lib/promo/server';
 import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
+import { decideStandaloneUnlockCheckout } from '@/lib/ziina/standaloneUnlockGuards';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 
@@ -188,7 +189,86 @@ export async function POST(request: NextRequest) {
   const allowTestMode = testMode === true && !productionRuntime;
 
   try {
-    if (reportId && !isStandaloneUnlock) {
+    // Standalone Kundali / Synastry unlocks are not bound to a report_id, so the
+    // forecast alreadyPaid / pending-reuse / supersede guards below never ran for
+    // them. Without the same guards, double-submit / two tabs / "Unlock" again after
+    // a completed purchase mint multiple payable intents and the 2nd charge buys nothing
+    // (finalize only re-upserts the unlock row).
+    if (isStandaloneUnlock) {
+      const unlockTable = planType === 'kundali' ? 'user_kundali_unlock' : 'user_synastry_unlock';
+      const { data: unlockRow, error: unlockLookupErr } = await db
+        .from(unlockTable)
+        .select('user_id')
+        .eq('user_id', auth.user.id)
+        .maybeSingle();
+      if (unlockLookupErr) {
+        console.error('[ziina/create-intent] unlock lookup failed:', unlockLookupErr.message);
+        return NextResponse.json({ error: 'Could not start checkout' }, { status: 500 });
+      }
+
+      const { data: completedStandalone, error: completedStandaloneErr } = await db
+        .from('ziina_payments')
+        .select('ziina_intent_id')
+        .eq('user_id', auth.user.id)
+        .is('report_id', null)
+        .eq('plan_type', planType)
+        .eq('status', 'completed')
+        .limit(1)
+        .maybeSingle();
+      if (completedStandaloneErr) {
+        console.error(
+          '[ziina/create-intent] completed standalone lookup failed:',
+          completedStandaloneErr.message,
+        );
+        return NextResponse.json({ error: 'Could not start checkout' }, { status: 500 });
+      }
+
+      let reusablePending: { id: string; redirect_url: string; amount: number } | null = null;
+      const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();
+      const { data: existingPayment, error: existingPaymentErr } = await db
+        .from('ziina_payments')
+        .select('ziina_intent_id')
+        .eq('user_id', auth.user.id)
+        .is('report_id', null)
+        .eq('plan_type', planType)
+        .eq('status', 'pending')
+        .gte('created_at', pendingCutoff)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existingPaymentErr) {
+        console.warn(
+          '[ziina/create-intent] pending standalone intent lookup failed (continuing with new intent):',
+          existingPaymentErr.message,
+        );
+      } else if (existingPayment?.ziina_intent_id) {
+        const existingIntent = await getPaymentIntent(existingPayment.ziina_intent_id);
+        const expectedAmount = computeIntentAmount(planType, currency, discountPct);
+        reusablePending = getReusablePendingZiinaIntent(existingIntent, { currency, expectedAmount });
+      }
+
+      const decision = decideStandaloneUnlockCheckout({
+        hasUnlockRow: !!unlockRow,
+        hasCompletedPayment: !!completedStandalone,
+        reusablePending,
+      });
+      if (decision.action === 'already_unlocked') {
+        return NextResponse.json({
+          alreadyUnlocked: true,
+          redirectUrl: `/${planType}?unlocked=1`,
+        });
+      }
+      if (decision.action === 'reuse_pending') {
+        return NextResponse.json({
+          intentId: decision.intentId,
+          redirectUrl: decision.redirectUrl,
+          currency,
+          amount: decision.amount,
+          discountPct,
+        });
+      }
+    } else if (reportId) {
       const { data: reportRow, error: reportErr } = await db
         .from('reports')
         .select('user_id, payment_status')
@@ -346,7 +426,17 @@ export async function POST(request: NextRequest) {
     // pile of pending rows, and the 90s reuse lookup (orders by created_at desc) could
     // surface a just-created stale row over a genuinely reusable older intent. finalize
     // keys on ziina_intent_id, so cancelling pending rows never affects a completed one.
-    if (reportId && !isStandaloneUnlock) {
+    // Standalone unlocks use report_id IS NULL — supersede those too (same double-charge
+    // pile as forecast/upgrade without this).
+    if (isStandaloneUnlock) {
+      await db
+        .from('ziina_payments')
+        .update({ status: 'cancelled' })
+        .eq('user_id', auth.user.id)
+        .is('report_id', null)
+        .eq('plan_type', planType)
+        .eq('status', 'pending');
+    } else if (reportId) {
       await db
         .from('ziina_payments')
         .update({ status: 'cancelled' })
