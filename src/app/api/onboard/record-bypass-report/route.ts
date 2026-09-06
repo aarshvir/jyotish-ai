@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/admin';
 import { isBypassToken } from '@/lib/bypass';
 
 export const dynamic = 'force-dynamic';
@@ -37,7 +38,9 @@ export async function POST(request: NextRequest) {
           : body.birth_time
         : '12:00:00';
 
-    const { data, error } = await supabase
+    // Service role: 'bypass' is an entitled grant and RLS forbids browser writes of it.
+    const db = createServiceClient();
+    const { data, error } = await db
       .from('reports')
       .insert({
         user_id: user.id,
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     // Optional column: phone (migration 20260614_user_phone). Non-fatal on older DBs.
     if (typeof body?.phone === 'string' && body.phone.trim() && data?.id) {
-      const { error: phoneErr } = await supabase
+      const { error: phoneErr } = await db
         .from('reports')
         .update({ phone: body.phone.trim() })
         .eq('id', data.id);

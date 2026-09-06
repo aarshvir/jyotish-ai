@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isEntitledPaymentStatus, hasPaidMoney } from './entitlement';
+import { isEntitledPaymentStatus, hasPaidMoney, clientWritablePaymentStatus } from './entitlement';
 
 describe('isEntitledPaymentStatus — may this report show paid content?', () => {
   it('accepts every status that represents a granted report', () => {
@@ -31,6 +31,18 @@ describe('hasPaidMoney — did revenue actually happen?', () => {
     for (const s of ['promo', 'bypass']) {
       expect(isEntitledPaymentStatus(s)).toBe(true);
       expect(hasPaidMoney(s)).toBe(false);
+    }
+  });
+});
+
+describe('clientWritablePaymentStatus — what the browser is allowed to persist', () => {
+  it('keeps a free/preview insert as free', () => {
+    expect(clientWritablePaymentStatus('free')).toBe('free');
+  });
+
+  it('never lets the browser persist an entitled status (#208 bypass self-grant)', () => {
+    for (const s of ['bypass', 'paid', 'promo', 'unpaid', 'pending', '', null, undefined, 'PAID']) {
+      expect(clientWritablePaymentStatus(s), String(s)).toBe('unpaid');
     }
   });
 });

@@ -558,3 +558,45 @@ ALTER TABLE public.marketing_assets ADD COLUMN IF NOT EXISTS emotional_register 
 ALTER TABLE public.marketing_assets ADD COLUMN IF NOT EXISTS duration_target_sec NUMERIC;
 CREATE INDEX IF NOT EXISTS idx_marketing_assets_hook_family ON public.marketing_assets (hook_family);
 CREATE INDEX IF NOT EXISTS idx_marketing_assets_decision_domain ON public.marketing_assets (decision_domain);
+
+-- ---------------------------------------------------------------------
+-- 20260817_lock_down_bypass_report_status.sql
+-- ---------------------------------------------------------------------
+-- CRITICAL payment-bypass fix (#208 regression).
+-- #208 treated payment_status='bypass' as paid-equivalent (Ask, hourly-day,
+-- personalized, upgrade, status payload) while RLS still allowed the browser
+-- to write 'bypass' and the report page defaulted new rows to it.
+ALTER TABLE public.reports ALTER COLUMN payment_status SET DEFAULT 'unpaid';
+
+DROP POLICY IF EXISTS "Users insert own reports" ON public.reports;
+CREATE POLICY "Users insert own reports" ON public.reports
+  FOR INSERT
+  WITH CHECK (
+    (select auth.uid()) = user_id
+    AND COALESCE(payment_status, '') NOT IN ('paid', 'promo', 'bypass')
+  );
+
+DROP POLICY IF EXISTS "Users update own reports" ON public.reports;
+CREATE POLICY "Users update own reports" ON public.reports
+  FOR UPDATE
+  USING ((select auth.uid()) = user_id)
+  WITH CHECK (
+    (select auth.uid()) = user_id
+    AND COALESCE(payment_status, '') NOT IN ('paid', 'promo', 'bypass')
+  );
+
+UPDATE public.reports r
+SET payment_status = CASE
+  WHEN COALESCE(r.plan_type, '') IN ('free', 'preview') THEN 'free'
+  ELSE 'unpaid'
+END
+WHERE r.payment_status = 'bypass'
+  AND r.status IN ('generating', 'pending')
+  AND r.generation_completed_at IS NULL
+  AND NOT EXISTS (
+    SELECT 1
+    FROM public.ziina_payments z
+    WHERE z.report_id = r.id
+      AND z.status = 'completed'
+  );
+

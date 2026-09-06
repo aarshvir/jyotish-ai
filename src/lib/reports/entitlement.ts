@@ -5,8 +5,11 @@
  *  - "Is this report entitled to paid content?"  → isEntitledPaymentStatus()
  *      'paid'   — a completed Ziina payment
  *      'promo'  — a server-validated 100%-off code (redemption already booked)
- *      'bypass' — an admin/e2e grant (never client-settable: reports/start collapses
- *                 any client-claimed non-'free' status to 'unpaid')
+ *      'bypass' — an admin/e2e grant. NEVER client-settable: RLS rejects
+ *                 browser writes of paid/promo/bypass, and
+ *                 clientWritablePaymentStatus() collapses anything entitled
+ *                 to 'unpaid' before the report page inserts a row. reports/start
+ *                 also collapses a client-claimed non-'free' status to 'unpaid'.
  *
  *  - "Did money actually change hands?"          → hasPaidMoney()
  *      'paid' only. Use for revenue counts, CRM `paidEver`, founder digests —
@@ -25,4 +28,15 @@ export function isEntitledPaymentStatus(status: string | null | undefined): bool
 /** Real revenue only. NOT an entitlement check — a promo user is entitled but has paid nothing. */
 export function hasPaidMoney(status: string | null | undefined): boolean {
   return (status ?? '').trim() === 'paid';
+}
+
+/**
+ * Statuses a browser (anon-key + RLS) may persist on `reports`.
+ * 'paid' / 'promo' / 'bypass' are service-role grants only — the #208 Ask/upgrade
+ * gates treat them as entitled, so a client write of 'bypass' was a free unlock.
+ */
+export function clientWritablePaymentStatus(
+  status: string | null | undefined,
+): 'free' | 'unpaid' {
+  return (status ?? '').trim() === 'free' ? 'free' : 'unpaid';
 }
