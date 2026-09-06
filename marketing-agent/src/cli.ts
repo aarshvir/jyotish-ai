@@ -2,7 +2,9 @@ import { initDb } from './db/index';
 import { brain, type Tier } from './brain/index';
 import { lint } from './policy/linter';
 import { isKilled, killInfo, engageKill, releaseKill } from './safety/killswitch';
+import { existsSync } from 'node:fs';
 import { cliAvailable } from './brain/clis';
+import { resolveTools } from './loops/video';
 import { runDemoLoop } from './loops/demo';
 import { runBlogLoop, promoteBlog } from './loops/blog';
 import { runCreativeLoop } from './loops/creative';
@@ -32,8 +34,15 @@ async function main() {
     case 'doctor': {
       console.log('VedicHour Marketing Agent — doctor\n');
       console.log('CLIs:');
-      for (const c of ['gemini', 'codex', 'claude', 'ffmpeg', 'edge-tts']) {
+      for (const c of ['gemini', 'codex', 'claude', 'edge-tts']) {
         console.log(`  ${c.padEnd(9)} ${cliAvailable(c) ? 'available' : 'MISSING/installed elsewhere'}`);
+      }
+      // ffmpeg is resolved the way the renderer resolves it (PATH, then the WinGet Gyan build),
+      // not by PATH alone: doctor reported MISSING on a machine where every render worked.
+      {
+        const { ffmpeg } = resolveTools();
+        const ffOk = ffmpeg === 'ffmpeg' ? cliAvailable('ffmpeg') : existsSync(ffmpeg);
+        console.log(`  ${'ffmpeg'.padEnd(9)} ${ffOk ? `available (${ffmpeg})` : 'MISSING'}`);
       }
       const { path, tables } = initDb();
       console.log(`\nDB: ${path}`);
