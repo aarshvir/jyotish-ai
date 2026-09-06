@@ -32,6 +32,7 @@ import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { decideAfterPromoRedeem } from '@/lib/promo/redeemGate';
+import { decideFreeReportClaim } from '@/lib/reports/freeReportGate';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -736,6 +737,65 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 },
     );
+  }
+
+  // Close the free-report TOCTOU race: two concurrent starts can both pass the
+  // pre-upsert count check. Re-read free/preview rows and keep only the oldest.
+  if (isFreePlan && !userIsAdmin) {
+    const { data: freeRows, error: freeRaceErr } = await db
+      .from('reports')
+      .select('id')
+      .eq('user_id', auth.user.id)
+      .in('plan_type', ['free', 'preview'])
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true });
+    if (freeRaceErr) {
+      // Don't leave the row pinned 'generating' — the client will retry.
+      await db
+        .from('reports')
+        .update({
+          status: 'error',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reportId)
+        .eq('user_id', auth.user.id);
+      await releaseOwnedLock();
+      console.error('[reports/start] free-report race re-check failed:', freeRaceErr.message);
+      return NextResponse.json(
+        {
+          error: 'Unable to verify free report entitlement. Please retry in a moment.',
+          code: 'FREE_LIMIT_CHECK_FAILED',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 503 },
+      );
+    }
+    const freeIds = ((freeRows ?? []) as { id: string }[]).map((r) => r.id);
+    if (decideFreeReportClaim({ reportId, freeReportIdsOldestFirst: freeIds }) === 'limit_reached') {
+      // Drop this row out of the free/preview set so it cannot block a later retry
+      // of a different id, and so the oldest winner remains the sole entitlement.
+      await db
+        .from('reports')
+        .update({
+          status: 'error',
+          plan_type: '7day',
+          payment_status: 'unpaid',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reportId)
+        .eq('user_id', auth.user.id);
+      await releaseOwnedLock();
+      return NextResponse.json(
+        {
+          error: 'You have already used your one free report. Choose a plan to unlock more.',
+          code: 'FREE_LIMIT_REACHED',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 402 },
+      );
+    }
   }
 
   // Optional columns (see migrations 20260426 / 20260427) — omit from upsert so older DBs work.

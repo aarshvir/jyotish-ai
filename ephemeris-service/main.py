@@ -1157,7 +1157,11 @@ SPECIAL_EVENTS_CALENDAR = {
         ("2026-10-14", "2026-11-03"),
     ],
     "jupiter_direct": ["2026-03-10", "2026-03-11"],
-    "jupiter_retrograde_start": "2026-10-09",
+    # Bounded periods — never open-ended. Civil dates match trop. station windows
+    # (Jupiter Rx ~2026-12-13 → 2027-04-13). Keep in lockstep with specialEvents.ts.
+    "jupiter_retrograde_periods": [
+        ("2026-12-13", "2027-04-13"),
+    ],
     "jupiter_enters_cancer": ["2026-06-01", "2026-06-02"],
     "mercury_direct": ["2026-03-20", "2026-07-12", "2026-11-03"],
     "ugadi": ["2026-03-19"],
@@ -1251,11 +1255,17 @@ def get_special_events_for_date(date_str: str) -> List[str]:
     except Exception:
         return events
 
+    mercury_direct_dates = SPECIAL_EVENTS_CALENDAR.get("mercury_direct", [])
+    is_mercury_direct = date_str in mercury_direct_dates
+
+    # Station-direct days are celebrated as mercury_direct; do not also apply the
+    # mercury_retrograde penalty (+tier2 stacking) on the same civil date.
     for start_str, end_str in SPECIAL_EVENTS_CALENDAR.get("mercury_retrograde_periods", []):
         start = datetime.strptime(start_str, "%Y-%m-%d").date()
         end = datetime.strptime(end_str, "%Y-%m-%d").date()
         if start <= d <= end:
-            events.append("mercury_retrograde")
+            if not is_mercury_direct:
+                events.append("mercury_retrograde")
             break
 
     if date_str in SPECIAL_EVENTS_CALENDAR.get("jupiter_direct", []):
@@ -1264,7 +1274,7 @@ def get_special_events_for_date(date_str: str) -> List[str]:
     if date_str in SPECIAL_EVENTS_CALENDAR.get("jupiter_enters_cancer", []):
         events.append("jupiter_enters_cancer")
 
-    if date_str in SPECIAL_EVENTS_CALENDAR.get("mercury_direct", []):
+    if is_mercury_direct:
         events.append("mercury_direct")
 
     if date_str in SPECIAL_EVENTS_CALENDAR.get("ugadi", []):
@@ -1312,11 +1322,12 @@ def get_special_events_for_date(date_str: str) -> List[str]:
     if date_str in SPECIAL_EVENTS_CALENDAR.get("lunar_eclipse", []):
         events.append("lunar_eclipse")
 
-    jup_rx = SPECIAL_EVENTS_CALENDAR.get("jupiter_retrograde_start")
-    if jup_rx:
-        jup_rx_d = datetime.strptime(jup_rx, "%Y-%m-%d").date()
-        if d >= jup_rx_d:
+    for start_str, end_str in SPECIAL_EVENTS_CALENDAR.get("jupiter_retrograde_periods", []):
+        start = datetime.strptime(start_str, "%Y-%m-%d").date()
+        end = datetime.strptime(end_str, "%Y-%m-%d").date()
+        if start <= d <= end:
             events.append("jupiter_retrograde")
+            break
 
     return events
 
