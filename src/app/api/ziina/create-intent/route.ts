@@ -15,6 +15,7 @@ import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
 import { decideStandaloneUnlockCheckout } from '@/lib/ziina/standaloneUnlockGuards';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
+import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 
 /**
  * POST /api/ziina/create-intent
@@ -341,6 +342,19 @@ export async function POST(request: NextRequest) {
         const n = parseFloat(String(v ?? ''));
         return Number.isFinite(n) ? n : null;
       };
+      const birthLat = toCoord(body.birth_lat);
+      const birthLng = toCoord(body.birth_lng);
+      const currentLat = toCoord(body.current_lat);
+      const currentLng = toCoord(body.current_lng);
+      // Prefer timed-location estimate over client/browser TZ (onboard used to send
+      // getTimezoneOffset() when "live elsewhere" was unchecked).
+      const timezoneOffset = resolveReportTimezoneOffset({
+        clientOffset: body.timezone_offset,
+        birthCity: body.birth_city,
+        birthLng,
+        currentCity: body.current_city,
+        currentLng,
+      });
       const { error: draftErr } = await db.from('reports').upsert(
         {
           id: reportId,
@@ -350,15 +364,12 @@ export async function POST(request: NextRequest) {
           birth_date: body.birth_date ?? '2000-01-01',
           birth_time: body.birth_time ?? '12:00:00',
           birth_city: body.birth_city ?? 'Unknown',
-          birth_lat: toCoord(body.birth_lat),
-          birth_lng: toCoord(body.birth_lng),
+          birth_lat: birthLat,
+          birth_lng: birthLng,
           current_city: body.current_city ?? null,
-          current_lat: toCoord(body.current_lat),
-          current_lng: toCoord(body.current_lng),
-          timezone_offset:
-            typeof body.timezone_offset === 'number'
-              ? body.timezone_offset
-              : parseInt(String(body.timezone_offset ?? '0'), 10) || 0,
+          current_lat: currentLat,
+          current_lng: currentLng,
+          timezone_offset: timezoneOffset,
           plan_type: planType,
           // Persist the buyer's chosen forecast start date so the post-payment
           // auto-dispatch (finalizeIntent) generates from it instead of defaulting to today.
