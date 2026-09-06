@@ -154,6 +154,7 @@ type ExistingReportForStart = {
   plan_type: string | null;
   payment_status: string | null;
   payment_provider: string | null;
+  report_start_date: string | null;
 };
 
 /** Merge legacy field names from the onboard client (date/time/city/lat/forecastStart/currentTz). */
@@ -301,7 +302,9 @@ export async function POST(request: NextRequest) {
   const db = createServiceClient();
   const { data: existingRaw, error: existingErr } = await db
     .from('reports')
-    .select('user_id, status, report_data, generation_started_at, plan_type, payment_status, payment_provider')
+    .select(
+      'user_id, status, report_data, generation_started_at, plan_type, payment_status, payment_provider, report_start_date',
+    )
     .eq('id', reportId)
     .maybeSingle();
 
@@ -650,6 +653,11 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  const forecastStartForRow =
+    typeof body.forecast_start === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.forecast_start)
+      ? body.forecast_start
+      : existing?.report_start_date ?? null;
+
   const { error: upsertError } = await db.from('reports').upsert(
     {
       id: reportId,
@@ -666,6 +674,7 @@ export async function POST(request: NextRequest) {
       current_lng: body.current_lng ?? null,
       timezone_offset: timezoneOffset,
       plan_type: body.plan_type ?? '7day',
+      ...(forecastStartForRow ? { report_start_date: forecastStartForRow } : {}),
       status: 'generating',
       payment_status: trustedPaymentStatus,
       payment_provider:
@@ -778,7 +787,21 @@ export async function POST(request: NextRequest) {
             ? body.jyotish_rag_mode
             : undefined;
 
-  const toNum = (v: string | number | null | undefined) => parseFloat(String(v ?? 0)) || 0;
+  const toNum = (v: string | number | null | undefined) => {
+    const n = parseFloat(String(v ?? ''));
+    return Number.isFinite(n) ? n : 0;
+  };
+  // Prefer freshly submitted start date; fall back to the draft column persisted at
+  // create-intent so Try Again / recovery (often without ?forecastStart=) still honors
+  // the buyer's chosen horizon start.
+  const resolvedForecastStart =
+    (typeof body.forecast_start === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.forecast_start)
+      ? body.forecast_start
+      : null) ??
+    (typeof existing?.report_start_date === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(existing.report_start_date)
+      ? existing.report_start_date
+      : undefined);
   const input: PipelineInput = {
     name: body.name ?? 'Seeker',
     date: body.birth_date ?? '',
@@ -791,7 +814,7 @@ export async function POST(request: NextRequest) {
     currentCity: body.current_city ?? body.birth_city ?? '',
     timezoneOffset,
     type: body.plan_type ?? '7day',
-    forecastStart: body.forecast_start ?? undefined,
+    forecastStart: resolvedForecastStart,
     planType: body.plan_type ?? '7day',
     paymentStatus: trustedPaymentStatus,
     // Prefer the freshly-submitted context; fall back to the persisted column so a

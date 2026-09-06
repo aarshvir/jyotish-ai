@@ -35,6 +35,7 @@ import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { buildTransitQueryTerms, detectYogas } from '@/lib/rag/yogaDetector';
 import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
 import { notifyReportReady } from '@/lib/notify/reportReady';
+import { civilDateRange, civilDateYmd } from '@/lib/time/localTime';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
 
@@ -813,11 +814,12 @@ export async function generateReportPipeline(
         birth_date: input.date || '2000-01-01',
         birth_time: birthTimeNorm,
         birth_city: input.city || 'Unknown',
-        birth_lat: input.lat || null,
-        birth_lng: input.lng || null,
+        // Preserve lat/lng 0 (equator / prime meridian) — never coerce with `|| null`.
+        birth_lat: Number.isFinite(input.lat) ? input.lat : null,
+        birth_lng: Number.isFinite(input.lng) ? input.lng : null,
         current_city: input.currentCity || null,
-        current_lat: input.currentLat || null,
-        current_lng: input.currentLng || null,
+        current_lat: Number.isFinite(input.currentLat) ? input.currentLat : null,
+        current_lng: Number.isFinite(input.currentLng) ? input.currentLng : null,
         timezone_offset: input.timezoneOffset,
         plan_type: planType,
         status: 'generating',
@@ -977,18 +979,19 @@ export async function generateReportPipeline(
     // exactly what the preview shows: 1 day.
     const dayCount =
       input.type === 'monthly' || input.type === 'annual' ? 30 : previewPlan ? 1 : 7;
-    const cLat = input.currentLat || input.lat;
-    const cLng = input.currentLng || input.lng;
+    // Finite checks (not truthiness): equator / prime-meridian current coords are valid.
+    const cLat = Number.isFinite(input.currentLat) ? input.currentLat : input.lat;
+    const cLng = Number.isFinite(input.currentLng) ? input.currentLng : input.lng;
 
-    const today =
+    // Anchor day-1 on the seeker's civil date in `timezoneOffset`, not UTC.
+    // `toISOString().slice(0,10)` previously shifted Asia early-morning gens to
+    // yesterday and Americas evening gens to tomorrow — TodayCard looks up "today"
+    // via the same offset, so day-1 vanished from the UI.
+    const startYmd =
       input.forecastStart && /^\d{4}-\d{2}-\d{2}$/.test(input.forecastStart)
-        ? new Date(input.forecastStart + 'T12:00:00')
-        : new Date();
-
-    const dateRange: string[] = Array.from({ length: dayCount }, (_, i) => {
-      const d = new Date(today.getTime() + i * 24 * 60 * 60 * 1000);
-      return d.toISOString().split('T')[0];
-    });
+        ? input.forecastStart
+        : civilDateYmd(new Date(), input.timezoneOffset);
+    const dateRange = civilDateRange(startYmd, dayCount);
 
     // ── STEP 1: Ephemeris ─────────────────────────────────────────────────
     await assertWithinBudget('pre_ephemeris');
