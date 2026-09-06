@@ -1,0 +1,15 @@
+{
+  "idea": "job-change-month-vs-hour",
+  "title": "You picked the month to resign. You did not pick the hour to send it.",
+  "captured": "https://www.vedichour.com/sample-report",
+  "tts": {
+    "provider": "sapi",
+    "voiceName": "Microsoft David Desktop",
+    "durationSec": 55.067256,
+    "gender": "male"
+  },
+  "slides": 8,
+  "publishable": true,
+  "do_not_publish": false,
+  "disclaimer": "For reflection and planning, not certainty."
+}

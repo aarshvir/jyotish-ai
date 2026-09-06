@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VedicHour — Autonomous Marketing Machine: Architecture & Build Blueprint</title>
+<style>
+  :root{--navy:#0f1a36;--navy2:#16244a;--ink:#1a2233;--slate:#42506b;--mute:#78849c;
+    --gold:#b8862f;--gold2:#d8a94a;--line:#e3e7ef;--bg:#f6f8fc;--card:#fff;
+    --green:#1f8a55;--greenbg:#e8f5ee;--amber:#c8881a;--amberbg:#fbf3e3;--red:#c0392b;--redbg:#fbe9e7;--blue:#3b4cc0;--bluebg:#eef0fb}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);line-height:1.58;font-size:15px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 30px}
+  header.hero{background:linear-gradient(125deg,#0f1a36,#16244a 55%,#1d2f5e);color:#fff;padding:56px 0 48px}
+  .kicker{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold2);font-weight:700;margin-bottom:14px}
+  h1{font-size:34px;line-height:1.12;margin:0 0 14px;font-weight:770;letter-spacing:-.015em}
+  .sub{font-size:16.5px;color:#c8d2e6;max-width:720px}
+  .meta{margin-top:22px;display:flex;flex-wrap:wrap;gap:9px 24px;font-size:12.5px;color:#9fb0d0}
+  .meta b{color:#dfe7f5;font-weight:600}
+  section{padding:36px 0;border-bottom:1px solid var(--line)}
+  h2{font-size:22px;margin:0 0 6px;font-weight:740;color:var(--navy);letter-spacing:-.01em}
+  h2 .n{color:var(--gold);margin-right:11px;font-weight:740}
+  .lead{color:var(--slate);margin:0 0 20px;font-size:14.5px;max-width:780px}
+  h3{font-size:16px;margin:22px 0 8px;font-weight:700;color:var(--ink)}
+  p{margin:0 0 12px}
+  b{color:var(--navy)}
+  .grid{display:grid;gap:14px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr 1fr}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:17px 18px;box-shadow:0 1px 2px rgba(16,30,60,.04)}
+  .card h4{margin:0 0 6px;font-size:14.5px;font-weight:700;color:var(--navy)}
+  .card p{font-size:13px;color:var(--slate);margin:0}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:700;background:#fafbfe}
+  td b{color:var(--navy)}
+  code{background:#eef1f7;padding:1px 6px;border-radius:5px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.4px;color:#2a3a66}
+  .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;padding:2px 8px;border-radius:20px;text-transform:uppercase}
+  .t-green{background:var(--greenbg);color:var(--green)}.t-amber{background:var(--amberbg);color:var(--amber)}
+  .t-red{background:var(--redbg);color:var(--red)}.t-blue{background:var(--bluebg);color:var(--blue)}
+  .t-auto{background:var(--greenbg);color:var(--green)}.t-hitl{background:var(--amberbg);color:var(--amber)}
+  .callout{border-left:3px solid var(--gold);background:#fff;border-radius:8px;padding:14px 18px;margin:16px 0;box-shadow:0 1px 2px rgba(16,30,60,.05)}
+  .callout.warn{border-left-color:var(--amber);background:#fffaf2}
+  .callout.good{border-left-color:var(--green);background:#f4fbf7}
+  .callout.red{border-left-color:var(--red);background:#fdf3f2}
+  ul.clean{margin:8px 0 14px;padding-left:0;list-style:none}
+  ul.clean li{position:relative;padding-left:22px;margin-bottom:8px;font-size:13.7px}
+  ul.clean li::before{content:"";position:absolute;left:5px;top:8px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  ol{padding-left:20px}ol li{margin-bottom:8px;font-size:14px}
+  .loop{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:0;margin-bottom:14px;overflow:hidden;box-shadow:0 1px 2px rgba(16,30,60,.04)}
+  .loop .lh{display:flex;align-items:center;gap:12px;padding:13px 18px;background:#fafbfe;border-bottom:1px solid var(--line)}
+  .loop .lh .id{flex:0 0 auto;width:30px;height:30px;border-radius:8px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+  .loop .lh h4{margin:0;font-size:15.5px;color:var(--navy);flex:1}
+  .loop .lb{padding:14px 18px;font-size:13.3px;color:var(--slate)}
+  .loop .lb b{color:var(--navy)}
+  .loop .row{margin-bottom:7px}
+  .small{font-size:12px;color:var(--mute)}
+  .diagram{width:100%;height:auto;display:block;margin:8px 0;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;color:var(--slate);margin-top:8px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+  footer{padding:28px 0 44px;color:var(--mute);font-size:12px}
+  @media(max-width:820px){.g2,.g3{grid-template-columns:1fr}h1{font-size:27px}}
+  @media print{body{background:#fff}.card,.loop{box-shadow:none}section{break-inside:avoid}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="wrap">
+  <div class="kicker">VedicHour · Growth Engineering</div>
+  <h1>The Autonomous Marketing Machine</h1>
+  <div class="sub">An end-to-end architecture and build blueprint for running VedicHour's marketing — content, video, publishing, SEO, paid ads, lead-gen and outreach — as a self-operating system you check once a week. Built on your existing Master Playbook + Content Pack.</div>
+  <div class="meta">
+    <span><b>For</b> Aarsh</span><span><b>Scope</b> Strategy &amp; architecture (pre-build)</span>
+    <span><b>Products</b> Hour-by-Hour Forecast · Deep Kundali · Matchmaking</span><span><b>Date</b> 15 June 2026</span>
+  </div>
+</div></header>
+
+<div class="wrap">
+
+<!-- 1 -->
+<section>
+  <h2><span class="n">01</span>The honest verdict first</h2>
+  <p class="lead">You can get to roughly <b>85% autonomous</b> and safely "check once a week." You cannot get to 100% lights-out — and you shouldn't want to. The ~15% you deliberately keep (approving ad creative, signing off spend, and consenting outreach) is exactly the slice where account bans and legal liability are born. Designed correctly, your weekly touch is about <b>30 minutes</b>.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag t-green">Runs itself</span><h4 style="margin-top:8px">Content &amp; organic</h4><p>Daily blog, daily reels/posters from your scripts, scheduled multi-platform publishing, hashtags, SEO, KPI dashboards, lifecycle email to opted-in users.</p></div>
+    <div class="card"><span class="tag t-amber">Auto + weekly gate</span><h4 style="margin-top:8px">Paid &amp; outreach</h4><p>Ads run and auto-optimize against rules, but you approve <b>new creatives</b> and watch a hard spend cap. Cold email runs capped on warmed domains. WhatsApp only to opt-ins.</p></div>
+    <div class="card"><span class="tag t-red">Never automate</span><h4 style="margin-top:8px">The red lines</h4><p>Bot likes/follows/DMs, cold SMS, cold WhatsApp blasts, and any "guaranteed / miracle" ad claim. These are ban-and-lawsuit territory.</p></div>
+  </div>
+  <div class="callout"><b>The one-sentence strategy:</b> a single "Marketing Brain" (an orchestrator + Claude) directs nine specialist agent-loops that read your Content Pack, manufacture and publish collateral, run and tune ads, capture every visitor, and feed all results back into a shared memory that decides what to make more of — with a thin human approval gate on the two things that can hurt you.</p>
+</section>
+
+<!-- 2 -->
+<section>
+  <h2><span class="n">02</span>The mental model</h2>
+  <p class="lead">Think of it as a small autonomous marketing <b>agency</b> that never sleeps: a manager (the Brain), nine specialists (the loops), a shared filing cabinet (Memory/Data), a switchboard to every tool (Integration), and a Monday-morning review desk (the Cockpit). Everything an "employee" does that spends money or contacts a stranger passes across the review desk first.</p>
+  <svg class="diagram" viewBox="0 0 980 470" xmlns="http://www.w3.org/2000/svg" font-family="-apple-system,Segoe UI,Roboto,sans-serif">
+    <defs>
+      <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#9aa6bd"/></marker>
+    </defs>
+    <!-- Cockpit -->
+    <rect x="20" y="18" width="940" height="52" rx="9" fill="#0f1a36"/>
+    <text x="40" y="40" fill="#d8a94a" font-size="12" font-weight="700" letter-spacing="1.5">5 · HUMAN COCKPIT (weekly ~30 min)</text>
+    <text x="40" y="58" fill="#c8d2e6" font-size="12.5">Approval queue · spend cap &amp; kill-switch · KPI dashboard · brand-safety review</text>
+    <!-- Brain -->
+    <rect x="20" y="86" width="940" height="58" rx="9" fill="#16244a"/>
+    <text x="40" y="110" fill="#d8a94a" font-size="12" font-weight="700" letter-spacing="1.5">1 · THE BRAIN — n8n orchestrator + Claude reasoning + schedule/triggers</text>
+    <text x="40" y="129" fill="#c8d2e6" font-size="12.5">Plans the day, routes work to the loops, enforces guardrails, escalates to the cockpit when a rule says "ask a human"</text>
+    <!-- Loops row label -->
+    <text x="40" y="172" fill="#42506b" font-size="12" font-weight="700" letter-spacing="1.5">2 · THE NINE AGENT-LOOPS</text>
+    <!-- Loop boxes -->
+    <g font-size="11.5" fill="#1a2233">
+      <rect x="20" y="182" width="148" height="46" rx="7" fill="#fff" stroke="#e3e7ef"/><text x="30" y="205" font-weight="700">L1 Blog/SEO</text><text x="30" y="220" fill="#42506b">daily article</text>
+      <rect x="176" y="182" width="148" height="46" rx="7" fill="#fff" stroke="#e3e7ef"/><text x="186" y="205" font-weight="700">L2 Video factory</text><text x="186" y="220" fill="#42506b">reels/shorts</text>
+      <rect x="332" y="182" width="148" height="46" rx="7" fill="#fff" stroke="#e3e7ef"/><text x="342" y="205" font-weight="700">L3 Publish</text><text x="342" y="220" fill="#42506b">schedule+tags</text>
+      <rect x="488" y="182" width="148" height="46" rx="7" fill="#fff" stroke="#e3e7ef"/><text x="498" y="205" font-weight="700">L4 Tech SEO</text><text x="498" y="220" fill="#42506b">index+links</text>
+      <rect x="644" y="182" width="148" height="46" rx="7" fill="#fff" stroke="#e3e7ef"/><text x="654" y="205" font-weight="700">L5 Paid ads</text><text x="654" y="220" fill="#c8881a">HITL creative</text>
+      <rect x="800" y="182" width="160" height="46" rx="7" fill="#fff" stroke="#e3e7ef"/><text x="810" y="205" font-weight="700">L6 Optimizer</text><text x="810" y="220" fill="#42506b">the feedback brain</text>
+      <rect x="98" y="238" width="148" height="46" rx="7" fill="#fff" stroke="#e3e7ef"/><text x="108" y="261" font-weight="700">L7 Lead-gen</text><text x="108" y="276" fill="#c8881a">Apollo→email</text>
+      <rect x="410" y="238" width="170" height="46" rx="7" fill="#fff" stroke="#e3e7ef"/><text x="420" y="261" font-weight="700">L8 Lifecycle/WhatsApp</text><text x="420" y="276" fill="#42506b">opt-in only</text>
+      <rect x="730" y="238" width="160" height="46" rx="7" fill="#fff" stroke="#e3e7ef"/><text x="740" y="261" font-weight="700">L9 Creative Director</text><text x="740" y="276" fill="#42506b">judge+regen scripts</text>
+    </g>
+    <!-- Integration -->
+    <rect x="20" y="300" width="940" height="56" rx="9" fill="#eef0fb" stroke="#dfe3f6"/>
+    <text x="40" y="323" fill="#3b4cc0" font-size="12" font-weight="700" letter-spacing="1.5">3 · INTEGRATION — MCP servers (agent-native) + REST glue in n8n</text>
+    <text x="40" y="342" fill="#42506b" font-size="11.5">HeyGen·Veo·ElevenLabs·Ideogram·Postiz/Ayrshare·YouTube·Meta·Google Ads·Apollo·Smartlead·Brevo·WhatsApp Cloud·GA4·PostHog</text>
+    <!-- Data -->
+    <rect x="20" y="372" width="940" height="56" rx="9" fill="#fff" stroke="#e3e7ef"/>
+    <text x="40" y="395" fill="#42506b" font-size="12" font-weight="700" letter-spacing="1.5">4 · MEMORY &amp; DATA — content library · performance warehouse · attribution · brand kit · consent log</text>
+    <text x="40" y="414" fill="#7a8499" font-size="11.5">Every asset, every result, every lead — the shared brain the Optimizer learns from</text>
+    <!-- arrows -->
+    <g stroke="#9aa6bd" stroke-width="1.6" fill="none">
+      <line x1="490" y1="70" x2="490" y2="86" marker-end="url(#ar)"/>
+      <line x1="490" y1="144" x2="490" y2="180" marker-end="url(#ar)"/>
+      <line x1="490" y1="284" x2="490" y2="300" marker-end="url(#ar)"/>
+      <line x1="490" y1="356" x2="490" y2="372" marker-end="url(#ar)"/>
+      <line x1="930" y1="400" x2="930" y2="150" marker-end="url(#ar)"/>
+    </g>
+    <text x="848" y="368" fill="#7a8499" font-size="10.5" transform="rotate(-90 905 300)">results feed back ↑</text>
+  </svg>
+  <div class="legend">
+    <span><span class="sw" style="background:#16244a"></span> Brain</span>
+    <span><span class="sw" style="background:#fff;border:1px solid #e3e7ef"></span> Agent-loops</span>
+    <span><span class="sw" style="background:#eef0fb"></span> Integration</span>
+    <span><span class="sw" style="background:#0f1a36"></span> Cockpit</span>
+    <span><span class="tag t-hitl" style="font-size:9px">HITL</span> = human approval gate</span>
+  </div>
+</section>
+
+<!-- 3 -->
+<section>
+  <h2><span class="n">03</span>The five layers, concretely</h2>
+  <div class="grid g2">
+    <div class="card"><h4>1 · The Brain &nbsp;<span class="tag t-blue">orchestrator</span></h4><p><b>n8n (self-hosted)</b> on a $6–12/mo droplet as the spine — it has scheduled triggers, ~70 AI nodes, native human-approval steps, and speaks MCP both ways. <b>Claude</b> is the reasoning layer it calls to plan, write, judge and decide. This is the "manager" that runs the daily plan and routes work.</p></div>
+    <div class="card"><h4>2 · The Agent-Loops &nbsp;<span class="tag t-blue">the workers</span></h4><p>Nine repeatable workflows (Section 04). Each is a small pipeline: <i>trigger → gather → Claude reasons → tool acts → log result → maybe ask a human</i>. They run on schedules (daily/hourly) or on events (a new lead, an ad crossing a threshold).</p></div>
+    <div class="card"><h4>3 · Integration &nbsp;<span class="tag t-blue">the switchboard</span></h4><p>Where a tool has a <b>mature MCP server</b> (ElevenLabs, HeyGen, Apollo, Klaviyo/HubSpot, PostHog, Google Ads) Claude drives it directly. Everything else is a <b>REST node inside n8n</b>. One rule: nothing reaches a platform except through an official API.</p></div>
+    <div class="card"><h4>4 · Memory &amp; Data &nbsp;<span class="tag t-blue">the filing cabinet</span></h4><p>A content library (every script/asset + its status), a performance warehouse (every post/ad + its metrics), an attribution table (which creative drove which sale), the brand kit, and a <b>consent log</b> for outreach. This is what makes the system <i>learn</i> rather than just <i>do</i>.</p></div>
+    <div class="card" style="grid-column:1/-1"><h4>5 · The Human Cockpit &nbsp;<span class="tag t-amber">your 30 min/week</span></h4><p>One dashboard + one approval queue. You approve the week's new ad creatives, glance at the spend cap and KPI trend, clear any flagged items, and (optionally) thumbs-up next week's content themes. Everything else already happened. A single <b>kill-switch</b> pauses all spend instantly.</p></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section>
+  <h2><span class="n">04</span>The nine autonomous loops</h2>
+  <p class="lead">Each loop maps directly to something you asked for. <span class="tag t-auto">AUTO</span> runs unattended; <span class="tag t-hitl">HITL</span> has a human gate on the risky step.</p>
+
+  <div class="loop"><div class="lh"><div class="id">L1</div><h4>Daily Blog &amp; SEO content</h4><span class="tag t-auto">AUTO</span></div>
+    <div class="lb">
+      <div class="row"><b>Trigger:</b> daily 6am. <b>Does:</b> picks the next topic from an SEO keyword backlog (Search Console "striking-distance" queries + your Content Pack), Claude drafts a 1,200–1,800-word article grounded in your own blog style, generates a hero image (Ideogram/Flux), publishes to the blog with schema + internal links, pings Google for indexing.</div>
+      <div class="row"><b>Tools:</b> GA4 + Search Console API → Claude → Ideogram → your CMS/Next.js content API → IndexNow.</div>
+      <div class="row"><b>Decision rule:</b> prioritise keywords ranking #5–15 (fastest wins). <b>Guardrail:</b> brand-voice + claims check before publish (no medical/financial promises).</div>
+    </div></div>
+
+  <div class="loop"><div class="lh"><div class="id">L2</div><h4>Short-form video factory (reels / shorts / loops)</h4><span class="tag t-auto">AUTO</span></div>
+    <div class="lb">
+      <div class="row"><b>Trigger:</b> daily, batched. <b>Does:</b> pulls 3–4 approved scripts from the Content Pack/library → ElevenLabs voiceover → Veo 3.1 (vertical b-roll) <i>or</i> HeyGen avatar → auto-captions + your brand background → renders 9:16 MP4s → stores in the library marked "ready".</div>
+      <div class="row"><b>Tools:</b> Content library → ElevenLabs (MCP) → Veo via fal.ai / HeyGen (MCP) → captions → render → storage.</div>
+      <div class="row"><b>Decision rule:</b> make more of whatever format L6 says is winning. <b>Guardrail:</b> <b>don't build on Sora</b> (its API closes Sept 2026); cap render spend/day.</div>
+    </div></div>
+
+  <div class="loop"><div class="lh"><div class="id">L3</div><h4>Publish &amp; distribute</h4><span class="tag t-auto">AUTO</span></div>
+    <div class="lb">
+      <div class="row"><b>Trigger:</b> when assets are "ready" + an optimal slot. <b>Does:</b> posts the day's reels to YouTube Shorts, Instagram Reels, Facebook, (TikTok once audited), writes platform-specific captions + hashtag sets, adds the tracked bio/landing link, schedules across the week.</div>
+      <div class="row"><b>Tools:</b> Postiz (self-host, free) → graduate to Ayrshare; native YouTube/Instagram Graph/TikTok APIs.</div>
+      <div class="row"><b>Hard limits to respect:</b> IG ~100 API posts/24h; YouTube ~6 uploads/day (quota); TikTok needs app audit (else private-only). <b>Guardrail:</b> stay well under caps; multi-week app-review lead time — keep a manual fallback at launch.</div>
+    </div></div>
+
+  <div class="loop"><div class="lh"><div class="id">L4</div><h4>Technical SEO &amp; programmatic pages</h4><span class="tag t-auto">AUTO</span></div>
+    <div class="lb">
+      <div class="row"><b>Trigger:</b> weekly + on publish. <b>Does:</b> monitors Search Console for crawl/index issues, refreshes the sitemap, auto-builds programmatic pages (per-nakshatra, per-sign, per-dosha) from your engine data, fixes internal-link gaps, tracks ranking movement.</div>
+      <div class="row"><b>Tools:</b> Search Console API, GA4, your chart engine, Ahrefs/DataForSEO (optional).</div>
+      <div class="row"><b>Guardrail:</b> rate-limit page generation so Google sees quality, not a content dump.</div>
+    </div></div>
+
+  <div class="loop"><div class="lh"><div class="id">L5</div><h4>Paid ads — create, monitor, pause, scale</h4><span class="tag t-hitl">HITL on creative</span></div>
+    <div class="lb">
+      <div class="row"><b>Trigger:</b> continuous monitor (hourly) + weekly new-creative batch. <b>Does:</b> builds Google Search + Meta/Instagram campaigns from your winning organic hooks, attaches tracked landing links (UTM), then runs rules: pause an ad/keyword if CPA &gt; target or CTR &lt; floor after enough data; shift budget to winners (≤20%/change); flag fatigue → request fresh creative from L2/L9.</div>
+      <div class="row"><b>Tools:</b> Google Ads API + Meta Marketing API; Revealbot for rule execution.</div>
+      <div class="row"><b>The gate:</b> a human approves each <b>new ad creative + copy</b> (policy risk) and the system obeys a <b>hard daily spend cap</b>. Auto-bidding and pause/scale need no approval. <b>Guardrail:</b> no "guaranteed/miracle" copy; astrology framed as guidance + disclaimer.</div>
+    </div></div>
+
+  <div class="loop"><div class="lh"><div class="id">L6</div><h4>The Optimization Brain (the feedback loop)</h4><span class="tag t-auto">AUTO</span></div>
+    <div class="lb">
+      <div class="row"><b>Trigger:</b> nightly. <b>Does:</b> pulls every metric (views, CTR, sessions, sign-ups, sales, CPA, ROAS) into the warehouse, attributes sales back to creatives/keywords, then <b>decides</b>: scale winners, kill losers, tell L9 which themes to make more of and which to retire, and write the weekly cockpit summary. This is the part that "monitors the platform and tweaks everything."</div>
+      <div class="row"><b>Tools:</b> GA4 + PostHog (MCP) + ad APIs → warehouse → Claude → Looker Studio dashboard.</div>
+      <div class="row"><b>Guardrail:</b> needs ~3–7 days of data before acting on a verdict (avoids over-reacting to noise).</div>
+    </div></div>
+
+  <div class="loop"><div class="lh"><div class="id">L7</div><h4>Lead-gen &amp; cold email (B2B: astrologers, wedding planners, affiliates)</h4><span class="tag t-hitl">capped</span></div>
+    <div class="lb">
+      <div class="row"><b>Trigger:</b> daily, throttled. <b>Does:</b> finds relevant partners/affiliates on Apollo, enriches, Claude personalises a short pitch, sends via warmed inboxes, auto-follows-up, books replies into the CRM.</div>
+      <div class="row"><b>Tools:</b> Apollo (MCP) → Clay enrich → Smartlead (warmup + send) → Brevo/HubSpot CRM.</div>
+      <div class="row"><b>Hard rules:</b> CAN-SPAM compliant (physical address + 1-click unsubscribe); ≤40 emails/mailbox/day on domains warmed 4–6 weeks; auto-suppress unsubscribes + Germany. <b>Note:</b> this is B2B partner outreach — your D2C buyers come from L1–L5, not cold email.</div>
+    </div></div>
+
+  <div class="loop"><div class="lh"><div class="id">L8</div><h4>Lifecycle email &amp; WhatsApp (opt-in only)</h4><span class="tag t-auto">AUTO to opt-ins</span></div>
+    <div class="lb">
+      <div class="row"><b>Trigger:</b> event-based. <b>Does:</b> the free-Kundli visitor gives email/WhatsApp → automated welcome + value sequence → cart-abandon nudge → post-purchase upsell to the other two products → weekly "your timing this week" broadcast. This is your biggest revenue multiplier.</div>
+      <div class="row"><b>Tools:</b> Brevo (email) + WhatsApp Business Cloud API (approved templates).</div>
+      <div class="row"><b>Red line:</b> <b>no cold WhatsApp blasts and no cold SMS</b> — instant ban / TCPA exposure. WhatsApp marketing only to users who opted in, with a logged consent timestamp and the 24-hour window respected.</div>
+    </div></div>
+
+  <div class="loop"><div class="lh"><div class="id">L9</div><h4>Creative Director — judge existing, regenerate new</h4><span class="tag t-auto">AUTO</span></div>
+    <div class="lb">
+      <div class="row"><b>Trigger:</b> weekly + on L6 signal. <b>Does:</b> reads the entire script/content library, scores each asset against actual performance, marks the good ones "reuse/remix", and for tired or thin themes <b>writes brand-new scripts and image/video prompts</b> for L2 to produce. This is the "if the content is good use it; if not, generate new prompts/scripts" engine.</div>
+      <div class="row"><b>Tools:</b> Content library + L6 performance data → Claude (ideation + scriptwriting).</div>
+      <div class="row"><b>Guardrail:</b> new scripts pass the same brand-voice/claims check before they enter the L2 queue.</div>
+    </div></div>
+</section>
+
+<!-- 5 -->
+<section>
+  <h2><span class="n">05</span>The tool stack &amp; what it costs</h2>
+  <p class="lead">Recommendation: self-host the spine to kill the "API tax", lean on MCP-native tools so Claude drives them directly, and wrap everything else as REST nodes in n8n. Current June-2026 picks:</p>
+  <table>
+    <tr><th>Layer</th><th>Pick (why)</th><th>Agent control</th><th>~ $/mo</th></tr>
+    <tr><td><b>Brain / orchestration</b></td><td>n8n self-hosted + Claude reasoning</td><td>🟢 MCP both ways</td><td>$6–12</td></tr>
+    <tr><td><b>Video (b-roll)</b></td><td>Google Veo 3.1 Lite via fal.ai (native 9:16)</td><td>REST in n8n</td><td>usage ~$30</td></tr>
+    <tr><td><b>Video (avatar/UGC)</b></td><td>HeyGen (Creator) / Creatify for batch</td><td>🟢 HeyGen MCP</td><td>$30–48</td></tr>
+    <tr><td><b>Voice</b></td><td>ElevenLabs Creator</td><td>🟢 MCP</td><td>$22</td></tr>
+    <tr><td><b>Image / posters</b></td><td>Ideogram (text-in-image) + Flux.2 via fal</td><td>REST</td><td>~$10–20</td></tr>
+    <tr><td><b>Publishing</b></td><td>Postiz self-host → Ayrshare when scaling</td><td>REST</td><td>$0 → $149</td></tr>
+    <tr><td><b>Email / CRM</b></td><td>Brevo (priced by sends, free 300/day)</td><td>REST</td><td>$0–9</td></tr>
+    <tr><td><b>Cold outreach</b></td><td>Apollo (data) + Smartlead (send+warmup)</td><td>🟢 Apollo MCP</td><td>~$39 + data</td></tr>
+    <tr><td><b>WhatsApp</b></td><td>Meta WhatsApp Business Cloud API (direct)</td><td>REST</td><td>per-msg</td></tr>
+    <tr><td><b>Paid ads</b></td><td>Google Ads + Meta Marketing API + Revealbot</td><td>🟢 Google Ads MCP</td><td>$0 → $99</td></tr>
+    <tr><td><b>SEO data</b></td><td>Search Console + GA4 (free) ± DataForSEO</td><td>🟡 community MCP</td><td>$0–50</td></tr>
+    <tr><td><b>Analytics / dashboard</b></td><td>GA4 + PostHog (free) → Looker Studio</td><td>🟢 PostHog MCP</td><td>$0</td></tr>
+  </table>
+  <div class="callout good"><b>Realistic tooling burn: ~$120–180/mo + AI credits</b> at launch, scaling only with volume. That is separate from ad spend. Two flags from the research: <b>(1)</b> do not build on OpenAI Sora (API shuts Sept 24, 2026) — use Veo 3.1. <b>(2)</b> Instagram / TikTok / Facebook publishing require multi-week <b>app review + business verification</b> — start those approvals now.</div>
+</section>
+
+<!-- 6 -->
+<section>
+  <h2><span class="n">06</span>"Connect to every tool" — the integration reality</h2>
+  <p class="lead">You can connect to almost anything, in one of three ways, in this order of preference:</p>
+  <ul class="clean">
+    <li><b>MCP-native (best):</b> Claude controls the tool directly with no glue code. Already mature for ElevenLabs, HeyGen, Recraft, Apollo, Clay, Klaviyo, HubSpot, PostHog, Buffer, Google Ads, and n8n itself.</li>
+    <li><b>Official REST API wrapped in n8n (most things):</b> video/image generators, the social publishing APIs, Meta ads, WhatsApp Cloud, Brevo, Smartlead, GA4. Reliable and ToS-safe — this is the bulk of the build.</li>
+    <li><b>Browser automation (last resort, fragile):</b> only for tools with no API. Avoid for posting/engagement — it violates platform ToS and gets accounts banned.</li>
+  </ul>
+  <div class="callout warn"><b>"Every tool in the world" has a ceiling, and it's not technical — it's policy.</b> The platforms deliberately cap automation: Instagram allows ~100 API posts/24h, TikTok forces unaudited apps to private-only, YouTube ~6 uploads/day. So "connect everything" really means "connect everything through official, rate-limited, ToS-compliant doors" — which is plenty for your scale, but not infinite.</div>
+</section>
+
+<!-- 7 -->
+<section>
+  <h2><span class="n">07</span>The compliance matrix — what's safe to automate</h2>
+  <p class="lead">This is the part most "fully autonomous marketing" pitches ignore. Tag key: <span class="tag t-green">GREEN</span> safe · <span class="tag t-amber">CAUTION</span> automate with a gate · <span class="tag t-red">RED</span> never.</p>
+  <table>
+    <tr><th>Activity</th><th>Tag</th><th>Why / the rule</th><th>Your mitigation</th></tr>
+    <tr><td>Scheduled organic posting (own content, official API)</td><td><span class="tag t-green">GREEN</span></td><td>Allowed on IG/YT/FB; TikTok needs audit</td><td>Official APIs only; stay under caps</td></tr>
+    <tr><td>Bot likes / follows / mass-DMs / comments</td><td><span class="tag t-red">RED</span></td><td>Inauthentic behavior → shadowban/ban (Meta flags 2M+/day)</td><td>Never automate engagement</td></tr>
+    <tr><td>Astrology ads (guidance framing)</td><td><span class="tag t-amber">CAUTION</span></td><td>Allowed but policed for misleading claims</td><td>Disclaimer; "entertainment/guidance"; human approves creative</td></tr>
+    <tr><td>"Guaranteed / miracle / cure" ad copy or "you suffer from X" targeting</td><td><span class="tag t-red">RED</span></td><td>Meta judges implied meaning; instant disapproval/ban</td><td>Banned word-list filter on every ad</td></tr>
+    <tr><td>Auto bid/budget management via API</td><td><span class="tag t-amber">CAUTION</span></td><td>Allowed; ≤20% changes, 7-day eval</td><td>Hard daily cap + weekly human review</td></tr>
+    <tr><td>CAN-SPAM cold email (US, B2B)</td><td><span class="tag t-green">GREEN</span></td><td>No prior consent needed if compliant</td><td>Address + 1-click unsubscribe; ≤40/mailbox/day warmed</td></tr>
+    <tr><td>Cold SMS (US)</td><td><span class="tag t-red">RED</span></td><td>TCPA needs prior written consent; $500–1,500/text</td><td>Opt-in only, ever</td></tr>
+    <tr><td>WhatsApp marketing to opted-in users (approved templates)</td><td><span class="tag t-amber">CAUTION</span></td><td>Needs opt-in + template approval; quality rating</td><td>Consent log; monitor quality rating</td></tr>
+    <tr><td>Cold WhatsApp blasts</td><td><span class="tag t-red">RED</span></td><td>Unsolicited bulk → number ban</td><td>Never; opt-in gate on the free tools</td></tr>
+    <tr><td>EU / Germany / India outreach</td><td><span class="tag t-amber">CAUTION</span></td><td>GDPR consent-first; India DPDP phasing in</td><td>Consent or suppress; build consent capture now</td></tr>
+  </table>
+  <div class="callout red"><b>The single most important design choice:</b> put a human approval gate on exactly two things — <b>new ad creative/copy</b> and <b>any outreach to non-consented people</b>. Automate everything around them. That one decision is the difference between "checks once a week" and "account banned in week two."</div>
+</section>
+
+<!-- 8 -->
+<section>
+  <h2><span class="n">08</span>The weekly cockpit — your 30 minutes</h2>
+  <p class="lead">Everything converges into one page and one queue. A realistic Monday ritual:</p>
+  <ol>
+    <li><b>Glance at the scoreboard (5 min):</b> sessions, sign-ups, sales, CPA, ROAS vs last week — auto-built in Looker Studio by L6.</li>
+    <li><b>Clear the approval queue (15 min):</b> thumbs-up/down next week's ad creatives and any flagged outreach. Rejections send notes back to L9 for a rewrite.</li>
+    <li><b>Check the guardrail panel (5 min):</b> spend-cap usage, WhatsApp quality rating, email spam-rate, any platform warnings.</li>
+    <li><b>Optional steer (5 min):</b> tell the Brain a theme to push or avoid this week (e.g., "more matchmaking, it's wedding season").</li>
+  </ol>
+  <div class="callout"><b>Kill-switch:</b> one toggle pauses all paid spend and outbound sending immediately — your circuit-breaker if anything looks wrong while you're away.</div>
+</section>
+
+<!-- 9 -->
+<section>
+  <h2><span class="n">09</span>Build roadmap — crawl, walk, run</h2>
+  <p class="lead">Do <b>not</b> build all nine loops at once. Sequence by ROI and by what protects revenue first. Each phase is shippable and useful on its own.</p>
+  <table>
+    <tr><th>Phase</th><th>Build</th><th>Why first</th><th>Effort</th></tr>
+    <tr><td><b>0 · Foundations</b><br><span class="small">Week 1</span></td><td>n8n droplet, connect GA4/Search Console/PostHog, brand kit + content library, the cockpit dashboard, the consent log</td><td>Nothing is autonomous without the brain, memory and dashboard</td><td>2–4 days</td></tr>
+    <tr><td><b>1 · Capture &amp; lifecycle</b><br><span class="small">Week 2</span></td><td>L8 (email/WhatsApp opt-in flows) + L1 (daily blog)</td><td>Monetises traffic you already get — fastest revenue, zero ban risk</td><td>3–5 days</td></tr>
+    <tr><td><b>2 · Content engine</b><br><span class="small">Weeks 3–4</span></td><td>L9 (creative director) + L2 (video factory) + L3 (publishing)</td><td>The daily reels flywheel — your #1 organic growth lever</td><td>1–2 weeks</td></tr>
+    <tr><td><b>3 · Paid &amp; optimize</b><br><span class="small">Weeks 5–6</span></td><td>L5 (ads + HITL) + L6 (optimization brain) + L4 (tech SEO)</td><td>Now that creative + tracking exist, paid can amplify winners</td><td>1–2 weeks</td></tr>
+    <tr><td><b>4 · Outbound (optional)</b><br><span class="small">Week 7+</span></td><td>L7 (partner/affiliate cold email)</td><td>B2B growth; only after warmed domains are ready</td><td>3–5 days</td></tr>
+  </table>
+  <div class="callout good"><b>Highest-ROI first build:</b> Phase 0 + L8 + L9/L2/L3. A capture-and-content machine on your existing traffic and Content Pack pays for the whole stack before you spend a rupee on ads.</div>
+</section>
+
+<!-- 10 -->
+<section>
+  <h2><span class="n">10</span>What I'd need from you to build it</h2>
+  <ul class="clean">
+    <li><b>Accounts &amp; access:</b> a server (DigitalOcean/Hetzner), the Instagram/Facebook <b>Business</b> accounts + a Meta Developer app (start app review now), a YouTube channel + Google Cloud project, Google Ads + Meta Ads accounts, and API keys for Claude, ElevenLabs, fal.ai/HeyGen, Ideogram, Apollo, Smartlead, Brevo.</li>
+    <li><b>Decisions:</b> monthly ad budget + the hard daily cap; the banned-claims word-list; which markets to suppress (Germany/EU at first); how aggressive the autonomy (approve-then-post vs post-then-review for organic).</li>
+    <li><b>Already done:</b> your Master Playbook, Content Pack (scripts), brand assets, blog, and the three products — the machine consumes these on day one.</li>
+  </ul>
+  <div class="callout"><b>Next step when you're ready:</b> I can turn Phase 0 + Phase 1 into a concrete build — provision n8n, wire the dashboards, and stand up the capture + daily-blog loops — then add the content and paid engines phase by phase. Say the word and I'll start with the foundations.</div>
+</section>
+
+<footer class="wrap">
+  VedicHour — Autonomous Marketing Machine blueprint · 15 June 2026 · strategy &amp; architecture, pre-build · internal, not committed to the repo.
+</footer>
+</div>
+</body>
+</html>

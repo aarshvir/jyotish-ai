@@ -1,0 +1,28 @@
+{
+  "name": "vedichour-marketing-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "VedicHour always-on marketing engine — seven loops, one SQLite store, owner clicks only where the platforms require a human.",
+  "scripts": {
+    "doctor": "tsx src/cli.ts doctor",
+    "tick": "tsx src/cli.ts tick",
+    "loop:insight": "tsx src/cli.ts insight",
+    "loop:copy": "tsx src/cli.ts copy",
+    "loop:assets": "tsx src/cli.ts assets",
+    "loop:distribute": "tsx src/cli.ts distribute",
+    "loop:paid": "tsx src/cli.ts paid",
+    "loop:measure": "tsx src/cli.ts measure",
+    "loop:learn": "tsx src/cli.ts learn",
+    "dashboard": "tsx src/cli.ts dashboard",
+    "daemon": "tsx src/cli.ts daemon",
+    "test": "tsx --test src/policy/voice.test.ts src/policy/capture.test.ts src/loops/paid.test.ts src/copy/fallbacks.test.ts src/analytics/capi.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "playwright": "^1.63.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

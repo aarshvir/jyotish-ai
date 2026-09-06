@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "campaign": "VH-timing-IN",
+    "objective": "Sales with trial_start as custom event once CAPI is live",
+    "targeting": "India, 28–60, no detailed targeting on religion/astrology-interest if it implies a personal attribute. Let the creative qualify. Advantage+ only after validate.",
+    "landing": "https://www.vedichour.com/sample-report?utm_source=meta&utm_medium=paid&utm_campaign=job-change-month-vs-hour",
+    "specialAdCategory": "none — do not run housing/credit/employment special category by accident"
+  },
+  "google": {
+    "campaign": "VH-Search-Timing",
+    "keywords_positive": [
+      "muhurat",
+      "hora timing",
+      "kundli hourly",
+      "vedic timing app"
+    ],
+    "keywords_negative": [
+      "free kundli pdf",
+      "black magic",
+      "get ex back",
+      "lottery"
+    ],
+    "children": "Do not target under 18. Astrology is restricted from serving to children."
+  },
+  "capi": {
+    "send": [
+      "trial_start",
+      "subscribe",
+      "page_view"
+    ],
+    "never_send": [
+      "birth_date",
+      "birth_time",
+      "birth_place",
+      "personal_context",
+      "name"
+    ],
+    "dedup": "event_id + fbp/fbc when present"
+  },
+  "spend": {
+    "status": "hold",
+    "paying": 0,
+    "trials": 0,
+    "ltv": null,
+    "cacCeiling": null,
+    "recommendation": "HOLD. 0 paying customer(s). Ads multiply a conversion rate; they cannot create one. Get a handful of genuine organic paid users first.",
+    "stopConditions": [
+      "CAC > 0.5 × observed LTV on the validation cap",
+      "3 Meta/Google policy disapprovals in 7 days",
+      "Frequency > 3 and CTR down 40% vs week 1",
+      "Trial→paid < 10% after 100 attributed trials",
+      "Any health/legal/financial outcome claim in creative (do not appeal — kill)"
+    ]
+  }
+}

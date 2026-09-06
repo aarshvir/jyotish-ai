@@ -1,0 +1,25 @@
+{
+  "via": "anthropic-api#1",
+  "idea": "job-change-month-vs-hour",
+  "lint": "flag on the word guarantee in blog/ads (used as 'not guarantees')",
+  "script_en": {
+    "hook": "You wrote the resignation mail at midnight.",
+    "lines": [
+      "You sent it at 9:14 the next morning because that is when you opened your laptop.",
+      "The month mattered to you. The date mattered.",
+      "The hour did not.",
+      "VedicHour shows you when the sky is clearer for messages that change things.",
+      "Not which decision to make. When to press send.",
+      "A Tuesday morning at 10:35 feels different from 2:47 in the afternoon.",
+      "The resignation goes either way. The clarity does not."
+    ],
+    "cta": "VedicHour."
+  },
+  "script_hi": {
+    "hook": "Resign karne ka decision le liya. Mail bheja subah 9:42 pe.",
+    "note": "v1 wrote Roman Hindi. Prompt now requires Devanagari on the next copy run."
+  },
+  "script_hinglish": {
+    "hook": "Resignation letter likh diya raat ko. Send kiya 9:22 pe."
+  }
+}
