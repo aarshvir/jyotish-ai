@@ -9,7 +9,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-/** Static form shell rendered during SSR / by crawlers. */
+/**
+ * Visual shell for SSR / crawlers / the useSearchParams Suspense fallback.
+ *
+ * This is the FIRST HTML paint of /login. It must never be a submitting form
+ * with named credential fields: a GET form whose password input is submitted
+ * as a query parameter leaks the secret into history, Referer, and access logs
+ * if the user or a password manager submits before LoginForm hydrates.
+ */
 function LoginShell() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-space via-cosmos to-space flex items-center justify-center p-6">
@@ -24,7 +31,7 @@ function LoginShell() {
           <p className="font-body text-sm text-dust mt-2">Sign in to your account</p>
         </div>
 
-        <form method="GET" action="/login" noValidate>
+        <div>
           <div className="mb-4">
             <label htmlFor="shell-email" className="block font-body text-xs font-medium text-dust mb-1.5">
               Email
@@ -32,9 +39,9 @@ function LoginShell() {
             <input
               id="shell-email"
               type="email"
-              name="email"
               placeholder="you@example.com"
-              autoComplete="email"
+              autoComplete="off"
+              readOnly
               className="w-full px-4 py-3 min-h-[48px] bg-white/[0.05] border border-white/10 rounded-lg font-body text-sm text-star placeholder:text-dust/40"
             />
           </div>
@@ -45,19 +52,20 @@ function LoginShell() {
             <input
               id="shell-password"
               type="password"
-              name="password"
               placeholder="Your password"
-              autoComplete="current-password"
+              autoComplete="off"
+              readOnly
               className="w-full px-4 py-3 min-h-[48px] bg-white/[0.05] border border-white/10 rounded-lg font-body text-sm text-star placeholder:text-dust/40"
             />
           </div>
           <button
-            type="submit"
-            className="mt-2 w-full py-3 min-h-[48px] bg-gradient-to-r from-amber to-amber/80 text-space font-body text-sm font-semibold rounded-lg"
+            type="button"
+            disabled
+            className="mt-2 w-full py-3 min-h-[48px] bg-gradient-to-r from-amber to-amber/80 text-space font-body text-sm font-semibold rounded-lg disabled:opacity-60"
           >
             Sign In
           </button>
-        </form>
+        </div>
 
         <noscript>
           <p className="mt-4 text-center font-body text-xs text-dust/60">
