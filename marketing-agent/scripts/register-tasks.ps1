@@ -63,7 +63,7 @@ foreach ($t in $Tasks) {
   $logName = ($t.Script -replace ':', '-') + '.log'
   $logFile = Join-Path $LogDir $logName
 
-  $inner  = "Set-Location -LiteralPath '" + $AgentDir + "'; npm run " + $t.Script + ' ' + $t.Args + " *>> '" + $logFile + "'"
+  $inner  = "Set-Location -LiteralPath '" + $AgentDir + "'; npm run " + $t.Script + ' ' + $t.Args + " 2>&1 | Out-File -FilePath '" + $logFile + "' -Append -Encoding utf8"
   $argStr = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "' + $inner + '"'
   $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument $argStr
 
