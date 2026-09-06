@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
-import { isValidLat, isValidLng } from '@/lib/utils/coords';
+import { hasValidBirthCoords } from '@/lib/utils/coords';
 import { track } from '@/components/analytics/PostHogProvider';
 
 const DEFAULT: BirthDetails = {
@@ -89,7 +89,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
     e.preventDefault();
     setErr(null);
     setTeaser(null);
-    if (!p.birth_date || !isValidLat(p.birth_lat) || !isValidLng(p.birth_lng)) {
+    if (!p.birth_date || !hasValidBirthCoords(p)) {
       setErr('Enter your birth date and confirm your birth city.');
       return;
     }
