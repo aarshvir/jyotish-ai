@@ -2,6 +2,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { readFileSync, existsSync, rmSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ROOT } from '../db/index';
+import { envStr } from '../env';
 
 const TMP = resolve(ROOT, 'tmp');
 
@@ -134,7 +135,7 @@ export async function callCodex(prompt: string, model: string | null, timeoutMs:
   // npm one. On 2026-09-06 the app's 0.152.0 rejected the account's default model while npm's
   // 0.153.4 accepted it, and because spawnShim resolves via PATH the engine kept getting the
   // broken one. An explicit binary beats PATH order; unset, behaviour is unchanged.
-  const codexBin = (process.env.CODEX_BIN ?? '').trim() || 'codex';
+  const codexBin = (envStr('CODEX_BIN') ?? process.env.CODEX_BIN ?? '').trim() || 'codex';
   const r = await spawnShim(codexBin, args, prompt, timeoutMs);
   if (r.timedOut) throw new CliError(`codex timed out after ${timeoutMs}ms`);
   if (RATE_RE.test(r.stderr)) throw new RateLimitError(`codex: ${firstLine(r.stderr) || 'rate limited'}`);

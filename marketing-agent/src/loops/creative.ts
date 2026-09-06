@@ -301,7 +301,7 @@ const EXPLORE_SHARE = 0.3;
  * sums past this deadline means the stage dies before the second CLI can finish, which is exactly
  * the failure documented above.
  */
-const STAGE_DEADLINE_MS = 840_000;
+const STAGE_DEADLINE_MS = 1_020_000; // claude(480s) + codex(480s) retry must fit inside one stage
 
 /**
  * Weighted total. The hook still carries the most single weight — the first second is the whole

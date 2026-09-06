@@ -45,7 +45,8 @@
       "model": null,
       "dailyCap": 200,
       "minIntervalMs": 2000,
-      "timeoutMs": 300000
+      "timeoutMs": 480000,
+      "_timeout_why": "Raised 300s -> 480s on 2026-09-06: the creative script stage writes six full reels against a ~35k-char brief and claude timed out at exactly 300000ms on the first scheduled run (0 variants). Same reason codex was raised to 480s on 2026-08-17. Both must stay below creative.ts STAGE_DEADLINE_MS."
     }
   }
 }
