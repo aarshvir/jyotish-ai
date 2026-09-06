@@ -1,12 +1,22 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { finalizeCompletedZiinaIntent } from './finalizeIntent';
+import { inngest } from '@/lib/inngest/client';
 
 vi.mock('@/lib/ziina/server', () => ({
   getPaymentIntent: vi.fn(),
 }));
 
 vi.mock('@/lib/inngest/client', () => ({
-  inngest: { send: vi.fn() },
+  inngest: { send: vi.fn().mockResolvedValue(undefined) },
+}));
+
+vi.mock('@/lib/api/jobToken', () => ({
+  createJobToken: vi.fn(() => 'test-job-token'),
+  getPipelineJobTokenTtlSeconds: vi.fn(() => 3600),
+}));
+
+vi.mock('@/lib/promo/server', () => ({
+  redeemPromoCode: vi.fn().mockResolvedValue(true),
 }));
 
 type Row = Record<string, unknown>;
@@ -17,6 +27,7 @@ class MockQuery {
   private notFilters: Array<[string, unknown]> = [];
   private updatePayload: Row | null = null;
   private upsertPayload: Row | null = null;
+  private insertPayload: Row | null = null;
 
   constructor(
     private readonly tables: Tables,
@@ -43,8 +54,6 @@ class MockQuery {
 
   async maybeSingle() {
     const rows = this.rows();
-    // Model Supabase's .update(...).select().maybeSingle(): apply the pending update
-    // to the matched row(s) and return the (now updated) first row.
     if (this.updatePayload) {
       for (const row of rows) Object.assign(row, this.updatePayload);
     }
@@ -58,6 +67,11 @@ class MockQuery {
 
   upsert(payload: Row) {
     this.upsertPayload = payload;
+    return this;
+  }
+
+  insert(payload: Row) {
+    this.insertPayload = payload;
     return this;
   }
 
@@ -90,6 +104,11 @@ class MockQuery {
       else rows.push({ ...this.upsertPayload });
       this.tables[this.table] = rows;
     }
+    if (this.insertPayload) {
+      const rows = this.tables[this.table] ?? [];
+      rows.push({ ...this.insertPayload });
+      this.tables[this.table] = rows;
+    }
     return { data: null, error: null };
   }
 }
@@ -110,6 +129,11 @@ const completedIntent = {
 };
 
 describe('finalizeCompletedZiinaIntent', () => {
+  beforeEach(() => {
+    vi.mocked(inngest.send).mockClear();
+    process.env.INNGEST_EVENT_KEY = 'test-inngest-key';
+  });
+
   it('rejects a completed payment bound to a different report owner', async () => {
     const tables: Tables = {
       ziina_payments: [
@@ -148,6 +172,7 @@ describe('finalizeCompletedZiinaIntent', () => {
         },
       ],
       reports: [],
+      analytics_events: [],
     };
 
     const result = await finalizeCompletedZiinaIntent(
@@ -160,5 +185,63 @@ describe('finalizeCompletedZiinaIntent', () => {
     expect(result).toEqual({ ok: true, action: 'processed' });
     expect(tables.ziina_payments[0].status).toBe('completed');
     expect(tables.reports).toEqual([]);
+  });
+
+  it('regenerates when paying on a complete free/preview stub (same reportId)', async () => {
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'report_free',
+          plan_type: '7day',
+          status: 'pending',
+          user_id: 'buyer_user',
+          promo_code_id: null,
+        },
+      ],
+      reports: [
+        {
+          id: 'report_free',
+          user_id: 'buyer_user',
+          user_email: 'buyer@example.com',
+          native_name: 'Seeker',
+          birth_date: '1990-01-15',
+          birth_time: '10:30:00',
+          birth_city: 'Dubai',
+          birth_lat: 25.2,
+          birth_lng: 55.27,
+          current_city: null,
+          current_lat: null,
+          current_lng: null,
+          timezone_offset: 240,
+          plan_type: 'free',
+          report_start_date: null,
+          status: 'complete',
+          generation_started_at: null,
+          report_data: { days: [{ date: '2026-08-12', day_score: 70 }], months: [], weeks: [] },
+          payment_status: 'free',
+        },
+      ],
+      analytics_events: [],
+    };
+
+    const result = await finalizeCompletedZiinaIntent(
+      createMockDb(tables) as never,
+      'intent_1',
+      'https://example.test',
+      { intent: completedIntent as never },
+    );
+
+    expect(result).toEqual({ ok: true, action: 'processed' });
+    expect(tables.ziina_payments[0].status).toBe('completed');
+    expect(tables.reports[0].payment_status).toBe('paid');
+    expect(tables.reports[0].plan_type).toBe('7day');
+    expect(tables.reports[0].status).toBe('generating');
+    expect(tables.reports[0].report_data).toBeNull();
+    expect(inngest.send).toHaveBeenCalledTimes(1);
+    const sent = vi.mocked(inngest.send).mock.calls[0][0] as { id: string; name: string };
+    expect(sent.name).toBe('report/generate');
+    expect(sent.id).toMatch(/^report-generate:report_free:/);
+    expect(sent.id).not.toBe('report-generate:report_free');
   });
 });

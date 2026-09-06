@@ -28,11 +28,12 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { acquireLock, releaseLock } from '@/lib/redis/locks';
 import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
-import { getPromoDiscount, hasUserRedeemed, redeemPromoCode } from '@/lib/promo/server';
+import { getPromoDiscount, hasUserRedeemed, redeemPromoCode, oncePerUserOrderId } from '@/lib/promo/server';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { decideAfterPromoRedeem } from '@/lib/promo/redeemGate';
 import { decideFreeReportClaim } from '@/lib/reports/freeReportGate';
+import { minForecastDaysForPlan } from '@/lib/reports/forecastDayCount';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -356,10 +357,16 @@ export async function POST(request: NextRequest) {
   }
 
   const rd = existing?.report_data as { days?: unknown[] } | null | undefined;
+  const forceRestart = body.forceRestart === true;
+  const dayCount = Array.isArray(rd?.days) ? (rd!.days as unknown[]).length : 0;
+  const planForDone = String(body.plan_type ?? existing?.plan_type ?? '7day');
+  // A complete free/preview stub (1 day) must not block paid regeneration or an
+  // explicit Try Again — otherwise paying on the same reportId (or forceRestart)
+  // returns skipped forever with preview content.
   const alreadyDone =
+    !forceRestart &&
     existing?.status === 'complete' &&
-    Array.isArray(rd?.days) &&
-    (rd!.days as unknown[]).length > 0;
+    dayCount >= minForecastDaysForPlan(planForDone);
 
   if (alreadyDone) {
     return NextResponse.json({
@@ -372,8 +379,6 @@ export async function POST(request: NextRequest) {
       dispatch_mode: (useInngest ? 'inngest' : 'inline_fallback') as ReportStartDispatchMode,
     });
   }
-
-  const forceRestart = body.forceRestart === true;
 
   if (
     existing?.status === 'generating' &&
@@ -518,7 +523,7 @@ export async function POST(request: NextRequest) {
     if (promo.oncePerUser && promo.codeId) {
       let alreadyRedeemed: boolean;
       try {
-        alreadyRedeemed = await hasUserRedeemed(promo.codeId, auth.user.id);
+        alreadyRedeemed = await hasUserRedeemed(promo.codeId, auth.user.id, auth.user.email);
       } catch {
         // Fail closed on a transient lookup error — retryable, not a silent free grant.
         await releaseOwnedLock();
@@ -629,7 +634,7 @@ export async function POST(request: NextRequest) {
   // a per-report order_id so duplicate ⇒ same-report retry and may proceed.
   if (promoCodeIdToRedeem) {
     const orderId = promoOncePerUser
-      ? `promo:${promoCodeIdToRedeem}:${auth.user.id}`
+      ? oncePerUserOrderId(promoCodeIdToRedeem, auth.user.id, auth.user.email)
       : reportId;
     let booked: boolean;
     try {

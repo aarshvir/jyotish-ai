@@ -8,8 +8,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { inngest } from '@/lib/inngest/client';
 import type { PipelineInput } from '@/lib/reports/orchestrator';
 import { extendReportToMonthly } from '@/lib/reports/extendMonthly';
+import { minForecastDaysForPlan } from '@/lib/reports/forecastDayCount';
 import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
-import { redeemPromoCode } from '@/lib/promo/server';
+import { redeemPromoCode, oncePerUserOrderId } from '@/lib/promo/server';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
 const YOUNG_GENERATING_MS = 90 * 60 * 1000;
@@ -128,16 +129,25 @@ async function maybeDispatchReportGenerate(
 
   const r = row as ReportRow;
   const rd = r.report_data as { days?: unknown[] } | null | undefined;
-  if (r.status === 'complete' && Array.isArray(rd?.days) && rd!.days.length > 0) {
+  const dayCount = Array.isArray(rd?.days) ? rd!.days.length : 0;
+  const planRaw = r.plan_type ?? '7day';
+  const planType = planRaw === 'free' ? 'preview' : planRaw;
+  const minDays = minForecastDaysForPlan(planRaw);
+  // Free/preview persists only 1 sample day. If the buyer later pays on the SAME
+  // reportId, status is already 'complete' with days.length > 0 — the old
+  // "any days ⇒ skip" guard would leave them charged for a monthly/7-day with
+  // preview content forever. Only skip when the stored horizon matches the plan.
+  if (r.status === 'complete' && dayCount >= minDays) {
     return;
   }
   if (r.status === 'generating' && isYoungGenerating(r.generation_started_at)) {
     return;
   }
 
-  const planRaw = r.plan_type ?? '7day';
-  const planType = planRaw === 'free' ? 'preview' : planRaw;
   const tz = typeof r.timezone_offset === 'number' ? r.timezone_offset : 0;
+  // Regenerating over a short complete (free→paid on same id) must wipe the
+  // preview stub so the pipeline does not treat the row as already finalized.
+  const regeneratingShortComplete = r.status === 'complete' && dayCount < minDays;
 
   const input: PipelineInput = {
     name: r.native_name ?? 'Seeker',
@@ -175,6 +185,17 @@ async function maybeDispatchReportGenerate(
         generation_trace_id: generationTraceId,
         generation_started_at: nowIso,
         updated_at: nowIso,
+        ...(regeneratingShortComplete
+          ? {
+              // Clear preview-stripped payload + checkpoints so the paid run
+              // cannot short-circuit as "already complete" mid-pipeline.
+              report_data: null,
+              day_scores: null,
+              pipeline_state: null,
+              pipeline_checkpoint: null,
+              generation_progress: 0,
+            }
+          : {}),
       })
       .eq('id', reportId)
       .eq('user_id', r.user_id);
@@ -184,8 +205,13 @@ async function maybeDispatchReportGenerate(
         upErr.message,
       );
     }
+    // Unique id when regenerating over a prior free/preview Inngest run — a static
+    // `report-generate:${reportId}` would be deduped within Inngest's 24h window and
+    // silently drop the paid regeneration.
     await inngest.send({
-      id: `report-generate:${reportId}`,
+      id: regeneratingShortComplete
+        ? `report-generate:${reportId}:${generationTraceId}`
+        : `report-generate:${reportId}`,
       name: 'report/generate',
       data: {
         reportId,
@@ -258,21 +284,21 @@ export async function finalizeCompletedZiinaIntent(
   // guard + atomic claim below). Booking it before those guards burned the coupon —
   // and, for once-per-user codes, blocked the legitimate owner forever — on a payment
   // that ultimately granted nothing. Defined here (row is known); called at each grant.
-  const bookPromoRedemption = async () => {
+  const bookPromoRedemption = async (redeemerEmail?: string | null) => {
     if (!row.promo_code_id || !row.user_id) return;
     try {
-      // Once-per-user codes dedup the redemption on (code, user) via a STABLE order_id,
-      // so the same user can't redeem the same code across multiple reports — the
-      // existing unique index on order_id makes this race-safe. Unlimited codes
-      // (once_per_user = false, e.g. ADMIN100) keep the per-intent id so repeat use is
-      // allowed. Default to once-per-user when the flag is missing (matches getPromoDiscount).
+      // Once-per-user codes dedup the redemption on a durable email-scoped order_id
+      // (falls back to user_id when email is unknown) so account delete + re-signup
+      // cannot reset once_per_user. Unlimited codes keep the per-intent id.
       const { data: codeRow } = await db
         .from('promo_codes')
         .select('once_per_user')
         .eq('id', row.promo_code_id)
         .maybeSingle();
       const oncePerUser = (codeRow as { once_per_user?: boolean } | null)?.once_per_user !== false;
-      const orderId = oncePerUser ? `promo:${row.promo_code_id}:${row.user_id}` : intentId;
+      const orderId = oncePerUser
+        ? oncePerUserOrderId(row.promo_code_id, row.user_id, redeemerEmail)
+        : intentId;
       await redeemPromoCode(row.promo_code_id, row.user_id, orderId);
     } catch (e) {
       console.warn('[ziina/finalize] promo redeem failed (non-fatal):', e);
@@ -312,8 +338,15 @@ export async function finalizeCompletedZiinaIntent(
       })
       .eq('ziina_intent_id', intentId);
 
-    // Grant committed → book the coupon.
-    await bookPromoRedemption();
+    // Grant committed → book the coupon (email-durable once_per_user key when possible).
+    let redeemerEmail: string | null = null;
+    try {
+      const { data: authUser } = await db.auth.admin.getUserById(row.user_id!);
+      redeemerEmail = authUser.user?.email ?? null;
+    } catch {
+      /* fall back to user_id-scoped order_id */
+    }
+    await bookPromoRedemption(redeemerEmail);
 
     return { ok: true, action: 'processed' };
   }
@@ -324,7 +357,7 @@ export async function finalizeCompletedZiinaIntent(
 
   const { data: reportForPayment, error: reportForPaymentErr } = await db
     .from('reports')
-    .select('id, user_id')
+    .select('id, user_id, user_email')
     .eq('id', reportId)
     .maybeSingle();
 
@@ -376,7 +409,9 @@ export async function finalizeCompletedZiinaIntent(
   }
 
   // This caller won the atomic claim and passed the owner check → book the coupon now.
-  await bookPromoRedemption();
+  await bookPromoRedemption(
+    (reportForPayment as { user_email?: string | null } | null)?.user_email ?? null,
+  );
 
   // Behavioral event: reliable revenue signal for the analytics dashboard. Never throw.
   try {
