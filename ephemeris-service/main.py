@@ -1631,18 +1631,37 @@ def _local_midnight_utc(date_obj, timezone_offset_minutes: int):
     return utc_midnight - timedelta(minutes=timezone_offset_minutes)
 
 
+def _dst_aware_offset_minutes(
+    local_tz: ZoneInfo,
+    date_obj: datetime,
+    fallback: Optional[int],
+) -> int:
+    """
+    Minutes east of UTC for local noon on date_obj's civil day.
+
+    Client-provided offsets are often year-round city constants (onboard maps
+    "new york" → -300 / EST, "london" → 0 / GMT). During DST those constants
+    desync the 18 slot UTC windows from hora/choghadiya spans (which use
+    ZoneInfo), so every labeled hour scores the wrong window. Prefer IANA.
+    """
+    sample_dt = datetime(date_obj.year, date_obj.month, date_obj.day, 12, 0, 0, tzinfo=local_tz)
+    td = sample_dt.utcoffset()
+    if td is not None:
+        return int(td.total_seconds() / 60)
+    return fallback if fallback is not None else 0
+
+
 @app.post("/generate-daily-grid")
 def generate_daily_grid(data: DailyGridInput):
     try:
         tz_name = _tf.timezone_at(lat=data.current_lat, lng=data.current_lng)
         local_tz = ZoneInfo(tz_name)
         date_obj = datetime.strptime(data.date, "%Y-%m-%d")
-        # Use request offset if provided (e.g. Dubai 240); else infer from timezone
-        tz_offset_mins = data.timezone_offset_minutes
-        if tz_offset_mins is None:
-            sample_dt = datetime(date_obj.year, date_obj.month, date_obj.day, 12, 0, 0, tzinfo=local_tz)
-            td = sample_dt.utcoffset()
-            tz_offset_mins = int(td.total_seconds() / 60) if td else 0
+        # Always prefer IANA/DST-aware offset when timezonefinder resolved a zone.
+        # Do NOT trust client timezone_offset_minutes over this — see helper docstring.
+        tz_offset_mins = _dst_aware_offset_minutes(
+            local_tz, date_obj, data.timezone_offset_minutes
+        )
 
         # Sunrise / sunset anchors (same-day pairs)
         jd = get_julian_day(date_obj)
