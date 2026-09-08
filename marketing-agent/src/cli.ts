@@ -13,6 +13,7 @@ import { runReelLoop } from './loops/video';
 import { runRenderLoop, printBudgetStatus } from './loops/render';
 import { runPublishPrep } from './loops/publish-prep';
 import { runPackageLoop } from './loops/package';
+import { runCarouselLoop } from './loops/carousel';
 import { runContentOpsLoop } from './loops/content-ops';
 import { runSocialLoop } from './loops/social';
 import { runSyncLoop } from './loops/sync';
@@ -146,6 +147,9 @@ async function main() {
     case 'loop:package':
       await runPackageLoop({ slug: pos[0] });
       break;
+    case 'loop:carousel':
+      await runCarouselLoop({ slug: pos[0] });
+      break;
     case 'loop:social':
       await runSocialLoop();
       break;
@@ -202,6 +206,7 @@ async function main() {
           `  npm run reject <slug> "why"    reject + file the reason as a lesson\n\n` +
           `  npm run loop:publish           package reels into post-ready platform posts (L3)\n` +
           `  npm run loop:package [slug]    IG Reels / YT Shorts / YT 8-12m / GBP / IG carousel (L3b)\n` +
+          `  npm run loop:carousel <slug>   render 6-8 on-brand PNG carousel slides + caption pack (L3c, $0)\n` +
           `  npm run loop:social            generate platform social posts (L3 organic)\n` +
           `  npm run loop:consent           sync Supabase signups into the consent ledger (L8)\n` +
           `  npm run loop:sync              mirror campaign assets up to Supabase + pull admin kills down\n` +

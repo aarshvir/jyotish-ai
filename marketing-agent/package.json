@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "VedicHour autonomous marketing agent \u2014 local CLI-orchestrated growth engine (Phase 0 foundations).",
+  "description": "VedicHour autonomous marketing agent — local CLI-orchestrated growth engine (Phase 0 foundations).",
   "scripts": {
     "doctor": "tsx src/cli.ts doctor",
     "db:init": "tsx src/cli.ts db:init",
@@ -26,6 +26,7 @@
     "reject": "tsx src/cli.ts reject",
     "loop:publish": "tsx src/cli.ts loop:publish",
     "loop:package": "tsx src/cli.ts loop:package",
+    "loop:carousel": "tsx src/cli.ts loop:carousel",
     "loop:social": "tsx src/cli.ts loop:social",
     "loop:sync": "tsx src/cli.ts loop:sync",
     "loop:stats": "tsx src/cli.ts loop:stats",
@@ -38,7 +39,7 @@
     "loop:outreach": "tsx src/loops/outreach.ts",
     "report": "tsx src/report.ts",
     "relint": "tsx src/relint.ts",
-    "test": "tsx --test src/brain/clis.test.ts src/audit/cheap-tropes.test.ts src/audit/cold-open.test.ts src/audit/visible-page-text.test.ts src/audit/hardrules.test.ts src/loops/format-spec.test.ts src/loops/package.test.ts src/loops/publish-pack.test.ts src/cli-parse.test.ts src/env.test.ts src/brand.test.ts src/render/listen.test.ts src/render/silence.test.ts src/render/lcut.test.ts",
+    "test": "tsx --test src/brain/clis.test.ts src/audit/cheap-tropes.test.ts src/audit/cold-open.test.ts src/audit/visible-page-text.test.ts src/audit/hardrules.test.ts src/loops/format-spec.test.ts src/loops/package.test.ts src/loops/publish-pack.test.ts src/cli-parse.test.ts src/env.test.ts src/brand.test.ts src/render/listen.test.ts src/render/silence.test.ts src/render/lcut.test.ts src/loops/carousel.test.ts",
     "cycle": "tsx src/cycle.ts",
     "email:launch": "tsx src/email/send-launch.ts",
     "kill": "tsx src/cli.ts kill",
@@ -46,11 +47,12 @@
     "cockpit": "tsx src/cli.ts cockpit"
   },
   "dependencies": {
-    "better-sqlite3": "^11.8.0"
+    "better-sqlite3": "^12.11.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.0",
+    "playwright": "^1.60.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
