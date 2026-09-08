@@ -14,6 +14,7 @@ import {
 } from '@/lib/onboard/draft';
 import { applyDiscount, formatAmount, type SupportedCurrency } from '@/lib/ziina/amounts';
 import { estimateTimezoneOffsetMinutes } from '@/lib/utils/timezoneOffset';
+import { PaymentHandoff } from '@/components/checkout/PaymentHandoff';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -618,6 +619,11 @@ function OnboardPageInner() {
   const [checkCooldown, setCheckCooldown] = useState(0);
 
   const [promoDiscount, setPromoDiscount] = useState(0);
+  // Set instead of redirecting straight to Ziina: buyers need to be told what the
+  // Ziina page looks like BEFORE they see it (see PaymentHandoff).
+  const [handoff, setHandoff] = useState<{
+    productName: string; priceDisplay: string; redirectUrl: string; currency: 'INR' | 'AED' | 'USD';
+  } | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -1070,7 +1076,7 @@ function OnboardPageInner() {
           return;
         }
 
-        const intent = await intentRes.json() as { intentId?: string; redirectUrl?: string };
+        const intent = await intentRes.json() as { intentId?: string; redirectUrl?: string; amount?: number; currency?: string };
         if (!intent.redirectUrl) throw new Error('No redirect URL from Ziina');
 
         // Store the final report URL in sessionStorage so we can resume after payment redirect
@@ -1096,9 +1102,22 @@ function OnboardPageInner() {
         // Conversion event: fired fire-and-forget just before leaving for Ziina.
         track('checkout_started', { plan: effectiveType, product: 'forecast' });
 
-        // Redirect user to Ziina's hosted payment page
-        // (sessionStorage cleared on successful report page load — see report/[id]/page.tsx)
-        window.location.href = intent.redirectUrl;
+        // Show the hand-off card instead of redirecting blind. Every intent this
+        // platform ever created was abandoned on Ziina's page without a card being
+        // typed; the jump from our page to a UAE fintech page reads as a scam unless
+        // the buyer is told what is coming. They continue from there.
+        const handoffCurrency: 'INR' | 'AED' | 'USD' =
+          (intent.currency === 'INR' || intent.currency === 'AED' || intent.currency === 'USD')
+            ? intent.currency
+            : 'USD';
+        setHandoff({
+          productName: `VedicHour ${REPORT_TYPES.find((r) => r.id === effectiveType)?.title ?? 'Forecast'}`,
+          priceDisplay: formatAmount(intent.amount ?? 0, handoffCurrency),
+          redirectUrl: intent.redirectUrl,
+          currency: handoffCurrency,
+        });
+        setIsLoading(false);
+        checkoutInFlight.current = false;
         return;
       } catch (err) {
         console.error('Payment checkout failed:', err);
@@ -1198,6 +1217,16 @@ function OnboardPageInner() {
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.03]">
         <MandalaRing className="w-[500px] h-[500px] text-amber" />
       </div>
+
+      {handoff && (
+        <PaymentHandoff
+          productName={handoff.productName}
+          priceDisplay={handoff.priceDisplay}
+          redirectUrl={handoff.redirectUrl}
+          currency={handoff.currency}
+          onCancel={() => setHandoff(null)}
+        />
+      )}
 
       <div className="relative z-10 w-full max-w-md">
         {paymentReturnBanner && (
