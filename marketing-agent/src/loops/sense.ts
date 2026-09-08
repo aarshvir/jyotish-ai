@@ -4,9 +4,12 @@
  *
  * Sources (all $0, all public, all polite):
  *   1. Google Trends RSS   trends.google.com/trending/rss?geo=IN   — what India is searching now.
- *   2. Reddit public JSON  r/vedicastrology, r/astrology, r/india, r/IndianAcademia — real
- *      questions in the audience's own words. One request per sub, spaced, with a real UA.
- *   3. YouTube Data API    search.list on a few seed queries, using the YOUTUBE_API_KEY the
+ *   2. Reddit               OFF BY DEFAULT — see docs/PLATFORM_POLICY.md §1. Reddit's Developer
+ *      Terms §4.1 bar use of Reddit data by or on behalf of a monetised product without a written
+ *      agreement, and this engine exists to sell one. Requires REDDIT_COMMERCIAL_LICENSE=1.
+ *   3. First-party demand  our own users' free text, bucketed to category COUNTS in memory
+ *      (src/sources/firstparty.ts) — the signal that actually replaces Reddit.
+ *   4. YouTube Data API    search.list on a few seed queries, using the YOUTUBE_API_KEY the
  *      stats loop already uses. 100 quota units per call against a 10,000/day free tier, so the
  *      run is HARD-CAPPED at YT_MAX_CALLS calls — this loop may never be the reason the stats
  *      loop runs out of quota.
@@ -185,7 +188,42 @@ export function parseAtomTitles(xml: string): string[] {
   return out;
 }
 
+/**
+ * Reddit is GATED OFF and must stay that way until the owner has a written agreement.
+ *
+ * [Reddit Developer Terms §4.1](https://redditinc.com/policies/developer-terms) forbid using
+ * Reddit data "by or on behalf of a business or as part of a service or product that is
+ * monetized" without written approval, and the
+ * [Data API Terms](https://redditinc.com/policies/data-api-terms) require a separate agreement for
+ * commercial use. VedicHour is monetised and this engine exists to market it, so we are squarely
+ * inside that clause.
+ *
+ * The earlier move from /hot.json to the public Atom feed fixed an ACCESS problem (403) and was
+ * mistaken for fixing this one. A feed being reachable is not a licence to use it commercially.
+ * Reddit also answered HTTP 429 to the Atom feed on 2026-09-08, which is the practical half of the
+ * same message.
+ *
+ * REDDIT_COMMERCIAL_LICENSE=1 asserts that such an agreement EXISTS. It is not a retry switch, and
+ * nobody should set it because a run came back thin. What replaces the signal is first-party
+ * demand, which is a better one and unambiguously ours.
+ */
+export function redditEnabled(env: Record<string, string | undefined> = loadEnv()): boolean {
+  return env.REDDIT_COMMERCIAL_LICENSE === '1';
+}
+
+export const REDDIT_SKIP_REASON =
+  'skipped by policy: Reddit Developer Terms §4.1 bar commercial use without a written agreement (docs/PLATFORM_POLICY.md §1)';
+
 async function senseReddit(state: SenseState): Promise<void> {
+  if (!redditEnabled()) {
+    // Skipped by policy, not failed — a missing Reddit must never read as a broken loop.
+    state.sources['reddit'] = {
+      ok: true,
+      items: 0,
+      detail: REDDIT_SKIP_REASON,
+    };
+    return;
+  }
   for (const sub of SUBREDDITS) {
     const src = `reddit:${sub}`;
     try {
