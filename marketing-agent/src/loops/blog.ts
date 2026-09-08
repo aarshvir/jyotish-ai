@@ -47,7 +47,14 @@ function backlogSize(): number {
   return unpublishedTopics(topics, new Set([...publishedSlugs(), ...stagedSlugs()])).length;
 }
 
-function blogPrompt(t: Topic): string {
+/**
+ * Exported for the regression test only. The first real run of the self-feeding backlog produced
+ * a well-written article the policy-linter BLOCKED, because the writer kept attributing results
+ * to timing ("genuinely shifts outcomes at the margin", "emerge with more durable placements").
+ * A blocked article is the same silent nothing the empty backlog was, so the outcome line and the
+ * do-not-sound-generated tells are now spelled out here and asserted below.
+ */
+export function blogPrompt(t: Topic): string {
   return `You are the lead content writer for VedicHour (vedichour.com), a Vedic astrology platform.
 Write a complete, original, genuinely useful SEO blog article.
 
@@ -64,6 +71,32 @@ REQUIREMENTS:
 - Include the promo code NEWUSER30 (30% off the first paid report) in a clear call-to-action TWICE: once mid-article and once near the end, naturally.
 - Vedic astrology is sidereal. Be accurate.
 - ABSOLUTELY NO guarantees, miracle/100% claims, or health/financial/relationship promises. No fear-mongering.
+
+THE OUTCOME LINE — the single rule that gets articles rejected. VedicHour describes what a period
+tends to ASK OF the person. It never claims the period, or the act of using timing, CHANGES WHAT
+HAPPENS TO THEM. Describing the texture of a window is the product; attributing a result to it is
+a claim we cannot make, and softening words ("tends to", "at the margin", "often", "frequently")
+do not rescue it.
+  REJECTED: "that genuinely shifts outcomes at the margin"
+  REJECTED: "candidates who stay consistent through Saturn periods emerge with more durable placements"
+  REJECTED: "a Saturn-ruled placement comes later but tends to be more stable"
+  REJECTED: "using timing well means you won't burn out"
+  ACCEPTED: "a Mercury sub-period is a clearer window for the writing-heavy parts of the search"
+  ACCEPTED: "Saturn periods tend to ask for consistency rather than speed — which is worth knowing
+             before you read a slow month as a verdict on yourself"
+  ACCEPTED: "the chart cannot tell you whether the offer comes; it can tell you which weeks you
+             are likeliest to have your own clarity"
+Say what a window is like and what the reader might DO with that. Stop before the result.
+
+DO NOT WRITE LIKE AN AI. The owner rejects copy that reads generated, and it is obvious from a
+few tells. Banned outright: "unlock", "elevate", "delve", "navigate the complexities", "in today's
+fast-paced world", "it's important to note", "in conclusion", "harness the power", "journey"
+(as a metaphor), "game-changer", "empower". Also banned: the three-item rule-of-three cadence in
+every sentence, and paragraphs that all run the same length. Vary sentence length hard — a
+six-word sentence next to a thirty-word one. Prefer a concrete specific (an actual number, an
+actual weekday, an actual thing the reader does on a Tuesday) over an abstraction every time.
+Have an opinion and state it plainly. If a paragraph could appear in any astrology article on the
+internet, cut it and write the one only VedicHour would write.
 
 OUTPUT EXACTLY in this structure and nothing else (no markdown fences):
 DESCRIPTION: <meta description, max 155 chars>
