@@ -337,7 +337,7 @@ interface Idea {
   explore: boolean;
 }
 
-interface Shot {
+export interface Shot {
   kind: 'presenter' | 'broll' | 'screencap';
   seconds: number;
   visualPrompt: string;
@@ -1348,17 +1348,35 @@ const RESTATEMENT_MAX_SHARE = 0.6;
  * branded end card — so every one of these is both unrenderable and redundant.
  */
 const BURNED_IN_BRANDING = /\b(brand\s+lockup|lockup|logo|wordmark|watermark|end\s+card|title\s+card|lower\s+third|text\s+overlay|on-?screen\s+text|burned-?in\s+text|caption\s+overlay)\b/i;
-/** "no logos", "without any wordmark", "never a title card" are the CORRECT phrasing, not a hit. */
-const NEGATED_BEFORE = /\b(no|without|never|not|avoid|zero)\b[^.]{0,24}$/i;
+/**
+ * "no logos", "without any wordmark", "never a title card" are the CORRECT phrasing, not a hit.
+ *
+ * Scanned across the WHOLE SENTENCE preceding the match, not a fixed window. A 24-character
+ * lookback rejected all six variants of the 2026-09-08 batch, because the writer had done exactly
+ * what it was told and written a negated LIST — "No generated text, logos or end card." — where
+ * the 26 characters between "No" and "end card" overflowed the window. One negation governs every
+ * item in its list, however long, so the sentence is the correct unit.
+ */
+const NEGATION_WORD = /\b(no|without|never|not|avoid|zero|free\s+of)\b/i;
 
-function burnedInBrandingHit(shots: Shot[]): { shotIndex: number; excerpt: string } | null {
+/** Everything from the start of the sentence containing `index` up to `index`. */
+function sentenceBefore(text: string, index: number): string {
+  const head = text.slice(0, index);
+  const lastStop = Math.max(head.lastIndexOf('.'), head.lastIndexOf(';'), head.lastIndexOf('\n'));
+  return head.slice(lastStop + 1);
+}
+
+export function burnedInBrandingHit(shots: Shot[]): { shotIndex: number; excerpt: string } | null {
   for (let i = 0; i < shots.length; i++) {
     if (shots[i].kind === 'screencap') continue; // a real recording of the real site, logo and all
     const p = shots[i].visualPrompt ?? '';
-    const m = BURNED_IN_BRANDING.exec(p);
-    if (!m) continue;
-    if (NEGATED_BEFORE.test(p.slice(0, m.index))) continue;
-    return { shotIndex: i + 1, excerpt: p.slice(Math.max(0, m.index - 40), m.index + 50).trim() };
+    // Every occurrence, not just the first: an early legitimate "no logos" must not mask a later
+    // genuine request, and a genuine request must not be excused by an unrelated earlier negation.
+    for (const m of p.matchAll(new RegExp(BURNED_IN_BRANDING.source, 'gi'))) {
+      const idx = m.index ?? 0;
+      if (NEGATION_WORD.test(sentenceBefore(p, idx))) continue;
+      return { shotIndex: i + 1, excerpt: p.slice(Math.max(0, idx - 40), idx + 50).trim() };
+    }
   }
   return null;
 }
