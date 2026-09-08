@@ -15,6 +15,7 @@ import { runPublishPrep } from './loops/publish-prep';
 import { runPackageLoop } from './loops/package';
 import { runCarouselLoop } from './loops/carousel';
 import { runPaidLoop } from './loops/paid';
+import { runFirstPartyLoop } from './sources/firstparty';
 import { runContentOpsLoop } from './loops/content-ops';
 import { runSocialLoop } from './loops/social';
 import { runSyncLoop } from './loops/sync';
@@ -154,6 +155,9 @@ async function main() {
     case 'loop:paid':
       await runPaidLoop();
       break;
+    case 'loop:firstparty':
+      await runFirstPartyLoop();
+      break;
     case 'loop:social':
       await runSocialLoop();
       break;
@@ -212,6 +216,7 @@ async function main() {
           `  npm run loop:package [slug]    IG Reels / YT Shorts / YT 8-12m / GBP / IG carousel (L3b)\n` +
           `  npm run loop:carousel <slug>   render 6-8 on-brand PNG carousel slides + caption pack (L3c, $0)\n` +
           `  npm run loop:paid              spend ladder from REAL payments + Ads Manager export (L5, never spends)\n` +
+          `  npm run loop:firstparty        first-party demand: category counts from our own users (counts only)\n` +
           `  npm run loop:social            generate platform social posts (L3 organic)\n` +
           `  npm run loop:consent           sync Supabase signups into the consent ledger (L8)\n` +
           `  npm run loop:sync              mirror campaign assets up to Supabase + pull admin kills down\n` +
