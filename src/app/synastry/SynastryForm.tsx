@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
 import { hasValidBirthCoords } from '@/lib/utils/coords';
 import { track } from '@/components/analytics/PostHogProvider';
+import { PaymentHandoff } from '@/components/checkout/PaymentHandoff';
+import { formatAmount } from '@/lib/ziina/amounts';
 
 const DEFAULT_A: BirthDetails = {
   name: '', birth_date: '', birth_time: '12:00:00', birth_city: '', birth_lat: 0, birth_lng: 0,
@@ -31,6 +33,10 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
   const [okMsg, setOkMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [paying, setPaying] = useState(false);
+  // Prime the buyer for Ziina's page before sending them there — see PaymentHandoff.
+  const [handoff, setHandoff] = useState<{
+    priceDisplay: string; redirectUrl: string; currency: 'INR' | 'AED' | 'USD';
+  } | null>(null);
   const [a, setA] = useState<BirthDetails>({ ...DEFAULT_A });
   const [b, setB] = useState<BirthDetails>({ ...DEFAULT_A });
   const [teaser, setTeaser] = useState<Teaser | null>(null);
@@ -83,12 +89,18 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
         window.location.href = `/login?next=${encodeURIComponent('/synastry')}`;
         return;
       }
-      const data = (await res.json().catch(() => ({}))) as { redirectUrl?: string; error?: string };
+      const data = (await res.json().catch(() => ({}))) as { redirectUrl?: string; error?: string; amount?: number; currency?: string };
       if (!res.ok) { setErr(data.error ?? 'Checkout failed'); return; }
       if (data.redirectUrl) {
         try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ a, b })); } catch { /* private mode/quota */ }
         track('checkout_started', { plan: 'synastry', product: 'synastry' });
-        window.location.href = data.redirectUrl;
+        const cur: 'INR' | 'AED' | 'USD' =
+          data.currency === 'INR' || data.currency === 'AED' ? data.currency : 'USD';
+        setHandoff({
+          priceDisplay: formatAmount(data.amount ?? 0, cur),
+          redirectUrl: data.redirectUrl,
+          currency: cur,
+        });
       }
     } catch {
       setErr('Network error');
@@ -145,6 +157,15 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
 
   return (
     <form onSubmit={onSubmit} className="space-y-8 text-left">
+      {handoff && (
+        <PaymentHandoff
+          productName="VedicHour Matchmaking"
+          priceDisplay={handoff.priceDisplay}
+          redirectUrl={handoff.redirectUrl}
+          currency={handoff.currency}
+          onCancel={() => setHandoff(null)}
+        />
+      )}
       {okMsg && <p className="text-success text-body-sm border border-success/30 rounded-md px-4 py-3 bg-success/10">{okMsg}</p>}
 
       <div className="grid md:grid-cols-2 gap-6">

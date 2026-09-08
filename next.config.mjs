@@ -1,3 +1,5 @@
+const isDev = process.env.NODE_ENV !== 'production';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
@@ -53,7 +55,11 @@ const nextConfig = {
               // maps.googleapis.com / api.opencagedata.com removed — geocoding + LLM calls
               // run server-side, no client code calls these origins. Tightens the
               // script-injection surface (script-src) with no functional loss.
-              "script-src 'self' 'unsafe-inline' https://pay.ziina.com https://eu-assets.i.posthog.com https://www.googletagmanager.com https://connect.facebook.net",
+              // 'unsafe-eval' in DEVELOPMENT ONLY. Next's dev bundle evaluates strings for
+              // HMR/refresh, so without it React never hydrates locally: pages render but
+              // nothing is clickable, which silently made local UI testing impossible.
+              // Production bundles do not use eval, so the strict policy is unchanged there.
+              `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''} https://pay.ziina.com https://eu-assets.i.posthog.com https://www.googletagmanager.com https://connect.facebook.net`,
               "style-src 'self' 'unsafe-inline'",
               "font-src 'self' data:",
               "img-src 'self' data: blob: https:",
