@@ -75,7 +75,7 @@ async function main() {
       await runDemoLoop();
       break;
     case 'loop:blog':
-      await runBlogLoop({ tier: flags.tier as Tier });
+      await runBlogLoop({ tier: flags.tier as Tier, topicsOnly: flags['topics-only'] === 'true' });
       break;
     case 'blog:promote':
       promoteBlog(text || undefined);
@@ -180,7 +180,8 @@ async function main() {
           `  npm run brain "<prompt>"       route a prompt through the brain (--tier bulk|smart|code)\n` +
           `  npm run linter "<text>"        policy-lint marketing copy (--context organic|ad)\n` +
           `  npm run loop:demo              demo loop once (kill-aware, writes heartbeat)\n` +
-          `  npm run loop:blog              draft + lint + stage a blog article (L1) [--tier]\n` +
+          `  npm run loop:blog              refill the topic backlog if low, then draft + lint + stage\n` +
+          `                                 a blog article (L1) [--tier] [--topics-only refill only]\n` +
           `  npm run blog:promote [slug]    publish a staged post into the live site\n` +
           `  npm run loop:creative          ideate -> variants -> adversarial audit -> tournament (L4)\n` +
           `                                 [--count N ideas] [--tier] [--dry no writes]\n` +

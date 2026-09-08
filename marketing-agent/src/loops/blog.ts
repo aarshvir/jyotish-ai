@@ -5,18 +5,18 @@ import { lint } from '../policy/linter';
 import { isKilled, killInfo } from '../safety/killswitch';
 import { db, logRun, enqueueApproval, ROOT } from '../db/index';
 import { writeHeartbeat } from '../scheduler/heartbeat';
-
-const APP_BLOG_DIR = resolve(ROOT, '..', 'src', 'content', 'blog');
-const STAGE_DIR = resolve(ROOT, 'output', 'blog');
-const TOPICS_FILE = resolve(ROOT, 'config', 'blog-topics.json');
-
-interface Topic {
-  slug: string;
-  title: string;
-  product: string;
-  angle: string;
-  keywords: string[];
-}
+import {
+  APP_BLOG_DIR,
+  MIN_BACKLOG,
+  STAGE_DIR,
+  TOPICS_FILE,
+  ensureBacklog,
+  publishedSlugs,
+  readTopics,
+  stagedSlugs,
+  unpublishedTopics,
+  type Topic,
+} from './blog-topics';
 
 interface Parsed {
   description: string;
@@ -30,26 +30,21 @@ const camel = (slug: string) =>
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
-/** Slugs already published in the live app blog index. */
-function publishedSlugs(): Set<string> {
-  const idx = resolve(APP_BLOG_DIR, 'index.ts');
-  if (!existsSync(idx)) return new Set();
-  const src = readFileSync(idx, 'utf8');
-  const slugs = new Set<string>();
-  for (const m of src.matchAll(/from\s+['"]\.\/([a-z0-9-]+)['"]/g)) slugs.add(m[1]);
-  return slugs;
-}
-
-/** Slugs already staged in output/blog (drafted, awaiting promote). */
-function stagedSlugs(): Set<string> {
-  if (!existsSync(STAGE_DIR)) return new Set();
-  return new Set(readdirSync(STAGE_DIR).filter((f) => f.endsWith('.ts')).map((f) => f.replace(/\.ts$/, '')));
-}
-
+/**
+ * The next topic blog.ts may draft: the first one in config/blog-topics.json that is neither
+ * published in the live app nor already staged. Unchanged reading path — blog-topics.ts appends
+ * to the same file rather than introducing a second source of truth.
+ */
 function pickTopic(): Topic | null {
-  const { topics } = JSON.parse(readFileSync(TOPICS_FILE, 'utf8')) as { topics: Topic[] };
+  const { topics } = readTopics(TOPICS_FILE);
   const taken = new Set([...publishedSlugs(), ...stagedSlugs()]);
-  return topics.find((t) => !taken.has(t.slug)) ?? null;
+  return unpublishedTopics(topics, taken)[0] ?? null;
+}
+
+/** How many topics are still draftable right now. */
+function backlogSize(): number {
+  const { topics } = readTopics(TOPICS_FILE);
+  return unpublishedTopics(topics, new Set([...publishedSlugs(), ...stagedSlugs()])).length;
 }
 
 function blogPrompt(t: Topic): string {
@@ -152,8 +147,18 @@ function recordContent(
     });
 }
 
-/** L1 — draft one blog article, policy-lint it, and stage it for promotion. */
-export async function runBlogLoop(opts: { tier?: Tier } = {}): Promise<void> {
+/**
+ * L1 — draft one blog article, policy-lint it, and stage it for promotion.
+ *
+ * The backlog used to be a hand-written list, and when it ran dry this loop printed
+ * "No unpublished topics left in the backlog" every morning and produced nothing. It now refills
+ * itself first, from the questions strangers actually asked this week (state/sense.json), so the
+ * daily scheduled task cannot silently go quiet again.
+ *
+ * `topicsOnly` runs just the refill — useful to review what the bridge proposes before any
+ * article is written.
+ */
+export async function runBlogLoop(opts: { tier?: Tier; topicsOnly?: boolean } = {}): Promise<void> {
   const loop = 'blog';
   if (isKilled()) {
     console.log(`[blog] KILL-SWITCH engaged (${killInfo()?.reason}) — skipping.`);
@@ -162,9 +167,26 @@ export async function runBlogLoop(opts: { tier?: Tier } = {}): Promise<void> {
   }
   logRun({ loop, status: 'started' });
   try {
+    // Refill BEFORE drafting, so a low backlog never becomes an empty one. A refill failure is
+    // loud but not fatal while topics remain: drafting the last topic still beats doing nothing.
+    if (opts.topicsOnly || backlogSize() < MIN_BACKLOG) {
+      try {
+        await ensureBacklog({ force: opts.topicsOnly, tier: opts.tier, minBacklog: MIN_BACKLOG });
+      } catch (e: any) {
+        const msg = String(e?.message ?? e);
+        console.error(`[blog] topic refill failed: ${msg}`);
+        if (opts.topicsOnly || !backlogSize()) throw e;
+      }
+    }
+    if (opts.topicsOnly) {
+      logRun({ loop, status: 'ok', detail: 'topics-only refill' });
+      writeHeartbeat(loop, `topics-only: backlog ${backlogSize()}`);
+      return;
+    }
+
     const topic = pickTopic();
     if (!topic) {
-      console.log('[blog] No unpublished topics left in the backlog.');
+      console.log('[blog] No unpublished topics left in the backlog, and the refill produced none.');
       logRun({ loop, status: 'skipped', detail: 'backlog empty' });
       writeHeartbeat(loop, 'backlog empty');
       return;
