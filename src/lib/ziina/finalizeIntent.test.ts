@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { finalizeCompletedZiinaIntent } from './finalizeIntent';
+import { finalizeCompletedZiinaIntent, locallyCompletedIntentStub } from './finalizeIntent';
 import { inngest } from '@/lib/inngest/client';
 
 vi.mock('@/lib/ziina/server', () => ({
@@ -328,6 +328,75 @@ describe('finalizeCompletedZiinaIntent', () => {
     expect(result).toEqual({ ok: true, action: 'already_done' });
     expect(tables.reports[0].payment_status).toBe('paid');
     expect(tables.reports[0].payment_provider).toBe('ziina');
+    expect(tables.reports[0].plan_type).toBe('7day');
+  });
+
+  it('heals a completed monthly_upgrade when the 7-day row is already paid', async () => {
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'report_1',
+          plan_type: 'monthly_upgrade',
+          status: 'completed',
+          user_id: 'buyer_user',
+          promo_code_id: null,
+        },
+      ],
+      reports: [
+        {
+          id: 'report_1',
+          user_id: 'buyer_user',
+          payment_status: 'paid',
+          plan_type: '7day',
+          report_data: { days: Array.from({ length: 7 }, (_, i) => ({ date: `2026-09-0${i + 1}` })) },
+        },
+      ],
+      analytics_events: [],
+    };
+
+    const result = await finalizeCompletedZiinaIntent(
+      createMockDb(tables) as never,
+      'intent_1',
+      'https://example.test',
+      { intent: completedIntent as never },
+    );
+
+    expect(result).toEqual({ ok: true, action: 'already_done' });
+    expect(tables.reports[0].payment_status).toBe('paid');
+    expect(tables.reports[0].plan_type).toBe('monthly');
+    expect(tables.reports[0].payment_provider).toBe('ziina');
+    expect(inngest.send).toHaveBeenCalledTimes(1);
+    const sent = vi.mocked(inngest.send).mock.calls[0][0] as { id: string; name: string };
+    expect(sent.name).toBe('report/extend');
+    expect(sent.id).toBe('report-extend:report_1');
+  });
+
+  it('heals via a local completed stub (verify retry, no Ziina GET)', async () => {
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'report_1',
+          plan_type: '7day',
+          status: 'completed',
+          user_id: 'buyer_user',
+          promo_code_id: null,
+        },
+      ],
+      reports: [{ id: 'report_1', user_id: 'buyer_user', payment_status: 'unpaid', plan_type: '7day' }],
+      analytics_events: [],
+    };
+
+    const result = await finalizeCompletedZiinaIntent(
+      createMockDb(tables) as never,
+      'intent_1',
+      'https://example.test',
+      { intent: locallyCompletedIntentStub('intent_1') },
+    );
+
+    expect(result).toEqual({ ok: true, action: 'already_done' });
+    expect(tables.reports[0].payment_status).toBe('paid');
     expect(tables.reports[0].plan_type).toBe('7day');
   });
 });
