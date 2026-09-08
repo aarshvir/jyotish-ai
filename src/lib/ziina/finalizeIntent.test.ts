@@ -19,8 +19,22 @@ vi.mock('@/lib/promo/server', () => ({
   redeemPromoCode: vi.fn().mockResolvedValue(true),
 }));
 
+vi.mock('@/lib/reports/extendMonthly', () => ({
+  extendReportToMonthly: vi.fn(async () => ({ ok: true, message: 'mocked' })),
+}));
+
 type Row = Record<string, unknown>;
 type Tables = Record<string, Row[]>;
+
+/** Every terminal mock call resolves to one of these — a write may report an error. */
+type MockQueryResult =
+  | { data: null; error: null }
+  | { data: null; error: { message: string } };
+
+type MockDbOptions = {
+  /** Fail the next N updates that set reports.payment_status = 'paid'. */
+  failReportPaidGrants?: number;
+};
 
 class MockQuery {
   private filters: Array<[string, unknown]> = [];
@@ -32,6 +46,7 @@ class MockQuery {
   constructor(
     private readonly tables: Tables,
     private readonly table: string,
+    private readonly options: MockDbOptions,
   ) {}
 
   select() {
@@ -53,6 +68,9 @@ class MockQuery {
   }
 
   async maybeSingle() {
+    if (this.shouldFailPaidGrant()) {
+      return { data: null, error: { message: 'simulated grant write failure' } };
+    }
     const rows = this.rows();
     if (this.updatePayload) {
       for (const row of rows) Object.assign(row, this.updatePayload);
@@ -75,11 +93,19 @@ class MockQuery {
     return this;
   }
 
-  then<TResult1 = { data: null; error: null }, TResult2 = never>(
-    onfulfilled?: ((value: { data: null; error: null }) => TResult1 | PromiseLike<TResult1>) | null,
+  then<TResult1 = MockQueryResult, TResult2 = never>(
+    onfulfilled?: ((value: MockQueryResult) => TResult1 | PromiseLike<TResult1>) | null,
     onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null,
   ): Promise<TResult1 | TResult2> {
     return this.execute().then(onfulfilled, onrejected);
+  }
+
+  private shouldFailPaidGrant(): boolean {
+    if (this.table !== 'reports' || !this.updatePayload) return false;
+    if (this.updatePayload.payment_status !== 'paid') return false;
+    if ((this.options.failReportPaidGrants ?? 0) <= 0) return false;
+    this.options.failReportPaidGrants! -= 1;
+    return true;
   }
 
   private rows() {
@@ -90,7 +116,10 @@ class MockQuery {
     );
   }
 
-  private async execute() {
+  private async execute(): Promise<MockQueryResult> {
+    if (this.shouldFailPaidGrant()) {
+      return { data: null, error: { message: 'simulated grant write failure' } };
+    }
     if (this.updatePayload) {
       for (const row of this.rows()) {
         Object.assign(row, this.updatePayload);
@@ -113,10 +142,10 @@ class MockQuery {
   }
 }
 
-function createMockDb(tables: Tables) {
+function createMockDb(tables: Tables, options: MockDbOptions = {}) {
   return {
     from(table: string) {
-      return new MockQuery(tables, table);
+      return new MockQuery(tables, table, options);
     },
   };
 }
@@ -243,5 +272,62 @@ describe('finalizeCompletedZiinaIntent', () => {
     expect(sent.name).toBe('report/generate');
     expect(sent.id).toMatch(/^report-generate:report_free:/);
     expect(sent.id).not.toBe('report-generate:report_free');
+  });
+
+  it('surfaces a report entitlement grant failure after claiming payment', async () => {
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'report_1',
+          plan_type: '7day',
+          status: 'pending',
+          user_id: 'buyer_user',
+          promo_code_id: null,
+        },
+      ],
+      reports: [{ id: 'report_1', user_id: 'buyer_user', payment_status: 'unpaid' }],
+      analytics_events: [],
+    };
+
+    const result = await finalizeCompletedZiinaIntent(
+      createMockDb(tables, { failReportPaidGrants: 1 }) as never,
+      'intent_1',
+      'https://example.test',
+      { intent: completedIntent as never },
+    );
+
+    expect(result).toEqual({ ok: false, error: 'simulated grant write failure' });
+    expect(tables.ziina_payments[0].status).toBe('completed');
+    expect(tables.reports[0].payment_status).toBe('unpaid');
+  });
+
+  it('heals a completed payment that never granted report entitlement', async () => {
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'report_1',
+          plan_type: '7day',
+          status: 'completed',
+          user_id: 'buyer_user',
+          promo_code_id: null,
+        },
+      ],
+      reports: [{ id: 'report_1', user_id: 'buyer_user', payment_status: 'unpaid' }],
+      analytics_events: [],
+    };
+
+    const result = await finalizeCompletedZiinaIntent(
+      createMockDb(tables) as never,
+      'intent_1',
+      'https://example.test',
+      { intent: completedIntent as never },
+    );
+
+    expect(result).toEqual({ ok: true, action: 'already_done' });
+    expect(tables.reports[0].payment_status).toBe('paid');
+    expect(tables.reports[0].payment_provider).toBe('ziina');
+    expect(tables.reports[0].plan_type).toBe('7day');
   });
 });
