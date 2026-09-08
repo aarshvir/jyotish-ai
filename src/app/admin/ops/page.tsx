@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
+type Integration = { key: string; label: string; impact: string; configured: boolean };
+type Integrations = { environment: string; integrations: Integration[]; missing: string[]; emailWorks: boolean };
+
 type Ops = {
   summary: { failedReports: number; stuckReports: number; paidNotDelivered: number; stalePending: number };
   paidNotDelivered: { id: string; email: string; plan: string; status: string; at: string }[];
@@ -36,8 +39,12 @@ function List({ title, rows, render }: { title: string; rows: Record<string, unk
 export default function OpsPage() {
   const [d2, setD2] = useState<Ops | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [integrations, setIntegrations] = useState<Integrations | null>(null);
   useEffect(() => {
     fetch('/api/admin/ops').then((r) => r.json()).then((j) => (j.error ? setErr(j.error) : setD2(j))).catch(() => setErr('Failed to load'));
+    // Separate call: a missing key is not an "incident", but it silently disables
+    // whole features, so it belongs on the same page the owner checks for trouble.
+    fetch('/api/admin/integrations').then((r) => r.json()).then((j) => { if (!j.error) setIntegrations(j); }).catch(() => { /* panel just stays hidden */ });
   }, []);
   if (err) return <p className="text-caution">{err}</p>;
   if (!d2) return <p className="text-dust">Loading…</p>;
@@ -47,6 +54,31 @@ export default function OpsPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-3xl text-star">Ops &amp; health</h1>
+
+      {integrations && integrations.missing.length > 0 && (
+        <div className="card border border-caution/50 bg-caution/[0.06] rounded-card p-5">
+          <h2 className="font-display text-lg text-caution mb-1">
+            {integrations.missing.length} integration{integrations.missing.length === 1 ? ' is' : 's are'} not configured
+          </h2>
+          <p className="font-body text-body-sm text-dust mb-3">
+            These are switched off in <span className="font-mono text-mono-sm">{integrations.environment}</span>.
+            Nothing errors when they are missing — the feature just silently does nothing.
+          </p>
+          <div className="space-y-2.5">
+            {integrations.integrations.filter((i) => !i.configured).map((i) => (
+              <div key={i.key}>
+                <div className="font-body text-body-md text-star">
+                  {i.label} <span className="font-mono text-mono-sm text-dust/50">{i.key}</span>
+                </div>
+                <div className="font-body text-body-sm text-dust">{i.impact}</div>
+              </div>
+            ))}
+          </div>
+          <p className="font-body text-body-sm text-dust/70 mt-3">
+            Add these in Vercel → Project → Settings → Environment Variables, then redeploy.
+          </p>
+        </div>
+      )}
       {allClear && <p className="text-success font-body text-body-md">✓ All clear — no failures or stuck jobs detected.</p>}
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
