@@ -9,8 +9,36 @@ import { logRun, ROOT } from '../db/index';
 import { writeHeartbeat } from '../scheduler/heartbeat';
 import { BRAND, BRAND_BRIEF, utm } from '../brand';
 import { canPublish } from '../audit/approvals';
+import { CAROUSEL_OUT } from './carousel';
 
 const REELS_OUT = resolve(ROOT, 'output', 'reels');
+
+/**
+ * Rendered carousel slides for this slug, if `npm run loop:carousel -- <slug>` has been run.
+ * Packaging is the ready-to-post step, so a carousel that exists on disk must appear in it — a
+ * pack listing five text slides while eight PNGs sit unmentioned in output/carousels/ is exactly
+ * how an asset gets rendered and then never posted.
+ */
+export function renderedCarousel(slug: string): { dir: string; images: string[]; caption: string | null } | null {
+  const dir = resolve(CAROUSEL_OUT, slug);
+  if (!existsSync(dir)) return null;
+  const images = readdirSync(dir)
+    .filter((f) => /^slide-[0-9]+[.]png$/.test(f))
+    .sort()
+    .map((f) => resolve(dir, f));
+  if (!images.length) return null;
+  let caption: string | null = null;
+  const packFile = resolve(dir, 'carousel.json');
+  if (existsSync(packFile)) {
+    try {
+      caption = str(asRecord(JSON.parse(readFileSync(packFile, 'utf8'))).caption) || null;
+    } catch {
+      caption = null;
+    }
+  }
+  return { dir, images, caption };
+}
+
 
 export interface PackageOpts {
   slug?: string;
@@ -205,10 +233,16 @@ export async function packageSlug(slug: string): Promise<string[]> {
   writeFileSync(resolve(pkgDir, 'google-business.json'), JSON.stringify(gbp, null, 2));
   written.push(resolve(pkgDir, 'google-business.json'));
   const slides = carouselSlides(pub, creative);
+  const rendered = renderedCarousel(slug);
   const carousel = {
     platform: 'instagram_carousel',
     slides,
-    caption: `${slides[0].body}\n\nSwipe →\n\n${BRAND.taglineClose}\n${hashtags.join(' ')}`,
+    // Rendered PNGs win over the text outline when loop:carousel has produced them: those are
+    // the files the owner actually uploads.
+    images: rendered?.images ?? [],
+    imagesDir: rendered?.dir ?? null,
+    renderCommand: rendered ? null : `npm run loop:carousel -- ${slug}`,
+    caption: rendered?.caption ?? `${slides[0].body}\n\nSwipe →\n\n${BRAND.taglineClose}\n${hashtags.join(' ')}`,
     link: utm(landing, 'instagram', 'carousel', 'content_ops', slug),
     craft: { noMandalaCollage: true, proofSlideRequired: true },
     linter: await lintCopy(slides.map((s) => s.body).join('\n')),
@@ -246,7 +280,11 @@ export async function runPackageLoop(opts: PackageOpts = {}): Promise<void> {
   for (const slug of slugs) {
     try {
       const files = await packageSlug(slug);
-      console.log(`[package] ${slug} → ${files.length} artifacts in packages/`);
+      const car = renderedCarousel(slug);
+      console.log(
+        `[package] ${slug} → ${files.length} artifacts in packages/` +
+          (car ? ` (+ ${car.images.length} carousel slide(s))` : ` (no carousel — npm run loop:carousel -- ${slug})`),
+      );
       n++;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);

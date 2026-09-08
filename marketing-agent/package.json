@@ -26,6 +26,9 @@
     "reject": "tsx src/cli.ts reject",
     "loop:publish": "tsx src/cli.ts loop:publish",
     "loop:package": "tsx src/cli.ts loop:package",
+    "loop:carousel": "tsx src/cli.ts loop:carousel",
+    "loop:paid": "tsx src/cli.ts loop:paid",
+    "loop:firstparty": "tsx src/cli.ts loop:firstparty",
     "loop:social": "tsx src/cli.ts loop:social",
     "loop:sync": "tsx src/cli.ts loop:sync",
     "loop:stats": "tsx src/cli.ts loop:stats",
@@ -46,11 +49,12 @@
     "cockpit": "tsx src/cli.ts cockpit"
   },
   "dependencies": {
-    "better-sqlite3": "^11.8.0"
+    "better-sqlite3": "^12.11.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^22.10.0",
+    "playwright": "^1.60.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
