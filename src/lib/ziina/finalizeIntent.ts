@@ -13,6 +13,21 @@ import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { redeemPromoCode, oncePerUserOrderId } from '@/lib/promo/server';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 
+/**
+ * Stub for a payment our DB already marked `completed`. Lets GET /verify heal a
+ * lost entitlement grant without a second Ziina GET (which would send a charged
+ * buyer to payment=error if Ziina blipped). Heal does not read amount/currency.
+ */
+export function locallyCompletedIntentStub(intentId: string): ZiinaPaymentIntent {
+  return {
+    id: intentId,
+    status: 'completed',
+    redirect_url: '',
+    amount: 0,
+    currency_code: 'USD',
+  };
+}
+
 const YOUNG_GENERATING_MS = 90 * 60 * 1000;
 
 function birthTimeToPipelineTime(s: string): string {
@@ -370,7 +385,7 @@ async function healCompletedPaymentGrants(
 
   const { data: reportForPayment, error: reportForPaymentErr } = await db
     .from('reports')
-    .select('id, user_id, payment_status')
+    .select('id, user_id, payment_status, plan_type')
     .eq('id', reportId)
     .maybeSingle();
 
@@ -394,8 +409,15 @@ async function healCompletedPaymentGrants(
     return { ok: false, error: 'Payment is not bound to the report owner' };
   }
 
+  // monthly_upgrade is charged against an already-paid 7-day row. Skipping the
+  // grant because payment_status is already `paid` left plan_type stuck on
+  // `7day` after a claimed-but-failed upgrade write — and verify retries never
+  // reached this heal at all (early redirect). Re-apply until plan is monthly.
   const needsGrant =
-    reportForPayment.payment_status !== 'paid' && reportForPayment.payment_status !== 'promo';
+    planType === 'monthly_upgrade'
+      ? reportForPayment.plan_type !== 'monthly'
+      : reportForPayment.payment_status !== 'paid' &&
+        reportForPayment.payment_status !== 'promo';
   if (needsGrant) {
     const grant = await grantReportPaidEntitlement(db, {
       reportId,

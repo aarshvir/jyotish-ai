@@ -3,7 +3,10 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { getPaymentIntent } from '@/lib/ziina/server';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { finalizeCompletedZiinaIntent } from '@/lib/ziina/finalizeIntent';
+import {
+  finalizeCompletedZiinaIntent,
+  locallyCompletedIntentStub,
+} from '@/lib/ziina/finalizeIntent';
 import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 
 /**
@@ -73,6 +76,26 @@ export async function GET(request: NextRequest) {
           });
           return NextResponse.redirect(`${origin}/onboard?payment=error`);
         }
+      }
+      // Payment row is already `completed`, but the report/unlock grant may have
+      // been lost after the atomic claim. Reconcile only scans `pending`, and
+      // Ziina Individual has no webhooks — this retry is the only self-heal.
+      // Skip the Ziina GET (local stub) so an API blip cannot bounce a charged
+      // buyer to payment=error.
+      const heal = await finalizeCompletedZiinaIntent(
+        db,
+        intentId,
+        dispatchOrigin,
+        { intent: locallyCompletedIntentStub(intentId) },
+      );
+      if (!heal.ok) {
+        console.error('[ziina/verify] completed-payment heal failed:', heal.error);
+        return NextResponse.redirect(`${origin}/onboard?payment=error`);
+      }
+      if (storedIntent.plan_type === 'monthly_upgrade') {
+        return NextResponse.redirect(
+          `${origin}/report/${storedIntent.report_id}?payment_status=paid&upgraded=1`,
+        );
       }
       return NextResponse.redirect(`${origin}/report/${storedIntent.report_id}?payment_status=paid`);
     }
