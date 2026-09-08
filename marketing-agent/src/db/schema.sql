@@ -162,3 +162,30 @@ CREATE TABLE IF NOT EXISTS video_spend (
 
 CREATE INDEX IF NOT EXISTS idx_video_spend_ts ON video_spend(ts);
 CREATE INDEX IF NOT EXISTS idx_video_spend_run ON video_spend(run_id);
+
+-- Phase 4 (self-feeding blog) — every topic the demand bridge proposed, accepted or not.
+-- src/loops/blog-topics.ts is the only writer. Winners are ALSO appended to
+-- config/blog-topics.json, which stays the single file blog.ts reads; this table is the
+-- audit trail: what the model proposed, what it scored, and why a rejection happened.
+CREATE TABLE IF NOT EXISTS ideas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  source TEXT NOT NULL DEFAULT '',              -- the theme cluster the idea answers
+  signal TEXT NOT NULL DEFAULT '',              -- the stranger's own question, or the trend term
+  slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  product TEXT NOT NULL DEFAULT 'forecast',     -- forecast | kundali | matchmaking
+  angle TEXT NOT NULL DEFAULT '',
+  keywords TEXT NOT NULL DEFAULT '[]',          -- JSON array
+  demand INTEGER NOT NULL DEFAULT 1,            -- 1-5, search demand
+  pull INTEGER NOT NULL DEFAULT 1,              -- 1-5, emotional pull
+  distance INTEGER NOT NULL DEFAULT 1,          -- 1-5, distance from what competitors say
+  fit INTEGER NOT NULL DEFAULT 1,               -- 1-5, how directly it leads to the product
+  score INTEGER NOT NULL DEFAULT 1,             -- demand * pull * distance * fit, 1-625
+  rationale TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL,                         -- accepted | rejected_duplicate | rejected_lint | rejected_malformed
+  reason TEXT NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_ideas_status ON ideas(status);
+CREATE INDEX IF NOT EXISTS idx_ideas_slug ON ideas(slug);

@@ -12,6 +12,7 @@ export const BOOLEAN_FLAGS = new Set([
   'resume',
   'skip-sense',
   'allow-paid',
+  'topics-only',
 ]);
 
 export function parse(rest: string[]): { flags: Record<string, string>; text: string; pos: string[] } {
