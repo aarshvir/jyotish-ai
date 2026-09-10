@@ -46,8 +46,12 @@ export interface SpendDecision {
   status: SpendStatus;
   paying: number;
   trials: number;
-  /** Mean amount an actual paying customer has actually paid. null when nobody has paid. */
+  /**
+   * Mean amount an actual paying customer has actually paid, in MAJOR units (rupees, dollars,
+   * dirhams) of `currency`. null when nobody has paid, or when it cannot be denominated.
+   */
   ltv: number | null;
+  /** The currency `ltv` and `cacCeiling` are quoted in. null means they are not quotable. */
   currency: string | null;
   /** Observed cost per acquisition from real ad spend. null while no ad has ever run. */
   observedCac: number | null;
@@ -74,6 +78,11 @@ export const STOP_CONDITIONS: string[] = [
 /**
  * The ladder. Pure, so it is fully unit-testable and so no live read can change what a given set
  * of facts means.
+ *
+ * `ltv` and `observedCac` are MAJOR units (rupees, not paise) of `currency`, and `currency` is
+ * required whenever `ltv` is a number: a CAC ceiling with no denomination is a number a human
+ * pastes into Ads Manager against whatever unit they assume, which is the one mistake this
+ * ladder cannot be allowed to make. Quoting an undenominated ceiling is refused, not guessed.
  */
 export function spendLadder(input: {
   paying: number;
@@ -114,12 +123,30 @@ export function spendLadder(input: {
     };
   }
 
+  if (!currency) {
+    return {
+      ...base,
+      ltv: null,
+      status: 'hold',
+      cacCeiling: null,
+      headline: `HOLD — LTV ${ltv.toFixed(2)} has no currency, so no ceiling can be quoted.`,
+      reasoning:
+        'An LTV arrives without a currency when completed payments span more than one (rupees and dollars ' +
+        'summed together mean nothing), so the mean is not a price and half of it is not a CAC ceiling. ' +
+        'Compute LTV per currency and run one ladder per market before spending.',
+    };
+  }
+
+  // Every figure the owner reads carries its currency, so a ceiling can never be mistaken for a
+  // different unit than the one it was computed in.
+  const money = (n: number) => `${currency} ${n.toFixed(2)}`;
+
   if (observedCac != null && observedCac > CAC_STOP_MULTIPLE * ltv) {
     return {
       ...base,
       status: 'stop',
       cacCeiling: CAC_STOP_MULTIPLE * ltv,
-      headline: `STOP — observed CAC ${observedCac.toFixed(2)} exceeds ${CAC_STOP_MULTIPLE} x LTV ${ltv.toFixed(2)}.`,
+      headline: `STOP — observed CAC ${money(observedCac)} exceeds ${CAC_STOP_MULTIPLE} x LTV ${money(ltv)}.`,
       reasoning: 'Every additional impression is bought at a loss. Pause the campaigns today.',
     };
   }
@@ -129,9 +156,9 @@ export function spendLadder(input: {
       ...base,
       status: 'scale',
       cacCeiling: CAC_SCALE_MULTIPLE * ltv,
-      headline: `SCALE — CAC ${observedCac.toFixed(2)} is under ${CAC_SCALE_MULTIPLE} x LTV ${ltv.toFixed(2)}.`,
+      headline: `SCALE — CAC ${money(observedCac)} is under ${CAC_SCALE_MULTIPLE} x LTV ${money(ltv)}.`,
       reasoning:
-        `Raise budget by at most 20% per week while CAC stays under ${(CAC_SCALE_MULTIPLE * ltv).toFixed(2)}. ` +
+        `Raise budget by at most 20% per week while CAC stays under ${money(CAC_SCALE_MULTIPLE * ltv)}. ` +
         'You raise it, in Ads Manager. This engine still does not spend.',
     };
   }
@@ -140,10 +167,10 @@ export function spendLadder(input: {
     ...base,
     status: 'validate',
     cacCeiling: CAC_STOP_MULTIPLE * ltv,
-    headline: `VALIDATE — ${paying} paying, LTV ${ltv.toFixed(2)}. Small, capped, killable.`,
+    headline: `VALIDATE — ${paying} paying, LTV ${money(ltv)}. Small, capped, killable.`,
     reasoning:
       `Two or three creatives, one landing page (${BRAND.links.sampleReport}), a daily cap you set yourself. ` +
-      `Stop the moment CAC passes ${(CAC_STOP_MULTIPLE * ltv).toFixed(2)}. Do not scale off a good first week.`,
+      `Stop the moment CAC passes ${money(CAC_STOP_MULTIPLE * ltv)}. Do not scale off a good first week.`,
   };
 }
 
@@ -152,12 +179,80 @@ export function spendLadder(input: {
 export interface PaidFacts {
   paying: number;
   trials: number;
+  /** MAJOR units (rupees / dollars) of `currency`. null when it cannot be denominated. */
   ltv: number | null;
   currency: string | null;
-  grossRevenue: number;
+  /** MAJOR units of `currency`. null when completed payments span more than one currency. */
+  grossRevenue: number | null;
+  /** Gross revenue per currency, MAJOR units — always populated, even when mixed. */
+  revenueByCurrency: Record<string, number>;
   /** true when the count could not be established exactly. */
   trialsUnknown: boolean;
   source: string;
+}
+
+/**
+ * `ziina_payments.amount` is stored in BASE units, straight off the Ziina intent (paise, cents,
+ * fils — see src/lib/ziina/amounts.ts in the app). Every currency this product sells in divides
+ * into 100, so one divisor covers them all. Without this the ladder quoted a Rs 799 sale as an
+ * LTV of 79900 and a CAC ceiling of 39950 — a hundred times the real one.
+ */
+export const BASE_UNITS_PER_MAJOR = 100;
+
+export interface CompletedPaymentRow {
+  id: string;
+  user_id: string | null;
+  report_id: string | null;
+  /** BASE units, as stored. */
+  amount: number | null;
+  currency: string | null;
+}
+
+/**
+ * Turn completed payment rows into the facts the ladder reasons about. Pure, so the unit and
+ * mixed-currency rules below are provable without a network call.
+ *
+ * Distinct paying identity, so one person buying twice is one customer with a higher LTV, not two
+ * customers. Amounts of different currencies are NEVER summed into one figure: rupees plus
+ * dollars is not an amount of anything, and half of it is not a CAC ceiling. When more than one
+ * currency has paid, the per-currency breakdown is still reported but `ltv` is withheld, which
+ * lands the ladder on HOLD instead of on a confident number nobody can spend against.
+ */
+export function summarizePayments(rows: CompletedPaymentRow[]): {
+  paying: number;
+  ltv: number | null;
+  currency: string | null;
+  grossRevenue: number | null;
+  revenueByCurrency: Record<string, number>;
+} {
+  const customers = new Set<string>();
+  const baseByCurrency = new Map<string, number>();
+  for (const r of rows) {
+    customers.add(r.user_id || r.report_id || r.id);
+    const amt = typeof r.amount === 'number' && Number.isFinite(r.amount) ? r.amount : 0;
+    // An amount with no currency code cannot be attributed to a market, so it counts toward the
+    // customer but never toward a revenue figure that a price is derived from.
+    if (!r.currency) continue;
+    baseByCurrency.set(r.currency, (baseByCurrency.get(r.currency) ?? 0) + amt);
+  }
+
+  const revenueByCurrency: Record<string, number> = {};
+  for (const [code, base] of baseByCurrency) {
+    revenueByCurrency[code] = base / BASE_UNITS_PER_MAJOR;
+  }
+
+  const paying = customers.size;
+  const codes = [...baseByCurrency.keys()];
+  const singleCurrency = codes.length === 1 ? codes[0] : null;
+  const grossRevenue = singleCurrency ? revenueByCurrency[singleCurrency] : null;
+
+  return {
+    paying,
+    ltv: singleCurrency && paying ? grossRevenue! / paying : null,
+    currency: singleCurrency,
+    grossRevenue,
+    revenueByCurrency,
+  };
 }
 
 /**
@@ -178,45 +273,61 @@ async function exactCount(sb: { base: string; key: string }, table: string): Pro
   }
 }
 
+/** PostgREST's max-rows on this project. A plain select silently stops here. */
+const PAGE = 1000;
+/** Refuse to reason about more than this rather than page forever on a runaway table. */
+const MAX_PAYMENT_ROWS = 100_000;
+
 /**
- * Paying customers and LTV from production. Distinct paying identity, so one person buying twice
- * is one customer with a higher LTV, not two customers.
+ * Every completed payment, paged. The unpaged select this replaced was capped at PostgREST's
+ * max-rows, so past 1000 completed payments it would have understated both the customer count and
+ * revenue while looking exactly as authoritative — the same trap `exactCount` exists to avoid for
+ * `reports`.
+ */
+async function readCompletedPayments(
+  sb: { base: string; key: string },
+): Promise<{ rows: CompletedPaymentRow[]; truncated: boolean }> {
+  const rows: CompletedPaymentRow[] = [];
+  for (let offset = 0; offset < MAX_PAYMENT_ROWS; offset += PAGE) {
+    const page = (await sbGet(
+      sb,
+      'ziina_payments?select=id,user_id,report_id,amount,currency&status=eq.completed' +
+        `&order=created_at.asc&limit=${PAGE}&offset=${offset}`,
+    )) as CompletedPaymentRow[] | null;
+    rows.push(...(page ?? []));
+    if (!page || page.length < PAGE) return { rows, truncated: false };
+  }
+  return { rows, truncated: true };
+}
+
+/**
+ * Paying customers and LTV from production, in the currency they were actually paid in.
  */
 export async function readPaidFacts(): Promise<PaidFacts> {
   const sb = await resolveSupabase();
   if (!sb) throw new Error('no Supabase service-role credentials — refusing to guess paying-customer counts');
 
-  const rows = (await sbGet(
-    sb,
-    'ziina_payments?select=id,user_id,report_id,amount,currency,status&status=eq.completed',
-  )) as { id: string; user_id: string | null; report_id: string | null; amount: number | null; currency: string | null }[];
-
-  const byCustomer = new Map<string, number>();
-  let grossRevenue = 0;
-  const currencies = new Set<string>();
-  for (const r of rows ?? []) {
-    const key = r.user_id || r.report_id || r.id;
-    const amt = typeof r.amount === 'number' ? r.amount : 0;
-    grossRevenue += amt;
-    byCustomer.set(key, (byCustomer.get(key) ?? 0) + amt);
-    if (r.currency) currencies.add(r.currency);
-  }
-  const paying = byCustomer.size;
-  const ltv = paying ? grossRevenue / paying : null;
+  const { rows, truncated } = await readCompletedPayments(sb);
+  const summary = summarizePayments(rows);
 
   // PostgREST caps a plain select at the server's max-rows (1000 here), so counting the returned
   // array would have reported "1000 reports" forever and called it a fact. Ask for the exact count
   // in the Content-Range header instead.
   const trials = await exactCount(sb, 'reports');
 
+  const mixed = Object.keys(summary.revenueByCurrency).length > 1;
   return {
-    paying,
+    paying: summary.paying,
     trials,
-    ltv,
-    currency: currencies.size === 1 ? [...currencies][0] : null,
-    grossRevenue,
+    ltv: summary.ltv,
+    currency: summary.currency,
+    grossRevenue: summary.grossRevenue,
+    revenueByCurrency: summary.revenueByCurrency,
     trialsUnknown: trials < 0,
-    source: `Supabase ziina_payments status=completed (${rows?.length ?? 0} row(s))`,
+    source:
+      `Supabase ziina_payments status=completed (${rows.length} row(s), amounts converted from base units)` +
+      (mixed ? ` — ${Object.keys(summary.revenueByCurrency).join('/')} both present, so no single LTV` : '') +
+      (truncated ? ` — TRUNCATED at ${MAX_PAYMENT_ROWS} rows` : ''),
   };
 }
 
@@ -350,9 +461,13 @@ export async function runPaidLoop(): Promise<SpendDecision | null> {
     written.push(resolve(ADS_OUT, 'meta-import.csv'), resolve(ADS_OUT, 'google-rsa.csv'));
   }
 
+  const revenueLine = Object.entries(facts.revenueByCurrency)
+    .map(([code, amt]) => `${code} ${amt.toFixed(2)}`)
+    .join(' + ');
   console.log(`[paid] ${decision.headline}`);
   console.log(`[paid] facts: ${facts.paying} paying · ${facts.trialsUnknown ? 'unknown' : facts.trials} report(s) · ` +
-    `LTV ${facts.ltv == null ? 'n/a' : facts.ltv.toFixed(2)}${facts.currency ? ' ' + facts.currency : ''} · observed CAC n/a (no ad has ever run)`);
+    `LTV ${facts.ltv == null ? 'n/a' : `${facts.currency} ${facts.ltv.toFixed(2)}`} · ` +
+    `revenue ${revenueLine || 'none'} · observed CAC n/a (no ad has ever run)`);
   console.log(`[paid] source: ${facts.source}`);
   console.log(`[paid] ${decision.reasoning}`);
   console.log('[paid] stop conditions:');
