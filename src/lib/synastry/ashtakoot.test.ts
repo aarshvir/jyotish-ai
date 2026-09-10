@@ -186,6 +186,69 @@ describe('computeAshtakoot', () => {
     expect(koota('Nadi', different)?.score).toBe(8);
   });
 
+  it('scores Tara in both directions, never awarding 0', () => {
+    // Ashwini → Ashlesha is Parama Mitra one way and Sampat the other: full 3.
+    // The old offset lists returned 0 here, costing the pair 3 of 36 points.
+    const paramaMitra = computeAshtakoot({
+      moonNakshatraIndexA: 0, // Ashwini
+      moonNakshatraIndexB: 8, // Ashlesha — offset 8
+      moonSignIndexA: 0,
+      moonSignIndexB: 3,
+    });
+    expect(koota('Tara', paramaMitra)?.score).toBe(3);
+
+    // Bharani → Ashwini (offset 26) is the mirror case, also full 3.
+    const mirror = computeAshtakoot({
+      moonNakshatraIndexA: 1,
+      moonNakshatraIndexB: 0,
+      moonSignIndexA: 0,
+      moonSignIndexB: 0,
+    });
+    expect(koota('Tara', mirror)?.score).toBe(3);
+
+    // Offset 24 is Vadha forward / Kshema back — one direction only, so 1.5.
+    // The old lists gave this the full 3.
+    const vadha = computeAshtakoot({
+      moonNakshatraIndexA: 0,
+      moonNakshatraIndexB: 24, // Purva Bhadrapada
+      moonSignIndexA: 0,
+      moonSignIndexB: 10,
+    });
+    expect(koota('Tara', vadha)?.score).toBe(1.5);
+
+    // Tara is arithmetically incapable of scoring 0: the two inclusive counts
+    // are (t+1) and (28-t), whose remainders always sum to 2 mod 9.
+    for (let a = 0; a < 27; a++) {
+      for (let b = 0; b < 27; b++) {
+        const score = koota(
+          'Tara',
+          computeAshtakoot({
+            moonNakshatraIndexA: a,
+            moonNakshatraIndexB: b,
+            moonSignIndexA: 0,
+            moonSignIndexB: 0,
+          }),
+        )?.score;
+        expect(score, `Tara for offset ${(b - a + 27) % 27}`).toBeGreaterThan(0);
+        expect([1.5, 3]).toContain(score);
+      }
+    }
+  });
+
+  it('keeps Tara symmetric between the two partners', () => {
+    for (let a = 0; a < 27; a++) {
+      for (let b = 0; b < 27; b++) {
+        const ab = koota('Tara', computeAshtakoot({
+          moonNakshatraIndexA: a, moonNakshatraIndexB: b, moonSignIndexA: 0, moonSignIndexB: 0,
+        }))?.score;
+        const ba = koota('Tara', computeAshtakoot({
+          moonNakshatraIndexA: b, moonNakshatraIndexB: a, moonSignIndexA: 0, moonSignIndexB: 0,
+        }))?.score;
+        expect(ab, `pair ${a}/${b}`).toBe(ba);
+      }
+    }
+  });
+
   it('scores Yoni from classical animal pairs, not adjacent nakshatra indices', () => {
     // Rohini + Mrigashira — both Snake → full 4 (old map gave adjacent-index 2)
     const sameSnake = computeAshtakoot({

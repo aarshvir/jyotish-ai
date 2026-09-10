@@ -154,18 +154,48 @@ function scoreVashya(signA: number, signB: number): KootaLine {
   };
 }
 
+/** Tara by count-remainder mod 9. Index 0 is the 9th tara. */
+const TARA_NAMES = [
+  'Parama Mitra', 'Janma', 'Sampat', 'Vipat', 'Kshema',
+  'Pratyari', 'Sadhana', 'Vadha', 'Mitra',
+] as const;
+
+/** Vipat (3rd), Pratyari (5th) and Vadha (7th) are the three dosha taras. */
+const DOSHA_TARAS = new Set([3, 5, 7]);
+
+/**
+ * Tara reached by counting inclusively from `fromNak` to `toNak`, as a
+ * remainder mod 9 (0 meaning the 9th tara, Parama Mitra).
+ */
+function taraRemainder(fromNak: number, toNak: number): number {
+  const count = ((toNak - fromNak + 27) % 27) + 1;
+  return count % 9;
+}
+
+/**
+ * Tara (Dina) koota — 3 points, scored in BOTH directions: count from A's Moon
+ * nakshatra to B's and from B's back to A's. Both counts clear the dosha taras
+ * → 3; exactly one clears → 1.5.
+ *
+ * Tara can never be 0. The two inclusive counts are (t+1) and (28-t), so their
+ * remainders always sum to 2 mod 9, and no pair drawn from {3,5,7} sums to 2
+ * mod 9. The previous hard-coded good/medium offset lists nonetheless returned
+ * 0 for offsets 2, 8, 15, 20, 23 and 26 — offsets 8 and 26 are Parama Mitra one
+ * way and Sampat the other, i.e. full marks — while handing full marks to
+ * Vadha/Pratyari offsets such as 24 and 13. 486 of the 729 Moon-nakshatra pairs
+ * came out with a wrong Ashtakoot total.
+ */
 function scoreTara(nakA: number, nakB: number): KootaLine {
-  const t = (nakB - nakA + 27) % 27;
-  const good = [0, 3, 5, 7, 10, 12, 13, 16, 18, 21, 24];
-  const medium = [1, 4, 6, 9, 11, 14, 17, 19, 22, 25];
-  let score = 0;
-  if (good.includes(t)) score = 3;
-  else if (medium.includes(t)) score = 1.5;
+  const fwd = taraRemainder(nakA, nakB);
+  const rev = taraRemainder(nakB, nakA);
+  const fwdOk = !DOSHA_TARAS.has(fwd);
+  const revOk = !DOSHA_TARAS.has(rev);
+  const score = fwdOk && revOk ? 3 : fwdOk || revOk ? 1.5 : 0;
   return {
     name: 'Tara',
     max: 3,
     score,
-    note: `Tara count ${t + 1} of 27`,
+    note: `${TARA_NAMES[fwd]} tara one way, ${TARA_NAMES[rev]} the other`,
   };
 }
 
