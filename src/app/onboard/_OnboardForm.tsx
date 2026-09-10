@@ -1079,6 +1079,16 @@ function OnboardPageInner() {
         const intent = await intentRes.json() as { intentId?: string; redirectUrl?: string; amount?: number; currency?: string };
         if (!intent.redirectUrl) throw new Error('No redirect URL from Ziina');
 
+        // create-intent answers with a redirectUrl for things that are NOT a Ziina
+        // checkout too — an already-paid report sends the buyer straight to their
+        // reading. Those carry no amount, so no checkout is starting: no draft to
+        // resume, no conversion event, and nothing the hand-off card can honestly say
+        // about a charge that isn't happening.
+        if (typeof intent.amount !== 'number') {
+          window.location.href = intent.redirectUrl;
+          return;
+        }
+
         // Store the final report URL in sessionStorage so we can resume after payment redirect
         if (typeof window !== 'undefined') {
           try {
@@ -1112,7 +1122,7 @@ function OnboardPageInner() {
             : 'USD';
         setHandoff({
           productName: `VedicHour ${REPORT_TYPES.find((r) => r.id === effectiveType)?.title ?? 'Forecast'}`,
-          priceDisplay: formatAmount(intent.amount ?? 0, handoffCurrency),
+          priceDisplay: formatAmount(intent.amount, handoffCurrency),
           redirectUrl: intent.redirectUrl,
           currency: handoffCurrency,
         });

@@ -79,17 +79,25 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
       }
       const data = (await res.json().catch(() => ({}))) as { redirectUrl?: string; error?: string; amount?: number; currency?: string };
       if (!res.ok) { setErr(data.error ?? 'Checkout failed'); return; }
-      if (data.redirectUrl) {
-        try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(p)); } catch { /* private mode/quota */ }
-        track('checkout_started', { plan: 'kundali', product: 'kundali' });
-        const cur: 'INR' | 'AED' | 'USD' =
-          data.currency === 'INR' || data.currency === 'AED' ? data.currency : 'USD';
-        setHandoff({
-          priceDisplay: formatAmount(data.amount ?? 0, cur),
-          redirectUrl: data.redirectUrl,
-          currency: cur,
-        });
+      if (!data.redirectUrl) return;
+      // create-intent answers with a redirectUrl for things that are NOT a Ziina
+      // checkout too: a 100%-off code grants the unlock outright, and an already-paid
+      // buyer is sent to their reading. Those carry no amount, and a hand-off card
+      // that promises "Pay <merchant>" for a payment that isn't happening reads as a
+      // demand for money we already have. Only the real charge gets the card.
+      if (typeof data.amount !== 'number') {
+        window.location.href = data.redirectUrl;
+        return;
       }
+      try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(p)); } catch { /* private mode/quota */ }
+      track('checkout_started', { plan: 'kundali', product: 'kundali' });
+      const cur: 'INR' | 'AED' | 'USD' =
+        data.currency === 'INR' || data.currency === 'AED' ? data.currency : 'USD';
+      setHandoff({
+        priceDisplay: formatAmount(data.amount, cur),
+        redirectUrl: data.redirectUrl,
+        currency: cur,
+      });
     } catch {
       setErr('Network error');
     } finally {
