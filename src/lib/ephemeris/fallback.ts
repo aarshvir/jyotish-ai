@@ -25,6 +25,8 @@ const SIGNS = [
   'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces',
 ];
 
+const CAPRICORN_SIGN_INDEX = 9;
+
 // Chaldean order: Sun=0, Venus=1, Mercury=2, Moon=3, Saturn=4, Jupiter=5, Mars=6
 const HORA_RULERS = ['Sun','Venus','Mercury','Moon','Saturn','Jupiter','Mars'];
 
@@ -222,7 +224,11 @@ function approximateTransitLagna(
   // Days since Jan 14 (Capricorn ingress in sidereal zodiac)
   const dayOfYear = (mm - 1) * 30.44 + dd;
   const daysSinceCapricorn = ((dayOfYear - 14) + 365) % 365;
-  const sunSignIdx = Math.floor(daysSinceCapricorn / 30.44) % 12; // Capricorn=9
+  // The division yields signs elapsed SINCE Capricorn, so it has to be added to
+  // Capricorn's own index (9). Using the raw offset as an absolute sign index
+  // reported every transit lagna 3 signs ahead of the model's own intent.
+  const signsSinceCapricorn = Math.floor(daysSinceCapricorn / 30.44) % 12;
+  const sunSignIdx = (CAPRICORN_SIGN_INDEX + signsSinceCapricorn) % 12;
 
   // Ascendant at sunrise ≈ the Sun's own sign (the Sun is on the eastern horizon
   // at sunrise). Matches RatingAgent.getApproxTransitLagnaSign; the prior -6 offset

@@ -406,38 +406,41 @@ function inRahuKaal(slotStartTime: string, rk: RahuKaalData): boolean {
   return !timeLt(midpoint, rk.start_time) && timeLt(midpoint, rk.end_time);
 }
 
+// Sankranti ladder: [1-based month, day of ingress, sign index the Sun enters].
+// Approximate Lahiri sidereal ingress dates (±1 day across years). Before the
+// first entry the Sun is still in Sagittarius, which is where Dec 16 left it.
+//
+// The ladder used to skip Pisces in April and start Aries on Apr 1 instead of
+// Apr 14, so every entry from April onwards named the NEXT sign: 251 of 336
+// days in 2026 returned a sign one place ahead of the sidereal Sun, and Dec 20
+// reported Capricorn while Jan 5 reported Sagittarius — the Sun moving
+// backwards across the year boundary.
+const SANKRANTIS: ReadonlyArray<readonly [number, number, number]> = [
+  [1, 14, 9],   // Makara — Capricorn
+  [2, 13, 10],  // Kumbha — Aquarius
+  [3, 15, 11],  // Meena — Pisces
+  [4, 14, 0],   // Mesha — Aries
+  [5, 15, 1],   // Vrishabha — Taurus
+  [6, 15, 2],   // Mithuna — Gemini
+  [7, 16, 3],   // Karka — Cancer
+  [8, 17, 4],   // Simha — Leo
+  [9, 17, 5],   // Kanya — Virgo
+  [10, 17, 6],  // Tula — Libra
+  [11, 16, 7],  // Vrischika — Scorpio
+  [12, 16, 8],  // Dhanu — Sagittarius
+];
+
 // Guess sun's sidereal sign index from the date (approximate)
 function getSunSignIndex(dateStr: string): number {
   const d = new Date(dateStr + 'T12:00:00Z');
-  const month = d.getUTCMonth(); // 0-11
+  const month = d.getUTCMonth() + 1;
   const day = d.getUTCDate();
-  // Simplified sidereal sun sign (Lahiri, approx): sun moves ~1°/day, ~30 days/sign.
-  // For Feb 2026: Sun is in Aquarius (sidereal, Lahiri)
-  // Jan 14 - Feb 12: Capricorn (9), Feb 13 - Mar 14: Aquarius (10), Mar 15 - Apr 13: Pisces (11)
-  if (month === 0 && day < 14) return 8;  // Sagittarius
-  if (month === 0) return 9;               // Capricorn
-  if (month === 1 && day <= 12) return 9;  // Capricorn
-  if (month === 1) return 10;              // Aquarius
-  if (month === 2 && day <= 14) return 10; // Aquarius
-  if (month === 2) return 11;              // Pisces
-  if (month === 3 && day <= 13) return 0;  // Aries
-  if (month === 3) return 1;               // Taurus
-  if (month === 4 && day <= 14) return 1;  // Taurus
-  if (month === 4) return 2;               // Gemini
-  if (month === 5 && day <= 14) return 2;  // Gemini
-  if (month === 5) return 3;               // Cancer
-  if (month === 6 && day <= 16) return 3;  // Cancer
-  if (month === 6) return 4;               // Leo
-  if (month === 7 && day <= 16) return 4;  // Leo
-  if (month === 7) return 5;               // Virgo
-  if (month === 8 && day <= 16) return 5;  // Virgo
-  if (month === 8) return 6;               // Libra
-  if (month === 9 && day <= 16) return 6;  // Libra
-  if (month === 9) return 7;               // Scorpio
-  if (month === 10 && day <= 15) return 7; // Scorpio
-  if (month === 10) return 8;              // Sagittarius
-  if (month === 11 && day <= 14) return 8; // Sagittarius
-  return 9;                                 // Capricorn
+
+  let sign = 8; // Sagittarius, carried over from the previous 16 December
+  for (const [m, dayOfIngress, signIndex] of SANKRANTIS) {
+    if (month > m || (month === m && day >= dayOfIngress)) sign = signIndex;
+  }
+  return sign;
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────
