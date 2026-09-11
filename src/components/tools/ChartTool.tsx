@@ -8,6 +8,7 @@ import { ShareResult } from '@/components/shared/ShareResult';
 import { TimingBridge } from '@/components/tools/TimingBridge';
 import { writeOnboardDraft } from '@/lib/onboard/draft';
 import { UNLOCK_7DAY_HREF } from '@/lib/pricing';
+import { track } from '@/components/analytics/PostHogProvider';
 
 export type ToolView =
   | 'manglik'
@@ -137,8 +138,14 @@ export function ChartTool({
     setRes(null);
     if (!valid) { setErr('Enter your birth date and confirm your birth city.'); return; }
     setLoading(true);
+    // These tools are the most-visited pages on the site and the biggest exit, but
+    // nothing recorded whether a visitor actually got a result — so "they left the
+    // calculator" could not be separated from "they never managed to use it".
+    // Without that split there is no way to tell a form problem from an offer problem.
+    track('calculator_submitted', { tool: view });
     try {
       setRes(await postChart());
+      track('calculator_result', { tool: view });
       writeOnboardDraft({
         name: d.name?.trim() || '',
         birthDate: d.birth_date,
@@ -150,7 +157,9 @@ export function ChartTool({
         promoCode: '',
       });
     } catch (e2) {
-      setErr(e2 instanceof Error ? e2.message : 'Network error. Please try again.');
+      const msg = e2 instanceof Error ? e2.message : 'Network error. Please try again.';
+      track('calculator_failed', { tool: view, reason: msg.slice(0, 80) });
+      setErr(msg);
     } finally {
       setLoading(false);
     }
@@ -213,12 +222,14 @@ export function ChartTool({
             <Link
               href={UNLOCK_7DAY_HREF}
               data-track="calculator-unlock-hours"
+              onClick={() => track('calculator_cta', { tool: view, cta: 'unlock_forecast' })}
               className="btn-primary inline-block px-7 py-3"
             >
               Unlock my hour-by-hour forecast →
             </Link>
             <Link
               href={ctaHref}
+              onClick={() => track('calculator_cta', { tool: view, cta: 'secondary', href: ctaHref })}
               className="inline-block px-7 py-2.5 rounded-button border border-horizon text-dust hover:text-star hover:border-amber/40 transition-colors duration-250"
             >
               {ctaLabel} →
