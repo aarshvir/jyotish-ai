@@ -1,30 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { cleanEnv } from '@/lib/env';
+import { isProtectedRoute } from './protectedRoutes';
 
 // Normalize env vars to guard against copied CRLF suffixes in deployment secrets.
 const _supaUrl = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const _supaKey = cleanEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
-// Exact paths or prefix segments — must match full path segment to avoid
-// false positives like '/report' matching '/reports/start' (an API route).
-const PROTECTED_PREFIXES = [
-  '/dashboard',
-  '/auth/consent',
-  '/settings',
-  '/account',
-  '/api/user',
-  '/onboard',
-  '/report',
-  '/upsell',
-];
-
-function isProtectedRoute(pathname: string): boolean {
-  return PROTECTED_PREFIXES.some((prefix) => {
-    // Exact match OR prefix followed by '/' (segment boundary)
-    return pathname === prefix || pathname.startsWith(prefix + '/');
-  });
-}
 
 export async function updateSession(
   request: NextRequest,
@@ -84,10 +65,6 @@ export async function updateSession(
     url.pathname = '/login';
     url.search = '';
     url.searchParams.set('next', returnTo);
-    // Unauthenticated /onboard is account-capture: land on Sign Up, not Sign In.
-    if (returnUrl.pathname === '/onboard' || returnUrl.pathname.startsWith('/onboard/')) {
-      url.searchParams.set('mode', 'signup');
-    }
     return NextResponse.redirect(url);
   }
 
