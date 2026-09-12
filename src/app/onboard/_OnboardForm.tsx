@@ -683,6 +683,8 @@ function OnboardPageInner() {
         birthLat: prev.birthLat ?? draft.birthLat ?? prev.birthLat,
         birthLng: prev.birthLng ?? draft.birthLng ?? prev.birthLng,
         reportType: draft.reportType || prev.reportType,
+        // Carried by the win-back resume link so the report answers the question they already asked.
+        personalContext: prev.personalContext || draft.personalContext || '',
       };
     });
     if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);

@@ -29,6 +29,7 @@ const NAV_GROUPS: { label: string; links: { href: string; label: string }[] }[] 
       { href: '/admin/acquisition', label: 'Acquisition' },
       { href: '/admin/attribution', label: 'Attribution' },
       { href: '/admin/content', label: 'Content' },
+      { href: '/admin/winback', label: 'Win-back' },
     ],
   },
   {

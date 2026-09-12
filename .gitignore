@@ -111,3 +111,6 @@ codex_*.md
 claude_audit.md
 e2e_test.js
 **/__tmp_*.tsx
+
+# Win-back email previews contain real recipients' emails and questions (PII). Never commit.
+scripts/.winback-preview/
