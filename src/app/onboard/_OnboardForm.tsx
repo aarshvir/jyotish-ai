@@ -7,6 +7,7 @@ import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { createClient } from '@/lib/supabase/client';
 import { DeliveryGate } from '@/components/onboard/DeliveryGate';
+import { reportStartErrorMessage } from '@/lib/onboard/reportStartError';
 import { track } from '@/components/analytics/PostHogProvider';
 import {
   readOnboardDraft as readDraft,
@@ -1223,13 +1224,9 @@ function OnboardPageInner() {
       if (!startRes.ok) {
         const errBody = await startRes.json().catch(() => ({})) as { error?: string; code?: string };
         console.error('Report start failed:', errBody.error);
-        setPaymentReturnBanner({
-          type: 'error',
-          message:
-            errBody.code === 'INNGEST_DISPATCH_FAILED'
-              ? 'Background queue unavailable, please retry in a minute'
-              : (errBody.error ?? 'Failed to start report generation. Please try again.'),
-        });
+        // Never show a visitor the raw server error: on 2026-09-12 a failed ephemeris call put an
+        // entire HTML page into this banner. The raw text still goes to the console just above.
+        setPaymentReturnBanner({ type: 'error', message: reportStartErrorMessage(errBody) });
         setIsLoading(false);
         checkoutInFlight.current = false;
         if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
