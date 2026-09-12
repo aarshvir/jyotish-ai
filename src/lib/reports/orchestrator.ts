@@ -36,6 +36,7 @@ import { buildTransitQueryTerms, detectYogas } from '@/lib/rag/yogaDetector';
 import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
 import { notifyReportReady } from '@/lib/notify/reportReady';
 import { civilDateRange, civilDateYmd } from '@/lib/time/localTime';
+import { NATIVITY_FETCH_ATTEMPTS, NATIVITY_FETCH_TIMEOUT_MS } from '@/lib/agents/nativityBudget';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
 
@@ -1172,7 +1173,8 @@ export async function generateReportPipeline(
                 requireScriptureGrounding,
                 ...ragModePayload,
               }),
-            }, 2, 3000, 160_000),
+              // One attempt at 270 s: two 160 s attempts could run 323 s, past the 290 s step budget.
+            }, NATIVITY_FETCH_ATTEMPTS, 3000, NATIVITY_FETCH_TIMEOUT_MS),
           );
           if (natRes.ok) {
             const raw = await natRes.json();

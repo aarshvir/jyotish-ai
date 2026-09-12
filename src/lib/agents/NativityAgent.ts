@@ -15,6 +15,7 @@ import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { detectYogas } from '@/lib/rag/yogaDetector';
 import { parseJyotishRagMode, resolveJyotishRagMode, type JyotishRagMode } from '@/lib/rag/ragMode';
 import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
+import { NATIVITY_SDK_TIMEOUT_MS, NATIVITY_MAX_TOKENS } from '@/lib/agents/nativityBudget';
 
 const SYSTEM_PROMPT = `You are a Vedic astrologer writing a premium personal report. Your job is to translate astrological data into practical, output-focused guidance a busy professional can act on today. You write like a trusted advisor — warm, specific, direct — not like a textbook.
 
@@ -143,10 +144,9 @@ function anthropicKeyOk(): string | null {
   return apiKey;
 }
 
-// Hard per-attempt timeout for Anthropic calls. The nativity prompt generates
-// long JSON output; set SDK timeout high enough to complete. API route wall
-// budget is 150s (see /api/agents/nativity).
-const ANTHROPIC_TIMEOUT_MS = 110_000;
+// Hard per-attempt timeout for Anthropic calls — sized from a real Opus 5 nativity (163 s).
+// All the nativity limits live together in nativityBudget.ts so they cannot drift apart.
+const ANTHROPIC_TIMEOUT_MS = NATIVITY_SDK_TIMEOUT_MS;
 
 export class NativityAgent {
   private client: Anthropic | null;
@@ -198,12 +198,13 @@ export class NativityAgent {
       // Single Anthropic attempt — SDK timeout handles the wall-clock limit.
       // No AbortSignal: it fires unreliably for non-streaming calls (fires mid-response
       // for longer prompts like RAG-augmented ones but not shorter ones, causing asymmetric
-      // failure that defeats the comparison). The SDK timeout:110s is the hard stop.
+      // failure that defeats the comparison). NATIVITY_SDK_TIMEOUT_MS is the hard stop.
       try {
         console.log(`NativityAgent attempt 1/1 (RAG mode=${mode})`);
         const response = await this.client.messages.create({
           model: 'claude-opus-5',
-          max_tokens: 8000,
+          // 8,000 truncated Opus 5 mid-JSON on a real chart (it wrote 11,164) -> parse failed -> stub.
+          max_tokens: NATIVITY_MAX_TOKENS,
           // Rules go in the dedicated system field (Anthropic weights it more strongly)
           // rather than folded into the user turn — hardens the JSON-only + safety
           // guardrails against injection in the chart fields. Matches the fallback path.

@@ -3,6 +3,7 @@ import { NativityAgent } from '@/lib/agents/NativityAgent';
 import type { NatalChartData } from '@/lib/agents/types';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
+import { NATIVITY_ROUTE_BUDGET_MS } from '@/lib/agents/nativityBudget';
 
 export const maxDuration = 300;
 
@@ -15,7 +16,7 @@ try {
 
 // Hard wall-clock budget for the entire nativity route.
 // Anthropic attempt: up to 95s (AbortSignal in NativityAgent) + fallback chain margin.
-const ROUTE_BUDGET_MS = 150_000;
+const ROUTE_BUDGET_MS = NATIVITY_ROUTE_BUDGET_MS;
 
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
