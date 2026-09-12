@@ -1,15 +1,18 @@
 import Script from 'next/script';
+import { metaPixelId } from '@/lib/analytics/trackingIds';
 
 /**
  * Meta (Facebook) Pixel — powers ad-campaign conversion optimization + audiences.
- * Renders nothing unless NEXT_PUBLIC_META_PIXEL_ID is set, so it is safe on every
- * environment. Loaded afterInteractive so it never blocks first paint. CSP for
+ * Renders nothing unless NEXT_PUBLIC_META_PIXEL_ID is a valid pixel id, so it is safe on
+ * every environment. Loaded afterInteractive so it never blocks first paint. CSP for
  * connect.facebook.net / www.facebook.com is in next.config.mjs.
  *
  * Beyond the automatic PageView, call `fbqTrack('Purchase', {...})` etc. from
  * client code at conversion moments — it no-ops when the pixel isn't loaded.
  */
-const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+// Validated, not just read: production's value ended in a line break, which put a newline inside
+// the fbq('init', '…') string literal below — a syntax error that stopped the pixel initialising.
+const PIXEL_ID = metaPixelId(process.env.NEXT_PUBLIC_META_PIXEL_ID);
 
 export function fbqTrack(event: string, params?: Record<string, unknown>) {
   try {
