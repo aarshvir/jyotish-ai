@@ -13,6 +13,7 @@ import {
   readOnboardDraft as readDraft,
   writeOnboardDraft as writeDraft,
   clearOnboardDraft as clearDraft,
+  mergeOnboardDraft,
 } from '@/lib/onboard/draft';
 import { applyDiscount, formatAmount, type SupportedCurrency } from '@/lib/ziina/amounts';
 import { estimateTimezoneOffsetMinutes } from '@/lib/utils/timezoneOffset';
@@ -674,18 +675,7 @@ function OnboardPageInner() {
     setForm((prev) => {
       const isEmpty = !prev.name && !prev.birthDate && !prev.birthTime && !prev.birthCity;
       if (!isEmpty) return prev;
-      return {
-        ...prev,
-        name: prev.name || draft.name || '',
-        birthDate: prev.birthDate || draft.birthDate || '',
-        birthTime: prev.birthTime || draft.birthTime || '',
-        birthCity: prev.birthCity || draft.birthCity || '',
-        birthLat: prev.birthLat ?? draft.birthLat ?? prev.birthLat,
-        birthLng: prev.birthLng ?? draft.birthLng ?? prev.birthLng,
-        reportType: draft.reportType || prev.reportType,
-        // Carried by the win-back resume link so the report answers the question they already asked.
-        personalContext: prev.personalContext || draft.personalContext || '',
-      };
+      return mergeOnboardDraft(prev, draft);
     });
     if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -697,16 +687,7 @@ function OnboardPageInner() {
     if (searchParams.get('resume') !== '1') return;
     const draft = readDraft();
     if (draft) {
-      setForm((prev) => ({
-        ...prev,
-        name: prev.name || draft.name || '',
-        birthDate: prev.birthDate || draft.birthDate || '',
-        birthTime: prev.birthTime || draft.birthTime || '',
-        birthCity: prev.birthCity || draft.birthCity || '',
-        birthLat: prev.birthLat ?? draft.birthLat ?? prev.birthLat,
-        birthLng: prev.birthLng ?? draft.birthLng ?? prev.birthLng,
-        reportType: draft.reportType || prev.reportType,
-      }));
+      setForm((prev) => mergeOnboardDraft(prev, draft));
       if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);
     }
     setStep(2);
@@ -798,16 +779,7 @@ function OnboardPageInner() {
     if (failedOrCancelled) {
       const draft = readDraft();
       if (draft) {
-        setForm((prev) => ({
-          ...prev,
-          name: prev.name || draft.name || '',
-          birthDate: prev.birthDate || draft.birthDate || '',
-          birthTime: prev.birthTime || draft.birthTime || '',
-          birthCity: prev.birthCity || draft.birthCity || '',
-          birthLat: prev.birthLat ?? draft.birthLat ?? prev.birthLat,
-          birthLng: prev.birthLng ?? draft.birthLng ?? prev.birthLng,
-          reportType: draft.reportType || prev.reportType,
-        }));
+        setForm((prev) => mergeOnboardDraft(prev, draft));
         if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);
         restored = true;
       }
@@ -1140,6 +1112,7 @@ function OnboardPageInner() {
           birthLng: form.birthLng,
           reportType: effectiveType,
           promoCode,
+          personalContext: form.personalContext,
         });
 
         // Conversion event: fired fire-and-forget just before leaving for Ziina.
@@ -1303,6 +1276,7 @@ function OnboardPageInner() {
               birthLng: form.birthLng,
               reportType: form.reportType,
               promoCode,
+              personalContext: form.personalContext,
             });
           }}
         />
