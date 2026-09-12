@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MandalaRing } from '@/components/ui/MandalaRing';
 import { StarField } from '@/components/ui/StarField';
 import { createClient } from '@/lib/supabase/client';
+import { DeliveryGate } from '@/components/onboard/DeliveryGate';
 import { track } from '@/components/analytics/PostHogProvider';
 import {
   readOnboardDraft as readDraft,
@@ -624,17 +625,23 @@ function OnboardPageInner() {
   const [handoff, setHandoff] = useState<{
     productName: string; priceDisplay: string; redirectUrl: string; currency: 'INR' | 'AED' | 'USD';
   } | null>(null);
+  // null = not yet known, false = logged out. The free flow is open to logged-out visitors and asks
+  // for an account only at delivery (DeliveryGate, lib/onboard/deliveryAuth).
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [deliveryGateOpen, setDeliveryGateOpen] = useState(false);
+  // Set on return from Google (?resume=1): finish the submit once auth and restored coords are ready.
+  const [pendingResume, setPendingResume] = useState(false);
+  const resumeFired = useRef(false);
 
   useEffect(() => {
     const supabase = createClient();
     void supabase.auth.getUser().then(async ({ data }) => {
-      if (!data.user) {
-        // First-time visitors from "Free Kundli" need the Sign Up tab + context, not a
-        // bare Sign In wall. mode=signup pre-selects Sign Up; the login page also shows
-        // free-Kundli framing when `next` points back to /onboard.
-        router.replace(`/login?mode=signup&next=${encodeURIComponent('/onboard' + window.location.search)}`);
-        return;
-      }
+      // No redirect for logged-out visitors. This used to router.replace() them to /login on mount —
+      // a SECOND signup wall behind the middleware one, so removing /onboard from PROTECTED_PREFIXES
+      // alone would still have bounced every visitor one render later. The account is now
+      // requested at delivery instead.
+      setIsAuthed(Boolean(data.user));
+      if (!data.user) return;
       // Pre-fill form from saved profile defaults
       const { data: prof } = await supabase
         .from('user_profiles')
@@ -680,6 +687,39 @@ function OnboardPageInner() {
     if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Back from Google (?resume=1): restore the stashed details, return to the last step, and finish
+  // the submit the visitor already started — they should not have to press the button twice.
+  useEffect(() => {
+    if (searchParams.get('resume') !== '1') return;
+    const draft = readDraft();
+    if (draft) {
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name || draft.name || '',
+        birthDate: prev.birthDate || draft.birthDate || '',
+        birthTime: prev.birthTime || draft.birthTime || '',
+        birthCity: prev.birthCity || draft.birthCity || '',
+        birthLat: prev.birthLat ?? draft.birthLat ?? prev.birthLat,
+        birthLng: prev.birthLng ?? draft.birthLng ?? prev.birthLng,
+        reportType: draft.reportType || prev.reportType,
+      }));
+      if (draft.promoCode) setPromoCode((prev) => prev || draft.promoCode);
+    }
+    setStep(2);
+    setPendingResume(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!pendingResume || resumeFired.current) return;
+    if (isAuthed !== true) return;
+    if (form.birthLat == null || form.birthLng == null) return;
+    resumeFired.current = true;
+    setPendingResume(false);
+    void goToReportGeneration();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingResume, isAuthed, form.birthLat, form.birthLng]);
 
   useEffect(() => {
     const plan = searchParams.get('plan');
@@ -1205,7 +1245,24 @@ function OnboardPageInner() {
     router.push(finalUrl);
   }
 
-  function handleSubmit() { void goToReportGeneration(); }
+  // Logged-out visitors meet the delivery gate HERE — after they have entered their details — instead
+  // of a signup wall in front of the form. Bypass links keep their own flow.
+  async function submitWithDeliveryGate() {
+    if (!hasBypass) {
+      let authed = isAuthed;
+      if (authed === null) {
+        const { data } = await createClient().auth.getUser();
+        authed = Boolean(data.user);
+        setIsAuthed(authed);
+      }
+      if (!authed) {
+        setDeliveryGateOpen(true);
+        return;
+      }
+    }
+    await goToReportGeneration();
+  }
+  function handleSubmit() { void submitWithDeliveryGate(); }
   function handleAdminFreeSubmit() { void goToReportGeneration({ forcePaidPlan: true, adminFree: true }); }
 
   const vars = slideVariants(dir);
@@ -1225,6 +1282,30 @@ function OnboardPageInner() {
           redirectUrl={handoff.redirectUrl}
           currency={handoff.currency}
           onCancel={() => setHandoff(null)}
+        />
+      )}
+
+      {deliveryGateOpen && (
+        <DeliveryGate
+          defaultEmail={form.email}
+          onCancel={() => setDeliveryGateOpen(false)}
+          onAuthed={() => {
+            setIsAuthed(true);
+            setDeliveryGateOpen(false);
+            void goToReportGeneration();
+          }}
+          onGoogle={() => {
+            writeDraft({
+              name: form.name,
+              birthDate: form.birthDate,
+              birthTime: form.birthTime,
+              birthCity: form.birthCity,
+              birthLat: form.birthLat,
+              birthLng: form.birthLng,
+              reportType: form.reportType,
+              promoCode,
+            });
+          }}
         />
       )}
 
