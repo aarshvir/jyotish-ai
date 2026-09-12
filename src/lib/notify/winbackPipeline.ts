@@ -171,6 +171,9 @@ const SYSTEM = [
   '- No guarantees. Write about tendency and timing, never certainty.',
   '- Plain English a non-astrologer understands. No Sanskrit beyond the terms supplied.',
   '- Speak to their actual question, anchored on the running period. Do not restate the question.',
+  // Seen in the first rendered preview: the reading repeated the period names and
+  // end date that the facts card directly above already shows.
+  '- The reader already sees their period names and end date listed just above this paragraph. Mention them once at most; spend the words on what they mean for the question.',
   '- Do not sell, do not mention price, do not add a call to action.',
   '- No greeting and no sign-off — this drops into the middle of a letter.',
   '- 2-3 sentences, under 70 words total.',
