@@ -119,7 +119,7 @@ async function completeOpenAiGpt55HighReasoning(opts: {
     ).responses;
     if (responsesApi?.create) {
       const r = await responsesApi.create({
-        model: 'gpt-5.5',
+        model: 'gpt-5.6-sol',
         reasoning: { effort: 'high' },
         input,
         max_output_tokens: maxOut,
@@ -128,7 +128,7 @@ async function completeOpenAiGpt55HighReasoning(opts: {
       if (text) return text;
     }
   } catch (e) {
-    console.error('OpenAI responses (gpt-5.5 high reasoning) SDK error:', e);
+    console.error('OpenAI responses (gpt-5.6-sol high reasoning) SDK error:', e);
   }
 
   const resp = await fetch('https://api.openai.com/v1/responses', {
@@ -138,7 +138,7 @@ async function completeOpenAiGpt55HighReasoning(opts: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-5.5',
+      model: 'gpt-5.6-sol',
       reasoning: { effort: 'high' },
       input,
       max_output_tokens: maxOut,
@@ -235,7 +235,7 @@ export async function completeLlmChat(opts: {
   maxTokens: number;
 }): Promise<string> {
   const raw = (opts.modelOverride ?? '').trim();
-  const modelId = raw || 'claude-sonnet-4-6';
+  const modelId = raw || 'claude-opus-5';
 
   // Anthropic (default or explicit claude-*)
   if (!raw || modelId.startsWith('claude-')) {
@@ -243,7 +243,7 @@ export async function completeLlmChat(opts: {
       console.log(`[LLM] Using Anthropic model: ${modelId}`);
       try {
         const response = await anthropicClient.messages.create({
-          model: modelId.startsWith('claude-') ? modelId : 'claude-sonnet-4-6',
+          model: modelId.startsWith('claude-') ? modelId : 'claude-opus-5',
           max_tokens: opts.maxTokens,
           system: opts.systemPrompt,
           messages: [{ role: 'user', content: opts.userPrompt }],
@@ -425,7 +425,7 @@ export async function completeLlmChat(opts: {
     throw new Error('ANTHROPIC_API_KEY is not configured');
   }
   const response = await anthropicClient.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-opus-5',
     max_tokens: opts.maxTokens,
     system: opts.systemPrompt,
     messages: [{ role: 'user', content: opts.userPrompt }],

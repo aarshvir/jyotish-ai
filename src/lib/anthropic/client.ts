@@ -19,14 +19,14 @@ export async function generateAstrologyAnalysis(prompt: string): Promise<string>
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         const message = await anthropic.messages.create({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-opus-5',
           max_tokens: 16000,
           messages: [{ role: 'user', content: prompt }],
         });
 
         const textContent = message.content.find((block) => block.type === 'text');
         const out = textContent && 'text' in textContent ? textContent.text : '';
-        if (out.trim()) logLlmAudit('generateAstrologyAnalysis', 'anthropic', 'claude-sonnet-4-6');
+        if (out.trim()) logLlmAudit('generateAstrologyAnalysis', 'anthropic', 'claude-opus-5');
         return out;
       } catch (error: unknown) {
         lastError = error;
