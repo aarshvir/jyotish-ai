@@ -78,7 +78,7 @@ async function completeOpenAiFallback(opts: {
 }): Promise<{ model: string; text: string }> {
   const key = env(process.env.OPENAI_API_KEY);
   if (!key) throw new Error('OPENAI_API_KEY missing for fallback');
-  const model = env(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-5.5';
+  const model = env(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-5.6-sol';
   const client = new OpenAI({ apiKey: key, timeout: 120_000, maxRetries: 1 });
   const input = [
     { role: 'system' as const, content: opts.systemPrompt },
@@ -194,7 +194,7 @@ async function completeDeepSeekFallback(opts: {
 }): Promise<{ model: string; text: string }> {
   const key = env(process.env.DEEPSEEK_API_KEY);
   if (!key) throw new Error('DEEPSEEK_API_KEY missing for fallback');
-  const model = env(process.env.LLM_FALLBACK_DEEPSEEK_MODEL) || 'deepseek-chat';
+  const model = env(process.env.LLM_FALLBACK_DEEPSEEK_MODEL) || 'deepseek-flash';
   const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com', timeout: 90_000, maxRetries: 1 });
   const r = await client.chat.completions.create({
     model,

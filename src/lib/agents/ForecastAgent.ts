@@ -1,7 +1,7 @@
 /**
  * ForecastAgent
  * Orchestrates the full day-by-day forecast pipeline with resilient error handling.
- * Uses claude-sonnet-4-6 for all AI calls.
+ * Uses claude-opus-5 for all AI calls.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -110,7 +110,7 @@ async function callClaudeWithBackoff(
   for (let i = 0; i < retries; i++) {
     try {
       const response = await claude.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-opus-5',
         max_tokens: maxTokens,
         system: 'You are a Vedic astrologer. Return only valid JSON. No prose, no markdown. Dense paragraphs only. Whenever you use provided scripture, include inline citations like [[SOURCE:CH:V]]. Never invent scores — match provided numeric inputs exactly.',
         messages: [{ role: 'user', content: prompt }],
@@ -315,7 +315,7 @@ export class ForecastAgent {
       if (this.claude) {
         try {
           rawText = await callClaudeWithBackoff(this.claude, prompt, 16000);
-          if (rawText?.trim()) logLlmAudit('forecast_narrative', 'anthropic', 'claude-sonnet-4-6');
+          if (rawText?.trim()) logLlmAudit('forecast_narrative', 'anthropic', 'claude-opus-5');
         } catch (claudeErr: unknown) {
           console.warn('ForecastAgent - Claude failed, trying fallback chain:', (claudeErr as Error)?.message);
         }

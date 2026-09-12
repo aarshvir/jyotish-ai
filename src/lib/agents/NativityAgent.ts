@@ -1,6 +1,6 @@
 /**
  * NativityAgent
- * Sends the natal chart JSON to Claude claude-sonnet-4-6 with extended thinking
+ * Sends the natal chart JSON to Claude claude-opus-5 with extended thinking
  * and returns a structured NativityProfile. Falls back to OpenAI → Gemini → DeepSeek
  * via runChatFallbackChain when Anthropic is unavailable or exhausted.
  */
@@ -202,7 +202,7 @@ export class NativityAgent {
       try {
         console.log(`NativityAgent attempt 1/1 (RAG mode=${mode})`);
         const response = await this.client.messages.create({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-opus-5',
           max_tokens: 8000,
           // Rules go in the dedicated system field (Anthropic weights it more strongly)
           // rather than folded into the user turn — hardens the JSON-only + safety
@@ -222,7 +222,7 @@ export class NativityAgent {
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         const cleanJson = jsonMatch ? jsonMatch[0] : text;
 
-        logLlmAudit('nativity', 'anthropic', 'claude-sonnet-4-6');
+        logLlmAudit('nativity', 'anthropic', 'claude-opus-5');
         return safeParseJson<NativityProfile>(cleanJson);
       } catch (error: unknown) {
         lastError = error;

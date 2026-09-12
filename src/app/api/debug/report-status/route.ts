@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-5.5',
+          model: 'gpt-5.6-sol',
           max_output_tokens: 16,
           input: [{ role: 'user', content: 'Reply OK' }],
         }),

@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: 'claude-opus-5',
           max_tokens: 100,
           messages: [{ role: 'user', content: 'Describe Cancer lagna in 3 sentences.' }],
         }),
