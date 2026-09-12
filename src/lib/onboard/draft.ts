@@ -16,6 +16,8 @@ export interface OnboardDraft {
   birthLng?: number | null;
   reportType: OnboardDraftPlan;
   promoCode: string;
+  /** The question they typed last time — the hook their report answers. Older drafts lack it. */
+  personalContext?: string;
 }
 
 export function readOnboardDraft(): OnboardDraft | null {

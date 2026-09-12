@@ -105,3 +105,7 @@ export async function fetchSuppressedSet(db: SupabaseClient): Promise<Set<string
   }
   return new Set((data ?? []).map((r) => (r as { email?: string }).email?.trim().toLowerCase()).filter(Boolean) as string[]);
 }
+
+// Exported for other HMAC-signed links (the win-back resume link) so every signed
+// URL uses the same key chain and fails closed the same way when no key is set.
+export { secretOrNull as signingSecretOrNull };
