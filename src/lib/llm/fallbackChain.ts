@@ -187,6 +187,33 @@ async function completeGrokFallback(opts: {
   throw new Error(`Grok fallback exhausted: ${errors.join(' | ')}`);
 }
 
+/**
+ * DeepSeek V4.1-Flash (`deepseek-flash`) THINKS by default. Measured 2026-09-12 on a nativity-sized
+ * prompt at 8,000 tokens: ~34,500 characters of reasoning, finish_reason "length", ~750 characters of
+ * truncated content — on a real nativity this rung returned empty content. With thinking disabled the
+ * same request returned 13,180 characters of complete, parseable JSON in 17 s. `reasoning_effort: "low"`
+ * and `enable_thinking: false` were both silently ignored; only `thinking: { type: "disabled" }` works.
+ * An explicitly configured reasoner model is left to think.
+ */
+/** The only part of a non-streaming DeepSeek response this rung reads. */
+type DeepSeekCompletion = { choices: Array<{ message?: { content?: string | null } }> };
+
+export function deepSeekRequest(
+  model: string,
+  opts: { systemPrompt: string; userPrompt: string; maxTokens: number },
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: Math.min(opts.maxTokens, 8192),
+    messages: [
+      { role: 'system', content: opts.systemPrompt },
+      { role: 'user', content: opts.userPrompt },
+    ],
+  };
+  if (!/reasoner/i.test(model)) body.thinking = { type: 'disabled' };
+  return body;
+}
+
 async function completeDeepSeekFallback(opts: {
   systemPrompt: string;
   userPrompt: string;
@@ -196,14 +223,11 @@ async function completeDeepSeekFallback(opts: {
   if (!key) throw new Error('DEEPSEEK_API_KEY missing for fallback');
   const model = env(process.env.LLM_FALLBACK_DEEPSEEK_MODEL) || 'deepseek-flash';
   const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com', timeout: 90_000, maxRetries: 1 });
-  const r = await client.chat.completions.create({
-    model,
-    max_tokens: Math.min(opts.maxTokens, 8192),
-    messages: [
-      { role: 'system', content: opts.systemPrompt },
-      { role: 'user', content: opts.userPrompt },
-    ],
-  });
+  // `thinking` is not in the OpenAI SDK types, so the DeepSeek body is built untyped and passed through,
+  // and the non-streaming response is read through the only shape this rung needs.
+  const r = (await client.chat.completions.create(
+    deepSeekRequest(model, opts) as unknown as Parameters<typeof client.chat.completions.create>[0],
+  )) as unknown as DeepSeekCompletion;
   const text = (r.choices[0]?.message?.content ?? '').trim();
   if (!text) throw new Error('DeepSeek fallback returned empty content');
   return { model, text };
