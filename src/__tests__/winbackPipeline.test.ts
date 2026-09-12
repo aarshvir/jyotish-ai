@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { acceptInsight, isInternalEmail } from '@/lib/notify/winbackPipeline';
+import { acceptInsight, insightRejection, isInternalEmail } from '@/lib/notify/winbackPipeline';
 import type { WinbackChart } from '@/lib/notify/winback';
 
 // All names and wording here are invented. This repository is public.
@@ -56,6 +56,32 @@ describe('acceptInsight — the last gate before a model reading reaches an inbo
   it('rejects empty and runaway output', () => {
     expect(acceptInsight('', chart, NOW)).toBe('');
     expect(acceptInsight('word '.repeat(300), chart, NOW)).toBe('');
+  });
+});
+
+describe('insightRejection — a skipped person is never a mystery', () => {
+  it('returns null for a reading that may be sent', () => {
+    expect(insightRejection('Patience serves you in this period.', chart, NOW)).toBeNull();
+  });
+
+  it('names the invented year', () => {
+    expect(insightRejection('Expect a breakthrough by 2031.', chart, NOW)).toBe(
+      'the reading named a year it was never given (2031)',
+    );
+  });
+
+  it('names the topic it drifted into', () => {
+    expect(insightRejection('This period may bring a risk of illness.', chart, NOW)).toBe(
+      'the reading drifted into health',
+    );
+    expect(insightRejection('Your chart suggests she loves you deeply.', chart, NOW)).toBe(
+      "the reading drifted into another person's feelings or actions",
+    );
+  });
+
+  it('says when the reading was empty or too long', () => {
+    expect(insightRejection('', chart, NOW)).toBe('the reading came back empty');
+    expect(insightRejection('word '.repeat(300), chart, NOW)).toBe('the reading was too long');
   });
 });
 

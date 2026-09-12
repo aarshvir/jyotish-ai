@@ -176,35 +176,55 @@ const SYSTEM = [
   '- 2-3 sentences, under 70 words total.',
 ].join('\n');
 
+function cleanInsight(raw: string): string {
+  return (raw ?? '').trim().replace(/^["'“]+|["'”]+$/g, '').trim();
+}
+
+const TOPIC_LABEL: Record<Exclude<QuestionCategory, 'general'>, string> = {
+  medical: 'health',
+  mortality: 'lifespan',
+  third_party: "another person's feelings or actions",
+};
+
 /**
- * Defence in depth. The prompt forbids all of this, but a rule the model broke
- * must not reach an inbox: an insight that drifts into health, death or someone
- * else's feelings, or that states a year it was never given, is discarded.
+ * Why a model reading must not be sent, or null if it may.
+ *
+ * Defence in depth: the prompt forbids all of this, but a rule the model broke
+ * must not reach an inbox. The reason is returned rather than swallowed so a
+ * skipped person is never a mystery — a false positive here silently removes a
+ * real customer from the send, and that must be visible to fix.
  */
-export function acceptInsight(raw: string, chart: WinbackChart, now: Date = new Date()): string {
-  const text = (raw ?? '').trim().replace(/^["'“]+|["'”]+$/g, '').trim();
-  if (!text || text.length > 900) return '';
+export function insightRejection(raw: string, chart: WinbackChart, now: Date = new Date()): string | null {
+  const text = cleanInsight(raw);
+  if (!text) return 'the reading came back empty';
+  if (text.length > 900) return 'the reading was too long';
 
   // Sign names are chart vocabulary, not claims: a Cancer Moon is not a diagnosis.
   let scrubbed = text;
   for (const term of [chart.lagna, chart.moonSign, chart.nakshatra]) {
     if (term) scrubbed = scrubbed.split(term).join(' ');
   }
-  if (classifyQuestion(scrubbed) !== 'general') return '';
+  const topic = classifyQuestion(scrubbed);
+  if (topic !== 'general') return `the reading drifted into ${TOPIC_LABEL[topic]}`;
 
   const allowedYears = new Set<string>([String(now.getUTCFullYear())]);
   if (chart.subPeriodEnds) allowedYears.add(chart.subPeriodEnds.slice(0, 4));
   const years = text.match(/\b(?:19|20)\d{2}\b/g) ?? [];
   for (const y of years) {
-    if (!allowedYears.has(y)) return '';
+    if (!allowedYears.has(y)) return `the reading named a year it was never given (${y})`;
   }
-  return text;
+  return null;
+}
+
+/** The reading if it may be sent, otherwise ''. */
+export function acceptInsight(raw: string, chart: WinbackChart, now: Date = new Date()): string {
+  return insightRejection(raw, chart, now) ? '' : cleanInsight(raw);
 }
 
 export async function winbackInsight(
   client: Anthropic,
   args: { question: string; firstName: string; chart: WinbackChart; now?: Date },
-): Promise<string> {
+): Promise<{ text: string; rejection: string | null }> {
   const { question, firstName, chart } = args;
   const now = args.now ?? new Date();
   const label = periodLabel(chart.mahadasha, chart.antardasha);
@@ -233,8 +253,16 @@ export async function winbackInsight(
     ],
   });
   const block = msg.content.find((b) => b.type === 'text');
-  return acceptInsight(block && block.type === 'text' ? block.text : '', chart, now);
+  const raw = block && block.type === 'text' ? block.text : '';
+  const rejection = insightRejection(raw, chart, now);
+  return { text: rejection ? '' : cleanInsight(raw), rejection };
 }
+
+/**
+ * Model drafts vary. A draft that trips a rule is redrafted once rather than
+ * dropping the person — the rules themselves are never relaxed.
+ */
+const INSIGHT_ATTEMPTS = 2;
 
 export type ComposedWinback =
   | { ok: true; subject: string; html: string; text: string; category: QuestionCategory }
@@ -252,14 +280,21 @@ export async function composeWinback(args: {
   const now = args.now ?? new Date();
 
   const facts = await fetchChart(r);
-  if (!facts) return { ok: false, reason: 'chart unavailable' };
+  if (!facts) return { ok: false, reason: 'their chart could not be calculated' };
   const chart = winbackChartFrom(facts, now);
 
   const category = classifyQuestion(r.question);
   let insight = '';
   if (mayAnswer(category)) {
-    insight = await winbackInsight(anthropic, { question: r.question, firstName: r.firstName, chart, now });
-    if (!insight) return { ok: false, reason: 'reading rejected by safety checks' };
+    const rejections: string[] = [];
+    for (let attempt = 0; attempt < INSIGHT_ATTEMPTS && !insight; attempt++) {
+      const res = await winbackInsight(anthropic, { question: r.question, firstName: r.firstName, chart, now });
+      if (res.rejection) rejections.push(res.rejection);
+      else insight = res.text;
+    }
+    if (!insight) {
+      return { ok: false, reason: `safety check, ${INSIGHT_ATTEMPTS} drafts: ${rejections.join('; ')}` };
+    }
   }
 
   const mail = buildWinbackEmail({
