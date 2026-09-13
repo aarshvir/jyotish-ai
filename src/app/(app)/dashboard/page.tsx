@@ -753,7 +753,7 @@ function DashboardInner() {
             </div>
 
             {/* New Report CTA */}
-            <Link href="/onboard" className="btn-primary px-5 py-2.5 text-body-sm shrink-0">
+            <Link href="/start" className="btn-primary px-5 py-2.5 text-body-sm shrink-0">
               + New Report
             </Link>
           </div>

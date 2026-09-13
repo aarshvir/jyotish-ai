@@ -113,7 +113,7 @@ export default function AuthButton() {
               </Link>
             </Button>
             <Button variant="ghost" className="gap-2 text-dust hover:text-star text-body-sm" asChild>
-              <Link href="/onboard">
+              <Link href="/start">
                 <FileText className="h-4 w-4" />
                 New report
               </Link>
