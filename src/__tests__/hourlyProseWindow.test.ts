@@ -46,3 +46,26 @@ describe('hourly-prose window sizing', () => {
     });
   });
 });
+
+import { HOURLY_BATCH_STEPS, resolveHourlyBatchDays } from '@/lib/reports/hourlyProseWindow';
+
+describe('resolveHourlyBatchDays — a batch must fit the model output cap', () => {
+  it('keeps batches to 2 days for the default 10-day window and a 7-day report', () => {
+    expect(resolveHourlyBatchDays(7)).toBe(2);
+    expect(resolveHourlyBatchDays(10)).toBe(2);
+    expect(resolveHourlyBatchDays(12)).toBe(2);
+  });
+
+  it('never returns the 5-day batch that truncated real reports, unless days exceed the steps', () => {
+    for (let n = 1; n <= 24; n++) expect(resolveHourlyBatchDays(n)).toBeLessThan(5);
+  });
+
+  it('grows only as needed so every prose day lands in one of the six hourly steps', () => {
+    for (const n of [1, 7, 10, 13, 18, 30, 60]) {
+      const size = resolveHourlyBatchDays(n);
+      expect(Math.ceil(n / size)).toBeLessThanOrEqual(HOURLY_BATCH_STEPS);
+    }
+    expect(resolveHourlyBatchDays(13)).toBe(3);
+    expect(resolveHourlyBatchDays(30)).toBe(5);
+  });
+});

@@ -238,7 +238,10 @@ Include every day from the input. Each day must have exactly 18 slots. Start wit
       modelOverride,
       systemPrompt,
       userPrompt,
-      maxTokens: Math.min(16000, 2000 + daysIn.length * 18 * 200),
+      // 105-150 words per slot plus JSON is ~160-215 tokens; 200 per slot truncated real batches (a 7-day promo
+      // report shipped 73 of 126 template hours). 260 per slot leaves headroom; the orchestrator keeps batches to
+      // 2-3 days so this stays under the 16k cap and the 160 s fetch timeout.
+      maxTokens: Math.min(16000, 2000 + daysIn.length * 18 * 260),
     });
 
     type BatchDay = { dayIndex?: number; date?: string; slots?: Array<{ slot_index?: number; commentary?: string }> };

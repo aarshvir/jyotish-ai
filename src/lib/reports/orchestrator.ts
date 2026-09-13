@@ -7,7 +7,7 @@
 import { createServiceClient } from '@/lib/supabase/admin';
 import { appendReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
-import { resolveHourlyProseDays, resolveProseDayCount } from '@/lib/reports/hourlyProseWindow';
+import { resolveHourlyBatchDays, resolveHourlyProseDays, resolveProseDayCount } from '@/lib/reports/hourlyProseWindow';
 import { validateReportData } from '@/lib/validation/reportValidation';
 import type { JyotishRagMode } from '@/lib/rag/ragMode';
 import { PHASE } from '@/lib/reports/phases/slugs';
@@ -1627,7 +1627,6 @@ export async function generateReportPipeline(
       // ── commentary_hourly_1/2/3: one batch per Inngest step (was all parallel → budget abort) ──
       type BatchSlot = { slot_index: number; commentary?: string; commentary_short?: string };
       type BatchDay = { dayIndex: number; slots?: BatchSlot[] };
-      const CHUNK_SIZE = 5;
       // BOUNDED WINDOW: generate full AI hourly prose up-front only for the first N
       // days (default 10). Far days keep their deterministic guidance_v2 text and are
       // written on-demand via /api/reports/[id]/hourly-day when the user opens them.
@@ -1653,6 +1652,9 @@ export async function generateReportPipeline(
           score: s.score,
         })),
       }));
+      // Sized so a batch fits the model's output cap (see resolveHourlyBatchDays) and every
+      // prose day lands in one of the six hourly steps.
+      const CHUNK_SIZE = resolveHourlyBatchDays(allDaysInput.length);
       const chunks: typeof allDaysInput[] = [];
       for (let i = 0; i < allDaysInput.length; i += CHUNK_SIZE) {
         chunks.push(allDaysInput.slice(i, i + CHUNK_SIZE));

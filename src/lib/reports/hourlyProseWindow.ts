@@ -22,3 +22,18 @@ export function resolveProseDayCount(proseDays: number, totalDays: number): numb
   if (totalDays <= 0) return 0;
   return proseDays > 0 ? Math.min(proseDays, totalDays) : totalDays;
 }
+
+/** Hourly-batch Inngest steps available (commentary_hourly_1..6). A chunk beyond this never runs. */
+export const HOURLY_BATCH_STEPS = 6;
+
+/**
+ * Days per hourly-batch LLM call. Each slot asks for 105-150 words (~160-215 tokens in JSON), so a
+ * 5-day batch (90 slots, ~18k tokens) overran the 16k output cap and the parser silently filled the
+ * rest with template hours — a real 7-day promo report shipped 73 of 126 template slots. Two days
+ * (~7.7k tokens, ~80 s on Haiku) fits the cap and the 160 s fetch timeout. The count grows only
+ * when there are more prose days than steps, so every prose day still gets a batch.
+ */
+export function resolveHourlyBatchDays(proseDayCount: number, steps: number = HOURLY_BATCH_STEPS): number {
+  if (proseDayCount <= 0) return 2;
+  return Math.max(2, Math.ceil(proseDayCount / Math.max(1, steps)));
+}
