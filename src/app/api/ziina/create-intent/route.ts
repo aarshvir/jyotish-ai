@@ -17,6 +17,7 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { isSubscriptionPlanType } from '@/lib/subscriptions/period';
+import { subscriptionTablesReady } from '@/lib/subscriptions/access';
 
 /**
  * POST /api/ziina/create-intent
@@ -73,6 +74,19 @@ export async function POST(request: NextRequest) {
   const isSubscription = isSubscriptionPlanType(planType);
   if (isSubscription && typeof promoCode === 'string' && promoCode.trim() !== '') {
     return NextResponse.json({ error: 'Codes cannot be used on subscriptions.' }, { status: 400 });
+  }
+  // Never take money we cannot grant. The period is recorded after payment, so if the
+  // subscription tables are missing (migration 20260913_subscriptions.sql not yet run) or
+  // unreachable, refuse before a payment intent exists rather than charge and fail the grant.
+  if (isSubscription && !(await subscriptionTablesReady(createServiceClient()))) {
+    console.error('[create-intent] subscription tables unavailable; refusing checkout before charging');
+    return NextResponse.json(
+      {
+        error: 'Subscriptions are opening in a few minutes. Your answers are saved, so please try again shortly.',
+        code: 'SUBSCRIPTION_SETUP_PENDING',
+      },
+      { status: 503 },
+    );
   }
   const isStandaloneUnlock = (planType === 'synastry' || planType === 'kundali') && !reportId;
   if (!reportId && !isStandaloneUnlock) {

@@ -37,6 +37,23 @@ export async function getSubscription(
 }
 
 /**
+ * True only when both tables a paid period is written to can be read. Checkout calls this
+ * before creating a payment intent: if the migration has not been run (or the database is
+ * unreachable) the customer must not be charged for a period that cannot be recorded.
+ */
+export async function subscriptionTablesReady(db: SupabaseClient): Promise<boolean> {
+  try {
+    const [periods, subs] = await Promise.all([
+      db.from('subscription_periods').select('payment_intent_id').limit(1),
+      db.from('subscriptions').select('user_id').limit(1),
+    ]);
+    return !periods.error && !subs.error;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Days a subscriber waits between 30-day forecasts. Each forecast costs real model
  * spend, and the subscription price is set at 6x the cost of one a month — without a
  * cooldown one period could trigger unlimited generations.
