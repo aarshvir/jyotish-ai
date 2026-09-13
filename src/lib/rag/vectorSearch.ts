@@ -214,19 +214,24 @@ export async function buildScriptureContextHybrid(
   // Use a longer base timeout for the whole hybrid phase
   const timeoutMs = options.timeoutMs ?? (Number(process.env.RAG_TOTAL_TIMEOUT_MS) || 120_000);
 
+  // The timer must be cleared when the lookup wins the race: left running, it printed "total timeout"
+  // 25–35 s after every report even when retrieval had finished in about a second.
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     return await Promise.race([
       buildScriptureContextHybridInner(yogaNames, lagnaSign),
-      new Promise<string>((resolve) =>
-        setTimeout(() => {
+      new Promise<string>((resolve) => {
+        timer = setTimeout(() => {
           console.warn(`[rag] buildScriptureContextHybrid total timeout (${timeoutMs}ms) — falling back to keyword search`);
           resolve(buildScriptureContext(yogaNames, lagnaSign));
-        }, timeoutMs),
-      ),
+        }, timeoutMs);
+      }),
     ]);
   } catch (err) {
     console.error('[rag] buildScriptureContextHybrid threw:', err);
     return '';
+  } finally {
+    clearTimeout(timer);
   }
 }
 
