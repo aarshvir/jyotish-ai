@@ -24,7 +24,7 @@ const FAQS: Faq[] = [
   { q: 'What if I do not know my birth time?', a: 'You can still explore your chart, but treat the Lagna as approximate. Some astrologers fall back to a Sun-rising or Moon-rising chart, while others use birth-time rectification, matching the timing of major life events to narrow down the likely ascendant.' },
   { q: 'How often does the Lagna change?', a: 'A new sign rises in the east roughly every two hours, so the Lagna cycles through all twelve signs over about a 24-hour day. The exact duration of each rising sign varies a little by latitude and time of year.' },
   { q: 'Is the ascendant the same as the rising sign?', a: 'Yes — ascendant, rising sign and Lagna all refer to the same thing: the sign on the eastern horizon at birth. Vedic astrology usually uses the Sanskrit term Lagna and measures from where the stars actually sit, while Western astrology says rising sign and measures from the seasons, so the named sign can differ between the two systems.' },
-  { q: 'Is this Lagna calculator free?', a: 'Yes, it is completely free with no login. For a full plain-English reading of your ascendant, houses and planetary periods, the deep Kundli report is a one-time $9.99 / ₹899.' },
+  { q: 'Is this Lagna calculator free?', a: 'Yes, it is completely free with no login. For a full plain-English reading and your hour-by-hour forecast, VedicHour membership starts with a 2-minute quiz.' },
 ];
 
 export default function Page() {

@@ -18,7 +18,7 @@ const SESSION_KEY = 'vh_exit_upsell_shown';
 const DWELL_MS = 35_000; // mobile/desktop fallback if no exit gesture fires
 
 export function ExitIntentUpsell({
-  unlockHref = '/onboard?plan=7day&promo=NEWUSER30',
+  unlockHref = '/start',
 }: {
   unlockHref?: string;
 }) {
@@ -115,8 +115,7 @@ export function ExitIntentUpsell({
             </ul>
 
             <div className="rounded-md border border-amber/25 bg-amber/[0.06] px-4 py-2.5 mb-5 flex items-center gap-2">
-              <span className="font-mono text-mono-sm text-amber">NEWUSER30</span>
-              <span className="font-body text-body-sm text-dust">— 30% off your first report, 24-hour money-back guarantee.</span>
+              <span className="font-body text-body-sm text-dust">Your full hour-by-hour forecast starts with a 2-minute quiz.</span>
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">

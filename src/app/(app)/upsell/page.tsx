@@ -47,7 +47,7 @@ export default async function UpsellPage({ searchParams }: Props) {
   // Entitlement, not revenue — must match /api/ziina/upgrade or the page offers an
   // upgrade the API then refuses (or vice-versa).
   if (!rep || !isEntitledPaymentStatus(rep.payment_status)) {
-    redirect('/onboard');
+    redirect('/start');
   }
   if (rep.plan_type !== '7day') {
     redirect(`/report/${reportId}`);
@@ -82,7 +82,7 @@ export default async function UpsellPage({ searchParams }: Props) {
           <h1 className="text-display-md text-star font-display mb-4">Upgrade your foresight</h1>
           <p className="text-dust text-lg">
             {rep.native_name ? `Hi ${rep.native_name} — ` : ''}
-            Your 7-day forecast is generating. Add the <strong className="text-amber">30-Day Monthly Oracle</strong> at a one-time loyalty discount.
+            Your 7-day forecast is generating. Add the <strong className="text-amber">30-Day Monthly Oracle</strong> at a loyalty discount.
           </p>
         </div>
 
@@ -96,7 +96,7 @@ export default async function UpsellPage({ searchParams }: Props) {
             </div>
             <div className="text-right">
               <span className="text-2xl font-bold text-success">+{upgradeLabel}</span>
-              <p className="text-xs text-dust/60">one-time · Ziina checkout</p>
+              <p className="text-xs text-dust/60">Ziina checkout</p>
             </div>
           </div>
           <ul className="space-y-3 mb-6">
@@ -116,7 +116,7 @@ export default async function UpsellPage({ searchParams }: Props) {
           <div className="flex items-center justify-center gap-2 text-sm text-success/80">
             <ShieldCheckIcon className="h-4 w-4 shrink-0" />
             <Link href="/refund" className="hover:underline font-mono text-mono-sm">
-              24-hour money-back guarantee — full refund, no questions.
+              Read our refund policy
             </Link>
           </div>
           <UpsellButton reportId={reportId} />

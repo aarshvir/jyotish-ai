@@ -24,7 +24,7 @@ const FAQS: Faq[] = [
   { q: 'Why does my Vedic Moon sign differ from my Western sign?', a: 'Vedic astrology measures from where the stars actually sit in the sky, while Western astrology measures from the seasons. The roughly 24-degree gap between the two often shifts a placement back by one sign, so the two systems can give different results for the same birth.' },
   { q: 'Why does the Moon sign matter so much in Vedic astrology?', a: 'Your rashifal (daily and yearly horoscope) is read from the Moon sign, and Gun Milan — the marriage-compatibility scoring — depends mainly on the Moon sign and Nakshatra. Because the Moon governs the mind, the Rashi is the practical anchor for most everyday Jyotish.' },
   { q: 'Do I need an exact birth time for my Rashi?', a: 'A precise time is helpful but rarely essential for the Moon sign, since the Moon stays in one sign for over two days. It matters only when birth falls near a sign change. An exact time is more important for the ascendant (Lagna) and the house positions.' },
-  { q: 'Is this calculator free?', a: 'Yes, completely free with no login. For a full plain-English birth-chart reading that places your Moon sign in the context of your whole chart, the deep Kundli report is a one-time $9.99 / ₹899.' },
+  { q: 'Is this calculator free?', a: 'Yes, completely free with no login. For a full plain-English reading and your hour-by-hour forecast, VedicHour membership starts with a 2-minute quiz.' },
 ];
 
 export default function Page() {

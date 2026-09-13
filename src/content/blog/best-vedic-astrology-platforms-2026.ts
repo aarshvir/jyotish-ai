@@ -33,7 +33,7 @@ export const post: BlogPost = {
 <tr><th>Platform</th><th>Best for</th><th>AI plain-English</th><th>Hour-by-hour timing</th><th>Free Kundli</th><th>Model</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>VedicHour</strong></td><td>AI forecasts + hourly timing</td><td>Yes — core feature</td><td>Yes — 18 windows/day</td><td>Yes</td><td>One-time, no per-minute</td></tr>
+<tr><td><strong>VedicHour</strong></td><td>AI forecasts + hourly timing</td><td>Yes — core feature</td><td>Yes — 18 windows/day</td><td>Yes</td><td>Subscription, no per-minute</td></tr>
 <tr><td>AstroTalk</td><td>Live astrologer chats</td><td>Limited</td><td>No</td><td>Basic</td><td>Per-minute consultations</td></tr>
 <tr><td>Astroyogi</td><td>Live consultations + reports</td><td>Limited</td><td>No</td><td>Basic</td><td>Per-minute + reports</td></tr>
 <tr><td>AstroSage</td><td>Free chart database + software</td><td>No</td><td>No</td><td>Yes — extensive</td><td>Free + paid reports/ads</td></tr>
@@ -46,7 +46,7 @@ export const post: BlogPost = {
 
 <p>This is the category we set out to win, and we think it is genuinely underserved elsewhere. Most platforms give you a daily horoscope; <a href="/">VedicHour</a> rates <strong>every planetary hour of your day</strong> — eighteen windows — so you know not just whether today is good, but <em>which hour</em> to ask for the raise, sign the deal, or have the hard conversation. The charts are computed with the <strong>Swiss Ephemeris</strong> and the Lahiri ayanamsa (the professional standard), then generative AI turns the raw planetary data into clear, plain-English guidance instead of intimidating tables.</p>
 
-<p>You also get a <a href="/free-kundli">free Kundli</a> and free calculators (nakshatra, dasha, manglik, sade sati), a deep <a href="/kundali">Kundli report</a> across every life area, and <a href="/synastry">Kundli matchmaking</a>. Pricing is one-time — no per-minute meter running while you think. The trade-off: VedicHour is self-serve software, so if your heart is set on a long phone call with a named astrologer, a consultation marketplace will suit you better.</p>
+<p>You also get a <a href="/free-kundli">free Kundli</a> and free calculators (nakshatra, dasha, manglik, sade sati), a deep <a href="/kundali">Kundli report</a> across every life area, and <a href="/synastry">Kundli matchmaking</a>. Pricing is a monthly or annual subscription — no per-minute meter running while you think. The trade-off: VedicHour is self-serve software, so if your heart is set on a long phone call with a named astrologer, a consultation marketplace will suit you better.</p>
 
 <h2>AstroTalk — best for live astrologer chats</h2>
 
@@ -68,7 +68,7 @@ export const post: BlogPost = {
 
 <p>Match the tool to the job. Want a quick free chart to download? AstroSage. Want to talk to a human by the minute? AstroTalk or Astroyogi. Want a general daily panchang? Drik Panchang. But if you want <strong>precise, personalised, AI-explained guidance you can act on — especially the best hour to do something — VedicHour is the most modern, self-serve option in 2026</strong>, and it is the only one of these built around hour-by-hour timing.</p>
 
-<p>The honest meta-point: most people end up using two tools — a free chart generator and, for big decisions, a forecasting tool or a live astrologer. If precision timing and clear AI explanations are what you are after, <a href="/onboard">start with a free VedicHour reading</a> and judge it against any of the above yourself. Use code NEWUSER30 for 30% off your first paid report.</p>
+<p>The honest meta-point: most people end up using two tools — a free chart generator and, for big decisions, a forecasting tool or a live astrologer. If precision timing and clear AI explanations are what you are after, <a href="/start">start with the VedicHour quiz</a> and judge the forecast against any of the above yourself.</p>
 `,
   faqs: [
     {
@@ -85,7 +85,7 @@ export const post: BlogPost = {
     },
     {
       q: 'Is VedicHour free?',
-      a: 'Yes — you get a free Kundli, free calculators, and one free preview reading. Deep reports and the full hour-by-hour forecast are one-time paid (no per-minute charges), with a 24-hour money-back guarantee.',
+      a: 'Partly — the free Kundli and free calculators need no sign-up. Deep reports and the full hour-by-hour forecast come with a monthly or annual subscription (no per-minute charges).',
     },
   ],
 };

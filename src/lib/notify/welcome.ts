@@ -16,22 +16,22 @@ export async function sendWelcomeEmail(email: string, displayName?: string): Pro
       <p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#2a2730">You&apos;ve joined VedicHour &mdash; Vedic astrology decoded hour by hour, in plain English.</p>
       <p style="margin:0 0 10px;font-size:15px;font-weight:700;color:#15131f">Three ways to start:</p>
       <p style="margin:0 0 22px;font-size:15px;line-height:1.8;color:#2a2730">
-        &bull; <a href="${SITE}/onboard?plan=free" style="color:#9a7b1a">Generate your free chart</a> &mdash; your birth chart in a minute<br>
-        &bull; <a href="${SITE}/onboard?plan=7day&amp;promo=NEWUSER30" style="color:#9a7b1a">Get your hour-by-hour forecast</a> &mdash; the clearer windows of your day<br>
+        &bull; <a href="${SITE}/free-kundli" style="color:#9a7b1a">Get your free birth chart</a> &mdash; your birth chart in a minute<br>
+        &bull; <a href="${SITE}/start" style="color:#9a7b1a">Get your hour-by-hour forecast</a> &mdash; the clearer windows of your day<br>
         &bull; <a href="${SITE}/synastry" style="color:#9a7b1a">Check compatibility</a> &mdash; 36-point Gun Milan
       </p>
-      ${emailButton('Start my free reading', `${SITE}/onboard?plan=free`)}`;
+      ${emailButton('See your hours', `${SITE}/start`)}`;
     await sendEmail({
       to: email,
       subject: `Welcome to VedicHour, ${name}`,
-      html: emailShell({ preheader: 'Start with your free Kundli and hour-by-hour forecast.', contentHtml: content }),
+      html: emailShell({ preheader: 'Start with your free birth chart, then see your hours.', contentHtml: content }),
       text: plainText([
         `Welcome to VedicHour, ${name}.`,
         '',
         'Vedic astrology decoded hour by hour, in plain English.',
         '',
-        `Free chart: ${SITE}/onboard?plan=free`,
-        `Hour-by-hour forecast: ${SITE}/onboard?plan=7day&promo=NEWUSER30`,
+        `Free birth chart: ${SITE}/free-kundli`,
+        `Hour-by-hour forecast: ${SITE}/start`,
         `Compatibility (Gun Milan): ${SITE}/synastry`,
       ]),
     });

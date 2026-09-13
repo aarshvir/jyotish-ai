@@ -37,7 +37,7 @@ function barColor(score: number): string {
 export function PreviewValueStrip({
   reportId,
   firstName,
-  unlockHref = '/onboard?plan=7day&promo=NEWUSER30',
+  unlockHref = '/start',
 }: {
   reportId: string;
   firstName?: string;
@@ -162,7 +162,7 @@ export function PreviewValueStrip({
             Unlock the reasons →
           </Link>
           <span className="font-mono text-mono-sm text-dust/60">
-            30% off with NEWUSER30 · 24-hour money-back guarantee
+            Starts with a 2-minute quiz
           </span>
         </div>
       </div>

@@ -141,7 +141,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
             <Link href={UNLOCK_FREE_HREF} className="btn-secondary">Or start with the free chart</Link>
           </div>
           <p className="font-body text-body-sm text-dust mt-4">
-            Use code NEWUSER30 for <Link href={UNLOCK_7DAY_HREF} className="text-amber underline">30% off</Link> your first paid report. 24-hour money-back.
+            Your own hour-by-hour forecast starts with a <Link href={UNLOCK_7DAY_HREF} className="text-amber underline">2-minute quiz</Link>.
           </p>
         </div>
 

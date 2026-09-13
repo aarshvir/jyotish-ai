@@ -42,7 +42,7 @@ export const post: BlogPost = {
 
 <p>A couple of examples make it concrete. A <strong>Mars Hora</strong> concentrates drive and courage — historically chosen for competition, athletic effort, or surgery, where decisiveness matters. A <strong>Jupiter Hora</strong> favours wealth, contracts, and auspicious purchases. A <strong>Mercury Hora</strong> sharpens communication and commerce, while a <strong>Moon Hora</strong> suits emotional conversations and anything nurturing.</p>
 
-<p><strong>The catch is precision.</strong> The Swiss Ephemeris computes planetary positions to within 0.001 arc-seconds — and you need that exactness to know precisely when one Hora ends and the next begins, because the boundaries shift with your location's sunrise. This is exactly the gap that AI-powered tools like <a href="/onboard">VedicHour</a> close: they translate the constantly shifting Hora boundaries into eighteen-plus plain-English hourly windows for your day, so you do not have to redraw the table by hand. If you want the mechanics in depth, our <a href="/blog/hora-planetary-hours-guide">guide to planetary hours</a> walks through the full sequence.</p>
+<p><strong>The catch is precision.</strong> The Swiss Ephemeris computes planetary positions to within 0.001 arc-seconds — and you need that exactness to know precisely when one Hora ends and the next begins, because the boundaries shift with your location's sunrise. This is exactly the gap that AI-powered tools like <a href="/start">VedicHour</a> close: they translate the constantly shifting Hora boundaries into eighteen-plus plain-English hourly windows for your day, so you do not have to redraw the table by hand. If you want the mechanics in depth, our <a href="/blog/hora-planetary-hours-guide">guide to planetary hours</a> walks through the full sequence.</p>
 
 <h2>Risk Mitigation: Rahu Kaal and the 8th House</h2>
 
@@ -68,7 +68,7 @@ export const post: BlogPost = {
 
 <p>The honest problem with all of this is effort. Computing the Panchang, the weekday ruler, eighteen shifting Hora windows, Rahu Kaal, and your personal Dasha — for a single decision — is hours of manual work, and a small error anywhere quietly invalidates the result. That is precisely why this branch of astrology has stayed inaccessible to most people.</p>
 
-<p><a href="/onboard">VedicHour</a> bridges that gap: it pairs Swiss Ephemeris precision with generative AI to turn the raw planetary data into actionable, hour-by-hour guidance in plain English — so you stop guessing and start acting on the windows that actually support you. Begin with a <a href="/free-kundli">free chart</a>, then unlock your personalised twelve-month and hour-by-hour outlook to see exactly when your next move is blessed by the clock.</p>
+<p><a href="/start">VedicHour</a> bridges that gap: it pairs Swiss Ephemeris precision with generative AI to turn the raw planetary data into actionable, hour-by-hour guidance in plain English — so you stop guessing and start acting on the windows that actually support you. Begin with a <a href="/free-kundli">free chart</a>, then unlock your personalised twelve-month and hour-by-hour outlook to see exactly when your next move is blessed by the clock.</p>
 `,
   faqs: [
     {

@@ -23,7 +23,7 @@ const FAQS: Faq[] = [
   { q: 'Can a Manglik marry a non-Manglik?', a: 'Yes. Classical astrology lists several cancellations, and many Manglik–non-Manglik couples marry happily. A full Kundli match and, where wanted, traditional remedies are the usual approach.' },
   { q: 'Does Manglik Dosha really cancel at age 28?', a: 'That is a popular belief rather than a strict classical rule. Mars’s intensity does tend to mature with age, but genuine cancellation comes from chart factors — placement, signs and the partner’s chart — not a birthday.' },
   { q: 'Anshik (partial) vs full Manglik — what is the difference?', a: 'Anshik Manglik is a partial or mild dosha, often when only one reference point triggers it or Mars sits in a comfortable sign. The result grades severity (mild / moderate / strong) so you can see which applies to you.' },
-  { q: 'Is this calculator free?', a: 'Yes, completely free with no login. For a full plain-English birth-chart reading with Manglik shown in context, the deep Kundli report is a one-time $9.99 / ₹899.' },
+  { q: 'Is this calculator free?', a: 'Yes, completely free with no login. For a full plain-English reading and your hour-by-hour forecast, VedicHour membership starts with a 2-minute quiz.' },
 ];
 
 export default function Page() {

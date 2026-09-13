@@ -73,7 +73,7 @@ export default function HoroscopeDayPage({ params }: Props) {
           ))}
         </div>
         <div className="mt-10 flex flex-wrap gap-4">
-          <Link href="/onboard" className="btn-primary inline-flex px-6 py-3">
+          <Link href="/start" className="btn-primary inline-flex px-6 py-3">
             Full personalised forecast
           </Link>
           <Link href={`/horoscope/${sign}`} className="btn-secondary inline-flex px-6 py-3">

@@ -49,19 +49,19 @@ export default function LaunchBanner() {
       <div id="vh-launch-banner" className="relative w-full bg-amber text-space">
         <div className="mx-auto flex max-w-6xl items-center justify-center gap-3 px-10 py-2.5 text-center">
             <span className="font-mono text-xs sm:text-sm font-medium tracking-wide">
-              <span className="font-bold">Launch offer — 30% off your first paid report.</span>
-              {' '}Use code <span className="font-bold">NEWUSER30</span>.{' '}
+              <span className="font-bold">Your Life, Decoded Hour by Hour.</span>
+              {' '}
               <Link
-                href="/onboard?plan=7day&promo=NEWUSER30"
+                href="/start"
                 className="underline hover:no-underline transition-all"
               >
-                Claim 30% off →
+                Take the 2-minute quiz →
               </Link>
             </span>
         </div>
         <button
           onClick={handleDismiss}
-          aria-label="Dismiss launch offer banner"
+          aria-label="Dismiss banner"
           className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded hover:bg-space/10 transition-colors"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>

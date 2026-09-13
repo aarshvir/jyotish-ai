@@ -109,7 +109,7 @@ export const post: BlogPost = {
 
 <p>For hourly and muhurat timing specifically, that combination is the whole game. A daily horoscope cannot tell you that this afternoon's third hora favours a hard conversation while the next one does not. A chart-aware hourly forecast can. That is the niche, and it is worth choosing a tool that takes it seriously.</p>
 
-<p>If you want to start, the most useful first step costs nothing: build your <a href="/free-kundli">free Kundli</a> to confirm your placements, then <a href="/onboard">create your personalised forecast</a> and see your day rated hour by hour. Decide for yourself whether timing changes how your week feels — that is the only test that really matters.</p>
+<p>If you want to start, the most useful first step costs nothing: build your <a href="/free-kundli">free Kundli</a> to confirm your placements, then <a href="/start">create your personalised forecast</a> and see your day rated hour by hour. Decide for yourself whether timing changes how your week feels — that is the only test that really matters.</p>
 `,
   faqs: [
     {

@@ -24,7 +24,7 @@ const FAQS: Faq[] = [
   { q: 'Is Kaal Sarp Dosha harmful or dangerous?', a: 'No. It is a common pattern, not a curse, and it appears in the charts of many accomplished people. At most it describes a tendency for life to move in concentrated waves that reward persistence. Treat it as a factor to understand, not something to fear.' },
   { q: 'What are the remedies for Kaal Sarp Dosha?', a: 'The measured, traditional supports include Rahu–Ketu shanti rituals, chanting the Maha Mrityunjaya mantra, giving to charity and keeping a disciplined daily routine. These are aids to steadiness and patience rather than instant fixes, and no remedy is required for a successful life.' },
   { q: 'How does this calculator check Kaal Sarp Dosha?', a: 'It computes your full chart from your date, time and place of birth, locates Rahu and Ketu, and tests whether all seven planets fall on one side of that axis. It then tells you yes or no with a short explanation.' },
-  { q: 'Is this Kaal Sarp Dosha calculator free?', a: 'Yes, completely free with no login. For a full plain-English birth-chart reading with Kaal Sarp shown in context alongside your dashas and other yogas, the deep Kundli report is a one-time $9.99 / ₹899.' },
+  { q: 'Is this Kaal Sarp Dosha calculator free?', a: 'Yes, completely free with no login. For a full plain-English reading and your hour-by-hour forecast, VedicHour membership starts with a 2-minute quiz.' },
 ];
 
 export default function Page() {

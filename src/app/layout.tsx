@@ -214,7 +214,7 @@ export default function RootLayout({
                       price: '0',
                       priceCurrency: 'USD',
                       description: 'Free Kundli with complete natal birth chart, Lagna, Moon sign, and Dasha period.',
-                      url: `${SITE_URL}/onboard?plan=free`,
+                      url: `${SITE_URL}/start`,
                     },
                     {
                       '@type': 'Offer',

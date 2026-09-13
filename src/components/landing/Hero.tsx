@@ -6,8 +6,8 @@ import { UNLOCK_FREE_HREF } from '@/lib/pricing';
 const TRUST_STATS = [
   { value: '18', label: 'hourly windows a day' },
   { value: 'Real', label: 'astronomy — no guesswork' },
-  { value: 'One-time', label: 'payment · no subscription' },
-  { value: '24h', label: 'no-questions refund' },
+  { value: 'Free', label: 'calculators · no sign-up' },
+  { value: '2-min', label: 'quiz to start' },
 ];
 
 /*

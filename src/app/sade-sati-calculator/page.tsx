@@ -24,7 +24,7 @@ const FAQS: Faq[] = [
   { q: 'What is the difference between dhaiya and Sade Sati?', a: 'Sade Sati is the seven-and-a-half-year transit across the 12th, 1st and 2nd from the Moon. Dhaiya — also called the small panoti — is a shorter, roughly two-and-a-half-year transit of Saturn through the 4th or 8th from the Moon. They are different periods, though both involve Saturn pressing on the Moon.' },
   { q: 'What remedies help during Sade Sati?', a: 'The most reliable remedies are practical: guard your health and rest, be patient with delays, avoid overcommitting, and stay honest and steady in your work. Many people also keep a simple Saturday discipline or a gentle Hanuman or Shani practice. Treat these as support for the right mindset, not a magic switch.' },
   { q: 'Is Sade Sati always bad?', a: 'No. It is a demanding, slowing period rather than a guaranteed misfortune, and its effect depends on where Saturn sits in your chart and how strong it is. For many people Sade Sati brings hard-won growth, maturity and lasting results, especially when met with patience.' },
-  { q: 'Is this calculator free?', a: 'Yes, completely free with no login. For a full plain-English birth-chart reading that shows Sade Sati in the context of your whole chart, the deep Kundli report is a one-time $9.99 / ₹899.' },
+  { q: 'Is this calculator free?', a: 'Yes, completely free with no login. For a full plain-English reading and your hour-by-hour forecast, VedicHour membership starts with a 2-minute quiz.' },
 ];
 
 export default function Page() {

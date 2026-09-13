@@ -24,7 +24,7 @@ const FAQS: Faq[] = [
   { q: 'How is Vimshottari Dasha calculated?', a: 'It is calculated from the Moon’s nakshatra at birth. The nakshatra lord determines the Mahadasha you start in, and the Moon’s exact position within that nakshatra decides how much of the first period was already elapsed at birth. From there the periods follow the fixed Vimshottari order and lengths.' },
   { q: 'Do I need my exact birth time?', a: 'For precise dasha start and end dates, yes — the Moon moves quickly, so birth time affects its nakshatra position and the balance of your first period. Even without a known time you can get a useful current Mahadasha, but exact times give the most reliable transition dates.' },
   { q: 'What are the planetary period lengths?', a: 'The Vimshottari Mahadasha lengths are: Ketu 7 years, Venus 20, Sun 6, Moon 10, Mars 7, Rahu 18, Jupiter 16, Saturn 19 and Mercury 17 — adding up to the full 120-year cycle.' },
-  { q: 'Is this calculator free?', a: 'Yes, completely free with no login. For a plain-English reading of how your current dasha plays out across the next few years, the deep Kundli report is a one-time $9.99 / ₹899.' },
+  { q: 'Is this calculator free?', a: 'Yes, completely free with no login. For a full plain-English reading and your hour-by-hour forecast, VedicHour membership starts with a 2-minute quiz.' },
 ];
 
 export default function Page() {

@@ -20,7 +20,7 @@ const CTA =
   '<ul>' +
   '<li>Generate your <a href="/free-kundli">free Kundli</a> — Lagna, Moon sign, nakshatra and current dasha in plain English.</li>' +
   '<li>Open a <a href="/kundali">deep Kundli report</a> for a full chart reading across seven life areas.</li>' +
-  '<li>See the <a href="/pricing">plans</a> — free preview, then one-time reports (no subscription).</li>' +
+  '<li>See the <a href="/pricing">plans</a> — free Kundli and calculators, then a monthly or annual subscription for the full forecast.</li>' +
   '</ul>';
 
 export const COMPARISONS: Comparison[] = [
@@ -29,7 +29,7 @@ export const COMPARISONS: Comparison[] = [
     title: 'AstroSage Alternative — VedicHour vs AstroSage',
     h1: 'A modern AstroSage alternative',
     description:
-      'Looking for an AstroSage alternative? VedicHour pairs Swiss Ephemeris Kundli with an AI Jyotish report in plain English and an hour-by-hour Vedic timing grid. Free preview, no card.',
+      'Looking for an AstroSage alternative? VedicHour pairs Swiss Ephemeris Kundli with an AI Jyotish report in plain English and an hour-by-hour Vedic timing grid. Free Kundli, no card.',
     keywords: [
       'astrosage alternative',
       'alternative to astrosage',
@@ -56,7 +56,7 @@ export const COMPARISONS: Comparison[] = [
       '<tr><td>Plain-English AI report</td><td>Limited</td><td>Core focus</td></tr>' +
       '<tr><td>Hour-by-hour timing grid</td><td>Panchang / choghadiya tables</td><td>All 18 horas scored as clearer / heavier windows</td></tr>' +
       '<tr><td>Kundli matching (Gun Milan)</td><td>Yes</td><td>Yes — <a href="/synastry">free 36-point score</a></td></tr>' +
-      '<tr><td>Pricing</td><td>Free + paid consultations</td><td>Free preview, then one-time reports (no subscription)</td></tr>' +
+      '<tr><td>Pricing</td><td>Free + paid consultations</td><td>Free Kundli and calculators, then a monthly or annual subscription</td></tr>' +
       '</table>' +
       '<h2>Which should you choose?</h2>' +
       '<p>If you want the widest possible toolbox and an established community, AstroSage is a sensible choice. If you would rather have your chart explained in plain English and see your day broken into clearer and heavier windows, VedicHour is built for exactly that. You can try the core for free and decide — no card needed.</p>' +
@@ -65,7 +65,7 @@ export const COMPARISONS: Comparison[] = [
     faqs: [
       {
         q: 'Is VedicHour free like AstroSage?',
-        a: 'Yes. Your Kundli — Lagna, Moon sign, nakshatra, current dasha and the classical dosha flags — is free with no card. Deep reports are a one-time payment, not a subscription.',
+        a: 'Yes. Your Kundli — Lagna, Moon sign, nakshatra, current dasha and the classical dosha flags — is free with no card. Deep reports and the hour-by-hour forecast come with a monthly or annual subscription.',
       },
       {
         q: 'Does VedicHour use the same calculations as AstroSage?',
@@ -86,7 +86,7 @@ export const COMPARISONS: Comparison[] = [
     title: 'Prokerala Alternative — VedicHour vs Prokerala',
     h1: 'A modern Prokerala alternative',
     description:
-      'A Prokerala alternative for free Kundli and Vedic timing. VedicHour adds a plain-English AI Jyotish report and an hour-by-hour grid of clearer and heavier windows. Swiss Ephemeris, free preview.',
+      'A Prokerala alternative for free Kundli and Vedic timing. VedicHour adds a plain-English AI Jyotish report and an hour-by-hour grid of clearer and heavier windows. Swiss Ephemeris, free Kundli.',
     keywords: [
       'prokerala alternative',
       'alternative to prokerala',
@@ -112,7 +112,7 @@ export const COMPARISONS: Comparison[] = [
       '<tr><td>Plain-English AI report</td><td>No</td><td>Core focus</td></tr>' +
       '<tr><td>Hour-by-hour timing grid</td><td>Panchang / muhurat tables</td><td>All 18 horas scored as clearer / heavier windows</td></tr>' +
       '<tr><td>Engine</td><td>Sidereal Vedic</td><td>Swiss Ephemeris + Lahiri ayanamsa</td></tr>' +
-      '<tr><td>Pricing</td><td>Free + paid reports</td><td>Free preview, then one-time reports</td></tr>' +
+      '<tr><td>Pricing</td><td>Free + paid reports</td><td>Free Kundli, then a subscription</td></tr>' +
       '</table>' +
       '<h2>Which should you choose?</h2>' +
       '<p>For a quick, clean calculation, Prokerala is fine. If you want your chart explained in plain language and your day organised into clearer and heavier windows for reflection and planning, VedicHour is the better fit — and the preview is free.</p>' +
@@ -121,7 +121,7 @@ export const COMPARISONS: Comparison[] = [
     faqs: [
       {
         q: 'Is VedicHour free like Prokerala?',
-        a: 'Yes — the Kundli and core tools are free with no card. Deep, plain-English reports are a one-time payment, with no subscription.',
+        a: 'Yes — the Kundli and core tools are free with no card. Deep, plain-English reports come with a monthly or annual subscription.',
       },
       {
         q: 'How accurate is VedicHour compared with Prokerala?',
@@ -165,7 +165,7 @@ export const COMPARISONS: Comparison[] = [
       '<li>Turns your chart into a <strong>plain-English AI report</strong> — placements, dasha and life-area themes written out, not left as tables.</li>' +
       '<li>Rates all <strong>18 planetary hours</strong> of your day as clearer or heavier windows — an hour-by-hour timing grid for planning, not a generic daily horoscope.</li>' +
       '</ul>' +
-      '<p>You can generate the <a href="/free-kundli">free Kundli</a> and see a sample timing grid before paying for anything. A full <a href="/kundali">deep report</a> is a one-time cost, not a subscription.</p>' +
+      '<p>You can generate the <a href="/free-kundli">free Kundli</a> and see a sample timing grid before paying for anything. A full <a href="/kundali">deep report</a> is included in a monthly or annual subscription.</p>' +
       '<h2>The honest summary</h2>' +
       '<table>' +
       '<tr><th>If you want…</th><th>Best fit</th></tr>' +
@@ -179,7 +179,7 @@ export const COMPARISONS: Comparison[] = [
     faqs: [
       {
         q: 'What is the best free AI Kundli website?',
-        a: 'It depends on what you want. For the widest free toolbox, established portals like AstroSage or Prokerala are strong. For a plain-English AI reading plus an hour-by-hour timing grid computed on the Swiss Ephemeris, VedicHour is built for that specifically, with a free preview.',
+        a: 'It depends on what you want. For the widest free toolbox, established portals like AstroSage or Prokerala are strong. For a plain-English AI reading plus an hour-by-hour timing grid computed on the Swiss Ephemeris, VedicHour is built for that specifically, with a free Kundli to start.',
       },
       {
         q: 'Are AI Kundli sites accurate?',
@@ -187,7 +187,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: 'Is a free Kundli really free?',
-        a: 'On VedicHour, yes — your Kundli and core tools are free with no card. Deep reports are a one-time payment with no subscription.',
+        a: 'On VedicHour, yes — your Kundli and core tools are free with no card. Deep reports come with a monthly or annual subscription.',
       },
       {
         q: 'What makes VedicHour different from a daily horoscope?',
@@ -225,7 +225,7 @@ export const COMPARISONS: Comparison[] = [
       '<h2>How people use it</h2>' +
       '<p>Think of it as a structured second lens for planning a demanding day — when to schedule the focused work, the difficult conversation, the launch, the long drive. It is timing <em>awareness</em>: a prompt to plan thoughtfully, never a guarantee about how things will turn out. For dated muhurat questions, pair it with the free <a href="/vimshottari-dasha-calculator">dasha</a> and dosha calculators.</p>' +
       '<h2>Try your own timing grid</h2>' +
-      '<p>Generate your <a href="/free-kundli">free Kundli</a> and see a sample hour-by-hour grid for your chart. A full forecast with daily windows across a 7-day, monthly or annual span is a one-time <a href="/pricing">report</a>.</p>' +
+      '<p>Generate your <a href="/free-kundli">free Kundli</a> and see a sample hour-by-hour grid for your chart. A full forecast with daily windows across a 7-day, monthly or annual span comes with a monthly or annual <a href="/pricing">subscription</a>.</p>' +
       CTA +
       DISCLAIMER,
     faqs: [
@@ -243,7 +243,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: 'Is the timing grid free?',
-        a: 'You can see a sample timing grid for your chart free. A full forecast with daily windows across a 7-day, monthly or annual period is a one-time report, with no subscription.',
+        a: 'You can see a sample timing grid for your chart free. A full forecast with daily windows across a 7-day, monthly or annual period comes with a monthly or annual subscription.',
       },
     ],
   },
@@ -273,7 +273,7 @@ export const COMPARISONS: Comparison[] = [
       '<tr><td>Plain-English AI report</td><td>Limited</td><td>No</td><td>Core focus</td></tr>' +
       '<tr><td>Hour-by-hour timing grid</td><td>Panchang tables</td><td>Panchang tables</td><td>All 18 horas scored clearer / heavier</td></tr>' +
       '<tr><td>Engine</td><td>Sidereal Vedic</td><td>Sidereal Vedic</td><td>Swiss Ephemeris + Lahiri</td></tr>' +
-      '<tr><td>Pricing</td><td>Free + consultations</td><td>Free + reports</td><td>Free preview, one-time reports</td></tr>' +
+      '<tr><td>Pricing</td><td>Free + consultations</td><td>Free + reports</td><td>Free Kundli, subscription</td></tr>' +
       '</table>' +
       '<h2>Which should you pick?</h2>' +
       '<ul>' +
@@ -295,7 +295,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: 'Are all three free?',
-        a: 'All three offer free Kundli generation. AstroSage and Prokerala add paid consultations or reports; VedicHour offers a free preview and one-time reports with no subscription.',
+        a: 'All three offer free Kundli generation. AstroSage and Prokerala add paid consultations or reports; VedicHour offers a free Kundli and calculators, with the full forecast on a monthly or annual subscription.',
       },
       {
         q: 'Can I use more than one?',
@@ -348,7 +348,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: 'Is there a free AI astrology app?',
-        a: 'VedicHour offers a free Kundli and a sample plain-English reading with no card. Full reports across a 7-day, monthly or annual horizon are a one-time payment, not a subscription.',
+        a: 'VedicHour offers a free Kundli with no card. The full plain-English reading and hour-by-hour forecast come with a monthly or annual subscription.',
       },
     ],
   },
@@ -395,7 +395,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: 'Is VedicHour’s Kundli matching free?',
-        a: 'Yes — the 36-point Gun Milan score and the eight-fold breakdown are free. A deeper written compatibility reading is a one-time report.',
+        a: 'Yes — the 36-point Gun Milan score and the eight-fold breakdown are free. A deeper written compatibility reading is available as a paid reading.',
       },
     ],
   },

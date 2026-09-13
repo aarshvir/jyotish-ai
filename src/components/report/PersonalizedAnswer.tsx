@@ -26,7 +26,7 @@ interface Personalized {
 export function PersonalizedAnswer({
   reportId,
   isPreview,
-  unlockHref = '/onboard?plan=7day',
+  unlockHref = '/start',
 }: {
   reportId: string;
   isPreview: boolean;
@@ -132,7 +132,7 @@ export function PersonalizedAnswer({
             <Link href={unlockHref} className="btn-primary px-6 py-3 text-sm">
               Unlock my full answer →
             </Link>
-            <span className="font-mono text-mono-sm text-dust/60">24-hour money-back guarantee</span>
+            <span className="font-mono text-mono-sm text-dust/60">Starts with a 2-minute quiz</span>
           </div>
         </div>
       </motion.section>

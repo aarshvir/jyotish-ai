@@ -77,7 +77,7 @@ export const post: BlogPost = {
 
 <p>Even a near-perfect day has rough patches and smooth ones inside it. This is where muhurta becomes genuinely hour-by-hour. The daylight is divided into segments, each ruled by a planet, and one of them — <strong>Rahu Kaal</strong> — is the window most people learn to avoid for anything important. Rahu Kaal lasts roughly ninety minutes and falls at a different time each weekday, so a Thursday that is excellent overall still has one stretch best kept for routine tasks rather than signing, launching, or departing.</p>
 
-<p>Beyond Rahu Kaal, the older system of <strong>hora</strong> — planetary hours — assigns each hour of the day to a planet in a fixed cycle. A Jupiter hora is a small, favourable pocket for growth and money; a Mercury hora suits communication and deals; a Venus hora helps relationships and creativity. Picking not just the right day but the right hora within it is the most refined, personal layer of timing — and it is exactly the layer that is hard to eyeball from a printed panchang. This is the heart of what VedicHour’s <a href="/onboard">hour-by-hour forecast</a> is built to do: rate every planetary hour of your specific day against your own birth chart, so you can see which windows are working for you and which to sidestep, without memorising a single rule.</p>
+<p>Beyond Rahu Kaal, the older system of <strong>hora</strong> — planetary hours — assigns each hour of the day to a planet in a fixed cycle. A Jupiter hora is a small, favourable pocket for growth and money; a Mercury hora suits communication and deals; a Venus hora helps relationships and creativity. Picking not just the right day but the right hora within it is the most refined, personal layer of timing — and it is exactly the layer that is hard to eyeball from a printed panchang. This is the heart of what VedicHour’s <a href="/start">hour-by-hour forecast</a> is built to do: rate every planetary hour of your specific day against your own birth chart, so you can see which windows are working for you and which to sidestep, without memorising a single rule.</p>
 
 <h2>Make It Personal: A Muhurat Should Match Your Chart</h2>
 
@@ -101,7 +101,7 @@ export const post: BlogPost = {
 
 <p>And one honest caveat: do not let the search for a perfect muhurat become an excuse not to act. Saturn rewards starting; Jupiter rewards growth; neither rewards endless waiting. A solid, well-chosen window beats a “perfect” one that never arrives. Timing is a tailwind, not a permission slip — preparation, effort, and good judgement still do most of the work.</p>
 
-<p>If you are weighing a launch, a new role, a move, or a trip and want to see which hours of your day actually favour it, start with your own chart rather than a one-size-fits-all calendar. Create your <a href="/onboard">personalised hour-by-hour forecast</a> and let the muhurat come to you, mapped to your life and decoded hour by hour.</p>
+<p>If you are weighing a launch, a new role, a move, or a trip and want to see which hours of your day actually favour it, start with your own chart rather than a one-size-fits-all calendar. Create your <a href="/start">personalised hour-by-hour forecast</a> and let the muhurat come to you, mapped to your life and decoded hour by hour.</p>
 `,
   faqs: [
     {

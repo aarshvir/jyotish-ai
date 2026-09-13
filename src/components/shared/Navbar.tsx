@@ -118,10 +118,10 @@ export default function Navbar() {
 
           <div className="flex shrink-0 items-center gap-2">
             <Link
-              href="/onboard?plan=free"
+              href="/start"
               className="hidden lg:inline-flex btn-primary px-4 py-2 text-sm"
             >
-              Get free Kundli
+              Get your forecast
             </Link>
             <div className="hidden lg:block">
               <AuthButton />
@@ -160,11 +160,11 @@ export default function Navbar() {
           >
             <div className="mx-auto max-w-6xl px-5 py-5 flex flex-col gap-4">
               <Link
-                href="/onboard?plan=free"
+                href="/start"
                 onClick={() => setMobileOpen(false)}
                 className="btn-primary text-center py-3"
               >
-                Get free Kundli
+                Get your forecast
               </Link>
               {NAV_LINKS.map((l) => (
                 <Link

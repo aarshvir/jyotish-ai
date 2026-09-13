@@ -114,7 +114,7 @@ export const post: BlogPost = {
 
 <p>And do not let it become anxiety. The point of hora is to flow with the day, not to freeze waiting for permission from the clock. If the only window you have for something important falls in a less ideal hora, do it anyway with intention. A well-aimed effort in a plain hour beats a perfect hour spent hesitating.</p>
 
-<p>If you want to stop counting on your fingers and simply see your day laid out hour by hour — every hora ruled, rated, and matched to what it favours — start with your <a href="/free-kundli">free Kundli</a> to anchor your chart, then build your personalised hour-by-hour forecast at <a href="/onboard">VedicHour</a> and let the right hour come to you.</p>
+<p>If you want to stop counting on your fingers and simply see your day laid out hour by hour — every hora ruled, rated, and matched to what it favours — start with your <a href="/free-kundli">free Kundli</a> to anchor your chart, then build your personalised hour-by-hour forecast at <a href="/start">VedicHour</a> and let the right hour come to you.</p>
 `,
   faqs: [
     {

@@ -244,10 +244,10 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
               </span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <a href="/onboard?plan=7day&promo=NEWUSER30" className="btn-primary px-6 py-3 text-sm">
+              <a href="/start" className="btn-primary px-6 py-3 text-sm">
                 Unlock my full year →
               </a>
-              <span className="font-mono text-mono-sm text-dust/60">30% off with NEWUSER30 · 24-hour money-back guarantee</span>
+              <span className="font-mono text-mono-sm text-dust/60">Starts with a 2-minute quiz</span>
             </div>
           </div>
         )}

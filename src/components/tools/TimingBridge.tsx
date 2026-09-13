@@ -77,7 +77,7 @@ export function TimingBridge({
           Unlock my hour-by-hour forecast &rarr;
         </Link>
         <span className="font-mono text-mono-sm text-dust">
-          Free Kundli first &middot; 24h money-back on paid
+          Starts with a 2-minute quiz
         </span>
       </div>
     </section>

@@ -60,12 +60,12 @@ export function MobileAuthLinks({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex flex-col gap-3">
       <Link
-        href="/onboard?plan=free"
+        href="/start"
         rel="nofollow"
         onClick={onNavigate}
         className="btn-primary w-full text-body-sm px-6 py-3"
       >
-        Get your free Kundli
+        Get your forecast
       </Link>
       <Link
         href="/login"
@@ -132,7 +132,7 @@ export default function AuthButton() {
               Sign in
             </Link>
             <Link
-              href="/onboard"
+              href="/start"
               className="btn-primary text-body-sm px-5 py-2"
             >
               Get report

@@ -1121,7 +1121,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           </p>
           <div className="flex items-center justify-center gap-3">
             <Link href="/dashboard" className="btn-secondary px-6 py-2">My Reports</Link>
-            <Link href="/onboard" className="btn-primary px-6 py-2">Generate a Report</Link>
+            <Link href="/start" className="btn-primary px-6 py-2">Generate a Report</Link>
           </div>
         </div>
       </div>
@@ -1532,7 +1532,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
 
         <div id="report-content">
           {/* Last-chance offer when a free reader signals they're leaving (preview only). */}
-          {isPreviewPlan && <ExitIntentUpsell unlockHref="/onboard?plan=7day&promo=NEWUSER30" />}
+          {isPreviewPlan && <ExitIntentUpsell unlockHref="/start" />}
 
           {/* Mobile section nav — sticky scroll-spy tabs (desktop uses ReportSidebar). */}
           <MobileSectionNav preview={isPreviewPlan} />
@@ -1576,7 +1576,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             <PersonalizedAnswer
               reportId={reportIdFromRoute}
               isPreview={isPreviewPlan}
-              unlockHref="/onboard?plan=7day&promo=NEWUSER30"
+              unlockHref="/start"
             />
           </ReportErrorBoundary>
 
@@ -1588,7 +1588,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
               <PreviewValueStrip
                 reportId={reportIdFromRoute}
                 firstName={(displayName || '').trim().split(/\s+/)[0]}
-                unlockHref="/onboard?plan=7day&promo=NEWUSER30"
+                unlockHref="/start"
               />
             </ReportErrorBoundary>
           )}
@@ -1709,7 +1709,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
                   <Link href="/pricing" className="btn-secondary px-5 py-2.5 text-sm">
                     Compare plans
                   </Link>
-                  <span className="font-mono text-mono-sm text-dust/60">24-hour money-back guarantee</span>
+                  <span className="font-mono text-mono-sm text-dust/60">Starts with a 2-minute quiz</span>
                 </div>
               </div>
             </div>
@@ -1830,8 +1830,8 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
                 Unlock hour-by-hour forecasts
               </h2>
               <p className="font-body text-body-md text-dust mb-5 max-w-2xl leading-relaxed">
-                This preview shows your natal chart and sample timing. Upgrade to the 7-Day, Monthly, or
-                Annual Oracle for 18 hourly windows per day with full commentary, weekly synthesis, and
+                This preview shows your natal chart and sample timing. Upgrade to a monthly or annual
+                subscription for 18 hourly windows per day with full commentary, weekly synthesis, and
                 priority dates for career, health, and wealth.
               </p>
               <div className="flex flex-wrap items-center gap-3">
@@ -1848,7 +1848,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
                   Compare plans
                 </Link>
                 <span className="font-mono text-mono-sm text-dust/60">
-                  24-hour money-back guarantee
+                  Starts with a 2-minute quiz
                 </span>
               </div>
             </div>

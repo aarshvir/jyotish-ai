@@ -211,14 +211,14 @@ export default function TransitSEOPage({ params }: Props) {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center mt-8">
             <Link
-              href={`/onboard?plan=free&transit=${planet}_${sign}`}
+              href={`/start?transit=${planet}_${sign}`}
               className="btn-primary w-full sm:w-auto px-8 py-3"
             >
               Generate My Personalised Jyotish Report
             </Link>
           </div>
           <p className="text-dust text-xs text-center mt-4">
-            Free Kundli • 30-day hourly forecast • precise to the minute
+            Starts with a 2-minute quiz • hour-by-hour forecast • precise to the minute
           </p>
 
           <div className="mt-10 pt-6 border-t border-horizon/30 text-center">

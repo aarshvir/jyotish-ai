@@ -127,7 +127,7 @@ export default function HourlyPreview() {
           <p className="font-body text-body-md text-dust mb-5">
             Your report will show your specific planetary hours, timing quality for each window, and the daily challenging hour to avoid.
           </p>
-          <a href="/onboard" className="btn-primary text-base px-8 py-3.5">
+          <a href="/start" className="btn-primary text-base px-8 py-3.5">
             Get My Hourly Forecast
           </a>
         </div>

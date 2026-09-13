@@ -84,7 +84,7 @@ export const post: BlogPost = {
 
 <p>Choghadiya is the everyday cousin of two richer ideas in Vedic astrology. The first is the planetary hour, or hora, which also divides the day by planet but does so hour by hour and ties more directly to which planet is favourable for which activity. The second is full muhurta — the detailed, chart-based selection of an auspicious moment for major events like marriage, a housewarming, or a business inauguration, which weighs nakshatra, tithi, planetary positions, and your own birth chart.</p>
 
-<p>Choghadiya sits comfortably below both. It asks nothing about your birth details and gives you a fast, daily reading you can act on without an astrologer. If you want to go deeper than the day-level windows, that is where a personalised reading earns its place. At <a href="/onboard">VedicHour</a> the Hour-by-Hour Forecast rates every planetary hour of your day against your own chart, so you are not just following a generic good-or-bad label — you are seeing how each window lands for you specifically. It is the natural next step once Choghadiya has shown you how useful timing can be.</p>
+<p>Choghadiya sits comfortably below both. It asks nothing about your birth details and gives you a fast, daily reading you can act on without an astrologer. If you want to go deeper than the day-level windows, that is where a personalised reading earns its place. At <a href="/start">VedicHour</a> the Hour-by-Hour Forecast rates every planetary hour of your day against your own chart, so you are not just following a generic good-or-bad label — you are seeing how each window lands for you specifically. It is the natural next step once Choghadiya has shown you how useful timing can be.</p>
 
 <h2>Building Your Own Choghadiya for Today</h2>
 
@@ -92,7 +92,7 @@ export const post: BlogPost = {
 
 <p>It is very doable by hand, but fiddly enough that most people use a tool — especially because the windows change every single day and shift with your location. If you would rather see today's good and bad windows laid out cleanly, a Choghadiya view built around your own sunrise saves the arithmetic and the guesswork.</p>
 
-<p>If this has made you curious about how timing connects to your wider chart, start free: generate your <a href="/free-kundli">free Kundli</a> to see your planetary placements, then explore the personalised Hour-by-Hour Forecast at <a href="/onboard">VedicHour</a> to learn which windows truly work in your favour. Knowing when to begin is one of the quietest advantages there is — and it costs you nothing to start finding yours.</p>
+<p>If this has made you curious about how timing connects to your wider chart, start free: generate your <a href="/free-kundli">free Kundli</a> to see your planetary placements, then explore the personalised Hour-by-Hour Forecast at <a href="/start">VedicHour</a> to learn which windows truly work in your favour. Knowing when to begin is one of the quietest advantages there is — and it costs you nothing to start finding yours.</p>
 `,
   faqs: [
     {

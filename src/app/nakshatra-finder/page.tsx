@@ -24,7 +24,7 @@ const FAQS: Faq[] = [
   { q: 'What is the difference between a nakshatra and a rashi?', a: 'A rashi is your Moon sign — one of the 12 zodiac signs the Moon occupies. A nakshatra is a finer division: there are 27 of them, and roughly two and a quarter nakshatras fit inside each rashi. The nakshatra gives a more detailed reading than the sign alone.' },
   { q: 'Why does my nakshatra matter?', a: 'It is the basis of two core tools: the Vimshottari dasha system, which builds your predictive planetary-period timeline from the nakshatra’s ruling planet, and Gun Milan, the marriage-compatibility scoring that compares two birth stars.' },
   { q: 'How many nakshatras are there?', a: 'There are 27 nakshatras, running in order from Ashwini to Revati, each ruled by a planet and associated with a deity and symbol. Some traditions also reference a 28th, Abhijit, but the standard scheme used here is 27.' },
-  { q: 'Is this nakshatra finder free?', a: 'Yes, completely free with no login. For your nakshatra shown in context within a full plain-English birth-chart reading, the deep Kundli report is a one-time $9.99 / ₹899.' },
+  { q: 'Is this nakshatra finder free?', a: 'Yes, completely free with no login. For a full plain-English reading and your hour-by-hour forecast, VedicHour membership starts with a 2-minute quiz.' },
 ];
 
 export default function Page() {

@@ -127,7 +127,7 @@ export default function HoraPage() {
             Generate your <Link href="/free-kundli">free Kundli</Link> to see a sample hour-by-hour grid for
             your chart, or check your <Link href="/vimshottari-dasha-calculator">current dasha</Link> to
             understand the longer planetary period your timing sits inside. A full forecast with daily
-            windows is a one-time <Link href="/kundali">report</Link>.
+            windows comes with a VedicHour subscription, which starts with a <Link href="/start">2-minute quiz</Link>.
           </p>
 
           <p className="text-body-sm">

@@ -79,13 +79,11 @@ export async function sendFounderDigest(): Promise<{ ok: boolean; skipped?: bool
 /**
  * Where an abandoned checkout actually resumes. NOT /pricing — that is a plan
  * chooser, so the reader lands one step further from finishing than the copy
- * promises. The real unlock is the onboard checkout for the plan they abandoned
- * (same shape as UNLOCK_7DAY_HREF in src/lib/pricing.ts).
+ * promises. Recovery leads into the same sign-up → quiz funnel as every other
+ * unlock CTA (/start).
  */
-const PAID_PLANS = new Set(['7day', 'monthly', 'annual']);
-function abandonedUnlockUrl(planType: string | null | undefined): string {
-  const plan = planType && PAID_PLANS.has(planType) ? planType : '7day';
-  return `${SITE}/onboard?plan=${plan}&promo=NEWUSER30`;
+function abandonedUnlockUrl(): string {
+  return `${SITE}/start`;
 }
 
 // Copy note: the recovery job SKIPS reports with status 'complete', so at send
@@ -94,19 +92,16 @@ function abandonedUnlockUrl(planType: string | null | undefined): string {
 function abandonedHtml(name: string, unlockUrl: string): string {
   const content = `
     <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#15131f">${name}, your reading is one step away</h1>
-    <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#2a2730">You started unlocking your VedicHour reading but didn't finish. Your birth details are still saved &mdash; pick up right where you left off, and use code <strong>NEWUSER30</strong> for 30% off. Your reading starts generating the moment checkout completes.</p>
-    ${emailButton('Finish &amp; unlock', unlockUrl)}
-    <p style="margin:18px 0 0;font-size:13px;color:#6b6776">24-hour money-back guarantee.</p>`;
-  return emailShell({ preheader: `${name}, your details are saved — finish unlocking your reading.`, contentHtml: content });
+    <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#2a2730">You started unlocking your VedicHour reading but didn't finish. You can pick it up again whenever you're ready &mdash; it starts with a 2-minute quiz.</p>
+    ${emailButton('Finish &amp; unlock', unlockUrl)}`;
+  return emailShell({ preheader: `${name}, finish unlocking your reading whenever you're ready.`, contentHtml: content });
 }
 function abandonedText(name: string, unlockUrl: string): string {
   return plainText([
     `${name}, your VedicHour reading is one step away.`,
     '',
-    `Your birth details are still saved. Finish unlocking your reading and use code NEWUSER30 for 30% off:`,
+    `Finish unlocking your reading whenever you're ready. It starts with a 2-minute quiz:`,
     unlockUrl,
-    '',
-    '24-hour money-back guarantee.',
   ]);
 }
 
@@ -149,19 +144,19 @@ function nurtureEmail(stage: 's1' | 's2' | 's3', name: string, personalContext: 
       subject: `${name}, the rest of your answer is ready`,
       lead: `Your VedicHour reading only scratched the surface — ${qClause}. Your full report answers it directly and shows the timing that matters.`,
       cta: 'See my full answer',
-      ps: 'Use code NEWUSER30 for 30% off your first report — 24-hour money-back guarantee.',
+      ps: 'Your full forecast starts with a 2-minute quiz.',
     },
     s2: {
       subject: `${name}, here's exactly what you're missing`,
       lead: `Still weighing it up? Since ${qClause}, here's what the full report puts in your hands:`,
       cta: 'Unlock the full report',
-      ps: 'NEWUSER30 still gets you 30% off. Most readers say the hour-by-hour timing alone was worth it.',
+      ps: 'The quiz takes about two minutes.',
     },
     s3: {
-      subject: `${name}, your 30% off is about to expire`,
-      lead: `This is the last nudge — your personalized answer is one click away, and your NEWUSER30 discount won't stay forever. ${qClause[0].toUpperCase()}${qClause.slice(1)}: don't leave it unanswered.`,
-      cta: 'Claim my report (30% off)',
-      ps: '24-hour money-back guarantee — if it doesn\'t resonate, you pay nothing.',
+      subject: `${name}, one last note about your question`,
+      lead: `This is the last nudge — your personalized answer is one click away. ${qClause[0].toUpperCase()}${qClause.slice(1)}: don't leave it unanswered.`,
+      cta: 'Get my full forecast',
+      ps: 'This is the last email about this reading.',
     },
   }[stage];
 
@@ -259,10 +254,10 @@ export async function runAbandonedCheckoutRecovery(): Promise<{ ok: boolean; sen
       if (!rep || rep.status === 'complete') continue;
       const email = (rep.user_email ?? '').trim();
       const name = ((rep.native_name ?? '').trim().split(' ')[0]) || 'there';
-      const unlockUrl = abandonedUnlockUrl((p as { plan_type?: string }).plan_type);
+      const unlockUrl = abandonedUnlockUrl();
       if (email && !suppressed.has(email.toLowerCase())) await sendEmail({ to: email, subject: `${name}, your VedicHour reading is one step away`, html: abandonedHtml(name, unlockUrl), text: abandonedText(name, unlockUrl), listUnsubscribeUrl: unsubscribeUrl(email) });
       const phone = (rep.phone ?? '').trim();
-      if (phone) await sendWhatsApp({ to: phone, body: `Namaste ${name} 🙏 Your birth details are saved — finish unlocking your VedicHour reading here: ${unlockUrl} (NEWUSER30 = 30% off).` });
+      if (phone) await sendWhatsApp({ to: phone, body: `Namaste ${name} 🙏 Finish unlocking your VedicHour reading here: ${unlockUrl}` });
       sent++;
     }
     return { ok: true, sent };

@@ -110,7 +110,7 @@ export const post: BlogPost = {
 
 <p>At its core, Rahu Kaal reflects a beautiful idea at the heart of Jyotish: that time itself has texture and quality, that some moments are riper for certain actions than others. You do not have to treat it as fate. You can treat it as a gentle, time-tested rhythm worth respecting for the decisions that really count, and ignoring for the small stuff. Used that way, it adds a little mindfulness to your day rather than anxiety.</p>
 
-<p>If you would like to stop calculating windows by hand and simply see your day mapped out — your Rahu Kaal, your favourable hours, and the quieter ones — try VedicHour. Start with your <a href="/free-kundli">free Kundli</a> to set up your chart, then <a href="/onboard">create your account</a> to unlock the full hour-by-hour forecast and decode your day, hour by hour. Knowing the rhythm of your day is the first step to working with it instead of against it.</p>
+<p>If you would like to stop calculating windows by hand and simply see your day mapped out — your Rahu Kaal, your favourable hours, and the quieter ones — try VedicHour. Start with your <a href="/free-kundli">free Kundli</a> to set up your chart, then <a href="/start">create your account</a> to unlock the full hour-by-hour forecast and decode your day, hour by hour. Knowing the rhythm of your day is the first step to working with it instead of against it.</p>
 `,
   faqs: [
     {

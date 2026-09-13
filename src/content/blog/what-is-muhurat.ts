@@ -90,7 +90,7 @@ export const post: BlogPost = {
 
 <p>At the same time, do not let the search for a perfect muhurat paralyse you. Sometimes life sets the date for you, and a slightly imperfect but well-intentioned start beats endless waiting. The most useful approach is practical: pick the best available window within your real constraints, then commit with a settled mind. Half the benefit of a muhurat is the calm and confidence it gives you to act.</p>
 
-<p>If you want to find your own auspicious timing rather than rely on a generic calendar, start by generating your <a href="/free-kundli">free Kundli</a> to see your Moon, nakshatra, and current period, then let VedicHour map the favourable hours of your days when you are ready to plan something that matters. You can begin your reading any time at <a href="/onboard">VedicHour</a> — and choose your next beginning with the sky on your side.</p>
+<p>If you want to find your own auspicious timing rather than rely on a generic calendar, start by generating your <a href="/free-kundli">free Kundli</a> to see your Moon, nakshatra, and current period, then let VedicHour map the favourable hours of your days when you are ready to plan something that matters. You can begin your reading any time at <a href="/start">VedicHour</a> — and choose your next beginning with the sky on your side.</p>
 `,
   faqs: [
     {

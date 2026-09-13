@@ -32,7 +32,7 @@ const PRODUCTS = [
     title: 'Deep Kundali Analysis',
     body:
       'Your complete Vedic birth chart (Janam Kundali) read in plain English: divisional charts, Manglik, Kaal Sarpa & Sade Sati doshas, seven life areas, and a 5-year outlook.',
-    tag: 'One-time report',
+    tag: 'Included in subscription',
     cta: 'Get your Kundali',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
@@ -51,7 +51,7 @@ const PRODUCTS = [
     title: 'Matchmaking · Gun Milan',
     body:
       'Classical 36-point Ashtakoot Kundli matching for two birth charts. The full 8-koota breakdown, Manglik check, and a clear verdict on the match — free score first.',
-    tag: 'One-time report',
+    tag: 'Included in subscription',
     cta: 'Check compatibility',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>

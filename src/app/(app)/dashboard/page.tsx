@@ -844,7 +844,7 @@ function DashboardInner() {
                 {completeReports.length === 0 ? (
                   <div className="text-center py-6">
                     <p className="text-dust/60 text-body-sm mb-3">No completed reports yet.</p>
-                    <Link href="/onboard" className="btn-primary text-body-sm px-4 py-2">Generate one →</Link>
+                    <Link href="/start" className="btn-primary text-body-sm px-4 py-2">Generate one →</Link>
                   </div>
                 ) : (
                   <ul className="space-y-3">
@@ -892,7 +892,7 @@ function DashboardInner() {
                 ) : (
                   <div className="text-center py-6">
                     <p className="text-dust/60 text-body-sm mb-1">No payment history yet.</p>
-                    <p className="text-dust/40 text-mono-sm font-mono">Free reports are not billed.</p>
+                    <p className="text-dust/40 text-mono-sm font-mono">Your payments will appear here.</p>
                   </div>
                 )}
 
@@ -947,7 +947,7 @@ function DashboardInner() {
                   {reportFilter === 'all' ? 'No reports yet — generate your first forecast.' : `No ${reportFilter} reports.`}
                 </p>
                 {reportFilter === 'all' && (
-                  <Link href="/onboard" className="btn-primary px-8 py-3">Generate your first report →</Link>
+                  <Link href="/start" className="btn-primary px-8 py-3">Generate your first report →</Link>
                 )}
               </div>
             ) : (
