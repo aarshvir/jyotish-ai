@@ -1,21 +1,19 @@
 /**
  * NativityAgent
- * Sends the natal chart JSON to Claude claude-opus-5 with extended thinking
- * and returns a structured NativityProfile. Falls back to OpenAI → Gemini → DeepSeek
- * via runChatFallbackChain when Anthropic is unavailable or exhausted.
+ * Sends the natal chart JSON through the owner's model order (runModelChain: GPT-5.6-terra high →
+ * Claude Opus 5 → Grok → DeepSeek V4.1-Flash max) and returns a structured NativityProfile.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { NatalChartData, NativityProfile } from './types';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { sanitizeForPrompt, sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
-import { anthropicErrorWarrantsProviderFallback, hasAnyChatFallbackKey, runChatFallbackChain } from '@/lib/llm/fallbackChain';
-import { logLlmAudit } from '@/lib/llm/audit';
+import { hasAnyChatFallbackKey } from '@/lib/llm/fallbackChain';
+import { runModelChain } from '@/lib/llm/modelChain';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { detectYogas } from '@/lib/rag/yogaDetector';
 import { parseJyotishRagMode, resolveJyotishRagMode, type JyotishRagMode } from '@/lib/rag/ragMode';
 import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
-import { NATIVITY_SDK_TIMEOUT_MS, NATIVITY_MAX_TOKENS } from '@/lib/agents/nativityBudget';
+import { NATIVITY_MAX_TOKENS, NATIVITY_RESPONSE_MARGIN_MS, NATIVITY_ROUTE_BUDGET_MS } from '@/lib/agents/nativityBudget';
 
 const SYSTEM_PROMPT = `You are a Vedic astrologer writing a premium personal report. Your job is to translate astrological data into practical, output-focused guidance a busy professional can act on today. You write like a trusted advisor — warm, specific, direct — not like a textbook.
 
@@ -131,32 +129,21 @@ function buildFallbackNativity(chart: NatalChartData): NativityProfile {
   };
 }
 
-function extractTextContent(response: Anthropic.Message): string {
-  return response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === 'text')
-    .map((block) => block.text)
-    .join('');
-}
-
 function anthropicKeyOk(): string | null {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey || apiKey === 'your_anthropic_api_key') return null;
   return apiKey;
 }
 
-// Hard per-attempt timeout for Anthropic calls — sized from a real Opus 5 nativity (163 s).
-// All the nativity limits live together in nativityBudget.ts so they cannot drift apart.
-const ANTHROPIC_TIMEOUT_MS = NATIVITY_SDK_TIMEOUT_MS;
+/** The outermost {...} in a model reply — models sometimes wrap JSON in prose or code fences. */
+function extractJsonObject(text: string): string {
+  const m = text.match(/\{[\s\S]*\}/);
+  return m ? m[0] : text;
+}
 
 export class NativityAgent {
-  private client: Anthropic | null;
-
   constructor() {
-    const key = anthropicKeyOk();
-    this.client = key
-      ? new Anthropic({ apiKey: key, timeout: ANTHROPIC_TIMEOUT_MS, maxRetries: 0 })
-      : null;
-    if (!this.client && !hasAnyChatFallbackKey()) {
+    if (!anthropicKeyOk() && !hasAnyChatFallbackKey()) {
       throw new Error(
         'No LLM configured: set ANTHROPIC_API_KEY and/or OPENAI_API_KEY / GEMINI_API_KEY (and optional DeepSeek fallback)'
       );
@@ -171,6 +158,8 @@ export class NativityAgent {
     rag: boolean | { disableRag?: boolean; jyotishRagMode?: string | null; ragTimeoutMs?: number; requireScriptureGrounding?: boolean } = false,
   ): Promise<NativityProfile> {
     let lastError: unknown;
+    // The route's wall clock starts about now; RAG retrieval below spends part of it.
+    const startedAt = Date.now();
 
     const opts = typeof rag === 'object' && rag !== null ? rag : { disableRag: !!rag };
     const explicit = parseJyotishRagMode(
@@ -194,71 +183,24 @@ export class NativityAgent {
       assertRequiredScriptureGrounding(ragContext, 'nativity');
     }
 
-    if (this.client) {
-      // Single Anthropic attempt — SDK timeout handles the wall-clock limit.
-      // No AbortSignal: it fires unreliably for non-streaming calls (fires mid-response
-      // for longer prompts like RAG-augmented ones but not shorter ones, causing asymmetric
-      // failure that defeats the comparison). NATIVITY_SDK_TIMEOUT_MS is the hard stop.
-      try {
-        console.log(`NativityAgent attempt 1/1 (RAG mode=${mode})`);
-        const response = await this.client.messages.create({
-          model: 'claude-opus-5',
-          // 8,000 truncated Opus 5 mid-JSON on a real chart (it wrote 11,164) -> parse failed -> stub.
-          max_tokens: NATIVITY_MAX_TOKENS,
-          // Rules go in the dedicated system field (Anthropic weights it more strongly)
-          // rather than folded into the user turn — hardens the JSON-only + safety
-          // guardrails against injection in the chart fields. Matches the fallback path.
-          system: SYSTEM_PROMPT,
-          messages: [
-            {
-              role: 'user',
-              content: buildUserPrompt(natalChart, ragContext, detectedYogas),
-            },
-          ],
-        });
-
-        const text = extractTextContent(response);
-        console.log(`NativityAgent response: ${text.length} chars`);
-
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        const cleanJson = jsonMatch ? jsonMatch[0] : text;
-
-        logLlmAudit('nativity', 'anthropic', 'claude-opus-5');
-        return safeParseJson<NativityProfile>(cleanJson);
-      } catch (error: unknown) {
-        lastError = error;
-        const status = (error as { status?: number })?.status;
-
-        if (status === 400 && !anthropicErrorWarrantsProviderFallback(error)) {
-          console.error('NativityAgent 400:', (error as Error)?.message);
-          throw error;
-        }
-
-        if (anthropicErrorWarrantsProviderFallback(error)) {
-          console.warn(
-            'NativityAgent: Anthropic credits/billing or overload — will try OpenAI/Gemini fallback:',
-            (error as Error)?.message,
-          );
-        } else {
-          console.warn('NativityAgent: Anthropic failed — will try fallback chain:', (error as Error)?.message);
-        }
-      }
-    }
-
-    if (hasAnyChatFallbackKey()) {
-      try {
-        console.warn('NativityAgent: using backup LLM chain (no extended thinking) + RAG');
-        const text = await runChatFallbackChain({
-          systemPrompt: SYSTEM_PROMPT,
-          userPrompt: buildUserPrompt(natalChart, ragContext, detectedYogas),
-          maxTokens: 16000,
-          auditStage: 'nativity',
-        });
-        return safeParseJson<NativityProfile>(text);
-      } catch (fallbackErr) {
-        console.error('NativityAgent: fallback chain failed:', (fallbackErr as Error)?.message);
-        lastError = fallbackErr;
-      }
+    const userPrompt = buildUserPrompt(natalChart, ragContext, detectedYogas);
+    try {
+      const { text, rung, model } = await runModelChain({
+        systemPrompt: SYSTEM_PROMPT,
+        userPrompt,
+        maxTokens: NATIVITY_MAX_TOKENS,
+        auditStage: 'nativity',
+        deadlineAt: startedAt + NATIVITY_ROUTE_BUDGET_MS - NATIVITY_RESPONSE_MARGIN_MS,
+        // A rung whose output is not a JSON object must fall through to the next rung, never ship.
+        validate: (t) => {
+          const parsed = safeParseJson<NativityProfile>(extractJsonObject(t));
+          if (!parsed || typeof parsed !== 'object') throw new Error('nativity output is not a JSON object');
+        },
+      });
+      console.log(`NativityAgent: answered by ${rung} (${model}), ${text.length} chars`);
+      return safeParseJson<NativityProfile>(extractJsonObject(text));
+    } catch (error: unknown) {
+      lastError = error;
     }
 
     console.error('NativityAgent: all paths failed, returning minimal fallback:', lastError);

@@ -8,6 +8,7 @@ import {
   hasAnyChatFallbackKey,
   runChatFallbackChain,
 } from '@/lib/llm/fallbackChain';
+import { runModelChain } from '@/lib/llm/modelChain';
 
 const anthropicApiKey = cleanEnv(process.env.ANTHROPIC_API_KEY);
 
@@ -226,19 +227,33 @@ async function completeGrokResponsesApi(opts: {
 }
 
 /**
- * Unified completion for commentary routes (Anthropic default; optional model_override for comparisons).
+ * Unified completion for commentary routes: the owner's model chain by default; an explicit model_override pins one provider (comparisons, or a deliberately pinned env model).
  */
 export async function completeLlmChat(opts: {
   modelOverride?: string | null;
   systemPrompt: string;
   userPrompt: string;
   maxTokens: number;
+  /** Label for llm_audit logs. */
+  auditStage?: string;
 }): Promise<string> {
   const raw = (opts.modelOverride ?? '').trim();
-  const modelId = raw || 'claude-opus-5';
 
-  // Anthropic (default or explicit claude-*)
-  if (!raw || modelId.startsWith('claude-')) {
+  // No explicit model: the owner's order (GPT-5.6-terra high → Opus 5 → Grok → DeepSeek max), with
+  // deadline-aware fall-through and truncation treated as failure. See src/lib/llm/modelChain.ts.
+  if (!raw) {
+    const { text } = await runModelChain({
+      systemPrompt: opts.systemPrompt,
+      userPrompt: opts.userPrompt,
+      maxTokens: opts.maxTokens,
+      auditStage: opts.auditStage ?? 'commentary',
+    });
+    return text;
+  }
+  const modelId = raw;
+
+  // Explicit claude-* override (comparisons / a deliberately pinned env model).
+  if (modelId.startsWith('claude-')) {
     if (anthropicClient) {
       console.log(`[LLM] Using Anthropic model: ${modelId}`);
       try {

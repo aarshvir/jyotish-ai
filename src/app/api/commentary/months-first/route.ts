@@ -12,11 +12,10 @@ import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock } from
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
-// Default to Claude so the 6-month forecast runs on the Anthropic-first fallback
-// chain (Anthropic → OpenAI → Grok → DeepSeek) with the key you already have.
-// Set REPORT_MONTHLY_MODEL=gpt-5.6-sol in Vercel to pin OpenAI instead.
-const DEFAULT_MONTHLY_MODEL =
-  process.env.REPORT_MONTHLY_MODEL?.trim() || 'claude-opus-5';
+// No default model: an empty override sends the months forecast through the owner's model order
+// (GPT-5.6-terra high → Opus 5 → Grok → DeepSeek max). Set REPORT_MONTHLY_MODEL in Vercel only to
+// pin one provider on purpose.
+const DEFAULT_MONTHLY_MODEL = process.env.REPORT_MONTHLY_MODEL?.trim() || '';
 
 function buildFallbackMonths(body: { months?: unknown[]; lagnaSign?: string; mahadasha?: string; antardasha?: string }): { month_index: number; month_label: string; overall_score: number; career_score: number; money_score: number; health_score: number; love_score: number; intimacy_score: number; theme: string; key_transits: string[]; analysis: string }[] {
   const fallbackScores = [48, 52, 58, 70, 73, 65];

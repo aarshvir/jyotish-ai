@@ -29,3 +29,6 @@ export const NATIVITY_FETCH_ATTEMPTS = 1;
 
 /** Opus 5 wrote 11,164 tokens for one real chart; 8,000 truncated it mid-JSON. */
 export const NATIVITY_MAX_TOKENS = 16_000;
+
+/** Kept back from the route budget so the route can still parse the answer and respond. */
+export const NATIVITY_RESPONSE_MARGIN_MS = 5_000;

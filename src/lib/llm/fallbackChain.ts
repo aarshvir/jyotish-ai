@@ -1,6 +1,5 @@
-import OpenAI from 'openai';
-import { logLlmAudit } from '@/lib/llm/audit';
 import { cleanEnv } from '@/lib/env';
+import { runModelChain } from '@/lib/llm/modelChain';
 
 function getHttpStatus(err: unknown): number | undefined {
   if (err && typeof err === 'object' && 'status' in err) {
@@ -71,219 +70,18 @@ export type FallbackChainOpts = {
   auditStage?: string;
 };
 
-async function completeOpenAiFallback(opts: {
-  systemPrompt: string;
-  userPrompt: string;
-  maxTokens: number;
-}): Promise<{ model: string; text: string }> {
-  const key = env(process.env.OPENAI_API_KEY);
-  if (!key) throw new Error('OPENAI_API_KEY missing for fallback');
-  const model = env(process.env.LLM_FALLBACK_OPENAI_MODEL) || 'gpt-5.6-sol';
-  const client = new OpenAI({ apiKey: key, timeout: 120_000, maxRetries: 1 });
-  const input = [
-    { role: 'system' as const, content: opts.systemPrompt },
-    { role: 'user' as const, content: opts.userPrompt },
-  ];
-
-  if (/^gpt-5/i.test(model)) {
-    const responsesApi = (
-      client as unknown as {
-        responses?: { create: (args: Record<string, unknown>) => Promise<unknown> };
-      }
-    ).responses;
-    if (responsesApi?.create) {
-      const r = await responsesApi.create({
-        model,
-        reasoning: { effort: 'high' },
-        input,
-        max_output_tokens: Math.min(opts.maxTokens, 16000),
-      });
-      const text = extractResponsesText(r);
-      if (text) return { model, text };
-      throw new Error('OpenAI Responses fallback returned empty content');
-    }
-  }
-
-  const tokenParam = /^gpt-5/i.test(model)
-    ? { max_completion_tokens: Math.min(opts.maxTokens, 16000) }
-    : { max_tokens: Math.min(opts.maxTokens, 16000) };
-  const r = await client.chat.completions.create({
-    model,
-    ...tokenParam,
-    messages: [
-      { role: 'system', content: opts.systemPrompt },
-      { role: 'user', content: opts.userPrompt },
-    ],
-  });
-  const text = (r.choices[0]?.message?.content ?? '').trim();
-  if (!text) throw new Error('OpenAI fallback returned empty content');
-  return { model, text };
-}
-
-function extractResponsesText(data: unknown): string {
-  if (!data || typeof data !== 'object') return '';
-  const direct = (data as { output_text?: unknown }).output_text;
-  if (typeof direct === 'string' && direct.trim()) return direct.trim();
-  const output = (data as { output?: unknown }).output;
-  if (!Array.isArray(output)) return '';
-  let text = '';
-  for (const item of output) {
-    const content = item && typeof item === 'object' ? (item as { content?: unknown }).content : undefined;
-    if (!Array.isArray(content)) continue;
-    for (const part of content) {
-      if (!part || typeof part !== 'object') continue;
-      const p = part as { type?: unknown; text?: unknown };
-      if (p.type === 'text' && typeof p.text === 'string') text += p.text;
-    }
-  }
-  return text.trim();
-}
-
-function grokCandidates(): string[] {
-  const configured = env(process.env.LLM_FALLBACK_GROK_MODEL);
-  const list = env(process.env.LLM_FALLBACK_GROK_MODELS)
-    .split(',')
-    .map((m) => m.trim())
-    .filter(Boolean);
-  return [
-    ...(configured ? [configured] : []),
-    ...list,
-    'grok-4.20',
-    'grok-4',
-    'grok-3',
-    'grok-2-1212',
-  ].filter((model, index, all) => all.indexOf(model) === index);
-}
-
-async function completeGrokFallback(opts: {
-  systemPrompt: string;
-  userPrompt: string;
-  maxTokens: number;
-}): Promise<{ model: string; text: string }> {
-  const key = env(process.env.GROK_API_KEY);
-  if (!key) throw new Error('GROK_API_KEY missing for fallback');
-  const client = new OpenAI({ apiKey: key, baseURL: 'https://api.x.ai/v1', timeout: 90_000, maxRetries: 1 });
-  const errors: string[] = [];
-
-  for (const model of grokCandidates()) {
-    try {
-      const r = await client.chat.completions.create({
-        model,
-        max_tokens: Math.min(opts.maxTokens, 8192),
-        messages: [
-          { role: 'system', content: opts.systemPrompt },
-          { role: 'user', content: opts.userPrompt },
-        ],
-      });
-      const text = (r.choices[0]?.message?.content ?? '').trim();
-      if (!text) throw new Error('empty content');
-      return { model, text };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      errors.push(`${model}: ${msg.slice(0, 180)}`);
-    }
-  }
-
-  throw new Error(`Grok fallback exhausted: ${errors.join(' | ')}`);
-}
-
 /**
- * DeepSeek V4.1-Flash (`deepseek-flash`) THINKS by default. Measured 2026-09-12 on a nativity-sized
- * prompt at 8,000 tokens: ~34,500 characters of reasoning, finish_reason "length", ~750 characters of
- * truncated content — on a real nativity this rung returned empty content. With thinking disabled the
- * same request returned 13,180 characters of complete, parseable JSON in 17 s. `reasoning_effort: "low"`
- * and `enable_thinking: false` were both silently ignored; only `thinking: { type: "disabled" }` works.
- * An explicitly configured reasoner model is left to think.
- */
-/** The only part of a non-streaming DeepSeek response this rung reads. */
-type DeepSeekCompletion = { choices: Array<{ message?: { content?: string | null } }> };
-
-export function deepSeekRequest(
-  model: string,
-  opts: { systemPrompt: string; userPrompt: string; maxTokens: number },
-): Record<string, unknown> {
-  const body: Record<string, unknown> = {
-    model,
-    max_tokens: Math.min(opts.maxTokens, 8192),
-    messages: [
-      { role: 'system', content: opts.systemPrompt },
-      { role: 'user', content: opts.userPrompt },
-    ],
-  };
-  if (!/reasoner/i.test(model)) body.thinking = { type: 'disabled' };
-  return body;
-}
-
-async function completeDeepSeekFallback(opts: {
-  systemPrompt: string;
-  userPrompt: string;
-  maxTokens: number;
-}): Promise<{ model: string; text: string }> {
-  const key = env(process.env.DEEPSEEK_API_KEY);
-  if (!key) throw new Error('DEEPSEEK_API_KEY missing for fallback');
-  const model = env(process.env.LLM_FALLBACK_DEEPSEEK_MODEL) || 'deepseek-flash';
-  const client = new OpenAI({ apiKey: key, baseURL: 'https://api.deepseek.com', timeout: 90_000, maxRetries: 1 });
-  // `thinking` is not in the OpenAI SDK types, so the DeepSeek body is built untyped and passed through,
-  // and the non-streaming response is read through the only shape this rung needs.
-  const r = (await client.chat.completions.create(
-    deepSeekRequest(model, opts) as unknown as Parameters<typeof client.chat.completions.create>[0],
-  )) as unknown as DeepSeekCompletion;
-  const text = (r.choices[0]?.message?.content ?? '').trim();
-  if (!text) throw new Error('DeepSeek fallback returned empty content');
-  return { model, text };
-}
-
-/**
- * Runs after Anthropic fails. Order is intentionally fixed:
- * OpenAI -> Grok -> DeepSeek.
+ * The fallback chain now IS the owner's model order, minus the rungs already tried upstream.
+ * Kept as a named export because explicit-override paths (a pinned claude-* or gpt-* model in
+ * routeCompletion) and ForecastAgent call it after their own first attempt fails.
  */
 export async function runChatFallbackChain(opts: FallbackChainOpts): Promise<string> {
-  const auditStage = opts.auditStage ?? 'fallback_chain';
-  const base = {
+  const { text } = await runModelChain({
     systemPrompt: opts.systemPrompt,
     userPrompt: opts.userPrompt,
     maxTokens: opts.maxTokens,
-  };
-  const errors: Error[] = [];
-
-  if (!opts.skipOpenAI && env(process.env.OPENAI_API_KEY)) {
-    try {
-      const { model, text } = await completeOpenAiFallback(base);
-      console.warn('[LLM fallback] success: OpenAI', model);
-      logLlmAudit(auditStage, 'openai', model);
-      return text;
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      errors.push(err);
-      console.warn('[LLM fallback] OpenAI failed, trying Grok:', err.message.slice(0, 160));
-    }
-  }
-
-  if (env(process.env.GROK_API_KEY)) {
-    try {
-      const { model, text } = await completeGrokFallback(base);
-      console.warn('[LLM fallback] success: Grok', model);
-      logLlmAudit(auditStage, 'grok', model);
-      return text;
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      errors.push(err);
-      console.warn('[LLM fallback] Grok failed, trying DeepSeek:', err.message.slice(0, 160));
-    }
-  }
-
-  if (env(process.env.DEEPSEEK_API_KEY)) {
-    try {
-      const { model, text } = await completeDeepSeekFallback(base);
-      console.warn('[LLM fallback] success: DeepSeek', model);
-      logLlmAudit(auditStage, 'deepseek', model);
-      return text;
-    } catch (e) {
-      const err = e instanceof Error ? e : new Error(String(e));
-      errors.push(err);
-    }
-  }
-
-  const summary = errors.map((e) => e.message).join(' | ');
-  throw new Error(`LLM fallback chain exhausted: ${summary || 'no providers configured'}`);
+    auditStage: opts.auditStage ?? 'fallback_chain',
+    skip: opts.skipOpenAI ? ['openai', 'anthropic'] : ['anthropic'],
+  });
+  return text;
 }
