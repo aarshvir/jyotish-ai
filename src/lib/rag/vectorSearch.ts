@@ -19,10 +19,10 @@ import { buildScriptureContext, searchScriptures, type ScriptureEntry } from './
 import type { JyotishRagMode } from './ragMode';
 import { resolveJyotishRagMode } from './ragMode';
 
-// Defaults match the latest jyotish_scriptures migration: vector(768) with Google
-// text-embedding-004. Override only after changing the database schema and re-embedding.
-const GOOGLE_EMBED_MODEL = cleanEnv(process.env.JYOTISH_RAG_EMBED_MODEL) || 'text-embedding-004';
-const EMBED_DIMS = Number(cleanEnv(process.env.JYOTISH_RAG_EMBED_DIMS) || '768') || 768;
+// PRODUCTION's column is vector(1536): the 768-dim migration was never applied there (verified 2026-09-13 — the RPC
+// rejects 768). Google shut down text-embedding-004 (404), so query AND corpus use gemini-embedding-001 at 1536 dims.
+const GOOGLE_EMBED_MODEL = cleanEnv(process.env.JYOTISH_RAG_EMBED_MODEL) || 'gemini-embedding-001';
+const EMBED_DIMS = Number(cleanEnv(process.env.JYOTISH_RAG_EMBED_DIMS) || '1536') || 1536;
 
 // Hard 15s timeout on the embed call
 const EMBED_TIMEOUT_MS = 15_000;
@@ -32,7 +32,11 @@ const EMBED_TIMEOUT_MS = 15_000;
  * This must match the pgvector dimension in the active Supabase migration.
  * Falls back gracefully to null (triggering keyword search) on any failure.
  */
-export async function embedText(input: string): Promise<number[] | null> {
+export async function embedText(
+  input: string,
+  // Searches embed as queries; corpus rows (embedChunksJob) must embed as documents.
+  taskType: 'RETRIEVAL_QUERY' | 'RETRIEVAL_DOCUMENT' = 'RETRIEVAL_QUERY',
+): Promise<number[] | null> {
   const apiKey = cleanEnv(process.env.GEMINI_API_KEY) || cleanEnv(process.env.GOOGLE_AI_API_KEY);
   if (!apiKey) return null;
 
@@ -49,7 +53,7 @@ export async function embedText(input: string): Promise<number[] | null> {
         body: JSON.stringify({
           model: `models/${GOOGLE_EMBED_MODEL}`,
           content: { parts: [{ text: input }] },
-          taskType: 'RETRIEVAL_DOCUMENT',
+          taskType,
           outputDimensionality: EMBED_DIMS,
         }),
       },

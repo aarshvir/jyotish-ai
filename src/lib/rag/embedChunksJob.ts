@@ -60,7 +60,7 @@ export async function runScriptureEmbedRefresh(
     }
 
     const textForEmbedding = `${ch.topic}\n\n${ch.text}`;
-    const vector = await embedText(textForEmbedding);
+    const vector = await embedText(textForEmbedding, 'RETRIEVAL_DOCUMENT');
     if (!vector) {
       console.warn('[embedChunksJob] skip (no embedding):', ch.id);
       continue;

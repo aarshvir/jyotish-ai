@@ -12,7 +12,7 @@
  *
  * What it does:
  *   1. Reads SCRIPTURE_CORPUS from src/lib/rag/scriptures.ts
- *   2. Embeds each entry's topic + text using Google text-embedding-004 (768 dims)
+ *   2. Embeds each entry's topic + text using Google gemini-embedding-001 (1536 dims)
  *   3. Upserts into the `jyotish_scriptures` table
  *
  * Re-running is safe — it's an idempotent upsert keyed by `id`. Add new rows to
@@ -58,13 +58,13 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 }
 
 if (!cleanEnv(process.env.GEMINI_API_KEY) && !cleanEnv(process.env.GOOGLE_AI_API_KEY)) {
-  console.error('Missing GEMINI_API_KEY (or GOOGLE_AI_API_KEY) — required for Google text-embedding-004');
+  console.error('Missing GEMINI_API_KEY (or GOOGLE_AI_API_KEY) — required for Google gemini-embedding-001');
   process.exit(1);
 }
 
-// Must match supabase/migrations/20260425_jyotish_scriptures_768dim.sql.
-const GOOGLE_EMBED_MODEL = cleanEnv(process.env.JYOTISH_RAG_EMBED_MODEL) || 'text-embedding-004';
-const EMBED_DIMS = Number(cleanEnv(process.env.JYOTISH_RAG_EMBED_DIMS) || '768') || 768;
+// Must match PRODUCTION's column, which is vector(1536) — the 768-dim migration was never applied there.
+const GOOGLE_EMBED_MODEL = cleanEnv(process.env.JYOTISH_RAG_EMBED_MODEL) || 'gemini-embedding-001';
+const EMBED_DIMS = Number(cleanEnv(process.env.JYOTISH_RAG_EMBED_DIMS) || '1536') || 1536;
 
 const GEMINI_API_KEY = cleanEnv(process.env.GEMINI_API_KEY) || cleanEnv(process.env.GOOGLE_AI_API_KEY);
 
@@ -107,23 +107,32 @@ async function embed(text, retries = 5) {
 }
 
 async function loadCorpus() {
+  // The table holds BOTH the book chunks and the 29 curated SCRIPTURE_CORPUS entries. Embedding only one
+  // of them after a model change leaves the other on the old model, where its similarities are garbage.
+  let chunks = [];
   // Prefer _chunks_clean.json (OCR-filtered) over _chunks.json
   const cleanPath = resolve('data/scriptures/_chunks_clean.json');
   const chunksPath = resolve('data/scriptures/_chunks.json');
   for (const [label, p] of [[`_chunks_clean.json`, cleanPath], [`_chunks.json`, chunksPath]]) {
     try {
-      const chunksData = readFileSync(p, 'utf8');
-      const chunks = JSON.parse(chunksData);
-      if (Array.isArray(chunks) && chunks.length > 0) {
-        console.log(`[embed-scriptures] Loaded ${chunks.length} chunks from ${label}`);
-        return chunks;
+      const parsed = JSON.parse(readFileSync(p, 'utf8'));
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        console.log(`[embed-scriptures] Loaded ${parsed.length} chunks from ${label}`);
+        chunks = parsed;
+        break;
       }
     } catch {
       // continue to next candidate
     }
   }
-  console.log('[embed-scriptures] Could not load chunks files, falling back to scriptures.ts...');
+  const curated = loadCuratedCorpus();
+  const chunkIds = new Set(chunks.map((c) => c.id));
+  const extra = curated.filter((c) => !chunkIds.has(c.id));
+  console.log(`[embed-scriptures] + ${extra.length} curated entries from scriptures.ts`);
+  return [...chunks, ...extra];
+}
 
+function loadCuratedCorpus() {
   // Parse the TS module as text and eval the exported array.
   const file = readFileSync(resolve('src/lib/rag/scriptures.ts'), 'utf8');
   const m = file.match(/export const SCRIPTURE_CORPUS:[^=]*=\s*(\[[\s\S]*?\n\]);/);
@@ -141,6 +150,8 @@ async function loadCorpus() {
 
 async function main() {
   const isDryRun = process.argv.includes('--dry-run');
+  // --force re-embeds every row: needed when the embedding MODEL changes, since content hashes do not.
+  const FORCE = process.argv.includes('--force');
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
     auth: { persistSession: false },
@@ -181,7 +192,7 @@ async function main() {
   if (isDryRun) {
     for (const entry of corpus) {
       const existingHash = existingHashMap.get(entry.id);
-      const isUnchanged = existingHash && existingHash === entry.content_hash;
+      const isUnchanged = !FORCE && existingHash && existingHash === entry.content_hash;
       if (isUnchanged) {
         skipCount++;
       } else {
@@ -198,7 +209,7 @@ async function main() {
   for (let i = 0; i < corpus.length; i++) {
     const entry = corpus[i];
     const existingHash = existingHashMap.get(entry.id);
-    const isUnchanged = existingHash && existingHash === entry.content_hash;
+    const isUnchanged = !FORCE && existingHash && existingHash === entry.content_hash;
 
     if (isUnchanged) {
       skipCount++;
