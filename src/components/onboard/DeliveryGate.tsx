@@ -24,11 +24,26 @@ export interface DeliveryGateProps {
   onAuthed: () => void;
   /** Called just before the Google redirect — the parent stashes the form so it survives the round trip. */
   onGoogle: () => void;
+  /** Where Google sign-in and email confirmation return to. Defaults to resuming /onboard. */
+  resumePath?: string;
+  title?: string;
+  subtitle?: string;
 }
 
-const RESUME_PATH = '/onboard?resume=1';
+const DEFAULT_RESUME_PATH = '/onboard?resume=1';
+const DEFAULT_TITLE = 'Where should we send your chart?';
+const DEFAULT_SUBTITLE =
+  'Your details are in. Add an email so your chart is saved to you and you can come back to it any time.';
 
-export function DeliveryGate({ defaultEmail = '', onCancel, onAuthed, onGoogle }: DeliveryGateProps) {
+export function DeliveryGate({
+  defaultEmail = '',
+  onCancel,
+  onAuthed,
+  onGoogle,
+  resumePath = DEFAULT_RESUME_PATH,
+  title = DEFAULT_TITLE,
+  subtitle = DEFAULT_SUBTITLE,
+}: DeliveryGateProps) {
   const [email, setEmail] = useState(defaultEmail);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -58,7 +73,7 @@ export function DeliveryGate({ defaultEmail = '', onCancel, onAuthed, onGoogle }
       createClient().auth,
       email,
       password,
-      `${window.location.origin}/auth/callback?next=${encodeURIComponent(RESUME_PATH)}`,
+      `${window.location.origin}/auth/callback?next=${encodeURIComponent(resumePath)}`,
     );
     if (result.ok) {
       onAuthed();
@@ -84,7 +99,7 @@ export function DeliveryGate({ defaultEmail = '', onCancel, onAuthed, onGoogle }
     const { error: oauthErr } = await createClient().auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(RESUME_PATH)}`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(resumePath)}`,
         queryParams: { access_type: 'offline', prompt: 'consent' },
       },
     });
@@ -107,12 +122,9 @@ export function DeliveryGate({ defaultEmail = '', onCancel, onAuthed, onGoogle }
     >
       <div className="w-full sm:max-w-md bg-cosmos border border-horizon rounded-t-card sm:rounded-card p-5 sm:p-6 max-h-[92vh] overflow-y-auto">
         <h2 id="delivery-gate-title" className="font-body font-semibold text-star text-headline-sm mb-1">
-          Where should we send your chart?
+          {title}
         </h2>
-        <p className="font-body text-body-sm text-dust mb-5">
-          Your details are in. Add an email so your chart is saved to you and you can come back to it
-          any time.
-        </p>
+        <p className="font-body text-body-sm text-dust mb-5">{subtitle}</p>
 
         <button
           type="button"

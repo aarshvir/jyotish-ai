@@ -1,5 +1,9 @@
+export const dynamic = 'force-dynamic';
+
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
+import { isCurrentUserAdmin } from '@/lib/admin/guard';
 import OnboardForm from './_OnboardForm';
 
 export const metadata: Metadata = {
@@ -100,7 +104,10 @@ function OnboardShell() {
   );
 }
 
-export default function OnboardPage() {
+export default async function OnboardPage() {
+  // Reports now start from the quiz and a subscription (owner, 2026-09-13). Admins keep
+  // /onboard for generating test reports; every old /onboard link lands on /start.
+  if (!(await isCurrentUserAdmin())) redirect('/start');
   return (
     <Suspense fallback={<OnboardShell />}>
       <OnboardForm />

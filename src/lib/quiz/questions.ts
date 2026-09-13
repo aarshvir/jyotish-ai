@@ -334,33 +334,20 @@ export const STEPS: Step[] = [
     maxLength: 60,
   },
 
-  // ── 8. Commitment: sets up the daily habit before they have paid. ────────
-  {
-    id: 'reminder_time',
-    kind: 'single',
-    field: 'reminder_time',
-    title: 'When should we send your timings each day?',
-    subtitle: 'One short message. You can change or stop it anytime.',
-    autoAdvance: true,
-    options: [
-      { value: 'early', label: 'Early morning', hint: 'Around 6 am' },
-      { value: 'morning', label: 'With my morning tea', hint: 'Around 8 am' },
-      { value: 'evening', label: 'Evening, to plan tomorrow', hint: 'Around 8 pm' },
-      { value: 'none', label: 'Do not send anything' },
-    ],
-  },
+  // (A daily-reminder question belongs here once daily messages actually ship. Asking
+  // "when should we send your timings each day?" before that would be a false promise.)
 
   // ── 9. Real computation. The wait is honest, not theatrical. ────────────
   {
     id: 'compute',
     kind: 'loader',
     title: 'Working out your chart',
+    // Only what this step really computes (the birth chart and the running period). The
+    // hour-by-hour scoring happens after subscribing, so the loader must not claim it.
     lines: [
       'Finding the sky at your birth moment',
       'Placing the nine grahas',
       'Working out which period you are running now',
-      'Scoring your next 30 days, hour by hour',
-      'Marking the windows that matter for you',
     ],
   },
 

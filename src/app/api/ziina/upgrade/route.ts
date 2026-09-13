@@ -25,6 +25,17 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
 
+  // Retired with the subscription pivot (owner, 2026-09-13: "all subscription-based, not
+  // one-time"). This only ever extended a one-time 7-day report, and those are no longer
+  // sold, so nothing may buy it. The monthly_upgrade branches in finalizeIntent stay only to
+  // heal an in-flight legacy payment. ALLOW_LEGACY_UPGRADE=true re-opens it if ever needed.
+  if (process.env.ALLOW_LEGACY_UPGRADE !== 'true') {
+    return NextResponse.json(
+      { error: 'Upgrades are now part of a VedicHour subscription.', code: 'SUBSCRIPTION_ONLY', redirectUrl: '/start' },
+      { status: 410 },
+    );
+  }
+
   if (!isZiinaConfigured()) {
     return NextResponse.json({ error: 'Payment not configured' }, { status: 503 });
   }

@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
-import { currencyFromHeader, getDisplayPrice } from '@/lib/pricing';
 import { SynastryForm } from './SynastryForm';
 import { JsonLd } from '@/components/seo/JsonLd';
 import SynastrySamplePreview from '@/components/landing/SynastrySamplePreview';
@@ -14,7 +12,7 @@ import { faqPageLd, breadcrumbLd, softwareAppLd, type Faq } from '@/lib/seo/json
 export const metadata: Metadata = {
   title: 'Kundli Matching & Marriage Compatibility (Gun Milan) — VedicHour',
   description:
-    'Free-to-start Vedic matchmaking. Enter two birth details and get your 36-point Ashtakoot Gun Milan score with a full eight-fold compatibility breakdown. $9.99 / ₹899.',
+    'Free-to-start Vedic matchmaking. Enter two birth details and get your 36-point Ashtakoot Gun Milan score free. The full eight-fold compatibility breakdown comes with a VedicHour subscription.',
   alternates: { canonical: '/synastry' },
 };
 
@@ -39,13 +37,11 @@ const SYNASTRY_FAQS: Faq[] = [
   { q: 'What is Nadi dosha?', a: 'Nadi dosha occurs when both partners share the same Nadi, costing all 8 of its points. It is taken seriously for health and children, though classical texts list cancellations. Your reading flags it and explains the context.' },
   { q: 'Does kundli matching matter for a love marriage?', a: 'It is best used as insight rather than a veto. A lower score points to areas to be mindful of — temperament, health, finances — not a reason to call things off. Many happy marriages have modest scores, and remedies exist for specific doshas.' },
   { q: 'Do I need exact birth times for both people?', a: 'Gun Milan is based on the Moon’s sign and nakshatra, which need the birth date and ideally the time and place for precision. The more exact the birth details, the more reliable the Yoni, Gana and Nadi scores.' },
-  { q: 'Is the compatibility score free?', a: 'Yes — you get your 36-point Gun Milan score for free. The full eight-fold koota breakdown, Manglik and Nadi checks and the plain-English verdict are a one-time $9.99 / ₹899.' },
+  { q: 'Is the compatibility score free?', a: 'Yes — you get your 36-point Gun Milan score for free. The full eight-fold koota breakdown, Manglik and Nadi checks and the plain-English verdict come with a VedicHour subscription.' },
   { q: 'What if our score is low?', a: 'A low score is a prompt to understand specific areas, not a verdict on the relationship. The breakdown shows exactly which kootas are weak, classical remedies where relevant, and what to be conscious of together.' },
 ];
 
-export default async function SynastryPage() {
-  const currency = currencyFromHeader((await headers()).get('x-currency'));
-  const priceLabel = getDisplayPrice('synastry', currency);
+export default function SynastryPage() {
   return (
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
@@ -58,9 +54,10 @@ export default async function SynastryPage() {
             Kundli Matching &amp; <span className="text-amber">Gun Milan</span> — Free Compatibility Check
           </h1>
           <p className="text-body-lg text-dust max-w-2xl mx-auto leading-relaxed">
-            Enter both birth details and get your <strong className="text-star">36-point compatibility score</strong> with
-            a full breakdown across eight areas of life — temperament, mindset, health, and more. The classical
-            Ashtakoot Gun Milan that Indian families have used for generations, computed instantly.
+            Enter both birth details and get your <strong className="text-star">36-point compatibility score</strong> free,
+            with the full breakdown across eight areas of life — temperament, mindset, health, and more — for
+            subscribers. The classical Ashtakoot Gun Milan that Indian families have used for generations, computed
+            instantly.
           </p>
           <div className="flex items-center justify-center gap-6 sm:gap-10 mt-7">
             {STEPS.map((s) => (
@@ -72,7 +69,7 @@ export default async function SynastryPage() {
           </div>
         </div>
         <Suspense fallback={<p className="text-center text-dust">Loading form…</p>}>
-          <SynastryForm priceLabel={priceLabel} />
+          <SynastryForm />
         </Suspense>
 
         <SynastrySamplePreview />
@@ -95,8 +92,8 @@ export default async function SynastryPage() {
             name: 'VedicHour Kundli Matching (Gun Milan)',
             path: '/synastry',
             description:
-              'Free 36-point Ashtakoot Gun Milan (Kundli matching) for two birth charts. Get your compatibility score free, then unlock the full eight-koota breakdown, Manglik and Nadi dosha checks and a plain-English verdict.',
-            price: '9.99',
+              'Free 36-point Ashtakoot Gun Milan (Kundli matching) for two birth charts. The full eight-koota breakdown, Manglik and Nadi dosha checks and a plain-English verdict come with a VedicHour subscription.',
+            price: '0',
           }),
           faqPageLd(SYNASTRY_FAQS),
           breadcrumbLd([

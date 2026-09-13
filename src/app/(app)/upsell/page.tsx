@@ -30,6 +30,13 @@ export default async function UpsellPage({ searchParams }: Props) {
     redirect(`/login?next=${encodeURIComponent(`/upsell?reportId=${reportId}`)}`);
   }
 
+  // The one-time 7-day → monthly upgrade was retired with the subscription pivot
+  // (owner, 2026-09-13), and /api/ziina/upgrade now refuses it. Send the reader to the
+  // subscription plans, pre-filled from their latest report, instead of a price that fails.
+  if (process.env.ALLOW_LEGACY_UPGRADE !== 'true') {
+    redirect('/start?renew=1');
+  }
+
   const { data: rep } = await supabase
     .from('reports')
     .select('id, plan_type, payment_status, native_name, upsell_dismissed_at')

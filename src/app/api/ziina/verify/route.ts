@@ -115,13 +115,18 @@ export async function GET(request: NextRequest) {
           : intent.status === 'pending'
             ? 'pending'
             : 'incomplete';
+      // A subscription checkout starts on the quiz paywall, so an unfinished payment goes back there.
+      if (resolvedPlanType === 'sub_monthly' || resolvedPlanType === 'sub_annual') {
+        return NextResponse.redirect(`${origin}/start?payment=${reason}`);
+      }
       return NextResponse.redirect(`${origin}/onboard?plan=${resolvedPlanType}&payment=${reason}`);
     }
 
     const fin = await finalizeCompletedZiinaIntent(db, intentId, dispatchOrigin, { intent });
+    const isSubscription = resolvedPlanType === 'sub_monthly' || resolvedPlanType === 'sub_annual';
 
     if (!fin.ok) {
-      return NextResponse.redirect(`${origin}/onboard?payment=error`);
+      return NextResponse.redirect(`${origin}/${isSubscription ? 'start' : 'onboard'}?payment=error`);
     }
 
     if (resolvedPlanType === 'synastry' || planType === 'synastry') {
@@ -172,7 +177,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.redirect(`${origin}/report/${reportId}?payment_status=paid`);
+    return NextResponse.redirect(
+      `${origin}/report/${reportId}?payment_status=paid${isSubscription ? '&subscribed=1' : ''}`,
+    );
   } catch (err) {
     console.error('[ziina/verify] failed:', err);
     return NextResponse.redirect(`${origin}/onboard?plan=${planType}&payment=error`);

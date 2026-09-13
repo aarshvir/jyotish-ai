@@ -1,26 +1,21 @@
 /**
- * PricingComparison — detailed feature-by-feature table for users who like
- * full transparency on what each tier includes.
+ * PricingComparison — feature-by-feature table for people who like full transparency
+ * on what each option includes.
  *
- * Pure presentational. Mobile renders as stacked cards; tablet+ renders as
- * a proper comparison table.
+ * Pure presentational. Mobile renders as stacked cards; tablet+ renders as a table.
  */
 
 import { Fragment } from 'react';
 import { FEATURE_MATRIX, type PlanId } from '@/lib/pricing';
 
-// Single source of truth: the table renders from FEATURE_MATRIX (imported from
-// '@/lib/pricing'), the SAME data the landing Pricing cards and /pricing use, so
-// the three surfaces can never contradict each other.
+// Single source of truth: the table renders from FEATURE_MATRIX, the SAME data the
+// landing Pricing cards and /pricing use, so the three surfaces cannot contradict.
 const FEATURES = FEATURE_MATRIX;
 
-// Plan columns keyed to FeatureRow (free / '7day' / monthly / annual). Sub-labels
-// and the Monthly highlight mirror PLAN_CARDS' badges without re-stating prices.
 const PLANS: readonly { key: PlanId; label: string; sub: string; highlight?: boolean }[] = [
-  { key: 'free', label: 'Free Kundli', sub: 'Free' },
-  { key: '7day', label: '7-Day Forecast', sub: '7 days' },
-  { key: 'monthly', label: 'Monthly Oracle', sub: '30 days · Recommended', highlight: true },
-  { key: 'annual', label: 'Annual Oracle', sub: '1-year access · Best Value' },
+  { key: 'free', label: 'Free calculators', sub: 'No sign-up' },
+  { key: 'sub_monthly', label: 'Monthly', sub: 'Recommended', highlight: true },
+  { key: 'sub_annual', label: 'Yearly', sub: 'Paid once a year' },
 ] as const;
 
 function Cell({ value }: { value: string | boolean }) {
@@ -44,25 +39,22 @@ function Cell({ value }: { value: string | boolean }) {
       </span>
     );
   }
-  return <span className="font-mono text-mono-sm text-amber/80 italic">{value}</span>;
+  return <span className="font-body text-body-sm text-amber/80 italic">{value}</span>;
 }
 
 export default function PricingComparison() {
   return (
-    <section
-      aria-labelledby="pricing-comparison-heading"
-      className="py-24 md:py-28 bg-space relative"
-    >
+    <section aria-labelledby="pricing-comparison-heading" className="py-24 md:py-28 bg-space relative">
       <div className="section-divider absolute top-0 left-0 right-0" />
 
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-5xl mx-auto px-6">
         <div className="section-header text-center">
           <p className="section-eyebrow">Compare</p>
           <h2 id="pricing-comparison-heading" className="section-title text-display-md">
-            What every plan includes
+            What you get, free and subscribed
           </h2>
           <p className="section-subtitle text-body-lg mx-auto">
-            Full transparency. Pick the depth that matches the decision you&apos;re making.
+            The calculators stay free. Everything written for you comes with a subscription.
           </p>
         </div>
 
@@ -71,20 +63,14 @@ export default function PricingComparison() {
           <table className="w-full">
             <thead className="bg-bg-3">
               <tr>
-                <th className="text-left p-4 font-mono text-mono-sm text-dust uppercase tracking-wider w-1/3">
-                  Feature
-                </th>
+                <th className="text-left p-4 font-body text-body-sm text-dust w-2/5">Feature</th>
                 {PLANS.map((p) => (
                   <th
                     key={p.key}
-                    className={`p-4 text-center border-l border-horizon/30 ${
-                      'highlight' in p && p.highlight ? 'bg-amber/[0.04]' : ''
-                    }`}
+                    className={`p-4 text-center border-l border-horizon/30 ${p.highlight ? 'bg-amber/[0.04]' : ''}`}
                   >
-                    <div className={`font-body text-headline-sm ${'highlight' in p && p.highlight ? 'text-amber' : 'text-star'}`}>
-                      {p.label}
-                    </div>
-                    <div className="font-mono text-mono-sm text-dust mt-0.5">{p.sub}</div>
+                    <div className={`font-body text-headline-sm ${p.highlight ? 'text-amber' : 'text-star'}`}>{p.label}</div>
+                    <div className="font-body text-body-sm text-dust mt-0.5">{p.sub}</div>
                   </th>
                 ))}
               </tr>
@@ -93,7 +79,7 @@ export default function PricingComparison() {
               {FEATURES.map((group) => (
                 <Fragment key={group.group}>
                   <tr className="bg-bg-3/50">
-                    <td colSpan={5} className="p-3 font-mono text-mono-sm text-amber/80 uppercase tracking-[0.12em]">
+                    <td colSpan={4} className="p-3 font-body text-body-sm text-amber/80">
                       {group.group}
                     </td>
                   </tr>
@@ -101,9 +87,8 @@ export default function PricingComparison() {
                     <tr key={`${group.group}-${r.label}`} className="border-t border-horizon/20">
                       <td className="p-4 font-body text-body-sm text-star/85">{r.label}</td>
                       <td className="p-4 text-center border-l border-horizon/20"><Cell value={r.free} /></td>
-                      <td className="p-4 text-center border-l border-horizon/20"><Cell value={r['7day']} /></td>
-                      <td className="p-4 text-center border-l border-horizon/20 bg-amber/[0.03]"><Cell value={r.monthly} /></td>
-                      <td className="p-4 text-center border-l border-horizon/20"><Cell value={r.annual} /></td>
+                      <td className="p-4 text-center border-l border-horizon/20 bg-amber/[0.03]"><Cell value={r.sub_monthly} /></td>
+                      <td className="p-4 text-center border-l border-horizon/20"><Cell value={r.sub_annual} /></td>
                     </tr>
                   ))}
                 </Fragment>
@@ -115,17 +100,10 @@ export default function PricingComparison() {
         {/* Mobile: per-plan cards */}
         <div className="md:hidden space-y-6">
           {PLANS.map((p) => (
-            <div
-              key={p.key}
-              className={`card p-5 ${
-                'highlight' in p && p.highlight ? 'border-amber bg-amber/[0.04]' : ''
-              }`}
-            >
+            <div key={p.key} className={`card p-5 ${p.highlight ? 'border-amber bg-amber/[0.04]' : ''}`}>
               <div className="mb-4">
-                <div className={`font-body text-headline-sm ${'highlight' in p && p.highlight ? 'text-amber' : 'text-star'}`}>
-                  {p.label}
-                </div>
-                <div className="font-mono text-mono-sm text-dust mt-0.5">{p.sub}</div>
+                <div className={`font-body text-headline-sm ${p.highlight ? 'text-amber' : 'text-star'}`}>{p.label}</div>
+                <div className="font-body text-body-sm text-dust mt-0.5">{p.sub}</div>
               </div>
               <ul className="space-y-2">
                 {FEATURES.flatMap((g) =>
@@ -142,13 +120,11 @@ export default function PricingComparison() {
                           </span>
                           <span className="font-body text-body-sm text-star/85">
                             {r.label}
-                            {typeof v === 'string' && (
-                              <span className="text-amber/70 italic font-mono text-mono-sm ml-1">· {v}</span>
-                            )}
+                            {typeof v === 'string' && <span className="text-amber/70 italic ml-1">· {v}</span>}
                           </span>
                         </li>
                       );
-                    })
+                    }),
                 )}
               </ul>
             </div>

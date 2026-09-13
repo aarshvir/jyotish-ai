@@ -1,115 +1,41 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
 import { hasValidBirthCoords } from '@/lib/utils/coords';
 import { track } from '@/components/analytics/PostHogProvider';
-import { PaymentHandoff } from '@/components/checkout/PaymentHandoff';
-import { formatAmount } from '@/lib/ziina/amounts';
 
 const DEFAULT_A: BirthDetails = {
   name: '', birth_date: '', birth_time: '12:00:00', birth_city: '', birth_lat: 0, birth_lng: 0,
 };
 
-// Stash both partners' details before a Ziina redirect so a cancelled/declined payment
-// restores them instead of two blank forms on return.
-const DRAFT_KEY = 'vh_synastry_draft';
-function readSynastryDraft(): { a: BirthDetails; b: BirthDetails } | null {
-  try {
-    const raw = typeof window !== 'undefined' ? sessionStorage.getItem(DRAFT_KEY) : null;
-    return raw ? (JSON.parse(raw) as { a: BirthDetails; b: BirthDetails }) : null;
-  } catch { return null; }
-}
-
 const KOOTAS = ['Varna', 'Vashya', 'Tara', 'Yoni', 'Graha Maitri', 'Gana', 'Bhakoot', 'Nadi'];
 
 interface Teaser { total: number; max: number; label: string; tone: string }
 
-export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
+/**
+ * Free 36-point score for everyone; the full eight-fold breakdown for subscribers.
+ *
+ * The one-time Matchmaking unlock was retired on 2026-09-13 (owner: "all
+ * subscription-based, not one-time"). /api/synastry/compute already opens the full
+ * breakdown for anyone with a paid report, which every subscriber has, so the locked
+ * view simply leads into the quiz.
+ */
+export function SynastryForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [err, setErr] = useState<string | null>(null);
-  const [okMsg, setOkMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [paying, setPaying] = useState(false);
-  // Prime the buyer for Ziina's page before sending them there — see PaymentHandoff.
-  const [handoff, setHandoff] = useState<{
-    priceDisplay: string; redirectUrl: string; currency: 'INR' | 'AED' | 'USD';
-  } | null>(null);
   const [a, setA] = useState<BirthDetails>({ ...DEFAULT_A });
   const [b, setB] = useState<BirthDetails>({ ...DEFAULT_A });
   const [teaser, setTeaser] = useState<Teaser | null>(null);
-  const [promo, setPromo] = useState('');
-
-  useEffect(() => {
-    const payment = searchParams.get('payment');
-    if (searchParams.get('unlocked') === '1') {
-      setOkMsg('Your Matchmaking unlock is active — enter both birth details and tap "See our compatibility" for the full breakdown.');
-      return;
-    }
-    if (!payment) return;
-
-    // Restore both partners' details (wiped by the full-page Ziina redirect) so the user
-    // returns to a filled form, not blanks. Only fills fields that are still empty.
-    const draft = readSynastryDraft();
-    if (draft) {
-      setA((prev) => (prev.birth_date ? prev : draft.a));
-      setB((prev) => (prev.birth_date ? prev : draft.b));
-    }
-
-    if (payment === 'cancelled') {
-      setErr('Your payment didn’t complete — nothing was charged. Your details are saved below; tap "Unlock" to try again.');
-    } else if (payment === 'failed') {
-      setErr('Payment failed — nothing was charged. Please try again or use a different card.');
-    } else if (payment === 'pending' || payment === 'incomplete') {
-      setOkMsg('Your payment is still processing — you have not been charged twice. If your unlock doesn’t appear, refresh this page in a minute.');
-    } else if (payment === 'error') {
-      setErr('Something went wrong finishing your payment. If you were charged, refresh this page in a minute — your unlock should appear.');
-    }
-  }, [searchParams]);
 
   function valid(p: BirthDetails): boolean {
     return !!p.birth_date && hasValidBirthCoords(p);
   }
 
-  async function startCheckout() {
-    if (paying) return;
-    setErr(null);
-    setPaying(true);
-    try {
-      const res = await fetch('/api/ziina/create-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ planType: 'synastry', promoCode: promo.trim() || undefined }),
-      });
-      if (res.status === 401) {
-        // Not signed in — send them to sign-in and bring them back here, don't dead-end on an error.
-        window.location.href = `/login?next=${encodeURIComponent('/synastry')}`;
-        return;
-      }
-      const data = (await res.json().catch(() => ({}))) as { redirectUrl?: string; error?: string; amount?: number; currency?: string };
-      if (!res.ok) { setErr(data.error ?? 'Checkout failed'); return; }
-      if (data.redirectUrl) {
-        try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ a, b })); } catch { /* private mode/quota */ }
-        track('checkout_started', { plan: 'synastry', product: 'synastry' });
-        const cur: 'INR' | 'AED' | 'USD' =
-          data.currency === 'INR' || data.currency === 'AED' ? data.currency : 'USD';
-        setHandoff({
-          priceDisplay: formatAmount(data.amount ?? 0, cur),
-          redirectUrl: data.redirectUrl,
-          currency: cur,
-        });
-      }
-    } catch {
-      setErr('Network error');
-    } finally {
-      setPaying(false);
-    }
-  }
-
-  // One button: paid/logged-in users get the full result; everyone else gets the free score + unlock.
+  // One button: subscribers get the full result; everyone else gets the free score.
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
@@ -134,7 +60,7 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
         const id = (data as { id?: string }).id;
         if (id) { router.push(`/synastry/${id}`); return; }
       }
-      // 401 (logged out) or 402 (unpaid) → show the FREE score teaser + unlock CTA
+      // 401 (logged out) or 402 (not subscribed) → show the FREE score + subscription CTA
       const t = await fetch('/api/synastry/teaser', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,17 +83,6 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
 
   return (
     <form onSubmit={onSubmit} className="space-y-8 text-left">
-      {handoff && (
-        <PaymentHandoff
-          productName="VedicHour Matchmaking"
-          priceDisplay={handoff.priceDisplay}
-          redirectUrl={handoff.redirectUrl}
-          currency={handoff.currency}
-          onCancel={() => setHandoff(null)}
-        />
-      )}
-      {okMsg && <p className="text-success text-body-sm border border-success/30 rounded-md px-4 py-3 bg-success/10">{okMsg}</p>}
-
       <div className="grid md:grid-cols-2 gap-6">
         <div className="card border border-horizon rounded-card p-6">
           <BirthDetailsInput label="You" value={a} onChange={setA} />
@@ -188,7 +103,7 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
         </div>
       )}
 
-      {/* FREE score reveal + locked full breakdown */}
+      {/* FREE score reveal + the full breakdown, which comes with a subscription */}
       {teaser && (
         <div className="rounded-card border border-amber/30 bg-gradient-to-br from-amber/[0.07] via-cosmos to-cosmos p-6 sm:p-8 text-center">
           <p className="section-eyebrow mb-2">Your Gun Milan score</p>
@@ -208,25 +123,16 @@ export function SynastryForm({ priceLabel = '$9.99' }: { priceLabel?: string }) 
             ))}
           </div>
 
-          <div className="max-w-xs mx-auto mb-4">
-            <input
-              value={promo}
-              onChange={(e) => setPromo(e.target.value.toUpperCase())}
-              placeholder="Coupon code (optional)"
-              className="w-full rounded-md bg-cosmos border border-horizon px-3 py-2 text-center font-mono text-mono-sm text-star placeholder:text-dust focus:border-amber/60 focus:outline-none"
-            />
-          </div>
-
-          <button
-            type="button"
-            disabled={paying}
-            onClick={() => void startCheckout()}
-            className="btn-primary px-8 py-3 disabled:opacity-50"
+          <Link
+            href="/start"
+            onClick={() => track('synastry_subscribe_cta', { product: 'synastry' })}
+            className="btn-primary inline-block px-8 py-3"
           >
-            {paying ? 'Redirecting…' : `Unlock the full breakdown + reading — ${priceLabel}`}
-          </button>
-          <p className="mt-3 font-mono text-mono-sm text-dust">
-            One-time. 24-hour money-back guarantee. Already bought any VedicHour forecast? It&apos;s included — sign in.
+            See the full breakdown with a subscription
+          </Link>
+          <p className="mt-3 font-body text-body-sm text-dust">
+            The full matchmaking breakdown and reading are included with every VedicHour subscription. Already
+            subscribed? Sign in and tap &ldquo;See our compatibility&rdquo; again.
           </p>
         </div>
       )}
