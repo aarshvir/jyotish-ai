@@ -2,55 +2,28 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
-import { currencyFromHeader, getPricesForCurrency, PLAN_CARDS, type SupportedCurrency } from '@/lib/pricing';
+import { currencyFromHeader, getDisplayPrice, PLAN_CARDS, STANDALONE_PRODUCTS } from '@/lib/pricing';
+import { getPlanAmount } from '@/lib/ziina/server';
 import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 
-const CURRENCY_LABELS: Record<SupportedCurrency, string> = {
-  USD: 'USD',
-  INR: 'INR',
-  AED: 'AED',
-};
-
-/** Validate a recovery-email/blog promo code: uppercase alphanumerics plus
- *  dash/underscore, ≤32 chars. Returns '' if the shape is invalid so a bad
- *  ?promo= is silently ignored rather than propagated into checkout links. */
-function sanitizePromo(raw: string | string[] | undefined): string {
-  const v = Array.isArray(raw) ? raw[0] : raw;
-  if (!v) return '';
-  const code = v.toUpperCase();
-  return /^[A-Z0-9_-]{1,32}$/.test(code) ? code : '';
-}
-
-export default async function PricingPage({
-  searchParams,
-}: {
-  searchParams: { promo?: string | string[] };
-}) {
-  const { promo: rawPromo } = searchParams;
-  const promo = sanitizePromo(rawPromo);
-
+export default async function PricingPage() {
   const h = await headers();
   const currency = currencyFromHeader(h.get('x-currency'));
-  const prices = getPricesForCurrency(currency);
-
-  // USD prices for og:price meta (standard)
-  const usdPrices = getPricesForCurrency('USD');
 
   const rawUrl = process.env.NEXT_PUBLIC_URL ?? '';
-  const SITE_URL = (rawUrl.startsWith('http://localhost') || rawUrl === ''
-    ? 'https://www.vedichour.com'
-    : rawUrl
-  ).replace(/\/+$/, '');
+  const SITE_URL = (rawUrl.startsWith('http://localhost') || rawUrl === '' ? 'https://www.vedichour.com' : rawUrl).replace(
+    /\/+$/,
+    '',
+  );
 
+  // Rendered from the same table checkout charges from, so the shown price is the charged price.
   const plans = PLAN_CARDS.map((p) => ({
     ...p,
-    highlight: p.featured,
-    // Carry a valid recovery-email/blog promo through the click so /onboard
-    // (which auto-applies ?promo=) doesn't drop the discount that drew the visit.
-    href: promo ? `${p.href}&promo=${promo}` : p.href,
-    price: p.id === 'free' ? 'Free' : (prices[p.id] ?? usdPrices[p.id] ?? ''),
-    priceNote: p.id === 'free' ? 'No credit card required' : `One-time · ${CURRENCY_LABELS[currency]}`,
+    price: p.id === 'free' ? 'Free' : getDisplayPrice(p.id, currency),
+    priceNote: p.id === 'free' ? 'No sign-up, no card' : `${p.id === 'sub_annual' ? 'Per year' : 'Per month'} · ${currency}`,
   }));
+
+  const usd = (planId: string) => (getPlanAmount(planId, 'USD') / 100).toFixed(2);
 
   return (
     <div className="min-h-screen bg-space text-star">
@@ -58,94 +31,72 @@ export default async function PricingPage({
 
       {/* Hero */}
       <section className="text-center px-5 sm:px-8 pt-28 sm:pt-32 pb-10 sm:pb-14">
-        <p className="section-eyebrow mb-3">Free chart · hourly windows</p>
-        <h1 className="font-body font-semibold text-display-lg mb-4">
-          Start free. Pay once if the hours earn it.
-        </h1>
+        <p className="section-eyebrow mb-3">Free calculators · one subscription</p>
+        <h1 className="font-body font-semibold text-display-lg mb-4">Your timing, planned every month.</h1>
         <p className="font-body text-body-lg text-dust max-w-lg mx-auto leading-relaxed">
-          Free birth chart in about a minute — no card. Upgrade for every hourly window across
-          7 or 30 days. One-time payments. No subscriptions.
+          The calculators are free, with no sign-up. Your hour-by-hour forecast, written around what you tell us in a
+          short quiz, comes with a subscription.
         </p>
-        <p className="mt-4 font-mono text-mono-sm text-dust">
-          Prices shown in {currency}. All plans are one-time — no subscription.
+        <p className="mt-4 font-body text-body-sm text-dust">
+          Prices shown in {currency}. Nothing is charged automatically — you renew each period with one tap.
         </p>
-        {promo && (
-          <p className="mt-4 inline-flex items-center gap-2 rounded-pill border border-amber/30 bg-amber/[0.06] px-4 py-1.5 font-mono text-mono-sm text-amber">
-            Code <span className="font-semibold tracking-wide">{promo}</span> applied at checkout
-          </p>
-        )}
       </section>
 
-      {/* Three standalone readings */}
+      {/* Deeper readings, included */}
       <section className="max-w-5xl mx-auto px-5 sm:px-8 pb-6">
         <div className="grid sm:grid-cols-2 gap-5">
-          <Link href="/kundali" className="group rounded-card border border-horizon/50 hover:border-amber/50 bg-cosmos p-6 transition-colors">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="font-display text-headline-md text-star">Kundali Analysis</h3>
-              <span className="font-display text-xl text-amber">{prices['kundali'] ?? usdPrices['kundali']}</span>
-            </div>
-            <p className="font-body text-body-sm text-dust leading-relaxed mb-3">
-              A personalized birth-chart reading in plain English — who you are, the life chapter you are
-              in now, and your life-chapters timeline. Instant.
-            </p>
-            <span className="font-mono text-mono-sm text-amber group-hover:underline">Get your reading →</span>
-          </Link>
-          <Link href="/synastry" className="group rounded-card border border-horizon/50 hover:border-amber/50 bg-cosmos p-6 transition-colors">
-            <div className="flex items-start justify-between mb-2">
-              <h3 className="font-display text-headline-md text-star">Matchmaking (Gun Milan)</h3>
-              <span className="font-display text-xl text-amber">{prices['synastry'] ?? usdPrices['synastry']}</span>
-            </div>
-            <p className="font-body text-body-sm text-dust leading-relaxed mb-3">
-              Enter two birth details and get your 36-point Ashtakoot compatibility score with a full
-              eight-fold breakdown. The classical Kundli matching, computed instantly.
-            </p>
-            <span className="font-mono text-mono-sm text-amber group-hover:underline">Check compatibility →</span>
-          </Link>
+          {STANDALONE_PRODUCTS.map((p) => (
+            <Link
+              key={p.id}
+              href={p.href}
+              className="group rounded-card border border-horizon/50 hover:border-amber/50 bg-cosmos p-6 transition-colors"
+            >
+              <div className="flex items-start justify-between mb-2 gap-3">
+                <h3 className="font-display text-headline-md text-star">{p.name}</h3>
+                <span className="font-body text-body-sm text-amber shrink-0">Included</span>
+              </div>
+              <p className="font-body text-body-sm text-dust leading-relaxed mb-3">{p.description}</p>
+              <span className="font-body text-body-sm text-amber group-hover:underline">{p.cta}</span>
+            </Link>
+          ))}
         </div>
-        <p className="text-center font-mono text-mono-sm text-dust mt-5">
-          Or get the hour-by-hour timing forecast below ⌄
-        </p>
       </section>
 
       {/* Plans */}
-      <section className="max-w-6xl mx-auto px-5 sm:px-8 pb-14 sm:pb-18">
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <section className="max-w-5xl mx-auto px-5 sm:px-8 pb-14 sm:pb-18">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {plans.map((plan) => (
             <div
-              key={plan.name}
+              key={plan.id}
               className={`relative flex flex-col rounded-card p-6 sm:p-7 ${
-                plan.highlight
-                  ? 'bg-amber/[0.06] border-2 border-amber shadow-glow-amber'
-                  : 'card'
+                plan.featured ? 'bg-amber/[0.06] border-2 border-amber shadow-glow-amber' : 'card'
               }`}
             >
               {plan.badge && (
-                <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-pill text-label-sm font-mono font-medium tracking-wider uppercase whitespace-nowrap ${
-                  plan.highlight
-                    ? 'bg-amber text-space'
-                    : 'bg-amber/15 text-amber'
-                }`}>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-pill text-label-sm font-body font-medium whitespace-nowrap bg-amber text-space">
                   {plan.badge}
                 </div>
               )}
 
               <div className="mb-5">
-                <h2 className={`font-body text-headline-sm mb-1.5 ${plan.highlight ? 'text-amber' : 'text-star'}`}>
+                <h2 className={`font-body text-headline-sm mb-1.5 ${plan.featured ? 'text-amber' : 'text-star'}`}>
                   {plan.name}
                 </h2>
                 <p className="font-body text-body-sm text-dust mb-3 leading-relaxed">{plan.description}</p>
-                <span className={`text-3xl font-bold font-mono tabular-nums ${plan.price === 'Free' ? 'text-success' : 'text-star'}`}>
+                <span
+                  className={`text-3xl font-bold font-body tabular-nums ${plan.price === 'Free' ? 'text-success' : 'text-star'}`}
+                >
                   {plan.price}
                 </span>
-                <p className="font-mono text-mono-sm text-dust mt-1">{plan.priceNote}</p>
-                {plan.id === 'annual' && (
-                  <p className="font-mono text-mono-sm text-success/80 mt-1">Best value · our deepest reading</p>
-                )}
+                <p className="font-body text-body-sm text-dust mt-1">{plan.priceNote}</p>
               </div>
 
               <ul className="list-none p-0 mb-6 flex-1 space-y-0" role="list">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5 py-2 border-b border-horizon/30 text-body-sm text-dust leading-snug">
+                  <li
+                    key={feature}
+                    className="flex items-start gap-2.5 py-2 border-b border-horizon/30 text-body-sm text-dust leading-snug"
+                  >
                     <span className="text-amber shrink-0 mt-0.5">✦</span>
                     {feature}
                   </li>
@@ -155,7 +106,7 @@ export default async function PricingPage({
               {plan.id !== 'free' && (
                 <div className="flex items-center gap-2 mb-3 text-sm text-success/80">
                   <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                  <Link href="/refund" className="hover:underline font-mono text-mono-sm">
+                  <Link href="/refund" className="hover:underline font-body text-body-sm">
                     24-hour money-back guarantee
                   </Link>
                 </div>
@@ -163,12 +114,12 @@ export default async function PricingPage({
 
               <Link
                 href={plan.href}
-                className={`text-center min-h-[48px] rounded-button text-body-sm font-medium tracking-wide transition-all ${
-                  plan.highlight
+                className={`text-center min-h-[48px] rounded-button text-body-sm font-medium transition-all ${
+                  plan.featured
                     ? 'btn-primary w-full justify-center'
-                    : plan.price === 'Free'
-                    ? 'btn-secondary w-full justify-center text-success border-success/30 hover:bg-success/5'
-                    : 'btn-secondary w-full justify-center'
+                    : plan.id === 'free'
+                      ? 'btn-secondary w-full justify-center text-success border-success/30 hover:bg-success/5'
+                      : 'btn-secondary w-full justify-center'
                 }`}
               >
                 {plan.cta}
@@ -185,15 +136,17 @@ export default async function PricingPage({
           <div className="prose-reading text-body-md text-dust space-y-3">
             <p>
               VedicHour calculates every chart from real astronomical data — the same math a careful astrologer uses.
-              Positions are measured the traditional Indian way, from where the stars actually sit in the sky, and life-period timing comes from your Vimshottari dasha.
+              Positions are measured the traditional Indian way, from where the stars actually sit in the sky, and
+              life-period timing comes from your Vimshottari dasha.
             </p>
             <p>
-              Each hourly window is scored by combining hora rulers, choghadiya quality, transit lagna, and your natal chart&apos;s functional benefic/malefic relationships.
-              AI interpretation layers narrative and recommendations on top of the mathematical framework.
+              Each hourly window is scored by combining hora rulers, choghadiya quality, transit lagna, and your natal
+              chart&apos;s functional benefic/malefic relationships. AI interpretation layers narrative and
+              recommendations on top of the mathematical framework.
             </p>
             <p>
-              This is a structured analytical tool based on classical Vedic principles.
-              Results should inform — not replace — your own judgment.
+              This is a structured analytical tool based on classical Vedic principles. Results should inform — not
+              replace — your own judgment.
             </p>
           </div>
         </div>
@@ -205,38 +158,44 @@ export default async function PricingPage({
           <div className="card p-5 text-center">
             <div className="flex justify-center mb-3">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-amber" aria-hidden>
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path
+                  d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
             <h3 className="font-body text-title-md text-star mb-1">24-Hour Refund</h3>
             <p className="text-body-sm text-dust">Full refund within 24 hours. No questions asked.</p>
-            <Link href="/refund" className="font-mono text-mono-sm text-amber mt-2 inline-block hover:underline">
+            <Link href="/refund" className="font-body text-body-sm text-amber mt-2 inline-block hover:underline">
               Refund policy →
             </Link>
           </div>
           <div className="card p-5 text-center">
             <div className="flex justify-center mb-3">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-amber" aria-hidden>
-                <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="2"/>
+                <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
+                <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="2" />
               </svg>
             </div>
             <h3 className="font-body text-title-md text-star mb-1">Privacy First</h3>
             <p className="text-body-sm text-dust">Birth data encrypted. Never sold. Never shared.</p>
-            <Link href="/privacy" className="font-mono text-mono-sm text-amber mt-2 inline-block hover:underline">
+            <Link href="/privacy" className="font-body text-body-sm text-amber mt-2 inline-block hover:underline">
               Privacy policy →
             </Link>
           </div>
           <div className="card p-5 text-center">
             <div className="flex justify-center mb-3">
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-amber" aria-hidden>
-                <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <path d="M2 8l10 7 10-7" stroke="currentColor" strokeWidth="2"/>
+                <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
+                <path d="M2 8l10 7 10-7" stroke="currentColor" strokeWidth="2" />
               </svg>
             </div>
             <h3 className="font-body text-title-md text-star mb-1">Support</h3>
             <p className="text-body-sm text-dust">Questions? Reach us anytime.</p>
-            <span className="font-mono text-mono-sm text-amber mt-2 inline-block">support@vedichour.com</span>
+            <span className="font-body text-body-sm text-amber mt-2 inline-block">support@vedichour.com</span>
           </div>
         </div>
       </section>
@@ -247,14 +206,24 @@ export default async function PricingPage({
           __html: JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'Product',
-            name: 'VedicHour 7-Day Jyotish Forecast',
+            name: 'VedicHour Subscription',
             url: `${SITE_URL}/pricing`,
-            offers: {
-              '@type': 'Offer',
-              price: '9.99',
-              priceCurrency: 'USD',
-              availability: 'https://schema.org/InStock',
-            },
+            offers: [
+              {
+                '@type': 'Offer',
+                name: 'Monthly',
+                price: usd('sub_monthly'),
+                priceCurrency: 'USD',
+                availability: 'https://schema.org/InStock',
+              },
+              {
+                '@type': 'Offer',
+                name: 'Yearly',
+                price: usd('sub_annual'),
+                priceCurrency: 'USD',
+                availability: 'https://schema.org/InStock',
+              },
+            ],
           }),
         }}
       />

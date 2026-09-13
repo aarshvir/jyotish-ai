@@ -34,6 +34,8 @@ import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { decideAfterPromoRedeem } from '@/lib/promo/redeemGate';
 import { decideFreeReportClaim } from '@/lib/reports/freeReportGate';
 import { minForecastDaysForPlan } from '@/lib/reports/forecastDayCount';
+import { getSubscription, nextForecastUnlock } from '@/lib/subscriptions/access';
+import { isSubscriptionPlanType } from '@/lib/subscriptions/period';
 
 /**
  * If a row is `generating` and younger than this, skip starting a duplicate pipeline.
@@ -478,9 +480,9 @@ export async function POST(request: NextRequest) {
   }
 
   // ── Entitlement gate ────────────────────────────────────────────────
-  // Login is already enforced above. Policy: each user gets exactly ONE free
-  // report (the free preview); every paid plan requires a verified completed
-  // payment. Admins (owner) bypass. Client-claimed promo/bypass do NOT entitle
+  // Login is already enforced above. Policy (owner, 2026-09-13): no free reports for
+  // non-admins; every forecast needs a verified completed payment or an active
+  // subscription. Admins (owner) bypass. Client-claimed promo/bypass do NOT entitle
   // here — only 'paid' (a real completed Ziina payment) passes.
   const userIsAdmin = auth.isAdmin === true || (await isAdmin(auth.user.email));
   const planNorm = (body.plan_type ?? existing?.plan_type ?? '7day').trim().toLowerCase();
@@ -545,6 +547,73 @@ export async function POST(request: NextRequest) {
     promoOncePerUser = promo.oncePerUser === true;
   }
 
+  // ── Subscription entitlement ─────────────────────────────────────────
+  // An active subscriber starts their next 30-day forecast without paying again. Only
+  // consulted when nothing else entitles this report, and never for a free plan.
+  let subscriptionGranted = false;
+  if (!isFreePlan && !isEntitledPaymentStatus(trustedPaymentStatus) && !userIsAdmin) {
+    let subscription: Awaited<ReturnType<typeof getSubscription>>;
+    try {
+      subscription = await getSubscription(db, auth.user.id);
+    } catch (e) {
+      // "Could not check" must never read as "not subscribed" — that would send a
+      // paying customer to the paywall. Fail closed, but as a retryable 503.
+      console.warn('[reports/start] subscription lookup unavailable:', e);
+      await releaseOwnedLock();
+      return NextResponse.json(
+        {
+          error: 'We could not check your subscription just now. Please try again in a moment.',
+          code: 'SUBSCRIPTION_VERIFY_UNAVAILABLE',
+          engine: 'none' as ReportStartEngine,
+          dispatch_mode: 'blocked' as ReportStartDispatchMode,
+        },
+        { status: 503 },
+      );
+    }
+    if (subscription?.active) {
+      const { data: lastForecast, error: lastForecastErr } = await db
+        .from('reports')
+        .select('created_at')
+        .eq('user_id', auth.user.id)
+        .in('payment_status', ['paid', 'promo'])
+        .in('plan_type', ['monthly', 'annual'])
+        .neq('id', reportId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (lastForecastErr) {
+        await releaseOwnedLock();
+        return NextResponse.json(
+          {
+            error: 'We could not check your subscription just now. Please try again in a moment.',
+            code: 'SUBSCRIPTION_VERIFY_UNAVAILABLE',
+            engine: 'none' as ReportStartEngine,
+            dispatch_mode: 'blocked' as ReportStartDispatchMode,
+          },
+          { status: 503 },
+        );
+      }
+      // One 30-day forecast per ~month: the price is set at 6x the cost of one.
+      const unlock = nextForecastUnlock((lastForecast as { created_at?: string } | null)?.created_at);
+      if (unlock && unlock.getTime() > Date.now()) {
+        await releaseOwnedLock();
+        return NextResponse.json(
+          {
+            error: `Your next 30-day forecast unlocks on ${unlock.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', timeZone: 'UTC' })}.`,
+            code: 'FORECAST_COOLDOWN',
+            unlocks_at: unlock.toISOString(),
+            engine: 'none' as ReportStartEngine,
+            dispatch_mode: 'blocked' as ReportStartDispatchMode,
+          },
+          { status: 429 },
+        );
+      }
+      trustedPaymentStatus = 'paid';
+      subscriptionGranted = true;
+      body.plan_type = 'monthly';
+    }
+  }
+
   // `trustedPaymentStatus` is server-derived: a client-claimed 'promo'/'bypass' was
   // already collapsed to 'unpaid' by safeNonPaidPaymentStatus, so accepting the full
   // entitled set here cannot be forged by a buyer.
@@ -561,25 +630,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Free reports have ended (owner, 2026-09-13). The free calculators stay free and lead
+  // into the quiz; every report now comes through a subscription. Admins keep this path
+  // for testing.
   if (isFreePlan && !userIsAdmin) {
-    const { count: priorFree } = await db
-      .from('reports')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', auth.user.id)
-      .in('plan_type', ['free', 'preview'])
-      .neq('id', reportId);
-    if ((priorFree ?? 0) >= 1) {
-      await releaseOwnedLock();
-      return NextResponse.json(
-        {
-          error: 'You have already used your one free report. Choose a plan to unlock more.',
-          code: 'FREE_LIMIT_REACHED',
-          engine: 'none' as ReportStartEngine,
-          dispatch_mode: 'blocked' as ReportStartDispatchMode,
-        },
-        { status: 402 },
-      );
-    }
+    await releaseOwnedLock();
+    return NextResponse.json(
+      {
+        error: 'Free reports have ended. Take the short quiz to start your subscription.',
+        code: 'FREE_REPORTS_ENDED',
+        redirect: '/start',
+        engine: 'none' as ReportStartEngine,
+        dispatch_mode: 'blocked' as ReportStartDispatchMode,
+      },
+      { status: 402 },
+    );
   }
 
   // Bind the report's plan to what was actually paid for — prevents paying for a
@@ -595,7 +660,8 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .maybeSingle();
     const paidPlan = (paidRow as { plan_type?: string } | null)?.plan_type;
-    if (paidPlan) body.plan_type = paidPlan;
+    // A subscription payment's first report is the 30-day forecast; 'sub_*' is not a report plan.
+    if (paidPlan) body.plan_type = isSubscriptionPlanType(paidPlan) ? 'monthly' : paidPlan;
   }
 
   // Guard: refuse to generate for unresolved birth coordinates. A geocode failure
@@ -721,7 +787,9 @@ export async function POST(request: NextRequest) {
       payment_status: trustedPaymentStatus,
       payment_provider:
         trustedPaymentStatus === 'paid'
-          ? 'ziina'
+          ? subscriptionGranted
+            ? 'subscription'
+            : 'ziina'
           : existing?.payment_provider ?? null,
       generation_started_at: nowIso,
       generation_progress: 0,

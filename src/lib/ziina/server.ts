@@ -56,6 +56,35 @@ export const ZIINA_PLANS: Record<string, ZiinaPlan> = {
     amountUSD: 999,
     amountINR: 89900,
   },
+  /**
+   * Subscriptions. Owner rule (2026-09-13): price at no less than 6x real model cost,
+   * assuming a subscriber opens the product every day.
+   *
+   * Cost per daily-active subscriber-month, measured against a real stored 30-day report
+   * and priced on the most expensive realistic path: every narrative stage on Claude
+   * Opus 5 ($5/$25 per 1M tokens, with its tokenizer counting ~30% more tokens than the
+   * characters suggest), hourly prose every day, one Ask a day, 20% retry overhead,
+   * occasional Kundli/matchmaking, and infrastructure: about $6.50. GPT-5.6-terra first
+   * in the chain is a little cheaper even with ~4k reasoning tokens per call; pricing on
+   * the Opus path means a day of fallbacks can never break the rule.
+   *
+   * 6 x $6.50 = $39 net, grossed up for Ziina fees (~4.3% + AED 1) = ~$41.03.
+   * At USD/INR 95.58 (2026-09-13) that is ~Rs 3,922, so Rs 3,999. Annual is 12 periods at
+   * the same floor, which is why it carries almost no discount: a deeper one breaks 6x.
+   * Promo codes are refused for these plans for the same reason.
+   */
+  sub_monthly: {
+    name: 'VedicHour Monthly Subscription',
+    amountAED: 15900,
+    amountUSD: 4199,
+    amountINR: 399900,
+  },
+  sub_annual: {
+    name: 'VedicHour Annual Subscription',
+    amountAED: 184900,
+    amountUSD: 49900,
+    amountINR: 4799900,
+  },
 };
 
 /** 10% off the upgrade delta vs paying full monthly after already owning 7-day */

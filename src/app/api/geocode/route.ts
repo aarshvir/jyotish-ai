@@ -22,7 +22,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const cacheKey = stableCacheKey('geo', city.trim().toLowerCase());
+    // 'geo:en' — results before English names were requested are cached under 'geo' for up
+    // to 7 days, and some (e.g. Dubai) are in Arabic script. A new namespace means those
+    // stale entries are simply never read again.
+    const cacheKey = stableCacheKey('geo:en', city.trim().toLowerCase());
     const cached = await cacheGet<unknown>(cacheKey);
     if (cached) {
       return NextResponse.json(cached, {
@@ -33,7 +36,12 @@ export async function GET(req: NextRequest) {
     }
 
     const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=1`,
+      // accept-language=en: without it OpenStreetMap returns each place's primary local name,
+      // so Dubai came back as "دبي, الإمارات العربية المتحدة" — unreadable for most visitors
+      // and unmatched by anyone typing "Dubai". Places with no English name keep their own.
+      // limit=5: the quiz lets people pick between same-named towns; onboard and the calculators
+      // still take data[0], which is Nominatim's highest-ranked match either way.
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(city)}&format=json&limit=5&accept-language=en`,
       {
         headers: {
           'User-Agent': 'VedicHour/1.0 (vedichour.com)',

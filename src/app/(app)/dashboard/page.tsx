@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { SubscriptionCard } from '@/components/dashboard/SubscriptionCard';
 import { createClient } from '@/lib/supabase/client';
 import { RightNowCard } from '@/components/dashboard/RightNowCard';
 import { DayRating } from '@/components/report/DayRating';
@@ -812,6 +813,9 @@ function DashboardInner() {
         {/* ── Tab: Overview ──────────────────────────────────────────────── */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
+            {/* Subscription status, next forecast, renewal */}
+            <SubscriptionCard />
+
             {/* Live score card */}
             <RightNowCard />
 

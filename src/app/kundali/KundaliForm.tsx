@@ -1,101 +1,31 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { BirthDetailsInput, type BirthDetails } from '@/components/forms/BirthDetailsInput';
 import { hasValidBirthCoords } from '@/lib/utils/coords';
 import { track } from '@/components/analytics/PostHogProvider';
-import { PaymentHandoff } from '@/components/checkout/PaymentHandoff';
-import { formatAmount } from '@/lib/ziina/amounts';
 
 const DEFAULT: BirthDetails = {
   name: '', birth_date: '', birth_time: '12:00:00', birth_city: '', birth_lat: 0, birth_lng: 0,
 };
 
-// Stash birth details before a Ziina redirect so a cancelled/declined payment restores
-// them instead of a blank form on return.
-const DRAFT_KEY = 'vh_kundali_draft';
-function readKundaliDraft(): BirthDetails | null {
-  try {
-    const raw = typeof window !== 'undefined' ? sessionStorage.getItem(DRAFT_KEY) : null;
-    return raw ? (JSON.parse(raw) as BirthDetails) : null;
-  } catch { return null; }
-}
-
 interface Teaser { lagna: string; moon_sign: string; moon_nakshatra: string; mahadasha: string; antardasha: string }
 
-export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
+/**
+ * Free chart facts for everyone; the full Kundali analysis for subscribers.
+ *
+ * The one-time Kundali unlock was retired on 2026-09-13 (owner: "all subscription-based,
+ * not one-time"). /api/kundali/compute already opens the full reading for anyone with a
+ * paid report, which every subscriber has, so the locked view simply leads into the quiz.
+ */
+export function KundaliForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [err, setErr] = useState<string | null>(null);
-  const [okMsg, setOkMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [paying, setPaying] = useState(false);
-  // Prime the buyer for Ziina's page before sending them there — see PaymentHandoff.
-  const [handoff, setHandoff] = useState<{
-    priceDisplay: string; redirectUrl: string; currency: 'INR' | 'AED' | 'USD';
-  } | null>(null);
   const [p, setP] = useState<BirthDetails>({ ...DEFAULT });
   const [teaser, setTeaser] = useState<Teaser | null>(null);
-  const [promo, setPromo] = useState('');
-
-  useEffect(() => {
-    const payment = searchParams.get('payment');
-    if (searchParams.get('unlocked') === '1') {
-      setOkMsg('Your Kundali analysis is unlocked — enter your birth details and tap "See my chart" for the full reading.');
-      return;
-    }
-    if (!payment) return;
-
-    // Restore birth details (wiped by the full-page Ziina redirect). Only if still empty.
-    const draft = readKundaliDraft();
-    if (draft) setP((prev) => (prev.birth_date ? prev : draft));
-
-    if (payment === 'cancelled') {
-      setErr('Your payment didn’t complete — nothing was charged. Your details are saved below; tap "Unlock" to try again.');
-    } else if (payment === 'failed') {
-      setErr('Payment failed — nothing was charged. Please try again or use a different card.');
-    } else if (payment === 'pending' || payment === 'incomplete') {
-      setOkMsg('Your payment is still processing — you have not been charged twice. If your unlock doesn’t appear, refresh this page in a minute.');
-    } else if (payment === 'error') {
-      setErr('Something went wrong finishing your payment. If you were charged, refresh this page in a minute — your unlock should appear.');
-    }
-  }, [searchParams]);
-
-  async function startCheckout() {
-    if (paying) return;
-    setErr(null);
-    setPaying(true);
-    try {
-      const res = await fetch('/api/ziina/create-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ planType: 'kundali', promoCode: promo.trim() || undefined }),
-      });
-      if (res.status === 401) {
-        window.location.href = `/login?next=${encodeURIComponent('/kundali')}`;
-        return;
-      }
-      const data = (await res.json().catch(() => ({}))) as { redirectUrl?: string; error?: string; amount?: number; currency?: string };
-      if (!res.ok) { setErr(data.error ?? 'Checkout failed'); return; }
-      if (data.redirectUrl) {
-        try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(p)); } catch { /* private mode/quota */ }
-        track('checkout_started', { plan: 'kundali', product: 'kundali' });
-        const cur: 'INR' | 'AED' | 'USD' =
-          data.currency === 'INR' || data.currency === 'AED' ? data.currency : 'USD';
-        setHandoff({
-          priceDisplay: formatAmount(data.amount ?? 0, cur),
-          redirectUrl: data.redirectUrl,
-          currency: cur,
-        });
-      }
-    } catch {
-      setErr('Network error');
-    } finally {
-      setPaying(false);
-    }
-  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -118,7 +48,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
         const id = (data as { id?: string }).id;
         if (id) { router.push(`/kundali/${id}`); return; }
       }
-      // 401/402 → free chart-facts teaser + unlock CTA
+      // 401/402 → free chart-facts teaser + subscription CTA
       const t = await fetch('/api/kundali/teaser', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -139,17 +69,6 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
 
   return (
     <form onSubmit={onSubmit} className="max-w-lg mx-auto space-y-6 text-left">
-      {handoff && (
-        <PaymentHandoff
-          productName="VedicHour Kundali Analysis"
-          priceDisplay={handoff.priceDisplay}
-          redirectUrl={handoff.redirectUrl}
-          currency={handoff.currency}
-          onCancel={() => setHandoff(null)}
-        />
-      )}
-      {okMsg && <p className="text-success text-body-sm border border-success/30 rounded-md px-4 py-3 bg-success/10">{okMsg}</p>}
-
       <div className="card border border-horizon rounded-card p-6">
         <BirthDetailsInput value={p} onChange={setP} showName={false} />
       </div>
@@ -165,7 +84,7 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
         </div>
       )}
 
-      {/* FREE chart facts + locked full reading */}
+      {/* FREE chart facts + the full reading, which comes with a subscription */}
       {teaser && (
         <div className="rounded-card border border-amber/30 bg-gradient-to-br from-amber/[0.07] via-cosmos to-cosmos p-6 sm:p-8 text-center">
           <p className="section-eyebrow mb-3">Your chart at a glance</p>
@@ -192,20 +111,16 @@ export function KundaliForm({ priceLabel = '$9.99' }: { priceLabel?: string }) {
             ))}
           </div>
 
-          <div className="max-w-xs mx-auto mb-4">
-            <input
-              value={promo}
-              onChange={(e) => setPromo(e.target.value.toUpperCase())}
-              placeholder="Coupon code (optional)"
-              className="w-full rounded-md bg-cosmos border border-horizon px-3 py-2 text-center font-mono text-mono-sm text-star placeholder:text-dust focus:border-amber/60 focus:outline-none"
-            />
-          </div>
-
-          <button type="button" disabled={paying} onClick={() => void startCheckout()} className="btn-primary px-8 py-3 disabled:opacity-50">
-            {paying ? 'Redirecting…' : `Unlock your full reading — ${priceLabel}`}
-          </button>
-          <p className="mt-3 font-mono text-mono-sm text-dust">
-            One-time. 24-hour money-back guarantee. Already bought any VedicHour forecast? It&apos;s included — sign in.
+          <Link
+            href="/start"
+            onClick={() => track('kundali_subscribe_cta', { product: 'kundali' })}
+            className="btn-primary inline-block px-8 py-3"
+          >
+            Get your full reading with a subscription
+          </Link>
+          <p className="mt-3 font-body text-body-sm text-dust">
+            Your full Kundali analysis is included with every VedicHour subscription, together with your hour-by-hour
+            forecast. Already subscribed? Sign in and tap &ldquo;See my chart&rdquo; again.
           </p>
         </div>
       )}

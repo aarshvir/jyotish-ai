@@ -210,10 +210,13 @@ describe('the email body', () => {
     }
   });
 
-  it('links to the resume page and states the discount that link really applies', () => {
-    const { html } = buildWinbackEmail(base);
+  it('links to the resume page and describes the subscription honestly', () => {
+    const { html, text } = buildWinbackEmail(base);
     expect(html).toContain('https://www.vedichour.com/resume?t=abc');
-    expect(html).toContain('30% off applied');
+    expect(html).toContain('Nothing renews automatically');
+    // Codes are refused on subscriptions, so the email must not promise a discount.
+    expect(html).not.toMatch(/% off/);
+    expect(text).not.toMatch(/% off/);
   });
 
   it('carries a visible unsubscribe link, not just the header', () => {

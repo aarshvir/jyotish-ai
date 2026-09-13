@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
-import { currencyFromHeader, getDisplayPrice } from '@/lib/pricing';
 import { KundaliForm } from './KundaliForm';
 import { JsonLd } from '@/components/seo/JsonLd';
 import KundaliSamplePreview from '@/components/landing/KundaliSamplePreview';
@@ -14,7 +12,7 @@ import { faqPageLd, breadcrumbLd, softwareAppLd, type Faq } from '@/lib/seo/json
 export const metadata: Metadata = {
   title: 'Deep Kundali Report — Your Full Vedic Birth Chart',
   description:
-    'A deep, personalized Vedic birth report — your full chart read across career & money, marriage & intimacy, health, children and family, a year-by-year outlook for the next 5 years, and the classical checks (Manglik, Kaal Sarpa, Sade Sati). Computed from your exact birth moment. $9.99 / ₹899.',
+    'A deep, personalized Vedic birth report — your full chart read across career & money, marriage & intimacy, health, children and family, a year-by-year outlook for the next 5 years, and the classical checks (Manglik, Kaal Sarpa, Sade Sati). Your chart facts are free; the full reading comes with a VedicHour subscription.',
   alternates: { canonical: '/kundali' },
 };
 
@@ -37,7 +35,7 @@ const KUNDALI_SECTIONS: { h: string; p: string }[] = [
 const KUNDALI_FAQS: Faq[] = [
   { q: 'What is a Kundli (Janam Kundali)?', a: 'A Kundli, or Janam Kundali, is your Vedic birth chart — a snapshot of where every planet sat at your exact birth time and place. It is the basis for every Jyotish prediction, from personality to the timing of events.' },
   { q: 'Do I need my exact birth time?', a: 'For the ascendant (Lagna), the houses and dasha timing, yes — the Lagna changes about every two hours. With only your date you still get an accurate Moon sign, nakshatra and planetary signs, but house-based and timing details need a birth time.' },
-  { q: 'Is the Kundli free?', a: 'Yes — you can generate your birth chart and see your core facts (Lagna, Moon sign, nakshatra, current dasha and dosha flags) for free. The deep, plain-English report across all life areas with a 5-year outlook is a one-time $9.99 / ₹899.' },
+  { q: 'Is the Kundli free?', a: 'Yes — you can generate your birth chart and see your core facts (Lagna, Moon sign, nakshatra and current dasha) for free. The deep, plain-English report across all life areas with a 5-year outlook comes with a VedicHour subscription, together with your hour-by-hour forecast.' },
   { q: 'What does the deep report include?', a: 'Your full chart read across character, career & money, relationships, marriage & intimacy, health, children and family; divisional charts (D9, D7, D10); Manglik / Kaal Sarpa / Sade Sati checks; and a year-by-year outlook for the next five years.' },
   { q: 'How accurate is it?', a: 'The chart is calculated from real astronomical data — the same math a careful astrologer uses — so the positions themselves are precise. The interpretation follows classical Parashari principles in plain English. Astrology is for reflection and guidance, not guaranteed outcomes.' },
   { q: 'Does Manglik Dosha stop marriage?', a: 'Rarely. Manglik Dosha is a Mars placement weighed in matching, but classical texts list many cancellations and two Manglik partners offset it. Your report explains your exact situation plainly, without fear.' },
@@ -45,9 +43,7 @@ const KUNDALI_FAQS: Faq[] = [
   { q: 'How is Vedic astrology different from Western?', a: 'Vedic (Jyotish) measures from where the stars actually sit in the sky; Western measures from the seasons — so your Vedic Sun or Moon sign is often one sign earlier. Jyotish also emphasises the Moon sign, the nakshatras and the dasha timing system.' },
 ];
 
-export default async function KundaliPage() {
-  const currency = currencyFromHeader((await headers()).get('x-currency'));
-  const priceLabel = getDisplayPrice('kundali', currency);
+export default function KundaliPage() {
   return (
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
@@ -76,7 +72,7 @@ export default async function KundaliPage() {
         </div>
 
         <Suspense fallback={<p className="text-center text-dust">Loading form…</p>}>
-          <KundaliForm priceLabel={priceLabel} />
+          <KundaliForm />
         </Suspense>
 
         <KundaliSamplePreview />
@@ -99,8 +95,8 @@ export default async function KundaliPage() {
             name: 'VedicHour Deep Kundli Analysis',
             path: '/kundali',
             description:
-              'Generate your free Vedic birth chart (Janam Kundali) and unlock a deep, plain-English Kundli report: seven life areas, divisional charts, Manglik / Kaal Sarpa / Sade Sati checks and a 5-year outlook.',
-            price: '9.99',
+              'Generate your free Vedic birth chart (Janam Kundali) facts. The deep, plain-English Kundli report — seven life areas, divisional charts, Manglik / Kaal Sarpa / Sade Sati checks and a 5-year outlook — comes with a VedicHour subscription.',
+            price: '0',
           }),
           faqPageLd(KUNDALI_FAQS),
           breadcrumbLd([

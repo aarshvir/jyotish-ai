@@ -12,6 +12,8 @@ import { minForecastDaysForPlan } from '@/lib/reports/forecastDayCount';
 import { getPaymentIntent, type ZiinaPaymentIntent } from '@/lib/ziina/server';
 import { redeemPromoCode, oncePerUserOrderId } from '@/lib/promo/server';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
+import { planFromPlanType } from '@/lib/subscriptions/period';
+import { grantSubscriptionPeriod } from '@/lib/subscriptions/grant';
 
 const YOUNG_GENERATING_MS = 90 * 60 * 1000;
 
@@ -348,12 +350,28 @@ async function grantStandaloneUnlock(
  */
 async function healCompletedPaymentGrants(
   db: SupabaseClient,
-  row: ZiinaPaymentRow & { promo_code_id?: string | null },
+  intentId: string,
+  row: ZiinaPaymentRow & { promo_code_id?: string | null; amount?: number | null; currency?: string | null },
   baseUrl: string,
   bookPromoRedemption: () => Promise<void>,
 ): Promise<FinalizeIntentResult> {
   const planType = row.plan_type ?? '';
   const reportId = row.report_id;
+
+  // Subscriptions: re-apply the period this payment bought (idempotent per intent), then
+  // heal the bound first-period report as the 30-day plan it is.
+  const subscriptionPlan = planFromPlanType(planType);
+  const reportPlanType = subscriptionPlan ? 'monthly' : planType;
+  if (subscriptionPlan && row.user_id) {
+    const sub = await grantSubscriptionPeriod(db, {
+      intentId,
+      userId: row.user_id,
+      planType,
+      amount: row.amount,
+      currency: row.currency,
+    });
+    if (!sub.ok) return { ok: false, error: sub.error };
+  }
 
   const standaloneUnlock =
     (planType === 'synastry' || planType === 'kundali') && !reportId && row.user_id;
@@ -400,7 +418,7 @@ async function healCompletedPaymentGrants(
     const grant = await grantReportPaidEntitlement(db, {
       reportId,
       userId: row.user_id,
-      planType,
+      planType: reportPlanType,
     });
     if (!grant.ok) return { ok: false, error: grant.error };
     await bookPromoRedemption();
@@ -412,7 +430,7 @@ async function healCompletedPaymentGrants(
   }
 
   const forecastPlans = new Set(['7day', 'monthly', 'annual']);
-  if (forecastPlans.has(planType)) {
+  if (forecastPlans.has(reportPlanType)) {
     await maybeDispatchReportGenerate(db, reportId, baseUrl);
   }
 
@@ -446,7 +464,7 @@ export async function finalizeCompletedZiinaIntent(
 
   const { data: payRow, error: payErr } = await db
     .from('ziina_payments')
-    .select('report_id, plan_type, status, user_id, promo_code_id')
+    .select('report_id, plan_type, status, user_id, promo_code_id, amount, currency')
     .eq('ziina_intent_id', intentId)
     .maybeSingle();
 
@@ -454,7 +472,9 @@ export async function finalizeCompletedZiinaIntent(
     console.warn('[ziina/finalize] ziina_payments lookup:', payErr.message);
   }
 
-  const row = payRow as (ZiinaPaymentRow & { promo_code_id?: string | null }) | null;
+  const row = payRow as
+    | (ZiinaPaymentRow & { promo_code_id?: string | null; amount?: number | null; currency?: string | null })
+    | null;
   if (!row) {
     return { ok: true, action: 'no_binding' };
   }
@@ -485,7 +505,7 @@ export async function finalizeCompletedZiinaIntent(
   };
 
   if (row.status === 'completed') {
-    return healCompletedPaymentGrants(db, row, baseUrl, bookPromoRedemption);
+    return healCompletedPaymentGrants(db, intentId, row, baseUrl, bookPromoRedemption);
   }
 
   const planType = row.plan_type ?? '';
@@ -581,6 +601,7 @@ export async function finalizeCompletedZiinaIntent(
     // entitlements in case the winner lost the report/unlock write after the claim.
     return healCompletedPaymentGrants(
       db,
+      intentId,
       { ...row, status: 'completed' },
       baseUrl,
       bookPromoRedemption,
@@ -609,6 +630,25 @@ export async function finalizeCompletedZiinaIntent(
     /* analytics must never break payment finalization */
   }
 
+  // A subscription payment extends access first — that is the product. The report the
+  // quiz created is the first period's 30-day forecast, so it is granted and generated
+  // as the 'monthly' report plan (writing 'sub_monthly' onto it would break its length).
+  const subscriptionPlan = planFromPlanType(planType);
+  const reportPlanType = subscriptionPlan ? 'monthly' : planType;
+  if (subscriptionPlan) {
+    if (!boundUserId) {
+      return { ok: false, error: 'Subscription payment is missing its owner' };
+    }
+    const sub = await grantSubscriptionPeriod(db, {
+      intentId,
+      userId: boundUserId,
+      planType,
+      amount: intent.amount,
+      currency: intent.currency_code,
+    });
+    if (!sub.ok) return { ok: false, error: sub.error };
+  }
+
   if (planType === 'monthly_upgrade') {
     const grant = await grantReportPaidEntitlement(db, {
       reportId,
@@ -625,13 +665,13 @@ export async function finalizeCompletedZiinaIntent(
     const grant = await grantReportPaidEntitlement(db, {
       reportId,
       userId: boundUserId,
-      planType,
+      planType: reportPlanType,
     });
     if (!grant.ok) return { ok: false, error: grant.error };
   }
 
   const forecastPlans = new Set(['7day', 'monthly', 'annual']);
-  if (forecastPlans.has(planType) && reportForPayment) {
+  if (forecastPlans.has(reportPlanType) && reportForPayment) {
     await maybeDispatchReportGenerate(db, reportId, baseUrl);
   }
 

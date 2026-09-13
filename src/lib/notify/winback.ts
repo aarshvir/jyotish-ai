@@ -241,7 +241,7 @@ export interface WinbackInput {
   chart: WinbackChart;
   /** 2–3 sentences interpreting the chart against the question. Ignored for unsafe questions. */
   insight: string;
-  /** Signed resume link: lands on a pre-filled 7-day checkout with NEWUSER30 applied. */
+  /** Signed resume link: lands on the quiz, pre-filled with their details and earlier question. */
   offerHref: string;
   unsubscribeHref: string;
   now?: Date;
@@ -329,9 +329,9 @@ ${facts.length ? `<table role="presentation" width="100%" cellpadding="0" cellsp
 
 <p style="margin:0 0 16px">${esc(reading)}</p>
 
-<p style="margin:0 0 20px">The full reading takes this period down to the hour &mdash; which days favour the move you are weighing, and which to sit out. It is a one-time purchase, no subscription, and the button below already has 30% off applied for you.</p>
+<p style="margin:0 0 20px">A subscription takes this period down to the hour &mdash; which days favour the move you are weighing, and which to sit out &mdash; with a fresh 30-day forecast every month. Nothing renews automatically: you choose each time.</p>
 
-${emailButton('Read my full forecast', offerHref)}
+${emailButton('See my plan', offerHref)}
 
 <p style="margin:18px 0 0;font-size:14px;color:#6b6776">If this is not what you were after, just reply and tell me &mdash; a real person reads these.</p>
 
@@ -355,7 +355,7 @@ ${emailButton('Read my full forecast', offerHref)}
     '',
     reading,
     '',
-    'The full reading takes this period down to the hour. One-time purchase, no subscription — 30% off is already applied at this link:',
+    'A subscription takes this period down to the hour, with a fresh 30-day forecast every month. Nothing renews automatically:',
     offerHref,
     '',
     'If this is not what you were after, just reply and tell me — a real person reads these.',
