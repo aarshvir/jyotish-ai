@@ -8,6 +8,7 @@ import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { sendFounderDigest, runAbandonedCheckoutRecovery, runPreviewNurture } from '@/lib/notify/lifecycle';
 import { drainReconcilePayments } from '@/lib/ziina/reconcilePayments';
 import { recordCronRun } from '@/lib/analytics/server';
+import { runRenewalReminders, supabaseReminderStore } from '@/lib/subscriptions/renewalReminders';
 
 /**
  * GET /api/cron/reconcile-payments
@@ -32,6 +33,14 @@ export async function GET(request: NextRequest) {
   const digest = await sendFounderDigest();
 
   const db = createServiceClient();
+
+  // Subscription renewal reminders (one per paid period). Guarded twice — the job never throws and is
+  // capped — because nothing it does may stop the payment drain below from running.
+  const renewals = await runRenewalReminders({ store: supabaseReminderStore(db) }).catch((e: unknown) => ({
+    ok: false,
+    error: e instanceof Error ? e.message.slice(0, 200) : String(e).slice(0, 200),
+  }));
+
   const cutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   const dispatchOrigin = getCanonicalDispatchOrigin(request.nextUrl.origin);
 
@@ -58,5 +67,6 @@ export async function GET(request: NextRequest) {
     recovery,
     nurture,
     digest,
+    renewals,
   });
 }

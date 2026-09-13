@@ -51,7 +51,7 @@ export default function Hero() {
 
         {/* Subtitle — CSS fade-up */}
         <p className="animate-fade-up-1 font-body text-body-lg text-dust max-w-xl mx-auto mb-10 leading-relaxed">
-          Same Tuesday. Two windows. Your chart says which hour is clearer for the call.
+          Same Tuesday. Two windows. Your chart says which hour is clearer for the call.{' '}
           <br className="hidden md:block" />
           Eighteen slots a day, scored in plain English. Free to start.
         </p>
@@ -68,7 +68,7 @@ export default function Hero() {
             Or read a full sample day →
           </Link>
           <p className="font-mono text-mono-sm text-dust tracking-wider">
-            Free account in 20 seconds · no card required
+            No sign-up · no card required
           </p>
         </div>
 
