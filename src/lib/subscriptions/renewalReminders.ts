@@ -122,15 +122,18 @@ export async function runRenewalReminders(opts: {
         result.alreadySent++;
         continue;
       }
-      const { subject, html, text } = renewalReminderEmail({
-        plan: sub.plan,
-        daysRemaining: daysLeft(sub, now),
-        renewHref: `${site}/start?renew=1`,
-        unsubscribeHref: unsubscribeUrl(email, site),
-      });
       let delivered = false;
       try {
-        const r = await send({ to: email, subject, html, text, listUnsubscribeUrl: unsubscribeUrl(email, site) });
+        // Inside the per-subscriber guard: a missing unsubscribe signing secret must cost this one
+        // email (released below, retried tomorrow), never the whole run.
+        const unsub = unsubscribeUrl(email, site);
+        const { subject, html, text } = renewalReminderEmail({
+          plan: sub.plan,
+          daysRemaining: daysLeft(sub, now),
+          renewHref: `${site}/start?renew=1`,
+          unsubscribeHref: unsub,
+        });
+        const r = await send({ to: email, subject, html, text, listUnsubscribeUrl: unsub });
         delivered = r.ok && !r.skipped;
       } catch {
         delivered = false;

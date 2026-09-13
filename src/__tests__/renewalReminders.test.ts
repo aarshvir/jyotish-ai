@@ -1,4 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
+
+// The real unsubscribe link needs a signing secret that tests do not have; the link's own signing is
+// covered by suppression.test.ts. Here it only has to be present in the email.
+vi.mock('@/lib/notify/suppression', () => ({
+  unsubscribeUrl: (email: string) => `https://www.vedichour.com/api/unsubscribe?e=${encodeURIComponent(email)}`,
+  fetchSuppressedSet: vi.fn(async () => new Set<string>()),
+}));
+
 import {
   runRenewalReminders,
   renewalReminderEmail,
@@ -33,7 +41,7 @@ function fakeStore(subs: DueSubscription[], opts: { emails?: Record<string, stri
   return { store, claimed };
 }
 
-const okSend = () => vi.fn(async () => ({ ok: true }));
+const okSend = () => vi.fn(async (_args: { to: string }) => ({ ok: true }));
 
 describe('who gets a renewal reminder', () => {
   it('reminds a monthly plan 3 days out and an annual plan 14 days out, and nobody earlier', async () => {
@@ -47,7 +55,7 @@ describe('who gets a renewal reminder', () => {
     const send = okSend();
     const r = await runRenewalReminders({ store: fakeStore(subs).store, send, now: NOW });
     expect(r).toMatchObject({ ok: true, due: 2, sent: 2 });
-    expect(send.mock.calls.map((c) => (c[0] as { to: string }).to).sort()).toEqual(['a-due@example.com', 'm-due@example.com']);
+    expect(send.mock.calls.map((c) => c[0].to).sort()).toEqual(['a-due@example.com', 'm-due@example.com']);
   });
 
   it('links to one-tap renewal and never promises a price or discount', () => {
@@ -55,7 +63,11 @@ describe('who gets a renewal reminder', () => {
     expect(e.subject).toBe('Your VedicHour monthly plan ends in 3 days');
     expect(e.html).toContain('/start?renew=1');
     expect(e.text).toContain('Unsubscribe: https://x/u');
-    expect(`${e.html}${e.text}`).not.toMatch(/%|off|discount|₹|\$|refund|guarantee/i);
+    // Checked on the plain-text body (the same words as the HTML): the email shell's CSS legitimately
+    // contains "%" and "off", so a blanket match on the HTML tests the template, not the promise.
+    expect(e.text).not.toMatch(/\d\s?%|% off|discount|₹|\$\s?\d|refund|guarantee|free/i);
+    // Word boundary: the shared shell's disclaimer "not guaranteed outcomes" is honest, not a promise.
+    expect(e.html).not.toMatch(/discount|₹|refund|money-back|\bguarantee\b|% off/i);
     expect(renewalReminderEmail({ plan: 'annual', daysRemaining: 1, renewHref: 'r', unsubscribeHref: 'u' }).subject).toBe(
       'Your VedicHour annual plan ends tomorrow',
     );
