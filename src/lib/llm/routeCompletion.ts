@@ -256,6 +256,8 @@ export async function completeLlmChat(opts: {
   if (modelId.startsWith('claude-')) {
     if (anthropicClient) {
       console.log(`[LLM] Using Anthropic model: ${modelId}`);
+      const t0 = Date.now();
+      let truncated = false;
       try {
         const response = await anthropicClient.messages.create({
           model: modelId.startsWith('claude-') ? modelId : 'claude-opus-5',
@@ -263,8 +265,36 @@ export async function completeLlmChat(opts: {
           system: opts.systemPrompt,
           messages: [{ role: 'user', content: opts.userPrompt }],
         });
+        // Same usage line as the model chain, so a pinned model's cost is visible too (hourly-batch).
+        console.log(
+          JSON.stringify({
+            type: 'llm_usage',
+            stage: opts.auditStage ?? 'commentary_pinned',
+            rung: 'anthropic_pinned',
+            model: modelId,
+            ms: Date.now() - t0,
+            input: response.usage?.input_tokens ?? null,
+            output: response.usage?.output_tokens ?? null,
+            reasoning: null,
+            fallbacks: 0,
+          }),
+        );
+        // A reply cut off at max_tokens is half a JSON document; never hand it to the caller as an answer.
+        if (response.stop_reason === 'max_tokens') {
+          truncated = true;
+          throw new Error(`${modelId} truncated at max_tokens ${opts.maxTokens}`);
+        }
         return extractAnthropicText(response);
       } catch (anthropicErr: unknown) {
+        if (truncated && hasAnyChatFallbackKey()) {
+          console.warn(`[LLM] ${modelId} truncated — running the model chain instead`);
+          return runChatFallbackChain({
+            systemPrompt: opts.systemPrompt,
+            userPrompt: opts.userPrompt,
+            maxTokens: opts.maxTokens,
+            auditStage: opts.auditStage,
+          });
+        }
         const errStatus = (anthropicErr as { status?: number })?.status;
         const errMsg = anthropicErr instanceof Error ? anthropicErr.message : String(anthropicErr);
         console.error(`[LLM] Anthropic ${modelId} failed — HTTP ${errStatus ?? 'unknown'}: ${errMsg.slice(0, 200)}`);
