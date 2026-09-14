@@ -1753,28 +1753,41 @@ export async function generateReportPipeline(
       let months1Data: MonthSummary[] = [];
       const startDate = new Date(forecastDays[0].date);
       const lagna = ephemerisData.lagna ?? 'Cancer';
+      // Lahiri (Chitrapaksha) sidereal ingresses, computed with pyswisseph 2.10.03 in
+      // SIDM_LAHIRI (first UT day in the new sign), covering the forecast window. The
+      // previous hand-typed table was wrong for most planets (e.g. "Mars enters Scorpio
+      // 1 Sep 2026" when Mars was in Gemini, Jupiter "in Taurus" when it was in Cancer),
+      // and those claims were written into customers' monthly forecasts.
       const KNOWN_INGRESSES_2026 = [
-        { planet: 'Jupiter', sign: 'Taurus',      date: '2026-05-14', note: 'Jupiter enters Taurus (H? for lagna) — expansion of resources, 12-yr cycle' },
-        { planet: 'Saturn',  sign: 'Aries',       date: '2025-03-29', note: 'Saturn in Aries — discipline, karmic pressure on action' },
-        { planet: 'Saturn',  sign: 'Pisces',      date: '2025-03-29', note: 'Saturn in Pisces' },
-        { planet: 'Rahu',    sign: 'Aquarius',    date: '2025-05-18', note: 'Rahu in Aquarius — ambition toward networks and technology' },
-        { planet: 'Ketu',    sign: 'Leo',         date: '2025-05-18', note: 'Ketu in Leo — spiritual detachment from ego, fame' },
-        { planet: 'Mars',    sign: 'Cancer',      date: '2026-02-23', note: 'Mars in Cancer — high-energy home/emotional focus' },
-        { planet: 'Mars',    sign: 'Leo',         date: '2026-04-11', note: 'Mars in Leo — bold self-expression, career momentum' },
-        { planet: 'Mars',    sign: 'Virgo',       date: '2026-05-27', note: 'Mars in Virgo — precision, health, service-oriented action' },
-        { planet: 'Mars',    sign: 'Libra',       date: '2026-07-13', note: 'Mars in Libra — partnerships, contracts, assertive diplomacy' },
-        { planet: 'Mars',    sign: 'Scorpio',     date: '2026-09-01', note: 'Mars in Scorpio — depth, investigation, hidden resources' },
-        { planet: 'Mars',    sign: 'Sagittarius', date: '2026-10-18', note: 'Mars in Sagittarius — expansion, philosophy, long-distance action' },
-        { planet: 'Mars',    sign: 'Capricorn',   date: '2026-12-01', note: 'Mars exalted in Capricorn — peak professional drive' },
+        { planet: 'Saturn',  sign: 'Pisces',      date: '2025-03-30', note: 'Saturn in Pisces — discipline around endings, faith and letting go' },
+        { planet: 'Rahu',    sign: 'Aquarius',    date: '2025-05-19', note: 'Rahu in Aquarius — ambition toward networks and technology' },
+        { planet: 'Ketu',    sign: 'Leo',         date: '2025-05-19', note: 'Ketu in Leo — detachment from ego and recognition' },
+        { planet: 'Mars',    sign: 'Capricorn',   date: '2026-01-16', note: 'Mars exalted in Capricorn — peak professional drive' },
+        { planet: 'Mars',    sign: 'Aquarius',    date: '2026-02-23', note: 'Mars in Aquarius — drive toward groups, systems and technology' },
+        { planet: 'Mars',    sign: 'Pisces',      date: '2026-04-02', note: 'Mars in Pisces — quieter, behind-the-scenes effort' },
+        { planet: 'Mars',    sign: 'Aries',       date: '2026-05-11', note: 'Mars in Aries (own sign) — bold initiative, fast action' },
+        { planet: 'Mars',    sign: 'Taurus',      date: '2026-06-21', note: 'Mars in Taurus — steady effort on money and assets' },
+        { planet: 'Jupiter', sign: 'Cancer',      date: '2026-06-02', note: 'Jupiter exalted in Cancer — growth through home, care and wisdom' },
+        { planet: 'Mars',    sign: 'Gemini',      date: '2026-08-03', note: 'Mars in Gemini — busy communication, short trips, negotiations' },
+        { planet: 'Mars',    sign: 'Cancer',      date: '2026-09-18', note: 'Mars debilitated in Cancer — emotional reactions, home matters' },
+        { planet: 'Jupiter', sign: 'Leo',         date: '2026-10-31', note: 'Jupiter in Leo — confidence, leadership, creative growth' },
+        { planet: 'Mars',    sign: 'Leo',         date: '2026-11-13', note: 'Mars in Leo — bold self-expression, career momentum' },
+        { planet: 'Rahu',    sign: 'Capricorn',   date: '2026-12-06', note: 'Rahu in Capricorn — ambition toward status and structure' },
+        { planet: 'Ketu',    sign: 'Cancer',      date: '2026-12-06', note: 'Ketu in Cancer — detachment around home and emotional ties' },
+        { planet: 'Jupiter', sign: 'Cancer',      date: '2027-01-25', note: 'Jupiter moves back into Cancer (retrograde)' },
+        { planet: 'Sun',     sign: 'Capricorn',   date: '2026-01-14', note: 'Sun in Capricorn — duty, structure, long-term goals' },
+        { planet: 'Sun',     sign: 'Aquarius',    date: '2026-02-13', note: 'Sun in Aquarius — community, ideas, networks' },
+        { planet: 'Sun',     sign: 'Pisces',      date: '2026-03-15', note: 'Sun in Pisces — reflection, rest, spiritual focus' },
         { planet: 'Sun',     sign: 'Aries',       date: '2026-04-14', note: 'Sun enters Aries (sidereal) — solar new year, identity surge' },
         { planet: 'Sun',     sign: 'Taurus',      date: '2026-05-15', note: 'Sun in Taurus — stabilisation, financial focus' },
         { planet: 'Sun',     sign: 'Gemini',      date: '2026-06-15', note: 'Sun in Gemini — communication, learning peaks' },
-        { planet: 'Sun',     sign: 'Cancer',      date: '2026-07-16', note: 'Sun in Cancer — home, emotions, nurturing' },
+        { planet: 'Sun',     sign: 'Cancer',      date: '2026-07-17', note: 'Sun in Cancer — home, emotions, nurturing' },
         { planet: 'Sun',     sign: 'Leo',         date: '2026-08-17', note: 'Sun in Leo (own sign) — leadership, authority at peak' },
         { planet: 'Sun',     sign: 'Virgo',       date: '2026-09-17', note: 'Sun in Virgo — analysis, health, service' },
-        { planet: 'Sun',     sign: 'Libra',       date: '2026-10-17', note: 'Sun debilitated in Libra — compromise, partnership focus' },
-        { planet: 'Sun',     sign: 'Scorpio',     date: '2026-11-16', note: 'Sun in Scorpio — depth, hidden matters surface' },
+        { planet: 'Sun',     sign: 'Libra',       date: '2026-10-18', note: 'Sun debilitated in Libra — compromise, partnership focus' },
+        { planet: 'Sun',     sign: 'Scorpio',     date: '2026-11-17', note: 'Sun in Scorpio — depth, hidden matters surface' },
         { planet: 'Sun',     sign: 'Sagittarius', date: '2026-12-16', note: 'Sun in Sagittarius — expansion, optimism, dharma' },
+        { planet: 'Sun',     sign: 'Capricorn',   date: '2027-01-15', note: 'Sun in Capricorn — duty, structure, long-term goals' },
       ];
       const SIGNS_WHEEL = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
       const houseFromLagna = (sign: string, lagnaSign: string) => {

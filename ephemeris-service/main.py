@@ -4,6 +4,7 @@ from datetime import date, datetime, timedelta
 from typing import Optional, List, Dict, Any
 from zoneinfo import ZoneInfo
 from timezonefinder import TimezoneFinder
+import threading
 import swisseph as swe
 import math
 import traceback
@@ -67,7 +68,14 @@ print(
 
 @app.middleware("http")
 async def _reassert_sidereal_mode(request, call_next):
-    """Belt-and-braces: pin Lahiri at the start of every request."""
+    """Pins Lahiri on the event-loop thread only.
+
+    pyswisseph keeps the sidereal mode PER THREAD, and FastAPI runs the sync endpoints
+    in a worker thread pool, so this alone never protected /natal-chart or the daily
+    grids: production served Fagan-Bradley on most requests. The load-bearing calls are
+    the ensure_lahiri() at the top of get_planet_position() and
+    get_sidereal_ascendant_longitude(), which run on whichever thread does the maths.
+    """
     ensure_lahiri()
     return await call_next(request)
 
@@ -80,13 +88,35 @@ def health():
     correct zero-point. `ayanamsa_ok: false` means every chart being served is wrong.
     """
     ayan = ensure_lahiri()
+    ayanamsa_ok = _LAHIRI_J2000_MIN <= ayan <= _LAHIRI_J2000_MAX
+    # The mode is per thread, so checking it here only proves THIS thread. Also run the
+    # real chart primitive in a brand-new thread, which starts on the Fagan-Bradley
+    # default, and confirm it still lands on Lahiri.
+    worker_thread_ok = _worker_thread_is_lahiri()
     return {
-        "ok": True,
+        "ok": ayanamsa_ok and worker_thread_ok,
         "ayanamsa": _AYANAMSA_NAME,
         "ayanamsa_j2000": round(ayan, 6),
-        "ayanamsa_ok": _LAHIRI_J2000_MIN <= ayan <= _LAHIRI_J2000_MAX,
+        "ayanamsa_ok": ayanamsa_ok,
+        "worker_thread_ok": worker_thread_ok,
         "pyswisseph": getattr(swe, "__version__", "unknown"),
     }
+
+
+def _worker_thread_is_lahiri() -> bool:
+    """True when get_planet_position() yields Lahiri on a thread that never set the mode."""
+    box: Dict[str, float] = {}
+
+    def run():
+        sidereal = get_planet_position(2451545.0, swe.SUN)["longitude"]
+        tropical = swe.calc_ut(2451545.0, swe.SUN, 0)[0][0]
+        box["ayanamsa"] = (tropical - sidereal) % 360.0
+
+    t = threading.Thread(target=run, daemon=True)
+    t.start()
+    t.join(timeout=5)
+    ayan = box.get("ayanamsa")
+    return ayan is not None and _LAHIRI_J2000_MIN <= ayan <= _LAHIRI_J2000_MAX
 
 # Timezone finder instance
 _tf = TimezoneFinder()
@@ -196,6 +226,8 @@ def get_julian_day(dt: datetime) -> float:
 
 def get_planet_position(jd: float, planet: int) -> Dict[str, Any]:
     """Get sidereal position of a planet"""
+    # Per-thread sidereal mode: set Lahiri on the thread doing this calculation.
+    ensure_lahiri()
     result = swe.calc_ut(jd, planet, swe.FLG_SIDEREAL)
     longitude = result[0][0]
     speed = result[0][3]
@@ -242,6 +274,8 @@ def get_sidereal_ascendant_longitude(jd: float, lat: float, lng: float) -> float
     except Exception:
         _, ascmc = swe.houses(jd, lat, lng, b'E')
     asc_tropical = float(ascmc[0]) % 360.0
+    # Per-thread sidereal mode: set Lahiri on this thread before reading the ayanamsa.
+    ensure_lahiri()
     return (asc_tropical - swe.get_ayanamsa_ut(jd)) % 360.0
 
 
