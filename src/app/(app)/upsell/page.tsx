@@ -5,8 +5,8 @@ import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 import { UpsellButton } from './_UpsellButton';
 import { DismissToReport } from './_DismissToReport';
 import { createClient } from '@/lib/supabase/server';
-import { headers } from 'next/headers';
-import { currencyFromHeader } from '@/lib/pricing';
+import { headers, cookies } from 'next/headers';
+import { currencyForRequest } from '@/lib/pricing';
 import { getMonthlyUpgradeAmount, formatAmount } from '@/lib/ziina/server';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 
@@ -60,9 +60,10 @@ export default async function UpsellPage({ searchParams }: Props) {
   }
 
   // Localized upgrade price — matches the currency the upgrade route will charge
-  // (middleware sets x-currency from the vh_currency cookie → geo, same as /api/ziina/upgrade).
+  // (vh_currency cookie → country, the same precedence /api/ziina/upgrade charges with).
   const h = await headers();
-  const upgradeCurrency = currencyFromHeader(h.get('x-currency'));
+  const cookieStore = await cookies();
+  const upgradeCurrency = currencyForRequest(cookieStore.get('vh_currency')?.value, h.get('x-vercel-ip-country'));
   const upgradeLabel = formatAmount(getMonthlyUpgradeAmount(upgradeCurrency), upgradeCurrency);
 
   return (

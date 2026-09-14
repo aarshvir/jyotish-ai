@@ -20,7 +20,9 @@ export default function BlogOgImage({ params }: { params: { slug: string } }) {
           flexDirection: 'column',
           justifyContent: 'space-between',
           background:
-            'radial-gradient(1200px 600px at 85% 5%, rgba(228,185,98,0.20), transparent 60%), linear-gradient(135deg, #080C18 0%, #0C1226 50%, #080C18 100%)',
+            // Satori (next/og) rejects the "1200px 600px at …" radial-gradient size form with
+            // "Missing comma before color stops", which made every blog share preview a 500.
+            'radial-gradient(circle at 85% 5%, rgba(228,185,98,0.20) 0%, rgba(228,185,98,0) 60%), linear-gradient(135deg, #080C18 0%, #0C1226 50%, #080C18 100%)',
           padding: 72,
           fontFamily: 'Noto Sans',
           color: '#F5EFE0',

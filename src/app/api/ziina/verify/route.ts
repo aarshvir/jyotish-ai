@@ -34,6 +34,10 @@ export async function GET(request: NextRequest) {
     if (planType === 'synastry' || planType === 'kundali') {
       return NextResponse.redirect(`${origin}/${planType}?payment=cancelled`);
     }
+    // A subscription checkout starts on the quiz paywall; /onboard would redirect there and drop the banner.
+    if (planType === 'sub_monthly' || planType === 'sub_annual') {
+      return NextResponse.redirect(`${origin}/start?payment=cancelled`);
+    }
     return NextResponse.redirect(`${origin}/onboard?plan=${planType}&payment=cancelled`);
   }
 
@@ -74,7 +78,18 @@ export async function GET(request: NextRequest) {
           return NextResponse.redirect(`${origin}/onboard?payment=error`);
         }
       }
-      return NextResponse.redirect(`${origin}/report/${storedIntent.report_id}?payment_status=paid`);
+      // The payment is already claimed, but a grant after the claim (subscription period,
+      // report entitlement, generation dispatch) may have failed, and the reconcile cron
+      // only scans pending rows. The finalizer is idempotent, so re-running it here heals
+      // that customer instead of leaving them on the preview they paid to unlock.
+      const heal = await finalizeCompletedZiinaIntent(db, intentId, dispatchOrigin);
+      if (!heal.ok) {
+        console.error('[ziina/verify] heal of completed intent failed:', heal.error);
+      }
+      const subscribed = storedIntent.plan_type === 'sub_monthly' || storedIntent.plan_type === 'sub_annual';
+      return NextResponse.redirect(
+        `${origin}/report/${storedIntent.report_id}?payment_status=paid${subscribed ? '&subscribed=1' : ''}`,
+      );
     }
 
     // Standalone unlock products (synastry/kundali) have NO bound report. Handle them
@@ -182,6 +197,9 @@ export async function GET(request: NextRequest) {
     );
   } catch (err) {
     console.error('[ziina/verify] failed:', err);
+    if (planType === 'sub_monthly' || planType === 'sub_annual') {
+      return NextResponse.redirect(`${origin}/start?payment=error`);
+    }
     return NextResponse.redirect(`${origin}/onboard?plan=${planType}&payment=error`);
   }
 }

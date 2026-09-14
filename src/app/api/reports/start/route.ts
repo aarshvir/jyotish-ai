@@ -34,7 +34,7 @@ import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { decideAfterPromoRedeem } from '@/lib/promo/redeemGate';
 import { decideFreeReportClaim } from '@/lib/reports/freeReportGate';
 import { minForecastDaysForPlan } from '@/lib/reports/forecastDayCount';
-import { getSubscription, nextForecastUnlock } from '@/lib/subscriptions/access';
+import { getSubscription, latestForecastStartedAt, nextForecastUnlock } from '@/lib/subscriptions/access';
 import { isSubscriptionPlanType } from '@/lib/subscriptions/period';
 
 /**
@@ -571,16 +571,13 @@ export async function POST(request: NextRequest) {
       );
     }
     if (subscription?.active) {
-      const { data: lastForecast, error: lastForecastErr } = await db
-        .from('reports')
-        .select('created_at')
-        .eq('user_id', auth.user.id)
-        .in('payment_status', ['paid', 'promo'])
-        .in('plan_type', ['monthly', 'annual'])
-        .neq('id', reportId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      let lastForecastAt: string | null = null;
+      let lastForecastErr: unknown = null;
+      try {
+        lastForecastAt = await latestForecastStartedAt(db, auth.user.id, reportId);
+      } catch (e) {
+        lastForecastErr = e;
+      }
       if (lastForecastErr) {
         await releaseOwnedLock();
         return NextResponse.json(
@@ -594,7 +591,7 @@ export async function POST(request: NextRequest) {
         );
       }
       // One 30-day forecast per ~month: the price is set at 6x the cost of one.
-      const unlock = nextForecastUnlock((lastForecast as { created_at?: string } | null)?.created_at);
+      const unlock = nextForecastUnlock(lastForecastAt);
       if (unlock && unlock.getTime() > Date.now()) {
         await releaseOwnedLock();
         return NextResponse.json(

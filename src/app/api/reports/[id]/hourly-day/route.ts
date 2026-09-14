@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { createJobToken } from '@/lib/api/jobToken';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
@@ -123,6 +124,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // Production refuses customer sessions on /api/commentary/* (model spend), so this
+        // server-to-server call carries a short-lived job token for the report. The cookie
+        // stays for local runs, where sessions are still accepted.
+        'x-job-token': createJobToken({
+          reportId,
+          userId: (reportRow as { user_id?: string | null }).user_id ?? auth.user.id,
+          purpose: 'pipeline',
+          ttlSeconds: 5 * 60,
+        }),
         cookie: req.headers.get('cookie') ?? '',
       },
       body: JSON.stringify({
