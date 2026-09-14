@@ -12,6 +12,7 @@ import {
 } from '@/lib/ziina/server';
 import { getPromoDiscount, redeemPromoCode, hasUserRedeemed, oncePerUserOrderId } from '@/lib/promo/server';
 import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
+import { persistUnpaidCheckoutDraft } from '@/lib/ziina/checkoutDraft';
 import { decideStandaloneUnlockCheckout } from '@/lib/ziina/standaloneUnlockGuards';
 import { isReportCheckoutAlreadyPaid } from '@/lib/ziina/reportBoundCheckoutGuards';
 import { finalizeCompletedZiinaIntent } from '@/lib/ziina/finalizeIntent';
@@ -32,6 +33,7 @@ import { subscriptionTablesReady } from '@/lib/subscriptions/access';
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
+  const user = auth.user;
 
   if (!isZiinaConfigured()) {
     return NextResponse.json({ error: 'Payment not configured' }, { status: 503 });
@@ -228,6 +230,51 @@ export async function POST(request: NextRequest) {
     (process.env.VERCEL === '1' && process.env.NODE_ENV !== 'development');
   const allowTestMode = testMode === true && !productionRuntime;
 
+  async function persistCheckoutDraftFromBody() {
+    if (!reportId) return { ok: true as const };
+    const toCoord = (v: unknown): number | null => {
+      const n = parseFloat(String(v ?? ''));
+      return Number.isFinite(n) ? n : null;
+    };
+    const birthLat = toCoord(body.birth_lat);
+    const birthLng = toCoord(body.birth_lng);
+    const currentLat = toCoord(body.current_lat);
+    const currentLng = toCoord(body.current_lng);
+    const timezoneOffset = resolveReportTimezoneOffset({
+      clientOffset: body.timezone_offset,
+      birthCity: body.birth_city,
+      birthLng,
+      currentCity: body.current_city,
+      currentLng,
+    });
+    const draft = await persistUnpaidCheckoutDraft(db, {
+      reportId,
+      userId: user.id,
+      userEmail: user.email ?? '',
+      nativeName: body.name ?? 'Seeker',
+      birthDate: body.birth_date ?? '2000-01-01',
+      birthTime: body.birth_time ?? '12:00:00',
+      birthCity: body.birth_city ?? 'Unknown',
+      birthLat,
+      birthLng,
+      currentCity: body.current_city ?? null,
+      currentLat,
+      currentLng,
+      timezoneOffset,
+      planType: isSubscription ? 'monthly' : planType ?? 'monthly',
+      reportStartDate:
+        typeof body.forecast_start === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.forecast_start)
+          ? body.forecast_start
+          : null,
+      phone: typeof body.phone === 'string' ? body.phone : null,
+      personalContext: typeof body.personal_context === 'string' ? body.personal_context : null,
+    });
+    if (!draft.ok) {
+      console.error('[ziina/create-intent] draft report persist failed:', draft.error);
+    }
+    return draft;
+  }
+
   try {
     // Standalone Kundali / Synastry unlocks are not bound to a report_id, so the
     // forecast alreadyPaid / pending-reuse / supersede guards below never ran for
@@ -390,6 +437,15 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      // Write (or refresh) the unpaid draft BEFORE pending-intent reuse. /start reuses
+      // the same report id for 30 minutes, so a Back from Ziina plus a changed birth
+      // time must land on this row — finalize generates from these fields, and the
+      // 90s reuse used to return without touching them.
+      const draft = await persistCheckoutDraftFromBody();
+      if (!draft.ok) {
+        return NextResponse.json({ error: 'Could not create checkout draft' }, { status: 500 });
+      }
+
       const pendingCutoff = new Date(Date.now() - 90 * 1000).toISOString();
       const { data: existingPayment, error: existingPaymentErr } = await db
         .from('ziina_payments')
@@ -424,97 +480,6 @@ export async function POST(request: NextRequest) {
             amount: reusable.amount,
             discountPct,
           });
-        }
-      }
-    }
-
-    // Persist a paid report DRAFT row (with full birth data) BEFORE checkout so a
-    // completed Ziina payment ALWAYS has a row to mark paid + generate. Without this,
-    // verify redirects to a bare /report/{id} with no row → the buyer sees "not found"
-    // after paying. Created 'pending'/'unpaid'; finalize flips it to paid + dispatches
-    // generation from these stored birth fields. ignoreDuplicates so it never clobbers
-    // an already-owned (e.g. already-paid) row.
-    if (reportId && !isStandaloneUnlock) {
-      const toCoord = (v: unknown): number | null => {
-        const n = parseFloat(String(v ?? ''));
-        return Number.isFinite(n) ? n : null;
-      };
-      const birthLat = toCoord(body.birth_lat);
-      const birthLng = toCoord(body.birth_lng);
-      const currentLat = toCoord(body.current_lat);
-      const currentLng = toCoord(body.current_lng);
-      // Prefer timed-location estimate over client/browser TZ (onboard used to send
-      // getTimezoneOffset() when "live elsewhere" was unchecked).
-      const timezoneOffset = resolveReportTimezoneOffset({
-        clientOffset: body.timezone_offset,
-        birthCity: body.birth_city,
-        birthLng,
-        currentCity: body.current_city,
-        currentLng,
-      });
-      const { error: draftErr } = await db.from('reports').upsert(
-        {
-          id: reportId,
-          user_id: auth.user.id,
-          user_email: auth.user.email ?? '',
-          native_name: body.name ?? 'Seeker',
-          birth_date: body.birth_date ?? '2000-01-01',
-          birth_time: body.birth_time ?? '12:00:00',
-          birth_city: body.birth_city ?? 'Unknown',
-          birth_lat: birthLat,
-          birth_lng: birthLng,
-          current_city: body.current_city ?? null,
-          current_lat: currentLat,
-          current_lng: currentLng,
-          timezone_offset: timezoneOffset,
-          // A subscription's first period is a 30-day forecast; the payment row keeps sub_*.
-          plan_type: isSubscription ? 'monthly' : planType,
-          // Persist the buyer's chosen forecast start date so the post-payment
-          // auto-dispatch (finalizeIntent) generates from it instead of defaulting to today.
-          report_start_date:
-            typeof body.forecast_start === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.forecast_start)
-              ? body.forecast_start
-              : null,
-          status: 'pending',
-          payment_status: 'unpaid',
-        },
-        { onConflict: 'id', ignoreDuplicates: true },
-      );
-      if (draftErr) {
-        console.error('[ziina/create-intent] draft report upsert failed:', draftErr.message);
-        return NextResponse.json({ error: 'Could not create checkout draft' }, { status: 500 });
-      }
-
-      // Optional column: phone (migration 20260614_user_phone). Tolerant of older DBs;
-      // lets the owner call the seeker to discuss their reading.
-      if (typeof body.phone === 'string' && body.phone.trim()) {
-        const { error: phoneErr } = await db
-          .from('reports')
-          .update({ phone: body.phone.trim() })
-          .eq('id', reportId)
-          .eq('user_id', auth.user.id);
-        if (phoneErr) {
-          const m = phoneErr.message ?? '';
-          if (!m.includes('phone') && !m.includes('schema cache')) {
-            console.warn('[ziina/create-intent] phone update failed:', m);
-          }
-        }
-      }
-
-      // Optional column: personal_context (migration 20260617). Tolerant of older DBs;
-      // personalizes the LLM commentary. Persisted via a separate update because the draft
-      // upsert above uses ignoreDuplicates (no-op on an existing row).
-      if (typeof body.personal_context === 'string' && body.personal_context.trim()) {
-        const { error: pcErr } = await db
-          .from('reports')
-          .update({ personal_context: body.personal_context.trim().slice(0, 1200) })
-          .eq('id', reportId)
-          .eq('user_id', auth.user.id);
-        if (pcErr) {
-          const m = pcErr.message ?? '';
-          if (!m.includes('personal_context') && !m.includes('schema cache')) {
-            console.warn('[ziina/create-intent] personal_context update failed:', m);
-          }
         }
       }
     }
