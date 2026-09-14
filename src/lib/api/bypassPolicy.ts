@@ -33,6 +33,16 @@ export const JOB_TOKEN_ALLOWED_PREFIXES = [
   '/api/validation/',
 ] as const;
 
+/**
+ * Routes that spend model tokens on the caller's behalf. The pipeline reaches them with a job
+ * token; in production a plain customer session may not, or any signed-up user could run paid
+ * generation for free. Admin sessions keep access for support and testing.
+ */
+export const SESSION_RESTRICTED_PREFIXES = ['/api/agents/', '/api/commentary/'] as const;
+
+/** Compute-only routes under a restricted prefix: no model spend, and the calculators call them. */
+export const SESSION_RESTRICTED_EXCEPTIONS = ['/api/agents/ephemeris'] as const;
+
 function matchesPrefix(pathname: string, prefixes: readonly string[]): boolean {
   return prefixes.some((p) => pathname.startsWith(p));
 }
@@ -46,6 +56,16 @@ export function isBypassAllowedForPath(
   // unless it is explicitly re-enabled for a production e2e run.
   if (opts.isProduction && !opts.allowInProduction) return false;
   return matchesPrefix(pathname, BYPASS_ALLOWED_PREFIXES);
+}
+
+/** May a signed-in user's own session call this path directly? */
+export function isSessionAllowedForPath(
+  pathname: string,
+  opts: { isProduction: boolean; isAdmin: boolean },
+): boolean {
+  if (!opts.isProduction || opts.isAdmin) return true;
+  if (SESSION_RESTRICTED_EXCEPTIONS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) return true;
+  return !matchesPrefix(pathname, SESSION_RESTRICTED_PREFIXES);
 }
 
 /** May an internal job token authenticate this path? */

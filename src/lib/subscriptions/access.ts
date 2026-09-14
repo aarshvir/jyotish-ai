@@ -60,6 +60,39 @@ export async function subscriptionTablesReady(db: SupabaseClient): Promise<boole
  */
 export const FORECAST_COOLDOWN_DAYS = 25;
 
+/**
+ * When the subscriber's most recent paid 30-day forecast started, or null if none has.
+ *
+ * Uses the later of created_at and generation_started_at. A report row can be created long
+ * before it is generated (every checkout makes a draft), so keying the cooldown on created_at
+ * alone let drafts made on day 0 all start, one after another, on day 25. Throws when the
+ * lookup fails, so "could not check" is never read as "no recent forecast".
+ */
+export async function latestForecastStartedAt(
+  db: SupabaseClient,
+  userId: string,
+  excludeReportId?: string,
+): Promise<string | null> {
+  let query = db
+    .from('reports')
+    .select('created_at, generation_started_at')
+    .eq('user_id', userId)
+    .in('payment_status', ['paid', 'promo'])
+    .in('plan_type', ['monthly', 'annual']);
+  if (excludeReportId) query = query.neq('id', excludeReportId);
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(50);
+  if (error) throw new Error(`Forecast lookup failed: ${error.message}`);
+
+  let latestMs = -Infinity;
+  for (const row of (data ?? []) as { created_at?: string | null; generation_started_at?: string | null }[]) {
+    for (const ts of [row.created_at, row.generation_started_at]) {
+      const ms = ts ? new Date(ts).getTime() : NaN;
+      if (Number.isFinite(ms) && ms > latestMs) latestMs = ms;
+    }
+  }
+  return Number.isFinite(latestMs) ? new Date(latestMs).toISOString() : null;
+}
+
 /** When the next forecast unlocks, given the most recent one's creation time. */
 export function nextForecastUnlock(lastForecastCreatedAt: string | Date | null | undefined): Date | null {
   if (!lastForecastCreatedAt) return null;

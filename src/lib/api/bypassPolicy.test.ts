@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isBypassAllowedForPath, isJobTokenAllowedForPath } from './bypassPolicy';
+import { isBypassAllowedForPath, isJobTokenAllowedForPath, isSessionAllowedForPath } from './bypassPolicy';
 
 const DEV = { isProduction: false, allowInProduction: false };
 const PROD = { isProduction: true, allowInProduction: false };
@@ -63,6 +63,34 @@ describe('job token route policy', () => {
       '/api/ziina/upgrade',
     ]) {
       expect(isJobTokenAllowedForPath(path), path).toBe(false);
+    }
+  });
+});
+
+describe('customer sessions on model-spending routes', () => {
+  const PROD_USER = { isProduction: true, isAdmin: false };
+  const PROD_ADMIN = { isProduction: true, isAdmin: true };
+  const DEV_USER = { isProduction: false, isAdmin: false };
+
+  it('refuses a customer session on commentary and agent routes in production', () => {
+    for (const path of ['/api/commentary/hourly-batch', '/api/commentary/weeks-synthesis', '/api/agents/nativity', '/api/agents/forecast']) {
+      expect(isSessionAllowedForPath(path, PROD_USER)).toBe(false);
+    }
+  });
+
+  it('keeps the compute-only ephemeris route open to signed-in sessions', () => {
+    expect(isSessionAllowedForPath('/api/agents/ephemeris', PROD_USER)).toBe(true);
+    expect(isSessionAllowedForPath('/api/agents/ephemeris-extra', PROD_USER)).toBe(false);
+  });
+
+  it('lets admins and non-production sessions through', () => {
+    expect(isSessionAllowedForPath('/api/commentary/hourly-batch', PROD_ADMIN)).toBe(true);
+    expect(isSessionAllowedForPath('/api/commentary/hourly-batch', DEV_USER)).toBe(true);
+  });
+
+  it('leaves every other route to its own checks', () => {
+    for (const path of ['/api/reports/abc/hourly-day', '/api/subscription/status', '/api/ziina/create-intent']) {
+      expect(isSessionAllowedForPath(path, PROD_USER)).toBe(true);
     }
   });
 });

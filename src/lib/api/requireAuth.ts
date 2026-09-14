@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { verifyJobToken } from '@/lib/api/jobToken';
 import { isAdmin } from '@/lib/admin/isAdmin';
 import { isProductionRuntime } from '@/lib/env';
-import { isBypassAllowedForPath, isJobTokenAllowedForPath } from '@/lib/api/bypassPolicy';
+import { isBypassAllowedForPath, isJobTokenAllowedForPath, isSessionAllowedForPath } from '@/lib/api/bypassPolicy';
 
 // Trim to guard against env var stored with trailing \r\n (common in CI/Windows pipes)
 const _rawBypass = (process.env.BYPASS_SECRET ?? '').trim();
@@ -121,9 +121,13 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    const admin = await isAdmin(user.email);
+    if (!isSessionAllowedForPath(pathname, { isProduction: isProductionRuntime(), isAdmin: admin })) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
     return {
       user: { id: user.id, email: user.email },
-      isAdmin: await isAdmin(user.email),
+      isAdmin: admin,
     };
   } catch {
     return NextResponse.json({ error: 'Auth check failed' }, { status: 500 });

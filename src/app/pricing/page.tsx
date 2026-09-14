@@ -1,14 +1,15 @@
-import { headers } from 'next/headers';
+import { headers, cookies } from 'next/headers';
 import Link from 'next/link';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
-import { currencyFromHeader, getDisplayPrice, PLAN_CARDS, STANDALONE_PRODUCTS } from '@/lib/pricing';
+import { currencyForRequest, getDisplayPrice, PLAN_CARDS, STANDALONE_PRODUCTS } from '@/lib/pricing';
 import { getPlanAmount } from '@/lib/ziina/server';
 import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
 
 export default async function PricingPage() {
   const h = await headers();
-  const currency = currencyFromHeader(h.get('x-currency'));
+  const cookieStore = await cookies();
+  const currency = currencyForRequest(cookieStore.get('vh_currency')?.value, h.get('x-vercel-ip-country'));
 
   const rawUrl = process.env.NEXT_PUBLIC_URL ?? '';
   const SITE_URL = (rawUrl.startsWith('http://localhost') || rawUrl === '' ? 'https://www.vedichour.com' : rawUrl).replace(

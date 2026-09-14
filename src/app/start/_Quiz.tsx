@@ -115,6 +115,40 @@ async function fetchChart(a: Answers): Promise<ChartFacts | null> {
   }
 }
 
+const CHECKOUT_REPORT_KEY = 'vh_checkout_report_v1';
+const CHECKOUT_REPORT_MAX_AGE_MS = 30 * 60 * 1000;
+
+/**
+ * One draft report per checkout attempt. Reusing it across a double tap, a retry or the
+ * back button from Ziina lets create-intent hand back the same pending payment instead of
+ * opening a second one the buyer could pay twice.
+ */
+function checkoutReportId(): string {
+  try {
+    const raw = sessionStorage.getItem(CHECKOUT_REPORT_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw) as { id?: unknown; at?: unknown };
+      if (typeof saved.id === 'string' && typeof saved.at === 'number' && Date.now() - saved.at < CHECKOUT_REPORT_MAX_AGE_MS) {
+        return saved.id;
+      }
+    }
+    const id = crypto.randomUUID();
+    sessionStorage.setItem(CHECKOUT_REPORT_KEY, JSON.stringify({ id, at: Date.now() }));
+    return id;
+  } catch {
+    return crypto.randomUUID();
+  }
+}
+
+function goToGrantedReport(reportId: string) {
+  try {
+    sessionStorage.removeItem(CHECKOUT_REPORT_KEY);
+  } catch {
+    /* ignore */
+  }
+  window.location.href = `/report/${reportId}?payment_status=paid&subscribed=1`;
+}
+
 function checkoutBody(a: Answers, planType: SubPlan, reportId: string) {
   const currentLat = num(a.current_city_lat);
   const currentLng = num(a.current_city_lng);
@@ -173,6 +207,7 @@ export function StartQuiz() {
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [gateOpen, setGateOpen] = useState(false);
   const [chart, setChart] = useState<ChartFacts | null>(null);
+  const [chartLoading, setChartLoading] = useState(false);
   const [computeLine, setComputeLine] = useState(0);
   const [prices, setPrices] = useState<Prices | null>(null);
   const [plan, setPlan] = useState<SubPlan>('sub_monthly');
@@ -197,7 +232,7 @@ export function StartQuiz() {
     if (payment) {
       setBanner(
         payment === 'pending'
-          ? 'Your payment is still processing. If money has left your account, refresh in a minute — you will not be charged twice.'
+          ? 'Your payment is still being confirmed. Keep this page open — it takes you to your forecast the moment Ziina confirms. You will not be charged twice.'
           : 'The payment did not go through, and nothing was charged. You can try again below.',
       );
     }
@@ -251,12 +286,49 @@ export function StartQuiz() {
     if (!signedIn) return;
     fetch('/api/subscription/status', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
-      .then((j: { subscription?: { active?: boolean; currentPeriodEnd?: string } | null } | null) => {
+      .then((j: { subscription?: { active?: boolean; currentPeriodEnd?: string } | null; grantedReportId?: string | null } | null) => {
+        // This request just granted a payment that had not landed (tab closed, late confirmation).
+        if (j?.grantedReportId) {
+          goToGrantedReport(j.grantedReportId);
+          return;
+        }
         const s = j?.subscription;
         setActiveUntil(s?.active && s.currentPeriodEnd ? s.currentPeriodEnd : null);
       })
       .catch(() => {});
   }, [signedIn]);
+
+  // Ziina sends this plan no webhooks, so a payment that had not confirmed when the buyer
+  // came back is re-checked here. /api/subscription/status asks Ziina about this visitor's
+  // own recent payments and grants any that completed. Gives up after about three minutes.
+  useEffect(() => {
+    if (!signedIn) return;
+    const payment = params.get('payment');
+    if (payment !== 'pending' && payment !== 'error') return;
+    let tries = 0;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      if (stopped) return;
+      tries += 1;
+      try {
+        const r = await fetch('/api/subscription/status', { cache: 'no-store' });
+        const j = r.ok ? ((await r.json()) as { grantedReportId?: string | null }) : null;
+        if (j?.grantedReportId) {
+          goToGrantedReport(j.grantedReportId);
+          return;
+        }
+      } catch {
+        /* try again on the next tick */
+      }
+      if (!stopped && tries < 36) timer = setTimeout(poll, 5000);
+    };
+    timer = setTimeout(poll, 5000);
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [signedIn, params]);
 
   useEffect(() => {
     if (hydrated) saveQuiz(answers, stepId);
@@ -327,6 +399,24 @@ export function StartQuiz() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepId, signedIn]);
 
+  // The chart is worked out on the compute step and not saved, so arriving on the recap from
+  // saved progress (a reload, or coming back from Google sign-in) had no chart and told the
+  // visitor the chart service was unreachable. Work it out again instead.
+  useEffect(() => {
+    if (stepId !== 'recap' || chart || computing.current) return;
+    let cancelled = false;
+    setChartLoading(true);
+    void fetchChart(answers).then((facts) => {
+      if (cancelled) return;
+      setChart(facts);
+      setChartLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepId]);
+
   function commitDraft() {
     if (!step || !('field' in step)) return;
     const value = step.kind === 'text' ? draft.trim() : draft;
@@ -380,7 +470,7 @@ export function StartQuiz() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(checkoutBody(answers, plan, crypto.randomUUID())),
+        body: JSON.stringify(checkoutBody(answers, plan, checkoutReportId())),
       });
       if (r.status === 401) {
         setSignedIn(false);
@@ -591,7 +681,7 @@ export function StartQuiz() {
         )}
 
         {step && step.kind === 'recap' && (
-          <Recap answers={answers} chart={chart} onContinue={() => setStepId(PAYWALL)} />
+          <Recap answers={answers} chart={chart} loading={chartLoading} onContinue={() => setStepId(PAYWALL)} />
         )}
 
         {stepId === PAYWALL && (
@@ -752,7 +842,17 @@ function CityStep({
   );
 }
 
-function Recap({ answers, chart, onContinue }: { answers: Answers; chart: ChartFacts | null; onContinue: () => void }) {
+function Recap({
+  answers,
+  chart,
+  loading,
+  onContinue,
+}: {
+  answers: Answers;
+  chart: ChartFacts | null;
+  loading: boolean;
+  onContinue: () => void;
+}) {
   const name = typeof answers.first_name === 'string' && answers.first_name.trim() ? answers.first_name.trim() : null;
   const confidence = timeConfidence(answers);
   const ends = formatMonthYear(chart?.periodEnds ?? null);
@@ -778,6 +878,10 @@ function Recap({ answers, chart, onContinue }: { answers: Answers; chart: ChartF
             </div>
           ))}
         </dl>
+      ) : loading ? (
+        <p className="font-body text-body-md text-dust mb-5" role="status">
+          Working out your chart…
+        </p>
       ) : (
         <p className="font-body text-body-md text-dust mb-5">
           We could not reach the chart service just now. Your full forecast is still worked out once you subscribe.

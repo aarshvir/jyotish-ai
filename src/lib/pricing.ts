@@ -42,7 +42,23 @@ export function getPricesForCurrency(
   return prices;
 }
 
-/** Resolve a currency from the x-currency request header (set by middleware). */
+/**
+ * Currency for a server render, with the same precedence as /api/geo and checkout: the
+ * visitor's own pick (vh_currency cookie), then their country (Vercel's x-vercel-ip-country).
+ *
+ * Server pages used to read an x-currency header "set by middleware", but the root
+ * middleware.ts has never run (with src/app, Next.js only loads src/middleware.ts), so every
+ * visitor saw USD on /pricing whatever their cookie or country.
+ */
+export function currencyForRequest(cookieCurrency: string | null | undefined, country: string | null | undefined): SupportedCurrency {
+  if (cookieCurrency === 'USD' || cookieCurrency === 'INR' || cookieCurrency === 'AED') return cookieCurrency;
+  const c = (country ?? '').toUpperCase();
+  if (c === 'IN') return 'INR';
+  if (c === 'AE') return 'AED';
+  return 'USD';
+}
+
+/** Resolve a currency from an x-currency header value. */
 export function currencyFromHeader(headerValue: string | null): SupportedCurrency {
   if (headerValue === 'AED' || headerValue === 'INR') return headerValue;
   return 'USD';

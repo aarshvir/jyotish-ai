@@ -93,8 +93,13 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
           capture_pageview: false, // captured manually on route change (App Router)
           capture_pageleave: true, // time-on-page
           autocapture: true, // clicks, form interactions
+          // Visitors type birth details and see their chart, name and birth city on screen.
+          // None of that may reach analytics: autocapture must not record element text or
+          // attributes, and replays mask all text as well as inputs.
+          mask_all_text: true,
+          mask_all_element_attributes: true,
           person_profiles: 'identified_only',
-          session_recording: { maskAllInputs: true }, // scroll/rage-clicks/replays; inputs masked for privacy
+          session_recording: { maskAllInputs: true, maskTextSelector: '*' },
         });
         ph = posthog;
 
@@ -108,8 +113,9 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
             try {
               const sb = createClient();
               void sb.auth.getUser().then(({ data }) => {
-                if (data.user?.email) {
-                  posthog.identify(data.user.id, { email: data.user.email });
+                // The opaque user id is enough to join events; the email address never goes to PostHog.
+                if (data.user?.id) {
+                  posthog.identify(data.user.id);
                 }
               });
             } catch {
@@ -130,10 +136,14 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         const start = ev.target as HTMLElement | null;
         const el = start?.closest?.('a, button, [role="button"], [data-track]') as HTMLElement | null;
         if (!el) return;
+        // Button text outside the marketing pages can be personal (a birth-city result such as
+        // "Use Jaipur, Rajasthan, India", a name, chart facts), so there only explicit labels are sent.
+        const path = window.location.pathname;
+        const textIsSafe = path === '/' || path.startsWith('/pricing') || path.startsWith('/blog');
         const label = (
           el.getAttribute('aria-label') ||
           el.getAttribute('data-track') ||
-          el.textContent ||
+          (textIsSafe ? el.textContent : '') ||
           el.getAttribute('title') ||
           ''
         ).replace(/\s+/g, ' ').trim().slice(0, 80);
