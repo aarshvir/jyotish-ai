@@ -13,6 +13,9 @@ import {
 import { getPromoDiscount, redeemPromoCode, hasUserRedeemed, oncePerUserOrderId } from '@/lib/promo/server';
 import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
 import { decideStandaloneUnlockCheckout } from '@/lib/ziina/standaloneUnlockGuards';
+import { isReportCheckoutAlreadyPaid } from '@/lib/ziina/reportBoundCheckoutGuards';
+import { finalizeCompletedZiinaIntent } from '@/lib/ziina/finalizeIntent';
+import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
@@ -322,7 +325,47 @@ export async function POST(request: NextRequest) {
       // Already paid: don't mint a fresh payable intent for a report the user already
       // bought — a stale/duplicated client redirect would otherwise charge them twice
       // (finalize is idempotent on the grant, so the 2nd charge buys nothing).
-      if (reportRow && isEntitledPaymentStatus(reportRow.payment_status)) {
+      // Also refuse when ziina_payments is already `completed` for this report even
+      // if the grant write lagged (report still `unpaid`). Standalone unlocks and
+      // /upgrade already had this guard; without it, /start?payment=error + the
+      // 30-minute report-id reuse minted a second subscription charge.
+      const { data: completedBound, error: completedBoundErr } = await db
+        .from('ziina_payments')
+        .select('ziina_intent_id')
+        .eq('user_id', auth.user.id)
+        .eq('report_id', reportId)
+        .eq('status', 'completed')
+        .limit(1)
+        .maybeSingle();
+      if (completedBoundErr) {
+        console.error(
+          '[ziina/create-intent] completed payment lookup failed:',
+          completedBoundErr.message,
+        );
+        return NextResponse.json({ error: 'Could not start checkout' }, { status: 500 });
+      }
+      if (
+        isReportCheckoutAlreadyPaid({
+          reportEntitled: !!(reportRow && isEntitledPaymentStatus(reportRow.payment_status)),
+          hasCompletedPayment: !!completedBound,
+        })
+      ) {
+        // Grant may have failed after the claim. Heal before sending them to the report
+        // so Subscribe-again does not skip the period/report write verify already tried.
+        if (completedBound?.ziina_intent_id) {
+          try {
+            const heal = await finalizeCompletedZiinaIntent(
+              db,
+              completedBound.ziina_intent_id,
+              getCanonicalDispatchOrigin(origin),
+            );
+            if (!heal.ok) {
+              console.error('[ziina/create-intent] heal of completed intent failed:', heal.error);
+            }
+          } catch (e) {
+            console.error('[ziina/create-intent] heal of completed intent threw:', e);
+          }
+        }
         return NextResponse.json({
           alreadyPaid: true,
           redirectUrl: `/report/${reportId}?payment_status=paid`,
