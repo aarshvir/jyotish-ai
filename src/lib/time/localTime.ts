@@ -106,3 +106,28 @@ export function civilDateRange(startYmd: string, count: number): string[] {
   const n = Math.max(0, Math.floor(count));
   return Array.from({ length: n }, (_, i) => addCivilDays(startYmd, i));
 }
+
+const YMD_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/**
+ * The calendar month `index` months after a civil YYYY-MM-DD.
+ *
+ * `Date#setMonth` keeps the day-of-month, so a forecast that starts on the 31st
+ * rolls into the month after any 30-day month (31 Aug + 1 → 1 Oct) and skips
+ * February from 31 Jan. The 12-month outlook must step the month, not the day.
+ * Labels are UTC so a date-only string (UTC midnight) cannot render as the
+ * previous month in a timezone west of Greenwich.
+ */
+export function calendarMonthAfter(
+  startYmd: string,
+  index: number,
+): { ym: string; label: string } | null {
+  const m = YMD_RE.exec(startYmd.trim());
+  if (!m || !Number.isInteger(index)) return null;
+  const utc = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1 + index, 1));
+  if (Number.isNaN(utc.getTime())) return null;
+  return {
+    ym: `${utc.getUTCFullYear()}-${pad2(utc.getUTCMonth() + 1)}`,
+    label: utc.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+  };
+}
