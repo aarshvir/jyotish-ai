@@ -57,6 +57,51 @@ describe('reconcileUserPayments', () => {
     expect(out.granted).toEqual([{ intentId: 'pi_1', reportId: 'r1', planType: 'sub_monthly' }]);
   });
 
+  it('finalizes a superseded cancelled intent that Ziina still completed', async () => {
+    // Buyer paid the first Ziina tab, then a retry marked that row cancelled and
+    // they closed the laptop before the success redirect. The new pending checkout
+    // was never paid. Only the cancelled row was charged.
+    const db = fakeDb({
+      ziina_payments: [
+        { ziina_intent_id: 'pi_paid_old', user_id: 'u1', status: 'cancelled', plan_type: 'sub_monthly', report_id: 'r1', created_at: recent },
+        { ziina_intent_id: 'pi_retry', user_id: 'u1', status: 'pending', plan_type: 'sub_monthly', report_id: 'r1', created_at: recent },
+      ],
+    });
+    const finalize = vi.fn().mockResolvedValue({ ok: true, action: 'processed' });
+    const getPaymentIntent = vi.fn(async (id: string) =>
+      intent(id === 'pi_paid_old' ? 'completed' : 'pending'),
+    );
+    const out = await reconcileUserPayments(db, 'u1', {
+      dispatchOrigin: 'https://example.test',
+      getPaymentIntent,
+      finalize,
+      nowMs: NOW,
+    });
+    expect(finalize).toHaveBeenCalledTimes(1);
+    expect(finalize).toHaveBeenCalledWith(db, 'pi_paid_old', 'https://example.test', {
+      intent: expect.objectContaining({ status: 'completed' }),
+    });
+    expect(out.granted).toEqual([{ intentId: 'pi_paid_old', reportId: 'r1', planType: 'sub_monthly' }]);
+  });
+
+  it('does not grant a cancelled intent Ziina never completed', async () => {
+    const db = fakeDb({
+      ziina_payments: [
+        { ziina_intent_id: 'pi_abandoned', user_id: 'u1', status: 'cancelled', plan_type: 'sub_monthly', report_id: 'r1', created_at: recent },
+      ],
+    });
+    const finalize = vi.fn();
+    const out = await reconcileUserPayments(db, 'u1', {
+      dispatchOrigin: 'https://example.test',
+      getPaymentIntent: async () => intent('canceled'),
+      finalize,
+      nowMs: NOW,
+    });
+    expect(finalize).not.toHaveBeenCalled();
+    expect(out.granted).toEqual([]);
+    expect(out.checked).toBe(1);
+  });
+
   it('leaves a payment that is still pending at Ziina alone', async () => {
     const db = fakeDb({
       ziina_payments: [{ ziina_intent_id: 'pi_1', user_id: 'u1', status: 'pending', plan_type: 'sub_monthly', report_id: 'r1', created_at: recent }],
