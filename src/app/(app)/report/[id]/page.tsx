@@ -42,7 +42,7 @@ import { generationErrorCtaKind } from '@/lib/reports/reportErrors';
 import { resolveLocalSlotTimes } from '@/lib/time/localTime';
 import { UNLOCK_7DAY_HREF } from '@/lib/pricing';
 import { clientWritablePaymentStatus } from '@/lib/reports/entitlement';
-import { parseCoord } from '@/lib/utils/coords';
+import { coordsFromReportRow, parseCoord } from '@/lib/utils/coords';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -965,11 +965,8 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             birth_date: String(row.birth_date ?? '').slice(0, 10),
             birth_time: String(row.birth_time ?? '').slice(0, 8),
             birth_city: String(row.birth_city ?? ''),
-            birth_lat: typeof row.birth_lat === 'number' ? row.birth_lat : null,
-            birth_lng: typeof row.birth_lng === 'number' ? row.birth_lng : null,
+            ...coordsFromReportRow(row),
             current_city: (row.current_city as string | null) ?? null,
-            current_lat: typeof row.current_lat === 'number' ? row.current_lat : null,
-            current_lng: typeof row.current_lng === 'number' ? row.current_lng : null,
             timezone_offset: typeof row.timezone_offset === 'number' ? row.timezone_offset : null,
             plan_type: (row.plan_type as string | null) ?? null,
             payment_status: (row.payment_status as string | null) ?? null,

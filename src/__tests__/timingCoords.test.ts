@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  coordsFromReportRow,
   hasValidBirthCoords,
   isNullIsland,
   parseCoord,
@@ -34,6 +35,42 @@ describe('hasValidBirthCoords / isNullIsland', () => {
 
   it('accepts a normal city geocode', () => {
     expect(hasValidBirthCoords({ birth_lat: 19.07, birth_lng: 72.87 })).toBe(true);
+  });
+});
+
+describe('coordsFromReportRow', () => {
+  it('keeps PostgREST NUMERIC strings so a paid retry still has a birthplace', () => {
+    // reports.birth_lat is NUMERIC. PostgREST returns "28.6139", not 28.6139.
+    // Treating that as missing made Try Again refuse every paid report (0,0 guard).
+    expect(
+      coordsFromReportRow({
+        birth_lat: '28.6139',
+        birth_lng: '77.2090',
+        current_lat: '19.0760',
+        current_lng: '72.8777',
+      }),
+    ).toEqual({
+      birth_lat: 28.6139,
+      birth_lng: 77.209,
+      current_lat: 19.076,
+      current_lng: 72.8777,
+    });
+  });
+
+  it('keeps a real zero longitude (London) that a typeof number check would drop', () => {
+    expect(
+      coordsFromReportRow({
+        birth_lat: '51.5074',
+        birth_lng: '0',
+        current_lat: null,
+        current_lng: null,
+      }),
+    ).toEqual({
+      birth_lat: 51.5074,
+      birth_lng: 0,
+      current_lat: null,
+      current_lng: null,
+    });
   });
 });
 

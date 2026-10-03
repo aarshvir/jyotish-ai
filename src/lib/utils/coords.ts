@@ -51,6 +51,33 @@ export function parseCoord(v: unknown): number | null {
 }
 
 /**
+ * Coordinates from a `reports` row.
+ *
+ * `birth_lat` / `birth_lng` / `current_lat` / `current_lng` are Postgres NUMERIC.
+ * PostgREST sends those as strings (`"28.6139"`), not numbers. A `typeof === 'number'`
+ * check throws them away, and the report page then retries a paid forecast as Null
+ * Island and refuses to start.
+ */
+export function coordsFromReportRow(row: {
+  birth_lat?: unknown;
+  birth_lng?: unknown;
+  current_lat?: unknown;
+  current_lng?: unknown;
+}): {
+  birth_lat: number | null;
+  birth_lng: number | null;
+  current_lat: number | null;
+  current_lng: number | null;
+} {
+  return {
+    birth_lat: parseCoord(row.birth_lat),
+    birth_lng: parseCoord(row.birth_lng),
+    current_lat: parseCoord(row.current_lat),
+    current_lng: parseCoord(row.current_lng),
+  };
+}
+
+/**
  * Resolve the lat/lng used for timing grids (daily scores, teaser curve, /api/now).
  *
  * Prefer the seeker's current city when present; otherwise birth. The pair
