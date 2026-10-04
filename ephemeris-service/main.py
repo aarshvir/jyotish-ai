@@ -358,16 +358,35 @@ def get_current_dasha(dasha_sequence: List[Dict], current_date: datetime) -> Dic
 
 
 def get_sunrise_sunset(jd: float, lat: float, lng: float) -> tuple:
-    """Return (sunrise_jd, sunset_jd) for the same solar day.
+    """Return (sunrise_jd, sunset_jd) for the civil date whose 00:00 UT is ``jd``.
 
-    Searching both rise and set from ``jd - 0.5`` independently often returns the
-    *previous* day's sunset for longitudes east of the Americas (Dubai, India,
-    UK, NYC, …), yielding a negative day length and inverted hora/choghadiya/
-    Rahu-Kaal schedules. Always find sunrise first, then the next sunset after it.
+    Callers pass Julian day at 00:00 UT of a calendar date. Two search starts
+    both produced a wrong pair:
+
+    - Searching rise and set independently from ``jd - 0.5`` returns the
+      previous day's sunset east of the Americas, so day length goes negative
+      and hora / choghadiya / Rahu Kaal run backwards.
+    - Searching the next rise from that same ``jd - 0.5`` (noon UT the day
+      before) is already after local sunrise wherever the Sun rises before
+      12:00 UT: the Rockies west all year, and Central Time in winter. The
+      pair is then the previous local day. Those spans do not overlap the
+      requested day's 06:00–00:00 slots, and every hour inherits the first
+      span's hora and choghadiya.
+
+    Start two hours before approximate local midnight (longitude / 15h). That
+    is after the previous sunrise and before this one, including the gap
+    between solar time and the civil zone. Take the next rise, then the set
+    after it, so the pair is one real day and it is the requested day.
     """
     geopos = (lng, lat, 0.0)
-    sunrise_jd = swe.rise_trans(jd - 0.5, swe.SUN, swe.CALC_RISE | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
-    sunset_jd = swe.rise_trans(sunrise_jd, swe.SUN, swe.CALC_SET | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0)[1][0]
+    solar_offset_days = (lng / 15.0) / 24.0
+    search_jd = jd - solar_offset_days - (2.0 / 24.0)
+    sunrise_jd = swe.rise_trans(
+        search_jd, swe.SUN, swe.CALC_RISE | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0
+    )[1][0]
+    sunset_jd = swe.rise_trans(
+        sunrise_jd, swe.SUN, swe.CALC_SET | swe.BIT_DISC_CENTER, geopos, 0.0, 0.0
+    )[1][0]
     return sunrise_jd, sunset_jd
 
 
