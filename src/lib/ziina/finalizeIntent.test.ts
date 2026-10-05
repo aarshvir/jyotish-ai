@@ -274,6 +274,62 @@ describe('finalizeCompletedZiinaIntent', () => {
     expect(sent.id).not.toBe('report-generate:report_free');
   });
 
+  it('dispatches the current city when NUMERIC coordinates come back as strings', async () => {
+    const tables: Tables = {
+      ziina_payments: [
+        {
+          ziina_intent_id: 'intent_1',
+          report_id: 'report_nyc',
+          plan_type: 'monthly',
+          status: 'pending',
+          user_id: 'buyer_user',
+          promo_code_id: null,
+        },
+      ],
+      reports: [
+        {
+          id: 'report_nyc',
+          user_id: 'buyer_user',
+          user_email: 'buyer@example.com',
+          native_name: 'Seeker',
+          birth_date: '1990-01-15',
+          birth_time: '10:30:00',
+          birth_city: 'Delhi, India',
+          birth_lat: '28.6139',
+          birth_lng: '77.2090',
+          current_city: 'New York, USA',
+          current_lat: '40.7128',
+          current_lng: '-74.0060',
+          timezone_offset: -300,
+          plan_type: 'monthly',
+          report_start_date: null,
+          status: 'pending',
+          generation_started_at: null,
+          report_data: null,
+          payment_status: 'unpaid',
+        },
+      ],
+      analytics_events: [],
+    };
+
+    const result = await finalizeCompletedZiinaIntent(
+      createMockDb(tables) as never,
+      'intent_1',
+      'https://example.test',
+      { intent: completedIntent as never },
+    );
+
+    expect(result).toEqual({ ok: true, action: 'processed' });
+    expect(inngest.send).toHaveBeenCalledTimes(1);
+    const sent = vi.mocked(inngest.send).mock.calls[0][0] as {
+      data: { input: { lat: number; lng: number; currentLat: number; currentLng: number } };
+    };
+    expect(sent.data.input.lat).toBeCloseTo(28.6139);
+    expect(sent.data.input.lng).toBeCloseTo(77.209);
+    expect(sent.data.input.currentLat).toBeCloseTo(40.7128);
+    expect(sent.data.input.currentLng).toBeCloseTo(-74.006);
+  });
+
   it('surfaces a report entitlement grant failure after claiming payment', async () => {
     const tables: Tables = {
       ziina_payments: [

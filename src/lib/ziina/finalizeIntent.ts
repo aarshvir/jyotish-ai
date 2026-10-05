@@ -14,6 +14,7 @@ import { redeemPromoCode, oncePerUserOrderId } from '@/lib/promo/server';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 import { planFromPlanType } from '@/lib/subscriptions/period';
 import { grantSubscriptionPeriod } from '@/lib/subscriptions/grant';
+import { coercePipelineCoords } from '@/lib/reports/pipelineCoords';
 
 const YOUNG_GENERATING_MS = 90 * 60 * 1000;
 
@@ -147,6 +148,14 @@ async function maybeDispatchReportGenerate(
   }
 
   const tz = typeof r.timezone_offset === 'number' ? r.timezone_offset : 0;
+  // birth_lat / current_lat are NUMERIC and come back as strings. Leave them as
+  // strings and the grid is scored at the birthplace, then the row is nulled.
+  const coords = coercePipelineCoords({
+    lat: r.birth_lat,
+    lng: r.birth_lng,
+    currentLat: r.current_lat,
+    currentLng: r.current_lng,
+  });
   // Regenerating over a short complete (free→paid on same id) must wipe the
   // preview stub so the pipeline does not treat the row as already finalized.
   const regeneratingShortComplete = r.status === 'complete' && dayCount < minDays;
@@ -156,10 +165,12 @@ async function maybeDispatchReportGenerate(
     date: r.birth_date ?? '',
     time: birthTimeToPipelineTime(String(r.birth_time ?? '12:00:00')),
     city: r.birth_city ?? '',
-    lat: r.birth_lat ?? 0,
-    lng: r.birth_lng ?? 0,
-    currentLat: r.current_lat ?? r.birth_lat ?? 0,
-    currentLng: r.current_lng ?? r.birth_lng ?? 0,
+    lat: coords.lat,
+    lng: coords.lng,
+    // Null when no current city was stored. The grid falls back to birth;
+    // copying birth into these fields would invent a current location.
+    currentLat: coords.storedCurrentLat,
+    currentLng: coords.storedCurrentLng,
     currentCity: r.current_city ?? r.birth_city ?? '',
     timezoneOffset: tz,
     type: planType,

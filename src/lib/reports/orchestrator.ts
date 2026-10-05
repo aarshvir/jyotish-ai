@@ -36,6 +36,7 @@ import { buildTransitQueryTerms, detectYogas } from '@/lib/rag/yogaDetector';
 import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
 import { notifyReportReady } from '@/lib/notify/reportReady';
 import { civilDateRange, civilDateYmd } from '@/lib/time/localTime';
+import { coercePipelineCoords } from '@/lib/reports/pipelineCoords';
 import { NATIVITY_FETCH_ATTEMPTS, NATIVITY_FETCH_TIMEOUT_MS } from '@/lib/agents/nativityBudget';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
@@ -159,8 +160,9 @@ export interface PipelineInput {
   city: string;
   lat: number;
   lng: number;
-  currentLat: number;
-  currentLng: number;
+  /** Null when the seeker did not give a current city. The grid then uses birth. */
+  currentLat: number | null;
+  currentLng: number | null;
   currentCity: string;
   timezoneOffset: number;
   type: string;
@@ -528,6 +530,9 @@ export async function generateReportPipeline(
   authHeaders: Record<string, string>,
   options: PipelineOptions = {},
 ): Promise<void> {
+  // NUMERIC columns arrive as strings from PostgREST. Coerce once so the natal
+  // chart, the current-city grid, and the row upsert all see real numbers.
+  const coords = coercePipelineCoords(input);
   const pipelineRunLabel = options.stopAfterPhase != null ? String(options.stopAfterPhase) : 'full_inline';
   const stopAfter = options.stopAfterPhase;
   function maybeStopAfter(phase: PipelinePhaseName): void {
@@ -816,11 +821,11 @@ export async function generateReportPipeline(
         birth_time: birthTimeNorm,
         birth_city: input.city || 'Unknown',
         // Preserve lat/lng 0 (equator / prime meridian) — never coerce with `|| null`.
-        birth_lat: Number.isFinite(input.lat) ? input.lat : null,
-        birth_lng: Number.isFinite(input.lng) ? input.lng : null,
+        birth_lat: coords.storedBirthLat,
+        birth_lng: coords.storedBirthLng,
         current_city: input.currentCity || null,
-        current_lat: Number.isFinite(input.currentLat) ? input.currentLat : null,
-        current_lng: Number.isFinite(input.currentLng) ? input.currentLng : null,
+        current_lat: coords.storedCurrentLat,
+        current_lng: coords.storedCurrentLng,
         timezone_offset: input.timezoneOffset,
         plan_type: planType,
         status: 'generating',
@@ -981,8 +986,8 @@ export async function generateReportPipeline(
     const dayCount =
       input.type === 'monthly' || input.type === 'annual' ? 30 : previewPlan ? 1 : 7;
     // Finite checks (not truthiness): equator / prime-meridian current coords are valid.
-    const cLat = Number.isFinite(input.currentLat) ? input.currentLat : input.lat;
-    const cLng = Number.isFinite(input.currentLng) ? input.currentLng : input.lng;
+    const cLat = coords.currentLat;
+    const cLng = coords.currentLng;
 
     // Anchor day-1 on the seeker's civil date in `timezoneOffset`, not UTC.
     // `toISOString().slice(0,10)` previously shifted Asia early-morning gens to
@@ -1024,8 +1029,8 @@ export async function generateReportPipeline(
               birth_date: input.date,
               birth_time: formatEphemerisBirthTime(input.time),
               birth_city: input.city,
-              birth_lat: input.lat,
-              birth_lng: input.lng,
+              birth_lat: coords.lat,
+              birth_lng: coords.lng,
             }),
           },
           3,
