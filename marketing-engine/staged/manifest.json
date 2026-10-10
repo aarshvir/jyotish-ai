@@ -1,0 +1,20 @@
+{
+  "idea": "two-slots-same-tuesday",
+  "voice": {
+    "primary": "espeak-ng en-gb-x-rp at 128 wpm",
+    "comparedWith": "espeak-ng en-us sample (voice-en-us-sample.wav)",
+    "hindi": "espeak-ng hi (voice-hi.wav)",
+    "note": "ElevenLabs was not used. espeak-ng has no Indian-English voice. RP is the slower of the two English samples. This is a free fallback, and it sounds like a synthesizer. Do not pretend it is a presenter.",
+    "meanVolumeDb": -20.3,
+    "durationSec": 44.840907
+  },
+  "picture": "Live vedichour.com/start (quiz taps: Work and money, then changing jobs) and a scroll of /sample-report. No birth data typed.",
+  "files": {
+    "reel9x16": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/reel-9x16.mp4",
+    "reel1x1": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/reel-1x1.mp4",
+    "reel16x9": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/reel-16x9.mp4",
+    "carousel": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/carousel",
+    "captions": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/captions.ass"
+  },
+  "humanView": "Play reel-9x16.mp4 with sound before anyone posts it."
+}
