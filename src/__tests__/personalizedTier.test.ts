@@ -28,7 +28,9 @@ describe('personalized-answer tier gating (paywall)', () => {
     expect(wantedTier(true)).toBe('full');
     expect(hasPaidPersonalizationEntitlement('paid')).toBe(true);
     expect(hasPaidPersonalizationEntitlement('promo')).toBe(true);
+    expect(hasPaidPersonalizationEntitlement('bypass')).toBe(true);
     expect(hasPaidPersonalizationEntitlement('free')).toBe(false);
+    expect(hasPaidPersonalizationEntitlement('unpaid')).toBe(false);
   });
 
   it('projecting a full object to preview STRIPS full_answer and key_windows', () => {
