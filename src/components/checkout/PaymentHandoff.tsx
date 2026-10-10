@@ -9,8 +9,8 @@ import { handoffCopy, type CheckoutCurrency } from '@/lib/checkout/handoffCopy';
  * Why this exists: every payment intent this platform has ever created — all two
  * of them — reached Ziina's page and was abandoned WITHOUT a card being entered
  * (Ziina reports both as `requires_payment_instrument`). The redirect used to be
- * a hard cut from a branded Vedic site to a UAE fintech page headed "Pay
- * aarshvir", with Apple Pay / Google Pay on top and no UPI anywhere. A buyer who
+ * a hard cut from a branded Vedic site to a UAE fintech page with Apple Pay /
+ * Google Pay on top and no UPI anywhere. A buyer who
  * is not told that is coming reads it as a scam and leaves.
  *
  * So we say, in advance, exactly what the next screen will look like. Naming the
@@ -26,14 +26,6 @@ export interface PaymentHandoffProps {
   redirectUrl: string;
   /** Drives the India-specific card guidance. */
   currency: CheckoutCurrency;
-  /**
-   * Merchant name EXACTLY as Ziina renders it. Defaults from
-   * NEXT_PUBLIC_ZIINA_MERCHANT_NAME because the Ziina account currently displays a
-   * personal name ("aarshvir"), not the brand. Promising "Pay VedicHour" while the
-   * page says "Pay aarshvir" would do more damage than saying nothing, so this must
-   * track reality — flip the env var the moment the Ziina dashboard is renamed.
-   */
-  merchantName?: string;
   onCancel: () => void;
 }
 
@@ -42,7 +34,6 @@ export function PaymentHandoff({
   priceDisplay,
   redirectUrl,
   currency,
-  merchantName = process.env.NEXT_PUBLIC_ZIINA_MERCHANT_NAME || 'aarshvir',
   onCancel,
 }: PaymentHandoffProps) {
   const continueRef = useRef<HTMLAnchorElement>(null);
@@ -57,7 +48,7 @@ export function PaymentHandoff({
     return () => window.removeEventListener('keydown', onKey);
   }, [onCancel]);
 
-  const copy = handoffCopy(currency, merchantName);
+  const copy = handoffCopy(currency);
 
   return (
     <div
@@ -83,13 +74,9 @@ export function PaymentHandoff({
           <li className="flex gap-3">
             <span aria-hidden="true" className="text-amber shrink-0">1.</span>
             <p className="font-body text-body-sm text-dust-light">
-              The next page is <strong className="text-star">Ziina</strong> — it will say{' '}
-              <strong className="text-star">&ldquo;Pay {merchantName}&rdquo;</strong> and show{' '}
-              <strong className="text-star tabular-nums">{priceDisplay}</strong>.
-              {copy.explainMerchantName && (
-                <> <strong className="text-star">{merchantName}</strong> is the VedicHour
-                account holder — that&rsquo;s us, not a stranger.</>
-              )}
+              The next page is <strong className="text-star">Ziina</strong>, our payment partner.
+              It shows <strong className="text-star tabular-nums">{priceDisplay}</strong> for{' '}
+              {productName}.
             </p>
           </li>
           <li className="flex gap-3">

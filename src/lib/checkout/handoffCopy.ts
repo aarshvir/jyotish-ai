@@ -6,8 +6,12 @@
  *
  * The rules exist because of measured behaviour: every payment intent this
  * platform has ever created was abandoned on Ziina's hosted page WITHOUT a card
- * being entered. The page shows a personal name, leads with Apple/Google Pay, and
- * is UAE-licensed — all surprises to an Indian buyer who was not warned.
+ * being entered. The page leads with Apple/Google Pay and is UAE-licensed — both
+ * surprises to an Indian buyer who was not warned.
+ *
+ * The card never names the Ziina account holder. Owner, 2026-10-11: no personal
+ * name may appear anywhere on the platform. The header on Ziina's own page is set in
+ * the Ziina dashboard, not here.
  */
 
 export type CheckoutCurrency = 'INR' | 'AED' | 'USD';
@@ -17,21 +21,12 @@ export interface HandoffCopy {
   showInternationalCardHelp: boolean;
   /** Say UPI is missing only where buyers expect it; elsewhere it's noise. */
   showUpiNote: boolean;
-  /**
-   * True when Ziina renders a name that isn't the brand, so the card must
-   * explain it. Promising "Pay VedicHour" while Ziina says "Pay aarshvir" would
-   * damage trust more than saying nothing, so this tracks the real value.
-   */
-  explainMerchantName: boolean;
 }
 
-export const BRAND = 'vedichour';
-
-export function handoffCopy(currency: CheckoutCurrency, merchantName: string): HandoffCopy {
+export function handoffCopy(currency: CheckoutCurrency): HandoffCopy {
   const isIndia = currency === 'INR';
   return {
     showInternationalCardHelp: isIndia,
     showUpiNote: isIndia,
-    explainMerchantName: merchantName.trim().toLowerCase() !== BRAND,
   };
 }
