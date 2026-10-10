@@ -8,6 +8,21 @@ import {
 import { applyDiscount } from '@/lib/ziina/amounts';
 import { computeIntentAmount } from '@/lib/ziina/server';
 import { PLAN_CARDS, FEATURE_MATRIX, UNLOCK_7DAY_HREF, UNLOCK_FREE_HREF } from '@/lib/pricing';
+import {
+  COST_MODEL,
+  CURRENCIES,
+  EXPERIMENTS,
+  PRICE_SETS,
+  READY_CURRENCIES,
+  SUBSCRIPTION_MONTHS,
+  experimentPrice,
+  firstPaymentProfitUsd,
+  netOfCharge,
+  steadyMargin,
+  subscriptionPrice,
+  type PriceExperiment,
+  type PriceSetId,
+} from '@/lib/priceBook';
 
 /**
  * Locks the displayed prices so the amount a customer SEES always equals the amount
@@ -45,32 +60,66 @@ describe('pricing consistency — display == charge', () => {
 });
 
 /**
- * Owner rule (2026-09-13): a subscription must sell for at least 6x its real model cost,
- * assuming the subscriber uses it every day. The cost basis is the most expensive
- * realistic path, measured against a stored 30-day report — see the comment on
- * ZIINA_PLANS.sub_monthly. This test fails if a price edit, a fee change or an exchange
- * rate move takes any currency below that floor after Ziina's cut.
+ * Cost floor, on the honest basis (docs/PRICING_RESEARCH.md §4–§5). Replaces the
+ * 2026-09-13 rule "6x a $6.50 all-Opus worst case", which priced a ceiling nobody pays:
+ * the measured cost of a daily-active subscriber-month is ≤ $1.60, plus $0.40 for Ask.
+ *
+ * A price passes when, after Ziina's real fees (2.6% + 1.5% non-AED + 1.2% FX + AED 1)
+ * and a 5% refund reserve:
+ *   1. serve cost at daily use takes at most 30% of what we keep (70% margin), and
+ *   2. a buyer who pays once and never renews is not a loss, even after the market's
+ *      extra first-run budget.
+ * Checked for the live prices, the recommended prices and every experiment arm. An arm
+ * that knowingly sits below the floor must say so (belowFloor) or this fails.
  */
-describe('subscription prices clear the 6x cost floor after fees', () => {
-  const COST_PER_MONTH_USD = 6.5;
-  const MARKUP = 6;
-  // Ziina keeps ~4.3% (2.6% processing + 1.5% international + VAT on fees) plus AED 1.
-  const FEE_PCT = 0.043;
-  const FEE_FIXED_USD = 1 / 3.6725;
-  // Rates used when these prices were set (2026-09-13). Revisit if the rupee moves sharply.
-  const USD_PER: Record<SupportedCurrency, number> = { USD: 1, INR: 1 / 95.58, AED: 1 / 3.6725 };
+describe('prices clear the honest cost floor after fees and refunds', () => {
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-  const months: Record<string, number> = { sub_monthly: 1, sub_annual: 12 };
-
-  for (const [planId, count] of Object.entries(months)) {
-    for (const cur of ['USD', 'INR', 'AED'] as SupportedCurrency[]) {
-      it(`${planId} in ${cur} nets at least ${MARKUP}x cost`, () => {
-        const grossUsd = (getPlanAmount(planId, cur) / 100) * USD_PER[cur];
-        const netUsd = grossUsd * (1 - FEE_PCT) - FEE_FIXED_USD;
-        expect(netUsd).toBeGreaterThanOrEqual(COST_PER_MONTH_USD * count * MARKUP);
-      });
+  for (const setId of Object.keys(PRICE_SETS) as PriceSetId[]) {
+    for (const sku of ['sub_monthly', 'sub_annual'] as const) {
+      for (const cur of [...CURRENCIES, ...READY_CURRENCIES]) {
+        it(`${setId} ${sku} in ${cur} keeps a ${pct(COST_MODEL.minSteadyMargin)}+ margin and never loses on one payment`, () => {
+          const amt = subscriptionPrice(sku, cur, setId);
+          expect(steadyMargin(amt, cur, SUBSCRIPTION_MONTHS[sku])).toBeGreaterThanOrEqual(COST_MODEL.minSteadyMargin);
+          expect(firstPaymentProfitUsd(amt, cur)).toBeGreaterThanOrEqual(0);
+        });
+      }
     }
   }
+
+  it('every subscription experiment arm clears the floor or says why not', () => {
+    for (const id of ['price_monthly_in', 'price_monthly_row'] as const) {
+      const exp: PriceExperiment = EXPERIMENTS[id];
+      for (const [armId, arm] of Object.entries(exp.arms)) {
+        const cur = exp.market === 'IN' ? 'INR' : 'USD';
+        const amt = experimentPrice(id, armId, cur);
+        const passes = steadyMargin(amt, cur, 1) >= COST_MODEL.minSteadyMargin && firstPaymentProfitUsd(amt, cur) >= 0;
+        if (!passes) expect(arm.belowFloor, `${id}/${armId} is below the floor without saying so`).toBeTruthy();
+        else expect(arm.belowFloor, `${id}/${armId} clears the floor; drop the belowFloor note`).toBeUndefined();
+      }
+    }
+  });
+
+  it('every one-time funnel price nets at least 2x its estimated generation cost', () => {
+    const oneTime = [
+      ['price_report', 'report_entry', true],
+      ['price_bump', 'bump_30day', false], // rides in the report's charge: no second fixed fee
+      ['price_downsell', 'downsell_7day', true],
+    ] as const;
+    for (const [id, sku, ownCharge] of oneTime) {
+      for (const armId of Object.keys(EXPERIMENTS[id].arms)) {
+        for (const cur of CURRENCIES) {
+          const { netUsd } = netOfCharge(experimentPrice(id, armId, cur), cur, { fixedFee: ownCharge });
+          expect(netUsd, `${id}/${armId}/${cur}`).toBeGreaterThanOrEqual(COST_MODEL.oneTimeMarkup * COST_MODEL.oneTimeCostUsd[sku]);
+        }
+      }
+    }
+  });
+
+  it('the measured cost basis is used, not the old all-Opus ceiling', () => {
+    expect(COST_MODEL.monthlyServeUsd).toBeLessThan(6.5);
+    expect(COST_MODEL.monthlyServeUsd).toBeGreaterThanOrEqual(1.6);
+  });
 });
 
 /**
