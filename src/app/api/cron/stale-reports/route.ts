@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { markReportAsFailedUnscoped } from '@/lib/reports/reportErrors';
 import { getStaleOrphanUpdatedAtMs } from '@/lib/reports/staleGeneratingConstants';
+import { recordCronRun } from '@/lib/analytics/server';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const t0 = Date.now();
   const db = createServiceClient();
   const cutoff = new Date(Date.now() - getStaleOrphanUpdatedAtMs()).toISOString();
 
@@ -30,11 +32,13 @@ export async function GET(request: NextRequest) {
 
   if (e1) {
     console.error('[cron/stale-reports] select:', e1.message);
+    await recordCronRun('stale-reports', false, t0, 'select_error');
     return NextResponse.json({ error: e1.message }, { status: 500 });
   }
 
   const ids = (staleRows ?? []).map((r) => r.id);
   if (ids.length === 0) {
+    await recordCronRun('stale-reports', true, t0);
     return NextResponse.json({ ok: true, marked: 0, ids: [] });
   }
 
@@ -48,6 +52,7 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  await recordCronRun('stale-reports', true, t0);
   console.warn(`[cron/stale-reports] marked ${ids.length} stale generating rows as error`);
   return NextResponse.json({ ok: true, marked: ids.length, ids });
 }

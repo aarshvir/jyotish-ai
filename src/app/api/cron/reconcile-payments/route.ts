@@ -7,6 +7,7 @@ import { getPaymentIntent } from '@/lib/ziina/server';
 import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
 import { sendFounderDigest, runAbandonedCheckoutRecovery, runPreviewNurture } from '@/lib/notify/lifecycle';
 import { drainReconcilePayments } from '@/lib/ziina/reconcilePayments';
+import { recordCronRun } from '@/lib/analytics/server';
 
 /**
  * GET /api/cron/reconcile-payments
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const t0 = Date.now();
   // Daily lifecycle work runs first so it fires even when there are no pending payments
   // (folded in here because Vercel Hobby caps cron jobs at 2). Both no-op until
   // RESEND_API_KEY / TWILIO_* are set, and never throw.
@@ -40,12 +42,14 @@ export async function GET(request: NextRequest) {
   });
 
   if (drain.error && drain.scanned === 0) {
+    await recordCronRun('reconcile-payments', false, t0, 'drain_error');
     return NextResponse.json({ error: drain.error }, { status: 500 });
   }
 
   console.log(
     `[cron/reconcile-payments] reconciled ${drain.reconciled}/${drain.scanned} (actions=${drain.results.length})`,
   );
+  await recordCronRun('reconcile-payments', true, t0);
   return NextResponse.json({
     ok: true,
     reconciled: drain.reconciled,
