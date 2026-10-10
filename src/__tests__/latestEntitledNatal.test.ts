@@ -77,7 +77,7 @@ describe('latestEntitledNatal', () => {
       user_id: 'u1',
       payment_status: 'paid',
       created_at: '2026-09-01T10:00:00.000Z',
-      native_name: 'Aarsh',
+      native_name: 'Paid Seeker',
       birth_date: '1994-06-15',
       birth_time: '09:10:00',
       birth_city: 'Dubai',
@@ -99,7 +99,7 @@ describe('latestEntitledNatal', () => {
       personal_context: 'When will we have a child?',
     });
     const got = await latestEntitledNatal(fakeDb([abandoned, paid]), 'u1');
-    expect(got?.native_name).toBe('Aarsh');
+    expect(got?.native_name).toBe('Paid Seeker');
     expect(got?.birth_date).toBe('1994-06-15');
     expect(got?.birth_time).toBe('09:10:00');
     expect(got?.birth_city).toBe('Dubai');
