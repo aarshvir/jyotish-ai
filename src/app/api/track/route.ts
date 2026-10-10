@@ -63,6 +63,8 @@ export async function POST(req: NextRequest) {
         referrer: typeof body.referrer === 'string' ? body.referrer.slice(0, 256) : null,
         utm: utm && Object.keys(utm).length ? utm : null,
         session_id: typeof body.session_id === 'string' ? body.session_id.slice(0, 64) : null,
+        // Lets /admin2 tell production traffic from local dev and preview deploys.
+        host: (req.headers.get('host') ?? '').toLowerCase().slice(0, 128) || null,
       },
     });
   } catch {

@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { track } from '@/components/analytics/PostHogProvider';
+import { trackEvent } from '@/lib/analytics/client';
+import { DropoffPrompt, canShowDropoff } from '@/components/analytics/DropoffPrompt';
+import type { DropoffContext } from '@/lib/analytics/events';
 import { DeliveryGate } from '@/components/onboard/DeliveryGate';
 import { PaymentHandoff } from '@/components/checkout/PaymentHandoff';
 import { formatAmount } from '@/lib/ziina/amounts';
@@ -218,6 +221,12 @@ export function StartQuiz() {
   const [activeUntil, setActiveUntil] = useState<string | null>(null);
   const [renewing, setRenewing] = useState(false);
   const computing = useRef(false);
+  const [dropoff, setDropoff] = useState<DropoffContext | null>(null);
+  const offerShownAt = useRef(0);
+  /** Ask "what stopped you?" — at most once per context and twice per session. */
+  const askWhy = useCallback((context: DropoffContext) => {
+    if (canShowDropoff(context)) setDropoff(context);
+  }, []);
 
   const step: Step | undefined = stepId === PAYWALL ? undefined : getStep(stepId);
 
@@ -230,6 +239,7 @@ export function StartQuiz() {
       setAnswers(saved.answers);
       setStepId(payment ? PAYWALL : saved.stepId);
     }
+    if (payment === 'cancelled') askWhy('checkout_cancelled');
     if (payment) {
       setBanner(quizPaymentReturnBanner(payment));
     }
@@ -277,7 +287,7 @@ export function StartQuiz() {
       });
 
     return () => authSub.subscription.unsubscribe();
-  }, [params]);
+  }, [params, askWhy]);
 
   useEffect(() => {
     if (!signedIn) return;
@@ -338,9 +348,32 @@ export function StartQuiz() {
     const v = current && 'field' in current ? answers[current.field] : undefined;
     setDraft(typeof v === 'string' ? v : '');
     track(stepId === PAYWALL ? 'paywall_view' : 'quiz_step', { step: stepId });
+    // Canonical funnel events (lib/analytics/events.ts) alongside the legacy names above.
+    if (stepId === PAYWALL) {
+      offerShownAt.current = Date.now();
+      trackEvent('offer_view', {}, { slug: 'start' });
+    } else if (stepId === 'recap') {
+      trackEvent('reveal_view', {}, { slug: 'start' });
+    } else {
+      const pos = current && current.kind !== 'loader' ? stepPosition(stepId, answers) : null;
+      trackEvent('quiz_view', { step: stepId, step_index: pos ? pos.index + 1 : undefined, step_total: pos?.total }, { slug: 'start' });
+    }
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepId]);
+
+  // Desktop exit intent on the paywall: the pointer leaves through the top of the window
+  // (towards the tab bar / close button) after they have had time to read the offer.
+  useEffect(() => {
+    if (stepId !== PAYWALL || handoff || paying) return;
+    const onOut = (e: MouseEvent) => {
+      if (e.relatedTarget || e.clientY > 0) return;
+      if (Date.now() - offerShownAt.current < 8000) return;
+      askWhy('paywall_exit');
+    };
+    document.addEventListener('mouseout', onOut);
+    return () => document.removeEventListener('mouseout', onOut);
+  }, [stepId, handoff, paying, askWhy]);
 
   const advance = useCallback(
     (nextAnswers: Answers) => {
@@ -356,8 +389,10 @@ export function StartQuiz() {
   );
 
   function back() {
+    trackEvent('quiz_back', { step: stepId }, { slug: 'start' });
     if (stepId === PAYWALL) {
       setStepId('recap');
+      askWhy('paywall_back');
       return;
     }
     const prev = prevStepId(stepId, answers);
@@ -386,6 +421,7 @@ export function StartQuiz() {
 
     void fetchChart(answers).then((facts) => {
       setChart(facts);
+      trackEvent('calc_complete', { ok: Boolean(facts) }, { slug: 'start' });
       const wait = Math.max(0, MIN_COMPUTE_MS - (Date.now() - started));
       setTimeout(() => {
         clearInterval(timer);
@@ -424,6 +460,8 @@ export function StartQuiz() {
     }
     const next = { ...answers, [step.field]: value };
     setAnswers(next);
+    // Typed answers (names, dates, places) are personal: only the step is recorded.
+    trackEvent('quiz_answer', { step: stepId }, { slug: 'start' });
     advance(next);
   }
 
@@ -431,6 +469,7 @@ export function StartQuiz() {
     if (!step || step.kind !== 'single') return;
     const next = { ...answers, [step.field]: value };
     setAnswers(next);
+    trackEvent('quiz_answer', { step: stepId, value }, { slug: 'start' });
     if (step.autoAdvance) advance(next);
   }
 
@@ -448,12 +487,14 @@ export function StartQuiz() {
       setError(problem);
       return;
     }
+    trackEvent('quiz_answer', { step: stepId, value: answers[step.field] }, { slug: 'start' });
     advance(answers);
   }
 
   function pickCity(field: string, place: { name: string; lat: number; lng: number }) {
     const next = { ...answers, [field]: place.name, [`${field}_lat`]: String(place.lat), [`${field}_lng`]: String(place.lng) };
     setAnswers(next);
+    trackEvent('quiz_answer', { step: stepId }, { slug: 'start' });
     advance(next);
   }
 
@@ -462,6 +503,7 @@ export function StartQuiz() {
     setPaying(true);
     setBanner(null);
     track('checkout_started', { plan, product: 'subscription' });
+    trackEvent('checkout_start', { plan, currency: prices?.currency, items: 'subscription' }, { slug: 'start' });
     try {
       const r = await fetch('/api/ziina/create-intent', {
         method: 'POST',
@@ -712,12 +754,14 @@ export function StartQuiz() {
           }}
           onAuthed={() => {
             track('quiz_signup_done', { method: 'email' });
+            trackEvent('contact_submit', { channel: 'email' }, { slug: 'start' });
             setSignedIn(true);
             setGateOpen(false);
           }}
           onGoogle={() => {
             saveQuiz(answers, 'compute');
             track('quiz_signup_done', { method: 'google' });
+            trackEvent('contact_submit', { channel: 'google' }, { slug: 'start' });
           }}
         />
       )}
@@ -728,8 +772,15 @@ export function StartQuiz() {
           priceDisplay={handoff.priceDisplay}
           redirectUrl={handoff.redirectUrl}
           currency={handoff.currency}
-          onCancel={() => setHandoff(null)}
+          onCancel={() => {
+            setHandoff(null);
+            askWhy('handoff_cancel');
+          }}
         />
+      )}
+
+      {dropoff && !handoff && !gateOpen && (
+        <DropoffPrompt context={dropoff} slug="start" onClose={() => setDropoff(null)} />
       )}
     </main>
   );
