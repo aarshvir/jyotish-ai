@@ -7,6 +7,8 @@
  * report. `projectForTier(p, 'preview')` is the last gate before serialization.
  */
 
+import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
+
 export interface Personalized {
   tier: 'preview' | 'full';
   question_echo: string;
@@ -14,6 +16,34 @@ export interface Personalized {
   unlock_points?: string[];
   full_answer?: string;
   key_windows?: string[];
+}
+
+interface FullPersonalizationPersistenceContext {
+  paymentStatus: unknown;
+  reportOwnerId: string;
+  requesterId: string;
+  requesterIsAdmin: boolean;
+}
+
+/** Payment states that entitle the report owner to paid personalized content (paid, promo, bypass). */
+export function hasPaidPersonalizationEntitlement(paymentStatus: unknown): boolean {
+  return isEntitledPaymentStatus(typeof paymentStatus === 'string' ? paymentStatus : null);
+}
+
+/**
+ * Admins may inspect any report's full answer, but must not persist it into another
+ * user's unentitled row: report_data is directly readable by that owner through RLS.
+ */
+export function canPersistFullPersonalization({
+  paymentStatus,
+  reportOwnerId,
+  requesterId,
+  requesterIsAdmin,
+}: FullPersonalizationPersistenceContext): boolean {
+  return (
+    hasPaidPersonalizationEntitlement(paymentStatus) ||
+    (requesterIsAdmin && requesterId === reportOwnerId)
+  );
 }
 
 /** Which tier a caller may receive, decided server-side from entitlement (never the model). */
