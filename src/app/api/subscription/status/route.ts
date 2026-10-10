@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { getSubscription, latestForecastStartedAt, nextForecastUnlock } from '@/lib/subscriptions/access';
+import { getSubscription, latestEntitledNatal, latestForecastStartedAt, nextForecastUnlock } from '@/lib/subscriptions/access';
 import { reconcileUserPayments } from '@/lib/ziina/reconcileUser';
 import { getPaymentIntent } from '@/lib/ziina/server';
 import { getCanonicalDispatchOrigin } from '@/lib/url/canonicalDispatchOrigin';
@@ -14,8 +14,9 @@ const RECONCILE_WAIT_MS = 8000;
 /**
  * The signed-in visitor's subscription state, for the quiz paywall and the dashboard:
  * the subscription itself, when their next 30-day forecast unlocks, and the birth
- * details from their latest report — so renewing or starting the next forecast never
- * asks for them again. Only ever the caller's own rows.
+ * details from their latest *entitled* report — so renewing or starting the next
+ * forecast never asks for them again, and never copies an abandoned checkout draft.
+ * Only ever the caller's own rows.
  *
  * Deliberately not under /api/user: that prefix is login-protected by middleware, which
  * redirects a logged-out fetch to an HTML login page — the quiz calls this before sign-up.
@@ -50,18 +51,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const subscription = await getSubscription(db, data.user.id);
-    const [lastForecastAt, latest] = await Promise.all([
+    const [lastForecastAt, latestReport] = await Promise.all([
       latestForecastStartedAt(db, data.user.id),
-      db
-        .from('reports')
-        .select('native_name, birth_date, birth_time, birth_city, birth_lat, birth_lng, current_city, current_lat, current_lng, personal_context')
-        .eq('user_id', data.user.id)
-        .not('birth_lat', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      latestEntitledNatal(db, data.user.id),
     ]);
-    if (latest.error) throw new Error(latest.error.message);
 
     const unlock = nextForecastUnlock(lastForecastAt);
 
@@ -71,7 +64,7 @@ export async function GET(request: NextRequest) {
         subscription,
         lastForecastAt,
         nextForecastUnlock: unlock ? unlock.toISOString() : null,
-        latestReport: latest.data ?? null,
+        latestReport,
         // Set when this request just granted a payment, so the quiz can take the buyer to their report.
         grantedReportId,
       },

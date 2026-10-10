@@ -1,5 +1,23 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { ENTITLED_PAYMENT_STATUSES } from '@/lib/reports/entitlement';
 import { isActive, type SubscriptionPlan } from './period';
+
+/** Birth fields the dashboard and renew quiz copy onto the next entitled forecast. */
+export const ENTITLED_NATAL_COLUMNS =
+  'native_name, birth_date, birth_time, birth_city, birth_lat, birth_lng, current_city, current_lat, current_lng, personal_context' as const;
+
+export interface EntitledNatal {
+  native_name: string | null;
+  birth_date: string | null;
+  birth_time: string | null;
+  birth_city: string | null;
+  birth_lat: number | null;
+  birth_lng: number | null;
+  current_city: string | null;
+  current_lat: number | null;
+  current_lng: number | null;
+  personal_context: string | null;
+}
 
 export interface SubscriptionState {
   plan: SubscriptionPlan;
@@ -91,6 +109,32 @@ export async function latestForecastStartedAt(
     }
   }
   return Number.isFinite(latestMs) ? new Date(latestMs).toISOString() : null;
+}
+
+/**
+ * Natal copied onto "start my next forecast" and `/start?renew=1`.
+ *
+ * Must ignore unpaid checkout drafts. Every Subscribe tap writes a `payment_status=unpaid`
+ * row with whatever is in the quiz — including a family member's chart the buyer then
+ * abandoned. The dashboard hides those drafts, but the status API used to return the newest
+ * `birth_lat` row with no entitlement filter, so the next paid generation used the draft.
+ * Throws when the lookup fails so a database error is never read as "no natal on file".
+ */
+export async function latestEntitledNatal(
+  db: SupabaseClient,
+  userId: string,
+): Promise<EntitledNatal | null> {
+  const { data, error } = await db
+    .from('reports')
+    .select(ENTITLED_NATAL_COLUMNS)
+    .eq('user_id', userId)
+    .in('payment_status', [...ENTITLED_PAYMENT_STATUSES])
+    .not('birth_lat', 'is', null)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`Natal lookup failed: ${error.message}`);
+  return (data as EntitledNatal | null) ?? null;
 }
 
 /** When the next forecast unlocks, given the most recent one's creation time. */
