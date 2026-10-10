@@ -96,13 +96,14 @@ describe('unsubscribe route', () => {
     expect(mocks.addSuppression).not.toHaveBeenCalled();
   });
 
-  it('adds a suppression for a valid POSTed form token', async () => {
+  it('adds a suppression for a valid POSTed form token and shows a page', async () => {
     const token = makeUnsubToken('reader@example.com');
 
     const response = await POST(postRequest(token));
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ ok: true });
+    expect(response.headers.get('content-type')).toContain('text/html');
+    expect(await response.text()).toContain('unsubscribed');
     expect(mocks.createServiceClient).toHaveBeenCalledTimes(1);
     expect(mocks.addSuppression).toHaveBeenCalledWith(
       db,
@@ -115,8 +116,26 @@ describe('unsubscribe route', () => {
     const response = await POST(postRequest('forged-token'));
 
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual({ ok: false });
+    expect(await response.text()).toContain('Link expired');
     expect(mocks.createServiceClient).not.toHaveBeenCalled();
     expect(mocks.addSuppression).not.toHaveBeenCalled();
+  });
+
+  it('keeps RFC 8058 one-click POST (token in query) as JSON', async () => {
+    const token = makeUnsubToken('oneclick@example.com');
+    const response = await POST(
+      new NextRequest(
+        `https://www.vedichour.com/api/unsubscribe?t=${encodeURIComponent(token)}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'List-Unsubscribe=One-Click',
+        },
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+    expect(mocks.addSuppression).toHaveBeenCalledWith(db, 'oneclick@example.com', 'unsubscribe-link');
   });
 });
