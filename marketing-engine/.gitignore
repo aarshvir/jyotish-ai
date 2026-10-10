@@ -1,0 +1,10 @@
+node_modules/
+data/*.db
+data/*.db-journal
+out/**/*.mp4
+out/**/*.wav
+out/**/*.jpg
+out/**/*.jpeg
+out/**/*.png
+.env
+*.log

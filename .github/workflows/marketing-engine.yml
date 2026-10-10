@@ -1,0 +1,25 @@
+name: marketing-engine
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+
+jobs:
+  cycle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng espeak-ng-data
+      - name: install
+        working-directory: marketing-engine
+        run: npm install
+      - name: test
+        working-directory: marketing-engine
+        run: npm test
+      - name: cycle needs Chrome on the runner
+        run: echo "Weekly test gate is the lint and spend tests. Full capture runs where google-chrome-stable exists (laptop or a VM with Chrome). Do not apt-install a browser in this job."
