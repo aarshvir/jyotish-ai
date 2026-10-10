@@ -36,9 +36,9 @@ export function runMeasure(db: DatabaseSync): void {
   const digest = `# Weekly digest
 
 Working:
-1. The Tuesday-slots idea is ranked first on priors (demand × pull × distance × product fit).
+1. The same-day two-windows idea is ranked first on priors (demand × pull × distance × product fit). The picture is the public Monday sample, not a generic Tuesday.
 2. The voice lint rejected the personal-attribute ad and kept the two product ads.
-3. Assets, when this file is fresh, are a live quiz capture plus the sample report, with an audible espeak track.
+3. Assets, when this file is fresh, are the live quiz and the sample report, beat-locked to a Kokoro male voice.
 
 Kill:
 The health-and-energy ad angle. The quiz asks it. Marketing must not.

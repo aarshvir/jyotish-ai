@@ -59,7 +59,7 @@ export function runDistribute(db: DatabaseSync): void {
 
 Do not auto-post. Instagram's terms forbid automated access that is not their API. The official publish API (\`instagram_content_publish\`) needs a professional account and, for an app that posts for a business, App Review. This folder is the one-click pack until that review exists. Even then, this engine will not call media_publish. You press publish.
 
-**Why this one:** Two times on one Tuesday is a concrete decision. The reel shows the live quiz and the sample report, with sound. Listen before you post. The English voice is espeak-ng, not a person.
+**Why this one:** The public sample is a Monday in Bangalore. 9 to 10 scores 94, noon scores 49, 5 to 6 scores 98. The reel shows those cards while the line is spoken. Listen before you post. The English voice is Kokoro (am_michael), a neural male read. There is no on-camera person in this file.
 
 **When:** Evenings in India are a reasonable guess. We have no measured audience hours yet, so do not treat a clock time as data.
 
@@ -83,9 +83,9 @@ ${CAPTION}
 
 No refresh token is in this environment. Nothing was uploaded.
 
-**Title:** Two times. One Tuesday.
+**Title:** A real Monday, scored hour by hour
 
-**Description:** A sun-sign line cannot split 10:00 and 17:00. VedicHour scores eighteen windows a day for thirty days after a quiz. Planning aid, not a job offer. You pay for the month. The card is not charged again by itself.
+**Description:** The public sample is Monday in Bangalore. 9 to 10 scores 94. Noon scores 49. 5 to 6 scores 98. Eighteen windows, then a quiz. Planning aid, not a job offer. You pay for the month. The card is not charged again by itself.
 
 ${utm('/start', 'youtube', 'short', SLUG)}
 

@@ -1,20 +1,86 @@
 {
   "idea": "two-slots-same-tuesday",
   "voice": {
-    "primary": "espeak-ng en-gb-x-rp at 128 wpm",
-    "comparedWith": "espeak-ng en-us sample (voice-en-us-sample.wav)",
-    "hindi": "espeak-ng hi (voice-hi.wav)",
-    "note": "ElevenLabs was not used. espeak-ng has no Indian-English voice. RP is the slower of the two English samples. This is a free fallback, and it sounds like a synthesizer. Do not pretend it is a presenter.",
-    "meanVolumeDb": -20.3,
-    "durationSec": 44.840907
+    "engine": "kokoro-v1.0 am_michael",
+    "speed": 1,
+    "meanVolumeDb": -17,
+    "maxSilenceSec": 0.761771,
+    "durationSec": 59.032,
+    "note": "Kokoro am_michael, a neural male voice, reading the public sample. No on-camera person: this machine has no render API key, and a fake face would be a lie. The picture is the live site, framed to the sentence."
   },
-  "picture": "Live vedichour.com/start (quiz taps: Work and money, then changing jobs) and a scroll of /sample-report. No birth data typed.",
+  "picture": {
+    "report": "https://www.vedichour.com/sample-report",
+    "quiz": "https://www.vedichour.com/start",
+    "sample": "Monday · Bangalore. Day score 70. 9–10 scores 94. Noon scores 49. 5–6 scores 98. Quiz: Work and money, then changing jobs.",
+    "sync": "Each sentence is its own shot. Scrolls land before the score is spoken. Captions use those boundaries."
+  },
+  "beats": [
+    {
+      "beatId": "cover",
+      "start": 0.04,
+      "end": 4.59,
+      "text": "A real chart.\\NCancer rising. Moon in Scorpio."
+    },
+    {
+      "beatId": "monday",
+      "start": 5.003,
+      "end": 8.955000000000002,
+      "text": "Monday, Bangalore.\\NDay score 70."
+    },
+    {
+      "beatId": "windows",
+      "start": 9.135,
+      "end": 14.239,
+      "text": "Two windows.\\N9 to 10 am, and 5 to 6 pm."
+    },
+    {
+      "beatId": "morning",
+      "start": 14.652,
+      "end": 18.476,
+      "text": "9 to 10 am.\\NScore 94."
+    },
+    {
+      "beatId": "noon",
+      "start": 18.888999999999996,
+      "end": 21.903,
+      "text": "12 to 1 pm.\\NScore 49. Heavier."
+    },
+    {
+      "beatId": "evening",
+      "start": 22.382999999999996,
+      "end": 27.060999999999996,
+      "text": "5 to 6 pm.\\NScore 98."
+    },
+    {
+      "beatId": "eighteen",
+      "start": 27.673999999999996,
+      "end": 31.049999999999997,
+      "text": "Eighteen windows.\\NClearer, and heavier."
+    },
+    {
+      "beatId": "quiz",
+      "start": 31.295999999999996,
+      "end": 34.608,
+      "text": "What is weighing on you.\\NWork and money."
+    },
+    {
+      "beatId": "jobs",
+      "start": 34.85399999999999,
+      "end": 37.696999999999996,
+      "text": "Which is closest.\\NChanging jobs."
+    },
+    {
+      "beatId": "promise",
+      "start": 37.94299999999999,
+      "end": 44.36999999999999,
+      "text": "30 days. A planning aid.\\NNot a promise this window gets you the role."
+    }
+  ],
   "files": {
     "reel9x16": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/reel-9x16.mp4",
     "reel1x1": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/reel-1x1.mp4",
     "reel16x9": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/reel-16x9.mp4",
-    "carousel": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/carousel",
-    "captions": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/captions.ass"
+    "carousel": "/workspace/marketing-engine/out/2026-10-10/two-slots-same-tuesday/film/carousel"
   },
-  "humanView": "Play reel-9x16.mp4 with sound before anyone posts it."
+  "humanView": "Play reel-9x16.mp4 with sound. The morning card must be on screen while he says 94, noon while he says 49, and 5 to 6 while he says 98."
 }

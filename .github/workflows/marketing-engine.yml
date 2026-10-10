@@ -12,7 +12,7 @@ jobs:
         with:
           node-version: '22'
       - name: tools
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg espeak-ng espeak-ng-data
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: install
         working-directory: marketing-engine
         run: npm install
@@ -20,4 +20,4 @@ jobs:
         working-directory: marketing-engine
         run: npm test
       - name: cycle needs Chrome on the runner
-        run: echo "Weekly test gate is the lint and spend tests. Full capture runs where google-chrome-stable exists (laptop or a VM with Chrome). Do not apt-install a browser in this job."
+        run: echo "Weekly test gate is the lint and spend tests. Full capture runs where google-chrome-stable and the Kokoro weights exist. Do not apt-install a browser in this job."

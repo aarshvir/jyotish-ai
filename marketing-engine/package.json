@@ -13,7 +13,7 @@
     "paid": "node --experimental-sqlite --import tsx src/cli.ts paid",
     "measure": "node --experimental-sqlite --import tsx src/cli.ts measure",
     "learn": "node --experimental-sqlite --import tsx src/cli.ts learn",
-    "test": "node --experimental-sqlite --import tsx --test src/voice.test.ts src/score.test.ts src/spend.test.ts src/learn.test.ts"
+    "test": "node --experimental-sqlite --import tsx --test src/voice.test.ts src/score.test.ts src/spend.test.ts src/learn.test.ts src/beats.test.ts"
   },
   "dependencies": {
     "puppeteer-core": "^24.15.0"

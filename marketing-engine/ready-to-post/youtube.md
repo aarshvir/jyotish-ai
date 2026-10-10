@@ -4,9 +4,9 @@
 
 No refresh token is in this environment. Nothing was uploaded.
 
-**Title:** Two times. One Tuesday.
+**Title:** A real Monday, scored hour by hour
 
-**Description:** A sun-sign line cannot split 10:00 and 17:00. VedicHour scores eighteen windows a day for thirty days after a quiz. Planning aid, not a job offer. You pay for the month. The card is not charged again by itself.
+**Description:** The public sample is Monday in Bangalore. 9 to 10 scores 94. Noon scores 49. 5 to 6 scores 98. Eighteen windows, then a quiz. Planning aid, not a job offer. You pay for the month. The card is not charged again by itself.
 
 https://www.vedichour.com/start?utm_source=youtube&utm_medium=short&utm_campaign=timing-grid&utm_content=two-meeting-times-same-tuesday
 

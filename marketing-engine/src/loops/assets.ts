@@ -1,13 +1,13 @@
-import { mkdirSync, writeFileSync, readdirSync, copyFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
-import type { Page } from 'puppeteer-core';
-import { CAROUSEL, ENGLISH_SCRIPT, HINDI_SCRIPT } from '../../config/pieces';
+import { REEL_BEATS, isReportShot, shotKey } from '../../config/beats';
 import { logRun } from '../db';
-import { withBrowser } from '../media/browser';
-import { cutAspect, durationSec, meanVolumeDb, slideshow, writeAss } from '../media/compose';
-import { speak } from '../media/speak';
+import { assembleReel, cutAspect, maxSilenceSec, meanVolumeDb, type Segment } from '../media/compose';
+import { captureFilm } from '../media/shots';
+import { VOICE_ENGINE, speakLines } from '../media/speak';
 import { ENGINE_ROOT } from '../paths';
+import { run } from '../shell';
 
 const IDEA = 'two-slots-same-tuesday';
 
@@ -16,93 +16,53 @@ function dayDir(): string {
   return resolve(ENGINE_ROOT, 'out', day, IDEA);
 }
 
-function slideHtml(slide: { title: string; body: string }, index: number): string {
-  return `<!doctype html><html><head><meta charset="utf-8"><style>
-    html,body{margin:0;width:1080px;height:1350px;background:#0a0a1a;color:#f4ecd8;font-family:"DejaVu Sans",sans-serif}
-    .wrap{box-sizing:border-box;height:1350px;padding:100px 84px;display:flex;flex-direction:column;justify-content:center}
-    .k{color:#d4af37;letter-spacing:.16em;font-size:28px;text-transform:uppercase}
-    h1{font-size:78px;line-height:1.05;font-weight:650;margin:28px 0 24px}
-    p{font-size:40px;line-height:1.35;color:#ddd4c4;margin:0}
-    .n{position:absolute;bottom:56px;left:84px;color:#d4af37;font-size:26px}
-  </style></head><body><div class="wrap"><div class="k">VedicHour</div><h1>${escapeHtml(slide.title)}</h1><p>${escapeHtml(slide.body)}</p></div><div class="n">${index + 1} / ${CAROUSEL.length}</div></body></html>`;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-
-async function shoot(page: Page, dir: string, startAt: number, count: number, scrollPx: number): Promise<number> {
-  let n = startAt;
-  for (let i = 0; i < count; i++) {
-    const full = resolve(dir, `frame_${String(n).padStart(3, '0')}.jpg`);
-    await page.screenshot({ path: full, type: 'jpeg', quality: 72 });
-    n++;
-    if (scrollPx > 0) await page.evaluate((y) => window.scrollBy(0, y), scrollPx);
-  }
-  return n;
-}
-
-async function clickText(page: Page, text: string): Promise<void> {
-  const clicked = await page.evaluate((needle) => {
-    const buttons = Array.from(document.querySelectorAll('button'));
-    const hit = buttons.find((b) => (b.textContent ?? '').includes(needle));
-    if (!hit) return false;
-    hit.click();
-    return true;
-  }, text);
-  if (!clicked) throw new Error(`quiz button not found: ${text}`);
-  await new Promise((r) => setTimeout(r, 600));
-}
-
 export async function runAssets(db: DatabaseSync): Promise<string> {
   const dir = dayDir();
-  const frames = resolve(dir, 'frames');
-  const slides = resolve(dir, 'carousel');
-  mkdirSync(frames, { recursive: true });
-  mkdirSync(slides, { recursive: true });
+  const film = resolve(dir, 'film');
+  rmSync(film, { recursive: true, force: true });
+  mkdirSync(film, { recursive: true });
+  const voiceDir = resolve(dir, 'voice');
+  mkdirSync(voiceDir, { recursive: true });
 
-  await withBrowser(async (browser) => {
-    const page = await browser.newPage();
-    await page.setViewport({ width: 1080, height: 1350, deviceScaleFactor: 1 });
-    for (let i = 0; i < CAROUSEL.length; i++) {
-      await page.setContent(slideHtml(CAROUSEL[i], i), { waitUntil: 'load' });
-      await page.screenshot({ path: resolve(slides, `slide_${i + 1}.png`), type: 'png' });
+  await speakLines(REEL_BEATS.map((beat) => ({
+    id: beat.id,
+    text: beat.speech,
+    out: resolve(voiceDir, `${beat.id}.wav`),
+  })));
+
+  const captured = await captureFilm(film);
+  const segments: Segment[] = [];
+  for (let i = 0; i < REEL_BEATS.length; i++) {
+    const beat = REEL_BEATS[i];
+    const glide = captured.glides.get(i);
+    if (glide) {
+      segments.push({ kind: 'glide', dir: glide.dir, frames: glide.frames });
+    } else if (i > 0) {
+      const prev = captured.stills.get(shotKey(REEL_BEATS[i - 1].shot));
+      if (!prev) throw new Error(`missing still before ${beat.id}`);
+      const hardCut = !(isReportShot(REEL_BEATS[i - 1].shot) && isReportShot(beat.shot));
+      segments.push({ kind: 'hold', still: prev.png, seconds: hardCut ? 0.16 : 0.1 });
     }
-
-    const phone = await browser.newPage();
-    await phone.setViewport({ width: 390, height: 844, deviceScaleFactor: 2 });
-    await phone.goto('https://www.vedichour.com/start', { waitUntil: 'networkidle2', timeout: 45000 });
-    await phone.waitForFunction(() => (document.body.innerText || '').includes('weighing on you'), { timeout: 20000 });
-    let n = await shoot(phone, frames, 0, 4, 0);
-    await clickText(phone, 'Work and money');
-    n = await shoot(phone, frames, n, 3, 0);
-    await clickText(phone, 'changing jobs');
-    n = await shoot(phone, frames, n, 3, 0);
-
-    await phone.goto('https://www.vedichour.com/sample-report', { waitUntil: 'networkidle2', timeout: 45000 });
-    await new Promise((r) => setTimeout(r, 1500));
-    await shoot(phone, frames, n, 56, 140);
-  });
-
-  const frameFiles = readdirSync(frames).filter((f) => f.endsWith('.jpg')).sort();
-  if (frameFiles.length < 20) throw new Error(`only ${frameFiles.length} product frames; refusing to invent a reel`);
-
-  const voiceEn = resolve(dir, 'voice-en.wav');
-  const voiceHi = resolve(dir, 'voice-hi.wav');
-  const voiceUs = resolve(dir, 'voice-en-us-sample.wav');
-  await speak(ENGLISH_SCRIPT, voiceEn, 'en-gb-x-rp', 128);
-  await speak(HINDI_SCRIPT, voiceHi, 'hi', 124);
-  await speak(ENGLISH_SCRIPT.split('\n').slice(0, 2).join(' '), voiceUs, 'en-us', 128);
-
-  const seconds = await durationSec(voiceEn);
-  const fps = Math.max(1, Math.round((frameFiles.length / seconds) * 10) / 10);
-  const ass = resolve(dir, 'captions.ass');
-  writeAss(ENGLISH_SCRIPT.replace(/\n/g, ' '), seconds, ass);
+    const still = captured.stills.get(shotKey(beat.shot));
+    if (!still) throw new Error(`missing still for ${beat.id} (${shotKey(beat.shot)})`);
+    segments.push({
+      kind: 'speech',
+      still: still.png,
+      wav: resolve(voiceDir, `${beat.id}.wav`),
+      caption: beat.caption,
+      beatId: beat.id,
+    });
+  }
+  const slate = captured.stills.get('slate');
+  if (!slate) throw new Error('missing end slate');
+  segments.push({ kind: 'hold', still: slate.png, seconds: 0.4 });
 
   const reel = resolve(dir, 'reel-9x16.mp4');
-  await slideshow(dir, fps);
+  const timeline = await assembleReel(film, segments, reel);
   const mean = await meanVolumeDb(reel);
-  if (mean < -40) throw new Error(`reel is inaudible at ${mean} dB`);
+  const silence = await maxSilenceSec(reel);
+  if (mean < -32) throw new Error(`reel is too quiet at ${mean} dB`);
+  if (silence >= 0.95) throw new Error(`dead air of ${silence.toFixed(2)}s`);
 
   const square = resolve(dir, 'reel-1x1.mp4');
   const wide = resolve(dir, 'reel-16x9.mp4');
@@ -112,22 +72,27 @@ export async function runAssets(db: DatabaseSync): Promise<string> {
   const manifest = {
     idea: IDEA,
     voice: {
-      primary: 'espeak-ng en-gb-x-rp at 128 wpm',
-      comparedWith: 'espeak-ng en-us sample (voice-en-us-sample.wav)',
-      hindi: 'espeak-ng hi (voice-hi.wav)',
-      note: 'ElevenLabs was not used. espeak-ng has no Indian-English voice. RP is the slower of the two English samples. This is a free fallback, and it sounds like a synthesizer. Do not pretend it is a presenter.',
+      engine: VOICE_ENGINE,
+      speed: 1,
       meanVolumeDb: mean,
-      durationSec: seconds,
+      maxSilenceSec: silence,
+      durationSec: timeline.duration,
+      note: 'Kokoro am_michael, a neural male voice, reading the public sample. No on-camera person: this machine has no render API key, and a fake face would be a lie. The picture is the live site, framed to the sentence.',
     },
-    picture: 'Live vedichour.com/start (quiz taps: Work and money, then changing jobs) and a scroll of /sample-report. No birth data typed.',
+    picture: {
+      report: 'https://www.vedichour.com/sample-report',
+      quiz: 'https://www.vedichour.com/start',
+      sample: 'Monday · Bangalore. Day score 70. 9–10 scores 94. Noon scores 49. 5–6 scores 98. Quiz: Work and money, then changing jobs.',
+      sync: 'Each sentence is its own shot. Scrolls land before the score is spoken. Captions use those boundaries.',
+    },
+    beats: timeline.cues,
     files: {
       reel9x16: reel,
       reel1x1: square,
       reel16x9: wide,
-      carousel: slides,
-      captions: ass,
+      carousel: captured.carouselDir,
     },
-    humanView: 'Play reel-9x16.mp4 with sound before anyone posts it.',
+    humanView: 'Play reel-9x16.mp4 with sound. The morning card must be on screen while he says 94, noon while he says 49, and 5 to 6 while he says 98.',
   };
   writeFileSync(resolve(dir, 'manifest.json'), JSON.stringify(manifest, null, 2));
   mkdirSync(resolve(ENGINE_ROOT, 'staged'), { recursive: true });
@@ -136,17 +101,25 @@ export async function runAssets(db: DatabaseSync): Promise<string> {
   const now = new Date().toISOString();
   const ins = db.prepare(`INSERT INTO assets (idea_slug, kind, path, created_at) VALUES (?, ?, ?, ?)`);
   ins.run(IDEA, 'reel-9x16', reel, now);
-  ins.run(IDEA, 'carousel', slides, now);
-  logRun(db, 'assets', 'ok', `reel ${seconds.toFixed(1)}s mean ${mean.toFixed(1)} dB, ${frameFiles.length} frames, ${CAROUSEL.length} slides`);
+  ins.run(IDEA, 'carousel', captured.carouselDir, now);
+  logRun(db, 'assets', 'ok', `reel ${timeline.duration.toFixed(1)}s mean ${mean.toFixed(1)} dB silence ${silence.toFixed(2)}s, ${VOICE_ENGINE}`);
 
-  const artifact = '/opt/cursor/artifacts';
-  try {
-    mkdirSync(artifact, { recursive: true });
+  if (existsSync('/opt/cursor/artifacts')) {
+    const artifact = '/opt/cursor/artifacts';
     copyFileSync(reel, resolve(artifact, 'reel_9x16.mp4'));
-    copyFileSync(resolve(slides, 'slide_1.png'), resolve(artifact, 'carousel_slide_1.png'));
-    copyFileSync(resolve(frames, frameFiles[8] ?? frameFiles[0]), resolve(artifact, 'product_frame.jpg'));
-  } catch {
-    /* artifacts dir is optional outside the cloud VM */
+    copyFileSync(resolve(captured.carouselDir, 'slide_1.png'), resolve(artifact, 'carousel_slide_1.png'));
+    const morning = captured.stills.get('hour:09:00–10:00');
+    const evening = captured.stills.get('hour:17:00–18:00');
+    const quiz = captured.stills.get('quiz:concern');
+    if (morning) copyFileSync(morning.png, resolve(artifact, 'beat_morning.png'));
+    if (evening) copyFileSync(evening.png, resolve(artifact, 'beat_evening.png'));
+    if (quiz) copyFileSync(quiz.png, resolve(artifact, 'beat_quiz.png'));
+    copyFileSync(slate.png, resolve(artifact, 'beat_slate.png'));
+    for (const cue of timeline.cues) {
+      const mid = ((cue.start + cue.end) / 2).toFixed(3);
+      const frame = resolve(artifact, `reel_${cue.beatId}.jpg`);
+      await run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', mid, '-i', reel, '-frames:v', '1', frame]);
+    }
   }
   return dir;
 }

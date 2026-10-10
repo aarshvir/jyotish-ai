@@ -8,7 +8,7 @@ import type { Seed } from '../src/score';
 export const SEEDS: Seed[] = [
   {
     slug: 'two-slots-same-tuesday',
-    title: 'Two meeting times on the same Tuesday',
+    title: 'Two meeting times on the same day',
     source: 'public-search-intent',
     demand: 0.72,
     emotion: 0.84,
