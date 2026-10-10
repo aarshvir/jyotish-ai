@@ -8,6 +8,7 @@ import { track } from '@/components/analytics/PostHogProvider';
 import { DeliveryGate } from '@/components/onboard/DeliveryGate';
 import { PaymentHandoff } from '@/components/checkout/PaymentHandoff';
 import { formatAmount } from '@/lib/ziina/amounts';
+import { quizPaymentReturnBanner } from '@/lib/checkout/quizPaymentReturn';
 import type { Answers, Step } from '@/lib/quiz/questions';
 import {
   concernHeadline,
@@ -230,11 +231,7 @@ export function StartQuiz() {
       setStepId(payment ? PAYWALL : saved.stepId);
     }
     if (payment) {
-      setBanner(
-        payment === 'pending'
-          ? 'Your payment is still being confirmed. Keep this page open — it takes you to your forecast the moment Ziina confirms. You will not be charged twice.'
-          : 'The payment did not go through, and nothing was charged. You can try again below.',
-      );
+      setBanner(quizPaymentReturnBanner(payment));
     }
     // Renewal (from the dashboard or a reminder): skip the quiz and go straight to the plans,
     // with birth details taken from the latest report.
