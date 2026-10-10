@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createHmac } from 'node:crypto';
-import { makeUnsubToken, verifyUnsubToken } from './suppression';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { fetchSuppressedSet, makeUnsubToken, verifyUnsubToken } from './suppression';
 
 const KEYS = ['UNSUBSCRIBE_SECRET', 'CRON_SECRET', 'SUPABASE_SERVICE_ROLE_KEY'] as const;
 
@@ -50,5 +51,35 @@ describe('unsubscribe token signing', () => {
     // …and it stays rejected once a real key is in place.
     process.env.UNSUBSCRIBE_SECRET = 'a-real-secret';
     expect(verifyUnsubToken(forged)).toBeNull();
+  });
+});
+
+function suppressionDb(result: { data: Array<{ email: string }> | null; error: { message: string } | null }) {
+  return {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        limit: vi.fn().mockResolvedValue(result),
+      })),
+    })),
+  } as unknown as SupabaseClient;
+}
+
+describe('fetchSuppressedSet', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('normalizes suppression addresses', async () => {
+    const suppressed = await fetchSuppressedSet(
+      suppressionDb({ data: [{ email: ' USER@Example.COM ' }], error: null }),
+    );
+    expect(suppressed).toEqual(new Set(['user@example.com']));
+  });
+
+  it('fails closed when suppressions cannot be verified', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await expect(
+      fetchSuppressedSet(suppressionDb({ data: null, error: { message: 'database unavailable' } })),
+    ).rejects.toThrow('Could not verify email suppressions');
   });
 });
