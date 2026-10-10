@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addCivilDays,
+  calendarMonthAfter,
   civilDateRange,
   civilDateYmd,
   formatIsoTimeInOffset,
@@ -58,5 +59,16 @@ describe('local time helpers', () => {
       '2026-08-02',
       '2026-08-03',
     ]);
+  });
+
+  it('calendarMonthAfter steps months from the 31st without skipping', () => {
+    // Date#setMonth(31 Aug + 1) lands on 1 Oct and drops September. The outlook must not.
+    expect(calendarMonthAfter('2026-08-31', 0)).toEqual({ ym: '2026-08', label: 'August 2026' });
+    expect(calendarMonthAfter('2026-08-31', 1)).toEqual({ ym: '2026-09', label: 'September 2026' });
+    expect(calendarMonthAfter('2026-08-31', 2)).toEqual({ ym: '2026-10', label: 'October 2026' });
+    expect(calendarMonthAfter('2026-01-31', 1)).toEqual({ ym: '2026-02', label: 'February 2026' });
+    expect(calendarMonthAfter('2026-12-31', 1)).toEqual({ ym: '2027-01', label: 'January 2027' });
+    expect(calendarMonthAfter('2026-09-21', 0)).toEqual({ ym: '2026-09', label: 'September 2026' });
+    expect(calendarMonthAfter('not-a-date', 0)).toBeNull();
   });
 });

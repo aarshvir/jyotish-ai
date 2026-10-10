@@ -35,7 +35,7 @@ import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { buildTransitQueryTerms, detectYogas } from '@/lib/rag/yogaDetector';
 import { assertRequiredScriptureGrounding } from '@/lib/rag/sourceValidation';
 import { notifyReportReady } from '@/lib/notify/reportReady';
-import { civilDateRange, civilDateYmd } from '@/lib/time/localTime';
+import { calendarMonthAfter, civilDateRange, civilDateYmd } from '@/lib/time/localTime';
 import { NATIVITY_FETCH_ATTEMPTS, NATIVITY_FETCH_TIMEOUT_MS } from '@/lib/agents/nativityBudget';
 
 // ── Pipeline-internal types ──────────────────────────────────────────────────
@@ -1833,11 +1833,10 @@ export async function generateReportPipeline(
         }
       }
       const allMonths = Array.from({ length: 12 }, (_, i) => {
-        const d = new Date(startDate);
-        d.setMonth(d.getMonth() + i);
-        const ym = d.toISOString().substring(0, 7);
+        const slot = calendarMonthAfter(forecastDays[0].date, i);
+        const ym = slot?.ym ?? '';
         const hints = ingressByMonth[ym] ?? [];
-        return { month_label: d.toLocaleString('default', { month: 'long', year: 'numeric' }), month_index: i, key_transits_hint: hints.join('; ') };
+        return { month_label: slot?.label ?? '', month_index: i, key_transits_hint: hints.join('; ') };
       });
       const monthlyScriptureContext = await getDashaTransitScriptureContext();
       const refPayload = {
