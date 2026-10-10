@@ -12,7 +12,7 @@ Seven loops, one SQLite file (`marketing-engine/data/engine.db`), one command: `
 | 6 Measure | before paid | Records paying customers = 0 when no warehouse is connected. Writes `out/dashboard.html` and `out/digest.md`. | $0 |
 | 7 Learn | last | Appends `learnings.md`. With no reach, ranks do not move. | $0 |
 
-Schedule, once this is on a machine with Chrome and espeak-ng: GitHub Actions weekly (`.github/workflows/marketing-engine.yml`) plus `npm run cycle` locally whenever the UI changes, so the screen capture is re-shot.
+Schedule: `npm run cycle` on a machine with Chrome and espeak-ng, including after a UI change so the capture is re-shot. The GitHub workflow is manual (`workflow_dispatch`) until `marketing-agent`'s scheduler is turned off. Two schedulers posting one brand was the 2026-09-08 failure.
 
 State is the SQLite tables `ideas`, `drafts`, `assets`, `measurements`, `runs`.
 

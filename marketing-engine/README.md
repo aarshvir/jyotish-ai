@@ -1,5 +1,7 @@
 # VedicHour marketing engine
 
+On 2026-09-08 this folder was reduced to a tombstone because a second engine was fighting `marketing-agent/`. This tree is a founder-requested reset (2026-10-10). It does not post, and the GitHub workflow is `workflow_dispatch` only so it cannot double-publish beside `marketing-agent`.
+
 `npm run cycle` ranks ideas, lints copy, records the live site, stages posts, and refuses ad spend.
 
 ```bash

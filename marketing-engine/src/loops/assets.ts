@@ -130,6 +130,8 @@ export async function runAssets(db: DatabaseSync): Promise<string> {
     humanView: 'Play reel-9x16.mp4 with sound before anyone posts it.',
   };
   writeFileSync(resolve(dir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+  mkdirSync(resolve(ENGINE_ROOT, 'staged'), { recursive: true });
+  writeFileSync(resolve(ENGINE_ROOT, 'staged', 'manifest.json'), JSON.stringify(manifest, null, 2));
 
   const now = new Date().toISOString();
   const ins = db.prepare(`INSERT INTO assets (idea_slug, kind, path, created_at) VALUES (?, ?, ?, ?)`);

@@ -93,7 +93,7 @@ For reflection and planning, not certainty.
 `,
   );
 
-  const mailDir = resolve(ENGINE_ROOT, 'out', 'email');
+  const mailDir = resolve(ENGINE_ROOT, 'staged', 'email');
   mkdirSync(mailDir, { recursive: true });
   for (const e of EMAILS) {
     writeFileSync(resolve(mailDir, `${e.id}.txt`), `Subject: ${e.subject}\n\n${e.body}\n`);
@@ -101,7 +101,7 @@ For reflection and planning, not certainty.
 
   const rssItem = `<item><title>${BLOG_TITLE}</title><link>https://www.vedichour.com/blog/${SLUG}</link><description>${BLOG_DESCRIPTION}</description></item>`;
   writeFileSync(
-    resolve(ENGINE_ROOT, 'out', 'feed.xml'),
+    resolve(ENGINE_ROOT, 'staged', 'feed.xml'),
     `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>VedicHour</title><link>https://www.vedichour.com/blog</link>${rssItem}</channel></rss>\n`,
   );
 

@@ -62,7 +62,7 @@ export async function slideshow(dir: string, fps: number): Promise<void> {
     '-framerate', String(fps),
     '-i', 'frames/frame_%03d.jpg',
     '-i', 'voice-en.wav',
-    '-vf', `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30,ass=captions.ass:fontsdir=${fonts}`,
+    '-vf', `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,setsar=1,fps=30,format=yuv420p,ass=captions.ass:fontsdir=${fonts}`,
     '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '20', '-pix_fmt', 'yuv420p',
     '-c:a', 'aac', '-b:a', '160k', '-ar', '48000',
     '-shortest',
@@ -73,8 +73,8 @@ export async function slideshow(dir: string, fps: number): Promise<void> {
 
 export async function cutAspect(src: string, outPath: string, mode: 'square' | 'wide'): Promise<void> {
   const vf = mode === 'square'
-    ? 'crop=ih:ih,scale=1080:1080'
-    : 'scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080';
+    ? 'crop=1080:1080:0:(in_h-1080)/2,scale=1080:1080,setsar=1'
+    : 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=0x0a0a1a,setsar=1';
   await run('ffmpeg', ['-y', '-i', src, '-vf', vf, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '22', '-c:a', 'copy', outPath]);
 }
 

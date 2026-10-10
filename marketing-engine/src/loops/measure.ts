@@ -17,7 +17,7 @@ export function runMeasure(db: DatabaseSync): void {
   const drafts = db.prepare(`SELECT kind, lang, ok FROM drafts`).all() as { kind: string; lang: string; ok: number }[];
   const assets = db.prepare(`SELECT kind, path FROM assets ORDER BY id DESC LIMIT 6`).all() as { kind: string; path: string }[];
 
-  const dir = resolve(ENGINE_ROOT, 'out');
+  const dir = resolve(ENGINE_ROOT, 'staged');
   mkdirSync(dir, { recursive: true });
   const rows = ideas.map((i) => `<tr><td>${i.slug}</td><td>${i.score}</td><td>no channel row</td><td>0</td><td>0</td></tr>`).join('');
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>VedicHour marketing</title>

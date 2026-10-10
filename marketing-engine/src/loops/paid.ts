@@ -57,7 +57,7 @@ export function runPaid(db: DatabaseSync): void {
     ltvUsd: measured.ltvUsd,
     d30Retention: measured.d30Retention,
   });
-  const dir = resolve(ENGINE_ROOT, 'out', 'campaigns');
+  const dir = resolve(ENGINE_ROOT, 'staged', 'campaigns');
   mkdirSync(dir, { recursive: true });
   const meta = {
     name: 'VedicHour timing grid — do not import until founder approves spend',
