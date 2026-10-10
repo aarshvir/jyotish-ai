@@ -9,6 +9,7 @@ import { buildSlotGuidance, buildDayBriefing } from '@/lib/guidance/builder';
 import { isV2GuidanceEnabled } from '@/lib/guidance/featureFlag';
 import type { ReportData } from '@/lib/agents/types';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
+import { hasCompleteHourlyProse } from '@/lib/reports/hourlyProseIntegrity';
 
 const SIGNS_FOR_LAGNA = [
   'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -76,7 +77,7 @@ function serviceHeaders(reportId: string, userId: string): Record<string, string
 
 async function fetchJSON(url: string, init: RequestInit, label: string): Promise<unknown> {
   const res = await fetch(url, { ...init, signal: AbortSignal.timeout(280_000) });
-  if (!res.ok) {
+  if (!res.ok || res.status === 206) {
     const t = await res.text().catch(() => '');
     throw new Error(`${label} HTTP ${res.status}: ${t.slice(0, 200)}`);
   }
@@ -205,6 +206,7 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
   // Hourly commentary in batches of 5 days (90 slots). 8 days = 144 slots × ~3
   // paragraphs each blows hourly-batch's 16k-token cap → truncation → template
   // fallback on the appended days. Match the orchestrator's primary path (CHUNK_SIZE=5).
+  const proseCompleteDayIndexes = new Set<number>();
   for (let off = 0; off < forecastNew.length; off += 5) {
     const slice = forecastNew.slice(off, off + 5);
     const payload = {
@@ -228,8 +230,11 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
       }, 'hourly-batch') as { days?: Array<{ dayIndex?: number; slots?: Array<{ slot_index?: number; commentary?: string }> }> };
 
       (batch.days ?? []).forEach((bd) => {
-        const day = forecastNew[bd.dayIndex ?? -1];
+        const dayIndex = bd.dayIndex ?? -1;
+        const day = forecastNew[dayIndex];
         if (!day) return;
+        const expectedSlotIndexes = day.slots.map((slot) => slot.slot_index);
+        if (!hasCompleteHourlyProse(bd.slots, expectedSlotIndexes)) return;
         (bd.slots ?? []).forEach((hs) => {
           const slot = day.slots.find((s) => s.slot_index === hs.slot_index);
           if (slot && hs.commentary) {
@@ -238,6 +243,7 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
             slot.commentary_short = first ? `${first}.` : '';
           }
         });
+        proseCompleteDayIndexes.add(dayIndex);
       });
     } catch (e) {
       console.error('[extendMonthly] hourly-batch failed:', e);
@@ -246,7 +252,7 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
 
   const v2Enabled = isV2GuidanceEnabled();
 
-  const newReportDays = forecastNew.map((d) => {
+  const newReportDays = forecastNew.map((d, dayIndex) => {
     const mappedSlots = d.slots.map((s) => {
       const slotScore = s.score ?? 50;
       const isRk = s.is_rahu_kaal ?? false;
@@ -310,6 +316,7 @@ export async function extendReportToMonthly(baseUrl: string, reportId: string): 
         ? { start: d.rahu_kaal.start.slice(0, 5), end: d.rahu_kaal.end.slice(0, 5) }
         : null,
       slots: mappedSlots,
+      ai_prose: proseCompleteDayIndexes.has(dayIndex),
       peak_count: mappedSlots.filter((s) => s.score >= 75 && !s.is_rahu_kaal).length,
       caution_count: mappedSlots.filter((s) => s.score < 45 || s.is_rahu_kaal).length,
       ...(briefingV2 ? { briefing_v2: briefingV2 } : {}),

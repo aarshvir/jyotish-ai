@@ -355,6 +355,9 @@ export interface DayForecast {
    */
   slots: HoraSlot[];
 
+  /** False when hourly prose must be generated on demand for this day. */
+  ai_prose?: boolean;
+
   /** Count of slots with score >= 75 (non-Rahu Kaal). */
   peak_count: number;
 

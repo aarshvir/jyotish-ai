@@ -37,3 +37,8 @@ export function resolveHourlyBatchDays(proseDayCount: number, steps: number = HO
   if (proseDayCount <= 0) return 2;
   return Math.max(2, Math.ceil(proseDayCount / Math.max(1, steps)));
 }
+
+/** Whether the pipeline intentionally generated hourly prose for this day. */
+export function isDayInsideProseWindow(dayIndex: number, proseDayCount: number): boolean {
+  return dayIndex >= 0 && dayIndex < proseDayCount;
+}
