@@ -8,9 +8,9 @@ import { FaqSection } from '@/components/seo/SeoSection';
 import { faqPageLd, breadcrumbLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Shubh Muhurat — How to Choose an Auspicious Time the Vedic Way',
+  title: 'Shubh Muhurat: How to Choose an Auspicious Time',
   description:
-    'A plain-English guide to shubh muhurat — how Vedic astrology chooses an auspicious time using the panchang, and how to read clearer vs heavier windows for everyday planning.',
+    'How Vedic astrology picks a shubh muhurat from the panchang, and how to read clearer and heavier windows for everyday planning.',
   keywords: [
     'shubh muhurat',
     'auspicious time',

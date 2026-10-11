@@ -16,12 +16,14 @@ export function generateStaticParams() {
 export function generateMetadata({ params }: { params: { name: string } }): Metadata {
   const n = getNakshatra(params.name);
   if (!n) return {};
+  // The stored titles ran to 67 to 78 characters once the brand suffix was added, and were cut in search.
+  const title = `${n.name} Nakshatra: Traits & Compatibility`;
   return {
-    title: n.title,
+    title,
     description: n.description,
     keywords: n.keywords,
     alternates: { canonical: `/nakshatra/${n.slug}` },
-    openGraph: { title: n.title, description: n.description, type: 'article', images: ['/opengraph-image'] },
+    openGraph: { title, description: n.description, type: 'article', images: ['/opengraph-image'] },
   };
 }
 

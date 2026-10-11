@@ -3,9 +3,9 @@ import { CalculatorPage } from '@/components/tools/CalculatorPage';
 import { faqPageLd, breadcrumbLd, softwareAppLd, howToLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Manglik Dosha Calculator — Free Mangal Dosh Check by Date of Birth',
+  title: 'Manglik Dosha Calculator: Free Mangal Dosh Check',
   description:
-    'Check if you are Manglik free in seconds. Enter your date, time and place of birth to see Mars’s placement, dosha strength and the classical cancellation rules — no signup.',
+    'Check whether you are Manglik. See where Mars sits in your chart, the strength of the dosha and the classical cancellation rules. Free, no sign-up.',
   alternates: { canonical: '/manglik-dosha-calculator' },
 };
 

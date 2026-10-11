@@ -6,7 +6,7 @@ import { StarField } from '@/components/ui/StarField';
 import { DASHAS } from '@/content/dashas';
 
 export const metadata: Metadata = {
-  title: 'Vimshottari Mahadasha — All 9 Planetary Periods Explained',
+  title: 'Vimshottari Mahadasha: All 9 Periods Explained',
   description:
     'The 9 Vimshottari Mahadashas explained — each planet’s period length, effects, sub-periods and remedies. Find your current mahadasha free by date of birth.',
   alternates: { canonical: '/dasha' },

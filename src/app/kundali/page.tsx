@@ -12,7 +12,7 @@ import { faqPageLd, breadcrumbLd, softwareAppLd, type Faq } from '@/lib/seo/json
 export const metadata: Metadata = {
   title: 'Deep Kundali Report — Your Full Vedic Birth Chart',
   description:
-    'A deep, personalized Vedic birth report — your full chart read across career & money, marriage & intimacy, health, children and family, a year-by-year outlook for the next 5 years, and the classical checks (Manglik, Kaal Sarpa, Sade Sati). Your chart facts are free; the full reading comes with a VedicHour subscription.',
+    'A deep Vedic birth report: career, money, marriage, health and family, a 5-year outlook, and the Manglik, Kaal Sarpa and Sade Sati checks. Chart facts are free.',
   alternates: { canonical: '/kundali' },
 };
 
