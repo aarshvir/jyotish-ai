@@ -63,7 +63,7 @@ export function OfferScreen({
   onBump,
   busy,
   banner,
-  contactLabel,
+  notify,
   onBuyBlueprint,
   onBuySubscription,
   onAddContact,
@@ -74,7 +74,8 @@ export function OfferScreen({
   onBump: (v: boolean) => void;
   busy: boolean;
   banner: string | null;
-  contactLabel: string | null;
+  /** 'on': they asked to hear from us; 'ask': they can; 'none': not offered (a birth date under 18). */
+  notify: 'on' | 'ask' | 'none';
   onBuyBlueprint: () => void;
   onBuySubscription: () => void;
   onAddContact: () => void;
@@ -134,9 +135,10 @@ export function OfferScreen({
             <h1 className="font-display font-semibold text-ink text-[1.625rem] leading-tight mb-2">Full Karmic Blueprint</h1>
             <p className="font-body text-[1rem] leading-relaxed text-ink-muted">
               The full 12–16 page blueprint is still being finished, so it is not on sale yet.{' '}
-              {contactLabel ? `We have ${contactLabel} and will tell you when it opens.` : 'Leave your email and we will tell you when it opens.'}
+              {notify === 'on' && 'We have your email and will tell you when it opens.'}
+              {notify === 'ask' && 'Save your chart with the notes box ticked and we will tell you when it opens.'}
             </p>
-            {!contactLabel && (
+            {notify === 'ask' && (
               <button type="button" onClick={onAddContact} className="btn-secondary mt-4 min-h-[48px] px-5 font-body text-ink border-paper-line">
                 Tell me when it opens
               </button>
