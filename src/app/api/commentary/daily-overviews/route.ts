@@ -7,7 +7,8 @@ import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaCo
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
-import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock } from '@/lib/utils/sanitize';
+import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { applyReaderTone, concreteDayLine, dayPersonalNote, eventDayLine, seekerPromptBlock, stripPartLabels } from '@/lib/personalization/forecastPrompt';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
@@ -129,8 +130,9 @@ export async function POST(req: NextRequest) {
     const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
     const mahadasha = sanitizePlanetName(body.mahadasha);
     const antardasha = sanitizePlanetName(body.antardasha);
-    const personalContextBlock = buildPersonalContextBlock(body.personal_context);
     const { days } = body;
+    // Quiz answers, not just tone: see src/lib/personalization/forecastPrompt.ts.
+    const personalContextBlock = seekerPromptBlock(body.personal_context, 'daily', { today: days?.[0]?.date });
     if (!lagnaSign) {
       return NextResponse.json({ days: [] }, { status: 200 });
     }
@@ -180,17 +182,17 @@ Return ONLY valid JSON. No markdown, no backticks.`;
   const callBatches = async (batchDays: typeof days, max_tokens: number, override?: string) => {
     const nDays = batchDays.length;
     const grahaBlocks = batchDays
-      .map(
-        (d: (typeof batchDays)[0]) =>
-          `=== ${d.date} ===\n${formatDayCommentaryAnchorBlocks({
-            planet_positions: d.planet_positions as import('@/lib/commentary/planetPositionsPrompt').PlanetPositionsPayload,
-            dateLabel: d.date,
-            yogaName: d.panchang?.yoga,
-            panchang: d.panchang,
-            slots: d.slots,
-            rahu_kaal: d.rahu_kaal,
-          })}`
-      )
+      .map((d: (typeof batchDays)[0]) => {
+        const note = dayPersonalNote(body.personal_context, d.date, { today: days[0]?.date });
+        return `=== ${d.date} ===\n${formatDayCommentaryAnchorBlocks({
+          planet_positions: d.planet_positions as import('@/lib/commentary/planetPositionsPrompt').PlanetPositionsPayload,
+          dateLabel: d.date,
+          yogaName: d.panchang?.yoga,
+          panchang: d.panchang,
+          slots: d.slots,
+          rahu_kaal: d.rahu_kaal,
+        })}${note ? `\n${note}` : ''}`;
+      })
       .join('\n\n');
 
     const userPrompt = `${grahaBlocks}
@@ -305,6 +307,23 @@ Exactly ${nDays} day entr${nDays === 1 ? 'y' : 'ies'} in the days array. Start w
         .flat()
         .map((d) => ({ ...d, day_overview: normalizeDayOverview(d.day_overview) }));
     }
+
+    // The reader's own choices, applied after the model has written: tone (no remedies, no alarm
+    // words), their date on its own day, and one concrete closing line for readers who found astrology
+    // vague. Text of a reader with none of these is returned exactly as written.
+    const sourceByDate = new Map(days.map((d) => [d.date, d]));
+    out = out.map((o) => {
+      const src = sourceByDate.get(o.date);
+      const extras = src
+        ? [eventDayLine(body.personal_context, { date: o.date, peak_slots: src.peak_slots, rahu_kaal: src.rahu_kaal }, { today: days[0]?.date }), concreteDayLine(body.personal_context, src)].filter(Boolean)
+        : [];
+      const overview = applyReaderTone(body.personal_context, stripPartLabels(o.day_overview));
+      return {
+        ...o,
+        day_theme: applyReaderTone(body.personal_context, o.day_theme),
+        day_overview: extras.length ? `${overview}\n\n${extras.join(' ')}` : overview,
+      };
+    });
 
     // Ensure exact day count is preserved. A count mismatch means the LLM output is
     // unusable, so we fall back to deterministic template days — but flag it 206 +

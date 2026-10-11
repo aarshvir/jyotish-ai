@@ -555,4 +555,13 @@ export interface ReportData {
   days: DayForecast[];
 
   synthesis: PeriodSynthesis;
+
+  /** How the reader's quiz answers changed the writing of this report (set by the generator). */
+  personalization?: {
+    v: 1;
+    concrete: boolean;
+    calm: boolean;
+    noSales: boolean;
+    eventDate: string | null;
+  };
 }

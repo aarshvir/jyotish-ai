@@ -5,6 +5,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/admin';
+import { personalizationStamp } from '@/lib/personalization/forecastView';
 import { appendReportGenerationLog } from '@/lib/observability/generationLog';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import {
@@ -1722,6 +1723,7 @@ export async function generateReportPipeline(
                 antardasha,
                 scripture_context: timingScriptureContext,
                 require_scripture_grounding: requireScriptureGrounding,
+                personal_context: rawPersonalContext,
                 days: chunkDays,
               });
               const res = await commentaryLimit(() =>
@@ -2275,6 +2277,8 @@ export async function generateReportPipeline(
       current_city: input.currentCity ?? input.city ?? null,
       generated_at: new Date().toISOString().slice(0, 10),
       nativity: nativityData,
+      // What the reader's quiz answers changed in how this report was written (read by the report page).
+      personalization: personalizationStamp(rawPersonalContext, forecastDays[0]?.date ?? new Date().toISOString().slice(0, 10)),
       months: allMonthsData,
       weeks: weekList,
       days: daysForReport,

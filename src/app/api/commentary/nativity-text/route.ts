@@ -6,7 +6,8 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
-import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock, sanitizeForPrompt } from '@/lib/utils/sanitize';
+import { sanitizeLagnaSign, sanitizePlanetName, sanitizeForPrompt } from '@/lib/utils/sanitize';
+import { applyReaderTone, seekerPromptBlock } from '@/lib/personalization/forecastPrompt';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { resolveJyotishRagMode } from '@/lib/rag/ragMode';
 import { detectYogas, buildTransitQueryTerms } from '@/lib/rag/yogaDetector';
@@ -63,7 +64,8 @@ export async function POST(req: NextRequest) {
   const mahadasha = sanitizePlanetName(body.mahadasha);
   const antardasha = sanitizePlanetName(body.antardasha);
   // Pre-sanitized seeker context block, built once in the orchestrator ('' if none).
-  const personalContextBlock = buildPersonalContextBlock(body.personal_context);
+  // Quiz answers, not just tone: see src/lib/personalization/forecastPrompt.ts.
+  const personalContextBlock = seekerPromptBlock(body.personal_context, 'nativity');
   if (!lagnaSign) {
     return NextResponse.json({ error: 'lagnaSign required' }, { status: 400 });
   }
@@ -163,8 +165,8 @@ Start with { and end with }. No markdown.`;
     // minor section that already has a good fallback would be worse UX. Accepted
     // best-effort: ship the LLM version when present, else the deterministic one.
     return NextResponse.json({
-      lagna_analysis: parsed?.lagna_analysis ?? '',
-      dasha_interpretation: parsed?.dasha_interpretation ?? '',
+      lagna_analysis: applyReaderTone(body.personal_context, parsed?.lagna_analysis ?? ''),
+      dasha_interpretation: applyReaderTone(body.personal_context, parsed?.dasha_interpretation ?? ''),
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
