@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
+import { useEffect, useState, useRef, useCallback, Suspense, Fragment, type ReactNode } from 'react';
 import { useSearchParams, useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -33,6 +33,16 @@ import { reportDataToMarkdown } from '@/lib/pdf/reportDataToMarkdown';
 import { PrintAllDays } from '@/components/report/PrintAllDays';
 import { GeneratingScreen } from '@/components/report/GeneratingScreen';
 import { BlueprintGate } from '@/components/blueprint/BlueprintGate';
+import { PersonalBrief, WhyHere } from '@/components/report/PersonalBrief';
+import {
+  FORECAST_BASE_ORDER,
+  buildForecastBrief,
+  forecastWhy,
+  type DayView,
+  type ForecastKey,
+  type MonthView,
+  type PersonalizationStamp,
+} from '@/lib/personalization/forecastView';
 import type { NatalChartData, NativityProfile, ReportData } from '@/lib/agents/types';
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
 import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
@@ -199,6 +209,8 @@ function ReportContent() {
     timezone_offset: number | null;
     plan_type: string | null;
     payment_status: string | null;
+    /** The reader's quiz answers, written as a note (reports.personal_context). */
+    personal_context?: string | null;
   } | null>(null);
   const [birthDisplay, setBirthDisplay] = useState<{
     name: string;
@@ -974,6 +986,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             timezone_offset: typeof row.timezone_offset === 'number' ? row.timezone_offset : null,
             plan_type: (row.plan_type as string | null) ?? null,
             payment_status: (row.payment_status as string | null) ?? null,
+            personal_context: (row.personal_context as string | null) ?? null,
           };
         }
 
@@ -1340,6 +1353,72 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
   const isPreviewPlan =
     !isAdminView && (reportPlanType === 'free' || reportPlanType === 'preview' || paidPlanLocked);
 
+  // The reader's own answers: a brief that quotes them, the order of the forecast sections, and a
+  // "why this is in your report" line for each. Paid reports only; a report with no answers renders
+  // exactly as before. See src/lib/personalization/forecastView.ts.
+  const dayViews: DayView[] = mergedDays.map((d) => ({
+    date: d.date,
+    score: d.day_score,
+    rahuKaal: d.rahu_kaal ? `${d.rahu_kaal.start}–${d.rahu_kaal.end}` : null,
+    slots: (d.hourlySlots ?? []).map((sl) => ({ label: sl.display_label ?? '', score: sl.score ?? 0, rahuKaal: Boolean(sl.is_rahu_kaal) })),
+  }));
+  const monthViews: MonthView[] = safeMonthly.map((m) => ({ month: m.month ?? '', score: m.score ?? m.overall_score ?? null, theme: m.theme ?? null }));
+  const stamp = ((reportData as unknown as { personalization?: PersonalizationStamp }).personalization ?? null) as PersonalizationStamp | null;
+  const personalBrief = isPreviewPlan
+    ? null
+    : buildForecastBrief({ personalContext: dbBirthRef.current?.personal_context, name: displayName, days: dayViews, months: monthViews, stamp, lagna: natalChart?.lagna });
+  const why = (k: ForecastKey) =>
+    personalBrief ? forecastWhy(k, { profile: personalBrief.profile, moved: personalBrief.order.moved, eventDate: personalBrief.eventDate, stamp }) : '';
+  const forecastOrderKeys: ForecastKey[] = personalBrief ? personalBrief.order.order : FORECAST_BASE_ORDER;
+
+  // The paid forecast's six reorderable sections, in a table so the reader's answers can choose their order.
+  const forecastNodes: Record<string, ReactNode> = {
+    decide: (!isPreviewPlan && reportData?.months && reportData.months.length > 0 && (
+            <ReportErrorBoundary fallbackTitle="Timing by domain">
+              <DecideSection
+                months={reportData.months}
+                strategicWindows={reportData?.synthesis?.strategic_windows ?? []}
+                days={mergedDays.map((d) => ({ date: d.date ?? '', day_score: d.day_score ?? 50 }))}
+              />
+            </ReportErrorBoundary>
+          )),
+    monthly: (!isPreviewPlan && (
+            <ReportErrorBoundary fallbackTitle="Monthly Analysis">
+              <MonthlyAnalysis months={safeMonthly} />
+            </ReportErrorBoundary>
+          )),
+    weekly: (!isPreviewPlan && (
+            <ReportErrorBoundary fallbackTitle="Weekly Analysis">
+              <WeeklyAnalysis weeks={safeWeekly} />
+            </ReportErrorBoundary>
+          )),
+    daily: (mergedDays.length > 0 && (
+            <ReportErrorBoundary fallbackTitle="Daily Forecast">
+              <DailyAnalysis
+                days={isPreviewPlan ? mergedDays.slice(0, 1) : mergedDays}
+                activeDayIndex={isPreviewPlan ? 0 : activeDayIndex}
+                onDayChange={setActiveDayIndex}
+                lagna={natalChart?.lagna}
+                reportId={isPreviewPlan ? undefined : reportIdFromRoute}
+              />
+            </ReportErrorBoundary>
+          )),
+    correlations: (!isPreviewPlan && mergedDays.length >= 3 && (
+            <ReportErrorBoundary fallbackTitle="Your personal rhythm">
+              <CorrelationsPanel days={mergedDays} dashaLabel={natalChart?.current_dasha?.mahadasha} />
+            </ReportErrorBoundary>
+          )),
+    synthesis: (!isPreviewPlan && (
+            <ReportErrorBoundary fallbackTitle="Period Synthesis">
+              <PeriodSynthesis
+                synthesis={reportData?.synthesis ?? ''}
+                dailyScores={mergedDays.map((d) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
+                onDayClick={handleDaySelectFromCalendar}
+              />
+            </ReportErrorBoundary>
+          )),
+  };
+
   // `synthesis` is a PeriodSynthesis OBJECT, not a string — interpolating it
   // directly yielded "[object Object]" and dropped the richest report context
   // from every Ask-your-report answer. Build the line from its text members.
@@ -1570,9 +1649,13 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
             </div>
           )}
 
+          {/* What this reader told us, quoted back, and how the report is arranged around it. */}
+          {personalBrief && <PersonalBrief brief={personalBrief} />}
+
           {/* The seeker's own question, answered first. Preview shows a teaser +
               locked full answer (the conversion spine); paid shows the full answer.
               Renders nothing when there's no question on file. */}
+          {personalBrief && <WhyHere text={why('answer')} />}
           <ReportErrorBoundary fallbackTitle="Your question">
             <PersonalizedAnswer
               reportId={reportIdFromRoute}
@@ -1596,6 +1679,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
 
           {/* Today anchor — grounds the report in the current day (paid only; preview
               shows a single sample day so "today" framing would mislead). */}
+          {personalBrief && mergedDays.length > 0 && <WhyHere text={why('today')} />}
           {!isPreviewPlan && mergedDays.length > 0 && (
             <ReportErrorBoundary fallbackTitle="Today">
               <TodayCard
@@ -1607,6 +1691,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           )}
 
           {/* Summary-first hero — the plain-language "what's ahead" brief. */}
+          {personalBrief && <WhyHere text={why('snapshot')} />}
           <ReportErrorBoundary fallbackTitle="Your forecast at a glance">
             <ForecastSnapshot
               name={displayName}
@@ -1621,58 +1706,12 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           {/* (Birth-chart detail moved below the forecast — see "About your chart". The
               report now leads with plain-language insight, not the technical chart.) */}
 
-          {/* DECIDE — domain-filtered timing intelligence: "When should I act on X?" */}
-          {!isPreviewPlan && reportData?.months && reportData.months.length > 0 && (
-            <ReportErrorBoundary fallbackTitle="Timing by domain">
-              <DecideSection
-                months={reportData.months}
-                strategicWindows={reportData?.synthesis?.strategic_windows ?? []}
-                days={mergedDays.map((d) => ({ date: d.date ?? '', day_score: d.day_score ?? 50 }))}
-              />
-            </ReportErrorBoundary>
-          )}
-
-          {!isPreviewPlan && (
-            <ReportErrorBoundary fallbackTitle="Monthly Analysis">
-              <MonthlyAnalysis months={safeMonthly} />
-            </ReportErrorBoundary>
-          )}
-
-          {!isPreviewPlan && (
-            <ReportErrorBoundary fallbackTitle="Weekly Analysis">
-              <WeeklyAnalysis weeks={safeWeekly} />
-            </ReportErrorBoundary>
-          )}
-
-          {mergedDays.length > 0 && (
-            <ReportErrorBoundary fallbackTitle="Daily Forecast">
-              <DailyAnalysis
-                days={isPreviewPlan ? mergedDays.slice(0, 1) : mergedDays}
-                activeDayIndex={isPreviewPlan ? 0 : activeDayIndex}
-                onDayChange={setActiveDayIndex}
-                lagna={natalChart?.lagna}
-                reportId={isPreviewPlan ? undefined : reportIdFromRoute}
-              />
-            </ReportErrorBoundary>
-          )}
-
-          {/* Personal rhythm — correlations computed from the full forecast (paid). */}
-          {!isPreviewPlan && mergedDays.length >= 3 && (
-            <ReportErrorBoundary fallbackTitle="Your personal rhythm">
-              <CorrelationsPanel days={mergedDays} dashaLabel={natalChart?.current_dasha?.mahadasha} />
-            </ReportErrorBoundary>
-          )}
-
-          {!isPreviewPlan && (
-            <ReportErrorBoundary fallbackTitle="Period Synthesis">
-              <PeriodSynthesis
-                synthesis={reportData?.synthesis ?? ''}
-                dailyScores={mergedDays.map((d) => ({ date: d?.date ?? '', score: d?.day_score ?? 50 }))}
-                onDayClick={handleDaySelectFromCalendar}
-              />
-            </ReportErrorBoundary>
-          )}
-
+          {forecastOrderKeys.map((k) => (
+            <Fragment key={k}>
+              {personalBrief && forecastNodes[k] ? <WhyHere text={why(k)} /> : null}
+              {forecastNodes[k]}
+            </Fragment>
+          ))}
           {!isPreviewPlan && (
             <ReportErrorBoundary fallbackTitle="Ask a question">
               <AskQuestion reportId={reportIdFromRoute} context={askContext} headers={authJsonHeaders()} />
@@ -1721,6 +1760,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           <div className="mt-14 pt-6 border-t border-horizon/30">
             <p className="section-eyebrow mb-1">The deeper detail</p>
             <h2 className="font-display text-headline-md text-star mb-1">About your birth chart</h2>
+            {personalBrief && <WhyHere text={why('chart')} />}
             <p className="font-body text-body-sm text-dust/70 mb-5 max-w-2xl">
               The classical foundation behind everything above — your lagna, dasha periods, planetary
               placements and yogas. Optional reading for the curious.

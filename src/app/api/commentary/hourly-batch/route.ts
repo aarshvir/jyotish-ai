@@ -13,6 +13,7 @@ import type { HoraRole, LagnaContext } from '@/lib/agents/lagnaContext';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { applyReaderTone, dayPersonalNote, seekerPromptBlock } from '@/lib/personalization/forecastPrompt';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import {
   formatDayCommentaryAnchorBlocks,
@@ -130,6 +131,8 @@ export async function POST(req: NextRequest) {
     }>;
     scripture_context?: string;
     require_scripture_grounding?: boolean;
+    /** The reader's quiz answers (reports.personal_context): activities, tone and date notes. */
+    personal_context?: string;
   };
 
   try {
@@ -161,6 +164,7 @@ export async function POST(req: NextRequest) {
   const ctx: LagnaContext = buildLagnaContext(lagnaSign);
   const horaBlock = buildHoraReferenceBlock(ctx);
   const scriptureBlock = buildScripturePromptBlock(body.scripture_context);
+  const readerBlock = seekerPromptBlock(body.personal_context, 'hourly', { today: daysIn[0]?.date });
   if (body.require_scripture_grounding) {
     try {
       assertRequiredScriptureGrounding(body.scripture_context, 'hourly-batch');
@@ -189,7 +193,8 @@ export async function POST(req: NextRequest) {
         return `  [${s.slot_index}] ${s.display_label}: ${s.dominant_hora} (${quality}); ${s.dominant_choghadiya}; ${s.transit_lagna} H${s.transit_lagna_house}; RK=${s.is_rahu_kaal}; score=${s.score}`;
       })
       .join('\n');
-    return `=== DAY_INDEX ${d.dayIndex} DATE ${d.date} ===\n${anchors}\nSLOTS:\n${slotLines}\n`;
+    const note = dayPersonalNote(body.personal_context, d.date, { today: daysIn[0]?.date });
+    return `=== DAY_INDEX ${d.dayIndex} DATE ${d.date} ===\n${anchors}${note ? `\n${note}` : ''}\nSLOTS:\n${slotLines}\n`;
   });
 
   const systemPrompt = `You are a Vedic astrologer writing a premium personal timing guide. Your job is to tell this person — in plain, direct English — what each hour is good for, what to avoid, and why. Write like a trusted advisor texting them their schedule, not a textbook explaining astrology.
@@ -197,7 +202,7 @@ export async function POST(req: NextRequest) {
 HORA ROLES FOR ${lagnaSign.toUpperCase()} LAGNA (use these — do not invent):
 ${horaBlock}
 
-${scriptureBlock}
+${scriptureBlock}${readerBlock}
 
 LANGUAGE RULES — enforce strictly:
 - No raw jargon without plain-English translation. Instead of "yogakaraka hora activates H10 kendra", write "this is your most powerful career hour — ${lagnaSign} lagna's strongest planet is running the show."
@@ -278,7 +283,7 @@ Include every day from the input. Each day must have exactly 18 slots. Start wit
 
       const slotsOut = normSlots.map((slot, i) => {
         const rawC = slotMap.get(slot.slot_index ?? i) ?? '';
-        const commentary = finalizeHourlyCommentary(rawC, slot);
+        const commentary = applyReaderTone(body.personal_context, finalizeHourlyCommentary(rawC, slot));
         const firstSent = commentary.split('.')[0]?.trim();
         return {
           slot_index: slot.slot_index ?? i,

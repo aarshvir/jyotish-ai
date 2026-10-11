@@ -76,6 +76,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: 'This feature is part of a paid report.' }, { status: 402 });
   }
 
+  // The reader's quiz answers, read on their own so a missing column never blocks a day from opening.
+  const pcRow = await db.from('reports').select('personal_context').eq('id', reportId).maybeSingle();
+  const personalContext = pcRow.error ? '' : String((pcRow.data as { personal_context?: string | null } | null)?.personal_context ?? '');
+
   let body: { date?: string };
   try { body = await req.json(); }
   catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
@@ -153,6 +157,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         lagnaSign: reportRow.lagna_sign,
         mahadasha: reportRow.dasha_mahadasha ?? 'Unknown',
         antardasha: reportRow.dasha_antardasha ?? 'Unknown',
+        personal_context: personalContext,
         days: [{
           dayIndex: 0,
           date,
