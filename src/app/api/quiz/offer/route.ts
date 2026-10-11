@@ -37,6 +37,8 @@ export async function GET(request: NextRequest) {
       bump,
       blueprint_plus30: withBump,
       sub_monthly: price('sub_monthly'),
+      // S18 down-sell (7-day forecast) has no checkout plan yet; null hides it.
+      downsell_7day: price('downsell_7day'),
     },
   });
 }

@@ -20,6 +20,7 @@ export interface OfferInfo {
     bump: { amount: number; display: string } | null;
     blueprint_plus30: { amount: number; display: string } | null;
     sub_monthly: { amount: number; display: string } | null;
+    downsell_7day?: { amount: number; display: string } | null;
   };
 }
 

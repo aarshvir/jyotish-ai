@@ -32,6 +32,8 @@ import { CalcScreen, type RevealRequest } from '@/components/funnel/CalcScreen';
 import { ContactScreen } from '@/components/funnel/ContactScreen';
 import { RevealScreen } from '@/components/funnel/RevealScreen';
 import { OfferScreen, type OfferInfo } from '@/components/funnel/OfferScreen';
+import { DropoffPrompt, canShowDropoff } from '@/components/analytics/DropoffPrompt';
+import type { DropoffContext } from '@/lib/analytics/events';
 
 /**
  * /q/[slug] — the ad funnel (VEDICHOUR_QUIZ_SPEC §4–5):
@@ -99,6 +101,10 @@ export function Funnel({ slugKey }: { slugKey: string }) {
   const [banner, setBanner] = useState<string | null>(null);
   const [handoff, setHandoff] = useState<{ plan: Plan; priceDisplay: string; redirectUrl: string; currency: Currency } | null>(null);
   const resumedCheckout = useRef(false);
+  const [dropoff, setDropoff] = useState<DropoffContext | null>(null);
+  const askWhy = useCallback((c: DropoffContext) => {
+    if (canShowDropoff(c)) setDropoff(c);
+  }, []);
 
   // ── boot: restore or start a session ────────────────────────────────────
   useEffect(() => {
@@ -144,6 +150,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
     void sb.auth.getUser().then(({ data }) => setSignedIn(Boolean(data.user)));
     const { data: sub } = sb.auth.onAuthStateChange((_e, session) => setSignedIn(Boolean(session?.user)));
     if (params.get('payment')) {
+      if (params.get('payment') === 'cancelled') setTimeout(() => askWhy('checkout_cancelled'), 800);
       setBanner(
         params.get('payment') === 'pending'
           ? 'Your payment is still being confirmed. You will not be charged twice.'
@@ -169,9 +176,9 @@ export function Funnel({ slugKey }: { slugKey: string }) {
   const ctx: EventContext | null = useMemo(
     () =>
       st && flags
-        ? { sessionId: st.sessionId, slug: slug.slug, lang: st.lang, utm: st.utm, fbclid: st.fbclid, gclid: st.gclid, geo: offer?.country ?? null, flags }
+        ? { sessionId: st.sessionId, slug: slug.slug, lang: st.lang, geo: offer?.country ?? null, flags }
         : null,
-    [st?.sessionId, st?.lang, st?.utm, st?.fbclid, st?.gclid, slug.slug, offer?.country, flags], // eslint-disable-line react-hooks/exhaustive-deps
+    [st?.sessionId, st?.lang, slug.slug, offer?.country, flags], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   // Resume at a safe screen once screens are known.
@@ -222,15 +229,16 @@ export function Funnel({ slugKey }: { slugKey: string }) {
   useEffect(() => {
     if (!st || !ctx || !screen || lastViewed.current === screen.id) return;
     lastViewed.current = screen.id;
-    funnelEvent(ctx, 'quiz_view', { step: screen.spec });
+    const cn = counter(screens, screen.id);
+    funnelEvent(ctx, 'quiz_view', { step: screen.spec, step_index: cn?.n, step_total: cn?.of, variant: flags?.quiz_length });
     if (screen.kind === 'reveal') {
-      funnelEvent(ctx, 'reveal_view');
+      funnelEvent(ctx, 'reveal_view', { mode: 'karmic' });
       pixelEvent(ctx, 'CompleteRegistration', 'reveal');
       syncServer(st, { reveal_viewed: true });
     } else {
       syncServer(st);
     }
-    if (screen.kind === 'offer') funnelEvent(ctx, 'offer_view', { blueprint_open: Boolean(offer?.blueprintOpen) });
+    if (screen.kind === 'offer') funnelEvent(ctx, 'offer_view', { plan: offer?.blueprintOpen ? 'blueprint' : 'sub_monthly', currency: offer?.currency, variant: flags?.price_report });
     if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
   }, [st, ctx, screen, syncServer, offer?.blueprintOpen]);
 
@@ -261,6 +269,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
     const prev = prevScreen(screens, screen.id, st.answers);
     if (!prev) return;
     funnelEvent(ctx, 'quiz_back', { step: screen.spec });
+    if (screen.kind === 'offer') askWhy('paywall_back');
     setSt({ ...st, screenId: prev.id });
   }
 
@@ -287,6 +296,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
           body: JSON.stringify({
             planType: plan,
             reportId,
+            funnelSlug: slug.slug,
             name,
             ...(st.contact?.channel === 'whatsapp' ? { phone: st.contact.value } : {}),
             birth_date: a.birth_date,
@@ -346,9 +356,9 @@ export function Funnel({ slugKey }: { slugKey: string }) {
 
   function buy(plan: Plan) {
     if (!st || !ctx) return;
-    funnelEvent(ctx, 'checkout_start', { plan });
+    funnelEvent(ctx, 'checkout_start', { plan, currency: offer?.currency, items: plan === 'blueprint_plus30' ? 'blueprint,bump_30day' : plan });
     pixelEvent(ctx, 'InitiateCheckout', `checkout:${plan}`);
-    if (plan === 'blueprint_plus30') funnelEvent(ctx, 'bump_taken');
+    if (plan === 'blueprint_plus30') funnelEvent(ctx, 'bump_taken', { item: 'bump_30day', currency: offer?.currency });
     if (plan === 'sub_monthly' && !st.answers.current_city) {
       setAskCity(true);
       return;
@@ -517,7 +527,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
               request={revealRequest(a)}
               lang={lang}
               onDone={(reveal: RevealData) => {
-                funnelEvent(ctx, 'calc_complete', { reference: reveal.reference });
+                funnelEvent(ctx, 'calc_complete', { ok: true });
                 setRevealFor(revealKey(a));
                 go(a, screen.id, { reveal });
               }}
@@ -533,14 +543,14 @@ export function Funnel({ slugKey }: { slugKey: string }) {
             initial={st.contact}
             lang={lang}
             onSubmit={(contact: Contact) => {
-              funnelEvent(ctx, 'contact_submit', { channel: contact.channel, consent: contact.consent });
+              funnelEvent(ctx, 'contact_submit', { channel: contact.channel });
               pixelEvent(ctx, 'Lead', 'contact');
               const next = { ...st, contact, contactSkipped: false };
               syncServer(next);
               go(a, screen.id, { contact, contactSkipped: false });
             }}
             onSkip={() => {
-              funnelEvent(ctx, 'contact_skip');
+              funnelEvent(ctx, 'contact_submit', { channel: 'skipped' });
               go(a, screen.id, { contactSkipped: true });
             }}
           />
@@ -650,9 +660,14 @@ export function Funnel({ slugKey }: { slugKey: string }) {
           priceDisplay={handoff.priceDisplay}
           redirectUrl={handoff.redirectUrl}
           currency={handoff.currency}
-          onCancel={() => setHandoff(null)}
+          onCancel={() => {
+            setHandoff(null);
+            askWhy('handoff_cancel');
+          }}
         />
       )}
+
+      {dropoff && !handoff && !gate && <DropoffPrompt context={dropoff} slug={slug.slug} onClose={() => setDropoff(null)} />}
     </main>
   );
 }
