@@ -21,6 +21,8 @@ export const FUNNEL_EVENTS = [
   'quiz_view',
   'quiz_answer',
   'quiz_back',
+  'interstitial_view',
+  'interstitial_continue',
   'calc_complete',
   'contact_submit',
   'reveal_view',
@@ -113,8 +115,11 @@ type PropKind = 'code' | 'int' | 'money' | 'bool' | 'text';
  */
 const PROPS: Record<CanonicalEventName, Record<string, PropKind>> = {
   quiz_view: { step: 'code', step_index: 'int', step_total: 'int', variant: 'code' },
-  quiz_answer: { step: 'code', value: 'code', step_index: 'int' },
+  quiz_answer: { step: 'code', value: 'code', step_index: 'int', words: 'int' },
   quiz_back: { step: 'code' },
+  // `truth` lists what the interstitial rests on: answer, computed and/or policy.
+  interstitial_view: { step: 'code', truth: 'code' },
+  interstitial_continue: { step: 'code' },
   calc_complete: { ok: 'bool' },
   contact_submit: { channel: 'code' },
   reveal_view: { mode: 'code' },

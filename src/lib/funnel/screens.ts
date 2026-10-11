@@ -1,17 +1,21 @@
 /**
- * The /q funnel's screens (VEDICHOUR_QUIZ_SPEC §5), as data.
+ * The /q funnel's screens, as data (VEDICHOUR_QUIZ_SPEC §5, rebuilt as v2 after the quiz
+ * teardown research).
  *
- * Numbering is fixed: S01 shows "2/18" (endowed start) and S17 shows "18/18". The
- * denominator NEVER changes, whatever is answered — a skipped screen (birth time when the
- * time is unknown) just moves the numerator on by two. Interstitials (`kind: 'info'`)
- * other than S06 are not numbered; they sit between numbered screens.
+ * Numbering is fixed: the first screen shows "2/N" (endowed start) and the last shows
+ * "N/N". The denominator NEVER changes, whatever is answered — a skipped screen (birth
+ * time when the time is unknown) just moves the numerator on by two. Interstitials are not
+ * numbered; they sit between numbered screens.
  *
- * Copy rules (H3/H4): every interstitial line is either educational (how Jyotish reads a
- * thing) or reflects the visitor's own answer back. No statistics, no user counts.
+ * Copy rules (H3/H4): every interstitial line is either a method fact, a product fact, or
+ * reflects the visitor's own answer back (see interstitials.ts). No statistics, no user
+ * counts. Hinglish is Roman-script Hindi in the "aap" form.
  */
 
 import type { QuizSlug } from '@/config/quiz_slugs';
 import { STEPS as START_STEPS } from '@/lib/quiz/questions';
+import { problemOptions, splitCodes, realProblems, problemLabel, OTHER_PROBLEM, CURIOUS_PROBLEM } from './problems';
+import type { InterstitialId } from './interstitials';
 
 export type Lang = 'en' | 'hi';
 export type T = { en: string; hi: string };
@@ -25,14 +29,32 @@ export interface Option {
 export type FocusArea = 'career' | 'love' | 'family' | 'health' | 'trust';
 export type Role = 'scholar' | 'warrior' | 'merchant' | 'healer' | 'ruler' | 'seeker';
 
-export type Screen =
-  | { id: string; spec: string; kind: 'single'; field: string; title: T; subtitle?: T; options: Option[]; numbered: true }
-  | { id: string; spec: string; kind: 'picture'; field: string; title: T; options: Option[]; toast: T; numbered: true }
-  | { id: string; spec: string; kind: 'info'; title: T; body: T; cta: T; numbered: boolean }
-  | { id: string; spec: string; kind: 'date' | 'time' | 'city'; field: string; title: T; subtitle?: T; numbered: true; showIf?: (a: FunnelAnswers) => boolean }
-  | { id: string; spec: string; kind: 'calc' | 'contact' | 'reveal' | 'offer'; numbered: true };
+/** Screens that vary with earlier answers resolve their title / options at render time. */
+export interface Dynamic {
+  title?: T;
+  subtitle?: T;
+  options?: Option[];
+}
 
 export type FunnelAnswers = Record<string, string | undefined>;
+
+export type Screen =
+  | {
+      id: string; spec: string; kind: 'single'; field: string; title: T; subtitle?: T; options: Option[]; numbered: true;
+      dyn?: (a: FunnelAnswers) => Dynamic; showIf?: (a: FunnelAnswers) => boolean; legacy?: boolean;
+    }
+  | { id: string; spec: string; kind: 'picture'; field: string; title: T; options: Option[]; toast: T; numbered: true }
+  | {
+      id: string; spec: string; kind: 'multi'; field: string; title: T; subtitle?: T; options: Option[]; numbered: true;
+      min: number; max: number; exclusive?: string[]; dyn?: (a: FunnelAnswers) => Dynamic; cta: T;
+    }
+  | {
+      id: string; spec: string; kind: 'text'; field: string; title: T; subtitle?: T; placeholder: T; numbered: true;
+      maxLength: number; optional: true; cta: T; skip: T;
+    }
+  | { id: string; spec: string; kind: 'interstitial'; template: InterstitialId; numbered: false; showIf?: (a: FunnelAnswers) => boolean }
+  | { id: string; spec: string; kind: 'date' | 'time' | 'city'; field: string; title: T; subtitle?: T; numbered: true; showIf?: (a: FunnelAnswers) => boolean }
+  | { id: string; spec: string; kind: 'calc' | 'contact' | 'reveal' | 'offer'; numbered: true };
 
 /** Reused verbatim from /start (spec S10–S13: "REUSE the existing /start components verbatim"). */
 function fromStart(id: string): { title: string; subtitle?: string; options?: { value: string; label: string; hint?: string }[] } {
@@ -49,6 +71,7 @@ const startDate = fromStart('birth_date');
 const startKnown = fromStart('birth_time_known');
 const startTime = fromStart('birth_time');
 const startCity = fromStart('birth_city');
+const startFrustration = fromStart('frustration');
 
 const KNOWN_HI: Record<string, string> = {
   exact: 'Haan, bilkul pata hai',
@@ -82,60 +105,28 @@ export const GOAL_LABEL: Record<string, T> = {
 };
 
 /**
- * Concern-adaptive interstitial after S02. Each line is a plain statement of how Jyotish
- * reads that area — true for everyone, and it shows the funnel heard their answer.
+ * What has bothered the person about astrology so far. Same codes and English labels as
+ * /start's `frustration` question, so the brief reads the same wherever it came from.
  */
-export const FOCUS_INTERSTITIAL: Record<FocusArea, { title: T; body: T }> = {
-  career: {
-    title: { en: 'Career & money. That is exactly what this reading is built around.', hi: 'Career aur paisa — yeh reading isi ke liye bani hai.' },
-    body: {
-      en: 'In Jyotish, work is read from your 10th house and money from your 2nd and 11th. Saturn shows where effort pays slowly but surely. Your result will say which of these houses your Rahu–Ketu axis falls across.',
-      hi: 'Jyotish mein kaam 10th house se aur paisa 2nd aur 11th house se padha jaata hai. Shani batata hai ki mehnat kahan dheere par pakka phal deti hai. Aapka result batayega ki aapka Rahu–Ketu axis in mein se kis ghar se guzarta hai.',
-    },
-  },
-  love: {
-    title: { en: 'Love & marriage. That is exactly what this reading is built around.', hi: 'Pyaar aur shaadi — yeh reading isi ke liye bani hai.' },
-    body: {
-      en: 'In Jyotish, partnership is read from your 7th house and from Venus. When Rahu or Ketu touches the 1st–7th axis, relationships become a main life lesson. Your result will show whether yours does.',
-      hi: 'Jyotish mein rishta 7th house aur Shukra se padha jaata hai. Jab Rahu ya Ketu 1st–7th axis par hote hain, toh rishte life ka bada sabak bante hain. Aapka result dikhayega ki aapke chart mein aisa hai ya nahi.',
-    },
-  },
-  family: {
-    title: { en: 'Family. That is exactly what this reading is built around.', hi: 'Parivaar — yeh reading isi ke liye bani hai.' },
-    body: {
-      en: 'In Jyotish, home and mother are read from your 4th house and the Moon, and family wealth and speech from the 2nd. Your result will show whether your Rahu–Ketu axis runs through either.',
-      hi: 'Jyotish mein ghar aur maa 4th house aur Chandra se, aur parivaar ka dhan aur vaani 2nd house se padhe jaate hain. Aapka result dikhayega ki aapka Rahu–Ketu axis in gharon se guzarta hai ya nahi.',
-    },
-  },
-  health: {
-    title: { en: 'Health & energy. Here is how Jyotish looks at it.', hi: 'Sehat aur energy — Jyotish ise aise dekhta hai.' },
-    body: {
-      en: 'Jyotish reads vitality from your 1st house and the Sun, and daily routines from the 6th. This is a reading of patterns and timing, never a medical opinion. Your result will show where your Rahu–Ketu axis sits.',
-      hi: 'Jyotish mein jeevan-shakti 1st house aur Surya se, aur roz ki dinacharya 6th house se padhi jaati hai. Yeh patterns aur timing ki reading hai, doctor ki salah nahi. Aapka result dikhayega ki aapka Rahu–Ketu axis kahan hai.',
-    },
-  },
-  trust: {
-    title: { en: 'Trust & friendships. That is exactly what this reading is built around.', hi: 'Bharosa aur dosti — yeh reading isi ke liye bani hai.' },
-    body: {
-      en: 'In Jyotish, friends and networks are read from your 11th house, and courage and siblings from the 3rd. Your result will show which houses your Rahu–Ketu axis crosses.',
-      hi: 'Jyotish mein dost aur network 11th house se, aur himmat aur bhai-behen 3rd house se padhe jaate hain. Aapka result dikhayega ki aapka Rahu–Ketu axis kin gharon se guzarta hai.',
-    },
-  },
+const FRUSTRATION_HI: Record<string, string> = {
+  vague: 'Bahut general tha, kuch kar nahi paaye',
+  fear: 'Chinta badh gayi, clarity nahi mili',
+  upsell: 'Gemstone ya puja kharidne ka dabaav',
+  generic: 'Sabko ek jaisa jawab',
+  cost: 'Har minute ke paise',
+  nothing: 'Kuch nahi, mujhe isse madad mili hai',
+  new: 'Pehle kabhi try nahi kiya',
 };
 
-/** Goal-adaptive interstitial before the birth details. Educational and true. */
-export function goalInterstitial(goal: string | undefined): { title: T; body: T } {
-  const g = (goal && GOAL_LABEL[goal]) || { en: 'Your next 12 months', hi: 'Aapke agle 12 mahine' };
-  return {
-    title: {
-      en: `${g.en}: noted. Now the part that makes this yours.`,
-      hi: `${g.hi}: samajh gaye. Ab woh hissa jo ise sirf aapka banata hai.`,
-    },
-    body: {
-      en: 'Rahu and Ketu move one sign about every 18 months, so the sign alone is shared by many people. The house they fall in depends on your exact birth time and place — that is what we calculate next.',
-      hi: 'Rahu aur Ketu lagbhag har 18 mahine mein rashi badalte hain, isliye sirf rashi bahut logon ki ek jaisi hoti hai. Woh kis ghar mein hain, yeh aapke janam ke sahi samay aur jagah se tay hota hai — wahi hum ab nikalenge.',
-    },
-  };
+function frustrationOptions(): Option[] {
+  const base = (startFrustration.options ?? [])
+    .filter((o) => o.value !== 'nothing')
+    .map((o) => ({ value: o.value, label: { en: o.label, hi: FRUSTRATION_HI[o.value] ?? o.label } }));
+  return [
+    ...base,
+    { value: 'nothing', label: { en: 'Nothing, it has helped me', hi: FRUSTRATION_HI.nothing } },
+    { value: 'new', label: { en: 'I have not tried it before', hi: FRUSTRATION_HI.new } },
+  ];
 }
 
 function hookOptions(): Option[] {
@@ -147,7 +138,29 @@ function hookOptions(): Option[] {
   ];
 }
 
-/** Full 18-step funnel, in order. The short variant (E1) filters this list. */
+const hasWords = (a: FunnelAnswers) => (a.mind_words ?? '').trim().length > 0;
+
+/** "Which of these…?" is only worth asking when there is more than one real worry to choose between. */
+const hasChoice = (a: FunnelAnswers) => realProblems(splitCodes(a.problems)).length >= 2;
+
+function mindFocusDyn(a: FunnelAnswers): Dynamic {
+  const picked = realProblems(splitCodes(a.problems)).slice(0, 3);
+  return {
+    title: hasWords(a)
+      ? { en: 'Which of these is closest to what you wrote?', hi: 'Inmein se kaunsa aapke likhe hue ke sabse kareeb hai?' }
+      : { en: 'Which of these weighs on you most?', hi: 'Inmein se sabse zyada kaunsa dabaav daalta hai?' },
+    options: [
+      ...picked.map((p) => ({ value: p.value, label: p.label })),
+      { value: OTHER_PROBLEM.value, label: { en: 'None of these', hi: 'Inmein se koi nahi' } },
+    ],
+  };
+}
+
+/**
+ * Every screen the funnel knows about, in flow order, followed by retired questions that
+ * are kept only so old saved answers still print their labels in the report brief.
+ * Use `screensFor` for the flow a visitor actually walks.
+ */
 export function buildScreens(slug: QuizSlug): Screen[] {
   return [
     { id: 's01', spec: 'S01', kind: 'single', field: 'hook', numbered: true, title: slug.s01, options: hookOptions() },
@@ -162,46 +175,27 @@ export function buildScreens(slug: QuizSlug): Screen[] {
         { value: 'trust', emoji: '🤝', label: FOCUS_LABEL.trust },
       ],
     },
-    // Body/title are filled at render time from FOCUS_INTERSTITIAL (they depend on S02).
-    { id: 'i_focus', spec: 'I1', kind: 'info', numbered: false, title: { en: '', hi: '' }, body: { en: '', hi: '' }, cta: { en: 'Continue', hi: 'Aage badhein' } },
+    // Interstitial 1 — the method, and that the funnel heard their area.
+    { id: 'i_method', spec: 'I1', kind: 'interstitial', template: 'method', numbered: false },
     {
-      id: 's03', spec: 'S03', kind: 'single', field: 'known_before', numbered: true,
-      title: { en: 'Have you ever felt you knew someone before you met them?', hi: 'Kabhi laga ki kisi ko milne se pehle hi jaante ho?' },
-      options: [
-        { value: 'instantly', emoji: '⚡', label: { en: 'Yes, instantly', hi: 'Haan, turant' } },
-        { value: 'once_twice', emoji: '✌️', label: { en: 'Once or twice', hi: 'Ek-do baar' } },
-        { value: 'not_sure', emoji: '🤔', label: { en: 'Not sure', hi: 'Pakka nahi pata' } },
-        { value: 'never', emoji: '🙅', label: { en: 'Never', hi: 'Kabhi nahi' } },
-      ],
-    },
-    {
-      id: 's04', spec: 'S04', kind: 'single', field: 'place_home', numbered: true,
-      title: { en: 'Has a place ever felt like home for no reason?', hi: 'Kya koi jagah bina wajah apne ghar jaisi lagi hai?' },
-      options: [
-        { value: 'strongly', emoji: '🏡', label: { en: 'Yes, strongly', hi: 'Haan, bahut zyada' } },
-        { value: 'few_times', emoji: '🧭', label: { en: 'A few times', hi: 'Kuch baar' } },
-        { value: 'not_really', emoji: '🙂', label: { en: 'Not really', hi: 'Nahi, khaas nahi' } },
-      ],
-    },
-    {
-      id: 's05', spec: 'S05', kind: 'single', field: 'skills_fears', numbered: true,
-      title: { en: 'Which sounds most like you?', hi: 'Inmein se aap par sabse zyada kya lagu hota hai?' },
-      options: [
-        { value: 'skills', emoji: '✨', label: { en: 'Some skills come unusually easily', hi: 'Kuch hunar bahut aasaani se aate hain' } },
-        { value: 'fears', emoji: '🌫️', label: { en: "Some fears I can't explain", hi: 'Kuch dar jinki wajah samajh nahi aati' } },
-        { value: 'both', emoji: '☯️', label: { en: 'Both', hi: 'Dono' } },
-        { value: 'neither', emoji: '➖', label: { en: 'Neither', hi: 'Dono mein se koi nahi' } },
-      ],
-    },
-    {
-      id: 's06', spec: 'S06', kind: 'info', numbered: true,
-      title: { en: 'In Jyotish, this has a name.', hi: 'Jyotish mein iska ek naam hai.' },
-      body: {
-        en: "Vedic astrology reads repeating patterns through the Rahu–Ketu axis in your birth chart. Ketu shows what you carry in from before. Rahu shows what this life pulls you toward. We'll calculate yours from your exact birth moment.",
-        hi: 'Vedic jyotish baar-baar aane wale patterns ko aapke birth chart ke Rahu–Ketu axis se padhta hai. Ketu dikhata hai jo aap pehle se saath laaye ho. Rahu dikhata hai ki yeh janam aapko kis taraf kheenchta hai. Hum aapka axis aapke janam ke sahi pal se nikalenge.',
-      },
+      id: 'q_problems', spec: 'P1', kind: 'multi', field: 'problems', numbered: true, min: 1, max: 3,
+      exclusive: [CURIOUS_PROBLEM.value],
+      title: { en: 'What is hardest for you right now?', hi: 'Abhi aapke liye sabse mushkil kya hai?' },
+      subtitle: { en: 'Pick up to 3.', hi: 'Zyada se zyada 3 chunein.' },
+      options: problemOptions('career'),
+      dyn: (a) => ({ options: problemOptions(a.focus_area) }),
       cta: { en: 'Continue', hi: 'Aage badhein' },
     },
+    {
+      id: 'q_frustration', spec: 'P2', kind: 'multi', field: 'frustration', numbered: true, min: 1, max: 7,
+      exclusive: ['nothing', 'new'],
+      title: { en: 'What has bothered you about astrology so far?', hi: 'Astrology ke baare mein ab tak kya achha nahi laga?' },
+      subtitle: { en: 'Pick any that apply. We use it to decide what to show you.', hi: 'Jo bhi sahi lage chunein. Isse tay hota hai ki hum aapko kya dikhayein.' },
+      options: frustrationOptions(),
+      cta: { en: 'Continue', hi: 'Aage badhein' },
+    },
+    // Interstitial 2 — their own answers, and where each is read from.
+    { id: 'i_built', spec: 'I2', kind: 'interstitial', template: 'built', numbered: false },
     {
       id: 's07', spec: 'S07', kind: 'picture', field: 'picture', numbered: true,
       title: { en: 'Which image pulls you first?', hi: 'Kaunsi tasveer aapko sabse pehle kheenchti hai?' },
@@ -236,7 +230,25 @@ export function buildScreens(slug: QuizSlug): Screen[] {
         { value: 'business', emoji: '🏪', label: GOAL_LABEL.business },
       ],
     },
-    { id: 'i_goal', spec: 'I2', kind: 'info', numbered: false, title: { en: '', hi: '' }, body: { en: '', hi: '' }, cta: { en: 'Enter my birth details', hi: 'Janam ki details bharein' } },
+    {
+      id: 'q_words', spec: 'W1', kind: 'text', field: 'mind_words', numbered: true, optional: true, maxLength: 240,
+      title: { en: 'In your own words, what is on your mind right now?', hi: 'Apne shabdon mein bataiye, abhi aapke mann mein kya chal raha hai?' },
+      subtitle: {
+        en: 'A line or two is plenty. English, Hindi or Hinglish all work. You can skip this.',
+        hi: 'Ek-do line kaafi hai. English, Hindi ya Hinglish, jo chalega. Chaahein toh skip kar sakte hain.',
+      },
+      placeholder: { en: 'Write here', hi: 'Yahan likhein' },
+      cta: { en: 'Continue', hi: 'Aage badhein' },
+      skip: { en: 'Skip', hi: 'Skip karein' },
+    },
+    // Interstitial 3 — their words, quoted back unchanged.
+    { id: 'i_echo', spec: 'I3', kind: 'interstitial', template: 'echo', numbered: false, showIf: hasWords },
+    {
+      id: 'q_focus', spec: 'W2', kind: 'single', field: 'mind_focus', numbered: true, showIf: hasChoice,
+      title: { en: 'Which of these weighs on you most?', hi: 'Inmein se sabse zyada kaunsa dabaav daalta hai?' },
+      options: [],
+      dyn: mindFocusDyn,
+    },
     {
       id: 's10', spec: 'S10', kind: 'date', field: 'birth_date', numbered: true,
       title: { en: startDate.title, hi: 'Aapka janam kab hua?' },
@@ -265,17 +277,67 @@ export function buildScreens(slug: QuizSlug): Screen[] {
     { id: 's15', spec: 'S15', kind: 'contact', numbered: true },
     { id: 's16', spec: 'S16', kind: 'reveal', numbered: true },
     { id: 's17', spec: 'S17', kind: 'offer', numbered: true },
+
+    // ── retired from the flow, kept so saved answers still print their labels ──────────
+    {
+      id: 's03', spec: 'S03', kind: 'single', field: 'known_before', numbered: true, legacy: true,
+      title: { en: 'Have you ever felt you knew someone before you met them?', hi: 'Kabhi laga ki kisi ko milne se pehle hi jaante ho?' },
+      options: [
+        { value: 'instantly', emoji: '⚡', label: { en: 'Yes, instantly', hi: 'Haan, turant' } },
+        { value: 'once_twice', emoji: '✌️', label: { en: 'Once or twice', hi: 'Ek-do baar' } },
+        { value: 'not_sure', emoji: '🤔', label: { en: 'Not sure', hi: 'Pakka nahi pata' } },
+        { value: 'never', emoji: '🙅', label: { en: 'Never', hi: 'Kabhi nahi' } },
+      ],
+    },
+    {
+      id: 's04', spec: 'S04', kind: 'single', field: 'place_home', numbered: true, legacy: true,
+      title: { en: 'Has a place ever felt like home for no reason?', hi: 'Kya koi jagah bina wajah apne ghar jaisi lagi hai?' },
+      options: [
+        { value: 'strongly', emoji: '🏡', label: { en: 'Yes, strongly', hi: 'Haan, bahut zyada' } },
+        { value: 'few_times', emoji: '🧭', label: { en: 'A few times', hi: 'Kuch baar' } },
+        { value: 'not_really', emoji: '🙂', label: { en: 'Not really', hi: 'Nahi, khaas nahi' } },
+      ],
+    },
+    {
+      id: 's05', spec: 'S05', kind: 'single', field: 'skills_fears', numbered: true, legacy: true,
+      title: { en: 'Which sounds most like you?', hi: 'Inmein se aap par sabse zyada kya lagu hota hai?' },
+      options: [
+        { value: 'skills', emoji: '✨', label: { en: 'Some skills come unusually easily', hi: 'Kuch hunar bahut aasaani se aate hain' } },
+        { value: 'fears', emoji: '🌫️', label: { en: "Some fears I can't explain", hi: 'Kuch dar jinki wajah samajh nahi aati' } },
+        { value: 'both', emoji: '☯️', label: { en: 'Both', hi: 'Dono' } },
+        { value: 'neither', emoji: '➖', label: { en: 'Neither', hi: 'Dono mein se koi nahi' } },
+      ],
+    },
   ];
 }
 
-/** E1 short variant drops S03, S04, S05, S07, S09 (and the goal interstitial that follows S09). */
-const SHORT_DROP = new Set(['s03', 's04', 's05', 's07', 's09', 'i_goal']);
+/** E1 short variant drops these questions. */
+const SHORT_DROP = new Set(['q_frustration', 's07', 's09', 'q_focus']);
 
+/** The flow a visitor walks. */
 export function screensFor(slug: QuizSlug, length: 'full' | 'short'): Screen[] {
-  const all = buildScreens(slug);
-  return length === 'short' ? all.filter((s) => !SHORT_DROP.has(s.id)) : all;
+  const flow = buildScreens(slug).filter((s) => !('legacy' in s && s.legacy));
+  return length === 'short' ? flow.filter((s) => !SHORT_DROP.has(s.id)) : flow;
 }
 
 export function isShown(s: Screen, a: FunnelAnswers): boolean {
   return !('showIf' in s) || !s.showIf || s.showIf(a);
+}
+
+/** A single- or multi-choice screen's title, subtitle and options after earlier answers apply. */
+export function resolveChoice(s: Extract<Screen, { kind: 'single' | 'multi' }>, a: FunnelAnswers): { title: T; subtitle?: T; options: Option[] } {
+  const d = s.dyn ? s.dyn(a) : {};
+  return { title: d.title ?? s.title, subtitle: d.subtitle ?? s.subtitle, options: d.options ?? s.options };
+}
+
+/** Label of a chosen option, in the given language, for any choice screen (including retired ones). */
+export function chosenLabel(screens: Screen[], field: string, value: string, lang: Lang): string {
+  if (field === 'problems' || field === 'mind_focus') return problemLabel(value, lang);
+  for (const s of screens) {
+    if ((s.kind === 'single' || s.kind === 'picture' || s.kind === 'multi') && s.field === field) {
+      const o = s.options.find((x) => x.value === value);
+      if (o) return o.label[lang] || o.label.en;
+    }
+  }
+  return value;
 }

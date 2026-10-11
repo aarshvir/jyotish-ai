@@ -40,7 +40,7 @@ describe('slug registry', () => {
 describe('progress', () => {
   it('starts at 2/18 and ends at 18/18 on the full funnel', () => {
     expect(counter(full, 's01')).toEqual({ n: 2, of: 18 });
-    expect(counter(full, 's06')).toEqual({ n: 7, of: 18 });
+    expect(counter(full, 'q_problems')).toEqual({ n: 4, of: 18 });
     expect(counter(full, 's17')).toEqual({ n: 18, of: 18 });
   });
   it('never changes the denominator, whatever is answered', () => {
@@ -48,13 +48,14 @@ describe('progress', () => {
     expect(Array.from(dens)).toEqual([18]);
   });
   it('does not number the extra interstitials, and the bar only moves forward', () => {
-    expect(counter(full, 'i_focus')).toBeNull();
+    expect(counter(full, 'i_method')).toBeNull();
+    expect(counter(full, 'i_built')).toBeNull();
     const fr = full.map((s) => barFraction(full, s.id));
     for (let i = 1; i < fr.length; i++) expect(fr[i]).toBeGreaterThan(fr[i - 1]);
   });
-  it('short variant (E1) drops S03, S04, S05, S07, S09 and keeps a fixed denominator', () => {
-    expect(short.map((s) => s.id)).not.toContain('s03');
-    expect(counter(short, 's01')).toEqual({ n: 2, of: 13 });
+  it('short variant (E1) drops four questions and keeps a fixed denominator', () => {
+    for (const id of ['q_frustration', 's07', 's09', 'q_focus']) expect(short.map((s) => s.id)).not.toContain(id);
+    expect(counter(short, 's01')).toEqual({ n: 2, of: 14 });
   });
 });
 
@@ -107,8 +108,8 @@ describe('session payload', () => {
     expect(p.row.utm_source).toBe('meta');
     expect('other' in p.row).toBe(false);
   });
-  it('does not keep a WhatsApp number without its country code, nor an email lead without consent', () => {
-    const p = sanitizeSessionPayload({ id, slug: 'known-before', contact: { channel: 'whatsapp', value: '9876543210' } })!;
+  it('keeps no phone number or WhatsApp contact, and no email lead without consent', () => {
+    const p = sanitizeSessionPayload({ id, slug: 'known-before', contact: { channel: 'whatsapp', value: '+919876543210' } })!;
     expect(p.row.contact).toBeUndefined();
     const q = sanitizeSessionPayload({ id, slug: 'known-before', contact: { channel: 'email', value: 'a@b.co' } })!;
     expect(q.consentedEmail).toBeNull();

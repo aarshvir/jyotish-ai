@@ -3,8 +3,11 @@
  * Pure, so it is unit-tested: this is an unauthenticated, service-role write.
  */
 
+// `mind_words` (the free-text answer) is deliberately NOT here: what someone writes in their
+// own words stays in their browser until they buy, and travels only inside the brief.
 export const ANSWER_KEYS = [
   'hook', 'focus_area', 'known_before', 'place_home', 'skills_fears', 'picture', 'self_role', 'goal_12m',
+  'problems', 'frustration', 'mind_focus',
   'birth_date', 'birth_time_known', 'birth_time', 'birth_city', 'birth_city_lat', 'birth_city_lng', 'first_name',
 ] as const;
 
@@ -61,15 +64,13 @@ export function sanitizeSessionPayload(raw: unknown): SanitizedSession | null {
   let consentedEmail: string | null = null;
   const c = b.contact && typeof b.contact === 'object' ? (b.contact as Record<string, unknown>) : null;
   if (c) {
-    const channel = c.channel === 'whatsapp' ? 'whatsapp' : c.channel === 'email' ? 'email' : null;
+    // Email only: the funnel does not collect phone numbers.
     const value = str(c.value, 200);
-    const valid =
-      channel === 'email' ? Boolean(value && EMAIL.test(value)) : channel === 'whatsapp' ? Boolean(value && /^\+\d{8,15}$/.test(value)) : false;
-    if (channel && value && valid) {
+    if (c.channel === 'email' && value && EMAIL.test(value)) {
       const consent = b.consent === true;
-      row.contact = { channel, value: channel === 'email' ? value.toLowerCase() : value, name: str(c.name, 60) };
+      row.contact = { channel: 'email', value: value.toLowerCase(), name: str(c.name, 60) };
       row.marketing_consent = consent;
-      if (channel === 'email' && consent) consentedEmail = value.toLowerCase();
+      if (consent) consentedEmail = value.toLowerCase();
     }
   }
 

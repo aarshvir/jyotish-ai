@@ -125,7 +125,7 @@ export function OfferScreen({
             <h1 className="font-display font-semibold text-ink text-[1.625rem] leading-tight mb-2">Full Karmic Blueprint</h1>
             <p className="font-body text-[1rem] leading-relaxed text-ink-muted">
               The full 12–16 page blueprint is still being finished, so it is not on sale yet.{' '}
-              {contactLabel ? `We have ${contactLabel} and will tell you when it opens.` : 'Leave a WhatsApp number or email and we will tell you when it opens.'}
+              {contactLabel ? `We have ${contactLabel} and will tell you when it opens.` : 'Leave your email and we will tell you when it opens.'}
             </p>
             {!contactLabel && (
               <button type="button" onClick={onAddContact} className="btn-secondary mt-4 min-h-[48px] px-5 font-body text-ink border-paper-line">
