@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const sign = params.sign?.toLowerCase() ?? '';
   const date = params.date ?? '';
   if (!isValidHoroscopeSign(sign)) {
-    return { title: 'Horoscope' };
+    return { title: 'Horoscope', robots: { index: false, follow: false } };
   }
   const { title, metaDescription } = buildHoroscopeCopy(sign, date);
   return {
@@ -43,6 +43,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: metaDescription,
     alternates: { canonical: `/horoscope/${sign}/${date}` },
     openGraph: { title, description: metaDescription, url: `/horoscope/${sign}/${date}` },
+    // The copy is generated from a hash of sign + date, not from the sky, so it is not a
+    // reading. Keep it out of search until it is computed from real positions.
+    robots: { index: false, follow: true },
   };
 }
 
