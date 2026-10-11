@@ -2,147 +2,127 @@ import type { BlogPost } from '@/content/blog/types';
 
 export const post: BlogPost = {
   slug: 'how-to-read-kundli',
-  title: 'How to Read Your Kundli: A Beginner’s Guide to Your Vedic Birth Chart',
-  "seoTitle": "How to Read Your Kundli: Beginner's Guide",
-  description: 'Learn how to read your Kundli step by step: start with your Lagna, then your Moon sign, the 12 houses, the planets, and your current Dasha.',
+  title: 'How to Read Your Kundli: A Step-by-Step Guide for Beginners',
+  seoTitle: "How to Read Your Kundli: Beginner's Guide",
+  description:
+    'Read your own Kundli in six steps: Lagna, Moon sign and nakshatra, houses and planets, house lords, and your current dasha. With tables.',
   keywords: [
     'how to read kundli',
     'janam kundali',
     'vedic birth chart',
     'kundli houses',
     'lagna',
-    'what is a kundli',
     'read kundli yourself',
-    'kundli reading for beginners',
-    'dasha',
-    'bhava',
+    'kundli kaise dekhe',
+    'north indian chart',
   ],
   date: '2026-06-14',
-  readingTimeMin: 11,
-  html: `
-<p>A Kundli (Janam Kundali) is a map of the sky at the exact moment you were born. To read it, start with your <strong>Lagna</strong> (the ascendant, or rising sign), then look at your Moon sign and nakshatra, then walk through the 12 houses and the planets sitting in them, and finally check which <strong>Dasha</strong> period you are living through right now.</p>
+  updated: '2026-10-11',
+  readingTimeMin: 7,
+  html: `<p><strong>To read a Kundli, go in this order: find the Lagna (rising sign, the 1st house), then the Moon sign and nakshatra, then the 12 houses and the planets in them, then where each house's lord sits, and finally the dasha period you are in now. You do not need to memorise anything. A table lookup for each step is enough to start.</strong></p>
 
-<p>If that sentence already made your eyes glaze over, take a breath. You don’t need to memorise Sanskrit or own a single dusty book to make sense of your own chart. Think of this as a friendly first lesson, not an exam. By the end, you’ll be able to open your chart and actually understand what you’re looking at, in the same way you can read a clock without being a watchmaker.</p>
+<p>A Kundli (Janam Kundali, Janam Patri) is a diagram of the sky at the moment and place you were born. It shows tendencies and timing. It does not show a fixed script. If you do not have yours yet, the <a href="/free-kundli">free Kundli</a> gives it with the Lagna, Moon sign, birth star and running dasha.</p>
 
-<h2>What Is a Kundli, Really?</h2>
+<h2>Step 1: Make sure the chart is right</h2>
 
-<p>The word “Kundli” simply means your birth chart in Vedic astrology (jyotish, the “science of light”). When you were born, the planets were sitting in specific spots in the sky. A Kundli freezes that exact arrangement, like a photograph of the heavens taken at your first breath.</p>
+<p>Everything depends on three inputs: the date, the exact time and the place of birth. The Lagna changes sign about every two hours, so a birth time that is off by an hour or two can give a different Lagna and a different chart. If you are unsure of the time, read <a href="/blog/birth-time-rectification-guide">birth time rectification</a> first. Also check the ayanamsa: Vedic charts normally use Lahiri, and a chart in the tropical zodiac will show most planets one sign later.</p>
 
-<p>That photograph is drawn as a diagram of twelve sections. Each section is a <strong>house</strong> (called a <strong>bhava</strong>), and each house represents an area of your life — money, relationships, career, health, and so on. The planets are scattered across these houses, and where each planet lands colours how that part of your life tends to unfold. That’s the whole idea in one breath: <strong>planets in houses, telling a story about you.</strong></p>
-
-<p>It helps to drop one common misconception right away. A Kundli is not a fortune-telling crystal ball that hands you a fixed destiny. It’s closer to a weather map for your life — it shows the patterns and tendencies you were born with, the seasons that are likely to come and go, and where your natural strengths and challenges sit. What you do with that information is still entirely yours. Read it as self-knowledge, not as a verdict, and the whole practice becomes far more useful and a lot less scary.</p>
-
-<p>Two chart styles are common. North Indian charts are diamond-shaped with fixed houses and moving signs. South Indian charts are square with fixed signs and moving houses. They show the exact same information — like Celsius and Fahrenheit measuring the same temperature — so don’t panic if yours looks different from a friend’s. If you’d rather see your own before reading on, you can <a href="/free-kundli">generate your free Kundli</a> in under a minute.</p>
-
-<h2>Start With Your Lagna (and Why Birth Time Matters)</h2>
-
-<p>Your <strong>Lagna</strong>, or ascendant, is the zodiac sign that was rising on the eastern horizon at the moment you were born. It becomes your 1st house, and it sets the entire frame of your chart — every other house is counted from it. The Lagna is often described as your outer self: your temperament, how you come across, the lens you see the world through.</p>
-
-<p>Here is the part beginners always trip over, so let me say it plainly: <strong>your birth time is everything.</strong> The rising sign changes roughly every two hours, which means two people born on the same day in the same city can have completely different charts if their birth times are a few hours apart. A guessed time gives you a guessed chart. If you can find your exact time of birth (a hospital record or birth certificate is gold), grab it before you do anything else. Not sure where you fall? You can <a href="/lagna-calculator">find your Lagna</a> with just your date, time, and place.</p>
-
-<h2>The 12 Houses (Bhavas): A Quick Map of Your Life</h2>
-
-<p>Once you know your Lagna, the twelve houses fall into place around it, always in the same order. Each one governs a slice of life. You don’t need to learn these by heart today — just keep this little table handy and refer back to it whenever a planet shows up somewhere.</p>
+<h2>Step 2: Know your chart style</h2>
 
 <ul>
-<li><strong>1st house</strong> — you: body, personality, how you start things</li>
-<li><strong>2nd house</strong> — money, family, speech, what you value</li>
-<li><strong>3rd house</strong> — courage, siblings, communication, short trips</li>
-<li><strong>4th house</strong> — home, mother, inner peace, property</li>
-<li><strong>5th house</strong> — creativity, romance, children, learning</li>
-<li><strong>6th house</strong> — health, daily work, debts, obstacles you overcome</li>
-<li><strong>7th house</strong> — marriage, partnerships, business deals</li>
-<li><strong>8th house</strong> — transformation, shared resources, deep change</li>
-<li><strong>9th house</strong> — luck, beliefs, higher learning, long journeys</li>
-<li><strong>10th house</strong> — career, reputation, your public role</li>
-<li><strong>11th house</strong> — gains, friendships, hopes and wishes</li>
-<li><strong>12th house</strong> — rest, letting go, spirituality, foreign lands</li>
+<li><strong>North Indian:</strong> a diamond-shaped chart. The houses are fixed in position (the top diamond is always the 1st house) and the numbers inside are the signs.</li>
+<li><strong>South Indian:</strong> a square grid. The signs are fixed in position (Aries is always second from the left on the top row) and you find the Lagna by the mark in its box.</li>
 </ul>
 
-<p>A simple way to read any chart: pick a topic you care about, find its house, and see which planet lives there. Curious about career? Look at the 10th. Relationships? The 7th. That single move — question, house, planet — is the heartbeat of every Kundli reading.</p>
+<p>They carry the same information in different layouts, so a chart is not wrong because it looks unlike one you saw before.</p>
 
-<h2>The 9 Planets (Grahas) in Brief</h2>
+<h2>Step 3: Find the Lagna</h2>
 
-<p>Vedic astrology works with nine planets, called <strong>grahas</strong>. Each carries a flavour, like a character in a play. When you find a planet in a house, you’re blending that planet’s nature with that area of life. Here is the short version:</p>
+<p>The Lagna (ascendant) is the sign rising on the eastern horizon when you were born. It becomes the 1st house, and every other house is counted from it. It is read as your body, temperament and the way you meet the world. The <a href="/lagna-calculator">Lagna calculator</a> gives it directly.</p>
+
+<h2>Step 4: Read the Moon sign and nakshatra</h2>
+
+<p>The Moon governs mind and mood, so the Moon sign and nakshatra describe your inner weather. They also set your dasha and matching scores. Find them with the <a href="/moon-sign-calculator">Moon sign calculator</a> and the <a href="/nakshatra-finder">Nakshatra calculator</a>, or see the <a href="/blog/nakshatra-birth-star-guide">full nakshatra table</a>.</p>
+
+<h2>Step 5: Read the houses and planets</h2>
+
+<table>
+<thead><tr><th>House</th><th>Covers</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Self, body, temperament</td></tr>
+<tr><td>2</td><td>Money, family, speech</td></tr>
+<tr><td>3</td><td>Effort, courage, siblings, short trips</td></tr>
+<tr><td>4</td><td>Home, mother, peace of mind, property</td></tr>
+<tr><td>5</td><td>Children, study, creativity, romance</td></tr>
+<tr><td>6</td><td>Daily work, health habits, debts, rivals</td></tr>
+<tr><td>7</td><td>Marriage, partnerships, dealings with others</td></tr>
+<tr><td>8</td><td>Sudden change, shared money, research</td></tr>
+<tr><td>9</td><td>Luck, teachers, belief, long journeys</td></tr>
+<tr><td>10</td><td>Career, status, public role</td></tr>
+<tr><td>11</td><td>Gains, friends, long-term goals</td></tr>
+<tr><td>12</td><td>Expenses, rest, solitude, foreign places</td></tr>
+</tbody>
+</table>
+
+<table>
+<thead><tr><th>Planet</th><th>Stands for</th></tr></thead>
+<tbody>
+<tr><td>Sun (Surya)</td><td>Self, authority, father, vitality</td></tr>
+<tr><td>Moon (Chandra)</td><td>Mind, mood, mother, comfort</td></tr>
+<tr><td>Mars (Mangal)</td><td>Drive, courage, conflict</td></tr>
+<tr><td>Mercury (Budha)</td><td>Speech, intellect, trade</td></tr>
+<tr><td>Jupiter (Guru)</td><td>Growth, learning, goodwill, children</td></tr>
+<tr><td>Venus (Shukra)</td><td>Relationships, comfort, the arts</td></tr>
+<tr><td>Saturn (Shani)</td><td>Discipline, work, delay, responsibility</td></tr>
+<tr><td>Rahu</td><td>Appetite, ambition, unusual routes</td></tr>
+<tr><td>Ketu</td><td>Detachment, focus, letting go</td></tr>
+</tbody>
+</table>
+
+<p>The method in one line: pick a question, find its house, then see which planet sits there and what that planet means. For career, look at the 10th house. For marriage, the 7th. A planet in a house blends its own nature with the house's topic.</p>
+
+<h2>Step 6: Follow the house lords</h2>
+
+<p>Each house is "owned" by the planet that rules its sign. The next level of reading asks where that owner sits. If the 10th house is Aries, its lord is Mars, and Mars's house and sign show how your career area is expressed. This is where a beginner's reading turns into a real one, and it is also the point where a calculator or an astrologer helps most.</p>
+
+<h2>Step 7: Check the dasha</h2>
+
+<p>A chart is a map and the dasha is the clock on it. The <a href="/blog/vimshottari-dasha-current-period">Vimshottari dasha</a> says which planet is in charge of your current chapter, so a strong 10th-house promise matters most when its lord's period runs. Find yours with the <a href="/vimshottari-dasha-calculator">dasha calculator</a>.</p>
+
+<h2>Common beginner mistakes</h2>
 
 <ul>
-<li><strong>Sun (Surya)</strong> — self, confidence, father, vitality</li>
-<li><strong>Moon (Chandra)</strong> — mind, emotions, mother, comfort</li>
-<li><strong>Mars (Mangal)</strong> — drive, courage, energy, conflict</li>
-<li><strong>Mercury (Budha)</strong> — intellect, speech, business, wit</li>
-<li><strong>Jupiter (Guru)</strong> — wisdom, growth, luck, generosity</li>
-<li><strong>Venus (Shukra)</strong> — love, beauty, pleasure, art</li>
-<li><strong>Saturn (Shani)</strong> — discipline, patience, hard lessons, time</li>
-<li><strong>Rahu</strong> — ambition, obsession, the unconventional (a lunar node, not a physical planet)</li>
-<li><strong>Ketu</strong> — detachment, spirituality, past patterns (the other lunar node)</li>
+<li><strong>Reading one planet alone.</strong> "Saturn in the 7th" means little until you know its sign, its aspects and the dasha running.</li>
+<li><strong>Treating labels as verdicts.</strong> Words like "afflicted" or "dosha" describe a pattern. Many are common and many are cancelled, as with <a href="/blog/manglik-dosha-marriage">Manglik dosha</a> or <a href="/blog/kaal-sarp-dosha-explained">Kaal Sarp</a>.</li>
+<li><strong>Mixing zodiacs.</strong> A Western sun-sign horoscope is a different system. See <a href="/blog/vedic-vs-western-astrology">Vedic vs Western astrology</a>.</li>
+<li><strong>Taking the chart as a script.</strong> It shows tendencies and timing, and you still decide what to do with them.</li>
 </ul>
 
-<p>So if you see, say, Jupiter in your 10th house, you read it as wisdom and growth meeting career and reputation — often a sign of teaching, advising, or steady professional respect. You’re just adding two words together. That’s genuinely how the pros begin too. Try a few combinations out loud: Mars in the 3rd becomes courage meeting communication; Venus in the 4th becomes love and beauty meeting home. None of these are final verdicts — they’re starting hunches you’ll refine as you learn — but they get you reading instead of staring.</p>
-
-<h2>Nakshatras: The Finer Detail</h2>
-
-<p>Beyond the twelve signs, Vedic astrology divides the sky into <strong>27 nakshatras</strong>, or lunar mansions. If signs are like twelve broad neighbourhoods, nakshatras are the specific streets — they add a layer of personality and nuance that the sign alone can’t capture.</p>
-
-<p>For a beginner, the one that matters most is your <strong>birth nakshatra</strong>: the nakshatra your Moon occupied when you were born. It says a lot about your instincts, your emotional texture, and the rhythms you feel most at home in. It’s also the starting point for your timing system, which we’ll get to next. You can <a href="/nakshatra-finder">find your nakshatra</a> in a moment if you’re curious where your Moon was resting.</p>
-
-<h2>Vimshottari Dasha: The Timing System</h2>
-
-<p>Here’s what makes Vedic astrology feel almost uncanny: it doesn’t just describe your personality, it tells you <strong>when</strong> things tend to happen. That timing comes from the <strong>Vimshottari Dasha</strong> system.</p>
-
-<p>The idea is elegant. Your life is divided into long planetary periods, called <strong>Mahadashas</strong>, and each one is “ruled” by a single planet for a set number of years — Jupiter governs 16 years, Saturn 19, Venus 20, and so on. The planet running your current Dasha tends to dominate the themes of that chapter of life. A Venus period might bring relationships and pleasure to the foreground; a Saturn period often asks for patience and hard work before reward.</p>
-
-<p>Your starting Dasha is set by your birth nakshatra — which is exactly why that little detail mattered earlier. To make sense of what your chart means <strong>right now</strong> rather than in general, check which <a href="/vimshottari-dasha-calculator">current Dasha</a> you’re in. Reading the houses tells you the “what”; the Dasha tells you the “when.”</p>
-
-<h2>How to Actually Start Reading: A Simple 5-Step Method</h2>
-
-<p>Enough theory — let’s put it together. Open your chart and work through these five steps in order. Don’t rush to interpret everything at once; just observe, the way you’d read the first page of a new book.</p>
-
-<ul>
-<li><strong>Step 1 — Find your Lagna.</strong> Spot the 1st house and note its sign. This is your frame. Everything else is read in relation to it.</li>
-<li><strong>Step 2 — Locate your Moon.</strong> Find which house and sign hold your Moon. It shows your emotional core and steadies the whole reading.</li>
-<li><strong>Step 3 — Scan the planets house by house.</strong> Go around the twelve houses and simply note which planet sits where. No judgement yet — just take attendance.</li>
-<li><strong>Step 4 — Pick one life area.</strong> Choose a house that matters to you (career, love, money), and blend its meaning with the planet inside it. Add two words together, as we practised.</li>
-<li><strong>Step 5 — Check your current Dasha.</strong> See which planetary period you’re in, then notice where that planet sits in your chart. That tells you which themes are alive for you this season.</li>
-</ul>
-
-<p>That’s a complete first read. Repeat it a few times across different life areas and the chart slowly stops looking like a puzzle and starts feeling like a description of someone you know — yourself.</p>
-
-<h2>Common Beginner Mistakes (and How to Avoid Them)</h2>
-
-<p>A few gentle warnings, because almost everyone makes these at the start:</p>
-
-<ul>
-<li><strong>Using a guessed birth time.</strong> This is the big one. An inaccurate time shifts your Lagna and scrambles the houses. Track down the real time before trusting any reading.</li>
-<li><strong>Judging a single planet in isolation.</strong> No planet acts alone — it’s shaped by the house it’s in, the sign, and other planets nearby. Read the whole sentence, not one word.</li>
-<li><strong>Reacting to scary keywords.</strong> Saturn isn’t “bad” and the 8th house isn’t a curse. These carry growth and depth, not doom. Astrology describes tendencies, not fixed fate.</li>
-<li><strong>Confusing your Lagna with your Sun sign.</strong> The horoscope sign you grew up reading is usually your Sun sign (or, in Vedic astrology, often your Moon sign). Your Lagna is a separate, deeper layer — don’t mix them up.</li>
-<li><strong>Trying to learn everything at once.</strong> You don’t need every aspect, divisional chart, and yoga on day one. Master the five steps above first; depth comes naturally with time.</li>
-</ul>
-
-<p>Reading your own Kundli is a skill that rewards patience and curiosity far more than memorisation. Start with your Lagna, meet your Moon, walk the houses, then check your Dasha — and let the rest unfold lesson by lesson. When you want the whole picture interpreted for you in plain language, a <a href="/kundali">deep AI-read Kundli report</a> can connect the dots across your houses, planets, and timing in one place.</p>
-
-<p>Ready to look at your own sky? <a href="/free-kundli">Generate your free Kundli</a> and try the five-step method on a chart that’s genuinely yours.</p>
-`,
+<p>If you want a plain-English reading of your own chart, the <a href="/kundali">deep Kundli report</a> goes through each life area, and the <a href="/start">2-minute quiz</a> sets up your hour-by-hour forecast.</p>`,
   faqs: [
     {
-      q: 'Do I need my exact birth time to read my Kundli?',
-      a: 'Yes, as close to exact as you can get. Your Lagna (ascendant) changes roughly every two hours, and it anchors every house in your chart. A guessed time produces a guessed chart. A hospital record or birth certificate is the most reliable source.',
+      q: 'How do I read my own Kundli?',
+      a: 'Find the Lagna, then the Moon sign and nakshatra, then the 12 houses and the planets in them, then the lords of each house, and finally your current dasha. Use tables for each step and read one question at a time.',
     },
     {
-      q: 'Can I really read my Kundli myself as a beginner?',
-      a: 'Absolutely. You don’t need to be an expert to understand the basics. Start with your Lagna, find your Moon, scan the planets house by house, focus on one life area, and check your current Dasha. The five-step method in this guide is designed for total beginners.',
+      q: 'What is the difference between North and South Indian charts?',
+      a: 'Layout only. In a North Indian chart the houses are fixed and the signs move; in a South Indian chart the signs are fixed and the houses move. Both show the same planets and signs.',
     },
     {
-      q: 'What is the most important part of a Kundli to look at first?',
-      a: 'Your Lagna (ascendant). It is the sign rising at your birth and forms your 1st house, setting the frame for everything else. After the Lagna, the Moon’s position is the next most important, since it reflects your mind and emotions.',
+      q: 'Which is more important, Lagna or Moon sign?',
+      a: 'Both. The Lagna sets the house layout and is read for body and outlook. The Moon sign sets the dasha, transit reading and matching scores, and is read for mind and mood.',
     },
     {
-      q: 'What is the difference between Lagna and Rashi?',
-      a: 'Your Lagna is the sign rising on the horizon at your birth — it describes your outer self and frames the houses. Your Rashi usually refers to your Moon sign, which describes your inner, emotional self. They are two distinct layers of the same chart and should not be confused.',
+      q: 'Why is my birth time so important?',
+      a: 'The Lagna changes sign about every two hours and the Moon changes pada about every six, so an error of an hour or two can change your Lagna, your nakshatra pada and your dasha dates.',
     },
     {
-      q: 'Is it free to generate and read my Kundli?',
-      a: 'Yes. You can generate your free Kundli with just your date, time, and place of birth, and use the simple five-step method in this guide to read it yourself. For a deeper, fully interpreted report, VedicHour also offers an AI-read Kundli that connects your houses, planets, and Dasha in plain language.',
+      q: 'Can a Kundli predict my future?',
+      a: 'It shows tendencies and timing in a traditional framework. It has not been shown to predict events, so use it for reflection and planning and not as a script.',
     },
+  ],
+  sources: [
+    'House and planet significations: standard Jyotish references, as in Brihat Parashara Hora Shastra',
+    'Chart styles: North Indian (fixed houses) and South Indian (fixed signs) conventions',
   ],
 };

@@ -2,6 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { POSTS } from '../content/blog';
+import { NAKSHATRAS } from '../content/nakshatras';
+import { DASHAS } from '../content/dashas';
+import { PREDICTIONS } from '../content/predictions';
+import { COMPARISONS } from '../content/comparisons';
 import { GET as sitemapGET } from '../app/api/sitemap/route';
 
 /**
@@ -62,5 +66,75 @@ describe('sitemap.xml', () => {
       if (!candidates.some((c) => existsSync(c))) missing.push(path);
     }
     expect(missing, `in sitemap but no page file: ${missing.join(', ')}`).toEqual([]);
+  });
+});
+
+/**
+ * Voice and safety guardrails for article copy. These are blunt on purpose: they catch the
+ * phrases that make copy read as machine-written, and the kinds of statement the site never makes.
+ */
+const postText = (p: (typeof POSTS)[number]) =>
+  `${p.title} ${p.description} ${p.html} ${(p.faqs ?? []).map((f) => `${f.q} ${f.a}`).join(' ')}`;
+
+describe('article voice', () => {
+  const BANNED = /\b(delve[sd]?|tapestry|fast-paced world|embark on|testament to|dive into|deep dive|ever-evolving|game-changer|holistic)\b/i;
+
+  it('avoids stock AI phrases', () => {
+    const hits = POSTS.filter((p) => BANNED.test(postText(p))).map((p) => `${p.slug}: ${postText(p).match(BANNED)?.[0]}`);
+    expect(hits).toEqual([]);
+  });
+
+  // Pages that AI assistants already cite. They are kept exactly as published so the quoted text
+  // and URLs stay stable; rewrite them only after checking that citations survive.
+  const FROZEN = new Set([
+    'best-vedic-astrology-platforms-2026',
+    'best-ai-vedic-astrology-app-2026',
+    'career-astrology-10th-house',
+  ]);
+
+  it('does not overuse em dashes (4 or fewer per article; cited pages are frozen)', () => {
+    const many = POSTS.filter((p) => !FROZEN.has(p.slug)).map((p) => ({ slug: p.slug, n: (postText(p).match(/—|&mdash;|&#8212;/g) ?? []).length })).filter((x) => x.n > 4);
+    expect(many).toEqual([]);
+  });
+
+  it('never predicts death, divorce or the sex of a child', () => {
+    const RE = /will (die|divorce|be widowed)|sex of (the|your|an unborn|a) (unborn )?child|gender of the (unborn )?child|baby (boy|girl) (is|will)/i;
+    const hits = POSTS.filter((p) => RE.test(postText(p))).map((p) => p.slug);
+    expect(hits).toEqual([]);
+  });
+});
+
+describe('article internal links', () => {
+  const STATIC_DIRS = ['src/app', 'src/app/(marketing)'];
+  const known = new Set(POSTS.map((p) => p.slug));
+
+  function resolves(href: string): boolean {
+    const path = href.split('#')[0].split('?')[0].replace(/\/$/, '') || '/';
+    if (path === '/') return true;
+    if (path.startsWith('/blog/')) return known.has(path.slice('/blog/'.length));
+    const dynamic: Record<string, string[]> = {
+      '/nakshatra/': NAKSHATRAS.map((n) => n.slug),
+      '/dasha/': DASHAS.map((d) => d.slug),
+      '/predictions/': PREDICTIONS.map((x) => x.slug),
+      '/compare/': COMPARISONS.map((c) => c.slug),
+    };
+    for (const [prefix, slugs] of Object.entries(dynamic)) {
+      if (path.startsWith(prefix)) return slugs.includes(path.slice(prefix.length));
+    }
+    const parts = path.split('/').filter(Boolean);
+    if (parts[0] === 'transit' && parts.length === 3) {
+      return ['saturn', 'jupiter', 'rahu', 'ketu'].includes(parts[1]) && parts[2].length > 2;
+    }
+    return STATIC_DIRS.some((d) => existsSync(join(ROOT, d, ...parts, 'page.tsx')));
+  }
+
+  it('only links to pages that exist', () => {
+    const broken: string[] = [];
+    for (const p of POSTS) {
+      for (const m of Array.from(p.html.matchAll(/href="(\/[^"]*)"/g))) {
+        if (!resolves(m[1])) broken.push(`${p.slug} -> ${m[1]}`);
+      }
+    }
+    expect(broken).toEqual([]);
   });
 });
