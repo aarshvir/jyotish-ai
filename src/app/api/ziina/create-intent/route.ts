@@ -22,6 +22,7 @@ import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { isSubscriptionPlanType } from '@/lib/subscriptions/period';
 import { subscriptionTablesReady } from '@/lib/subscriptions/access';
+import { BLUEPRINT_PLANS, blueprintSalesOpen } from '@/lib/funnel/offer';
 
 /**
  * POST /api/ziina/create-intent
@@ -70,9 +71,19 @@ export async function POST(request: NextRequest) {
   // route (/api/ziina/upgrade) that verifies a PAID 7-day report before charging
   // only the delta — accepting it here would let a buyer pay the cheaper upgrade
   // delta without ever owning a paid 7-day report.
-  const DIRECT_CHECKOUT_PLANS = new Set(['7day', 'monthly', 'annual', 'synastry', 'kundali', 'sub_monthly', 'sub_annual']);
+  const DIRECT_CHECKOUT_PLANS = new Set([
+    '7day', 'monthly', 'annual', 'synastry', 'kundali', 'sub_monthly', 'sub_annual', 'blueprint', 'blueprint_plus30',
+  ]);
   if (!DIRECT_CHECKOUT_PLANS.has(planType)) {
     return NextResponse.json({ error: 'Unsupported plan for checkout' }, { status: 400 });
+  }
+  // The /q funnel's Karmic Blueprint is sold only once its report generator exists
+  // (BLUEPRINT_SALES_ENABLED=1). Until then no intent is ever created for it.
+  if (BLUEPRINT_PLANS.has(planType) && !blueprintSalesOpen()) {
+    return NextResponse.json(
+      { error: 'The full blueprint is not on sale yet.', code: 'BLUEPRINT_NOT_OPEN' },
+      { status: 403 },
+    );
   }
   // Subscription prices sit at the owner's floor of 6x real model cost. Any percentage
   // code would sell below that floor, so codes are refused here rather than silently ignored.

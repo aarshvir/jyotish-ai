@@ -74,6 +74,25 @@ export const ZIINA_PLANS: Record<string, ZiinaPlan> = {
     amountUSD: subscriptionPrice('sub_annual', 'USD'),
     amountINR: subscriptionPrice('sub_annual', 'INR'),
   },
+  /**
+   * /q ad funnel (VEDICHOUR_QUIZ_SPEC S17): the Full Karmic Blueprint, one-time.
+   * ₹199 / $4.99 (spec price), AED at USD x ~3.67 rounded to .49/.99.
+   * NOT purchasable until BLUEPRINT_SALES_ENABLED=1 (see src/lib/funnel/offer.ts):
+   * create-intent refuses it while the Phase 4 report generator does not exist.
+   */
+  blueprint: {
+    name: 'VedicHour Full Karmic Blueprint',
+    amountAED: 1849,
+    amountUSD: 499,
+    amountINR: 19900,
+  },
+  /** Blueprint + the S17 order bump ("your next 30 days", ₹99 / $1.99), as one payment. */
+  blueprint_plus30: {
+    name: 'VedicHour Full Karmic Blueprint + next 30 days',
+    amountAED: 2598,
+    amountUSD: 698,
+    amountINR: 29800,
+  },
 };
 
 /** 10% off the upgrade delta vs paying full monthly after already owning 7-day */
