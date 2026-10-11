@@ -5,7 +5,7 @@ const READINGS = [
   { href: '/pricing', label: 'Hour-by-Hour Forecast' },
   { href: '/kundali', label: 'Deep Kundli Report' },
   { href: '/synastry', label: 'Kundli Matching (Gun Milan)' },
-  { href: '/horoscope/aries', label: 'Daily Horoscope' },
+  { href: '/transit', label: 'Planet transits now' },
 ];
 
 const TOOLS = [

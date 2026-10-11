@@ -7,10 +7,6 @@ import { METHOD_REVIEWED } from '@/lib/seo/methodology';
 
 const SITE_URL = 'https://www.vedichour.com';
 
-const PLANETS = [
-  'sun', 'moon', 'mars', 'mercury', 'jupiter',
-  'venus', 'saturn', 'rahu', 'ketu',
-];
 const SIGNS = [
   'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
   'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces',
@@ -31,14 +27,6 @@ const STATIC_ROUTES = [
   { path: '/terms',    changefreq: 'monthly', priority: '0.4'  },
 ];
 
-// Per-sign horoscope index pages (/horoscope/aries …). The dated leaves are added
-// by horoscopeRoutes(); these section indexes were previously missing from the sitemap.
-const SIGN_INDEX_ROUTES = SIGNS.map((sign) => ({
-  path: `/horoscope/${sign}`,
-  changefreq: 'daily',
-  priority: '0.7',
-}));
-
 // Free calculator tool pages — the highest-ROI SEO surface (the niche ranks tools).
 const TOOL_ROUTES = [
   '/free-kundli',
@@ -51,39 +39,20 @@ const TOOL_ROUTES = [
   '/kaal-sarp-dosha-calculator',
 ].map((path) => ({ path, changefreq: 'weekly', priority: path === '/free-kundli' ? '0.85' : '0.8' }));
 
-const TRANSIT_ROUTES = PLANETS.flatMap((planet) =>
-  SIGNS.map((sign) => ({
-    path: `/transit/${planet}/${sign}`,
-    changefreq: 'monthly',
-    priority: '0.7',
-  })),
-);
-
-/**
- * Rolling 3-week window: today + next 20 days × 12 signs. Kept short on purpose —
- * the day pages are algorithmically generated, so advertising a full 365-day window
- * (4,380 thin URLs) wastes crawl budget and risks duplicate/thin-content signals.
- * Each page also self-canonicals.
- */
-function horoscopeRoutes(): { path: string; changefreq: string; priority: string }[] {
-  const out: { path: string; changefreq: string; priority: string }[] = [];
-  const today = new Date();
-  // Match the page's generateStaticParams window (8 days) so every advertised horoscope
-  // URL is actually pre-rendered — otherwise the extra days were cold-SSR on first crawl.
-  for (let d = 0; d < 8; d++) {
-    const dt = new Date(today);
-    dt.setUTCDate(dt.getUTCDate() + d);
-    const iso = dt.toISOString().split('T')[0];
-    for (const sign of SIGNS) {
-      out.push({
-        path: `/horoscope/${sign}/${iso}`,
-        changefreq: 'daily',
-        priority: '0.65',
-      });
-    }
-  }
-  return out;
-}
+// Transit pages exist only for the four slow planets, where the dates are the answer (see
+// src/content/transits.ts). Sun, Moon, Mars, Mercury and Venus change sign in days to weeks, so
+// their per-sign pages are noindex and not listed. The /transit hub lists where each planet is now.
+const SLOW_TRANSIT_PLANETS = ['saturn', 'jupiter', 'rahu', 'ketu'];
+const TRANSIT_ROUTES = [
+  { path: '/transit', changefreq: 'weekly', priority: '0.8' },
+  ...SLOW_TRANSIT_PLANETS.flatMap((planet) =>
+    SIGNS.map((sign) => ({
+      path: `/transit/${planet}/${sign}`,
+      changefreq: 'monthly',
+      priority: '0.6',
+    })),
+  ),
+];
 
 const BLOG_ROUTES = [
   { path: '/blog', changefreq: 'daily', priority: '0.7', lastmod: POSTS[0]?.date },
@@ -111,7 +80,7 @@ const COMPARE_ROUTES = [
   })),
 ];
 
-const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...BLOG_ROUTES, ...REFERENCE_ROUTES, ...COMPARE_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
+const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...BLOG_ROUTES, ...REFERENCE_ROUTES, ...COMPARE_ROUTES, ...TRANSIT_ROUTES];
 
 export function GET() {
   // Only emit <lastmod> where we have a REAL date (blog posts carry p.date). Stamping
