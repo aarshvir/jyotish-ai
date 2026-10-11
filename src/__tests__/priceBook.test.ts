@@ -79,8 +79,8 @@ describe('charmDown — always rounds DOWN to a local charm price', () => {
 });
 
 describe('price sets', () => {
-  it('live is still the current price set until the owner approves a change', () => {
-    expect(ACTIVE_PRICE_SET).toBe('current');
+  it('live is the recommended price set, approved by the owner on 2026-10-11', () => {
+    expect(ACTIVE_PRICE_SET).toBe('recommended');
   });
 
   it('the checkout table charges exactly the active price set', () => {
