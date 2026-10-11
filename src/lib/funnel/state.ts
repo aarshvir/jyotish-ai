@@ -6,8 +6,9 @@
 import type { FunnelAnswers, Lang } from './screens';
 import type { RevealData } from './reveal/compute';
 
+/** Email only. (A saved session from before 2026-10-11 may hold a phone contact; it is dropped on load.) */
 export interface Contact {
-  channel: 'whatsapp' | 'email';
+  channel: 'email';
   value: string;
   name?: string;
   consent: boolean;
@@ -39,6 +40,7 @@ export function loadState(slug: string, now = Date.now()): FunnelState | null {
     const s = JSON.parse(raw) as FunnelState;
     if (!s || s.v !== 1 || s.slug !== slug || typeof s.sessionId !== 'string') return null;
     if (now - (s.savedAt ?? 0) > MAX_AGE_MS) return null;
+    if (s.contact && (s.contact as { channel?: string }).channel !== 'email') return { ...s, contact: null };
     return s;
   } catch {
     return null;

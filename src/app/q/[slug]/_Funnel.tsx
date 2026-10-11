@@ -6,15 +6,16 @@ import { createClient } from '@/lib/supabase/client';
 import { getQuizSlug, DEFAULT_SLUG } from '@/config/quiz_slugs';
 import { FLAG_CONTACT_REQUIRED, FLAG_PRICE_REPORT, FLAG_QUIZ_LENGTH, assignArm } from '@/config/quiz_flags';
 import {
-  FOCUS_INTERSTITIAL,
   FOCUS_LABEL,
-  goalInterstitial,
+  resolveChoice,
   screensFor,
   type FocusArea,
   type FunnelAnswers,
   type Lang,
   type Screen,
 } from '@/lib/funnel/screens';
+import { buildInterstitial } from '@/lib/funnel/interstitials';
+import { splitCodes } from '@/lib/funnel/problems';
 import { barFraction, birthReady, counter, nextScreen, prevScreen, resumeTarget } from '@/lib/funnel/engine';
 import { attributionFrom, loadState, newSessionId, saveState, type Contact, type FunnelState } from '@/lib/funnel/state';
 import { funnelEvent, pixelEvent, type EventContext } from '@/lib/funnel/events';
@@ -26,7 +27,10 @@ import { saveQuiz } from '@/lib/quiz/persist';
 import { formatAmount } from '@/lib/ziina/amounts';
 import { DeliveryGate } from '@/components/onboard/DeliveryGate';
 import { PaymentHandoff } from '@/components/checkout/PaymentHandoff';
-import { InfoScreen, InputScreen, PictureScreen, SingleScreen, Sub, Title, t } from '@/components/funnel/QuestionScreens';
+import { InputScreen, PictureScreen, SingleScreen, Sub, Title, t } from '@/components/funnel/QuestionScreens';
+import { Interstitial } from '@/components/funnel/Interstitial';
+import { MultiScreen } from '@/components/funnel/MultiScreen';
+import { TextScreen } from '@/components/funnel/TextScreen';
 import { CityTypeahead } from '@/components/funnel/CityTypeahead';
 import { CalcScreen, type RevealRequest } from '@/components/funnel/CalcScreen';
 import { ContactScreen } from '@/components/funnel/ContactScreen';
@@ -36,8 +40,9 @@ import { DropoffPrompt, canShowDropoff } from '@/components/analytics/DropoffPro
 import type { DropoffContext } from '@/lib/analytics/events';
 
 /**
- * /q/[slug] — the ad funnel (VEDICHOUR_QUIZ_SPEC §4–5):
- * S01–S13 questions → S14 real calculation → S15 contact → S16 free computed reveal → S17 offer.
+ * /q/[slug] — the ad funnel (VEDICHOUR_QUIZ_SPEC §4–5, v2):
+ * questions and interstitials → birth details → S14 real calculation → S15 contact → S16 free
+ * computed reveal → S17 offer.
  * No account or password is asked for before the reveal; sign-in happens only when someone
  * taps pay, because checkout needs an owner for the purchase.
  */
@@ -256,13 +261,29 @@ export function Funnel({ slugKey }: { slugKey: string }) {
   const answer = useCallback(
     (field: string, value: string, extra: FunnelAnswers = {}) => {
       if (!st || !screen || !ctx) return;
-      const answers = { ...st.answers, ...extra, [field]: value };
+      const answers: FunnelAnswers = { ...st.answers, ...extra, [field]: value };
+      // A new area makes the worries picked for the old one meaningless.
+      if (field === 'focus_area' && st.answers.focus_area && st.answers.focus_area !== value) {
+        delete answers.problems;
+        delete answers.mind_focus;
+      }
       const personal = field.startsWith('birth_');
       funnelEvent(ctx, 'quiz_answer', { step: screen.spec, value: personal ? 'set' : value });
       go(answers, screen.id);
     },
     [st, screen, ctx, go],
   );
+
+  /** Multi-select: the choice is kept as the person taps; moving on happens on Continue. */
+  const setDraft = useCallback((field: string, value: string) => {
+    setSt((prev) => {
+      if (!prev) return prev;
+      const answers = { ...prev.answers };
+      if (value) answers[field] = value;
+      else delete answers[field];
+      return { ...prev, answers };
+    });
+  }, []);
 
   function back() {
     if (!st || !screen || !ctx) return;
@@ -298,7 +319,6 @@ export function Funnel({ slugKey }: { slugKey: string }) {
             reportId,
             funnelSlug: slug.slug,
             name,
-            ...(st.contact?.channel === 'whatsapp' ? { phone: st.contact.value } : {}),
             birth_date: a.birth_date,
             birth_time: known && a.birth_time ? `${a.birth_time}:00` : '12:00:00',
             birth_city: a.birth_city,
@@ -397,9 +417,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
   const a = st.answers;
   const c = counter(screens, screen.id);
   const pct = barFraction(screens, screen.id);
-  const india = (offer?.country ?? '') === 'IN' || offer?.currency === 'INR';
   const focus = a.focus_area as FocusArea | undefined;
-  const focusLabel = focus ? FOCUS_LABEL[focus][lang] : null;
   const canBack = screen.id !== 's01' && screen.kind !== 'calc';
   const paper = screen.kind === 'offer';
   const blueprintCta = offer?.blueprintOpen && offer.prices.blueprint ? `Unlock my full blueprint — ${offer.prices.blueprint.display}` : 'Unlock my full blueprint';
@@ -443,14 +461,67 @@ export function Funnel({ slugKey }: { slugKey: string }) {
       <div className="max-w-md mx-auto px-4 pt-5 pb-16">
         {screen.id === 's01' && <p className="font-body text-label-md text-amber-light mb-3">{t(slug.eyebrow, lang)}</p>}
 
-        {screen.kind === 'single' && (
-          <SingleScreen
+        {screen.kind === 'single' &&
+          (() => {
+            const r = resolveChoice(screen, a);
+            return (
+              <SingleScreen
+                key={screen.id}
+                title={r.title}
+                subtitle={r.subtitle}
+                options={r.options}
+                selected={a[screen.field]}
+                lang={lang}
+                onChoose={(v) => answer(screen.field, v)}
+              />
+            );
+          })()}
+
+        {screen.kind === 'multi' &&
+          (() => {
+            const r = resolveChoice(screen, a);
+            return (
+              <MultiScreen
+                key={screen.id + (a.focus_area ?? '')}
+                title={r.title}
+                subtitle={r.subtitle}
+                options={r.options}
+                selected={a[screen.field] ?? ''}
+                min={screen.min}
+                max={screen.max}
+                exclusive={screen.exclusive}
+                cta={screen.cta}
+                lang={lang}
+                onChange={(v) => setDraft(screen.field, v)}
+                onSubmit={(v) => {
+                  funnelEvent(ctx, 'quiz_answer', { step: screen.spec, value: splitCodes(v) });
+                  answer(screen.field, v);
+                }}
+              />
+            );
+          })()}
+
+        {screen.kind === 'text' && (
+          <TextScreen
+            key={screen.id}
             title={screen.title}
             subtitle={screen.subtitle}
-            options={screen.options}
-            selected={a[screen.field]}
+            placeholder={screen.placeholder}
+            maxLength={screen.maxLength}
+            initial={a[screen.field] ?? ''}
+            cta={screen.cta}
+            skip={screen.skip}
             lang={lang}
-            onChoose={(v) => answer(screen.field, v)}
+            onSubmit={(text) => {
+              funnelEvent(ctx, 'quiz_answer', { step: screen.spec, value: 'set', words: text.split(/\s+/).length });
+              answer(screen.field, text);
+            }}
+            onSkip={() => {
+              funnelEvent(ctx, 'quiz_answer', { step: screen.spec, value: 'skipped' });
+              const next = { ...a };
+              delete next[screen.field];
+              go(next, screen.id);
+            }}
           />
         )}
 
@@ -466,17 +537,13 @@ export function Funnel({ slugKey }: { slugKey: string }) {
           />
         )}
 
-        {screen.kind === 'info' && (
-          <InfoScreen
-            key={screen.id}
-            lang={lang}
-            {...(screen.id === 'i_focus'
-              ? { ...FOCUS_INTERSTITIAL[focus ?? 'career'], cta: screen.cta }
-              : screen.id === 'i_goal'
-                ? { ...goalInterstitial(a.goal_12m), cta: screen.cta }
-                : { title: screen.title, body: screen.body, cta: screen.cta })}
+        {screen.kind === 'interstitial' && (
+          <Interstitial
+            key={screen.id + lang}
+            built={buildInterstitial(screen.template, a, lang)}
+            onView={() => funnelEvent(ctx, 'interstitial_view', { step: screen.spec, truth: buildInterstitial(screen.template, a, 'en').truth })}
             onNext={() => {
-              funnelEvent(ctx, 'quiz_answer', { step: screen.spec, value: 'continue' });
+              funnelEvent(ctx, 'interstitial_continue', { step: screen.spec });
               go(a, screen.id);
             }}
           />
@@ -538,7 +605,6 @@ export function Funnel({ slugKey }: { slugKey: string }) {
 
         {screen.kind === 'contact' && (
           <ContactScreen
-            india={india}
             required={flags.contact_required === 'A'}
             initial={st.contact}
             lang={lang}
@@ -576,7 +642,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
             onBump={setBump}
             busy={busy}
             banner={banner}
-            contactLabel={st.contact ? (st.contact.channel === 'whatsapp' ? 'your WhatsApp number' : 'your email') : null}
+            contactLabel={st.contact ? 'your email' : null}
             onBuyBlueprint={() => buy(bump ? 'blueprint_plus30' : 'blueprint')}
             onBuySubscription={() => buy('sub_monthly')}
             onAddContact={() => setSt({ ...st, screenId: 's15' })}
