@@ -22,6 +22,7 @@ import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { isSubscriptionPlanType } from '@/lib/subscriptions/period';
 import { subscriptionTablesReady } from '@/lib/subscriptions/access';
+import { BLUEPRINT_PLANS, blueprintSalesOpen } from '@/lib/funnel/offer';
 
 /**
  * POST /api/ziina/create-intent
@@ -60,6 +61,8 @@ export async function POST(request: NextRequest) {
     current_lng?: number | string;
     timezone_offset?: number | string;
     forecast_start?: string;
+    /** /q funnel slug, so a blueprint payment returns to the funnel it started in. */
+    funnelSlug?: string;
   };
 
   const { planType, reportId, promoCode, testMode } = body;
@@ -70,9 +73,19 @@ export async function POST(request: NextRequest) {
   // route (/api/ziina/upgrade) that verifies a PAID 7-day report before charging
   // only the delta — accepting it here would let a buyer pay the cheaper upgrade
   // delta without ever owning a paid 7-day report.
-  const DIRECT_CHECKOUT_PLANS = new Set(['7day', 'monthly', 'annual', 'synastry', 'kundali', 'sub_monthly', 'sub_annual']);
+  const DIRECT_CHECKOUT_PLANS = new Set([
+    '7day', 'monthly', 'annual', 'synastry', 'kundali', 'sub_monthly', 'sub_annual', 'blueprint', 'blueprint_plus30',
+  ]);
   if (!DIRECT_CHECKOUT_PLANS.has(planType)) {
     return NextResponse.json({ error: 'Unsupported plan for checkout' }, { status: 400 });
+  }
+  // The /q funnel's Karmic Blueprint is sold only once its report generator exists
+  // (BLUEPRINT_SALES_ENABLED=1). Until then no intent is ever created for it.
+  if (BLUEPRINT_PLANS.has(planType) && !blueprintSalesOpen()) {
+    return NextResponse.json(
+      { error: 'The full blueprint is not on sale yet.', code: 'BLUEPRINT_NOT_OPEN' },
+      { status: 403 },
+    );
   }
   // Subscription prices sit at the owner's floor of 6x real model cost. Any percentage
   // code would sell below that floor, so codes are refused here rather than silently ignored.
@@ -213,15 +226,19 @@ export async function POST(request: NextRequest) {
 
   const origin = request.nextUrl.origin;
   const verifyBase = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&planType=${planType}&status=`;
+  const funnelSlug =
+    BLUEPRINT_PLANS.has(planType) && typeof body.funnelSlug === 'string' && /^[a-z0-9-]{1,64}$/.test(body.funnelSlug)
+      ? `&slug=${body.funnelSlug}`
+      : '';
   const successUrl = isStandaloneUnlock
     ? `${verifyBase}success`
-    : `${verifyBase}success&reportId=${reportId}`;
+    : `${verifyBase}success&reportId=${reportId}${funnelSlug}`;
   const cancelUrl = isStandaloneUnlock
     ? `${verifyBase}cancel`
-    : `${verifyBase}cancel&reportId=${reportId}`;
+    : `${verifyBase}cancel&reportId=${reportId}${funnelSlug}`;
   const failureUrl = isStandaloneUnlock
     ? `${verifyBase}failure`
-    : `${verifyBase}failure&reportId=${reportId}`;
+    : `${verifyBase}failure&reportId=${reportId}${funnelSlug}`;
 
   const db = createServiceClient();
   const productionRuntime =

@@ -11,7 +11,7 @@
  */
 
 import { applyDiscount, formatAmount, type SupportedCurrency } from './amounts';
-import { subscriptionPrice } from '../priceBook';
+import { experimentPrice, subscriptionPrice } from '../priceBook';
 
 // Re-exported so existing server-side imports keep working. The implementations
 // live in ./amounts (pure, client-safe) so the price the buyer SEES on onboard
@@ -73,6 +73,25 @@ export const ZIINA_PLANS: Record<string, ZiinaPlan> = {
     amountAED: subscriptionPrice('sub_annual', 'AED'),
     amountUSD: subscriptionPrice('sub_annual', 'USD'),
     amountINR: subscriptionPrice('sub_annual', 'INR'),
+  },
+  /**
+   * /q ad funnel (VEDICHOUR_QUIZ_SPEC S17). Prices come from the price book's control arms
+   * (EXPERIMENTS.price_report / price_bump), so there is one place to change them.
+   * NOT purchasable until BLUEPRINT_SALES_ENABLED=1 (src/lib/funnel/offer.ts): create-intent
+   * refuses these while the Phase 4 report generator does not exist.
+   */
+  blueprint: {
+    name: 'VedicHour Full Karmic Blueprint',
+    amountAED: experimentPrice('price_report', null, 'AED'),
+    amountUSD: experimentPrice('price_report', null, 'USD'),
+    amountINR: experimentPrice('price_report', null, 'INR'),
+  },
+  /** Blueprint + the S17 order bump ("your next 30 days") as ONE charge, so one fixed fee. */
+  blueprint_plus30: {
+    name: 'VedicHour Full Karmic Blueprint + next 30 days',
+    amountAED: experimentPrice('price_report', null, 'AED') + experimentPrice('price_bump', null, 'AED'),
+    amountUSD: experimentPrice('price_report', null, 'USD') + experimentPrice('price_bump', null, 'USD'),
+    amountINR: experimentPrice('price_report', null, 'INR') + experimentPrice('price_bump', null, 'INR'),
   },
 };
 
