@@ -11,7 +11,7 @@
  */
 
 import { applyDiscount, formatAmount, type SupportedCurrency } from './amounts';
-import { subscriptionPrice } from '../priceBook';
+import { experimentPrice, subscriptionPrice } from '../priceBook';
 
 // Re-exported so existing server-side imports keep working. The implementations
 // live in ./amounts (pure, client-safe) so the price the buyer SEES on onboard
@@ -75,23 +75,23 @@ export const ZIINA_PLANS: Record<string, ZiinaPlan> = {
     amountINR: subscriptionPrice('sub_annual', 'INR'),
   },
   /**
-   * /q ad funnel (VEDICHOUR_QUIZ_SPEC S17): the Full Karmic Blueprint, one-time.
-   * ₹199 / $4.99 (spec price), AED at USD x ~3.67 rounded to .49/.99.
-   * NOT purchasable until BLUEPRINT_SALES_ENABLED=1 (see src/lib/funnel/offer.ts):
-   * create-intent refuses it while the Phase 4 report generator does not exist.
+   * /q ad funnel (VEDICHOUR_QUIZ_SPEC S17). Prices come from the price book's control arms
+   * (EXPERIMENTS.price_report / price_bump), so there is one place to change them.
+   * NOT purchasable until BLUEPRINT_SALES_ENABLED=1 (src/lib/funnel/offer.ts): create-intent
+   * refuses these while the Phase 4 report generator does not exist.
    */
   blueprint: {
     name: 'VedicHour Full Karmic Blueprint',
-    amountAED: 1849,
-    amountUSD: 499,
-    amountINR: 19900,
+    amountAED: experimentPrice('price_report', null, 'AED'),
+    amountUSD: experimentPrice('price_report', null, 'USD'),
+    amountINR: experimentPrice('price_report', null, 'INR'),
   },
-  /** Blueprint + the S17 order bump ("your next 30 days", ₹99 / $1.99), as one payment. */
+  /** Blueprint + the S17 order bump ("your next 30 days") as ONE charge, so one fixed fee. */
   blueprint_plus30: {
     name: 'VedicHour Full Karmic Blueprint + next 30 days',
-    amountAED: 2598,
-    amountUSD: 698,
-    amountINR: 29800,
+    amountAED: experimentPrice('price_report', null, 'AED') + experimentPrice('price_bump', null, 'AED'),
+    amountUSD: experimentPrice('price_report', null, 'USD') + experimentPrice('price_bump', null, 'USD'),
+    amountINR: experimentPrice('price_report', null, 'INR') + experimentPrice('price_bump', null, 'INR'),
   },
 };
 

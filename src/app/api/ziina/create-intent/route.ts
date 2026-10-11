@@ -61,6 +61,8 @@ export async function POST(request: NextRequest) {
     current_lng?: number | string;
     timezone_offset?: number | string;
     forecast_start?: string;
+    /** /q funnel slug, so a blueprint payment returns to the funnel it started in. */
+    funnelSlug?: string;
   };
 
   const { planType, reportId, promoCode, testMode } = body;
@@ -224,15 +226,19 @@ export async function POST(request: NextRequest) {
 
   const origin = request.nextUrl.origin;
   const verifyBase = `${origin}/api/ziina/verify?intentId={PAYMENT_INTENT_ID}&planType=${planType}&status=`;
+  const funnelSlug =
+    BLUEPRINT_PLANS.has(planType) && typeof body.funnelSlug === 'string' && /^[a-z0-9-]{1,64}$/.test(body.funnelSlug)
+      ? `&slug=${body.funnelSlug}`
+      : '';
   const successUrl = isStandaloneUnlock
     ? `${verifyBase}success`
-    : `${verifyBase}success&reportId=${reportId}`;
+    : `${verifyBase}success&reportId=${reportId}${funnelSlug}`;
   const cancelUrl = isStandaloneUnlock
     ? `${verifyBase}cancel`
-    : `${verifyBase}cancel&reportId=${reportId}`;
+    : `${verifyBase}cancel&reportId=${reportId}${funnelSlug}`;
   const failureUrl = isStandaloneUnlock
     ? `${verifyBase}failure`
-    : `${verifyBase}failure&reportId=${reportId}`;
+    : `${verifyBase}failure&reportId=${reportId}${funnelSlug}`;
 
   const db = createServiceClient();
   const productionRuntime =

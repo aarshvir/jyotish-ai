@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
   const intentId = searchParams.get('intentId') ?? '';
   const planType = searchParams.get('planType') ?? '';
+  const funnelSlugParam = /^[a-z0-9-]{1,64}$/.test(searchParams.get('slug') ?? '') ? (searchParams.get('slug') as string) : 'repeating-lessons';
   const status = searchParams.get('status') ?? '';
 
   const origin = request.nextUrl.origin;
@@ -33,6 +34,10 @@ export async function GET(request: NextRequest) {
     }
     if (planType === 'synastry' || planType === 'kundali') {
       return NextResponse.redirect(`${origin}/${planType}?payment=cancelled`);
+    }
+    // A /q funnel blueprint checkout returns to the funnel it started in.
+    if (planType === 'blueprint' || planType === 'blueprint_plus30') {
+      return NextResponse.redirect(`${origin}/q/${funnelSlugParam}?payment=cancelled`);
     }
     // A subscription checkout starts on the quiz paywall; /onboard would redirect there and drop the banner.
     if (planType === 'sub_monthly' || planType === 'sub_annual') {
@@ -130,6 +135,9 @@ export async function GET(request: NextRequest) {
           : intent.status === 'pending'
             ? 'pending'
             : 'incomplete';
+      if (resolvedPlanType === 'blueprint' || resolvedPlanType === 'blueprint_plus30') {
+        return NextResponse.redirect(`${origin}/q/${funnelSlugParam}?payment=${reason}`);
+      }
       // A subscription checkout starts on the quiz paywall, so an unfinished payment goes back there.
       if (resolvedPlanType === 'sub_monthly' || resolvedPlanType === 'sub_annual') {
         return NextResponse.redirect(`${origin}/start?payment=${reason}`);
@@ -142,6 +150,11 @@ export async function GET(request: NextRequest) {
 
     if (!fin.ok) {
       return NextResponse.redirect(`${origin}/${isSubscription ? 'start' : 'onboard'}?payment=error`);
+    }
+
+    // Paid /q blueprint: on to the one-tap upsell and the thank-you screen.
+    if (resolvedPlanType === 'blueprint' || resolvedPlanType === 'blueprint_plus30') {
+      return NextResponse.redirect(`${origin}/q/${funnelSlugParam}/thanks?plan=${resolvedPlanType}&r=${encodeURIComponent(reportId)}`);
     }
 
     if (resolvedPlanType === 'synastry' || planType === 'synastry') {
