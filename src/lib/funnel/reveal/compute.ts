@@ -59,6 +59,7 @@ export interface RevealData {
   lagna: Sign | null;
   moonSign: Sign;
   moonNakshatra: string | null;
+  moonPada: number | null;
   ketu: NodeFacts;
   rahu: NodeFacts;
   fifth: { sign: Sign; lord: Lord; lordSign: Sign; lordHouse: number; dignity: Dignity; level: MeritLevel };
@@ -147,6 +148,7 @@ export function computeReveal(input: RevealInput): RevealData {
   const fifthKeys = [refKey, `house5.sign=${sign5}`, `lord5=${lord5}`, `lord5.sign=${lordSign}`, `lord5.house=${lordHouse}`, `lord5.dignity=${dignity}`];
 
   const moonNakshatra = moon.nakshatra ?? chart.moon_nakshatra ?? null;
+  const moonPada = typeof moon.nakshatra_pada === 'number' ? moon.nakshatra_pada : null;
 
   const calcLines: Sourced[] = [
     {
@@ -214,6 +216,7 @@ export function computeReveal(input: RevealInput): RevealData {
     lagna,
     moonSign,
     moonNakshatra,
+    moonPada,
     ketu,
     rahu,
     fifth: { sign: sign5, lord: lord5, lordSign, lordHouse, dignity, level },

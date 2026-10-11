@@ -32,7 +32,7 @@ import { Interstitial } from '@/components/funnel/Interstitial';
 import { MultiScreen } from '@/components/funnel/MultiScreen';
 import { TextScreen } from '@/components/funnel/TextScreen';
 import { CityTypeahead } from '@/components/funnel/CityTypeahead';
-import { CalcScreen, type RevealRequest } from '@/components/funnel/CalcScreen';
+import { BriefScreen, type RevealRequest } from '@/components/funnel/BriefScreen';
 import { ContactScreen } from '@/components/funnel/ContactScreen';
 import { RevealScreen } from '@/components/funnel/RevealScreen';
 import { OfferScreen, type OfferInfo } from '@/components/funnel/OfferScreen';
@@ -589,11 +589,15 @@ export function Funnel({ slugKey }: { slugKey: string }) {
 
         {screen.kind === 'calc' &&
           (birthReady(a) ? (
-            <CalcScreen
+            <BriefScreen
               key={revealKey(a)}
               request={revealRequest(a)}
+              answers={a}
+              briefText={funnelPersonalContext(a, slug)}
               lang={lang}
-              onDone={(reveal: RevealData) => {
+              onBuilt={({ durationMs, lines }) => funnelEvent(ctx, 'brief_built', { ok: true, duration_ms: durationMs, lines })}
+              onFailed={() => funnelEvent(ctx, 'brief_built', { ok: false })}
+              onContinue={({ reveal }) => {
                 funnelEvent(ctx, 'calc_complete', { ok: true });
                 setRevealFor(revealKey(a));
                 go(a, screen.id, { reveal });
