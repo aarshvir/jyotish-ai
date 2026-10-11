@@ -13,7 +13,7 @@ export interface ChartEmailInput {
   firstName: string | null;
   resumeUrl: string;
   unsubscribeUrl: string;
-  /** They ticked the optional box for notes about their chart. */
+  /** They ticked the optional box for occasional emails about their chart and new tools. */
   marketingConsented: boolean;
   /** When the link stops working. */
   expiresOn: Date;
@@ -39,8 +39,8 @@ export function renderChartEmail(i: ChartEmailInput): { subject: string; html: s
     : `Your answers are already in it, so the link opens straight to your result. It works until ${until}.`;
   const extra = i.marketingConsented
     ? hi
-      ? 'Aapne chart ke notes wala box bhi tick kiya tha, isliye hum aapko chart se jude notes bhej sakte hain. Ek tap mein band kar sakte hain.'
-      : 'You also ticked the box for notes about your chart, so we may write to you with them. You can stop them in one tap.'
+      ? 'Aapne chart aur naye tools ke emails wala box bhi tick kiya tha, isliye hum kabhi-kabhi aapko likh sakte hain. Ek tap mein band kar sakte hain.'
+      : 'You also ticked the box for occasional emails about your chart and new tools, so we may write to you now and then. You can stop them in one tap.'
     : hi
       ? 'Aapne aur emails nahi maange, isliye hum yeh ek email hi bhejenge.'
       : 'That is the only email we will send unless you ask for more.';
@@ -48,8 +48,8 @@ export function renderChartEmail(i: ChartEmailInput): { subject: string; html: s
 
   const reason = i.marketingConsented
     ? hi
-      ? 'Aapko yeh isliye mila kyunki aapne VedicHour se apna chart save karne ko kaha aur notes wala box tick kiya.'
-      : 'You are getting this because you asked VedicHour to save your chart and ticked the box for notes.'
+      ? 'Aapko yeh isliye mila kyunki aapne VedicHour se apna chart save karne ko kaha aur kabhi-kabhi ke emails wala box tick kiya.'
+      : 'You are getting this because you asked VedicHour to save your chart and ticked the box for occasional emails.'
     : hi
       ? 'Aapko yeh isliye mila kyunki aapne VedicHour se apna chart save karne ko kaha.'
       : 'You are getting this because you asked VedicHour to save your chart.';

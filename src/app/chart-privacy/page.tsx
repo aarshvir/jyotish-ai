@@ -26,7 +26,7 @@ const sections: { title: string; body: string[] }[] = [
     body: [
       'To calculate and show your chart.',
       'To email you your chart link and keep your chart saved so you can open it again. This is the reason you gave us your address.',
-      'Only if you tick the second box: to email you notes about your chart.',
+      'Only if you tick the second box: to email you occasionally about your chart and new tools.',
       'To measure our ads. This uses page events and random numbers only, never your email or birth details.',
     ],
   },

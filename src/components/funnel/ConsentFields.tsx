@@ -11,7 +11,7 @@ import { consentText } from '@/lib/leads/consentText';
  *
  *   box 1  the chart link itself ("service"): shown unless the flag turns it off; when shown
  *          it must be ticked to save;
- *   box 2  optional notes about the chart ("marketing"): never required, never pre-ticked.
+ *   box 2  optional emails about the chart and new tools ("marketing"): never required, never pre-ticked.
  */
 
 const DOMAIN_SLIPS: Record<string, string> = {

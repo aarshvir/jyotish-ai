@@ -10,7 +10,7 @@
  * words they were given under.
  */
 
-export const NOTICE_VERSION = 'notice_v1';
+export const NOTICE_VERSION = 'notice_v2';
 export const PRIVACY_CONTACT = 'privacy@vedichour.com';
 
 export type Purpose = 'service' | 'marketing';
@@ -27,10 +27,13 @@ const TEXT: Record<'notice' | Purpose, Record<ConsentLang, string>> = {
     en: 'Email my chart link to this address and keep my chart saved.',
     hi: 'Mere chart ka link is email par bhejein aur mera chart save rakhein.',
   },
-  /** Box 2, unticked: optional notes. */
+  /**
+   * Box 2, unticked: optional emails. It promises only what is true today: now and then, no
+   * schedule (no email sequence exists). v1 said "about one email a week", so v2 replaces it.
+   */
   marketing: {
-    en: 'Also email me what my chart means for the coming weeks, about one email a week. I can unsubscribe in one tap.',
-    hi: 'Mujhe aane wale hafton ke liye mere chart ka matlab bhi email karein, lagbhag hafte mein ek email. Main ek tap mein unsubscribe kar sakta/sakti hoon.',
+    en: 'Also email me occasionally about my chart and new tools. I can unsubscribe in one tap.',
+    hi: 'Mujhe kabhi-kabhi mere chart aur naye tools ke baare mein bhi email karein. Main ek tap mein unsubscribe kar sakta/sakti hoon.',
   },
 };
 
@@ -40,6 +43,6 @@ export function consentText(kind: 'notice' | Purpose, lang: ConsentLang): string
 
 /** Devanagari draft of the key notice paragraph, for the notice page (DPDP asks for an Eighth Schedule language on request). */
 export const NOTICE_HINDI =
-  'VedicHour आपका ईमेल, पहला नाम, जन्म की तारीख/समय/स्थान और क्विज़ के जवाब इन कामों के लिए लेता है: (1) आपका चार्ट बनाना और दिखाना, (2) चार्ट का लिंक भेजना और सेव रखना, (3) सिर्फ़ तब, जब आप हाँ कहें: आपके चार्ट से जुड़े ईमेल। आप कभी भी सहमति वापस ले सकते हैं: हर ईमेल में अनसब्सक्राइब लिंक, या ' +
+  'VedicHour आपका ईमेल, पहला नाम, जन्म की तारीख/समय/स्थान और क्विज़ के जवाब इन कामों के लिए लेता है: (1) आपका चार्ट बनाना और दिखाना, (2) चार्ट का लिंक भेजना और सेव रखना, (3) सिर्फ़ तब, जब आप हाँ कहें: आपके चार्ट और नए टूल्स के बारे में कभी-कभी ईमेल। आप कभी भी सहमति वापस ले सकते हैं: हर ईमेल में अनसब्सक्राइब लिंक, या ' +
   PRIVACY_CONTACT +
   ' पर लिखकर। अपना डेटा देखने, सुधारने या मिटाने के लिए भी इसी पते पर लिखें। शिकायत Data Protection Board of India को भी की जा सकती है।';

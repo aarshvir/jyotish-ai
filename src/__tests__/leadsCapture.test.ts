@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeAll, vi } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import { ageOn, isMinor, parseCapture } from '@/lib/leads/capture';
 import { captureLead, contactHash, type CaptureDeps } from '@/lib/leads/captureLead';
 import { NOTICE_VERSION, consentText } from '@/lib/leads/consentText';
@@ -256,9 +258,9 @@ describe('the chart link email', () => {
     expect(m.text).toContain('Open my chart: https://example.invalid/q/x?r=tok');
   });
 
-  it('does not promise a schedule even when they ticked the notes box', () => {
+  it('does not promise a schedule even when they ticked the optional emails box', () => {
     const m = renderChartEmail({ ...base, lang: 'en', marketingConsented: true });
-    expect(m.html).toContain('ticked the box for notes');
+    expect(m.html).toContain('ticked the box for occasional emails about your chart and new tools');
     expect(m.html).not.toMatch(/every week|weekly|once a week/i);
   });
 
@@ -336,5 +338,48 @@ describe('mail that cannot be sent', () => {
     expect(JSON.stringify(log.mock.calls)).toContain('a***@example.invalid');
     expect(JSON.stringify(log.mock.calls)).not.toContain('asha.test');
     log.mockRestore();
+  });
+});
+
+describe('the optional emails box promises only what is true', () => {
+  const EN = 'Also email me occasionally about my chart and new tools. I can unsubscribe in one tap.';
+  const HI = 'Mujhe kabhi-kabhi mere chart aur naye tools ke baare mein bhi email karein. Main ek tap mein unsubscribe kar sakta/sakti hoon.';
+
+  it('says "occasionally", with no schedule, in English and Hinglish', () => {
+    expect(consentText('marketing', 'en')).toBe(EN);
+    expect(consentText('marketing', 'hi')).toBe(HI);
+    for (const lang of ['en', 'hi'] as const) {
+      expect(consentText('marketing', lang)).not.toMatch(/week|weekly|daily|every|hafte|hafta|roz|lagbhag/i);
+    }
+  });
+
+  it('is a new notice version, so grants made under the old weekly wording keep their own words', () => {
+    expect(NOTICE_VERSION).toBe('notice_v2');
+  });
+
+  it('records the exact new words and version in the ledger, never the old ones', async () => {
+    for (const lang of ['en', 'hi'] as const) {
+      const d = deps();
+      const p = parseCapture(body({ lang, consent: { service: true, marketing: true } }), null);
+      if (!p.ok) throw new Error('parse');
+      await captureLead(d, p.input);
+      const row = d.store.consent.find((c) => c.purpose === 'marketing' && c.action === 'granted')!;
+      expect(row.text_shown).toBe(lang === 'hi' ? HI : EN);
+      expect(row.notice_version).toBe('notice_v2');
+      for (const c of d.store.consent) expect(c.notice_version).toBe('notice_v2');
+      expect(JSON.stringify(d.store.consent)).not.toMatch(/about one email a week|lagbhag hafte/);
+    }
+  });
+
+  it('is the same wording the screen shows, and the privacy pages say the same thing', () => {
+    const root = path.resolve(__dirname, '../..');
+    const privacy = fs.readFileSync(path.join(root, 'src/app/privacy/page.tsx'), 'utf8');
+    expect(privacy).not.toContain('Transactional emails only');
+    expect(privacy).toContain('we also email you occasionally about your chart and new tools');
+    expect(privacy).toContain('We use Resend to send this mail');
+    expect(privacy).toContain('unsubscribe in one tap');
+    const notice = fs.readFileSync(path.join(root, 'src/app/chart-privacy/page.tsx'), 'utf8');
+    expect(notice).toContain('occasionally about your chart and new tools');
+    expect(notice).not.toMatch(/once a week|weekly/i);
   });
 });
