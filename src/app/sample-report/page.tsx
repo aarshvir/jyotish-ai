@@ -47,13 +47,14 @@ import {
 const WINDOW = SAMPLE_FORECAST.window;
 const WINDOW_LABEL = `${plainDate(WINDOW.start).replace(/ 20\d\d$/, '')} to ${plainDate(WINDOW.end)}`;
 
+// Search-length title and description, in the style of #238 (the title template adds " | VedicHour").
 export const metadata: Metadata = {
-  title: 'Sample Vedic Astrology Forecast Report: 30 Days, Hour by Hour',
+  title: 'Sample Report: A Full 30-Day Forecast',
   description:
-    'A finished VedicHour forecast for one chart: life-area scores, the best and hardest days, the dasha chapter, a week-by-week plan and every hour of an interview day, with the honest limits of each.',
+    'See a finished 30-day forecast for one real chart: life-area scores, best days, the dasha chapter and every hour of an interview day.',
   alternates: { canonical: '/sample-report' },
   openGraph: {
-    title: 'Sample Vedic Astrology Forecast Report: 30 Days, Hour by Hour',
+    title: 'Sample Report: A Full 30-Day Forecast',
     description:
       'One reader, one real chart, one month: what a VedicHour forecast looks like when it is written around the answers you gave.',
     url: '/sample-report',
