@@ -23,6 +23,7 @@ export const FUNNEL_EVENTS = [
   'quiz_back',
   'interstitial_view',
   'interstitial_continue',
+  'brief_built',
   'calc_complete',
   'contact_submit',
   'reveal_view',
@@ -120,6 +121,8 @@ const PROPS: Record<CanonicalEventName, Record<string, PropKind>> = {
   // `truth` lists what the interstitial rests on: answer, computed and/or policy.
   interstitial_view: { step: 'code', truth: 'code' },
   interstitial_continue: { step: 'code' },
+  // The "Building your brief" step finished: how long the real work took and how many lines it showed.
+  brief_built: { ok: 'bool', duration_ms: 'int', lines: 'int' },
   calc_complete: { ok: 'bool' },
   contact_submit: { channel: 'code' },
   reveal_view: { mode: 'code' },
