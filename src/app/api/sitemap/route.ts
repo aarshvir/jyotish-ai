@@ -3,6 +3,7 @@ import { NAKSHATRAS } from '@/content/nakshatras';
 import { DASHAS } from '@/content/dashas';
 import { PREDICTIONS } from '@/content/predictions';
 import { COMPARISONS } from '@/content/comparisons';
+import { METHOD_REVIEWED } from '@/lib/seo/methodology';
 
 const SITE_URL = 'https://www.vedichour.com';
 
@@ -21,6 +22,7 @@ const STATIC_ROUTES = [
   { path: '/synastry', changefreq: 'weekly',  priority: '0.9'  },  // Matchmaking / Gun Milan landing
   { path: '/pricing',  changefreq: 'weekly',  priority: '0.95' },
   { path: '/sample-report', changefreq: 'monthly', priority: '0.9' },  // Public full-day sample report (ad landing)
+  { path: '/methodology', changefreq: 'monthly', priority: '0.7', lastmod: METHOD_REVIEWED },
   { path: '/hora',     changefreq: 'monthly', priority: '0.7'  },  // Wave-3 category explainer (planetary hours)
   { path: '/muhurat',  changefreq: 'monthly', priority: '0.7'  },  // Wave-3 category explainer (auspicious timing)
   { path: '/refund',   changefreq: 'monthly', priority: '0.5'  },

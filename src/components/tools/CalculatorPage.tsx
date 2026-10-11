@@ -4,6 +4,7 @@ import { StarField } from '@/components/ui/StarField';
 import { ChartTool, type ToolView } from '@/components/tools/ChartTool';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { SeoProse, FaqSection } from '@/components/seo/SeoSection';
+import { MethodNote } from '@/components/seo/MethodNote';
 import type { Faq } from '@/lib/seo/jsonLd';
 
 export type CalculatorConfig = {
@@ -51,6 +52,8 @@ export function CalculatorPage(cfg: CalculatorConfig) {
             </div>
           ))}
         </SeoProse>
+
+        <MethodNote />
 
         <FaqSection faqs={cfg.faqs} heading={cfg.faqHeading} />
       </main>

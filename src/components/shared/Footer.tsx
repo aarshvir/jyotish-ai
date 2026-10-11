@@ -25,6 +25,7 @@ const LEARN = [
   { href: '/dasha', label: 'Dasha periods' },
   { href: '/predictions', label: 'Life Predictions' },
   { href: '/compare', label: 'Compare alternatives' },
+  { href: '/methodology', label: 'How we calculate' },
 ];
 
 const COMPANY = [

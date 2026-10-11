@@ -5,7 +5,8 @@ import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { FaqSection } from '@/components/seo/SeoSection';
-import { faqPageLd, breadcrumbLd, type Faq } from '@/lib/seo/jsonLd';
+import { faqPageLd, breadcrumbLd, articleLd, type Faq } from '@/lib/seo/jsonLd';
+import { HORA_ORDER, HORA_THEMES, WEEKDAY_RULERS, horasFrom } from '@/lib/seo/horaFacts';
 
 export const metadata: Metadata = {
   title: 'What Is a Hora? Planetary Hours & Vedic Day Timing',
@@ -39,6 +40,14 @@ export const metadata: Metadata = {
 
 const FAQS: Faq[] = [
   {
+    q: 'In what order do the horas run?',
+    a: 'The first hora after sunrise belongs to the ruler of the weekday. After that the horas follow a fixed order, Sun, Venus, Mercury, Moon, Saturn, Jupiter, Mars, and then repeat. Twelve horas cover the day from sunrise to sunset and twelve cover the night.',
+  },
+  {
+    q: 'How long is a hora?',
+    a: 'Daytime (sunrise to sunset) is divided into 12 equal parts and night (sunset to the next sunrise) into 12 more, so a hora is close to an hour only near the equinoxes. In summer a daytime hora is longer than a night one, and in winter the reverse, with the difference growing at higher latitudes.',
+  },
+  {
     q: 'What is a hora in Vedic astrology?',
     a: 'A hora is a planetary hour — a division of the day ruled by one of the seven classical planets in a fixed traditional sequence. The ruling planet is said to colour the tone of that stretch of time, which is why horas are used for everyday timing.',
   },
@@ -56,7 +65,7 @@ const FAQS: Faq[] = [
   },
   {
     q: 'How does VedicHour use horas?',
-    a: 'VedicHour rates the planetary hours of your day — all 18 hourly windows — against your own birth chart, marking each as clearer or heavier. It is computed with the Swiss Ephemeris and the Lahiri ayanamsa, and it is personal to you rather than a generic city-wide table.',
+    a: 'A day has 24 horas, and VedicHour scores the waking day: 18 one-hour slots from 06:00 to midnight local time, each labelled with the hora that covers most of it. It rates every slot clearer or heavier against your own birth chart, computed with the Swiss Ephemeris and the Lahiri ayanamsa, rather than as a generic city-wide table.',
   },
 ];
 
@@ -70,6 +79,7 @@ export default function HoraPage() {
       <main id="main-content" className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
         <p className="section-eyebrow mb-2">Vedic timing · plain English</p>
         <h1 className="text-display-md font-display text-star mb-4">What is a hora?</h1>
+        <p className="font-body text-body-sm text-dust mb-4">Updated 11 October 2026 · By the VedicHour team</p>
         <p className="text-body-lg text-dust leading-relaxed mb-8">
           A <strong className="text-star">hora</strong> is a planetary hour — a slice of the day governed
           by one of the seven classical planets. In Vedic astrology it is the building block of day-to-day
@@ -78,6 +88,57 @@ export default function HoraPage() {
         </p>
 
         <article className="space-y-4 font-body text-body-md text-dust leading-relaxed [&_h2]:font-display [&_h2]:text-2xl [&_h2]:text-star [&_h2]:mt-9 [&_h2]:mb-3 [&_h3]:font-display [&_h3]:text-xl [&_h3]:text-amber [&_h3]:mt-6 [&_h3]:mb-2 [&_strong]:text-star [&_a]:text-amber [&_a]:underline">
+          <h2>How the horas are ordered</h2>
+          <p>
+            Two rules fix the whole day. The first hora after sunrise belongs to the planet that rules the weekday. Every hora after
+            that follows the order <strong>{HORA_ORDER.join(' → ')}</strong>, then starts again. A day has 12 horas from sunrise to
+            sunset and 12 from sunset to the next sunrise, so a hora is about an hour long only near the equinoxes.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left [&_td]:pr-5 [&_th]:pr-5">
+              <thead>
+                <tr><th>Day</th><th>Ruler (first hora)</th></tr>
+              </thead>
+              <tbody>
+                {WEEKDAY_RULERS.map(([day, ruler]) => (
+                  <tr key={day}><td>{day}</td><td>{ruler}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <h3>A worked day: Sunday</h3>
+          <p>
+            Sunday is ruled by the Sun, so the first hora after sunrise is the Sun hora. The 24 horas run:
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left [&_td]:pr-5 [&_th]:pr-5">
+              <thead>
+                <tr><th>Hora</th><th>Ruler</th><th>Hora</th><th>Ruler</th></tr>
+              </thead>
+              <tbody>
+                {horasFrom('Sun').slice(0, 12).map((day, i) => (
+                  <tr key={i}>
+                    <td>{i + 1} (day)</td><td>{day}</td>
+                    <td>{i + 13} (night)</td><td>{horasFrom('Sun')[i + 12]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p>
+            The 24th hora is the last of the night, and the next sunrise starts with the Moon hora, which is Monday&apos;s ruler. The
+            sequence always lands on the next weekday&apos;s ruler, which is a quick way to check any hora table.
+          </p>
+          <h2>What each hora is traditionally used for</h2>
+          <ul className="list-disc pl-6 space-y-1.5">
+            {HORA_ORDER.map((p) => (
+              <li key={p}><strong>{p}:</strong> {HORA_THEMES[p]}.</li>
+            ))}
+          </ul>
+          <p>
+            These are associations from the Jyotish tradition, not measured effects, and traditions differ on the details.
+          </p>
+
           <h2>The planetary hour, simply</h2>
           <p>
             Classical Jyotish divides the day into planetary hours, each assigned a ruler from the seven
@@ -106,8 +167,9 @@ export default function HoraPage() {
           <h2>From a generic table to a personal grid</h2>
           <p>
             VedicHour reads timing against <em>your</em> chart instead of the city&apos;s. It rates the
-            planetary hours of your day — all 18 hourly windows — as <strong>clearer</strong> or{' '}
-            <strong>heavier</strong>, drawing on your Lagna, Moon and running dasha, and computes everything
+            day as <strong>clearer</strong> or{' '}
+            <strong>heavier</strong>: a day has 24 horas, and VedicHour scores the waking day as 18 one-hour slots from 06:00 to midnight,
+            each tied to the hora that covers most of it. It draws on drawing on your Lagna, Moon and running dasha, and computes everything
             with the Swiss Ephemeris and the Lahiri ayanamsa. The result is a grid that is specific to you,
             written in plain English. For a worked example of this approach, see{' '}
             <Link href="/compare/best-app-for-vedic-timing">the best app for Vedic timing</Link>.
@@ -162,6 +224,7 @@ export default function HoraPage() {
             author: { '@type': 'Organization', name: 'VedicHour' },
             publisher: { '@type': 'Organization', name: 'VedicHour', '@id': `${SITE_URL}#organization` },
             mainEntityOfPage: `${SITE_URL}/hora`,
+            dateModified: '2026-10-11',
           },
         ]}
       />
