@@ -27,12 +27,42 @@ export const FLAG_QUIZ_LENGTH: FlagDef<'full' | 'short'> = {
   ],
 };
 
-/** E2 — is the contact step required ('A') or skippable ('B')? */
+/**
+ * E2 — is the contact step required ('A') or skippable ('B')? Skippable is the default: the
+ * research favours "skip and view", and a visible Skip link is a promise of the v2 funnel.
+ * Set A's weight above 0 to test a required step.
+ */
 export const FLAG_CONTACT_REQUIRED: FlagDef<'A' | 'B'> = {
   name: 'contact_required',
   arms: [
-    { value: 'A', weight: 1 },
+    { value: 'A', weight: 0 },
     { value: 'B', weight: 1 },
+  ],
+};
+
+/**
+ * Experiment 1 — where the email ask sits. 'look_ask' (default): a small computed first look,
+ * then the ask (with Skip), then the full free reveal. 'ask_look': the ask first, as before.
+ * Switch it on by giving 'ask_look' a weight, for example 1 and 1 for an even split.
+ */
+export const FLAG_CONTACT_ORDER: FlagDef<'look_ask' | 'ask_look'> = {
+  name: 'contact_order',
+  arms: [
+    { value: 'look_ask', weight: 1 },
+    { value: 'ask_look', weight: 0 },
+  ],
+};
+
+/**
+ * Is the first tick box on "Save your chart" shown? 'on' (default): two separate unticked
+ * boxes, one for the chart link itself and one for notes, and the first must be ticked to
+ * save. 'off': only the notes box, with the button itself as the act of asking for the link.
+ */
+export const FLAG_SERVICE_BOX: FlagDef<'on' | 'off'> = {
+  name: 'contact_service_box',
+  arms: [
+    { value: 'on', weight: 1 },
+    { value: 'off', weight: 0 },
   ],
 };
 

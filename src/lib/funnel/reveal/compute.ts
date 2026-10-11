@@ -7,7 +7,7 @@
  */
 
 import type { NatalChartData } from '@/lib/agents/types';
-import type { Role } from '../screens';
+import type { FocusArea, Role } from '../screens';
 import { ROLE_LABEL } from '../screens';
 import {
   DIGNITY_PHRASE,
@@ -54,6 +54,27 @@ export interface NodeFacts {
 
 export type Precision = 'exact' | 'approx' | 'unknown';
 
+/** The Vimshottari period running today, straight from the chart engine. Dates are ISO (YYYY-MM-DD). */
+export interface RunningPeriod {
+  mahadasha: string;
+  antardasha: string;
+  antardashaEnds: string;
+  mahadashaEnds: string | null;
+}
+
+/** The house Jyotish reads for the person's chosen life area, and where its lord sits. All computed. */
+export interface FocusLook {
+  focus: FocusArea;
+  house: number;
+  sign: Sign;
+  lord: Lord;
+  lordSign: Sign;
+  lordHouse: number;
+  dignity: Dignity;
+}
+
+const FOCUS_HOUSE: Record<FocusArea, number> = { career: 10, love: 7, family: 4, health: 1, trust: 11 };
+
 /**
  * How much the reading could move if the birth time is not what was entered. Computed by
  * running the chart engine again at the edges of the uncertainty (the whole day when there
@@ -76,6 +97,8 @@ export interface RevealData {
   moonSign: Sign;
   moonNakshatra: string | null;
   moonPada: number | null;
+  period: RunningPeriod | null;
+  focusLook: FocusLook | null;
   ketu: NodeFacts;
   rahu: NodeFacts;
   fifth: { sign: Sign; lord: Lord; lordSign: Sign; lordHouse: number; dignity: Dignity; level: MeritLevel };
@@ -140,6 +163,26 @@ export interface RevealInput {
   lng: number;
   focusArea?: string;
   selfRole?: string;
+}
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+function runningPeriod(chart: NatalChartData): RunningPeriod | null {
+  const c = chart.current_dasha;
+  if (!c || typeof c.mahadasha !== 'string' || typeof c.antardasha !== 'string' || !ISO_DAY.test(c.end_date ?? '')) return null;
+  const md = (chart.dasha_sequence ?? []).find((d) => d.planet === c.mahadasha && d.start_date <= c.start_date && d.end_date >= c.end_date);
+  return { mahadasha: c.mahadasha, antardasha: c.antardasha, antardashaEnds: c.end_date, mahadashaEnds: md && ISO_DAY.test(md.end_date ?? '') ? md.end_date : null };
+}
+
+function focusLookOf(chart: NatalChartData, reference: Sign, focusArea: string | undefined): FocusLook | null {
+  if (!focusArea || !(focusArea in FOCUS_HOUSE)) return null;
+  const focus = focusArea as FocusArea;
+  const house = FOCUS_HOUSE[focus];
+  const sign = signOnHouse(reference, house);
+  const lord = SIGN_LORD[sign];
+  const pos = chart.planets?.[lord];
+  if (!pos || !isSign(pos.sign)) return null;
+  return { focus, house, sign, lord, lordSign: pos.sign, lordHouse: houseFrom(pos.sign, reference), dignity: dignityOf(lord, pos.sign) };
 }
 
 function distinct<T>(xs: (T | null | undefined)[]): T[] {
@@ -255,6 +298,8 @@ export function computeReveal(input: RevealInput): RevealData {
     moonSign,
     moonNakshatra,
     moonPada,
+    period: runningPeriod(chart),
+    focusLook: focusLookOf(chart, referenceSign, input.focusArea),
     ketu,
     rahu,
     fifth: { sign: sign5, lord: lord5, lordSign, lordHouse, dignity, level },

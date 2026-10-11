@@ -30,12 +30,18 @@ export function RevealScreen({
   reveal,
   name,
   lang = 'en',
+  statusLine,
+  reask,
   ctaLabel,
   onCta,
 }: {
   reveal: RevealData;
   name?: string;
   lang?: Lang;
+  /** One honest line about saving the chart (sent / not sent), when the person tried. */
+  statusLine?: string | null;
+  /** The one-tap "email me the link" card for people who skipped saving. */
+  reask?: React.ReactNode;
   ctaLabel: string;
   onCta: () => void;
 }) {
@@ -66,6 +72,11 @@ export function RevealScreen({
             ketuHouse={reveal.ketu.house}
           />
         </div>
+        {statusLine && (
+          <p role="status" className="mt-4 font-body text-body-md leading-[1.65] text-star">
+            {statusLine}
+          </p>
+        )}
         {precisionNotes(reveal, lang).map((note, i) => (
           <p key={i} className="mt-4 font-body text-body-md leading-[1.65] text-dust-light">
             {note}
@@ -107,6 +118,8 @@ export function RevealScreen({
             ))}
           </p>
         </article>
+
+        {reask}
 
         <section className="pt-4">
           <h2 className="font-display font-semibold text-ink text-[1.375rem] leading-tight mb-1">In your full blueprint</h2>

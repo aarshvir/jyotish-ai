@@ -11,7 +11,17 @@ export interface Contact {
   channel: 'email';
   value: string;
   name?: string;
+  /** The optional notes box (marketing). Unticked unless the person ticked it. */
   consent: boolean;
+}
+
+/** What the server said about saving the lead, so the result screen can say it honestly. */
+export interface LeadStatus {
+  saved: boolean;
+  emailed: boolean;
+  /** Masked address, only when an email really went. */
+  to?: string;
+  reason?: string;
 }
 
 export interface FunnelState {
@@ -26,6 +36,7 @@ export interface FunnelState {
   gclid: string | null;
   contact: Contact | null;
   contactSkipped: boolean;
+  lead?: LeadStatus | null;
   reveal: RevealData | null;
   savedAt: number;
 }

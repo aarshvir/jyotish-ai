@@ -84,6 +84,13 @@ export function precisionNotes(r: RevealData, lang: Lang): string[] {
           : `Your Moon sign could also be ${list(s.moonSigns, 'en')}.`,
       );
     }
+    if (s && s.moonNakshatras.length > 1) {
+      out.push(
+        hi
+          ? `Chandra nakshatra ${list(s.moonNakshatras, 'hi')} ho sakta hai, isliye chal rahi dasha bhi alag ho sakti hai.`
+          : `Your Moon nakshatra could be ${list(s.moonNakshatras, 'en')}, so the running period could differ too.`,
+      );
+    }
   }
   return out;
 }
