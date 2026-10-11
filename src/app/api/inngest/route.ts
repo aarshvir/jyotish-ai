@@ -4,6 +4,7 @@ import { inngest } from '@/lib/inngest/client';
 import { isProductionRuntime } from '@/lib/env';
 import {
   generateReportJob,
+  generateBlueprintJob,
   extendReportToMonthlyJob,
   refreshEmbeddingsCron,
   cleanupOrphanedReports,
@@ -24,6 +25,7 @@ const handlers = serve({
   client: inngest,
   functions: [
     generateReportJob,
+    generateBlueprintJob,
     extendReportToMonthlyJob,
     refreshEmbeddingsCron,
     cleanupOrphanedReports,

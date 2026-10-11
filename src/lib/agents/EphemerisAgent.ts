@@ -123,6 +123,27 @@ export class EphemerisAgent {
     return this.post<RahuKaalData>('/rahu-kaal', body);
   }
 
+  /**
+   * Daily grids for many dates in ONE call (the engine computes them sequentially; it is not
+   * thread-safe, so never fan this out). Used by the Karmic Blueprint for weekly Rahu/Sun
+   * samples and for the days around a reader's date. Max 800 dates per call.
+   */
+  async getDailyGridBatch(input: {
+    dates: string[];
+    lat: number;
+    lng: number;
+    natalLagnaSignIndex: number;
+    timezoneOffsetMinutes?: number | null;
+  }): Promise<{ days: unknown[]; errors: { date: string; error: string }[]; count: number }> {
+    return this.post('/generate-daily-grid-batch', {
+      dates: input.dates,
+      current_lat: input.lat,
+      current_lng: input.lng,
+      natal_lagna_sign_index: input.natalLagnaSignIndex,
+      ...(input.timezoneOffsetMinutes != null ? { timezone_offset_minutes: input.timezoneOffsetMinutes } : {}),
+    });
+  }
+
   getFullDayData(input: {
     date: string;
     birthLat: number;

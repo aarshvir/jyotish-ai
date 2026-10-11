@@ -167,8 +167,12 @@ function checkoutBody(a: Answers, planType: SubPlan, reportId: string) {
     birth_lat: num(a.birth_city_lat),
     birth_lng: num(a.birth_city_lng),
     ...(hasCurrent ? { current_city: a.current_city, current_lat: currentLat, current_lng: currentLng } : {}),
-    // A renewal carries the brief from the previous report when no new quiz answers were given.
-    personal_context: personalContextFrom(a) || (typeof a.renew_context === 'string' ? a.renew_context : ''),
+    // A renewal carries the brief from the previous report when no new quiz answers were given
+    // (a renewal still has birth details, so "no concern answered" is the test, not "empty").
+    personal_context:
+      !a.concern && typeof a.renew_context === 'string' && a.renew_context
+        ? a.renew_context
+        : personalContextFrom(a),
   };
 }
 

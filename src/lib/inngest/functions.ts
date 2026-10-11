@@ -37,6 +37,11 @@ import { createServiceClient } from '@/lib/supabase/admin';
 import { releaseLock } from '@/lib/redis/locks';
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { getStaleOrphanUpdatedAtMs } from '@/lib/reports/staleGeneratingConstants';
+import { assembleBlueprint, narrateGroup, narrativeGroups, prepareBlueprint, type PreparedBlueprint } from '@/lib/blueprint/generate';
+import { failBlueprint, loadBlueprintJob, markBlueprintGenerating, saveBlueprint } from '@/lib/blueprint/deliver';
+import { createEphemerisPort } from '@/lib/blueprint/ephemerisPort';
+import { createBlueprintLlm } from '@/lib/blueprint/llm';
+import type { NarrativeOutcome } from '@/lib/blueprint/narrative';
 
 type ReportExtendEvent = {
   name: 'report/extend';
@@ -343,5 +348,57 @@ export const cleanupOrphanedReports = inngest.createFunction(
     });
 
     return result;
+  },
+);
+
+/**
+ * Karmic Blueprint (the ₹199 funnel product): facts → narrative → lint → save.
+ *
+ * Each model call is its own step, so a slow or failed call retries alone and no single
+ * serverless invocation has to hold the whole document. Only reachable once a blueprint
+ * payment exists, i.e. after BLUEPRINT_SALES_ENABLED=1.
+ */
+export const generateBlueprintJob = inngest.createFunction(
+  {
+    id: 'generate-blueprint',
+    retries: 3,
+    concurrency: { key: 'event.data.reportId', limit: 1 },
+    triggers: [{ event: 'blueprint/generate' }],
+    onFailure: async ({ error, event }: { error: Error; event: { data: { event?: { data: { reportId?: string } } } } }) => {
+      const reportId = event.data?.event?.data?.reportId;
+      if (!reportId) return;
+      const db = createServiceClient();
+      const { data } = await db.from('reports').select('user_id').eq('id', reportId).maybeSingle();
+      const userId = (data as { user_id?: string } | null)?.user_id;
+      if (userId) await failBlueprint(db, reportId, userId, `Blueprint generation failed after retries: ${error.message}`);
+    },
+  },
+  async ({ event, step }: { event: unknown; step: { run: <T>(id: string, fn: () => Promise<T>) => Promise<T> } }) => {
+    const { reportId } = (event as { data: { reportId: string } }).data;
+    const db = createServiceClient();
+
+    const prep = await step.run('prepare', async () => {
+      const job = await loadBlueprintJob(db, reportId);
+      if (!job.ok) return { skip: job.skip } as { skip: string; userId?: undefined; prepared?: undefined };
+      await markBlueprintGenerating(db, reportId, job.userId);
+      const prepared = await prepareBlueprint(job.input, { ephemeris: createEphemerisPort() });
+      return { userId: job.userId, prepared } as { skip?: undefined; userId: string; prepared: PreparedBlueprint };
+    });
+    if (prep.skip !== undefined) return { reportId, skipped: prep.skip };
+
+    const prepared = prep.prepared!;
+    const llm = createBlueprintLlm();
+    const groups = narrativeGroups(prepared);
+    const outcomes: NarrativeOutcome[] = [];
+    for (let i = 0; i < groups.length; i++) {
+      outcomes.push(await step.run(`narrate:${i}`, () => narrateGroup(prepared, groups[i], llm)));
+    }
+
+    return step.run('save', async () => {
+      const doc = assembleBlueprint(prepared, outcomes);
+      await saveBlueprint(db, reportId, prep.userId!, doc);
+      console.log(JSON.stringify({ type: 'blueprint_done', reportId, plan: doc.plan, qa: doc.qa }));
+      return { reportId, flagged: doc.qa.flaggedSections, costUsd: doc.qa.costUsd };
+    });
   },
 );

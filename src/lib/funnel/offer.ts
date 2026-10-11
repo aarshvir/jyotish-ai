@@ -1,9 +1,11 @@
 /**
  * Server-side switch for selling the ₹199 Karmic Blueprint (spec S17).
  *
- * Off by default. The blueprint's report generator is spec Phase 4 and does not exist
- * yet, so a paid blueprint could not be delivered. Turn on (BLUEPRINT_SALES_ENABLED=1 in
- * Vercel) only once Phase 4 has shipped and finalizeIntent knows how to deliver it.
+ * Off by default. The generator now exists (src/lib/blueprint: engine facts → model
+ * narrative → content lint, built by the `blueprint/generate` Inngest job after payment, shown
+ * at /report/{id}), but turning sales on is the owner's decision (BLUEPRINT_SALES_ENABLED=1 in
+ * Vercel). Before flipping it, run `npx tsx scripts/blueprint-dry-run.ts` against invented
+ * profiles and read the output, and check that INNGEST_EVENT_KEY is set in production.
  */
 export function blueprintSalesOpen(): boolean {
   return (process.env.BLUEPRINT_SALES_ENABLED ?? '').trim() === '1';
