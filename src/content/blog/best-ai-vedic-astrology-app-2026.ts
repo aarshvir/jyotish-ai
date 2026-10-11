@@ -3,8 +3,9 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'best-ai-vedic-astrology-app-2026',
   title: 'Best AI Vedic Astrology Apps for Hourly & Muhurat Timing (2026)',
+  "seoTitle": "Best AI Vedic Astrology Apps for Timing (2026)",
   description:
-    'A balanced 2026 guide to the best AI Vedic astrology apps, and the single best tool for hour-by-hour muhurat timing: hourly forecasts, AI kundli, and free tools.',
+    'A balanced 2026 look at AI Vedic astrology apps for hour-by-hour muhurat timing: hourly forecasts, AI kundli and free tools. We make one of them.',
   keywords: [
     'best ai vedic astrology app',
     'ai astrology 2026',

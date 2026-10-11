@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "yamaganda-gulika-kaal-guide",
   "title": "Yamaganda and Gulika Kaal: The Other Daily Caution Windows",
+  "seoTitle": "Yamaganda and Gulika Kaal Explained",
   "description": "Learn Yamaganda and Gulika Kaal, how daily caution windows are calculated, and how to use them practically without fear.",
   "keywords": [
     "yamaganda",

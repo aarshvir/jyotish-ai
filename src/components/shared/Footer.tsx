@@ -23,6 +23,8 @@ const LEARN = [
   { href: '/blog', label: 'Blog' },
   { href: '/nakshatra', label: 'The 27 Nakshatras' },
   { href: '/dasha', label: 'Dasha periods' },
+  { href: '/hora', label: 'Planetary hours (Hora)' },
+  { href: '/muhurat', label: 'Shubh Muhurat' },
   { href: '/predictions', label: 'Life Predictions' },
   { href: '/compare', label: 'Compare alternatives' },
   { href: '/methodology', label: 'How we calculate' },
@@ -30,6 +32,7 @@ const LEARN = [
 
 const COMPANY = [
   { href: '/#how-it-works', label: 'How It Works' },
+  { href: '/about', label: 'About and method' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/refund', label: 'Refund Policy' },
   { href: '/privacy', label: 'Privacy' },

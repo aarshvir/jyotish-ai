@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "vivah-muhurat-marriage-timing",
   "title": "Vivah Muhurat: Choosing an Auspicious Wedding Date in Vedic Astrology",
+  "seoTitle": "Vivah Muhurat: Choosing a Wedding Date",
   "description": "Learn how vivah muhurat is chosen in Vedic astrology, including tithi, nakshatra, timing windows, and Gun Milan compatibility.",
   "keywords": [
     "vivah muhurat",

@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'nakshatra-birth-star-guide',
   title: 'The 27 Nakshatras: Find Your Birth Star and What It Reveals',
+  "seoTitle": "The 27 Nakshatras: Find Your Birth Star",
   description:
     'Your nakshatra is the lunar constellation your Moon sat in at birth. Learn how to find your janma nakshatra, its padas, gana, nadi, yoni — and what it reveals.',
   keywords: [

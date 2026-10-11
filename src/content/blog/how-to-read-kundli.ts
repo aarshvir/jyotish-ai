@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'how-to-read-kundli',
   title: 'How to Read Your Kundli: A Beginner’s Guide to Your Vedic Birth Chart',
+  "seoTitle": "How to Read Your Kundli: Beginner's Guide",
   description: 'Learn how to read your Kundli step by step: start with your Lagna, then your Moon sign, the 12 houses, the planets, and your current Dasha.',
   keywords: [
     'how to read kundli',

@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'vedic-vs-western-astrology',
   title: 'Vedic vs Western Astrology: Why Your Moon Sign Matters More Than Your Sun Sign',
+  "seoTitle": "Vedic vs Western Astrology: Key Differences",
   description:
     'Vedic vs Western astrology explained: sidereal vs tropical zodiac, why your sign changes, and why Jyotish weights your Moon sign and nakshatras.',
   keywords: [

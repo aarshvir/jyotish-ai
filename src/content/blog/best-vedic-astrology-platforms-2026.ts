@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'best-vedic-astrology-platforms-2026',
   title: 'Best Vedic Astrology Apps & Platforms in 2026 (Honest Comparison)',
+  "seoTitle": "Best Vedic Astrology Apps in 2026, Compared",
   description:
     'An honest 2026 comparison of the best Vedic astrology platforms — for AI forecasts, hourly timing, free Kundli and live astrologers — and how to choose.',
   keywords: [

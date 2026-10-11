@@ -199,6 +199,7 @@ export function buildLlmsTxt(site: string = SITE_FALLBACK, today: Date = new Dat
     '',
     '## More',
     `- [Full reference for AI assistants](${site}/llms-full.txt): definitions, methodology, FAQ and every guide.`,
+    `- [About and method](${site}/about): how charts are calculated, where AI is used, what is never predicted, and how to report an error.`,
     `- [Blog](${site}/blog): guides to Vedic astrology timing.`,
     `- [Sitemap](${site}/sitemap.xml)`,
     '',

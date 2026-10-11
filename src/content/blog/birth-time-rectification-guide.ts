@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "birth-time-rectification-guide",
   "title": "Birth Time Rectification: Why Minutes Matter and How to Find Yours",
+  "seoTitle": "Birth Time Rectification: How It Works",
   "description": "Discover why precise birth time is vital in Vedic astrology. Learn how minutes impact your chart and steps to find or rectify your accurate birth time.",
   "keywords": [
     "birth time rectification",

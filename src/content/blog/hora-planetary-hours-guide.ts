@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'hora-planetary-hours-guide',
   title: 'Planetary Hours (Hora): Which Hour Is Best for What',
+  "seoTitle": "Planetary Hours (Hora): Which Hour for What",
   description: 'Hora explained: the 7-planet planetary hours sequence from sunrise, what each hora favours, and how to time work, money, talks, and travel by the hour.',
   keywords: [
     'hora',

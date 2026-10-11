@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'best-time-to-start-business-astrology',
   title: 'The Best Time to Start a Business, Job, or Journey (Vedic Muhurat Guide)',
+  "seoTitle": "Best Time to Start a Business: Muhurat Guide",
   description:
     'A practical Vedic muhurat guide to timing a business launch, new job, journey, or griha pravesh — which days, tithis, and nakshatras favour beginnings.',
   keywords: [

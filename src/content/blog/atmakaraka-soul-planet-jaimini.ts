@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "atmakaraka-soul-planet-jaimini",
   "title": "Atmakaraka: Your 'Soul Planet' in Jaimini Astrology",
+  "seoTitle": "Atmakaraka: Your Soul Planet in Jaimini",
   "description": "Understand Atmakaraka in Jaimini astrology: how to find your soul planet, what each planet means, and how to read it wisely.",
   "keywords": [
     "atmakaraka",

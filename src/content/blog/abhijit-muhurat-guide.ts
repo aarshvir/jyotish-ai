@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "abhijit-muhurat-guide",
   "title": "Abhijit Muhurat: The Daily Midday Window, Explained",
+  "seoTitle": "Abhijit Muhurat: The Midday Window Explained",
   "description": "A plain-English guide to Abhijit Muhurat, the ~48-minute midday window in Vedic timing: what it is, how to find it for your location, and how to use it.",
   "keywords": [
     "abhijit muhurat",

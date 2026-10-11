@@ -25,6 +25,7 @@ const STATIC_ROUTES = [
   { path: '/methodology', changefreq: 'monthly', priority: '0.7', lastmod: METHOD_REVIEWED },
   { path: '/hora',     changefreq: 'monthly', priority: '0.7'  },  // Wave-3 category explainer (planetary hours)
   { path: '/muhurat',  changefreq: 'monthly', priority: '0.7'  },  // Wave-3 category explainer (auspicious timing)
+  { path: '/about',    changefreq: 'monthly', priority: '0.6'  },  // Methodology / E-E-A-T page
   { path: '/refund',   changefreq: 'monthly', priority: '0.5'  },
   { path: '/privacy',  changefreq: 'monthly', priority: '0.4'  },
   { path: '/terms',    changefreq: 'monthly', priority: '0.4'  },

@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'sade-sati-guide',
   title: 'Sade Sati: The 7.5-Year Saturn Cycle, Its Three Phases, and How to Get Through It',
+  "seoTitle": "Sade Sati: Phases, Duration and What to Do",
   description: 'Sade Sati explained gently: what it is, how it is calculated from your Moon sign, its three phases, which is hardest, and measured remedies that help.',
   keywords: [
     'sade sati',

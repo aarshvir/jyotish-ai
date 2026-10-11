@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "nadi-dosha-kundli-matching",
   "title": "Nadi Dosha in Kundli Matching: When It Matters and When It Cancels",
+  "seoTitle": "Nadi Dosha in Kundli Matching: When It Cancels",
   "description": "Explore Nadi Dosha in Kundli matching, its significance in Gun Milan, and critical cancellation rules. Understand when this 8-point koot impacts marital harmo",
   "keywords": [
     "nadi dosha",

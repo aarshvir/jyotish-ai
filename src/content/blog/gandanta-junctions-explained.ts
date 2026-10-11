@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "gandanta-junctions-explained",
   "title": "Gandanta Junctions Explained: The Water-Fire Points in Your Chart",
+  "seoTitle": "Gandanta Junctions Explained",
   "description": "A calm, plain-English guide to gandanta in sidereal Vedic astrology: the three junctions, abhukta moola, planets involved, and how to read them with awareness.",
   "keywords": [
     "gandanta",

@@ -3,8 +3,9 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'science-of-timing-vedic-muhurta',
   title: 'The Science of Timing: Why Your Best Decisions Start with Vedic Muhurta',
+  "seoTitle": "The Science of Timing in Vedic Muhurta",
   description:
-    'A data-backed guide to Vedic Muhurta: the Panchang, planetary weekdays, the Hora system, Rahu Kaal and the 8th house — and how to pick your most auspicious window.',
+    'A plain guide to Vedic Muhurta: the panchang, weekday rulers, hora, Rahu Kaal and the 8th house, and how to pick a workable window.',
   keywords: [
     'muhurta system',
     'rahu kaal timing today',

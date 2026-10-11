@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "moon-sign-vs-sun-sign-vedic",
   "title": "Moon Sign vs Sun Sign in Vedic Astrology: Why the Moon Leads",
+  "seoTitle": "Moon Sign vs Sun Sign in Vedic Astrology",
   "description": "In Vedic astrology, the Moon sign reveals the mind, emotions, timing, and lived experience more directly than the Sun sign.",
   "keywords": [
     "moon sign vs sun sign",

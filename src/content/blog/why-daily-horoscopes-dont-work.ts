@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "why-daily-horoscopes-dont-work",
   "title": "Why Generic Daily Horoscopes Feel Vague (and What Reads You Instead)",
+  "seoTitle": "Why Daily Horoscopes Feel So Vague",
   "description": "Generic daily Sun-sign horoscopes feel vague because they speak to a crowd. See how a Vedic chart reads your Moon, nakshatra, and dasha for real reflection.",
   "keywords": [
     "daily horoscope accuracy",
