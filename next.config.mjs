@@ -23,6 +23,23 @@ const nextConfig = {
   },
 
 
+  // Permanent redirects for articles that were merged into a stronger page. Keep the old
+  // URLs alive so links and AI citations land on the right place.
+  async redirects() {
+    return [
+      {
+        source: '/blog/best-planetary-hours-for-decisions',
+        destination: '/blog/hora-planetary-hours-guide',
+        permanent: true,
+      },
+      {
+        source: '/blog/science-of-timing-vedic-muhurta',
+        destination: '/blog/what-is-muhurat',
+        permanent: true,
+      },
+    ];
+  },
+
   // Compress all responses
   compress: true,
 
