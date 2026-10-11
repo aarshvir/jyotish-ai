@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { QUIZ_SLUGS, getQuizSlug, revealModeFor } from '@/config/quiz_slugs';
-import { FLAG_CONTACT_REQUIRED, FLAG_PRICE_REPORT, assignArm } from '@/config/quiz_flags';
+import { FLAG_CONTACT_ORDER, FLAG_CONTACT_REQUIRED, FLAG_PRICE_REPORT, FLAG_SERVICE_BOX, assignArm, type FlagDef } from '@/config/quiz_flags';
 import { screensFor, type FunnelAnswers } from '@/lib/funnel/screens';
 import { barFraction, counter, nextScreen, prevScreen, resumeTarget } from '@/lib/funnel/engine';
 import { sanitizeSessionPayload } from '@/lib/funnel/sessionPayload';
@@ -64,7 +64,8 @@ describe('navigation', () => {
     const a = { ...birth, birth_time_known: 'unknown' };
     expect(nextScreen(full, 's11', a)?.id).toBe('s13');
     expect(prevScreen(full, 's13', a)?.id).toBe('s11');
-    expect(prevScreen(full, 's15', birth)?.id).toBe('s13');
+    expect(prevScreen(full, 's15', birth)?.id).toBe('s_look');
+    expect(prevScreen(full, 's_look', birth)?.id).toBe('s13');
   });
   it('resumes a late screen only when the birth details are complete', () => {
     expect(resumeTarget(full, 's16', { hook: 'again' }).id).toBe('s02');
@@ -78,9 +79,17 @@ describe('flags', () => {
     expect(assignArm(FLAG_CONTACT_REQUIRED, id)).toBe(assignArm(FLAG_CONTACT_REQUIRED, id));
     for (let i = 0; i < 200; i++) expect(assignArm(FLAG_PRICE_REPORT, `s-${i}`)).toBe('199');
   });
+  it('ships the v2 defaults: a visible Skip, first look before the ask, both tick boxes', () => {
+    for (let i = 0; i < 200; i++) {
+      expect(assignArm(FLAG_CONTACT_REQUIRED, `s-${i}`)).toBe('B');
+      expect(assignArm(FLAG_CONTACT_ORDER, `s-${i}`)).toBe('look_ask');
+      expect(assignArm(FLAG_SERVICE_BOX, `s-${i}`)).toBe('on');
+    }
+  });
   it('splits a 50/50 flag roughly evenly', () => {
+    const even: FlagDef<'A' | 'B'> = { name: 'even_test', arms: [{ value: 'A', weight: 1 }, { value: 'B', weight: 1 }] };
     let a = 0;
-    for (let i = 0; i < 2000; i++) if (assignArm(FLAG_CONTACT_REQUIRED, `sess-${i}`) === 'A') a++;
+    for (let i = 0; i < 2000; i++) if (assignArm(even, `sess-${i}`) === 'A') a++;
     expect(a).toBeGreaterThan(850);
     expect(a).toBeLessThan(1150);
   });

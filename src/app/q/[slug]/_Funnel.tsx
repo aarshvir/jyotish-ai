@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { getQuizSlug, DEFAULT_SLUG } from '@/config/quiz_slugs';
-import { FLAG_CONTACT_REQUIRED, FLAG_PRICE_REPORT, FLAG_QUIZ_LENGTH, assignArm } from '@/config/quiz_flags';
+import { FLAG_CONTACT_ORDER, FLAG_CONTACT_REQUIRED, FLAG_PRICE_REPORT, FLAG_QUIZ_LENGTH, FLAG_SERVICE_BOX, assignArm } from '@/config/quiz_flags';
 import {
   FOCUS_LABEL,
   resolveChoice,
@@ -17,7 +17,7 @@ import {
 import { buildInterstitial } from '@/lib/funnel/interstitials';
 import { splitCodes } from '@/lib/funnel/problems';
 import { barFraction, birthReady, counter, nextScreen, prevScreen, resumeTarget } from '@/lib/funnel/engine';
-import { attributionFrom, loadState, newSessionId, saveState, type Contact, type FunnelState } from '@/lib/funnel/state';
+import { attributionFrom, loadState, newSessionId, saveState, type Contact, type FunnelState, type LeadStatus } from '@/lib/funnel/state';
 import { funnelEvent, pixelEvent, type EventContext } from '@/lib/funnel/events';
 import { placeLabel, type Place } from '@/lib/funnel/cities';
 import { funnelPersonalContext } from '@/lib/quiz/personalContext';
@@ -32,7 +32,12 @@ import { MultiScreen } from '@/components/funnel/MultiScreen';
 import { TextScreen } from '@/components/funnel/TextScreen';
 import { CityTypeahead } from '@/components/funnel/CityTypeahead';
 import { BriefScreen, type RevealRequest } from '@/components/funnel/BriefScreen';
-import { ContactScreen } from '@/components/funnel/ContactScreen';
+import { SaveChartScreen } from '@/components/funnel/SaveChartScreen';
+import { FirstLookScreen } from '@/components/funnel/FirstLookScreen';
+import { ReaskBar } from '@/components/funnel/ReaskBar';
+import { answersForServer, captureLeadRequest, leadStatusLine } from '@/lib/funnel/leadClient';
+import { isMinor } from '@/lib/leads/capture';
+import { NOTICE_VERSION } from '@/lib/leads/consentText';
 import { RevealScreen } from '@/components/funnel/RevealScreen';
 import { OfferScreen, type OfferInfo } from '@/components/funnel/OfferScreen';
 import { DropoffPrompt, canShowDropoff } from '@/components/analytics/DropoffPrompt';
@@ -102,9 +107,12 @@ export function Funnel({ slugKey }: { slugKey: string }) {
   const [askCity, setAskCity] = useState(false);
   const [bump, setBump] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [leadBusy, setLeadBusy] = useState(false);
+  const [linkNotice, setLinkNotice] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [handoff, setHandoff] = useState<{ plan: Plan; priceDisplay: string; redirectUrl: string; currency: Currency } | null>(null);
   const resumedCheckout = useRef(false);
+  const booted = useRef(false);
   const [dropoff, setDropoff] = useState<DropoffContext | null>(null);
   const askWhy = useCallback((c: DropoffContext) => {
     if (canShowDropoff(c)) setDropoff(c);
@@ -145,6 +153,34 @@ export function Funnel({ slugKey }: { slugKey: string }) {
     setSt(next);
     setRevealFor(next.reveal ? revealKey(next.answers) : '');
 
+    // Arriving from the emailed chart link: rebuild the chart from the answers kept with the
+    // lead, skip the questions and the ask, and go straight to calculating it again.
+    const linkToken = params.get('r');
+    if (linkToken) {
+      booted.current = true;
+      fetch(`/api/quiz/resume?t=${encodeURIComponent(linkToken)}`, { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j: { ok?: boolean; lang?: string; answers?: FunnelAnswers } | null) => {
+          if (!j?.ok || !j.answers) {
+            setLinkNotice(
+              lang === 'hi'
+                ? 'Yeh chart link ab kaam nahi karta. Aap neeche se dobara shuru kar sakte hain.'
+                : 'That chart link has expired or is not valid. You can start again below.',
+            );
+            booted.current = false;
+            return;
+          }
+          const answers = { ...j.answers, via_link: '1' };
+          setSt((prev) =>
+            prev ? { ...prev, lang: j.lang === 'hi' ? 'hi' : prev.lang, answers, screenId: 's14', reveal: null, contact: null, contactSkipped: true, lead: null } : prev,
+          );
+          setRevealFor('');
+        })
+        .catch(() => {
+          booted.current = false;
+        });
+    }
+
     fetch('/api/quiz/offer', { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((o: OfferInfo | null) => o && setOffer(o))
@@ -170,11 +206,13 @@ export function Funnel({ slugKey }: { slugKey: string }) {
     return {
       quiz_length: assignArm(FLAG_QUIZ_LENGTH, st.sessionId),
       contact_required: assignArm(FLAG_CONTACT_REQUIRED, st.sessionId),
+      contact_order: assignArm(FLAG_CONTACT_ORDER, st.sessionId),
+      contact_service_box: assignArm(FLAG_SERVICE_BOX, st.sessionId),
       price_report: assignArm(FLAG_PRICE_REPORT, st.sessionId),
     };
   }, [st?.sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const screens = useMemo(() => (flags ? screensFor(slug, flags.quiz_length) : []), [slug, flags]);
+  const screens = useMemo(() => (flags ? screensFor(slug, flags.quiz_length, flags.contact_order) : []), [slug, flags]);
   const lang: Lang = st?.lang ?? 'en';
 
   const ctx: EventContext | null = useMemo(
@@ -186,7 +224,6 @@ export function Funnel({ slugKey }: { slugKey: string }) {
   );
 
   // Resume at a safe screen once screens are known.
-  const booted = useRef(false);
   useEffect(() => {
     if (!st || !screens.length || booted.current) return;
     booted.current = true;
@@ -218,9 +255,9 @@ export function Funnel({ slugKey }: { slugKey: string }) {
           fbclid: s.fbclid,
           gclid: s.gclid,
           flags,
-          answers: s.answers,
+          answers: answersForServer(s.answers),
           step: s.screenId,
-          ...(s.contact ? { contact: { channel: s.contact.channel, value: s.contact.value, name: s.contact.name }, consent: s.contact.consent } : {}),
+          // The address never travels with the session: it goes to /api/lead/capture, with its consent record.
           ...extra,
         }),
       }).catch(() => {});
@@ -235,6 +272,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
     lastViewed.current = screen.id;
     const cn = counter(screens, screen.id);
     funnelEvent(ctx, 'quiz_view', { step: screen.spec, step_index: cn?.n, step_total: cn?.of, variant: flags?.quiz_length });
+    if (screen.kind === 'contact') funnelEvent(ctx, 'contact_view', { variant: flags?.contact_order });
     if (screen.kind === 'reveal') {
       funnelEvent(ctx, 'reveal_view', { mode: 'karmic' });
       pixelEvent(ctx, 'CompleteRegistration', 'reveal');
@@ -283,6 +321,26 @@ export function Funnel({ slugKey }: { slugKey: string }) {
       return { ...prev, answers };
     });
   }, []);
+
+  /** Sends the email to /api/lead/capture. Never throws; the answer is a status the result screen words honestly. */
+  const saveLead = useCallback(
+    async (v: { email: string; name: string; marketing: boolean; source: 'quiz_s15' | 'reveal_reask' }) => {
+      if (!st || !flags) return { saved: false, emailed: false, reason: 'no_session' } as LeadStatus;
+      return captureLeadRequest({
+        sessionId: st.sessionId,
+        slug: slug.slug,
+        lang: st.lang,
+        email: v.email,
+        firstName: v.name || undefined,
+        source: v.source,
+        marketing: v.marketing,
+        serviceBox: flags.contact_service_box === 'on',
+        answers: st.answers,
+        utm: st.utm,
+      });
+    },
+    [st, flags, slug.slug],
+  );
 
   function back() {
     if (!st || !screen || !ctx) return;
@@ -458,6 +516,11 @@ export function Funnel({ slugKey }: { slugKey: string }) {
       </div>
 
       <div className="max-w-md mx-auto px-4 pt-5 pb-16">
+        {linkNotice && (
+          <p role="status" className="mb-4 px-4 py-3 rounded-card border border-horizon bg-nebula font-body text-body-md text-dust-light">
+            {linkNotice}
+          </p>
+        )}
         {screen.id === 's01' && <p className="font-body text-label-md text-amber-light mb-3">{t(slug.eyebrow, lang)}</p>}
 
         {screen.kind === 'single' &&
@@ -620,27 +683,72 @@ export function Funnel({ slugKey }: { slugKey: string }) {
             <p className="font-body text-body-lg text-dust-light">Some birth details are missing. Please go back and check them.</p>
           ))}
 
-        {screen.kind === 'contact' && (
-          <ContactScreen
-            required={flags.contact_required === 'A'}
-            initial={st.contact}
+        {screen.kind === 'look' && st.reveal && (
+          <FirstLookScreen
+            key={screen.id + lang}
+            reveal={st.reveal}
             lang={lang}
-            onSubmit={(contact: Contact) => {
-              funnelEvent(ctx, 'contact_submit', { channel: contact.channel });
+            onView={() => funnelEvent(ctx, 'first_look_view', { precision: st.reveal?.precision, variant: flags.contact_order })}
+            onContinue={() => go(a, screen.id)}
+          />
+        )}
+
+        {screen.kind === 'contact' && (
+          <SaveChartScreen
+            required={flags.contact_required === 'A'}
+            serviceBox={flags.contact_service_box === 'on'}
+            initialEmail={st.contact?.value}
+            initialName={st.contact?.name}
+            lang={lang}
+            busy={leadBusy}
+            onSubmit={async ({ email, name, marketing }) => {
+              setLeadBusy(true);
+              funnelEvent(ctx, 'contact_submit', { channel: 'email' });
+              funnelEvent(ctx, 'consent_granted', { purpose: 'service', notice: NOTICE_VERSION });
+              if (marketing) funnelEvent(ctx, 'consent_granted', { purpose: 'marketing', notice: NOTICE_VERSION });
               pixelEvent(ctx, 'Lead', 'contact');
-              const next = { ...st, contact, contactSkipped: false };
-              syncServer(next);
-              go(a, screen.id, { contact, contactSkipped: false });
+              const lead = await saveLead({ email, name, marketing, source: 'quiz_s15' });
+              setLeadBusy(false);
+              const contact: Contact = { channel: 'email', value: email, name: name || undefined, consent: marketing };
+              go(a, screen.id, { contact, contactSkipped: false, lead });
             }}
             onSkip={() => {
-              funnelEvent(ctx, 'contact_submit', { channel: 'skipped' });
+              funnelEvent(ctx, 'contact_skip', { where: 'save' });
               go(a, screen.id, { contactSkipped: true });
             }}
           />
         )}
 
         {screen.kind === 'reveal' && st.reveal && revealFor === revealKey(a) && (
-          <RevealScreen reveal={st.reveal} name={st.contact?.name} lang={lang} ctaLabel={blueprintCta} onCta={() => go(a, screen.id)} />
+          <RevealScreen
+            reveal={st.reveal}
+            name={st.contact?.name}
+            lang={lang}
+            statusLine={st.contactSkipped ? null : leadStatusLine(st.lead, lang)}
+            reask={
+              st.contactSkipped && !isMinor(a.birth_date) && !a.via_link ? (
+                <ReaskBar
+                  lang={lang}
+                  serviceBox={flags.contact_service_box === 'on'}
+                  status={st.lead ?? null}
+                  busy={leadBusy}
+                  onView={() => funnelEvent(ctx, 'lead_reask_view')}
+                  onSubmit={async ({ email, marketing }) => {
+                    setLeadBusy(true);
+                    funnelEvent(ctx, 'lead_reask_submit');
+                    funnelEvent(ctx, 'consent_granted', { purpose: 'service', notice: NOTICE_VERSION });
+                    if (marketing) funnelEvent(ctx, 'consent_granted', { purpose: 'marketing', notice: NOTICE_VERSION });
+                    pixelEvent(ctx, 'Lead', 'reask');
+                    const lead = await saveLead({ email, name: '', marketing, source: 'reveal_reask' });
+                    setLeadBusy(false);
+                    setSt((prev) => (prev ? { ...prev, lead, contact: { channel: 'email', value: email, consent: marketing } } : prev));
+                  }}
+                />
+              ) : undefined
+            }
+            ctaLabel={blueprintCta}
+            onCta={() => go(a, screen.id)}
+          />
         )}
         {screen.kind === 'reveal' && (!st.reveal || revealFor !== revealKey(a)) && (
           <div className="text-center pt-10">

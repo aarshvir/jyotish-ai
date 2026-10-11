@@ -196,7 +196,7 @@ describe('the birth screens in the flow', () => {
   const full = screensFor(slug, 'full');
 
   it('has one screen for how sure the time is and the time itself', () => {
-    expect(full.map((s) => s.id).slice(-7)).toEqual(['s10', 's11', 's13', 's14', 's15', 's16', 's17']);
+    expect(full.map((s) => s.id).slice(-8)).toEqual(['s10', 's11', 's13', 's14', 's_look', 's15', 's16', 's17']);
     expect(full.find((s) => s.id === 's12')).toBeUndefined();
     expect(counter(full, 's17')).toEqual({ n: 17, of: 17 });
   });

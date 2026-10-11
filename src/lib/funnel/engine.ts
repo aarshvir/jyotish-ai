@@ -52,7 +52,7 @@ export function firstIncomplete(screens: Screen[], a: FunnelAnswers): Screen {
     if (!isShown(s, a)) continue;
     if ('field' in s && !a[s.field] && !('optional' in s && s.optional)) return s;
     if (s.kind === 'birthtime' && !(a.birth_time_known === 'unknown' || (a.birth_time_known && /^\d{2}:\d{2}$/.test(a.birth_time ?? '')))) return s;
-    if (s.kind === 'calc' || s.kind === 'contact' || s.kind === 'reveal' || s.kind === 'offer') return s;
+    if (s.kind === 'calc' || s.kind === 'look' || s.kind === 'contact' || s.kind === 'reveal' || s.kind === 'offer') return s;
   }
   return screens[0];
 }
@@ -70,7 +70,7 @@ export function birthReady(a: FunnelAnswers): boolean {
 export function resumeTarget(screens: Screen[], savedId: string, a: FunnelAnswers): Screen {
   const saved = screens.find((s) => s.id === savedId);
   if (!saved) return firstIncomplete(screens, a);
-  const late = saved.kind === 'calc' || saved.kind === 'contact' || saved.kind === 'reveal' || saved.kind === 'offer';
+  const late = saved.kind === 'calc' || saved.kind === 'look' || saved.kind === 'contact' || saved.kind === 'reveal' || saved.kind === 'offer';
   if (late && !birthReady(a)) return firstIncomplete(screens, a);
   if (!isShown(saved, a)) return firstIncomplete(screens, a);
   return saved;

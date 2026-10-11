@@ -16,6 +16,7 @@ import type { QuizSlug } from '@/config/quiz_slugs';
 import { STEPS as START_STEPS } from '@/lib/quiz/questions';
 import { problemOptions, splitCodes, realProblems, problemLabel, OTHER_PROBLEM, CURIOUS_PROBLEM } from './problems';
 import type { InterstitialId } from './interstitials';
+import { isMinor } from '@/lib/leads/capture';
 
 export type Lang = 'en' | 'hi';
 export type T = { en: string; hi: string };
@@ -57,7 +58,10 @@ export type Screen =
   /** How sure the person is of the birth time, and the time itself when they know it. Fills `birth_time_known` and `birth_time`. */
   | { id: string; spec: string; kind: 'birthtime'; title: T; subtitle?: T; numbered: true }
   | { id: string; spec: string; kind: 'city'; field: string; title: T; subtitle?: T; numbered: true }
-  | { id: string; spec: string; kind: 'calc' | 'contact' | 'reveal' | 'offer'; numbered: true };
+  /** A small computed first look (rising sign, Moon, running period, the house for their area), shown before the ask. */
+  | { id: string; spec: string; kind: 'look'; numbered: false; showIf?: (a: FunnelAnswers) => boolean }
+  | { id: string; spec: string; kind: 'contact'; numbered: true; showIf?: (a: FunnelAnswers) => boolean }
+  | { id: string; spec: string; kind: 'calc' | 'reveal' | 'offer'; numbered: true };
 
 /** Option labels shared with /start, so a brief reads the same wherever the answer came from. */
 function fromStart(id: string): { title: string; subtitle?: string; options?: { value: string; label: string; hint?: string }[] } {
@@ -268,7 +272,10 @@ export function buildScreens(slug: QuizSlug): Screen[] {
       },
     },
     { id: 's14', spec: 'S14', kind: 'calc', numbered: true },
-    { id: 's15', spec: 'S15', kind: 'contact', numbered: true },
+    // Someone arriving from their emailed chart link has already been through both.
+    { id: 's_look', spec: 'L1', kind: 'look', numbered: false, showIf: (a) => !a.via_link },
+    // No contact is collected for a birth date under 18 (DPDP: a child's data needs a parent's verifiable consent).
+    { id: 's15', spec: 'S15', kind: 'contact', numbered: true, showIf: (a) => !a.via_link && !isMinor(a.birth_date) },
     { id: 's16', spec: 'S16', kind: 'reveal', numbered: true },
     { id: 's17', spec: 'S17', kind: 'offer', numbered: true },
 
@@ -308,10 +315,18 @@ export function buildScreens(slug: QuizSlug): Screen[] {
 /** E1 short variant drops these questions. */
 const SHORT_DROP = new Set(['q_frustration', 's07', 's09', 'q_focus']);
 
-/** The flow a visitor walks. */
-export function screensFor(slug: QuizSlug, length: 'full' | 'short'): Screen[] {
+/**
+ * The flow a visitor walks. `order` is experiment 1: 'look_ask' (default) shows the first
+ * look and then asks for an email; 'ask_look' asks first, as the funnel did before.
+ */
+export function screensFor(slug: QuizSlug, length: 'full' | 'short', order: 'look_ask' | 'ask_look' = 'look_ask'): Screen[] {
   const flow = buildScreens(slug).filter((s) => !('legacy' in s && s.legacy));
-  return length === 'short' ? flow.filter((s) => !SHORT_DROP.has(s.id)) : flow;
+  const sized = length === 'short' ? flow.filter((s) => !SHORT_DROP.has(s.id)) : flow;
+  if (order === 'look_ask') return sized;
+  const look = sized.find((s) => s.id === 's_look');
+  const rest = sized.filter((s) => s.id !== 's_look');
+  const at = rest.findIndex((s) => s.id === 's15');
+  return look && at >= 0 ? [...rest.slice(0, at + 1), look, ...rest.slice(at + 1)] : sized;
 }
 
 export function isShown(s: Screen, a: FunnelAnswers): boolean {
