@@ -62,6 +62,8 @@ export function resendMailer(env: Env = process.env): LeadMailer {
         console.log(`[leads/mail] dry run, not sent: "${mail.subject}" -> ${maskEmail(mail.to)}`);
         return { status: 'dry_run' };
       }
+      // sendEmail logs the full recipient when no key is set; check first so an address is never logged.
+      if (!env.RESEND_API_KEY?.trim()) return { status: 'unconfigured' };
       const r = await sendEmail({
         to: mail.to,
         subject: mail.subject,
