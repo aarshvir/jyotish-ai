@@ -42,7 +42,7 @@ export const FUNNEL_EVENTS = [
 export const DROPOFF_EVENTS = ['dropoff_prompt_view', 'dropoff_reason', 'dropoff_prompt_dismiss'] as const;
 
 /** Operational heartbeats written by server code only (never accepted from browsers). */
-export const SERVER_ONLY_EVENTS = ['cron_run'] as const;
+export const SERVER_ONLY_EVENTS = ['cron_run', 'lead_captured', 'chart_link_open'] as const;
 
 export type FunnelEventName = (typeof FUNNEL_EVENTS)[number];
 export type DropoffEventName = (typeof DROPOFF_EVENTS)[number];
@@ -139,6 +139,9 @@ const PROPS: Record<CanonicalEventName, Record<string, PropKind>> = {
   dropoff_reason: { context: 'code', reason: 'code', text: 'text' },
   dropoff_prompt_dismiss: { context: 'code' },
   cron_run: { job: 'code', ok: 'bool', duration_ms: 'int', detail: 'code' },
+  // Written by /api/lead/capture and /api/quiz/resume. Never carries the address itself.
+  lead_captured: { source: 'code', marketing: 'bool', emailed: 'bool' },
+  chart_link_open: { source: 'code' },
 };
 
 const CODE_RE = /^[a-z0-9][a-z0-9_.-]{0,47}$/i;

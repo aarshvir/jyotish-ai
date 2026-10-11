@@ -14,6 +14,12 @@ export interface EmailDoc {
   preheader: string;
   /** Inner content HTML (already entity-safe). */
   contentHtml: string;
+  /**
+   * Replaces the small line under the card ("You're receiving this because you have a
+   * VedicHour account"). Mail to people who have no account (quiz leads) must say why they
+   * are getting it instead. Entity-safe HTML. Default: unchanged.
+   */
+  reasonHtml?: string;
 }
 
 export function emailButton(label: string, href: string): string {
@@ -22,7 +28,7 @@ export function emailButton(label: string, href: string): string {
   </td></tr></table>`;
 }
 
-export function emailShell({ preheader, contentHtml }: EmailDoc): string {
+export function emailShell({ preheader, contentHtml, reasonHtml }: EmailDoc): string {
   return `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8">
@@ -52,7 +58,7 @@ export function emailShell({ preheader, contentHtml }: EmailDoc): string {
       </td></tr>
     </table>
     <p style="max-width:480px;margin:14px auto 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;color:#a8a4b2;text-align:center">
-      You're receiving this because you have a VedicHour account.
+      ${reasonHtml ?? "You're receiving this because you have a VedicHour account."}
     </p>
   </td></tr>
 </table>

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/admin';
 import { verifyUnsubToken, addSuppression } from '@/lib/notify/suppression';
+import { recordUnsubscribe } from '@/lib/leads/withdraw';
 
 /**
  * Email unsubscribe endpoint.
@@ -12,11 +13,14 @@ import { verifyUnsubToken, addSuppression } from '@/lib/notify/suppression';
  * The token is HMAC-signed over the email, so no auth is needed and it can't be forged.
  */
 
-async function suppress(token: string): Promise<boolean> {
+async function suppress(token: string, fromForm: boolean): Promise<boolean> {
   const email = verifyUnsubToken(token);
   if (!email) return false;
   const db = createServiceClient();
-  return addSuppression(db, email, 'unsubscribe-link');
+  const ok = await addSuppression(db, email, 'unsubscribe-link');
+  // Also write the withdrawal to the consent ledger (best effort; silent if the tables are missing).
+  if (ok) await recordUnsubscribe(db, email, fromForm ? 'unsubscribe_link' : 'list_unsubscribe_post');
+  return ok;
 }
 
 /** Query token = RFC 8058 one-click (mail client). Form-body token = a human on our confirm page. */
@@ -54,7 +58,7 @@ function escapeHtmlAttribute(value: string): string {
 
 export async function POST(req: NextRequest) {
   const { token, fromForm } = await postToken(req);
-  const ok = await suppress(token);
+  const ok = await suppress(token, fromForm);
   if (fromForm) {
     return ok
       ? page('You&rsquo;re unsubscribed', 'You won&rsquo;t receive any more marketing emails from VedicHour. Your account and any reports are untouched.', HOME_LINK, 200)
