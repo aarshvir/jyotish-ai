@@ -72,7 +72,7 @@ const FOCUS_READ: Record<FocusArea, T> = {
   },
   family: {
     en: 'In Jyotish, home and mother are read from your 4th house and the Moon, and family wealth and speech from the 2nd.',
-    hi: 'Jyotish mein ghar aur maa 4th house aur Chandra se, aur parivaar ka dhan aur vaani 2nd house se padhe jaate hain.',
+    hi: 'Jyotish mein ghar aur maa 4th house aur Chandra se padhe jaate hain. Parivaar ka dhan aur vaani 2nd house se.',
   },
   health: {
     en: 'Jyotish reads vitality from your 1st house and the Sun, and daily routine from the 6th. This is a reading of patterns and timing, never a medical opinion.',
@@ -108,7 +108,7 @@ const FRUSTRATION_POLICY: Record<string, PolicyLine[]> = {
       needs: [],
       text: {
         en: 'Each result starts from something we calculated for you: a sign, a house, a nakshatra or a date.',
-        hi: 'Har result ek aisi cheez se shuru hota hai jo humne aapke liye nikaali hai: rashi, ghar, nakshatra ya tareekh.',
+        hi: 'Har result ek nikaali hui cheez se shuru hota hai. Rashi, ghar, nakshatra ya tareekh.',
       },
     },
   ],

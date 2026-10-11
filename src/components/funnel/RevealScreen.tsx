@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion';
 import type { RevealData, Sourced } from '@/lib/funnel/reveal/compute';
 import { NodeChart } from './NodeChart';
 import { precisionNotes } from '@/lib/funnel/precision';
+import { cardTitle, lockedTitle, matchLine, revealChrome } from '@/lib/funnel/revealCopy';
 import type { Lang } from '@/lib/funnel/screens';
 
 /**
@@ -47,12 +48,13 @@ export function RevealScreen({
 }) {
   const reduce = useReducedMotion();
   const [k, r, m] = reveal.cards;
+  const chrome = revealChrome(lang, name);
   return (
     <div className="pb-28">
       <section className="pt-2">
-        <p className="font-body text-label-md text-amber-light mb-3">Your Karmic Blueprint · the free part</p>
+        <p className="font-body text-label-md text-amber-light mb-3">{chrome.eyebrow}</p>
         <h1 className="font-display font-semibold text-star text-[1.875rem] leading-[1.1] tracking-[-0.015em] mb-4">
-          {name ? `${name}, here is your Rahu–Ketu axis.` : 'Here is your Rahu–Ketu axis.'}
+          {chrome.title}
         </h1>
         <p
           data-source-keys={`ketu.sign=${reveal.ketu.sign} ketu.house=${reveal.ketu.house} rahu.sign=${reveal.rahu.sign} rahu.house=${reveal.rahu.house}`}
@@ -72,6 +74,9 @@ export function RevealScreen({
             ketuHouse={reveal.ketu.house}
           />
         </div>
+        {chrome.englishNote && (
+          <p className="mt-4 font-body text-body-md leading-[1.65] text-dust-light">{chrome.englishNote}</p>
+        )}
         {statusLine && (
           <p role="status" className="mt-4 font-body text-body-md leading-[1.65] text-star">
             {statusLine}
@@ -87,7 +92,7 @@ export function RevealScreen({
       <div className="mt-8 -mx-4 px-4 pt-6 pb-8 bg-parchment rounded-t-[20px] space-y-4">
         {[k, r].map((card) => (
           <article key={card.key} className="rounded-card bg-white border border-paper-line px-5 py-5">
-            <h2 className="font-display font-semibold text-ink text-[1.375rem] leading-tight mb-3">{card.title}</h2>
+            <h2 className="font-display font-semibold text-ink text-[1.375rem] leading-tight mb-3">{cardTitle(card, lang)}</h2>
             <p className="font-body text-[1.0625rem] leading-[1.75] text-ink-muted">
               {card.paragraphs.map((p, i) => (
                 <Para key={i} p={p} />
@@ -98,16 +103,16 @@ export function RevealScreen({
 
         {reveal.match && (
           <article className="rounded-card bg-parchment-2 border border-paper-line px-5 py-5">
-            <p className="font-body text-label-md text-indigo-deep mb-2">Your pick vs your chart</p>
+            <p className="font-body text-label-md text-indigo-deep mb-2">{chrome.pickVsChart}</p>
             <p data-source-keys={reveal.match.source_keys.join(' ')} className="font-display font-semibold text-ink text-[1.3125rem] leading-snug">
-              {reveal.match.text}
+              {matchLine(reveal.match, lang)}
             </p>
           </article>
         )}
 
         <article className="rounded-card bg-white border border-paper-line px-5 py-5">
           <div className="flex items-center justify-between gap-3 mb-3">
-            <h2 className="font-display font-semibold text-ink text-[1.375rem] leading-tight">{m.title}</h2>
+            <h2 className="font-display font-semibold text-ink text-[1.375rem] leading-tight">{cardTitle(m, lang)}</h2>
             {m.badge && (
               <span className={`shrink-0 px-3 py-1 rounded-full font-body text-label-md font-semibold ${BADGE[m.badge] ?? ''}`}>{m.badge}</span>
             )}
@@ -122,8 +127,8 @@ export function RevealScreen({
         {reask}
 
         <section className="pt-4">
-          <h2 className="font-display font-semibold text-ink text-[1.375rem] leading-tight mb-1">In your full blueprint</h2>
-          <p className="font-body text-body-md text-ink-soft mb-4">Worked out from the same chart.</p>
+          <h2 className="font-display font-semibold text-ink text-[1.375rem] leading-tight mb-1">{chrome.fullBlueprint}</h2>
+          <p className="font-body text-body-md text-ink-soft mb-4">{chrome.sameChart}</p>
           <ul className="space-y-3">
             {reveal.locked.map((title) => (
               <li key={title} className="rounded-card bg-white border border-paper-line px-5 py-4">
@@ -133,7 +138,7 @@ export function RevealScreen({
                     <rect x="3" y="7" width="10" height="7" rx="1.5" fill="currentColor" />
                   </svg>
                   <div className="flex-1">
-                    <p className="font-body font-semibold text-[1rem] text-ink">{title}</p>
+                    <p className="font-body font-semibold text-[1rem] text-ink">{lockedTitle(title, lang)}</p>
                     <div aria-hidden className="mt-2 space-y-1.5 blur-[3px] select-none">
                       <div className="h-2.5 rounded bg-parchment-3 w-full" />
                       <div className="h-2.5 rounded bg-parchment-3 w-4/5" />

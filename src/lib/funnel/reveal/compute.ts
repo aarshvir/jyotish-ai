@@ -233,7 +233,7 @@ export function computeReveal(input: RevealInput): RevealData {
     },
     lagna
       ? { text: `Rising sign: ${lagna}`, source_keys: [`lagna=${lagna}`] }
-      : { text: `Rising sign: needs a birth time — counting houses from your Moon in ${moonSign}`, source_keys: [`moon.sign=${moonSign}`] },
+      : { text: `Rising sign: needs a birth time. Counting houses from your Moon in ${moonSign}`, source_keys: [`moon.sign=${moonSign}`] },
     ...(moonNakshatra ? [{ text: `Moon nakshatra: ${moonNakshatra}`, source_keys: [`moon.nakshatra=${moonNakshatra}`] }] : []),
     { text: `Ketu: ${ketu.sign}, ${ordinal(ketu.house)} house`, source_keys: [`ketu.sign=${ketu.sign}`, `ketu.house=${ketu.house}`, refKey] },
     { text: `Rahu: ${rahu.sign}, ${ordinal(rahu.house)} house`, source_keys: [`rahu.sign=${rahu.sign}`, `rahu.house=${rahu.house}`, refKey] },
@@ -278,7 +278,7 @@ export function computeReveal(input: RevealInput): RevealData {
       agrees,
       text: agrees
         ? `You chose ${you}. Your Ketu says the same.`
-        : `You chose ${you}; your Ketu points to ${ROLE_LABEL[archetype].en} — the full blueprint explains the gap.`,
+        : `You chose ${you}. Your Ketu points to ${ROLE_LABEL[archetype].en}, and the full blueprint explains the gap.`,
       source_keys: [`ketu.sign=${ketu.sign}`, `ketu.sign.lord=${SIGN_LORD[ketu.sign]}`, `answer.self_role=${chosen}`],
     };
   }

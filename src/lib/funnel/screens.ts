@@ -202,7 +202,7 @@ export function buildScreens(slug: QuizSlug): Screen[] {
         { value: 'fort', label: { en: 'Old fort at dusk', hi: 'Shaam ka purana kila' } },
         { value: 'court', label: { en: 'Royal court', hi: 'Raj darbaar' } },
       ],
-      toast: { en: "Noted. Your result comes only from your chart — let's see if it agrees.", hi: 'Note kar liya. Result sirf aapke chart se aayega — dekhte hain woh kya kehta hai.' },
+      toast: { en: "Noted. Your result comes only from your chart. Let's see if it agrees.", hi: 'Note kar liya. Result sirf aapke chart se aayega. Dekhte hain woh kya kehta hai.' },
     },
     {
       id: 's08', spec: 'S08', kind: 'single', field: 'self_role', numbered: true,
@@ -218,7 +218,7 @@ export function buildScreens(slug: QuizSlug): Screen[] {
     },
     {
       id: 's09', spec: 'S09', kind: 'single', field: 'goal_12m', numbered: true,
-      title: { en: 'What matters most in the next 12 months?', hi: 'Agle 12 mahino mein sabse zaroori kya hai?' },
+      title: { en: 'What matters most in the next 12 months?', hi: 'Agle 12 mahine mein sabse zaroori kya hai?' },
       options: [
         { value: 'career_move', emoji: '🚀', label: GOAL_LABEL.career_move },
         { value: 'relationship', emoji: '💞', label: GOAL_LABEL.relationship },
@@ -260,7 +260,7 @@ export function buildScreens(slug: QuizSlug): Screen[] {
       title: { en: 'Do you know your birth time?', hi: 'Janm ka samay pata hai?' },
       subtitle: {
         en: 'Birth time sets your rising sign, and a sign lasts about two hours on average, so even an hour can matter. A rough time is fine. Just tell us it is rough.',
-        hi: 'Janm ka samay aapka Lagna tay karta hai. Ek Lagna ausat mein do ghante ka hota hai, isliye ek ghante ka farq bhi fark daal sakta hai. Andaza ho to bhi chalega, bas bata dijiye ki andaza hai.',
+        hi: 'Janm ka samay aapka Lagna tay karta hai. Ek Lagna ausat mein do ghante ka hota hai. Isliye ek ghante ka farq bhi fark daal sakta hai. Andaza ho to bhi chalega, bas bata dijiye ki andaza hai.',
       },
     },
     {
