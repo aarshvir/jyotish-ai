@@ -38,14 +38,14 @@ describe('slug registry', () => {
 });
 
 describe('progress', () => {
-  it('starts at 2/18 and ends at 18/18 on the full funnel', () => {
-    expect(counter(full, 's01')).toEqual({ n: 2, of: 18 });
-    expect(counter(full, 'q_problems')).toEqual({ n: 4, of: 18 });
-    expect(counter(full, 's17')).toEqual({ n: 18, of: 18 });
+  it('starts at 2/17 and ends at 17/17 on the full funnel', () => {
+    expect(counter(full, 's01')).toEqual({ n: 2, of: 17 });
+    expect(counter(full, 'q_problems')).toEqual({ n: 4, of: 17 });
+    expect(counter(full, 's17')).toEqual({ n: 17, of: 17 });
   });
   it('never changes the denominator, whatever is answered', () => {
     const dens = new Set(full.filter((s) => s.numbered).map((s) => counter(full, s.id)!.of));
-    expect(Array.from(dens)).toEqual([18]);
+    expect(Array.from(dens)).toEqual([17]);
   });
   it('does not number the extra interstitials, and the bar only moves forward', () => {
     expect(counter(full, 'i_method')).toBeNull();
@@ -55,7 +55,7 @@ describe('progress', () => {
   });
   it('short variant (E1) drops four questions and keeps a fixed denominator', () => {
     for (const id of ['q_frustration', 's07', 's09', 'q_focus']) expect(short.map((s) => s.id)).not.toContain(id);
-    expect(counter(short, 's01')).toEqual({ n: 2, of: 14 });
+    expect(counter(short, 's01')).toEqual({ n: 2, of: 13 });
   });
 });
 

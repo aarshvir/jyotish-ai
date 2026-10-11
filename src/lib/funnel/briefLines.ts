@@ -50,7 +50,21 @@ export function chartLines(r: RevealData, lang: Lang): BriefLine[] {
   const hi = lang === 'hi';
   const out: BriefLine[] = [];
   if (r.lagna) out.push({ key: 'lagna', text: hi ? `Lagna: ${r.lagna}` : `Rising sign: ${r.lagna}` });
-  if (r.moonNakshatra) {
+
+  // With no birth time the Moon moves through the whole day: say so instead of naming one value.
+  const s = r.precision === 'unknown' ? r.spread : null;
+  const signs = s && s.moonSigns.length ? s.moonSigns : [r.moonSign];
+  const naks = s && s.moonNakshatras.length ? s.moonNakshatras : r.moonNakshatra ? [r.moonNakshatra] : [];
+  if (s && (signs.length > 1 || naks.length > 1)) {
+    const where = signs.length > 1 ? signs.join(hi ? ' phir ' : ' then ') : signs[0];
+    const nak = naks.length > 1 ? `${naks[0]} ${hi ? 'se' : 'to'} ${naks[naks.length - 1]}` : naks[0];
+    out.push({
+      key: 'moon',
+      text: hi
+        ? `Chandrama aapki janm tareekh par: ${where}${nak ? `, ${nak} nakshatra` : ''}`
+        : `Moon on your birth date: ${where}${nak ? `, ${nak} nakshatra` : ''}`,
+    });
+  } else if (r.moonNakshatra) {
     const pada = r.moonPada ? (hi ? `, charan ${r.moonPada}` : `, pada ${r.moonPada}`) : '';
     out.push({
       key: 'moon',
@@ -59,7 +73,9 @@ export function chartLines(r: RevealData, lang: Lang): BriefLine[] {
   } else {
     out.push({ key: 'moon', text: hi ? `Chandrama: ${r.moonSign}` : `Moon: ${r.moonSign}` });
   }
-  const house = (n: number) => (hi ? `${ordinal(n)} ghar` : `${ordinal(n)} house`);
+
+  const from = r.reference === 'moon' ? (hi ? ' (Chandra se)' : ' from your Moon') : '';
+  const house = (n: number) => (hi ? `${ordinal(n)} ghar${from}` : `${ordinal(n)} house${from}`);
   out.push({ key: 'ketu', text: `Ketu: ${r.ketu.sign}, ${house(r.ketu.house)}` });
   out.push({ key: 'rahu', text: `Rahu: ${r.rahu.sign}, ${house(r.rahu.house)}` });
   return out;

@@ -20,13 +20,13 @@ import { barFraction, birthReady, counter, nextScreen, prevScreen, resumeTarget 
 import { attributionFrom, loadState, newSessionId, saveState, type Contact, type FunnelState } from '@/lib/funnel/state';
 import { funnelEvent, pixelEvent, type EventContext } from '@/lib/funnel/events';
 import { placeLabel, type Place } from '@/lib/funnel/cities';
-import { validate as validateStartStep, getStep as getStartStep } from '@/lib/quiz/engine';
 import { funnelPersonalContext } from '@/lib/quiz/personalContext';
 import { saveQuiz } from '@/lib/quiz/persist';
 import { formatAmount } from '@/lib/ziina/amounts';
 import { DeliveryGate } from '@/components/onboard/DeliveryGate';
 import { PaymentHandoff } from '@/components/checkout/PaymentHandoff';
-import { InputScreen, PictureScreen, SingleScreen, Sub, Title, t } from '@/components/funnel/QuestionScreens';
+import { PictureScreen, SingleScreen, Sub, Title, t } from '@/components/funnel/QuestionScreens';
+import { BirthDateScreen, BirthTimeScreen } from '@/components/funnel/BirthScreens';
 import { Interstitial } from '@/components/funnel/Interstitial';
 import { MultiScreen } from '@/components/funnel/MultiScreen';
 import { TextScreen } from '@/components/funnel/TextScreen';
@@ -548,19 +548,33 @@ export function Funnel({ slugKey }: { slugKey: string }) {
           />
         )}
 
-        {(screen.kind === 'date' || screen.kind === 'time') && (
-          <InputScreen
+        {screen.kind === 'date' && (
+          <BirthDateScreen
             key={screen.id}
-            kind={screen.kind}
             title={screen.title}
             subtitle={screen.subtitle}
+            notice={screen.notice}
             initial={a[screen.field] ?? ''}
             lang={lang}
-            validate={(v) => {
-              const step = getStartStep(screen.kind === 'date' ? 'birth_date' : 'birth_time');
-              return step ? validateStartStep(step, v) : null;
+            onSubmit={(iso) => answer(screen.field, iso)}
+          />
+        )}
+
+        {screen.kind === 'birthtime' && (
+          <BirthTimeScreen
+            key={screen.id}
+            title={screen.title}
+            subtitle={screen.subtitle}
+            initialKnown={a.birth_time_known}
+            initialTime={a.birth_time}
+            lang={lang}
+            onSubmit={(known, time) => {
+              funnelEvent(ctx, 'quiz_answer', { step: screen.spec, value: known });
+              const next: FunnelAnswers = { ...a, birth_time_known: known };
+              if (time) next.birth_time = time;
+              else delete next.birth_time;
+              go(next, screen.id);
             }}
-            onSubmit={(v) => answer(screen.field, v)}
           />
         )}
 
@@ -626,7 +640,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
         )}
 
         {screen.kind === 'reveal' && st.reveal && revealFor === revealKey(a) && (
-          <RevealScreen reveal={st.reveal} name={st.contact?.name} ctaLabel={blueprintCta} onCta={() => go(a, screen.id)} />
+          <RevealScreen reveal={st.reveal} name={st.contact?.name} lang={lang} ctaLabel={blueprintCta} onCta={() => go(a, screen.id)} />
         )}
         {screen.kind === 'reveal' && (!st.reveal || revealFor !== revealKey(a)) && (
           <div className="text-center pt-10">

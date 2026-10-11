@@ -3,6 +3,8 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import type { RevealData, Sourced } from '@/lib/funnel/reveal/compute';
 import { NodeChart } from './NodeChart';
+import { precisionNotes } from '@/lib/funnel/precision';
+import type { Lang } from '@/lib/funnel/screens';
 
 /**
  * S16 — the free reveal. Night frame (header + chart) opening onto paper reading cards
@@ -27,11 +29,13 @@ const BADGE: Record<string, string> = {
 export function RevealScreen({
   reveal,
   name,
+  lang = 'en',
   ctaLabel,
   onCta,
 }: {
   reveal: RevealData;
   name?: string;
+  lang?: Lang;
   ctaLabel: string;
   onCta: () => void;
 }) {
@@ -62,12 +66,11 @@ export function RevealScreen({
             ketuHouse={reveal.ketu.house}
           />
         </div>
-        {reveal.reference === 'moon' && (
-          <p className="mt-4 font-body text-body-md text-dust-light">
-            You did not give a birth time, so every house here is counted from your Moon sign, {reveal.moonSign}. With a
-            time, houses are counted from your rising sign and may differ.
+        {precisionNotes(reveal, lang).map((note, i) => (
+          <p key={i} className="mt-4 font-body text-body-md leading-[1.65] text-dust-light">
+            {note}
           </p>
-        )}
+        ))}
       </section>
 
       <div className="mt-8 -mx-4 px-4 pt-6 pb-8 bg-parchment rounded-t-[20px] space-y-4">
