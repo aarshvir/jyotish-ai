@@ -220,7 +220,7 @@ Order of work is by expected return per hour. "Compute first" means the facts mu
 | #240 | `seo/thin-pages` | Noindex 216 filler pages; rebuild 48 transit pages with real dates; `/transit` hub | none |
 | #244 | `seo/content-refresh` | 7 new articles, 27 rewritten, 2 merged, Nadi fix, voice and link tests | #239, #240 |
 | #245 | `seo/hindi-pilot` | Two Hindi articles with hreflang | #244, native read |
-| (this) | `docs/seo-audit` | This document | none |
+| #248 | `docs/seo-audit` | This document | none |
 
 Merge in the order #238, #239, #240, #244, #245. #244 and #245 contain the earlier commits until those land, so their diffs shrink after the earlier merges.
 
