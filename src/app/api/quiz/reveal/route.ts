@@ -6,7 +6,8 @@ import { EphemerisAgent } from '@/lib/agents/EphemerisAgent';
 import type { NatalChartData } from '@/lib/agents/types';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 import { hasValidBirthCoords } from '@/lib/utils/coords';
-import { computeReveal, RevealError } from '@/lib/funnel/reveal/compute';
+import { computeReveal, RevealError, type Precision } from '@/lib/funnel/reveal/compute';
+import { shiftLocal } from '@/lib/funnel/birth';
 
 /**
  * POST /api/quiz/reveal — the /q funnel's free, computed reveal (spec S14 + S16).
@@ -52,17 +53,33 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Please choose your birth place from the list.' }, { status: 400 });
   }
 
+  const precision: Precision = b.time_known === 'exact' ? 'exact' : b.time_known === 'approx' ? 'approx' : 'unknown';
+
+  const unwrap = (raw: unknown) => (raw && typeof raw === 'object' && 'data' in raw && (raw as { data?: unknown }).data ? (raw as { data: NatalChartData }).data : (raw as NatalChartData));
+  const chartAt = (d: string, t: string) =>
+    new EphemerisAgent().getNatalChart({ birth_date: d, birth_time: `${t}:00`, birth_city: city, birth_lat: lat, birth_lng: lng }).then(unwrap);
+
+  // Unknown time: noon is the working chart, and the day's two edges show how far the Moon
+  // moves. Rough time: the given time, and two hours either side (a rising sign lasts about
+  // two hours). The edges only ever add caveats; if one fails the reveal still goes out.
+  const mainTime = timeKnown ? hhmm : '12:00';
+  const edges: [{ date: string; time: string }, { date: string; time: string }] | null =
+    precision === 'unknown'
+      ? [{ date, time: '00:00' }, { date, time: '23:59' }]
+      : precision === 'approx'
+        ? [shiftLocal(date, hhmm, -120), shiftLocal(date, hhmm, 120)]
+        : null;
+
   let chart: NatalChartData;
+  let window: { before: NatalChartData; after: NatalChartData } | undefined;
   try {
-    const raw = (await new EphemerisAgent().getNatalChart({
-      birth_date: date,
-      // Unknown time: noon, and the reveal counts houses from the Moon instead of the rising sign.
-      birth_time: timeKnown ? `${hhmm}:00` : '12:00:00',
-      birth_city: city,
-      birth_lat: lat,
-      birth_lng: lng,
-    })) as NatalChartData | { data?: NatalChartData };
-    chart = ('data' in raw && raw.data ? raw.data : raw) as NatalChartData;
+    const main = chartAt(date, mainTime);
+    const side = edges ? Promise.allSettled([chartAt(edges[0].date, edges[0].time), chartAt(edges[1].date, edges[1].time)]) : null;
+    chart = await main;
+    const settled = side ? await side : null;
+    if (settled && settled[0].status === 'fulfilled' && settled[1].status === 'fulfilled') {
+      window = { before: settled[0].value, after: settled[1].value };
+    }
   } catch (e) {
     console.error('[quiz/reveal] ephemeris failed:', e instanceof Error ? e.message : e);
     return NextResponse.json({ error: 'The chart service is busy. Please try again.' }, { status: 502 });
@@ -72,6 +89,8 @@ export async function POST(request: NextRequest) {
     const reveal = computeReveal({
       chart,
       timeKnown,
+      precision,
+      window,
       city,
       lat,
       lng,

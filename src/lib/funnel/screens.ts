@@ -53,10 +53,13 @@ export type Screen =
       maxLength: number; optional: true; cta: T; skip: T;
     }
   | { id: string; spec: string; kind: 'interstitial'; template: InterstitialId; numbered: false; showIf?: (a: FunnelAnswers) => boolean }
-  | { id: string; spec: string; kind: 'date' | 'time' | 'city'; field: string; title: T; subtitle?: T; numbered: true; showIf?: (a: FunnelAnswers) => boolean }
+  | { id: string; spec: string; kind: 'date'; field: string; title: T; subtitle?: T; notice: T; numbered: true }
+  /** How sure the person is of the birth time, and the time itself when they know it. Fills `birth_time_known` and `birth_time`. */
+  | { id: string; spec: string; kind: 'birthtime'; title: T; subtitle?: T; numbered: true }
+  | { id: string; spec: string; kind: 'city'; field: string; title: T; subtitle?: T; numbered: true }
   | { id: string; spec: string; kind: 'calc' | 'contact' | 'reveal' | 'offer'; numbered: true };
 
-/** Reused verbatim from /start (spec S10–S13: "REUSE the existing /start components verbatim"). */
+/** Option labels shared with /start, so a brief reads the same wherever the answer came from. */
 function fromStart(id: string): { title: string; subtitle?: string; options?: { value: string; label: string; hint?: string }[] } {
   const s = START_STEPS.find((x) => x.id === id);
   if (!s || !('title' in s)) throw new Error(`missing /start step ${id}`);
@@ -67,17 +70,7 @@ function fromStart(id: string): { title: string; subtitle?: string; options?: { 
   };
 }
 
-const startDate = fromStart('birth_date');
-const startKnown = fromStart('birth_time_known');
-const startTime = fromStart('birth_time');
-const startCity = fromStart('birth_city');
 const startFrustration = fromStart('frustration');
-
-const KNOWN_HI: Record<string, string> = {
-  exact: 'Haan, bilkul pata hai',
-  approx: 'Lagbhag — ek-do ghante idhar-udhar',
-  unknown: 'Pata nahi',
-};
 
 export const FOCUS_LABEL: Record<FocusArea, T> = {
   career: { en: 'Career & money', hi: 'Career aur paisa' },
@@ -251,27 +244,28 @@ export function buildScreens(slug: QuizSlug): Screen[] {
     },
     {
       id: 's10', spec: 'S10', kind: 'date', field: 'birth_date', numbered: true,
-      title: { en: startDate.title, hi: 'Aapka janam kab hua?' },
-      subtitle: startDate.subtitle ? { en: startDate.subtitle, hi: 'Sab kuch isi se nikalta hai. Aapki details private rehti hain.' } : undefined,
+      title: { en: 'When were you born?', hi: 'Aapki janm tithi kya hai?' },
+      subtitle: { en: 'Day, month and year.', hi: 'Din, mahina aur saal.' },
+      notice: {
+        en: 'We use your birth date, time and place only to calculate your chart. We do not sell them, and you can ask us to delete them at any time: privacy@vedichour.com.',
+        hi: 'Hum aapki janm tithi, samay aur jagah sirf aapki kundli banane ke liye lenge. Ye kisi ko bechi nahi jaati. Aap kabhi bhi delete karwa sakte hain: privacy@vedichour.com.',
+      },
     },
     {
-      id: 's11', spec: 'S11', kind: 'single', field: 'birth_time_known', numbered: true,
-      title: { en: startKnown.title, hi: 'Kya aapko janam ka samay pata hai?' },
-      subtitle: startKnown.subtitle
-        ? { en: startKnown.subtitle, hi: 'Sach batayein — andaaze ka samay galat reading deta hai, aur hum yeh saaf bata denge.' }
-        : undefined,
-      options: (startKnown.options ?? []).map((o) => ({ value: o.value, label: { en: o.label, hi: KNOWN_HI[o.value] ?? o.label } })),
-    },
-    {
-      id: 's12', spec: 'S12', kind: 'time', field: 'birth_time', numbered: true,
-      title: { en: startTime.title, hi: 'Aapka janam kitne baje hua?' },
-      subtitle: startTime.subtitle ? { en: startTime.subtitle, hi: 'Jitna sahi ho sake.' } : undefined,
-      showIf: (a) => a.birth_time_known === 'exact' || a.birth_time_known === 'approx',
+      id: 's11', spec: 'S11', kind: 'birthtime', numbered: true,
+      title: { en: 'Do you know your birth time?', hi: 'Janm ka samay pata hai?' },
+      subtitle: {
+        en: 'Birth time sets your rising sign, and a sign lasts about two hours on average, so even an hour can matter. A rough time is fine. Just tell us it is rough.',
+        hi: 'Janm ka samay aapka Lagna tay karta hai. Ek Lagna ausat mein do ghante ka hota hai, isliye ek ghante ka farq bhi fark daal sakta hai. Andaza ho to bhi chalega, bas bata dijiye ki andaza hai.',
+      },
     },
     {
       id: 's13', spec: 'S13', kind: 'city', field: 'birth_city', numbered: true,
-      title: { en: startCity.title, hi: 'Aapka janam kahan hua?' },
-      subtitle: startCity.subtitle ? { en: startCity.subtitle, hi: 'Shehar ya kasbe ka naam kaafi hai — baaki hum nikal lenge.' } : undefined,
+      title: { en: 'Where were you born?', hi: 'Aapka janam kahan hua?' },
+      subtitle: {
+        en: 'Pick your town or city from the list. For a small place, pick the nearest big town.',
+        hi: 'List se apna shehar ya kasba chunein. Chhoti jagah ho toh sabse paas ka bada shehar chun lijiye.',
+      },
     },
     { id: 's14', spec: 'S14', kind: 'calc', numbered: true },
     { id: 's15', spec: 'S15', kind: 'contact', numbered: true },

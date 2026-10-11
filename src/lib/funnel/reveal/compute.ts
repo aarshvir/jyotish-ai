@@ -52,8 +52,24 @@ export interface NodeFacts {
   conj: Lord[];
 }
 
+export type Precision = 'exact' | 'approx' | 'unknown';
+
+/**
+ * How much the reading could move if the birth time is not what was entered. Computed by
+ * running the chart engine again at the edges of the uncertainty (the whole day when there
+ * is no time, two hours either side when the time is rough) and listing what differs.
+ */
+export interface Spread {
+  /** Distinct rising signs across the window, in time order. Empty when there is no time to start from. */
+  lagnas: Sign[];
+  moonSigns: Sign[];
+  moonNakshatras: string[];
+}
+
 export interface RevealData {
   timeKnown: boolean;
+  precision: Precision;
+  spread: Spread | null;
   reference: 'lagna' | 'moon';
   referenceSign: Sign;
   lagna: Sign | null;
@@ -116,11 +132,28 @@ function houseLead(h: number, reference: 'lagna' | 'moon'): string {
 export interface RevealInput {
   chart: NatalChartData;
   timeKnown: boolean;
+  precision?: Precision;
+  /** The same birth at the start and end of the uncertainty window (see Spread). Optional. */
+  window?: { before: NatalChartData; after: NatalChartData };
   city: string;
   lat: number;
   lng: number;
   focusArea?: string;
   selfRole?: string;
+}
+
+function distinct<T>(xs: (T | null | undefined)[]): T[] {
+  const out: T[] = [];
+  for (const x of xs) if (x != null && !out.includes(x)) out.push(x);
+  return out;
+}
+
+export function spreadOf(charts: NatalChartData[], hasTime: boolean): Spread {
+  return {
+    lagnas: hasTime ? distinct(charts.map((c) => (isSign(c.lagna) ? c.lagna : null))) : [],
+    moonSigns: distinct(charts.map((c) => (isSign(c.planets?.Moon?.sign) ? (c.planets.Moon.sign as Sign) : null))),
+    moonNakshatras: distinct(charts.map((c) => c.planets?.Moon?.nakshatra ?? c.moon_nakshatra ?? null)),
+  };
 }
 
 export function computeReveal(input: RevealInput): RevealData {
@@ -209,8 +242,13 @@ export function computeReveal(input: RevealInput): RevealData {
 
   const order = (input.focusArea && LOCKED_ORDER[input.focusArea]) || LOCKED_DEFAULT;
 
+  const precision: Precision = input.precision ?? (timeKnown ? 'exact' : 'unknown');
+  const spread = input.window && precision !== 'exact' ? spreadOf([input.window.before, chart, input.window.after], timeKnown) : null;
+
   return {
     timeKnown: Boolean(lagna),
+    precision,
+    spread,
     reference,
     referenceSign,
     lagna,
