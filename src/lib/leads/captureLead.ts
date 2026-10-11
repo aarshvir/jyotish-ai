@@ -65,13 +65,17 @@ export async function captureLead(deps: CaptureDeps, input: CaptureInput): Promi
   const found = await store.findByEmail(input.email);
   if (!found.ok) return { saved: false, emailed: false, reason: found.missing ? 'storage_unavailable' : 'storage_error' };
 
+  const updateExisting = async (existing: { id: string; stage: string; reveal_viewed_at: string | null; source: string }) => {
+    const patch = fields(input, existing, nowIso);
+    // A later capture never erases a name already given.
+    if (!patch.first_name) delete patch.first_name;
+    return store.update(existing.id, patch);
+  };
+
   let leadId: string;
   if (found.value) {
     leadId = found.value.id;
-    const patch = fields(input, found.value, nowIso);
-    // A later capture never erases a name already given.
-    if (!patch.first_name) delete patch.first_name;
-    const up = await store.update(leadId, patch);
+    const up = await updateExisting(found.value);
     if (!up.ok) return { saved: false, emailed: false, reason: up.missing ? 'storage_unavailable' : 'storage_error' };
   } else {
     const ins = await store.insert({
@@ -84,8 +88,18 @@ export async function captureLead(deps: CaptureDeps, input: CaptureInput): Promi
       utm_campaign: input.utm.utm_campaign ?? null,
       utm_content: input.utm.utm_content ?? null,
     });
-    if (!ins.ok) return { saved: false, emailed: false, reason: ins.missing ? 'storage_unavailable' : 'storage_error' };
-    leadId = ins.value;
+    if (ins.ok) {
+      leadId = ins.value;
+    } else if (ins.missing) {
+      return { saved: false, emailed: false, reason: 'storage_unavailable' };
+    } else {
+      // Two taps at once can both miss the lookup and race to insert; the loser looks again and updates.
+      const again = await store.findByEmail(input.email);
+      if (!again.ok || !again.value) return { saved: false, emailed: false, reason: 'storage_error' };
+      leadId = again.value.id;
+      const up = await updateExisting(again.value);
+      if (!up.ok) return { saved: false, emailed: false, reason: up.missing ? 'storage_unavailable' : 'storage_error' };
+    }
   }
 
   // 2. the consent ledger: the words people were shown, looked up here, never taken from the browser

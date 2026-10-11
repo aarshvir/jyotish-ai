@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, vi } from 'vitest';
 import { ageOn, isMinor, parseCapture } from '@/lib/leads/capture';
 import { captureLead, contactHash, type CaptureDeps } from '@/lib/leads/captureLead';
 import { NOTICE_VERSION, consentText } from '@/lib/leads/consentText';
-import { maskEmail, mailModeFor, recordingMailer } from '@/lib/leads/mailer';
+import { maskEmail, mailModeFor, recordingMailer, resendMailer } from '@/lib/leads/mailer';
 import { renderChartEmail } from '@/lib/leads/chartEmail';
 import { makeResumeToken, verifyResumeToken } from '@/lib/leads/resumeToken';
 import { memoryStore } from '@/lib/leads/store';
@@ -290,5 +290,51 @@ describe('the consent words', () => {
     for (const lang of ['en', 'hi'] as const) {
       for (const k of ['notice', 'service', 'marketing'] as const) expect(consentText(k, lang)).not.toMatch(/whatsapp|phone|call/i);
     }
+  });
+});
+
+describe('two taps at once', () => {
+  it('updates the lead the other request just created instead of failing', async () => {
+    const inner = memoryStore();
+    const first = parseCapture(body(), null);
+    if (!first.ok) throw new Error('parse');
+    // Pre-create the lead the "other request" will have inserted.
+    const other = await captureLead({ ...deps(), store: inner }, first.input);
+    expect(other.saved).toBe(true);
+    let lookups = 0;
+    const racing = {
+      ...inner,
+      async findByEmail(e: string) {
+        // The first look misses (the other request had not committed yet); the retry finds it.
+        return ++lookups === 1 ? ({ ok: true, value: null } as const) : inner.findByEmail(e);
+      },
+      async insert() {
+        return { ok: false, missing: false, error: 'duplicate key value violates unique constraint "leads_email_uq"' } as const;
+      },
+    };
+    const d = deps({ store: racing as never });
+    const r = await captureLead(d, first.input);
+    expect(r).toMatchObject({ saved: true, emailed: true });
+    expect(inner.leads.size).toBe(1);
+  });
+});
+
+describe('mail that cannot be sent', () => {
+  it('never logs a full address when no email key is set', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const mailer = resendMailer({ NODE_ENV: 'production' });
+    const out = await mailer.send({ to: 'asha.test@example.invalid', subject: 'x', html: '<p>x</p>', text: 'x', listUnsubscribeUrl: 'https://example.invalid/u' });
+    expect(out).toEqual({ status: 'unconfigured' });
+    expect(JSON.stringify(log.mock.calls)).not.toContain('asha.test');
+    log.mockRestore();
+  });
+
+  it('is a dry run, with a masked log line, when dry-run is on', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const out = await resendMailer({ NODE_ENV: 'production', LEADS_DRY_RUN: '1', RESEND_API_KEY: 'x' }).send({ to: 'asha.test@example.invalid', subject: 'x', html: '', text: '', listUnsubscribeUrl: 'u' });
+    expect(out).toEqual({ status: 'dry_run' });
+    expect(JSON.stringify(log.mock.calls)).toContain('a***@example.invalid');
+    expect(JSON.stringify(log.mock.calls)).not.toContain('asha.test');
+    log.mockRestore();
   });
 });
