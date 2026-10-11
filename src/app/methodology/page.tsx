@@ -83,6 +83,12 @@ export default function MethodologyPage() {
           <Link href="/compare/vedic-vs-western-astrology" className="text-amber underline">Vedic vs Western astrology</Link>.
         </p>
 
+        <h2 className="font-display text-2xl text-star mt-10 mb-3">Sources and editorial policy</h2>
+        <p className="font-body text-body-md text-dust leading-relaxed">
+          The classical texts we follow, how articles are written and dated, what we will not predict and how to report a mistake are on the{' '}
+          <Link href="/about" className="text-amber underline">About page</Link>.
+        </p>
+
         <h2 className="font-display text-2xl text-star mt-10 mb-3">What it does not claim</h2>
         <p className="font-body text-body-md text-dust leading-relaxed">
           VedicHour does not predict events and does not offer medical, legal or financial advice. The hourly scores show how

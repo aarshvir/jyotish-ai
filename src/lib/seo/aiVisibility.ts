@@ -193,6 +193,7 @@ export function buildLlmsTxt(site: string = SITE_FALLBACK, today: Date = new Dat
     '',
     '## Methodology and guides',
     `- [How VedicHour calculates](${site}/methodology): ephemeris, ayanamsa, house system, scoring layers and what it does not claim.`,
+    `- [About and editorial policy](${site}/about): sources, where AI is used, what is never predicted, how to report a mistake.`,
     `- [What is a hora?](${site}/hora): the planetary-hour order, weekday rulers and a worked 24-hour table.`,
     `- [Vedic vs Western astrology](${site}/compare/vedic-vs-western-astrology): the real differences, in plain English.`,
     `- [All comparisons](${site}/compare): AstroSage, Prokerala, AstroTalk, Astroyogi, AI vs human astrologers and more.`,
