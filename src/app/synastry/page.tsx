@@ -10,9 +10,9 @@ import { SeoProse, FaqSection } from '@/components/seo/SeoSection';
 import { faqPageLd, breadcrumbLd, softwareAppLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Kundli Matching & Marriage Compatibility (Gun Milan) — VedicHour',
+  title: 'Kundli Matching: 36-Point Gun Milan Compatibility',
   description:
-    'Free-to-start Vedic matchmaking. Enter two birth details and get your 36-point Ashtakoot Gun Milan score free. The full eight-fold compatibility breakdown comes with a VedicHour subscription.',
+    'Enter two sets of birth details for a free 36-point Ashtakoot Gun Milan score. The full eight-koota breakdown comes with a VedicHour subscription.',
   alternates: { canonical: '/synastry' },
 };
 

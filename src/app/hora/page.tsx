@@ -8,9 +8,9 @@ import { FaqSection } from '@/components/seo/SeoSection';
 import { faqPageLd, breadcrumbLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'What Is a Hora? Planetary Hours & Vedic Day Timing',
+  title: 'What Is a Hora? Planetary Hours Explained',
   description:
-    'A plain-English guide to the hora (planetary hour) in Vedic astrology — how planetary hours, choghadiya and Rahu Kaal divide the day, and how to read clearer vs heavier windows.',
+    'What the hora (planetary hour) is, how it is counted from sunrise, and how hora, choghadiya and Rahu Kaal divide the day.',
   keywords: [
     'what is hora',
     'planetary hours vedic',

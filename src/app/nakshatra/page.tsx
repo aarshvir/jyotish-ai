@@ -6,9 +6,9 @@ import { StarField } from '@/components/ui/StarField';
 import { NAKSHATRAS } from '@/content/nakshatras';
 
 export const metadata: Metadata = {
-  title: 'The 27 Nakshatras — Vedic Birth Stars, Traits & Compatibility',
+  title: 'The 27 Nakshatras: Birth Stars, Traits, Compatibility',
   description:
-    'Explore all 27 nakshatras (Vedic birth stars): ruling planet, deity, gana, nadi, yoni, personality traits and compatibility. Find your janma nakshatra free.',
+    'All 27 nakshatras (Vedic birth stars): ruling planet, deity, gana, nadi, yoni, traits and compatibility. Find your janma nakshatra free.',
   alternates: { canonical: '/nakshatra' },
 };
 

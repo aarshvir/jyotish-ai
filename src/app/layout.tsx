@@ -82,15 +82,9 @@ export const metadata: Metadata = {
   authors: [{ name: 'VedicHour' }],
   creator: 'VedicHour',
   publisher: 'VedicHour',
-  alternates: {
-    canonical: '/',
-    // Serves one English site to global + India (₹) via geo currency; annotate locales.
-    languages: {
-      'en-IN': '/',
-      'en-US': '/',
-      'x-default': '/',
-    },
-  },
+  // No site-wide `alternates` on purpose. A canonical set here is inherited by any page that
+  // forgets its own, which would silently point that page at the homepage. Every indexable
+  // page sets its own canonical. hreflang is added only when a real translated page exists.
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -179,7 +173,6 @@ export default function RootLayout({
                     email: 'support@vedichour.com',
                     contactType: 'customer support',
                   },
-                  sameAs: [],
                 },
                 {
                   '@type': 'WebSite',

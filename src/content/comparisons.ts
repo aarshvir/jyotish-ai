@@ -12,7 +12,7 @@ const BASE_COMPARISONS: Comparison[] = [
     title: 'AstroSage Alternative — VedicHour vs AstroSage',
     h1: 'A modern AstroSage alternative',
     description:
-      'Looking for an AstroSage alternative? VedicHour pairs Swiss Ephemeris Kundli with an AI Jyotish report in plain English and an hour-by-hour Vedic timing grid. Free Kundli, no card.',
+      'Looking for an AstroSage alternative? VedicHour pairs a Swiss Ephemeris Kundli with a plain-English report and an hour-by-hour timing grid.',
     keywords: [
       'astrosage alternative',
       'alternative to astrosage',
@@ -72,7 +72,7 @@ const BASE_COMPARISONS: Comparison[] = [
     title: 'Prokerala Alternative — VedicHour vs Prokerala',
     h1: 'A modern Prokerala alternative',
     description:
-      'A Prokerala alternative for free Kundli and Vedic timing. VedicHour adds a plain-English AI Jyotish report and an hour-by-hour grid of clearer and heavier windows. Swiss Ephemeris, free Kundli.',
+      'A Prokerala alternative for free Kundli and Vedic timing: plain-English reports and an hour-by-hour grid of clearer and heavier windows.',
     keywords: [
       'prokerala alternative',
       'alternative to prokerala',
@@ -128,10 +128,10 @@ const BASE_COMPARISONS: Comparison[] = [
     published: '2026-06-21',
     updated: '2026-10-11',
     verdict: "There is no single best free Kundli site: some are best for breadth, some for clean calculators, some for plain-English readings. Match the site to what you want, and compare the same chart on two before you rely on either.",
-    title: 'Best Free AI Kundli & Jyotish Sites (Honest 2026 Guide)',
+    title: 'Best Free AI Kundli Sites: An Honest Guide',
     h1: 'Best free AI Kundli & Jyotish sites',
     description:
-      'An honest guide to the best free AI Kundli and Vedic astrology sites — what each is good for, and where VedicHour fits: plain-English AI reports plus an hour-by-hour timing grid on Swiss Ephemeris.',
+      'What the best free AI Kundli sites are each good for, and where VedicHour fits. We built VedicHour, so we say where others win.',
     keywords: [
       'best free ai kundli',
       'best ai astrology website',
@@ -189,10 +189,10 @@ const BASE_COMPARISONS: Comparison[] = [
     published: '2026-06-21',
     updated: '2026-10-11',
     verdict: "Most timing tools show the same panchang for everyone; VedicHour scores your day’s 18 hourly slots against your own birth chart. Use a panchang for the shared daily basics and a personal forecast when you are timing something that matters to you.",
-    title: 'Best App for Vedic Timing — Muhurat, Choghadiya & Hora',
+    title: 'Best App for Vedic Timing: Muhurat, Hora',
     h1: 'The best app for Vedic timing',
     description:
-      'Looking for the best app for Vedic timing — muhurat, choghadiya, hora and Rahu Kaal? VedicHour rates your day’s 18 hourly slots as clearer or heavier windows, personal to your chart. Free to try.',
+      'Choosing an app for muhurat, choghadiya, hora and Rahu Kaal? What each type does well, and how VedicHour rates 18 hourly windows for your chart.',
     keywords: [
       'best app for muhurat',
       'auspicious time calculator',
@@ -244,10 +244,10 @@ const BASE_COMPARISONS: Comparison[] = [
     published: '2026-06-21',
     updated: '2026-10-11',
     verdict: "AstroSage, Prokerala and VedicHour all compute a Vedic chart, so the raw positions should agree; they differ in what they are built for. AstroSage is the widest toolbox, Prokerala the cleanest calculators, VedicHour a readable reading with day-by-day timing.",
-    title: 'AstroSage vs Prokerala vs VedicHour — Free Kundli Compared',
+    title: 'AstroSage vs Prokerala vs VedicHour Compared',
     h1: 'AstroSage vs Prokerala vs VedicHour',
     description:
-      'AstroSage vs Prokerala vs VedicHour for a free Kundli. All three cast a sidereal chart; we compare breadth, readability and timing — and where each one fits. Honest, no hype.',
+      'AstroSage, Prokerala and VedicHour all cast a sidereal chart. We compare breadth, readability and timing, and where each one fits.',
     keywords: [
       'astrosage vs prokerala',
       'prokerala vs astrosage',
@@ -303,10 +303,10 @@ const BASE_COMPARISONS: Comparison[] = [
     published: '2026-06-21',
     updated: '2026-10-11',
     verdict: "A useful AI astrology app computes your real birth chart and explains it; a poor one writes generic Sun-sign text. Check that it names its ephemeris, gives the same chart for the same birth details, and says plainly that it is for reflection, not guarantees.",
-    title: 'Best AI Astrology Apps That Explain Your Chart (Honest Guide)',
+    title: 'Best AI Astrology Apps, Honestly Compared',
     h1: 'Best AI astrology apps that explain your chart',
     description:
-      'Most "AI astrology" is just generic horoscope text. Here is how to spot apps that actually read your birth chart — and where VedicHour fits, with an hour-by-hour timing grid on Swiss Ephemeris.',
+      'Most AI astrology is generic horoscope text. How to spot apps that read your actual birth chart, and where VedicHour fits.',
     keywords: [
       'best ai astrology app',
       'ai astrology app',
@@ -355,10 +355,10 @@ const BASE_COMPARISONS: Comparison[] = [
     published: '2026-06-21',
     updated: '2026-10-11',
     verdict: "Kundli matching scores two charts across eight factors for a maximum of 36 points; it is one input into a decision, not a verdict. A trustworthy tool shows the breakdown of all eight factors, not just the total.",
-    title: 'Best Kundli Matching for 36-Point Gun Milan (Free)',
+    title: 'Best Kundli Matching Sites for Gun Milan',
     h1: 'Kundli matching (Gun Milan), explained',
     description:
-      'How 36-point Gun Milan Kundli matching actually works, what each koota measures, and what to look for in a free matching tool. Try VedicHour’s free 36-point score on a sidereal chart.',
+      'How 36-point Gun Milan matching works, what each koota measures, and what to look for in a free kundli matching tool.',
     keywords: [
       'best kundli matching online',
       'kundli matching free',
@@ -405,10 +405,10 @@ const BASE_COMPARISONS: Comparison[] = [
     published: '2026-06-21',
     updated: '2026-10-11',
     verdict: "Sade Sati, Manglik and Kaal Sarp are chart patterns, not curses, and traditions differ on how much weight each deserves. A good calculator computes them from a real chart and explains the result calmly rather than selling a remedy.",
-    title: 'Best Free Dosha Calculators — Sade Sati, Manglik, Kaal Sarp',
+    title: 'Best Free Dosha Calculators: Sade Sati, Manglik',
     h1: 'Best free dosha calculators',
     description:
-      'Free Sade Sati, Manglik and Kaal Sarp dosha calculators on a Swiss Ephemeris chart — what each dosha means for reflection, not fear, and how to check yours in seconds. No signup.',
+      'Free Sade Sati, Manglik and Kaal Sarp calculators: what each dosha means, what to look for in a tool, and how to check yours. No sign-up.',
     keywords: [
       'dosha calculator',
       'manglik dosha calculator',

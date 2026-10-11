@@ -3,9 +3,9 @@ import { CalculatorPage } from '@/components/tools/CalculatorPage';
 import { faqPageLd, breadcrumbLd, softwareAppLd, howToLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Moon Sign Calculator — Free Rashi by Date of Birth (Vedic)',
+  title: 'Moon Sign Calculator: Find Your Vedic Rashi',
   description:
-    'Find your Vedic Moon sign (Rashi / Chandra Rashi) in seconds. Enter your date, time and place of birth to see the sign the Moon occupied at birth, plus your birth star — free, no signup.',
+    'Find your Vedic Moon sign (Rashi) and birth star from your date, time and place of birth. Free, no sign-up, sidereal zodiac with Lahiri ayanamsa.',
   alternates: { canonical: '/moon-sign-calculator' },
 };
 

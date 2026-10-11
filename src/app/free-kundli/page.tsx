@@ -3,9 +3,9 @@ import { CalculatorPage } from '@/components/tools/CalculatorPage';
 import { faqPageLd, breadcrumbLd, softwareAppLd, howToLd, type Faq } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Free Kundli Online by Date of Birth & Time — Instant Vedic Birth Chart',
+  title: 'Free Kundli Online by Date of Birth and Time',
   description:
-    'Generate your free Janam Kundali online. Enter your date, time and place of birth to see your Lagna, Moon sign, Nakshatra, Sun sign, current dasha and Manglik / Kaal Sarpa / Sade Sati flags — instant, free, no signup.',
+    'Make your free Janam Kundli in seconds. Enter your date, time and place of birth to see Lagna, Moon sign, birth star and running dasha. No sign-up.',
   alternates: { canonical: '/free-kundli' },
 };
 

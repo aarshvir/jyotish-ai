@@ -7,12 +7,12 @@ import { SAMPLE_GRID, SAMPLE_SEEKER, SAMPLE_DAY_SCORE } from '@/components/landi
 import { UNLOCK_FREE_HREF } from '@/lib/pricing';
 
 export const metadata: Metadata = {
-  title: 'Sample Vedic Day Timing Report — All 18 Hourly Windows',
+  title: 'Sample Report: One Full Day, Hour by Hour',
   description:
-    'A full sample Vedic day timing report: all 18 hourly windows for one real birth chart, each scored and explained in plain English — what each hour of the day actually suits.',
+    'See a full sample day from a real birth chart: all 18 hourly windows, each scored and explained in plain English.',
   alternates: { canonical: '/sample-report' },
   openGraph: {
-    title: 'Sample Vedic Day Timing Report — All 18 Hourly Windows',
+    title: 'Sample Report: One Full Day, Hour by Hour',
     description:
       'One full day, hour by hour: every window scored and explained in plain English. See what a VedicHour report actually looks like.',
     url: '/sample-report',
