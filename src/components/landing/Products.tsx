@@ -8,6 +8,7 @@
  */
 
 import Link from 'next/link';
+import { INDIA_MONTHLY, INDIA_YEARLY } from '@/lib/landingCopy';
 
 const PRODUCTS = [
   {
@@ -15,8 +16,8 @@ const PRODUCTS = [
     plain: 'Hour-by-hour timing',
     title: 'Life Forecast',
     body:
-      'Our flagship. Every day mapped into 18 scored hourly windows in plain English — 7 days or 30 days, plus a 12-month thematic outlook. Clearer windows to act; heavier ones to leave alone.',
-    tag: '7-day · Monthly · Annual',
+      'Our flagship. Every day of the next 30 days mapped into 18 scored hourly windows in plain English, plus a 12-month thematic outlook. Clearer windows to act; heavier ones to leave alone.',
+    tag: `Subscription · ${INDIA_MONTHLY} a month or ${INDIA_YEARLY} a year in India`,
     cta: 'See forecast plans',
     icon: (
       <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
