@@ -32,6 +32,7 @@ Date of audit: 11 October 2026. Owner of this work: the SEO session. Branches an
 | Descriptions over 160 chars | 24 (kundali 320, compare 8 of 8, calculators 8) |
 | Templated pages | 216 (horoscope 108, transit 108), 66% of the sitemap |
 | Pages with zero or one internal link in | /muhurat 0, /hora 1, /sample-report 1, all 108 transit pages 0 |
+| Images and alt text | No content images; the only `<img>` on any page is the Meta Pixel (empty alt, correct). Also means no image-search presence |
 | Private routes | noindex or auth-redirected correctly (/account, /dashboard, /report, /kundali/{id}, /q/*) |
 | AI crawlers | GPTBot, OAI-SearchBot, ChatGPT-User, PerplexityBot, ClaudeBot, Bingbot, Googlebot all receive 200 |
 | Redirects | `http://vedichour.com` goes 308 to `https://vedichour.com`, then **307** to `https://www.vedichour.com` |
