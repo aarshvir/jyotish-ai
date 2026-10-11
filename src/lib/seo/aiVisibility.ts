@@ -236,7 +236,7 @@ export function buildLlmsFullTxt(site: string = SITE_FALLBACK, today: Date = new
     ...METHOD_FACTS.map((f) => `- ${f.label}: ${f.text}`),
     '',
     '## Guides',
-    ...posts.map((p) => `- [${p.title}](${site}/blog/${p.slug}): ${p.description}`),
+    ...posts.map((p) => `- [${p.title}](${site}/blog/${p.slug})${p.lang === 'hi' ? ' (Hindi)' : ''}: ${p.description}`),
     '',
   ];
   return out.join('\n');

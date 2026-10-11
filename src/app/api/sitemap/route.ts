@@ -54,9 +54,11 @@ const TRANSIT_ROUTES = [
   ),
 ];
 
+// lastmod is the last substantive edit (updated) when we have one, otherwise the publish date.
+const lastEdit = (p: (typeof POSTS)[number]) => p.updated ?? p.date;
 const BLOG_ROUTES = [
-  { path: '/blog', changefreq: 'daily', priority: '0.7', lastmod: POSTS[0]?.date },
-  ...POSTS.map((p) => ({ path: `/blog/${p.slug}`, changefreq: 'weekly', priority: '0.7', lastmod: p.date })),
+  { path: '/blog', changefreq: 'daily', priority: '0.7', lastmod: POSTS.map(lastEdit).sort().at(-1) },
+  ...POSTS.map((p) => ({ path: `/blog/${p.slug}`, changefreq: 'weekly', priority: '0.7', lastmod: lastEdit(p) })),
 ];
 
 // Programmatic reference hubs + leaves (nakshatras, dasha periods, life predictions).

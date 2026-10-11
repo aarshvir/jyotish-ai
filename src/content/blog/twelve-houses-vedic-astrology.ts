@@ -1,33 +1,99 @@
 import type { BlogPost } from '@/content/blog/types';
 
 export const post: BlogPost = {
-  "slug": "twelve-houses-vedic-astrology",
-  "title": "The 12 Houses (Bhavas) of Your Birth Chart, Explained Simply",
-  "seoTitle": "The 12 Houses (Bhavas) Explained Simply",
-  "description": "Unlock your birth chart! Discover the 12 houses (bhavas) in Vedic astrology, what each governs, and how to read your kundli simply.",
-  "keywords": [
-    "12 houses vedic astrology",
-    "bhavas",
-    "houses in kundli",
-    "7th house marriage",
-    "10th house career",
-    "birth chart houses"
+  slug: 'twelve-houses-vedic-astrology',
+  title: 'The 12 Houses (Bhavas) in Vedic Astrology: What Each Covers and Which Planet Rules It',
+  seoTitle: 'The 12 Houses (Bhavas) Explained Simply',
+  description:
+    'What each of the 12 Vedic houses covers, its natural significator planet, the groups (kendra, trikona, dusthana, upachaya), and a way to read them.',
+  keywords: [
+    '12 houses vedic astrology',
+    'bhavas',
+    'houses in kundli',
+    '7th house marriage',
+    '10th house career',
+    'kendra trikona dusthana',
+    'natural karaka of houses',
   ],
-  "date": "2026-06-15",
-  "readingTimeMin": 7,
-  "html": "<p><strong>The 12 houses, or Bhavas, in your Vedic birth chart act as a cosmic map, dividing your life into distinct areas and revealing the unique tapestry of your existence.</strong></p>\n\n<p>If you've ever looked at your Vedic birth chart, also known as a kundli, you've likely noticed it's divided into twelve sections. These sections are called \"houses\" or \"bhavas,\" and they are fundamental to understanding the blueprint of your life. In Vedic astrology, which uses the sidereal zodiac, these houses represent different compartments of your experience, from your personality and family to your career, relationships, and spiritual path. Each house governs specific themes, and the planets residing within them, along with the sign on their cusp, color these life areas in profound ways.</p>\n\n<p>Understanding these <strong>12 houses vedic astrology</strong> provides incredible clarity. It’s like having a personalized guide to your strengths, challenges, and opportunities. Instead of feeling overwhelmed by complex planetary positions, let's take a plain-English tour of each house, demystifying what it governs so you can begin to interpret your own unique chart.</p>\n\n<h2>The First House: Your Self and Persona (Lagna Bhava)</h2>\n<p>The First House, also known as the Lagna Bhava or Ascendant, is arguably the most personal house in your chart. It represents your physical body, your appearance, temperament, overall vitality, and how you present yourself to the world. It’s your core personality, your innate disposition, and your self-identity. The sign on the cusp of this house, and any planets within it, strongly influence your self-perception and your general approach to life.</p>\n<ul>\n    <li><strong>Governs:</strong> Self, personality, physical body, appearance, temperament, initial approach to life.</li>\n    <li><strong>Think of it as:</strong> Your cosmic \"selfie\" – who you are at your most fundamental level.</li>\n</ul>\n\n<h2>The Second House: Resources and Family</h2>\n<p>The Second House delves into your material resources, beyond just earned income. It signifies your stored wealth, family values, speech patterns, and even your primary education. This house also relates to your immediate family (excluding parents, who are primarily linked to the 4th and 9th houses) and your ability to accumulate assets. It speaks to your sense of self-worth and how you value what you possess.</p>\n<ul>\n    <li><strong>Governs:</strong> Wealth, assets, family (especially immediate), speech, food habits, self-worth, primary education.</li>\n    <li><strong>Think of it as:</strong> Your personal treasury and what you hold dear.</li>\n</ul>\n\n<h2>The Third House: Communication and Courage</h2>\n<p>This house is all about how you express yourself, your drive, and your immediate environment. The Third House governs siblings (especially younger ones), communication skills, short journeys, courage, hobbies, and personal efforts. It highlights your initiative and your capacity for self-starting endeavors. A strong Third House often indicates someone who is dynamic and articulate.</p>\n<ul>\n    <li><strong>Governs:</strong> Siblings, communication, short trips, courage, effort, hobbies, writing.</li>\n    <li><strong>Think of it as:</strong> Your personal communication hub and action center.</li>\n</ul>\n\n<h2>The Fourth House: Home, Heart, and Mother</h2>\n<p>The Fourth House is deeply connected to your inner world, your roots, and your emotional foundation. It signifies your mother, home, domestic life, inner peace, and property. This house describes the kind of environment you feel most comfortable in and your emotional security. It's about your foundational happiness and your connection to your homeland.</p>\n<ul>\n    <li><strong>Governs:</strong> Mother, home, property, vehicles, inner peace, emotional well-being, roots.</li>\n    <li><strong>Think of it as:</strong> Your sanctuary, your emotional core.</li>\n</ul>\n\n<h2>The Fifth House: Creativity, Children, and Intellect</h2>\n<p>Joy, creativity, and intellect are themes of the Fifth House. It governs children, romance, creative expression, speculation (like investments or gambling), and higher learning (beyond primary education but not necessarily university degrees). It also speaks to your past life good karma, indicating natural talents and fortunate circumstances. This house illuminates your capacity for playfulness and self-expression.</p>\n<ul>\n    <li><strong>Governs:</strong> Children, creativity, romance, intellect, speculation, past life merits.</li>\n    <li><strong>Think of it as:</strong> Your playground for joy, love, and self-expression.</li>\n</ul>\n\n<h2>The Sixth House: Service, Health, and Challenges</h2>\n<p>Often considered a challenging house, the Sixth House deals with obstacles, service, health, debts, and enemies. However, it's also the house of overcoming adversity through hard work and discipline. It relates to your daily routines, your work ethic in service-oriented roles, and how you manage conflicts. A well-placed planet here can indicate victory over challenges, rather than being overcome by them.</p>\n<ul>\n    <li><strong>Governs:</strong> Debts, diseases, enemies, daily routine, service, pets, obstacles.</li>\n    <li><strong>Think of it as:</strong> Your arena for growth through challenge and service.</li>\n</ul>\n\n<h2>The Seventh House: Partnerships and Marriage (Kalatra Bhava)</h2>\n<p>The Seventh House is crucial for understanding your relationships, particularly romantic partnerships and marriage. It represents your spouse, business partners, and how you engage in one-on-one interactions. It shows what you seek in a partner and the nature of your significant relationships. When people ask about \"<strong>7th house marriage</strong>\", this is the bhava they are referring to. This house also deals with open enemies and legal contracts.</p>\n<ul>\n    <li><strong>Governs:</strong> Marriage, spouse, partnerships (business/personal), open enemies, contracts.</li>\n    <li><strong>Think of it as:</strong> Your mirror, reflecting your approach to significant unions. If you're curious about compatibility, a <a href=\"/synastry\">synastry report</a> can provide deeper insights into how your chart interacts with another's.</li>\n</ul>\n\n<h2>The Eighth House: Transformation and Hidden Realms</h2>\n<p>This is often considered the house of sudden changes, profound transformations, and hidden matters. The Eighth House governs longevity, inheritance, occult studies, research, shared resources (like taxes or a partner's finances), and deep psychological insights. It's a mysterious house, dealing with the unseen, rebirth, and profound shifts in life. Planets here can bring unexpected events or a deep interest in esoteric knowledge.</p>\n<ul>\n    <li><strong>Governs:</strong> Longevity, sudden events, inheritance, hidden knowledge, transformation, shared resources.</li>\n    <li><strong>Think of it as:</strong> The house of metamorphosis and uncovering hidden truths.</li>\n</ul>\n\n<h2>The Ninth House: Dharma, Fortune, and Higher Wisdom</h2>\n<p>The Ninth House is a highly auspicious house, representing dharma (your righteous path), fortune, higher education (university degrees and beyond), spirituality, gurus, and long-distance travel. It's connected to your father and your belief system. A strong Ninth House indicates good luck, moral fortitude, and a lifelong pursuit of wisdom. It guides your philosophical outlook and your connection to divine grace.</p>\n<ul>\n    <li><strong>Governs:</strong> Father, guru, higher education, long journeys, philosophy, dharma, luck, spirituality.</li>\n    <li><strong>Think of it as:</strong> Your pathway to wisdom, grace, and expansive experiences.</li>\n</ul>\n\n<h2>The Tenth House: Career, Status, and Public Image (Karma Bhava)</h2>\n<p>The Tenth House, also known as the Karma Bhava, is paramount for understanding your professional life, career, public reputation, and social status. When discussing \"<strong>10th house career</strong>\", this is the primary area of focus. It shows your ambitions, your leadership potential, and how you are perceived in the world outside your home. Planets here indicate the nature of your chosen profession and your public achievements. It also relates to your father's lineage and influence on your professional path.</p>\n<ul>\n    <li><strong>Governs:</strong> Career, profession, public image, reputation, status, achievements, authority.</li>\n    <li><strong>Think of it as:</strong> Your public stage and professional destiny.</li>\n</ul>\n\n<h2>The Eleventh House: Gains, Friends, and Aspirations</h2>\n<p>The Eleventh House is associated with gains, income, fulfillment of desires, friends, elder siblings, and social networks. It represents your ability to achieve your aspirations and receive benefits from your efforts. This is the house of large organizations, groups, and mass movements. A well-aspected Eleventh House suggests a strong support system and the easy realization of goals.</p>\n<ul>\n    <li><strong>Governs:</strong> Gains, income, aspirations, friends, elder siblings, social networks, fulfillment of desires.</li>\n    <li><strong>Think of it as:</strong> Your house of hopes, dreams, and income.</li>\n</ul>\n\n<h2>The Twelfth House: Loss, Liberation, and the Unseen</h2>\n<p>Often considered another challenging house, the Twelfth House deals with losses, expenditures, isolation, foreign lands (especially those involving retreat or seclusion), spirituality, and the subconscious mind. It's also the house of spiritual liberation (moksha), charitable deeds, and hidden enemies. While it can signify challenges, it also points towards self-undoing, meditation, and ultimate spiritual realization. It's where we transcend the material world.</p>\n<ul>\n    <li><strong>Governs:</strong> Losses, expenditures, isolation, foreign residence, subconscious, spirituality, hidden enemies.</li>\n    <li><strong>Think of it as:</strong> The realm of letting go and spiritual transcendence.</li>\n</ul>\n\n<h2>Bringing Your Birth Chart Houses Together</h2>\n<p>Each of these <strong>bhavas</strong> interacts with the others, creating a complex yet deeply personal narrative. The planets, signs, and aspects within your <strong>birth chart houses</strong> all contribute to the unique story your chart tells. For instance, while the 7th house governs marriage, other houses like the 1st (self) and 5th (romance) will also influence the nature of your relationships.</p>\n\n<p>Understanding these fundamental divisions is the first step toward unlocking the wisdom of your Vedic astrology chart. It moves you from simply knowing your \"Sun sign\" to appreciating the intricate dance of all cosmic energies at play in your life. With this knowledge, you can approach life’s areas with greater awareness and intention.</p>\n\n<p>To dive deeper into the specifics of your own unique cosmic blueprint, consider exploring a personalized report. You can get started with a <a href=\"/free-kundli\">free kundli</a> to see your basic chart, or explore our <a href=\"/pricing\">premium reports</a> for in-depth analysis.</p>",
-  "faqs": [
+  date: '2026-06-15',
+  updated: '2026-10-11',
+  readingTimeMin: 6,
+  html: `<p><strong>A Vedic birth chart has twelve houses (bhavas), counted from the Lagna (ascendant) as the 1st. Each covers an area of life, has a natural significator planet (karaka), and belongs to groups such as kendra (angles), trikona (trines), dusthana (6, 8, 12) and upachaya (3, 6, 10, 11). To read a topic, find its house, then see which planet sits in it and which planet rules it.</strong></p>
+
+<p>Find your Lagna with the <a href="/lagna-calculator">Lagna calculator</a>, or open the <a href="/free-kundli">free Kundli</a> to see your houses filled in.</p>
+
+<h2>The 12 houses at a glance</h2>
+
+<table>
+<thead><tr><th>House</th><th>Sanskrit</th><th>Covers</th><th>Natural significator</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Tanu</td><td>Self, body, temperament, vitality</td><td>Sun</td></tr>
+<tr><td>2</td><td>Dhana</td><td>Money, family, speech, food</td><td>Jupiter</td></tr>
+<tr><td>3</td><td>Sahaja</td><td>Effort, courage, siblings, skills, short trips</td><td>Mars</td></tr>
+<tr><td>4</td><td>Sukha</td><td>Home, mother, property, peace of mind</td><td>Moon</td></tr>
+<tr><td>5</td><td>Putra</td><td>Children, study, creativity, romance</td><td>Jupiter</td></tr>
+<tr><td>6</td><td>Ripu</td><td>Daily work, debts, health habits, rivals</td><td>Mars, Saturn</td></tr>
+<tr><td>7</td><td>Jaya</td><td>Marriage, partners, open dealings</td><td>Venus</td></tr>
+<tr><td>8</td><td>Ayu</td><td>Sudden change, shared money, research, longevity</td><td>Saturn</td></tr>
+<tr><td>9</td><td>Dharma</td><td>Luck, teachers, belief, long journeys, father</td><td>Jupiter, Sun</td></tr>
+<tr><td>10</td><td>Karma</td><td>Career, status, public role</td><td>Mercury, Sun, Jupiter, Saturn</td></tr>
+<tr><td>11</td><td>Labha</td><td>Gains, friends, long-term goals</td><td>Jupiter</td></tr>
+<tr><td>12</td><td>Vyaya</td><td>Expenses, sleep, solitude, foreign places, liberation</td><td>Saturn</td></tr>
+</tbody>
+</table>
+
+<h2>The groups that matter</h2>
+
+<ul>
+<li><strong>Kendra (1, 4, 7, 10):</strong> the angles. Strength and action. Planets here are the most visible.</li>
+<li><strong>Trikona (1, 5, 9):</strong> the trines. Fortune and merit. Their lords are considered the most helpful planets in a chart.</li>
+<li><strong>Dusthana (6, 8, 12):</strong> houses of difficulty and change. They are also where growth through effort happens, so "difficult" does not mean "bad".</li>
+<li><strong>Upachaya (3, 6, 10, 11):</strong> houses that improve with time. Mars, Saturn and Rahu are said to do well here.</li>
+</ul>
+
+<h2>How to read a house in four moves</h2>
+
+<ol>
+<li><strong>Pick the topic.</strong> Career is the 10th, marriage the 7th, children the 5th, money the 2nd and 11th.</li>
+<li><strong>See what sits in the house.</strong> Planets in the house colour the topic with their own nature.</li>
+<li><strong>Find the house lord.</strong> The planet that rules the sign on the house shows where the topic is "managed" from. The 10th lord in the 7th house, for example, links career and partnership.</li>
+<li><strong>Add timing.</strong> Check the planets' dasha periods with the <a href="/vimshottari-dasha-calculator">dasha calculator</a>, because a house comes alive mainly when the planets connected to it run.</li>
+</ol>
+
+<h2>Some houses people ask about</h2>
+
+<ul>
+<li><strong>7th house.</strong> Marriage and partnerships, and also business partners. <a href="/blog/manglik-dosha-marriage">Manglik dosha</a> is judged largely by Mars's relationship to this house.</li>
+<li><strong>10th house.</strong> Career. See <a href="/blog/career-astrology-10th-house">career astrology and the 10th house</a>.</li>
+<li><strong>8th house.</strong> The house people fear without cause. It covers sudden change, inheritance, shared money and research.</li>
+<li><strong>12th house.</strong> Expenses and sleep, but also retreat, foreign stays and spiritual practice.</li>
+</ul>
+
+<p>In a North Indian chart the houses are fixed in position; in a South Indian chart the signs are. Either way, the 1st house is the Lagna. For a full walk-through, see <a href="/blog/how-to-read-kundli">how to read your Kundli</a>.</p>`,
+  faqs: [
     {
-      "q": "What are bhavas in Vedic astrology?",
-      "a": "Bhavas are the 12 houses or divisions of a Vedic birth chart (kundli). Each bhava represents a distinct area of life, such as personality, family, wealth, relationships, career, and spirituality, and shows where planetary energies are expressed."
+      q: 'How many houses are there in a Vedic chart?',
+      a: 'Twelve. Each covers an area of life and is counted from the Lagna (ascendant) as the 1st house.',
     },
     {
-      "q": "How do I know which house is which in my birth chart?",
-      "a": "In a typical North Indian style birth chart, the First House (Lagna) is usually marked at the top center, and the houses proceed counter-clockwise. In South Indian style, the houses are fixed, and the signs move through them. The Ascendant (Lagna) sign always marks the First House, regardless of the chart style."
+      q: 'What are kendra and trikona houses?',
+      a: 'Kendra houses (1, 4, 7, 10) are the angles and stand for action and stability. Trikona houses (1, 5, 9) are the trines and stand for fortune and merit.',
     },
     {
-      "q": "Why are the houses important in Vedic astrology?",
-      "a": "The houses are crucial because they localize the influence of planets and signs to specific life events and experiences. A planet might be strong by sign, but its placement in a particular house determines where that strength will manifest in your life, providing context for predictions and insights."
-    }
-  ]
+      q: 'Which house is for career?',
+      a: 'The 10th. Look at the planets in it, its lord and the dasha running.',
+    },
+    {
+      q: 'Which house is for marriage?',
+      a: 'The 7th, with Venus as the natural significator.',
+    },
+    {
+      q: 'Are the 6th, 8th and 12th houses bad?',
+      a: 'They are called dusthana (houses of difficulty), but they also cover work, research and retreat. Many strong charts rely on them.',
+    },
+  ],
+  sources: [
+    'House significations and natural karakas: Brihat Parashara Hora Shastra and standard Jyotish manuals',
+    'Kendra, trikona, dusthana and upachaya groups: standard classical definitions',
+  ],
 };

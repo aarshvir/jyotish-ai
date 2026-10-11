@@ -14,7 +14,6 @@ import { post as vimshottariDasha } from './vimshottari-dasha-current-period';
 import { post as bestAiVedicApp } from "./best-ai-vedic-astrology-app-2026";
 import { post as bestTimeToStartBusiness } from './best-time-to-start-business-astrology';
 import { post as careerAstrology } from './career-astrology-10th-house';
-import { post as scienceOfTiming } from './science-of-timing-vedic-muhurta';
 import { post as bestPlatforms } from './best-vedic-astrology-platforms-2026';
 import { post as twelveHouses } from './twelve-houses-vedic-astrology';
 import { post as moonSignVsSunSignVedic } from './moon-sign-vs-sun-sign-vedic';
@@ -35,14 +34,30 @@ import { post as shaniDhaiyaExplained } from './shani-dhaiya-explained';
 import { post as vivahMuhuratMarriageTiming } from './vivah-muhurat-marriage-timing';
 import { post as yamagandaGulikaKaalGuide } from './yamaganda-gulika-kaal-guide';
 import { post as abhijitMuhuratGuide } from './abhijit-muhurat-guide';
-import { post as bestPlanetaryHoursForDecisions } from './best-planetary-hours-for-decisions';
 import { post as isAstrologyRealHonestAnswer } from './is-astrology-real-honest-answer';
 import { post as whyDailyHoroscopesDontWork } from './why-daily-horoscopes-dont-work';
 import { post as timingAJobChangeVedicAstrology } from './timing-a-job-change-vedic-astrology';
 import { post as gandantaJunctionsExplained } from './gandanta-junctions-explained';
+import { post as sadeSati20262027 } from './sade-sati-2026-2027-moon-signs';
+import { post as manglikDoshaCancellationRules } from './manglik-dosha-cancellation-rules';
+import { post as kundliWithoutBirthTime } from './kundli-without-birth-time';
+import { post as guruChandalYogaExplained } from './guru-chandal-yoga-explained';
+import { post as gajakesariYogaExplained } from './gajakesari-yoga-explained';
+import { post as jupiterTransitLeo2026 } from './jupiter-transit-leo-2026';
+import { post as rahuKetuTransitDecember2026 } from './rahu-ketu-transit-december-2026';
+import { post as sadhesati2026Hindi } from './sadhesati-2026-kin-rashiyon-par';
+import { post as mangalikDoshHindi } from './mangalik-dosh-kya-hai-kab-katta-hai';
 export const POSTS: BlogPost[] = [
+  sadhesati2026Hindi,
+  mangalikDoshHindi,
+  sadeSati20262027,
+  manglikDoshaCancellationRules,
+  kundliWithoutBirthTime,
+  guruChandalYogaExplained,
+  gajakesariYogaExplained,
+  jupiterTransitLeo2026,
+  rahuKetuTransitDecember2026,
   abhijitMuhuratGuide,
-  bestPlanetaryHoursForDecisions,
   isAstrologyRealHonestAnswer,
   whyDailyHoroscopesDontWork,
   timingAJobChangeVedicAstrology,
@@ -66,7 +81,6 @@ export const POSTS: BlogPost[] = [
   moonSignVsSunSignVedic,
   bestPlatforms,
   twelveHouses,
-  scienceOfTiming,
   careerAstrology,
   gunMilan,
   manglik,
