@@ -1,6 +1,7 @@
 import { STEPS, type Answers } from './questions';
 import type { QuizSlug } from '@/config/quiz_slugs';
 import { buildScreens, type FunnelAnswers, type Screen } from '@/lib/funnel/screens';
+import { briefSentences } from '@/lib/funnel/briefSentences';
 
 /**
  * Turns quiz answers into the plain-English note the report pipeline personalises from
@@ -86,6 +87,7 @@ export function funnelPersonalContext(a: FunnelAnswers, slug: QuizSlug, maxLengt
   if (v('place_home')) parts.push(`A place felt like home for no reason: ${funnelLabel(screens, 'place_home', v('place_home'))}.`);
   if (v('skills_fears')) parts.push(`Which sounds most like me: ${funnelLabel(screens, 'skills_fears', v('skills_fears'))}.`);
   if (v('goal_12m')) parts.push(`What matters most in the next 12 months: ${funnelLabel(screens, 'goal_12m', v('goal_12m'))}.`);
+  parts.push(...briefSentences(a));
   const known = v('birth_time_known');
   if (known) parts.push(`Birth time: ${known === 'exact' ? 'known exactly' : known === 'approx' ? 'approximate, within an hour or two' : 'not known'}.`);
   const picks: string[] = [];
