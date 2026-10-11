@@ -113,6 +113,8 @@ export function Funnel({ slugKey }: { slugKey: string }) {
   const [handoff, setHandoff] = useState<{ plan: Plan; priceDisplay: string; redirectUrl: string; currency: Currency } | null>(null);
   const resumedCheckout = useRef(false);
   const booted = useRef(false);
+  /** Set when the email step was opened from the offer, so saving returns there instead of going on to the result. */
+  const fromOffer = useRef(false);
   const [dropoff, setDropoff] = useState<DropoffContext | null>(null);
   const askWhy = useCallback((c: DropoffContext) => {
     if (canShowDropoff(c)) setDropoff(c);
@@ -717,10 +719,20 @@ export function Funnel({ slugKey }: { slugKey: string }) {
               const lead = await saveLead({ email, name, marketing, source: 'quiz_s15' });
               setLeadBusy(false);
               const contact: Contact = { channel: 'email', value: email, name: name || undefined, consent: marketing };
+              if (fromOffer.current) {
+                fromOffer.current = false;
+                setSt((prev) => (prev ? { ...prev, contact, contactSkipped: false, lead, screenId: 's17' } : prev));
+                return;
+              }
               go(a, screen.id, { contact, contactSkipped: false, lead });
             }}
             onSkip={() => {
               funnelEvent(ctx, 'contact_skip', { where: 'save' });
+              if (fromOffer.current) {
+                fromOffer.current = false;
+                setSt((prev) => (prev ? { ...prev, screenId: 's17' } : prev));
+                return;
+              }
               go(a, screen.id, { contactSkipped: true });
             }}
           />
@@ -774,10 +786,13 @@ export function Funnel({ slugKey }: { slugKey: string }) {
             onBump={setBump}
             busy={busy}
             banner={banner}
-            contactLabel={st.contact ? 'your email' : null}
+            notify={isMinor(a.birth_date) ? 'none' : st.contact?.consent && st.lead?.saved ? 'on' : 'ask'}
             onBuyBlueprint={() => buy(bump ? 'blueprint_plus30' : 'blueprint')}
             onBuySubscription={() => buy('sub_monthly')}
-            onAddContact={() => setSt({ ...st, screenId: 's15' })}
+            onAddContact={() => {
+              fromOffer.current = true;
+              setSt({ ...st, screenId: 's15' });
+            }}
           />
         )}
       </div>
