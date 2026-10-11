@@ -1,5 +1,5 @@
 export const dynamic = 'force-dynamic';
-export const maxDuration = 20;
+export const maxDuration = 30;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
