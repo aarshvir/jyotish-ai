@@ -66,6 +66,12 @@ export function Interstitial({ built, onView, onNext }: { built: BuiltInterstiti
                   </p>
                 </blockquote>
               );
+            case 'link':
+              return (
+                <a key={i} href={b.href} target="_blank" rel="noopener" className="inline-flex min-h-[44px] items-center font-body text-body-md text-indigo underline underline-offset-4">
+                  {b.text}
+                </a>
+              );
             case 'note':
               return (
                 <p key={i} className="font-body text-body-sm leading-[1.6] text-dust">

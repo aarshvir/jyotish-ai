@@ -111,6 +111,7 @@ describe('the screens a visitor reads', () => {
     'src/components/funnel',
     'src/app/q',
     'src/app/chart-privacy',
+    'src/app/what-we-never-say',
     'src/lib/funnel',
     'src/lib/leads/chartEmail.ts',
     'src/lib/leads/consentText.ts',

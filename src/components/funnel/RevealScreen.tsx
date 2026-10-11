@@ -5,6 +5,7 @@ import type { RevealData, Sourced } from '@/lib/funnel/reveal/compute';
 import { NodeChart } from './NodeChart';
 import { precisionNotes } from '@/lib/funnel/precision';
 import { cardTitle, lockedTitle, matchLine, revealChrome } from '@/lib/funnel/revealCopy';
+import { CrossCheckCard, TrustRow } from './TrustBits';
 import type { Lang } from '@/lib/funnel/screens';
 
 /**
@@ -124,7 +125,13 @@ export function RevealScreen({
           </p>
         </article>
 
+        <CrossCheckCard reveal={reveal} lang={lang} />
+
         {reask}
+
+        <div className="px-1">
+          <TrustRow lang={lang} tone="paper" />
+        </div>
 
         <section className="pt-4">
           <h2 className="font-display font-semibold text-ink text-[1.375rem] leading-tight mb-1">{chrome.fullBlueprint}</h2>

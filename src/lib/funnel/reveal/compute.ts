@@ -99,6 +99,8 @@ export interface RevealData {
   moonPada: number | null;
   period: RunningPeriod | null;
   focusLook: FocusLook | null;
+  /** Degrees within the sign, straight from the engine, for the cross-check card. */
+  degrees: { lagna: number | null; moon: number | null; rahu: number | null; ketu: number | null };
   ketu: NodeFacts;
   rahu: NodeFacts;
   fifth: { sign: Sign; lord: Lord; lordSign: Sign; lordHouse: number; dignity: Dignity; level: MeritLevel };
@@ -298,6 +300,12 @@ export function computeReveal(input: RevealInput): RevealData {
     moonSign,
     moonNakshatra,
     moonPada,
+    degrees: {
+      lagna: lagna && typeof chart.lagna_degree === 'number' ? chart.lagna_degree : null,
+      moon: typeof moon.degree === 'number' ? moon.degree : null,
+      rahu: typeof chart.planets?.Rahu?.degree === 'number' ? chart.planets.Rahu.degree : null,
+      ketu: typeof chart.planets?.Ketu?.degree === 'number' ? chart.planets.Ketu.degree : null,
+    },
     period: runningPeriod(chart),
     focusLook: focusLookOf(chart, referenceSign, input.focusArea),
     ketu,
