@@ -68,7 +68,7 @@ REQUIREMENTS:
 - 1200-1700 words. BODY HTML ONLY — no <h1> (the page renders the title as H1).
 - Use <h2> for sections, <h3> for sub-sections, <p>, <ul><li>, <strong>. Open with ONE bold-sentence answer wrapped in <p><strong>...</strong></p>.
 - Include 4-6 internal links spread naturally through the article (descriptive anchor text), using ONLY these exact root-relative paths: <a href="/free-kundli">, <a href="/kundali">, <a href="/pricing">, <a href="/synastry">. Do NOT invent any other URLs.
-- Include the promo code NEWUSER30 (30% off the first paid report) in a clear call-to-action TWICE: once mid-article and once near the end, naturally.
+- Include a clear call-to-action to the FREE birth-chart calculators (link to /free-kundli) TWICE: once mid-article and once near the end, naturally. Do NOT mention any promo code, price, discount, free report or free question: none exist. The full forecast is a subscription that starts with a 2-minute quiz; you may say that once, without a price.
 - Vedic astrology is sidereal. Be accurate.
 - ABSOLUTELY NO guarantees, miracle/100% claims, or health/financial/relationship promises. No fear-mongering.
 

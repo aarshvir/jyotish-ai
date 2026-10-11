@@ -77,9 +77,8 @@ export function buildPublishPack(
   const description =
     p.description ??
     `${c.hook}\n\n${spoken}\n\nVedicHour ${BRAND.adSafeDifferentiators[0]}, ${BRAND.adSafeDifferentiators[1]}, ${BRAND.adSafeDifferentiators[2]}.\n\n` +
-      `Start free: ${utm(BRAND.links.freeKundli, 'youtube', 'short', 'launch_video', c.slug)}\n` +
+      `Free birth-chart calculators: ${utm(BRAND.links.freeKundli, 'youtube', 'short', 'launch_video', c.slug)}\n` +
       `See the sample: ${utm(landing, 'youtube', 'short', 'launch_video', c.slug)}\n` +
-      `Use ${BRAND.promoPublic} for 30% off your first paid report.\n\n` +
       `${BRAND.disclaimer}\n\n${tags.map((t) => `#${t.replace(/\s+/g, '')}`).join(' ')}`;
 
   return {

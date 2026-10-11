@@ -5,11 +5,12 @@ export const BRAND = {
   domain: 'https://www.vedichour.com',
   taglineClose: 'Your Life, Decoded Hour by Hour.',
   positioningHook: 'Not another horoscope — a personal Vedic timing grid.',
-  promoPublic: 'NEWUSER30', // 30% off first paid report — the ONLY public code
+  // No public promo code. NEWUSER30 was retired 2026-09-13 with the move to subscriptions (the
+  // checkout refuses codes on subscription plans). Never put a code, a price or a discount in an ad.
   disclaimer: 'For reflection and planning only. Not medical, legal, financial, or emergency advice.',
   colors: { bg: '0x0a0a1a', mid: '0x0d0d2b', gold: '0xD4AF37' },
   differentiators: [
-    'rates all 18 planetary hours (horas) of your day',
+    'scores 18 hourly windows of your day, each tied to its hora (a day has 24 horas; the product scores the waking day)',
     'real astronomy — computed with the Swiss Ephemeris and Lahiri ayanamsa',
     'explained in plain English',
   ],
@@ -20,18 +21,20 @@ export const BRAND = {
    * ad — script, caption, YouTube description — uses these plain-English versions instead.
    */
   adSafeDifferentiators: [
-    'rates all 18 hours of your day against your own birth chart',
+    'scores 18 hourly windows of your day against your own birth chart',
     'real astronomical data — the same math a careful astrologer uses',
     'explained in plain English, no jargon',
   ],
   pillars: ['Not another horoscope', 'Your day is not one mood', 'Private, modern Jyotish'],
   links: {
-    freeKundli: '/onboard?plan=free',
+    // The free calculators (full results, no sign-up). There is no free report any more.
+    freeKundli: '/free-kundli',
     sampleReport: '/sample-report',
     kundali: '/kundali',
     synastry: '/synastry',
     pricing: '/pricing',
-    onboard: '/onboard',
+    // Nobody buys through /onboard any more: every paid path starts at the quiz.
+    onboard: '/start',
     blog: '/blog',
   },
   pronunciation: {
@@ -69,5 +72,5 @@ Voice: specific moments (HR sent 10am and 5pm), not keyword soup. A viewer shoul
 NEVER use: guaranteed/will definitely/100% · good luck/bad luck/lucky/unlucky · "best hour"/"worst hour" (say "clearer"/"heavier" windows) · fix your life/change your destiny · become rich/get the job/pass the exam/win · save your marriage · cure/heal/treat · avoid disaster/doom/curse · predict exactly. No medical/legal/financial/relationship claims.
 NEVER put engine jargon in ads or social. Do not name astronomy libraries, ayanamsa systems, sidereal, whole-sign, or dasha-cycle brand names. Credibility line: "real astronomical data, the same math a careful astrologer uses".
 ALWAYS include ≥1 ad-safe differentiator: rates all 18 hours of your day against your own birth chart · real astronomical data · plain English.
-Promo: NEWUSER30 (30% off first paid report) — only public code. Close with the tagline "Your Life, Decoded Hour by Hour."
-Links: show the product, never checkout. Forecast → /sample-report. Free start → /onboard?plan=free. Never /pricing in an ad.`;
+Offer: the birth-chart calculators are free with no sign-up; the hour-by-hour forecast is a subscription that starts with a 2-minute quiz. NEVER mention a price, a promo code, a discount, a free report or a free question. Close with the tagline "Your Life, Decoded Hour by Hour."
+Links: show the product, never checkout. Forecast → /sample-report. Free start → /free-kundli or /lagna-calculator. Never /pricing in an ad.`;

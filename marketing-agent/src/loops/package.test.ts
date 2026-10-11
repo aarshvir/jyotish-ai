@@ -38,7 +38,8 @@ test('default caption is the spoken scene plus one proof line, not hook+tagline'
   );
   assert.match(caption, /HR sent 10am and 5pm/);
   assert.match(caption, /VedicHour\.com/);
-  assert.match(caption, /18 hours of your day/i);
+  assert.match(caption, /18 hourly windows of your day/i);
+  assert.doesNotMatch(caption, /18 (planetary )?hours of your day|all 18 horas/i, 'a day has 24 horas; the product scores 18 hourly windows');
   assert.doesNotMatch(caption, /Swiss Ephemeris/i);
   assert.equal(presenterLines({ shots: [{ dialogue: 'One.' }, { vo: 'ignore' }, { dialogue: 'Two.' }] }).join('|'), 'One.|Two.');
 });
