@@ -40,7 +40,9 @@ import { post as isAstrologyRealHonestAnswer } from './is-astrology-real-honest-
 import { post as whyDailyHoroscopesDontWork } from './why-daily-horoscopes-dont-work';
 import { post as timingAJobChangeVedicAstrology } from './timing-a-job-change-vedic-astrology';
 import { post as gandantaJunctionsExplained } from './gandanta-junctions-explained';
+import { post as twoMeetingTimesSameTuesday } from './two-meeting-times-same-tuesday';
 export const POSTS: BlogPost[] = [
+  twoMeetingTimesSameTuesday,
   abhijitMuhuratGuide,
   bestPlanetaryHoursForDecisions,
   isAstrologyRealHonestAnswer,

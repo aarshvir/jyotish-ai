@@ -1,0 +1,18 @@
+{
+  "name": "VedicHour timing grid — do not import until founder approves spend",
+  "objective": "traffic",
+  "dailyBudgetUsd": 0,
+  "specialAdCategory": null,
+  "targetingNotes": [
+    "Do not target by health, relationship status, or financial hardship.",
+    "Age suggestion 28–60 is a passing product note, not a personal-attribute line in the ad text.",
+    "Landing page: /start. No birth data in the URL."
+  ],
+  "url": "https://www.vedichour.com/start?utm_source=meta&utm_medium=paid&utm_campaign=timing-grid&utm_content=two-slots-same-tuesday",
+  "decision": {
+    "stage": "hold",
+    "dailyBudgetUsd": 0,
+    "requiresFounderApproval": true,
+    "reason": "Hold. 0 paying subscription periods are in the measurement store. Need 10 organic paying customers before any validation budget. Ads are not a substitute for a working quiz → pay → return loop."
+  }
+}

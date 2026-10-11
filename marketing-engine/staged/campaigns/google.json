@@ -1,0 +1,23 @@
+{
+  "name": "VedicHour search — staged, not live",
+  "dailyBudgetUsd": 0,
+  "keywords": [
+    "vedic timing",
+    "planetary hours",
+    "which time to schedule a meeting"
+  ],
+  "negativeKeywords": [
+    "cure",
+    "guaranteed job",
+    "get married",
+    "pregnancy"
+  ],
+  "url": "https://www.vedichour.com/start?utm_source=google&utm_medium=cpc&utm_campaign=timing-grid&utm_content=two-slots-same-tuesday",
+  "personalizedAds": "Do not use customer lists built from birth data or quiz free-text. Astrology is restricted on Made-for-kids inventory.",
+  "decision": {
+    "stage": "hold",
+    "dailyBudgetUsd": 0,
+    "requiresFounderApproval": true,
+    "reason": "Hold. 0 paying subscription periods are in the measurement store. Need 10 organic paying customers before any validation budget. Ads are not a substitute for a working quiz → pay → return loop."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "vedichour-marketing-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Always-on VedicHour marketing loops. SQLite state, no paid SaaS required.",
+  "scripts": {
+    "cycle": "node --experimental-sqlite --import tsx src/cli.ts cycle",
+    "insight": "node --experimental-sqlite --import tsx src/cli.ts insight",
+    "copy": "node --experimental-sqlite --import tsx src/cli.ts copy",
+    "assets": "node --experimental-sqlite --import tsx src/cli.ts assets",
+    "distribute": "node --experimental-sqlite --import tsx src/cli.ts distribute",
+    "paid": "node --experimental-sqlite --import tsx src/cli.ts paid",
+    "measure": "node --experimental-sqlite --import tsx src/cli.ts measure",
+    "learn": "node --experimental-sqlite --import tsx src/cli.ts learn",
+    "test": "node --experimental-sqlite --import tsx --test src/voice.test.ts src/score.test.ts src/spend.test.ts src/learn.test.ts src/beats.test.ts"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
