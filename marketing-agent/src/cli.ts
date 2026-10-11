@@ -14,6 +14,7 @@ import { runRenderLoop, printBudgetStatus } from './loops/render';
 import { runPublishPrep } from './loops/publish-prep';
 import { runPackageLoop } from './loops/package';
 import { runCarouselLoop } from './loops/carousel';
+import { runAskReelLoop } from './loops/askreel';
 import { runPaidLoop } from './loops/paid';
 import { runFirstPartyLoop } from './sources/firstparty';
 import { runContentOpsLoop } from './loops/content-ops';
@@ -152,6 +153,9 @@ async function main() {
     case 'loop:carousel':
       await runCarouselLoop({ slug: pos[0] });
       break;
+    case 'loop:askreel':
+      await runAskReelLoop({ slug: pos[0] });
+      break;
     case 'loop:paid':
       await runPaidLoop();
       break;
@@ -216,6 +220,7 @@ async function main() {
           `  npm run loop:publish           package reels into post-ready platform posts (L3)\n` +
           `  npm run loop:package [slug]    IG Reels / YT Shorts / YT 8-12m / GBP / IG carousel (L3b)\n` +
           `  npm run loop:carousel <slug>   render 6-8 on-brand PNG carousel slides + caption pack (L3c, $0)\n` +
+          `  npm run loop:askreel [slug]    16s silent 'ask WHEN' reel: hook, questions, real report, end card (L2c, $0)\n` +
           `  npm run loop:paid              spend ladder from REAL payments + Ads Manager export (L5, never spends)\n` +
           `  npm run loop:firstparty        first-party demand: category counts from our own users (counts only)\n` +
           `  npm run loop:social            generate platform social posts (L3 organic)\n` +

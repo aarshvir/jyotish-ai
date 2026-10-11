@@ -1,0 +1,50 @@
+{
+  "_about": "ASK-REEL specs. Format learned from a competitor reel on 2026-10-12: hook card -> the questions on a black card -> brand reveal -> real product screen -> end card. We copy the STRUCTURE only. Every word, hook and question here is original. The twist that is ours: the competitor answers 'should I'; VedicHour answers 'WHEN'. So every question must be a timing question. The preflight (src/loops/askreel.ts) hard-blocks anything else. Edit freely; run `npm run loop:askreel -- <slug>`.",
+  "reveal": { "kicker": "I asked", "brand": "VedicHour", "ask": "when." },
+  "proof": {
+    "focus": "5 - 6 pm",
+    "cardsBefore": 2,
+    "note": "The scroll window is MEASURED on the live /sample-report at render time (src/render/reportMeasure.ts), not typed here, because the page is edited by other people: on 2026-10-12 the hour cards moved from y=2348 to y=33586 in half an hour. The reel glides from two cards before 'focus' and lands with that card fully on screen. 5-6 pm is the card that reads 'the day's strongest stretch... the hard conversation, the ask, do it here'. The render refuses to film if the window could reach a pricing or Subscribe block."
+  },
+  "proofLine": "and saw my clearer hours",
+  "sampleTag": "Sample chart",
+  "endCard": { "headline": "Find your rising sign free.", "sub": "vedichour.com" },
+  "reels": [
+    {
+      "slug": "ask-salary-talk",
+      "hook": "Same Tuesday. Two very different hours.",
+      "questions": ["Which hour for the salary talk?", "When should I send the proposal?"],
+      "hashtags": ["#vedichour", "#vedicastrology", "#jyotish", "#careertiming", "#planetaryhours"]
+    },
+    {
+      "slug": "ask-hard-conversation",
+      "hook": "Some talks land better at four than at ten.",
+      "questions": ["When should I bring this up?", "Which hour to make the call?"],
+      "hashtags": ["#vedichour", "#vedicastrology", "#jyotish", "#relationshiptiming", "#hora"]
+    },
+    {
+      "slug": "ask-launch-day",
+      "hook": "Before you launch, check the hour.",
+      "questions": ["Which day should I launch?", "What time should I hit publish?"],
+      "hashtags": ["#vedichour", "#vedicastrology", "#jyotish", "#businesstiming", "#muhurat"]
+    },
+    {
+      "slug": "ask-long-drive",
+      "hook": "A long drive tomorrow. Which hour to leave?",
+      "questions": ["When should I start the journey?", "Which hour to set off?"],
+      "hashtags": ["#vedichour", "#vedicastrology", "#jyotish", "#traveltiming", "#choghadiya"]
+    },
+    {
+      "slug": "ask-big-purchase",
+      "hook": "A big purchase. Do not pick the hour at random.",
+      "questions": ["When should I sign?", "Which hour to pay the deposit?"],
+      "hashtags": ["#vedichour", "#vedicastrology", "#jyotish", "#moneytiming", "#planetaryhours"]
+    },
+    {
+      "slug": "ask-interview-followup",
+      "hook": "The interview is done. Now the follow-up.",
+      "questions": ["When should I follow up?", "Which day to ask for an answer?"],
+      "hashtags": ["#vedichour", "#vedicastrology", "#jyotish", "#careertiming", "#hora"]
+    }
+  ]
+}

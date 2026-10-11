@@ -27,6 +27,7 @@
     "loop:publish": "tsx src/cli.ts loop:publish",
     "loop:package": "tsx src/cli.ts loop:package",
     "loop:carousel": "tsx src/cli.ts loop:carousel",
+    "loop:askreel": "tsx src/cli.ts loop:askreel",
     "loop:paid": "tsx src/cli.ts loop:paid",
     "loop:firstparty": "tsx src/cli.ts loop:firstparty",
     "loop:social": "tsx src/cli.ts loop:social",

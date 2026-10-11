@@ -90,13 +90,36 @@ interface SeedTargets {
   screencapTargets?: CaptureTarget[];
 }
 
+/**
+ * A target configured in creative-seeds.json INHERITS the measured scroll limits (and the wait
+ * selector) of the built-in target with the same key whenever it does not state its own.
+ *
+ * Why: on 2026-10-12 an ask-reel was rendered from the configured 'sample_report_page' target.
+ * The config entry had no scrollPx/panToPx, the config wins over the built-ins, so the pan ran
+ * from the top of the page to the bottom (0 -> 15198px) straight through the pricing CTA
+ * (y=13305) and the Subscribe block (y=14286): the exact CLAUDE.md §1 breach this module exists
+ * to prevent. A config entry may CHANGE the limits; it may not silently DROP them.
+ */
+export function mergeTargets(configured: CaptureTarget[], defaults: CaptureTarget[] = DEFAULT_CAPTURE_TARGETS): CaptureTarget[] {
+  return configured.map((t) => {
+    const d = defaults.find((x) => x.key === t.key);
+    if (!d) return t;
+    return {
+      ...t,
+      waitForSelector: t.waitForSelector ?? d.waitForSelector,
+      scrollPx: t.scrollPx ?? d.scrollPx,
+      panToPx: t.panToPx ?? d.panToPx,
+    };
+  });
+}
+
 function loadTargets(): CaptureTarget[] {
   const f = resolve(ROOT, 'config', 'creative-seeds.json');
   if (!existsSync(f)) return DEFAULT_CAPTURE_TARGETS;
   try {
     const j = JSON.parse(readFileSync(f, 'utf8')) as SeedTargets;
     const t = j.screencapTargets;
-    return Array.isArray(t) && t.length ? t : DEFAULT_CAPTURE_TARGETS;
+    return Array.isArray(t) && t.length ? mergeTargets(t) : DEFAULT_CAPTURE_TARGETS;
   } catch {
     return DEFAULT_CAPTURE_TARGETS;
   }
