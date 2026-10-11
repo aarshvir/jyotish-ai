@@ -28,8 +28,12 @@ export async function GET(request: NextRequest) {
   // Daily lifecycle work runs first so it fires even when there are no pending payments
   // (folded in here because Vercel Hobby caps cron jobs at 2). Both no-op until
   // RESEND_API_KEY / TWILIO_* are set, and never throw.
-  const recovery = await runAbandonedCheckoutRecovery();
-  const nurture = await runPreviewNurture();
+  // Emails to customers (abandoned-checkout and free-preview follow-ups) were written for
+  // the retired free-report product, so they stay off until LIFECYCLE_EMAILS_ENABLED=1.
+  // The founder digest and the payment drain below always run.
+  const lifecycleOn = process.env.LIFECYCLE_EMAILS_ENABLED?.trim() === '1';
+  const recovery = lifecycleOn ? await runAbandonedCheckoutRecovery() : { ok: true, sent: 0, skipped: true };
+  const nurture = lifecycleOn ? await runPreviewNurture() : { ok: true, sent: 0, skipped: true };
   const digest = await sendFounderDigest();
 
   const db = createServiceClient();
