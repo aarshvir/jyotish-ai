@@ -9,6 +9,7 @@ import { personalContextFrom } from '@/lib/quiz/personalContext';
 import { parseSeekerProfile } from '@/lib/personalization/parse';
 import {
   applyReaderTone,
+  stripJsonDebris,
   calmen,
   concreteDayLine,
   dayPersonalNote,
@@ -274,6 +275,15 @@ describe('directives and tone helpers', () => {
     expect(calmen('Avoid signing. ⚠⚠ Absolutely avoid risky deals; a warning.')).toBe('Hold off on signing. Hold off on delicate deals; a note.');
     expect(applyReaderTone(START_FIXTURES.rohan, 'Avoid it. Chant a mantra.')).toBe('Avoid it. Chant a mantra.');
     expect(applyReaderTone('', '')).toBe('');
+  });
+
+  it('removes a stray closing brace a model left inside a day note, for every reader', () => {
+    const note = 'Spend 50 minutes on one document, then stop.}\n\nKeep 07:39–09:08 for routine tasks.';
+    expect(stripJsonDebris(note)).toBe('Spend 50 minutes on one document, then stop.\n\nKeep 07:39–09:08 for routine tasks.');
+    expect(applyReaderTone('', note)).not.toMatch(/[{}]/);
+    expect(applyReaderTone(START_FIXTURES.asha, note)).not.toMatch(/[{}]/);
+    // Text without braces is returned exactly as written.
+    expect(applyReaderTone('', 'Nothing to fix here.')).toBe('Nothing to fix here.');
   });
 
   it('notes only the days within a week before and two after the date', () => {
