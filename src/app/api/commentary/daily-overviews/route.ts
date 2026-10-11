@@ -7,6 +7,7 @@ import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaCo
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { tierModel } from '@/lib/reports/qualityTier';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { applyReaderTone, concreteDayLine, dayPersonalNote, eventDayLine, seekerPromptBlock, stripPartLabels } from '@/lib/personalization/forecastPrompt';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
@@ -122,7 +123,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid JSON body', days: [] }, { status: 400 });
     }
 
-    const modelOverride = typeof body.model_override === 'string' ? body.model_override : undefined;
+    const modelOverride = (typeof body.model_override === 'string' && body.model_override.trim()) || tierModel('daily') || undefined;
     if (!hasLlmCredentials(modelOverride)) {
       return NextResponse.json({ days: [], partial: true }, { status: 206 });
     }

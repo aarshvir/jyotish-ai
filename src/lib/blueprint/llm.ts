@@ -16,6 +16,7 @@
 
 import { cleanEnv } from '@/lib/env';
 import { runModelChain } from '@/lib/llm/modelChain';
+import { anthropicTuning } from '@/lib/llm/anthropicTuning';
 import { parseModelJson } from './json';
 import type { LlmPort, LlmResult } from './deps';
 
@@ -23,13 +24,6 @@ export const DEFAULT_BLUEPRINT_MODEL = 'claude-sonnet-5-5';
 
 function mustBeJson(text: string): void {
   if (parseModelJson(text) === null) throw new Error('not valid JSON');
-}
-
-/** Request fields that keep a structured-prose call from spending its token budget on thinking. */
-export function anthropicTuning(model: string): Record<string, unknown> {
-  if (model.startsWith('claude-sonnet-5-5')) return { thinking: { type: 'between_tools' }, output_config: { effort: 'medium' } };
-  if (model.startsWith('claude-haiku-5-5')) return { thinking: { type: 'disabled' }, output_config: { effort: 'medium' } };
-  return {};
 }
 
 interface AnthropicReply {
