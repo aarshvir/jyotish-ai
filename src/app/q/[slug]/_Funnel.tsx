@@ -423,7 +423,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
         const currency: Currency = j.currency === 'INR' || j.currency === 'AED' ? j.currency : 'USD';
         setHandoff({ plan, priceDisplay: formatAmount(j.amount ?? 0, currency), redirectUrl: j.redirectUrl, currency });
       } catch {
-        setBanner('Network problem — please check your connection and try again.');
+        setBanner('Network problem. Please check your connection and try again.');
       } finally {
         setBusy(false);
       }
@@ -477,7 +477,14 @@ export function Funnel({ slugKey }: { slugKey: string }) {
   const focus = a.focus_area as FocusArea | undefined;
   const canBack = screen.id !== 's01' && screen.kind !== 'calc';
   const paper = screen.kind === 'offer';
-  const blueprintCta = offer?.blueprintOpen && offer.prices.blueprint ? `Unlock my full blueprint — ${offer.prices.blueprint.display}` : 'Unlock my full blueprint';
+  const blueprintCta =
+    offer?.blueprintOpen && offer.prices.blueprint
+      ? lang === 'hi'
+        ? `Poora blueprint paayein, ${offer.prices.blueprint.display}`
+        : `Get my full blueprint for ${offer.prices.blueprint.display}`
+      : lang === 'hi'
+        ? 'Poora blueprint dekhein'
+        : 'See my full blueprint';
 
   return (
     <main className={`min-h-screen ${paper ? 'bg-parchment' : 'bg-space'}`}>

@@ -100,13 +100,13 @@ export const RAHU_SIGN: Record<Sign, string> = {
 export const RAHU_HOUSE: Record<number, string> = {
   1: 'it asks you to build a strong identity of your own. Self-image, daily habits and personal ambition become central. You may reinvent yourself more than once. The work is to become someone on purpose, not by accident.',
   2: 'it asks you to build savings, family ties and a voice people listen to. Money, food and speech become central themes. The work is to earn and speak with care, so that what you build actually stays with you.',
-  3: 'it asks you for courage and constant effort. Media, writing, sales, short travel and bold moves are your growth areas, and siblings may play a big role. The work is to keep trying past the point where most people stop.',
+  3: 'it asks you for courage and constant effort. Media, writing, sales, short travel and bold moves are your growth areas, and siblings may play a big role. The work is to keep trying past the point where others stop.',
   4: 'it asks you to build a home and an inner peace you can rely on. Property, vehicles, your mother and where you live become central. You may settle far from where you were born. The work is to make a real base.',
   5: 'it asks you to create, learn and back your own ideas. Teaching, creative work, speculation and romance become important themes. The work is to trust your intelligence while keeping a cool head about gambles and quick wins.',
   6: 'it asks you to handle work, competition and daily problems head-on. Service, legal matters, routines and rivals are your growth ground, and you can do well where others struggle. The work is to stay disciplined without becoming combative.',
   7: 'it asks you to grow through partnership: marriage, business partners, clients and the public. Relationships may feel intense or come from unexpected backgrounds. The work is to choose partners with open eyes and keep your own centre as you commit.',
   8: 'it asks you to face change and look at what is hidden. Research, shared finances, insurance, inheritance and deep study become central, and life may take sudden turns. The work is to stay steady through change instead of resisting it.',
-  9: 'it asks you to find your own belief, teachers and higher learning. Long journeys, study abroad, law or philosophy may pull at you, and you may break with family tradition. The work is to build a faith you have tested yourself.',
+  9: 'it asks you to find your own belief, teachers and higher learning. Long trips, study abroad, law or philosophy may pull at you, and you may break with family tradition. The work is to build a faith you have tested yourself.',
   10: 'it asks you to build a career and public standing. Ambition, recognition and responsibility become central, and you may rise in a field unusual for your family. The work is to grow your status without letting it run your life.',
   11: 'it asks you to aim high and build networks. Income, friends, large groups and long-term goals become central, and gains can come suddenly through contacts. The work is to keep your goals honest and your friendships real.',
   12: 'it asks you to explore solitude, foreign lands and the spiritual side of life. Travel abroad, retreats, ashrams or work behind the scenes may play a role, and spending can rise. The work is to let go in a healthy way, not to escape.',
@@ -136,7 +136,7 @@ export const RAHU_CONJ: Record<Lord, string> = {
 /** Card 3 — the past-merit reserve, by level. */
 export const MERIT_TEXT: Record<MeritLevel, string> = {
   Strong:
-    'A strong 5th lord is read as a good reserve of past merit: learning sticks, ideas land and creative risks tend to repay you. Use it on purpose — merit grows when it is spent on what matters to you.',
+    'A strong 5th lord is read as a good reserve of past merit: learning sticks, ideas land and creative risks tend to repay you. Use it on purpose. Merit grows when it is spent on what matters to you.',
   Moderate:
     'A moderate 5th lord is read as a working reserve of past merit: ideas and learning respond to steady effort more than luck. Regular practice, study or prayer is what turns this reserve into results.',
   Developing:

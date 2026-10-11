@@ -86,7 +86,7 @@ export function Thanks({ slugKey }: { slugKey: string }) {
       const currency: Currency = j.currency === 'INR' || j.currency === 'AED' ? j.currency : 'USD';
       setHandoff({ priceDisplay: formatAmount(j.amount ?? 0, currency), redirectUrl: j.redirectUrl, currency });
     } catch {
-      setNote('Network problem — please check your connection and try again.');
+      setNote('Network problem. Please check your connection and try again.');
     } finally {
       setBusy(false);
     }
@@ -116,7 +116,7 @@ export function Thanks({ slugKey }: { slugKey: string }) {
               </p>
             )}
             <button type="button" disabled={busy || !monthly} onClick={() => void acceptMonthly()} className="btn-primary w-full min-h-[52px] font-body text-[1.0625rem] font-semibold">
-              {busy ? 'Starting secure payment…' : monthly ? `Add my 30 days — ${monthly.display}` : 'Add my 30 days'}
+              {busy ? 'Starting secure payment…' : monthly ? `Add my 30 days for ${monthly.display}` : 'Add my 30 days'}
             </button>
             <button type="button" onClick={decline} className="block w-full text-center mt-3 py-3 font-body text-body-md text-dust underline underline-offset-4">
               No thanks, take me to my blueprint
@@ -136,7 +136,7 @@ export function Thanks({ slugKey }: { slugKey: string }) {
               }}
               className="btn-primary w-full min-h-[52px] font-body text-[1.0625rem] font-semibold"
             >
-              Add 7 days — {downsell.display}
+              Add 7 days for {downsell.display}
             </button>
             <button type="button" onClick={() => setStep('done')} className="block w-full text-center mt-3 py-3 font-body text-body-md text-dust underline underline-offset-4">
               No thanks

@@ -107,7 +107,7 @@ describe('computeReveal', () => {
     expect(yes.match?.text).toBe('You chose Ruler / leader. Your Ketu says the same.');
     const no = computeReveal({ ...base, chart: chart({ lagna: 'Aries', rahu: 'Aquarius' }), timeKnown: true, selfRole: 'healer' });
     expect(no.match?.agrees).toBe(false);
-    expect(no.match?.text).toContain('your Ketu points to Ruler / leader');
+    expect(no.match?.text).toContain('Your Ketu points to Ruler / leader');
   });
 
   it('orders the locked sections by focus area', () => {

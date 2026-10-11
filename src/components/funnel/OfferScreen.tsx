@@ -98,7 +98,7 @@ export function OfferScreen({
             <label className="flex items-start gap-3 rounded-[14px] border-2 border-dashed border-[#B5862F] bg-[#F8EDD4] px-4 py-4 cursor-pointer">
               <input type="checkbox" checked={bump} onChange={(e) => onBump(e.target.checked)} className="mt-1 w-5 h-5 shrink-0 accent-[#B5862F] [color-scheme:light]" />
               <span className="font-body text-[1rem] text-ink">
-                <strong className="font-semibold">+ Your next 30 days:</strong> Rahu–Ketu sensitive days and your best hours —{' '}
+                <strong className="font-semibold">+ Your next 30 days:</strong> Rahu–Ketu sensitive days and your best hours, for{' '}
                 <span className="tabular-nums">{p.bump.display}</span>
               </span>
             </label>
@@ -106,7 +106,7 @@ export function OfferScreen({
           <button type="button" onClick={onBuyBlueprint} disabled={busy} className="btn-primary w-full min-h-[52px] mt-5 font-body text-[1.0625rem] font-semibold">
             {busy
               ? 'Starting secure payment…'
-              : `Unlock my full blueprint — ${bump && p.blueprint_plus30 ? p.blueprint_plus30.display : p.blueprint.display}`}
+              : `Get my full blueprint for ${bump && p.blueprint_plus30 ? p.blueprint_plus30.display : p.blueprint.display}`}
           </button>
           <Trust
             items={[
@@ -151,11 +151,11 @@ export function OfferScreen({
             disabled={busy || !p?.sub_monthly}
             className="btn-primary w-full min-h-[52px] font-body text-[1.0625rem] font-semibold"
           >
-            {busy ? 'Starting secure payment…' : p?.sub_monthly ? `Start my 30 days — ${p.sub_monthly.display} a month` : 'Start my 30 days'}
+            {busy ? 'Starting secure payment…' : p?.sub_monthly ? `Start my 30 days for ${p.sub_monthly.display} a month` : 'Start my 30 days'}
           </button>
           <Trust
             items={[
-              'Nothing is charged automatically — renew with one tap, or simply stop',
+              'Nothing is charged automatically. Renew with one tap, or simply stop.',
               'Calculated with Swiss Ephemeris astronomy',
               'Your birth details are never sold',
             ]}
