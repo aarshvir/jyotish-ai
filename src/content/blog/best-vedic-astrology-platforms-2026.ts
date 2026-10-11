@@ -77,7 +77,7 @@ export const post: BlogPost = {
     },
     {
       q: 'What is the best platform for a Vedic forecast?',
-      a: 'VedicHour is purpose-built for forecasts — it rates all 18 planetary hours of your day and gives a personalised outlook using Swiss Ephemeris precision and AI interpretation, rather than a generic daily horoscope.',
+      a: 'VedicHour is purpose-built for forecasts — it rates your day’s 18 hourly slots and gives a personalised outlook using Swiss Ephemeris precision and AI interpretation, rather than a generic daily horoscope.',
     },
     {
       q: 'Which Vedic astrology app has the most accurate calculations?',

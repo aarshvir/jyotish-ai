@@ -1,28 +1,17 @@
 import type { MetadataRoute } from 'next';
+import { AI_CRAWLERS, PRIVATE_PATHS } from '@/lib/seo/aiVisibility';
 
 const SITE_URL = 'https://www.vedichour.com';
 
 export default function robots(): MetadataRoute.Robots {
+  const allow = ['/', '/api/sitemap'];
+  const disallow = [...PRIVATE_PATHS];
   return {
     rules: [
-      {
-        userAgent: '*',
-        allow: ['/', '/api/sitemap'],
-        disallow: [
-          '/api/',
-          '/auth/',
-          '/dashboard',
-          '/report/',
-          '/onboarding',
-          '/onboard',
-          '/login',
-          '/signup',
-          '/upsell',
-          '/kundali/',   // private report pages /kundali/{id} (NOT the /kundali landing page)
-          '/synastry/',  // private report pages /synastry/{id} (NOT the /synastry landing page)
-          '/chart-preview', // dev-only mock-data preview
-        ],
-      },
+      { userAgent: '*', allow, disallow },
+      // AI search and assistant crawlers are named on purpose: being quoted in ChatGPT, Claude,
+      // Gemini and Perplexity answers is a growth channel. Same private-path rules as everyone.
+      { userAgent: [...AI_CRAWLERS], allow, disallow },
     ],
     // Point crawlers at the canonical /sitemap.xml (Next.js' default sitemap
     // location). next.config.mjs rewrites /sitemap.xml → /api/sitemap, and

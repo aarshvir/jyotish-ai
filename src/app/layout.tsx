@@ -7,6 +7,7 @@ import RefCapture from '@/components/analytics/RefCapture';
 import { FeedbackWidget } from '@/components/feedback/FeedbackWidget';
 import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
 import { MetaPixel } from '@/components/analytics/MetaPixel';
+import { vedicHourOffers } from '@/lib/seo/aiVisibility';
 
 const cormorant = localFont({
   src: [
@@ -207,40 +208,9 @@ export default function RootLayout({
                   applicationCategory: 'LifestyleApplication',
                   applicationSubCategory: 'Astrology',
                   operatingSystem: 'Web Browser',
-                  offers: [
-                    {
-                      '@type': 'Offer',
-                      name: 'Free Kundli (Janam Kundali)',
-                      price: '0',
-                      priceCurrency: 'USD',
-                      description: 'Free Kundli with complete natal birth chart, Lagna, Moon sign, and Dasha period.',
-                      url: `${SITE_URL}/start`,
-                    },
-                    {
-                      '@type': 'Offer',
-                      name: '7-Day Jyotish Forecast',
-                      price: '9.99',
-                      priceCurrency: 'USD',
-                      description: '7-day hourly forecast with 126 windows, planetary hours, and daily caution slots.',
-                      url: `${SITE_URL}/onboard?plan=7day`,
-                    },
-                    {
-                      '@type': 'Offer',
-                      name: 'Monthly Jyotish Oracle',
-                      price: '19.99',
-                      priceCurrency: 'USD',
-                      description: '30-day Vedic astrology forecast with weekly synthesis and monthly Jyotish analysis.',
-                      url: `${SITE_URL}/onboard?plan=monthly`,
-                    },
-                    {
-                      '@type': 'Offer',
-                      name: 'Annual Jyotish Oracle',
-                      price: '49.99',
-                      priceCurrency: 'USD',
-                      description: '30-day hourly forecast plus a 12-month thematic outlook and 1-year access.',
-                      url: `${SITE_URL}/onboard?plan=annual`,
-                    },
-                  ],
+                  // Built from the price book + plan list, so structured data can never quote a price
+                  // the checkout does not charge (it used to say $9.99 / $19.99 / $49.99 one-time).
+                  offers: vedicHourOffers(SITE_URL),
                   featureList: [
                     'Free Kundli generator',
                     'Janam Kundali online',

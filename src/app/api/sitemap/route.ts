@@ -98,11 +98,15 @@ const REFERENCE_ROUTES = [
 ];
 
 // Comparison / "alternative" pages — mid-tail commercial-intent SEO surface.
-const COMPARE_ROUTES = COMPARISONS.map((c) => ({
-  path: `/compare/${c.slug}`,
-  changefreq: 'monthly',
-  priority: '0.65',
-}));
+const COMPARE_ROUTES = [
+  { path: '/compare', changefreq: 'weekly', priority: '0.7', lastmod: COMPARISONS.map((c) => c.updated).sort().slice(-1)[0] },
+  ...COMPARISONS.map((c) => ({
+    path: `/compare/${c.slug}`,
+    changefreq: 'monthly',
+    priority: '0.65',
+    lastmod: c.updated,
+  })),
+];
 
 const ALL_ROUTES = [...STATIC_ROUTES, ...TOOL_ROUTES, ...BLOG_ROUTES, ...REFERENCE_ROUTES, ...COMPARE_ROUTES, ...SIGN_INDEX_ROUTES, ...TRANSIT_ROUTES, ...horoscopeRoutes()];
 

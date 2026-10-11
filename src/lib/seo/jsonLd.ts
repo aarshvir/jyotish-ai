@@ -81,3 +81,25 @@ export function howToLd(opts: { name: string; description?: string; steps: strin
     })),
   };
 }
+
+/** Article structured data with real dates. dateModified is what AI crawlers use to prefer a fresher source. */
+export function articleLd(opts: {
+  headline: string;
+  description: string;
+  path: string;
+  datePublished: string;
+  dateModified: string;
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: opts.headline,
+    description: opts.description,
+    url: absUrl(opts.path),
+    mainEntityOfPage: absUrl(opts.path),
+    datePublished: opts.datePublished,
+    dateModified: opts.dateModified,
+    author: { '@type': 'Organization', name: 'VedicHour', url: SITE_URL },
+    publisher: { '@type': 'Organization', name: 'VedicHour', url: SITE_URL },
+  };
+}

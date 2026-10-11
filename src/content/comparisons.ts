@@ -1,31 +1,14 @@
-export type Comparison = {
-  slug: string;
-  /** Used for <title> (the layout template appends " | VedicHour"). */
-  title: string;
-  /** On-page H1. */
-  h1: string;
-  description: string;
-  keywords: string[];
-  /** Lead paragraph under the H1. */
-  intro: string;
-  /** Body HTML: only <h2>,<h3>,<p>,<ul><li>,<strong>,<a href="/...">,<table>. No <h1>. */
-  html: string;
-  faqs: { q: string; a: string }[];
-};
+import { CTA, DISCLAIMER, type Comparison } from './comparisonShared';
+import { MORE_COMPARISONS } from './comparisonsMore';
 
-const DISCLAIMER =
-  '<p><strong>For reflection and planning only.</strong> VedicHour is a structured second lens for timing awareness, not medical, legal, financial, or emergency advice.</p>';
+export type { Comparison } from './comparisonShared';
 
-const CTA =
-  '<ul>' +
-  '<li>Generate your <a href="/free-kundli">free Kundli</a> — Lagna, Moon sign, nakshatra and current dasha in plain English.</li>' +
-  '<li>Open a <a href="/kundali">deep Kundli report</a> for a full chart reading across seven life areas.</li>' +
-  '<li>See the <a href="/pricing">plans</a> — free Kundli and calculators, then a monthly or annual subscription for the full forecast.</li>' +
-  '</ul>';
-
-export const COMPARISONS: Comparison[] = [
+const BASE_COMPARISONS: Comparison[] = [
   {
     slug: 'astrosage-alternative',
+    published: '2026-06-21',
+    updated: '2026-10-11',
+    verdict: "AstroSage is the broader toolbox with a long-established community; VedicHour is narrower, with a plain-English reading of your chart and a scored hour-by-hour forecast. Use AstroSage for breadth and reference, VedicHour for day-to-day timing.",
     title: 'AstroSage Alternative — VedicHour vs AstroSage',
     h1: 'A modern AstroSage alternative',
     description:
@@ -46,7 +29,7 @@ export const COMPARISONS: Comparison[] = [
       '<p>VedicHour deliberately does less, in more depth, in three ways:</p>' +
       '<ul>' +
       '<li><strong>Plain-English AI reading.</strong> Instead of dense tables and jargon, your chart is turned into a readable report — what each placement tends to mean, which dasha you are running, and how to think about the year ahead.</li>' +
-      '<li><strong>An hour-by-hour timing grid.</strong> VedicHour rates all 18 planetary hours (horas) of your day as clearer or heavier windows for reflection and planning — a structured second lens you do not get from a static panchang.</li>' +
+      '<li><strong>An hour-by-hour timing grid.</strong> VedicHour rates your day’s 18 hourly slots (each tied to its hora, or planetary hour) as clearer or heavier windows for reflection and planning — a structured second lens you do not get from a static panchang.</li>' +
       '<li><strong>Real astronomy, stated openly.</strong> Every chart and window is computed with the Swiss Ephemeris and the Lahiri ayanamsa — the sidereal standard professional astrologers use.</li>' +
       '</ul>' +
       '<h2>Side by side</h2>' +
@@ -54,7 +37,7 @@ export const COMPARISONS: Comparison[] = [
       '<tr><th>&nbsp;</th><th>AstroSage</th><th>VedicHour</th></tr>' +
       '<tr><td>Free Kundli</td><td>Yes</td><td>Yes (Swiss Ephemeris, Lahiri)</td></tr>' +
       '<tr><td>Plain-English AI report</td><td>Limited</td><td>Core focus</td></tr>' +
-      '<tr><td>Hour-by-hour timing grid</td><td>Panchang / choghadiya tables</td><td>All 18 horas scored as clearer / heavier windows</td></tr>' +
+      '<tr><td>Hour-by-hour timing grid</td><td>Panchang / choghadiya tables</td><td>18 hourly slots a day, each scored clearer / heavier against your chart</td></tr>' +
       '<tr><td>Kundli matching (Gun Milan)</td><td>Yes</td><td>Yes — <a href="/synastry">free 36-point score</a></td></tr>' +
       '<tr><td>Pricing</td><td>Free + paid consultations</td><td>Free Kundli and calculators, then a monthly or annual subscription</td></tr>' +
       '</table>' +
@@ -73,7 +56,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: 'What does VedicHour offer that AstroSage does not?',
-        a: 'A plain-English AI reading of your chart and an hour-by-hour grid that rates all 18 planetary hours as clearer or heavier windows for planning — a structured timing lens rather than a static panchang table.',
+        a: 'A plain-English AI reading of your chart and an hour-by-hour grid that rates your day’s 18 hourly slots as clearer or heavier windows for planning — a structured timing lens rather than a static panchang table.',
       },
       {
         q: 'Can I use both?',
@@ -83,6 +66,9 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'prokerala-alternative',
+    published: '2026-06-21',
+    updated: '2026-10-11',
+    verdict: "Prokerala is a clean, no-fuss set of free Vedic tools; VedicHour covers the same classical ground and adds a plain-English reading and an hour-by-hour forecast scored against your chart. Use Prokerala for quick calculations, VedicHour for a readable plan.",
     title: 'Prokerala Alternative — VedicHour vs Prokerala',
     h1: 'A modern Prokerala alternative',
     description:
@@ -95,14 +81,14 @@ export const COMPARISONS: Comparison[] = [
       'free kundli online alternative',
     ],
     intro:
-      'Prokerala offers a clean set of free Vedic tools — kundli, panchang, nakshatra and dosha checks — and is a popular, no-fuss option. VedicHour covers the same classical ground with the Swiss Ephemeris, then adds two things Prokerala does not: a plain-English AI reading of your chart, and an hour-by-hour grid that scores your day into clearer and heavier windows.',
+      'Prokerala offers a clean set of free Vedic tools — kundli, panchang, nakshatra and dosha checks — and is a popular, no-fuss option. VedicHour covers the same classical ground with the Swiss Ephemeris, then adds two things Prokerala’s free tools are not built around: a plain-English AI reading of your chart, and an hour-by-hour grid that scores your day into clearer and heavier windows.',
     html:
       '<h2>What Prokerala does well</h2>' +
       '<p>Prokerala is simple and fast. Its free calculators are easy to use, its panchang is reliable, and it does not bury you in clutter. For a quick kundli or a dosha check, it does the job cleanly.</p>' +
       '<h2>Where VedicHour goes further</h2>' +
       '<ul>' +
       '<li><strong>It explains, not just calculates.</strong> VedicHour turns your chart into a plain-English report — your Lagna, dasha and life-area themes written out, rather than left as raw tables.</li>' +
-      '<li><strong>It scores your day.</strong> All 18 planetary hours (horas) are rated as clearer or heavier windows, so timing becomes a practical, at-a-glance lens for planning your day.</li>' +
+      '<li><strong>It scores your day.</strong> Your day’s 18 hourly slots (each tied to its hora) are rated as clearer or heavier windows, so timing becomes a practical, at-a-glance lens for planning your day.</li>' +
       '<li><strong>It is transparent about the engine.</strong> Swiss Ephemeris plus the Lahiri ayanamsa, the same sidereal standard professional astrologers rely on.</li>' +
       '</ul>' +
       '<h2>Side by side</h2>' +
@@ -110,7 +96,7 @@ export const COMPARISONS: Comparison[] = [
       '<tr><th>&nbsp;</th><th>Prokerala</th><th>VedicHour</th></tr>' +
       '<tr><td>Free Kundli &amp; calculators</td><td>Yes</td><td>Yes — <a href="/free-kundli">free Kundli</a> + 8 tools</td></tr>' +
       '<tr><td>Plain-English AI report</td><td>No</td><td>Core focus</td></tr>' +
-      '<tr><td>Hour-by-hour timing grid</td><td>Panchang / muhurat tables</td><td>All 18 horas scored as clearer / heavier windows</td></tr>' +
+      '<tr><td>Hour-by-hour timing grid</td><td>Panchang / muhurat tables</td><td>18 hourly slots a day, each scored clearer / heavier against your chart</td></tr>' +
       '<tr><td>Engine</td><td>Sidereal Vedic</td><td>Swiss Ephemeris + Lahiri ayanamsa</td></tr>' +
       '<tr><td>Pricing</td><td>Free + paid reports</td><td>Free Kundli, then a subscription</td></tr>' +
       '</table>' +
@@ -129,7 +115,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: 'What is the hour-by-hour timing grid?',
-        a: 'VedicHour rates all 18 planetary hours (horas) of your day as clearer or heavier windows — a structured second lens for planning. It is timing awareness, never a promise about outcomes.',
+        a: 'VedicHour rates your day’s 18 hourly slots (each tied to its hora, or planetary hour) as clearer or heavier windows — a structured second lens for planning. It is timing awareness, never a promise about outcomes.',
       },
       {
         q: 'Do I need to create an account?',
@@ -139,6 +125,9 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'best-free-ai-kundli',
+    published: '2026-06-21',
+    updated: '2026-10-11',
+    verdict: "There is no single best free Kundli site: some are best for breadth, some for clean calculators, some for plain-English readings. Match the site to what you want, and compare the same chart on two before you rely on either.",
     title: 'Best Free AI Kundli & Jyotish Sites (Honest 2026 Guide)',
     h1: 'Best free AI Kundli & Jyotish sites',
     description:
@@ -163,7 +152,7 @@ export const COMPARISONS: Comparison[] = [
       '<p>This is where <strong>VedicHour</strong> is built to be the best fit. It computes your chart with the Swiss Ephemeris and the Lahiri ayanamsa, then does two things most free sites do not:</p>' +
       '<ul>' +
       '<li>Turns your chart into a <strong>plain-English AI report</strong> — placements, dasha and life-area themes written out, not left as tables.</li>' +
-      '<li>Rates all <strong>18 planetary hours</strong> of your day as clearer or heavier windows — an hour-by-hour timing grid for planning, not a generic daily horoscope.</li>' +
+      '<li>Rates your day’s <strong>18 hourly slots</strong> as clearer or heavier windows — an hour-by-hour timing grid for planning, not a generic daily horoscope.</li>' +
       '</ul>' +
       '<p>You can generate the <a href="/free-kundli">free Kundli</a> and see a sample timing grid before paying for anything. A full <a href="/kundali">deep report</a> is included in a monthly or annual subscription.</p>' +
       '<h2>The honest summary</h2>' +
@@ -197,10 +186,13 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'best-app-for-vedic-timing',
+    published: '2026-06-21',
+    updated: '2026-10-11',
+    verdict: "Most timing tools show the same panchang for everyone; VedicHour scores your day’s 18 hourly slots against your own birth chart. Use a panchang for the shared daily basics and a personal forecast when you are timing something that matters to you.",
     title: 'Best App for Vedic Timing — Muhurat, Choghadiya & Hora',
     h1: 'The best app for Vedic timing',
     description:
-      'Looking for the best app for Vedic timing — muhurat, choghadiya, hora and Rahu Kaal? VedicHour rates all 18 planetary hours of your day as clearer or heavier windows, personal to your chart. Free to try.',
+      'Looking for the best app for Vedic timing — muhurat, choghadiya, hora and Rahu Kaal? VedicHour rates your day’s 18 hourly slots as clearer or heavier windows, personal to your chart. Free to try.',
     keywords: [
       'best app for muhurat',
       'auspicious time calculator',
@@ -210,14 +202,14 @@ export const COMPARISONS: Comparison[] = [
       'rahu kaal app',
     ],
     intro:
-      'Most timing tools show the same generic panchang for everyone: choghadiya bands, Rahu Kaal, a muhurat table. Useful, but impersonal. VedicHour takes a different approach — it rates all 18 planetary hours (horas) of your day against your own birth chart, marking each as a clearer or a heavier window for reflection and planning. This page explains the difference and how to use it.',
+      'Most timing tools show the same generic panchang for everyone: choghadiya bands, Rahu Kaal, a muhurat table. Useful, but impersonal. VedicHour takes a different approach — it rates your day’s 18 hourly slots (each tied to its hora, or planetary hour) against your own birth chart, marking each as a clearer or a heavier window for reflection and planning. This page explains the difference and how to use it.',
     html:
       '<h2>Generic panchang vs a personal timing grid</h2>' +
       '<p>Classical timing draws on several layers: the hora (planetary hour), choghadiya bands, and cautionary periods like Rahu Kaal. Traditional apps display these the same way for the whole city. That is a fine reference, but two people with very different charts get an identical table.</p>' +
       '<p>VedicHour instead reads each hour <strong>against your chart</strong> — your Lagna, Moon and running dasha — and scores the day hour by hour. The result is a grid of clearer and heavier windows that is specific to you, in plain English.</p>' +
       '<h2>What it covers</h2>' +
       '<ul>' +
-      '<li><strong>All 18 planetary hours (horas)</strong> rated as clearer or heavier windows for the day.</li>' +
+      '<li><strong>Your day’s 18 hourly slots (each tied to its hora)</strong> rated as clearer or heavier windows for the day.</li>' +
       '<li><strong>Choghadiya and hora rulers</strong> woven in, not as a separate lookup.</li>' +
       '<li><strong>Rahu Kaal and cautionary periods</strong> flagged in context.</li>' +
       '<li>Everything computed with the <strong>Swiss Ephemeris and the Lahiri ayanamsa</strong>.</li>' +
@@ -231,7 +223,7 @@ export const COMPARISONS: Comparison[] = [
     faqs: [
       {
         q: 'What is the best app for auspicious Vedic timing?',
-        a: 'If you want timing that is personal to your chart rather than a generic city-wide panchang, VedicHour rates all 18 planetary hours of your day as clearer or heavier windows, computed on the Swiss Ephemeris. You can try it free.',
+        a: 'If you want timing that is personal to your chart rather than a generic city-wide panchang, VedicHour rates your day’s 18 hourly slots as clearer or heavier windows, computed on the Swiss Ephemeris. You can try it free.',
       },
       {
         q: 'How is this different from a choghadiya or muhurat app?',
@@ -249,6 +241,9 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'astrosage-vs-prokerala',
+    published: '2026-06-21',
+    updated: '2026-10-11',
+    verdict: "AstroSage, Prokerala and VedicHour all compute a Vedic chart, so the raw positions should agree; they differ in what they are built for. AstroSage is the widest toolbox, Prokerala the cleanest calculators, VedicHour a readable reading with day-by-day timing.",
     title: 'AstroSage vs Prokerala vs VedicHour — Free Kundli Compared',
     h1: 'AstroSage vs Prokerala vs VedicHour',
     description:
@@ -271,7 +266,7 @@ export const COMPARISONS: Comparison[] = [
       '<tr><td>Free Kundli</td><td>Yes</td><td>Yes</td><td>Yes</td></tr>' +
       '<tr><td>Breadth of free tools</td><td>Very broad</td><td>Broad</td><td>Focused (8 calculators)</td></tr>' +
       '<tr><td>Plain-English AI report</td><td>Limited</td><td>No</td><td>Core focus</td></tr>' +
-      '<tr><td>Hour-by-hour timing grid</td><td>Panchang tables</td><td>Panchang tables</td><td>All 18 horas scored clearer / heavier</td></tr>' +
+      '<tr><td>Hour-by-hour timing grid</td><td>Panchang tables</td><td>Panchang tables</td><td>18 hourly slots a day, scored clearer / heavier against your chart</td></tr>' +
       '<tr><td>Engine</td><td>Sidereal Vedic</td><td>Sidereal Vedic</td><td>Swiss Ephemeris + Lahiri</td></tr>' +
       '<tr><td>Pricing</td><td>Free + consultations</td><td>Free + reports</td><td>Free Kundli, subscription</td></tr>' +
       '</table>' +
@@ -291,7 +286,7 @@ export const COMPARISONS: Comparison[] = [
       },
       {
         q: 'What does VedicHour add over AstroSage and Prokerala?',
-        a: 'A plain-English AI reading of your chart and an hour-by-hour grid that rates all 18 planetary hours as clearer or heavier windows — timing awareness rather than a static panchang.',
+        a: 'A plain-English AI reading of your chart and an hour-by-hour grid that rates your day’s 18 hourly slots as clearer or heavier windows — timing awareness rather than a static panchang.',
       },
       {
         q: 'Are all three free?',
@@ -305,6 +300,9 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'best-ai-astrology-app',
+    published: '2026-06-21',
+    updated: '2026-10-11',
+    verdict: "A useful AI astrology app computes your real birth chart and explains it; a poor one writes generic Sun-sign text. Check that it names its ephemeris, gives the same chart for the same birth details, and says plainly that it is for reflection, not guarantees.",
     title: 'Best AI Astrology Apps That Explain Your Chart (Honest Guide)',
     h1: 'Best AI astrology apps that explain your chart',
     description:
@@ -329,7 +327,7 @@ export const COMPARISONS: Comparison[] = [
       '<li><strong>Is it honest about uncertainty?</strong> Reflection and planning, never guarantees or "lucky" claims.</li>' +
       '</ul>' +
       '<h2>Where VedicHour fits</h2>' +
-      '<p>VedicHour is built for the second kind. It casts your chart with the Swiss Ephemeris and Lahiri ayanamsa, writes a plain-English reading, and adds the piece most apps skip: an hour-by-hour grid that rates all 18 planetary hours (horas) of your day as clearer or heavier windows. It is framed as timing awareness — a structured second lens — not a prediction engine.</p>' +
+      '<p>VedicHour is built for the second kind. It casts your chart with the Swiss Ephemeris and Lahiri ayanamsa, writes a plain-English reading, and adds the piece most apps skip: an hour-by-hour grid that rates your day’s 18 hourly slots (each tied to its hora, or planetary hour) as clearer or heavier windows. It is framed as timing awareness — a structured second lens — not a prediction engine.</p>' +
       '<p>You can generate your <a href="/free-kundli">free Kundli</a> and see a sample reading and timing grid before paying for anything.</p>' +
       CTA +
       DISCLAIMER,
@@ -354,6 +352,9 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'best-kundli-matching',
+    published: '2026-06-21',
+    updated: '2026-10-11',
+    verdict: "Kundli matching scores two charts across eight factors for a maximum of 36 points; it is one input into a decision, not a verdict. A trustworthy tool shows the breakdown of all eight factors, not just the total.",
     title: 'Best Kundli Matching for 36-Point Gun Milan (Free)',
     h1: 'Kundli matching (Gun Milan), explained',
     description:
@@ -401,6 +402,9 @@ export const COMPARISONS: Comparison[] = [
   },
   {
     slug: 'best-dosha-calculators',
+    published: '2026-06-21',
+    updated: '2026-10-11',
+    verdict: "Sade Sati, Manglik and Kaal Sarp are chart patterns, not curses, and traditions differ on how much weight each deserves. A good calculator computes them from a real chart and explains the result calmly rather than selling a remedy.",
     title: 'Best Free Dosha Calculators — Sade Sati, Manglik, Kaal Sarp',
     h1: 'Best free dosha calculators',
     description:
@@ -447,6 +451,10 @@ export const COMPARISONS: Comparison[] = [
     ],
   },
 ];
+
+/** Existing articles first, then the newest. */
+export const COMPARISONS: Comparison[] = [...BASE_COMPARISONS, ...MORE_COMPARISONS];
+
 
 export function getComparison(slug: string): Comparison | undefined {
   return COMPARISONS.find((c) => c.slug === slug);

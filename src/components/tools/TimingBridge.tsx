@@ -46,7 +46,7 @@ export function TimingBridge({
       </h2>
       <p className="font-body text-body-md text-dust mt-3">
         A chart is a map. It doesn&rsquo;t tell you which hour of Thursday to actually make the
-        call. VedicHour reads your chart against each of the day&rsquo;s 18 planetary hours
+        call. VedicHour reads your chart against each of the day&rsquo;s 18 hourly windows
         (horas) and tells you, in plain English, which windows run clearer for what &mdash; and
         which ones to leave alone.
       </p>
