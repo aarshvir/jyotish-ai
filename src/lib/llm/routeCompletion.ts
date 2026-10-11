@@ -9,6 +9,7 @@ import {
   runChatFallbackChain,
 } from '@/lib/llm/fallbackChain';
 import { runModelChain } from '@/lib/llm/modelChain';
+import { anthropicTuning } from '@/lib/llm/anthropicTuning';
 
 const anthropicApiKey = cleanEnv(process.env.ANTHROPIC_API_KEY);
 
@@ -264,6 +265,8 @@ export async function completeLlmChat(opts: {
           max_tokens: opts.maxTokens,
           system: opts.systemPrompt,
           messages: [{ role: 'user', content: opts.userPrompt }],
+          // Nothing for the models this route has always pinned; for 5.x Sonnet/Haiku, no up-front thinking.
+          ...(anthropicTuning(modelId) as Record<string, never>),
         });
         // Same usage line as the model chain, so a pinned model's cost is visible too (hourly-batch).
         console.log(

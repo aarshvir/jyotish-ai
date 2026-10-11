@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { safeParseJson } from '@/lib/utils/safeJson';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { tierModel } from '@/lib/reports/qualityTier';
 import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { sanitizeLagnaSign, sanitizePlanetName, sanitizeForPrompt } from '@/lib/utils/sanitize';
 import { applyReaderTone, seekerPromptBlock } from '@/lib/personalization/forecastPrompt';
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
   }
 
   const modelOverride =
-    typeof body.model_override === 'string' ? body.model_override.trim() : undefined;
+    (typeof body.model_override === 'string' ? body.model_override.trim() : '') || tierModel('nativityText') || undefined;
 
   if (!hasLlmCredentials(modelOverride)) {
     return NextResponse.json(

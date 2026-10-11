@@ -7,6 +7,7 @@ import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaCo
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { tierModel } from '@/lib/reports/qualityTier';
 import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { applyReaderTone, seekerPromptBlock } from '@/lib/personalization/forecastPrompt';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
   const modelOverride =
     typeof body.model_override === 'string' && body.model_override.trim()
       ? body.model_override.trim()
-      : DEFAULT_MONTHLY_MODEL;
+      : DEFAULT_MONTHLY_MODEL || tierModel('months') || '';
   if (!hasLlmCredentials(modelOverride)) {
     return NextResponse.json({ months: buildFallbackMonths(body), partial: true }, { status: 206 });
   }
