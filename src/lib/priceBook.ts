@@ -148,9 +148,9 @@ export type SubscriptionSku = 'sub_monthly' | 'sub_annual';
 export const SUBSCRIPTION_MONTHS: Record<SubscriptionSku, number> = { sub_monthly: 1, sub_annual: 12 };
 
 /**
- * `current` is what production charges today (set 2026-09-13 on the old $6.50 all-Opus
- * cost basis). `recommended` is docs/PRICING_RESEARCH.md §8. Nothing changes for buyers
- * until ACTIVE_PRICE_SET is flipped, which needs the owner's yes.
+ * `current` is the previous price (set 2026-09-13 on the old $6.50 all-Opus cost basis),
+ * kept for the record and for the cost-floor tests. `recommended` is docs/PRICING_RESEARCH.md
+ * §8 and became live on 2026-10-11 when the owner approved it in chat.
  */
 export const PRICE_SETS = {
   current: {
@@ -165,8 +165,8 @@ export const PRICE_SETS = {
 
 export type PriceSetId = keyof typeof PRICE_SETS;
 
-/** THE live switch. 'current' until the owner approves the recommendation. */
-export const ACTIVE_PRICE_SET: PriceSetId = 'current';
+/** THE live switch. 'recommended' since the owner's approval on 2026-10-11. */
+export const ACTIVE_PRICE_SET: PriceSetId = 'recommended';
 
 export function subscriptionPrice(
   sku: SubscriptionSku,
@@ -253,11 +253,11 @@ export const EXPERIMENTS = {
       inr999: { price: p(999, 14.99), weight: 1 },
     },
   },
-  /** E4 (rest of world) — $41.99 (today's price) vs $14.99. INR here is unused (India uses price_monthly_in). */
+  /** E4 (rest of world) — $14.99 (live since 2026-10-11) vs the previous $41.99. INR here is unused (India uses price_monthly_in). */
   price_monthly_row: {
     sku: 'sub_monthly',
     enabled: false,
-    control: 'usd4199',
+    control: 'usd1499',
     market: 'ROW',
     arms: {
       usd4199: { price: p(999, 41.99, 159), weight: 1 },

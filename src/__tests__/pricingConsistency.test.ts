@@ -33,8 +33,8 @@ import {
 describe('pricing consistency — display == charge', () => {
   const EXPECTED: Record<string, Record<SupportedCurrency, string>> = {
     // Subscriptions — the only plans sold since 2026-09-13.
-    sub_monthly: { USD: '$41.99', INR: '₹3,999', AED: 'AED 159.00' },
-    sub_annual: { USD: '$499.00', INR: '₹47,999', AED: 'AED 1849.00' },
+    sub_monthly: { USD: '$14.99', INR: '₹999', AED: 'AED 54.99' },
+    sub_annual: { USD: '$119.00', INR: '₹9,999', AED: 'AED 429.00' },
     // Retired one-time plans, still defined for legacy rows and refused at checkout.
     '7day': { USD: '$9.99', INR: '₹799', AED: 'AED 37.99' },
     monthly: { USD: '$19.99', INR: '₹1,499', AED: 'AED 69.99' },
