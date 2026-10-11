@@ -5,6 +5,7 @@ import type { RevealData } from '@/lib/funnel/reveal/compute';
 import type { Lang } from '@/lib/funnel/screens';
 import { firstLook } from '@/lib/funnel/firstLook';
 import { PrimaryButton, Title } from './QuestionScreens';
+import { TrustRow } from './TrustBits';
 
 /**
  * The first look: three or four values from the person's own chart, before we ask for
@@ -43,6 +44,9 @@ export function FirstLookScreen({ reveal, lang, onView, onContinue }: { reveal: 
         </p>
       ))}
       <p className="mt-4 font-body text-body-sm leading-[1.6] text-dust">{look.footer}</p>
+      <div className="mt-5">
+        <TrustRow lang={lang} tone="night" />
+      </div>
       <PrimaryButton onClick={onContinue}>{hi ? 'Aage badhein' : 'Continue'}</PrimaryButton>
     </section>
   );

@@ -34,15 +34,24 @@ const INSIDE = [
   'A chapter on the area you chose',
 ];
 
-function Trust({ items }: { items: string[] }) {
+function Trust({ items }: { items: (string | { text: string; href: string })[] }) {
   return (
     <ul className="mt-5 grid gap-2">
-      {items.map((x) => (
-        <li key={x} className="flex gap-2 font-body text-body-md text-ink-soft">
-          <span aria-hidden className="text-[#226B48]">✓</span>
-          {x}
-        </li>
-      ))}
+      {items.map((x) => {
+        const text = typeof x === 'string' ? x : x.text;
+        return (
+          <li key={text} className="flex gap-2 font-body text-body-md text-ink-soft">
+            <span aria-hidden className="text-[#226B48]">✓</span>
+            {typeof x === 'string' ? (
+              text
+            ) : (
+              <a href={x.href} className="underline underline-offset-4">
+                {text}
+              </a>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -110,7 +119,7 @@ export function OfferScreen({
           </button>
           <Trust
             items={[
-              '24-hour refund, no questions asked',
+              { text: '24-hour refund, no questions asked', href: '/refund' },
               'Calculated with Swiss Ephemeris astronomy',
               'Your birth details are never sold',
               'One payment. Nothing is charged automatically.',
@@ -156,6 +165,7 @@ export function OfferScreen({
           <Trust
             items={[
               'Nothing is charged automatically. Renew with one tap, or simply stop.',
+              { text: '24-hour refund, no questions asked', href: '/refund' },
               'Calculated with Swiss Ephemeris astronomy',
               'Your birth details are never sold',
             ]}

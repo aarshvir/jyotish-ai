@@ -27,7 +27,8 @@ export type Block =
   | { kind: 'heading'; text: string }
   | { kind: 'line'; text: string }
   | { kind: 'quote'; text: string }
-  | { kind: 'note'; text: string };
+  | { kind: 'note'; text: string }
+  | { kind: 'link'; text: string; href: string };
 
 export interface BuiltInterstitial {
   id: InterstitialId;
@@ -239,6 +240,10 @@ export function buildInterstitial(id: InterstitialId, a: FunnelAnswers, lang: La
     if (policy.length) {
       blocks.push({ kind: 'heading', text: lang === 'hi' ? 'Astrology se jo shikayat thi' : 'About astrology so far' });
       for (const p of policy) blocks.push({ kind: 'line', text: p });
+    }
+
+    if (frustrations.includes('fear') && policyLine('fear', lang)) {
+      blocks.push({ kind: 'link', text: lang === 'hi' ? 'Hum kya kabhi nahi kehte' : 'What we never say', href: '/what-we-never-say' });
     }
 
     blocks.push({
