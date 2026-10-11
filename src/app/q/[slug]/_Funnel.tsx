@@ -19,7 +19,6 @@ import { splitCodes } from '@/lib/funnel/problems';
 import { barFraction, birthReady, counter, nextScreen, prevScreen, resumeTarget } from '@/lib/funnel/engine';
 import { attributionFrom, loadState, newSessionId, saveState, type Contact, type FunnelState } from '@/lib/funnel/state';
 import { funnelEvent, pixelEvent, type EventContext } from '@/lib/funnel/events';
-import type { RevealData } from '@/lib/funnel/reveal/compute';
 import { placeLabel, type Place } from '@/lib/funnel/cities';
 import { validate as validateStartStep, getStep as getStartStep } from '@/lib/quiz/engine';
 import { funnelPersonalContext } from '@/lib/quiz/personalContext';
