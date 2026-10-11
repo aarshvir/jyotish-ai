@@ -21,6 +21,7 @@ import { funnelEvent, pixelEvent, type EventContext } from '@/lib/funnel/events'
 import type { RevealData } from '@/lib/funnel/reveal/compute';
 import { placeLabel, type Place } from '@/lib/funnel/cities';
 import { validate as validateStartStep, getStep as getStartStep } from '@/lib/quiz/engine';
+import { funnelCheckoutBody } from '@/lib/funnel/checkoutBody';
 import { funnelPersonalContext } from '@/lib/quiz/personalContext';
 import { saveQuiz } from '@/lib/quiz/persist';
 import { formatAmount } from '@/lib/ziina/amounts';
@@ -279,12 +280,14 @@ export function Funnel({ slugKey }: { slugKey: string }) {
 
   // ── checkout ─────────────────────────────────────────────────────────────
   const startCheckout = useCallback(
-    async (plan: Plan) => {
+    async (plan: Plan, answers: FunnelAnswers) => {
       if (!st || !ctx || busy) return;
       setBusy(true);
       setBanner(null);
-      const a = st.answers;
-      const known = a.birth_time_known === 'exact' || a.birth_time_known === 'approx';
+      // `answers` is an argument because the city dialog calls this in the same
+      // turn as setState. Reading st.answers here would still be the pre-pick
+      // answers, and the paid grid would be timed at the birthplace.
+      const a = answers;
       const name = (st.contact?.name ?? '').trim();
       const reportId = checkoutReportId(plan);
       const personal = funnelPersonalContext(a, slug);
@@ -293,22 +296,17 @@ export function Funnel({ slugKey }: { slugKey: string }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({
-            planType: plan,
-            reportId,
-            funnelSlug: slug.slug,
-            name,
-            ...(st.contact?.channel === 'whatsapp' ? { phone: st.contact.value } : {}),
-            birth_date: a.birth_date,
-            birth_time: known && a.birth_time ? `${a.birth_time}:00` : '12:00:00',
-            birth_city: a.birth_city,
-            birth_lat: Number(a.birth_city_lat),
-            birth_lng: Number(a.birth_city_lng),
-            ...(a.current_city && a.current_city_lat
-              ? { current_city: a.current_city, current_lat: Number(a.current_city_lat), current_lng: Number(a.current_city_lng) }
-              : {}),
-            personal_context: personal,
-          }),
+          body: JSON.stringify(
+            funnelCheckoutBody({
+              planType: plan,
+              reportId,
+              funnelSlug: slug.slug,
+              name,
+              phone: st.contact?.channel === 'whatsapp' ? st.contact.value : null,
+              answers: a,
+              personalContext: personal,
+            }),
+          ),
         });
         if (r.status === 401) {
           setGate(plan);
@@ -367,7 +365,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
       setGate(plan);
       return;
     }
-    void startCheckout(plan);
+    void startCheckout(plan, st.answers);
   }
 
   // Back from Google sign-in with a pending checkout: carry straight on.
@@ -387,7 +385,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
     } catch {
       /* ignore */
     }
-    void startCheckout(pending);
+    void startCheckout(pending, st.answers);
   }, [signedIn, st, params, startCheckout]);
 
   if (!st || !screen || !ctx || !flags) {
@@ -596,7 +594,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
                   const next = { ...a, current_city: a.birth_city, current_city_lat: a.birth_city_lat, current_city_lng: a.birth_city_lng };
                   setSt({ ...st, answers: next });
                   setAskCity(false);
-                  if (signedIn) void startCheckout('sub_monthly');
+                  if (signedIn) void startCheckout('sub_monthly', next);
                   else setGate('sub_monthly');
                 }}
                 className="w-full text-left px-4 min-h-[56px] mb-3 rounded-[14px] border border-amber bg-amber/[0.08] font-body text-body-lg text-star"
@@ -613,7 +611,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
                 const next = { ...a, current_city: placeLabel(p), current_city_lat: String(p.lat), current_city_lng: String(p.lng) };
                 setSt({ ...st, answers: next });
                 setAskCity(false);
-                if (signedIn) void startCheckout('sub_monthly');
+                if (signedIn) void startCheckout('sub_monthly', next);
                 else setGate('sub_monthly');
               }}
             />
@@ -635,7 +633,7 @@ export function Funnel({ slugKey }: { slugKey: string }) {
             const plan = gate;
             setSignedIn(true);
             setGate(null);
-            void startCheckout(plan);
+            void startCheckout(plan, st.answers);
           }}
           onGoogle={() => {
             saveState({ ...st, screenId: 's17' });
