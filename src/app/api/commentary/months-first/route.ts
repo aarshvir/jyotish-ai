@@ -8,7 +8,9 @@ import { buildLagnaContext, buildHoraReferenceBlock } from '@/lib/agents/lagnaCo
 import { completeLlmChat, hasLlmCredentials } from '@/lib/llm/routeCompletion';
 import { formatDayCommentaryAnchorBlocks } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
-import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock } from '@/lib/utils/sanitize';
+import { tierModel } from '@/lib/reports/qualityTier';
+import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { applyReaderTone, seekerPromptBlock } from '@/lib/personalization/forecastPrompt';
 import { checkRateLimit, getRateLimitKey, RATE_LIMITS, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
 import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
@@ -95,7 +97,7 @@ export async function POST(req: NextRequest) {
   const modelOverride =
     typeof body.model_override === 'string' && body.model_override.trim()
       ? body.model_override.trim()
-      : DEFAULT_MONTHLY_MODEL;
+      : DEFAULT_MONTHLY_MODEL || tierModel('months') || '';
   if (!hasLlmCredentials(modelOverride)) {
     return NextResponse.json({ months: buildFallbackMonths(body), partial: true }, { status: 206 });
   }
@@ -103,7 +105,8 @@ export async function POST(req: NextRequest) {
   const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
   const mahadasha = sanitizePlanetName(body.mahadasha);
   const antardasha = sanitizePlanetName(body.antardasha);
-  const personalContextBlock = buildPersonalContextBlock(body.personal_context);
+  // Quiz answers, not just tone: see src/lib/personalization/forecastPrompt.ts.
+  const personalContextBlock = seekerPromptBlock(body.personal_context, 'months', { today: body.reference_planet_positions_date });
   const {
     months,
     reference_planet_positions,
@@ -231,7 +234,12 @@ Start with { and end with }.`;
     }));
     const out = chunkResults.flat();
 
-    return NextResponse.json({ months: out.slice(0, months.length) });
+    const toned = (out.slice(0, months.length) as Array<Record<string, unknown>>).map((m) => ({
+      ...m,
+      ...(typeof m.analysis === 'string' ? { analysis: applyReaderTone(body.personal_context, m.analysis) } : {}),
+      ...(typeof m.theme === 'string' ? { theme: applyReaderTone(body.personal_context, m.theme) } : {}),
+    }));
+    return NextResponse.json({ months: toned });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error('[months-first]', msg.slice(0, 500));

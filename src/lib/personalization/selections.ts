@@ -56,3 +56,20 @@ export function selectionsOf(p: SeekerProfile, eventDate: string | null = null):
   if (p.timeConfidence) add('time', 'Your birth time', TIME_LABEL[p.timeConfidence]);
   return out;
 }
+
+/**
+ * The reader's situation as the question they would have asked, in their own words (the labels
+ * they tapped), for the "answer to your question" card. First person, one short paragraph.
+ */
+export function askFromProfile(p: SeekerProfile, eventDate: string | null = null): string {
+  const bits: string[] = [];
+  const lead = [p.labels.concern ?? p.labels.focus_area, p.labels.detail].filter(Boolean).join(': ');
+  if (lead) bits.push(lead);
+  if (p.labels.duration) bits.push(`on my mind for ${p.labels.duration.toLowerCase()}`);
+  if (p.hasEvent === 'yes' && p.eventText) bits.push(`coming up: ${p.eventText}${eventDate ? ` (${longDate(eventDate)})` : ''}`);
+  else if (p.hasEvent === 'soon') bits.push('a decision is coming up soon');
+  if (p.partnerName) bits.push(`it involves ${p.partnerName}`);
+  if (p.labels.goal_12m) bits.push(`most important in the next 12 months: ${p.labels.goal_12m.toLowerCase()}`);
+  const text = bits.join('; ');
+  return text ? text.charAt(0).toUpperCase() + text.slice(1) + '.' : '';
+}

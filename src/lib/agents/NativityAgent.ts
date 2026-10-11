@@ -9,6 +9,8 @@ import { safeParseJson } from '@/lib/utils/safeJson';
 import { sanitizeForPrompt, sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
 import { hasAnyChatFallbackKey } from '@/lib/llm/fallbackChain';
 import { runModelChain } from '@/lib/llm/modelChain';
+import { tierModel } from '@/lib/reports/qualityTier';
+import { parseModelJson } from '@/lib/blueprint/json';
 import { buildScriptureContextHybrid } from '@/lib/rag/vectorSearch';
 import { detectYogas } from '@/lib/rag/yogaDetector';
 import { parseJyotishRagMode, resolveJyotishRagMode, type JyotishRagMode } from '@/lib/rag/ragMode';
@@ -141,6 +143,20 @@ function extractJsonObject(text: string): string {
   return m ? m[0] : text;
 }
 
+/**
+ * Strict parse first; if that fails, close a missing final bracket (a slip Claude Sonnet 5.5 made in
+ * both of the first two real nativity runs and in a Blueprint run) before giving up on the reply.
+ * Giving up sends the whole call to the next, dearer model, and the reply already paid for is lost.
+ */
+function parseProfile(text: string): NativityProfile | null {
+  const body = extractJsonObject(text);
+  try {
+    return safeParseJson<NativityProfile>(body);
+  } catch {
+    return parseModelJson<NativityProfile>(body);
+  }
+}
+
 export class NativityAgent {
   constructor() {
     if (!anthropicKeyOk() && !hasAnyChatFallbackKey()) {
@@ -190,15 +206,16 @@ export class NativityAgent {
         userPrompt,
         maxTokens: NATIVITY_MAX_TOKENS,
         auditStage: 'nativity',
+        pin: tierModel('nativity'),
         deadlineAt: startedAt + NATIVITY_ROUTE_BUDGET_MS - NATIVITY_RESPONSE_MARGIN_MS,
         // A rung whose output is not a JSON object must fall through to the next rung, never ship.
         validate: (t) => {
-          const parsed = safeParseJson<NativityProfile>(extractJsonObject(t));
+          const parsed = parseProfile(t);
           if (!parsed || typeof parsed !== 'object') throw new Error('nativity output is not a JSON object');
         },
       });
       console.log(`NativityAgent: answered by ${rung} (${model}), ${text.length} chars`);
-      return safeParseJson<NativityProfile>(extractJsonObject(text));
+      return parseProfile(text) as NativityProfile;
     } catch (error: unknown) {
       lastError = error;
     }

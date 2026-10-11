@@ -1,109 +1,79 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import Footer from '@/components/shared/Footer';
 import { JsonLd } from '@/components/seo/JsonLd';
+import { PersonalBrief } from '@/components/report/PersonalBrief';
 import { breadcrumbLd, softwareAppLd } from '@/lib/seo/jsonLd';
-import { SAMPLE_GRID, SAMPLE_SEEKER, SAMPLE_DAY_SCORE } from '@/components/landing/sampleData';
+import { SECTION_NAME, type ForecastKey } from '@/lib/personalization/forecastView';
 import { UNLOCK_FREE_HREF } from '@/lib/pricing';
+import {
+  ANTARDASHAS,
+  AREAS,
+  BRIEF,
+  CHART,
+  CURRENT_ANTARDASHA,
+  DAILY_NOTES,
+  DAYS,
+  EVENT_DATE,
+  EVENT_DAY,
+  FIRST_MONTH,
+  HOURLY,
+  MAHADASHA,
+  MONTH_ROWS,
+  MOON,
+  MOON_SIGN_MARGIN_MINUTES,
+  NATIVITY,
+  QUIETEST_DAYS,
+  READER_NAME,
+  SAMPLE_FORECAST,
+  SECTION_ORDER,
+  STRONGEST_DAYS,
+  SYNTHESIS,
+  WEEKS,
+  WINDOW_AVERAGE,
+  calendarRows,
+  dayTier,
+  formatClockRange,
+  formatRange,
+  noteBlocks,
+  plainDate,
+  shortDate,
+  splitHourly,
+  tierOf,
+  whyLine,
+} from '@/components/landing/sampleReportView';
 
+const WINDOW = SAMPLE_FORECAST.window;
+const WINDOW_LABEL = `${plainDate(WINDOW.start).replace(/ 20\d\d$/, '')} to ${plainDate(WINDOW.end)}`;
+
+// Search-length title and description, in the style of #238 (the title template adds " | VedicHour").
 export const metadata: Metadata = {
-  title: 'Sample Report: One Full Day, Hour by Hour',
+  title: 'Sample Report: A Full 30-Day Forecast',
   description:
-    'See a full sample day from a real birth chart: all 18 hourly windows, each scored and explained in plain English.',
+    'See a finished 30-day forecast for one real chart: life-area scores, best days, the dasha chapter and every hour of an interview day.',
   alternates: { canonical: '/sample-report' },
   openGraph: {
-    title: 'Sample Report: One Full Day, Hour by Hour',
+    title: 'Sample Report: A Full 30-Day Forecast',
     description:
-      'One full day, hour by hour: every window scored and explained in plain English. See what a VedicHour report actually looks like.',
+      'One reader, one real chart, one month: what a VedicHour forecast looks like when it is written around the answers you gave.',
     url: '/sample-report',
     type: 'article',
   },
 };
 
 /* ──────────────────────────────────────────────────────────────────────────
-   The clock ranges, scores and ruling planets below come from SAMPLE_GRID —
-   real output from the deterministic ephemeris engine for one fixed sample
-   birth (see src/components/landing/sampleData.ts). The same data drives the
-   landing-page preview, so this page and the landing chart can never disagree.
-
-   The one-line guidance is editorial: a plain-English reading of each window,
-   written to match its ruling planet and its score. Keyed by slot label so a
-   regenerated grid can never silently pair a line with the wrong hour.
+   Everything below comes from src/components/landing/sampleForecast.ts, which
+   scripts/gen-sample-forecast.ts writes: the chart, the dasha and the 30 days of
+   scores are the deterministic engine's (Lahiri), and the sentences are what the
+   report's own writing routes returned for the invented reader's quiz answers
+   (src/components/landing/sampleReader.ts). The brief at the top, the order of
+   the sections and each "why this is in your report" line use the same functions
+   the paid report page uses. Nothing here is fetched, so the page renders
+   statically for ad capture and crawlers.
    ────────────────────────────────────────────────────────────────────────── */
-const GUIDANCE: Record<string, string> = {
-  '06:00–07:00': 'A calm, clear-headed start. Good for planning the day or writing the message you keep rehearsing.',
-  '07:00–08:00': 'Heavier than it looks. Do the dull admin now, not anything that needs charm.',
-  '08:00–09:00': 'Fine for learning and advice. Ask someone further along than you an honest question.',
-  '09:00–10:00': "The morning's clearer window. Take the meeting you've been dodging, or ship the thing that's nearly done.",
-  '10:00–11:00': 'Good for being seen — a pitch, a demo, or asking your boss for something.',
-  '11:00–12:00': 'Pleasant but unfocused. Better for a coffee with someone than for a decision.',
-  '12:00–13:00': "The dip. Eat, walk, clear easy messages. Don't sign anything in this hour.",
-  '13:00–14:00': 'Steadier again. A decent slot for a one-to-one where feelings are part of it.',
-  '14:00–15:00': 'Grind time. Head down on the work nobody claps for, and keep people out of it.',
-  '15:00–16:00': "Still heavy going. If you're stuck, change the task rather than push harder.",
-  '16:00–17:00': "Everything opens up. Money talk, teaching, mentoring, or asking for what you're worth.",
-  '17:00–18:00': "The day's strongest stretch. Whatever you've been putting off — the hard conversation, the ask — do it here.",
-  '18:00–19:00': 'A strong close to the working day. Confirm, wrap up, be decisive where people can see it.',
-  '19:00–20:00': 'Low and scattered. A poor hour to negotiate, or to raise something tender at home.',
-  '20:00–21:00': 'Fine for small errands and light admin. Nothing that needs your best judgement.',
-  '21:00–22:00': 'Warm and easy. The right hour for family, a real conversation, or something you do for joy.',
-  '22:00–23:00': 'Good for reading, reflecting, and making peace with how the day actually went.',
-  '23:00–24:00': 'Still has energy in it — spend it winding down, not starting something new.',
-};
 
-/* One canonical 5-tier scale (docs/DESIGN_SYSTEM.md §1). Colour is never the
-   only signal — every row also carries the tier word.
-   `text` is used for the word and the number and must clear AA on parchment,
-   so `favourable` sits one step deeper than the spec's #3B8C63 (3.85:1).
-   `accent` is decorative (rail + legend dot) and keeps the spec's lighter
-   value, so the two green tiers stay distinguishable at a glance. */
-type Tier = { word: string; text: string; accent: string; tint: string };
-
-const TIERS: { min: number; tier: Tier }[] = [
-  { min: 80, tier: { word: 'Strong', text: '#226B48', accent: '#226B48', tint: 'rgba(34,107,72,0.10)' } },
-  { min: 60, tier: { word: 'Favourable', text: '#2E7A52', accent: '#5FAE86', tint: 'rgba(59,140,99,0.09)' } },
-  { min: 40, tier: { word: 'Mixed', text: '#8A6318', accent: '#C79A3C', tint: 'rgba(138,99,24,0.09)' } },
-  { min: 20, tier: { word: 'Guarded', text: '#A9541F', accent: '#D08050', tint: 'rgba(169,84,31,0.10)' } },
-  { min: 0, tier: { word: 'Avoid', text: '#8E3418', accent: '#C05B38', tint: 'rgba(142,52,24,0.11)' } },
-];
-
-function tierOf(score: number): Tier {
-  return (TIERS.find((t) => score >= t.min) ?? TIERS[TIERS.length - 1]).tier;
-}
-
-/** "15 Jun 1992 · 09:00 · New Delhi" → "… · 9:00 am · …". Never 24-hour. */
-function to12h(label: string): string {
-  return label.replace(/\b(\d{2}):(\d{2})\b/g, (_match, h: string, m: string) => {
-    const hr = Number(h);
-    return `${hr % 12 === 0 ? 12 : hr % 12}:${m} ${hr < 12 ? 'am' : 'pm'}`;
-  });
-}
-
-/** "06:00–07:00" → "6 – 7 am"; "11:00–12:00" → "11 am – 12 pm". Never 24-hour. */
-function formatRange(label: string): string {
-  const [from, to] = label.split('–').map((p) => Number(p.slice(0, 2)));
-  const clock = (h: number) => {
-    const norm = h % 24;
-    return norm % 12 === 0 ? 12 : norm % 12;
-  };
-  const meridiem = (h: number) => (h % 24 < 12 ? 'am' : 'pm');
-  return meridiem(from) === meridiem(to)
-    ? `${clock(from)} – ${clock(to)} ${meridiem(to)}`
-    : `${clock(from)} ${meridiem(from)} – ${clock(to)} ${meridiem(to)}`;
-}
-
-const RANKED = [...SAMPLE_GRID].sort((a, b) => b.score - a.score);
-const BEST_TWO = RANKED.slice(0, 2);
-const HARDEST = RANKED[RANKED.length - 1];
-const DAY_TIER = tierOf(SAMPLE_DAY_SCORE);
-
-const LEGEND = [
-  { ...TIERS[0].tier, range: '80–100' },
-  { ...TIERS[1].tier, range: '60–79' },
-  { ...TIERS[2].tier, range: '40–59' },
-];
-
-function Pill({ children }: { children: React.ReactNode }) {
+function Pill({ children }: { children: ReactNode }) {
   return (
     <span className="inline-flex items-center rounded-pill border border-amber/30 bg-amber/[0.08] px-3 py-1.5 font-body text-body-md text-amber-light">
       {children}
@@ -111,16 +81,451 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Colour is a cue; the word and the number are the answer. */
+function ScoreBadge({ score, word, tint, text }: { score: number; word: string; tint: string; text: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-2 whitespace-nowrap rounded-pill px-3 py-1 font-body text-body-md font-medium"
+      style={{ background: tint, color: text }}
+    >
+      {word}
+      <span aria-hidden className="h-3 w-px" style={{ background: 'rgba(30,23,38,0.18)' }} />
+      <span className="tabular-nums">{score}</span>
+    </span>
+  );
+}
+
+function DayBadge({ score }: { score: number }) {
+  const t = dayTier(score);
+  return <ScoreBadge score={score} word={t.word} tint={t.tint} text={t.text} />;
+}
+
+/** Weeks, months and life areas: the five-tier words. Days carry the report's own day words (DayBadge). */
+function TierBadge({ score }: { score: number }) {
+  const t = tierOf(score);
+  return <ScoreBadge score={score} word={t.word} tint={t.tint} text={t.text} />;
+}
+
+/** The one line under a section's title that says which answer put the section here. */
+function WhyLine({ k }: { k: ForecastKey }) {
+  const text = whyLine(k);
+  if (!text) return null;
+  return (
+    <p className="mt-2 font-body text-body-md italic leading-relaxed text-ink-soft" data-testid="why-here">
+      <span className="font-medium not-italic text-ink-muted">Why this is in your report: </span>
+      {text}
+    </p>
+  );
+}
+
+function SectionHead({ k, title, children }: { k: ForecastKey; title: string; children?: ReactNode }) {
+  return (
+    <header>
+      <h2 className="font-display text-headline-lg text-ink">{title}</h2>
+      <WhyLine k={k} />
+      {children}
+    </header>
+  );
+}
+
+function Prose({ children }: { children: ReactNode }) {
+  return <p className="font-body text-body-lg leading-relaxed text-ink-muted">{children}</p>;
+}
+
+/* ── Your chapter ─────────────────────────────────────────────────────────── */
+
+function ChapterSection() {
+  const now = CURRENT_ANTARDASHA;
+  return (
+    <section aria-labelledby="chapter" className="mt-12 first:mt-0">
+      <h2 id="chapter" className="font-display text-headline-lg text-ink">
+        The chapter you are in
+      </h2>
+      <p className="mt-2 font-body text-body-md italic leading-relaxed text-ink-soft" data-testid="why-here">
+        <span className="font-medium not-italic text-ink-muted">Why this is in your report: </span>
+        Every score below is read against this chart and this chapter of it, so it comes first.
+      </p>
+
+      <div className="mt-5 rounded-[1rem] border border-paper-line bg-white p-5 shadow-[0_1px_2px_rgba(60,44,28,0.06)]">
+        <p className="font-body text-body-md text-ink-soft">Your main period</p>
+        <p className="mt-1 font-display text-headline-md text-ink">
+          {MAHADASHA.lord} · {plainDate(MAHADASHA.start)} to {plainDate(MAHADASHA.end)}
+        </p>
+        <p className="mt-1 font-body text-body-md text-ink-muted">
+          Inside it, the {now.lord} sub-period runs until {plainDate(now.end)}.
+        </p>
+        <ol className="mt-4 grid grid-cols-1 gap-1.5 sm:grid-cols-3" aria-label="The sub-periods before, during and after this one">
+          {ANTARDASHAS.filter((_, i) => Math.abs(i - ANTARDASHAS.findIndex((x) => x.start === now.start)) <= 1).map((a) => {
+            const active = a.lord === now.lord && a.start === now.start;
+            return (
+              <li
+                key={a.lord + a.start}
+                className="rounded-[0.75rem] border px-3 py-2 font-body text-body-md"
+                style={{
+                  borderColor: active ? '#B5862F' : '#E6DBCB',
+                  background: active ? 'rgba(181,134,47,0.10)' : 'transparent',
+                  color: active ? '#8A6318' : '#66596F',
+                }}
+                aria-current={active ? 'true' : undefined}
+              >
+                <span className="font-medium">{a.lord}</span>
+                <span className="tabular-nums"> · {plainDate(a.start).replace(/^\d+ /, '')} to {plainDate(a.end).replace(/^\d+ /, '')}</span>
+                {active ? <span className="ml-2 font-medium">now</span> : null}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+
+      <div className="mt-6 space-y-4">
+        <h3 className="font-display text-headline-sm text-ink">What it means for you now</h3>
+        <Prose>{NATIVITY.dashaInterpretation}</Prose>
+        <h3 className="pt-2 font-display text-headline-sm text-ink">About your chart</h3>
+        <Prose>{NATIVITY.lagnaAnalysis}</Prose>
+      </div>
+    </section>
+  );
+}
+
+/* ── Timing by area of life ───────────────────────────────────────────────── */
+
+function DecideSection() {
+  const rows = calendarRows();
+  return (
+    <section aria-labelledby="decide" className="mt-14">
+      <SectionHead k="decide" title={SECTION_NAME.decide} />
+
+      <h3 className="mt-6 font-display text-headline-sm text-ink">{FIRST_MONTH.label}, by area of life</h3>
+      <p className="mt-1 font-body text-body-md text-ink-soft">{FIRST_MONTH.theme}</p>
+      <ul className="mt-4 space-y-3" aria-label="Life-area scores for the month">
+        {AREAS.map((a) => {
+          const t = tierOf(a.score);
+          return (
+            <li key={a.name} className="flex items-center gap-3">
+              <span className="w-28 shrink-0 font-body text-body-md text-ink-muted">{a.name}</span>
+              <span className="h-2.5 flex-1 overflow-hidden rounded-pill" style={{ background: 'rgba(30,23,38,0.07)' }}>
+                <span className="block h-full rounded-pill" style={{ width: `${a.score}%`, background: t.accent }} />
+              </span>
+              <span className="w-28 shrink-0 text-right font-body text-body-md tabular-nums" style={{ color: t.text }}>
+                {a.score} · {t.word}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="mt-3 font-body text-body-md text-ink-soft">
+        Month and life-area scores are estimates from the month&apos;s main planetary movements. Day and hour scores below are calculated.
+      </p>
+
+      <h3 className="mt-9 font-display text-headline-sm text-ink">The 30 days, day by day</h3>
+      <p className="mt-1 font-body text-body-md text-ink-soft">
+        Average {WINDOW_AVERAGE}. The date she told us about is outlined.
+      </p>
+      <div className="mt-4" role="table" aria-label="Day scores for the 30 days">
+        <div role="row" className="grid grid-cols-7 gap-1.5 pb-1.5 text-center font-body text-body-sm text-ink-soft">
+          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
+            <span key={d} role="columnheader">
+              {d}
+            </span>
+          ))}
+        </div>
+        {rows.map((row, ri) => (
+          <div key={ri} role="row" className="mb-1.5 grid grid-cols-7 gap-1.5">
+            {row.map((d, ci) => {
+              if (!d) return <span key={ci} role="cell" aria-hidden />;
+              const t = dayTier(d.score);
+              const isEvent = d.date === EVENT_DATE;
+              return (
+                <span
+                  key={d.date}
+                  role="cell"
+                  className="flex flex-col items-center rounded-[0.5rem] py-1.5 font-body leading-tight"
+                  style={{ background: t.tint, color: t.text, outline: isEvent ? '2px solid #B5862F' : 'none', outlineOffset: '1px' }}
+                  aria-label={`${shortDate(d.date)}: ${d.score}, ${t.word}${isEvent ? ', your interview' : ''}`}
+                >
+                  <span className="text-body-sm opacity-80">{Number(d.date.slice(8))}</span>
+                  <span className="text-body-md font-medium tabular-nums">{d.score}</span>
+                </span>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Week by week ─────────────────────────────────────────────────────────── */
+
+function WeeklySection() {
+  return (
+    <section aria-labelledby="weekly" className="mt-14">
+      <SectionHead k="weekly" title={SECTION_NAME.weekly} />
+      <ol className="mt-5 space-y-3">
+        {WEEKS.map((w) => (
+          <li key={w.label} className="rounded-[1rem] border border-paper-line bg-white p-4 shadow-[0_1px_2px_rgba(60,44,28,0.06)]">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <p className="font-body text-headline-sm tabular-nums text-ink">{w.label}</p>
+              <TierBadge score={w.score} />
+            </div>
+            <p className="mt-2 font-body text-body-lg leading-relaxed text-ink-muted">{w.theme}</p>
+            {w.analysis ? <p className="mt-3 font-body text-body-lg leading-relaxed text-ink-muted">{w.analysis}</p> : null}
+            <p className="mt-3 font-body text-body-md text-ink-soft">
+              <span className="font-medium text-ink-muted">Best: </span>
+              {w.best.replace(/^Best:\s*/i, '')}
+            </p>
+            <p className="font-body text-body-md text-ink-soft">
+              <span className="font-medium text-ink-muted">Hardest: </span>
+              {w.worst.replace(/^Worst:\s*/i, '')}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/* ── Month by month ───────────────────────────────────────────────────────── */
+
+function MonthlySection() {
+  return (
+    <section aria-labelledby="monthly" className="mt-14">
+      <SectionHead k="monthly" title={SECTION_NAME.monthly} />
+      <ol className="mt-5 space-y-3">
+        {MONTH_ROWS.map((m, i) => (
+          <li key={m.label} className="rounded-[1rem] border border-paper-line bg-white p-4 shadow-[0_1px_2px_rgba(60,44,28,0.06)]">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+              <p className="font-body text-headline-sm text-ink">{m.label}</p>
+              <TierBadge score={m.overall} />
+            </div>
+            <p className="mt-2 font-body text-body-lg leading-relaxed text-ink-muted">{m.theme}</p>
+            {i === 0 ? (
+              <div className="mt-3 space-y-3">
+                {[m.opening, m.movements, m.closing].filter(Boolean).map((t, j) => (
+                  <p key={j} className="font-body text-body-lg leading-relaxed text-ink-muted">
+                    {t}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+      <p className="mt-4 font-body text-body-md text-ink-soft">
+        Shown: the first four of twelve months. Your own report covers a full year, each month with its movements, its best and hardest stretch, and one thing to do.
+      </p>
+    </section>
+  );
+}
+
+/* ── Day by day, hour by hour ─────────────────────────────────────────────── */
+
+function NoteCard({ date, theme, overview }: { date: string; theme: string; overview: string }) {
+  const blocks = noteBlocks(overview);
+  const day = DAYS.find((d) => d.date === date);
+  return (
+    <article className="rounded-[1rem] border border-paper-line bg-white p-4 shadow-[0_1px_2px_rgba(60,44,28,0.06)] sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <h3 className="font-display text-headline-sm text-ink">{shortDate(date)}</h3>
+        {day ? <DayBadge score={day.score} /> : null}
+      </div>
+      <p className="mt-1 font-body text-body-md text-ink-soft">{theme}</p>
+      <div className="mt-3 space-y-3">
+        {blocks.map((b, i) => {
+          if (b.kind === 'h') return <h4 key={i} className="pt-1 font-body text-body-md font-medium text-ink">{b.text}</h4>;
+          if (b.kind === 'li')
+            return (
+              <p key={i} className="border-l-2 pl-3 font-body text-body-lg leading-relaxed text-ink-muted" style={{ borderColor: '#D6C8B3' }}>
+                {b.text}
+              </p>
+            );
+          return (
+            <p key={i} className="font-body text-body-lg leading-relaxed text-ink-muted">
+              {b.text}
+            </p>
+          );
+        })}
+      </div>
+    </article>
+  );
+}
+
+function DailySection() {
+  return (
+    <section aria-labelledby="daily" className="mt-14">
+      <SectionHead k="daily" title={SECTION_NAME.daily} />
+      <div className="mt-5 space-y-4">
+        {DAILY_NOTES.map((n) => (
+          <NoteCard key={n.date} date={n.date} theme={n.theme} overview={n.overview} />
+        ))}
+      </div>
+
+      <h3 className="mt-10 font-display text-headline-sm text-ink">
+        All 18 windows of {shortDate(EVENT_DATE)}, the day of the interview
+      </h3>
+      <p className="mt-1 font-body text-body-md text-ink-soft">
+        {SAMPLE_FORECAST.window.city}. Rahu Kaal is {EVENT_DAY.rahuKaal ? formatClockRange(EVENT_DAY.rahuKaal) : 'marked'}. Open a window for its full note.
+      </p>
+      <ol className="mt-5 space-y-3">
+        {EVENT_DAY.slots.map((slot, i) => {
+          const tier = tierOf(slot.score);
+          const note = HOURLY[i];
+          return (
+            <li
+              key={slot.label}
+              className="rounded-[1rem] border border-paper-line bg-white p-4 shadow-[0_1px_2px_rgba(60,44,28,0.06)]"
+              style={{ borderLeftWidth: '3px', borderLeftColor: tier.accent }}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                <p className="font-body text-headline-sm tabular-nums text-ink">{formatRange(slot.label)}</p>
+                <ScoreBadge score={slot.score} word={tier.word} tint={tier.tint} text={tier.text} />
+              </div>
+              <p className="mt-1 font-body text-body-md text-ink-soft">
+                {slot.hora} hour · {slot.chog} choghadiya
+                {slot.rahuKaal ? ' · Rahu Kaal' : ''}
+              </p>
+              {note ? (() => {
+                const h = splitHourly(note.full);
+                return (
+                  <>
+                    {h.action ? <p className="mt-2 font-body text-body-lg leading-relaxed text-ink-muted">{h.action}</p> : null}
+                    <details className="mt-2">
+                      <summary className="cursor-pointer list-none font-body text-body-md font-medium marker:content-none" style={{ color: '#8A6318' }}>
+                        More about this hour
+                      </summary>
+                      <div className="mt-2 space-y-2">
+                        <p className="font-body text-body-md leading-relaxed text-ink-soft">{h.role}</p>
+                        {h.more.map((para, j) => (
+                          <p key={j} className="font-body text-body-md leading-relaxed text-ink-muted">
+                            {para}
+                          </p>
+                        ))}
+                      </div>
+                    </details>
+                  </>
+                );
+              })() : null}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  );
+}
+
+/* ── Strongest and quietest dates ─────────────────────────────────────────── */
+
+function SynthesisSection() {
+  return (
+    <section aria-labelledby="synthesis" className="mt-14">
+      <SectionHead k="synthesis" title={SECTION_NAME.synthesis} />
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <div className="rounded-[1rem] border border-paper-line bg-white p-4 shadow-[0_1px_2px_rgba(60,44,28,0.06)]">
+          <h3 className="font-display text-headline-sm text-ink">Strongest days</h3>
+          <ul className="mt-3 space-y-3">
+            {STRONGEST_DAYS.map((d) => (
+              <li key={d.date}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-body text-body-lg font-medium text-ink">{shortDate(d.date)}</span>
+                  <DayBadge score={d.score} />
+                </div>
+                <p className="mt-1 font-body text-body-md text-ink-soft">
+                  {d.date === EVENT_DATE ? 'Her interview. ' : ''}
+                  Best hours: {d.hours.map(formatRange).join(', ') || 'none clear of Rahu Kaal'}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-[1rem] border border-paper-line bg-white p-4 shadow-[0_1px_2px_rgba(60,44,28,0.06)]">
+          <h3 className="font-display text-headline-sm text-ink">Quietest days</h3>
+          <ul className="mt-3 space-y-3">
+            {QUIETEST_DAYS.map((d) => (
+              <li key={d.date}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-body text-body-lg font-medium text-ink">{shortDate(d.date)}</span>
+                  <DayBadge score={d.score} />
+                </div>
+                <p className="mt-1 font-body text-body-md text-ink-soft">Keep it for rest and routine tasks; sign nothing.</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-4">
+        <Prose>{SYNTHESIS.opening}</Prose>
+        <h3 className="pt-2 font-display text-headline-sm text-ink">Career</h3>
+        <Prose>{SYNTHESIS.career}</Prose>
+        <h3 className="pt-2 font-display text-headline-sm text-ink">Money</h3>
+        <Prose>{SYNTHESIS.money}</Prose>
+        <Prose>{SYNTHESIS.closing}</Prose>
+      </div>
+    </section>
+  );
+}
+
+/* ── The limits, said plainly ─────────────────────────────────────────────── */
+
+function LimitsSection() {
+  const items: { head: string; body: string }[] = [
+    {
+      head: 'It is a timing guide, not a prediction.',
+      body: 'A strong day makes a conversation easier; it does not make the answer yes. A quiet day forbids nothing. Use the scores to choose when, not whether.',
+    },
+    {
+      head: 'The days and hours are calculated. The months are broader estimates.',
+      body: 'Each hour comes from the planetary hour, the Choghadiya, Rahu Kaal and the rising sign at that hour, set against this chart. A month or a life-area score is a judgement from that month’s main planetary movements, and the further out a month is, the broader it gets.',
+    },
+    {
+      head: 'Your birth time matters.',
+      body: `This sample’s Moon sits at ${MOON.degree.toFixed(1)} degrees of ${MOON.sign}, about ${MOON_SIGN_MARGIN_MINUTES} minutes of birth time away from changing sign. That would move ${CHART.moonNakshatra} to another star and shift every score. If your birth time is a guess, your report says so at the top and tells you how far to trust the hours.`,
+    },
+    {
+      head: 'It is not medical, legal or financial advice.',
+      body: 'The health and money notes are about timing and attention. They are not treatment, and they are not a reason to buy, sell, sign or stop anything on their own.',
+    },
+    {
+      head: 'It sells nothing.',
+      body: `${READER_NAME} told us pressure to buy things had put her off astrology, so her report suggests no gemstone, ritual or purchase. Yours follows what you tell us.`,
+    },
+    {
+      head: 'The sentences are written by software, from the calculated facts.',
+      body: 'The positions, dates, scores and times are computed with the Swiss Ephemeris and the Lahiri ayanamsa. The wording around them is generated and can be imprecise. When a sentence and a number disagree, trust the number and tell us.',
+    },
+  ];
+  return (
+    <section aria-labelledby="limits" className="mt-14">
+      <h2 id="limits" className="font-display text-headline-lg text-ink">
+        What this report cannot do
+      </h2>
+      <ul className="mt-5 space-y-4">
+        {items.map((it) => (
+          <li key={it.head} className="rounded-[1rem] border border-paper-line bg-white p-4 shadow-[0_1px_2px_rgba(60,44,28,0.06)]">
+            <p className="font-body text-body-lg font-medium text-ink">{it.head}</p>
+            <p className="mt-1 font-body text-body-lg leading-relaxed text-ink-muted">{it.body}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+const SECTION_VIEW: Record<string, () => JSX.Element> = {
+  decide: DecideSection,
+  weekly: WeeklySection,
+  monthly: MonthlySection,
+  daily: DailySection,
+  synthesis: SynthesisSection,
+};
+
 export default function SampleReportPage() {
   return (
     <div className="flex min-h-screen flex-col bg-space">
       {/* ── NIGHT cover ──────────────────────────────────────────────── */}
       <header
         className="relative px-4 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8"
-        style={{
-          background:
-            'radial-gradient(120% 90% at 50% -10%, #2A1C42 0%, #120C1E 55%, #0A0713 100%)',
-        }}
+        style={{ background: 'radial-gradient(120% 90% at 50% -10%, #2A1C42 0%, #120C1E 55%, #0A0713 100%)' }}
       >
         <div className="mx-auto w-full max-w-2xl">
           <Link
@@ -136,116 +541,55 @@ export default function SampleReportPage() {
             <span className="font-display text-lg font-semibold tracking-wide text-star">VedicHour</span>
           </Link>
 
-          <p className="mt-9 font-body text-body-md text-indigo">Sample report · one real chart, one real day</p>
-          <h1 className="mt-2 font-display text-display-md text-star">A full day, hour by hour</h1>
+          <p className="mt-9 font-body text-body-md text-indigo">Sample report · an invented reader, a real chart</p>
+          <h1 className="mt-2 font-display text-display-md text-star">{READER_NAME}&apos;s next 30 days</h1>
           <p className="mt-4 font-body text-body-lg leading-relaxed text-dust-light">
-            Every hour scored, and one plain line telling you what that window is good for. The times,
-            the scores and the ruling planets are all computed from a real birth chart.
+            One finished forecast, as a member reads it. {READER_NAME} is made up. Her chart is a real calculation, and every score,
+            hour and date below comes from it. The sentences were written for the answers she gave when she signed up.
           </p>
 
           <div className="mt-7 flex flex-wrap gap-2">
-            <Pill>{SAMPLE_SEEKER.lagna} rising</Pill>
+            <Pill>{CHART.lagna} rising</Pill>
             <Pill>
-              Moon in {SAMPLE_SEEKER.moonSign} · {SAMPLE_SEEKER.moonNakshatra}
+              Moon in {MOON.sign} · {CHART.moonNakshatra}
             </Pill>
+            <Pill>{MAHADASHA.lord} period</Pill>
           </div>
           <p className="mt-4 font-body text-body-md text-dust">
-            Sample birth: {to12h(SAMPLE_SEEKER.birthLabel)}. Day shown: {SAMPLE_SEEKER.sampleDayLabel}.
+            Sample birth: 15 Jun 1992, 9:00 am, New Delhi. Window: {WINDOW_LABEL}, in {WINDOW.city}.
           </p>
+
+          <div className="mt-8">
+            <PersonalBrief brief={BRIEF} />
+          </div>
         </div>
       </header>
 
       {/* ── PAPER reading canvas ─────────────────────────────────────── */}
-      <main
-        id="main-content"
-        className="-mt-6 flex-1 rounded-[24px] bg-parchment px-4 pb-14 pt-8 sm:px-6 sm:pt-10"
-      >
+      <main id="main-content" className="-mt-6 flex-1 rounded-[24px] bg-parchment px-4 pb-14 pt-8 sm:px-6 sm:pt-10">
         <div className="mx-auto w-full max-w-2xl">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-            <h2 className="font-display text-headline-lg text-ink">{SAMPLE_SEEKER.sampleDayLabel}</h2>
-            <span
-              className="inline-flex items-center gap-2 rounded-pill px-3 py-1.5 font-body text-body-md font-medium"
-              style={{ background: DAY_TIER.tint, color: DAY_TIER.text }}
-            >
-              {DAY_TIER.word} day
-              <span aria-hidden className="h-3 w-px" style={{ background: 'rgba(30,23,38,0.18)' }} />
-              <span className="tabular-nums">{SAMPLE_DAY_SCORE}</span>
-            </span>
-          </div>
-
-          <p className="mt-3 font-body text-body-lg leading-relaxed text-ink-muted">
-            Two windows carry this day — {formatRange(BEST_TWO[1].label)} and {formatRange(BEST_TWO[0].label)}.
-            The hour to protect yourself from is {formatRange(HARDEST.label)}.
-          </p>
-
-          {/* Legend — colour is a cue, the word is the answer */}
-          <ul className="mt-6 flex flex-wrap gap-x-4 gap-y-2 border-y border-paper-line py-3">
-            {LEGEND.map((l) => (
-              <li key={l.word} className="flex items-center gap-2">
-                <span aria-hidden className="h-2.5 w-2.5 rounded-pill" style={{ background: l.accent }} />
-                <span className="font-body text-body-md text-ink-soft">
-                  <span style={{ color: l.text }}>{l.word}</span>{' '}
-                  <span className="tabular-nums">{l.range}</span>
-                </span>
-              </li>
-            ))}
-          </ul>
-
-          {/* The 18 windows */}
-          <ol className="mt-6 space-y-3">
-            {SAMPLE_GRID.map((slot) => {
-              const tier = tierOf(slot.score);
-              return (
-                <li
-                  key={slot.label}
-                  className="rounded-[1rem] border border-paper-line bg-white p-4 shadow-[0_1px_2px_rgba(60,44,28,0.06)]"
-                  style={{ borderLeftWidth: '3px', borderLeftColor: tier.accent }}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                    <p className="font-body text-headline-sm tabular-nums text-ink">{formatRange(slot.label)}</p>
-                    <span
-                      className="inline-flex items-center gap-2 rounded-pill px-3 py-1 font-body text-body-md font-medium"
-                      style={{ background: tier.tint, color: tier.text }}
-                    >
-                      {tier.word}
-                      <span aria-hidden className="h-3 w-px" style={{ background: 'rgba(30,23,38,0.18)' }} />
-                      <span className="tabular-nums">{slot.score}</span>
-                    </span>
-                  </div>
-                  <p className="mt-1 font-body text-body-md text-ink-soft">{slot.hora} hour</p>
-                  <p className="mt-2 font-body text-body-lg leading-relaxed text-ink-muted">
-                    {GUIDANCE[slot.label]}
-                  </p>
-                </li>
-              );
-            })}
-          </ol>
-
-          <p className="mt-8 font-body text-body-md leading-relaxed text-ink-soft">
-            Your own report covers every day you buy, in your city&apos;s local time — calculated from real
-            astronomical data, the same math a careful astrologer uses. It is written to help you think, not
-            to promise outcomes.
-          </p>
+          <ChapterSection />
+          {SECTION_ORDER.map((k) => {
+            const View = SECTION_VIEW[k];
+            return View ? <View key={k} /> : null;
+          })}
+          <LimitsSection />
         </div>
       </main>
 
       {/* ── NIGHT close + CTA ────────────────────────────────────────── */}
       <section
         className="px-4 py-14 sm:px-6 sm:py-16"
-        style={{
-          background: 'radial-gradient(110% 100% at 50% 110%, #2A1C42 0%, #120C1E 60%, #0A0713 100%)',
-        }}
+        style={{ background: 'radial-gradient(110% 100% at 50% 110%, #2A1C42 0%, #120C1E 60%, #0A0713 100%)' }}
       >
         <div className="mx-auto w-full max-w-2xl text-center">
-          <h2 className="font-display text-display-md text-star">Now do this for your own day</h2>
+          <h2 className="font-display text-display-md text-star">Now do this for your own month</h2>
           <p className="mx-auto mt-3 max-w-md font-body text-body-lg leading-relaxed text-dust-light">
-            Your birth details, your city, your hours. The chart is free and takes about a minute.
+            Your birth details, your city, your question. The chart is free and takes about a minute.
           </p>
           <div className="mt-7 flex flex-col items-center gap-3">
             {/* Primary CTA is the same free path the navbar uses (UNLOCK_FREE_HREF).
-                /free-kundli is an SEO landing page, not the entry to the flow —
-                sending the highest-intent reader there added a hop. It stays in
-                the footer nav for search traffic. */}
+                /free-kundli is an SEO landing page, not the entry to the flow. */}
             <Link href={UNLOCK_FREE_HREF} className="btn-primary min-h-[3rem] w-full max-w-xs text-base">
               See your own day — free
             </Link>
@@ -262,10 +606,10 @@ export default function SampleReportPage() {
       <JsonLd
         data={[
           softwareAppLd({
-            name: 'VedicHour Hourly Timing Report',
+            name: 'VedicHour Forecast Report',
             path: '/sample-report',
             description:
-              'Sample Vedic day timing report showing all 18 hourly windows for one birth chart, each scored 0–100 and explained in plain English.',
+              'Sample Vedic astrology forecast: 30 days of scored days and hourly windows for one birth chart, with life-area scores, the dasha chapter, a week-by-week plan and the limits of each.',
             price: '0',
           }),
           breadcrumbLd([

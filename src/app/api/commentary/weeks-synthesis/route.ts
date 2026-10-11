@@ -10,8 +10,10 @@ import {
   type DayAnchorInput,
 } from '@/lib/commentary/planetPositionsPrompt';
 import { requireAuth } from '@/lib/api/requireAuth';
+import { tierModel } from '@/lib/reports/qualityTier';
 import { checkRateLimit, getRateLimitKey, shouldRateLimitLlmForUser } from '@/lib/api/rateLimit';
-import { sanitizeLagnaSign, sanitizePlanetName, buildPersonalContextBlock } from '@/lib/utils/sanitize';
+import { sanitizeLagnaSign, sanitizePlanetName } from '@/lib/utils/sanitize';
+import { applyReaderTone, seekerPromptBlock } from '@/lib/personalization/forecastPrompt';
 import { assertRequiredScriptureGrounding, buildScripturePromptBlock } from '@/lib/rag/sourceValidation';
 
 export async function POST(req: NextRequest) {
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
   }
 
   const modelOverride =
-    typeof body.model_override === 'string' ? body.model_override.trim() : undefined;
+    (typeof body.model_override === 'string' ? body.model_override.trim() : '') || tierModel('weeks') || undefined;
   if (!hasLlmCredentials(modelOverride)) {
     return NextResponse.json({
       weeks: [],
@@ -75,7 +77,8 @@ export async function POST(req: NextRequest) {
   const lagnaSign = sanitizeLagnaSign(body.lagnaSign);
   const mahadasha = sanitizePlanetName(body.mahadasha);
   const antardasha = sanitizePlanetName(body.antardasha);
-  const personalContextBlock = buildPersonalContextBlock(body.personal_context);
+  // Quiz answers, not just tone: see src/lib/personalization/forecastPrompt.ts.
+  const personalContextBlock = seekerPromptBlock(body.personal_context, 'weeks', { today: body.reportStartDate });
   const { weeks, synthesis_context, planet_positions_by_date } = body;
   if (!lagnaSign || !weeks?.length) {
     return NextResponse.json({ error: 'lagnaSign and weeks required' }, { status: 400 });
@@ -212,6 +215,26 @@ Start with { and end with }. No markdown.`;
         if (EXPLICIT_RE.test(dp.intimacy)) {
           dp.intimacy = 'Passion and closeness flow most easily on your higher-scoring days — lean into connection then. Lower-energy stretches are for warmth and rest, not pressure.';
         }
+      }
+    }
+
+    // The reader's tone choices (no remedies for someone tired of sales pressure, no alarm words for
+    // someone who found astrology anxious), applied to every paragraph the model wrote.
+    const tone = (t: unknown) => (typeof t === 'string' ? applyReaderTone(body.personal_context, t) : t);
+    if (synthesis && typeof synthesis === 'object') {
+      synthesis.opening_paragraph = tone(synthesis.opening_paragraph) as string;
+      synthesis.closing_paragraph = tone(synthesis.closing_paragraph) as string;
+      for (const list of [synthesis.strategic_windows, synthesis.caution_dates]) {
+        if (Array.isArray(list)) for (const w of list as Array<{ reason?: unknown }>) if (w && typeof w === 'object') w.reason = tone(w.reason);
+      }
+      const dp = synthesis.domain_priorities as Record<string, unknown> | undefined;
+      if (dp) for (const k of Object.keys(dp)) dp[k] = tone(dp[k]);
+    }
+    if (Array.isArray(parsed?.weeks)) {
+      for (const w of parsed.weeks) {
+        if (w.analysis) w.analysis = tone(w.analysis) as string;
+        if (w.commentary) w.commentary = tone(w.commentary) as string;
+        if (w.theme) w.theme = tone(w.theme) as string;
       }
     }
 
