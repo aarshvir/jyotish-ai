@@ -223,11 +223,20 @@ export function calmen(text: string): string {
     .replace(/\brisky\b/gi, (m) => keepCase(m, 'delicate'));
 }
 
-/** Apply the reader's tone choices to a model-written paragraph. A reader with no such choices gets the text back unchanged. */
+/**
+ * Curly braces never belong in what a reader sees. A model that is told to answer in JSON sometimes leaves one
+ * behind inside a string (seen: "...keep that list for November.}" at the end of three day notes in one reply),
+ * and the reader would see it as a typo. Removed wherever it occurs.
+ */
+export function stripJsonDebris(text: string): string {
+  return text.replace(/[{}]/g, '').replace(/[ \t]{2,}/g, ' ').replace(/ +([.,;:!?])/g, '$1');
+}
+
+/** Apply the reader's tone choices to a model-written paragraph. A reader with no such choices gets the text back unchanged, apart from stray braces. */
 export function applyReaderTone(raw: unknown, text: string): string {
   if (!text) return text;
   const p = parseSeekerProfile(typeof raw === 'string' ? raw : '');
-  let out = text;
+  let out = /[{}]/.test(text) ? stripJsonDebris(text) : text;
   if (wantsNoSales(p)) out = scrubRemedies(out);
   if (wantsCalm(p)) out = calmen(out);
   return out;
