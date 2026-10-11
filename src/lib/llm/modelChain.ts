@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { cleanEnv } from '@/lib/env';
 import { logLlmAudit } from '@/lib/llm/audit';
+import { anthropicTuning } from '@/lib/llm/anthropicTuning';
 
 /**
  * THE MODEL ORDER — one chain, used by every report-generation call.
@@ -163,7 +164,7 @@ export function chatUsage(data: Record<string, unknown>): ChainUsage {
 export interface AnthropicLike {
   messages: {
     create(
-      params: { model: string; max_tokens: number; system: string; messages: { role: 'user'; content: string }[] },
+      params: { model: string; max_tokens: number; system: string; messages: { role: 'user'; content: string }[]; [extra: string]: unknown },
       options?: { timeout?: number },
     ): Promise<{
       content: { type: string; text?: string }[];
@@ -189,6 +190,11 @@ export interface ChainOpts {
   deadlineAt?: number;
   /** Rungs already tried upstream. */
   skip?: readonly Rung[];
+  /**
+   * A Claude model to try FIRST, ahead of the owner's order, for a route the owner has chosen to run
+   * on a cheaper model (REPORT_TIER). The owner's order still follows it as the fallback.
+   */
+  pin?: string;
   /** Throw to reject a rung's output (e.g. JSON that does not parse) and move to the next rung. */
   validate?: (text: string) => void;
   deps?: ChainDeps;
@@ -233,6 +239,15 @@ async function postJson(
   }
 }
 
+/**
+ * A reply that was cut off is still BILLED. Attaching the provider's token counts to the error lets
+ * the chain log them, so the cost of a report includes the calls that were thrown away.
+ */
+function withUsage(e: Error, usage: ChainUsage): Error {
+  (e as Error & { usage?: ChainUsage }).usage = usage;
+  return e;
+}
+
 async function callRung(
   rung: Rung,
   model: string,
@@ -247,7 +262,7 @@ async function callRung(
       const url = rung === 'openai' ? 'https://api.openai.com/v1/responses' : 'https://api.x.ai/v1/responses';
       const data = await postJson(deps.fetchImpl, url, key, responsesRequest(model, o.systemPrompt, o.userPrompt, o.maxTokens), timeoutMs);
       if (data.status === 'incomplete') {
-        throw new Error(`truncated (status incomplete: ${JSON.stringify(data.incomplete_details ?? {})})`);
+        throw withUsage(new Error(`truncated (status incomplete: ${JSON.stringify(data.incomplete_details ?? {})})`), responsesUsage(data));
       }
       const text = responsesText(data);
       if (!text) throw new Error('empty output');
@@ -261,10 +276,12 @@ async function callRung(
           max_tokens: o.maxTokens,
           system: o.systemPrompt,
           messages: [{ role: 'user', content: o.userPrompt }],
+          // Effort for Opus only when LLM_ANTHROPIC_EFFORT is set; nothing otherwise.
+          ...anthropicTuning(model),
         },
         { timeout: timeoutMs },
       );
-      if (r.stop_reason === 'max_tokens') throw new Error(`truncated at max_tokens ${o.maxTokens}`);
+      if (r.stop_reason === 'max_tokens') throw withUsage(new Error(`truncated at max_tokens ${o.maxTokens}`), { input: num(r.usage?.input_tokens), output: num(r.usage?.output_tokens) });
       const text = r.content
         .filter((b) => b.type === 'text' && typeof b.text === 'string')
         .map((b) => b.text)
@@ -282,7 +299,7 @@ async function callRung(
         timeoutMs,
       );
       const choice = (data.choices as { finish_reason?: string; message?: { content?: string | null } }[] | undefined)?.[0];
-      if (choice?.finish_reason === 'length') throw new Error('truncated (finish_reason length)');
+      if (choice?.finish_reason === 'length') throw withUsage(new Error('truncated (finish_reason length)'), chatUsage(data));
       const text = (choice?.message?.content ?? '').trim();
       if (!text) throw new Error('empty output');
       return { text, usage: chatUsage(data) };
@@ -305,9 +322,14 @@ export async function runModelChain(o: ChainOpts): Promise<ChainResult> {
   const skipped = new Set(o.skip ?? []);
   const reasons: string[] = [];
 
-  for (const rung of OWNER_MODEL_ORDER) {
-    const model = models[rung];
-    if (skipped.has(rung)) continue;
+  const pinned = o.pin && o.pin.startsWith('claude-') ? o.pin : null;
+  const attempts: { rung: Rung; model: string; isPin: boolean }[] = [
+    ...(pinned ? [{ rung: 'anthropic' as Rung, model: pinned, isPin: true }] : []),
+    ...OWNER_MODEL_ORDER.map((rung) => ({ rung, model: models[rung], isPin: false })).filter((a) => !(pinned && a.rung === 'anthropic' && a.model === pinned)),
+  ];
+
+  for (const { rung, model, isPin } of attempts) {
+    if (!isPin && skipped.has(rung)) continue;
     const key = rung === 'anthropic' ? (deps.anthropic ? 'sdk' : '') : keyFor(rung);
     if (!key) {
       reasons.push(`${rung}: no API key`);
@@ -322,7 +344,12 @@ export async function runModelChain(o: ChainOpts): Promise<ChainResult> {
     const t0 = now();
     try {
       const { text, usage } = await callRung(rung, model, key, o, timeoutMs, deps);
-      o.validate?.(text);
+      try {
+        o.validate?.(text);
+      } catch (ve) {
+        // A complete reply the caller refused was still billed.
+        throw withUsage(ve instanceof Error ? ve : new Error(String(ve)), usage);
+      }
       const ms = now() - t0;
       logLlmAudit(o.auditStage, rung, model);
       console.log(
@@ -338,12 +365,30 @@ export async function runModelChain(o: ChainOpts): Promise<ChainResult> {
           fallbacks: reasons.length,
         }),
       );
-      if (rung !== OWNER_MODEL_ORDER[0]) {
+      if (!isPin && rung !== OWNER_MODEL_ORDER[0]) {
         console.warn(`[model-chain] ${o.auditStage}: answered by ${rung} (${model}) after: ${reasons.join(' | ')}`);
       }
       return { text, rung, model, usage, ms };
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      const wasted = (e as Error & { usage?: ChainUsage }).usage;
+      if (wasted) {
+        // Billed but unusable (truncated). Same shape as llm_usage plus wasted:true, so a cost sum can include it.
+        console.log(
+          JSON.stringify({
+            type: 'llm_usage',
+            stage: o.auditStage,
+            rung,
+            model,
+            ms: now() - t0,
+            input: wasted.input ?? null,
+            output: wasted.output ?? null,
+            reasoning: wasted.reasoning ?? null,
+            fallbacks: reasons.length,
+            wasted: true,
+          }),
+        );
+      }
       reasons.push(`${rung} ${model} after ${Math.round((now() - t0) / 1000)}s: ${msg.slice(0, 180)}`);
       console.warn(`[model-chain] ${o.auditStage}: ${rung} (${model}) failed — ${msg.slice(0, 160)}`);
     }
