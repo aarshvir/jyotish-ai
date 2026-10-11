@@ -32,6 +32,7 @@ import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
 import { reportDataToMarkdown } from '@/lib/pdf/reportDataToMarkdown';
 import { PrintAllDays } from '@/components/report/PrintAllDays';
 import { GeneratingScreen } from '@/components/report/GeneratingScreen';
+import { BlueprintGate } from '@/components/blueprint/BlueprintGate';
 import type { NatalChartData, NativityProfile, ReportData } from '@/lib/agents/types';
 import { formatDayOutcomeLabel } from '@/lib/guidance/labels';
 import type { SlotGuidanceV2, DayBriefingV2 } from '@/lib/guidance/types';
@@ -1872,7 +1873,9 @@ export default function ReportPage() {
         </div>
       }
     >
-      <ReportContent />
+      <BlueprintGate>
+        <ReportContent />
+      </BlueprintGate>
     </Suspense>
   );
 }

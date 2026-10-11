@@ -14,6 +14,7 @@ import { redeemPromoCode, oncePerUserOrderId } from '@/lib/promo/server';
 import { createJobToken, getPipelineJobTokenTtlSeconds } from '@/lib/api/jobToken';
 import { planFromPlanType } from '@/lib/subscriptions/period';
 import { grantSubscriptionPeriod } from '@/lib/subscriptions/grant';
+import { dispatchBlueprintGenerate, isBlueprintPlan } from '@/lib/blueprint/deliver';
 
 const YOUNG_GENERATING_MS = 90 * 60 * 1000;
 
@@ -433,6 +434,10 @@ async function healCompletedPaymentGrants(
   if (forecastPlans.has(reportPlanType)) {
     await maybeDispatchReportGenerate(db, reportId, baseUrl);
   }
+  // The /q funnel's Karmic Blueprint is written by its own job (idempotent: a finished one is left alone).
+  if (isBlueprintPlan(reportPlanType)) {
+    await dispatchBlueprintGenerate(db, reportId);
+  }
 
   return { ok: true, action: 'already_done' };
 }
@@ -673,6 +678,9 @@ export async function finalizeCompletedZiinaIntent(
   const forecastPlans = new Set(['7day', 'monthly', 'annual']);
   if (forecastPlans.has(reportPlanType) && reportForPayment) {
     await maybeDispatchReportGenerate(db, reportId, baseUrl);
+  }
+  if (isBlueprintPlan(reportPlanType) && reportForPayment) {
+    await dispatchBlueprintGenerate(db, reportId);
   }
 
   return { ok: true, action: 'processed' };
