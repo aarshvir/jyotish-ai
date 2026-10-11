@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'what-is-muhurat',
   title: 'What Is Muhurat? How to Find Auspicious Timing for Anything',
+  "seoTitle": "What Is Muhurat? Finding Auspicious Timing",
   description:
     'Muhurat is the Vedic art of choosing an auspicious time to begin something. Learn the panchang elements and how to pick a shubh muhurat for any event.',
   keywords: [

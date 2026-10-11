@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "choghadiya-vs-hora-timing",
   "title": "Choghadiya vs Hora: Two Daily Timing Systems, Compared",
+  "seoTitle": "Choghadiya vs Hora: Two Timing Systems",
   "description": "Choghadiya vs Hora explained: how these daily muhurat systems differ, when to use each, and how they complement timing.",
   "keywords": [
     "choghadiya vs hora",

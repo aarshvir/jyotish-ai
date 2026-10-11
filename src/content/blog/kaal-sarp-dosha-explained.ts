@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "kaal-sarp-dosha-explained",
   "title": "Kaal Sarp Dosha: What It Actually Is and How Seriously to Take It",
+  "seoTitle": "Kaal Sarp Dosha: What It Is and Whether It Matters",
   "description": "Understand Kaal Sarp Dosha: planets between Rahu and Ketu. Demystify fears, explore remedies, and learn what Kaal Sarp Yoga truly means in Vedic astrology.",
   "keywords": [
     "kaal sarp dosha",

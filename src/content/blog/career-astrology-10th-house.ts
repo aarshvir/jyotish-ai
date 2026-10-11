@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'career-astrology-10th-house',
   title: 'Career Astrology: What Your 10th House and Dasha Reveal',
+  "seoTitle": "Career Astrology: 10th House and Dasha",
   description:
     'Career astrology decoded: how the 10th house, Saturn, Sun and Mercury shape your work, and how dasha timing predicts the right moment for a career move.',
   keywords: [

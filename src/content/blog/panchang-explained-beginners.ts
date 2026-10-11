@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "panchang-explained-beginners",
   "title": "The Panchang Explained: Tithi, Nakshatra, Yoga, Karana, Vaara",
+  "seoTitle": "The Panchang Explained: Tithi, Nakshatra, Yoga",
   "description": "Unlock daily timing and clarity with the Panchang! Explore Tithi, Nakshatra, Yoga, Karana, and Vaara for auspicious actions and decisions.",
   "keywords": [
     "panchang",

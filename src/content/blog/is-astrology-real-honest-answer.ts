@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "is-astrology-real-honest-answer",
   "title": "Is Astrology Real? An Honest, Evidence-Aware Answer",
+  "seoTitle": "Is Astrology Real? An Honest Answer",
   "description": "An honest, plain-English look at whether astrology is real: separating real astronomy from interpretation, and how Vedic astrology aids reflection and timing.",
   "keywords": [
     "is astrology real",

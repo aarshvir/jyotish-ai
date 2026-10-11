@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "lagna-ascendant-guide",
   "title": "Your Lagna (Ascendant): The Lens That Shapes Your Whole Chart",
+  "seoTitle": "Your Lagna (Ascendant) and Your Whole Chart",
   "description": "Learn what your lagna means in Vedic astrology, how to find it, and why the rising sign shapes your whole birth chart.",
   "keywords": [
     "lagna",

@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'manglik-dosha-marriage',
   title: 'Manglik Dosha, Honestly: What It Means and Whether It Can Stop a Marriage',
+  "seoTitle": "Manglik Dosha and Marriage: What It Means",
   description: 'A calm, honest guide to Manglik dosha — what makes you Manglik, real cancellation rules, the “28” myth, and whether it can actually block a marriage.',
   keywords: [
     'manglik dosha',

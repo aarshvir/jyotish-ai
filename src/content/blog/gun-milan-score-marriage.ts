@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'gun-milan-score-marriage',
   title: 'Kundli Matching Explained: How Many Gunas Out of 36 You Really Need for Marriage',
+  "seoTitle": "How Many Gunas Should Match for Marriage?",
   description: 'How many gunas out of 36 do you need to marry? A clear, honest guide to Gun Milan, the 8 kootas, Nadi and Bhakoot dosha, and what scores really mean.',
   keywords: [
     'kundli matching',

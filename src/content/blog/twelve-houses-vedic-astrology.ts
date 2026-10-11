@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "twelve-houses-vedic-astrology",
   "title": "The 12 Houses (Bhavas) of Your Birth Chart, Explained Simply",
+  "seoTitle": "The 12 Houses (Bhavas) Explained Simply",
   "description": "Unlock your birth chart! Discover the 12 houses (bhavas) in Vedic astrology, what each governs, and how to read your kundli simply.",
   "keywords": [
     "12 houses vedic astrology",

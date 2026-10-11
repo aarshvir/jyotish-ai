@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "best-planetary-hours-for-decisions",
   "title": "Planetary Hours (Hora): A Calm Guide to Timing Your Decisions",
+  "seoTitle": "Planetary Hours (Hora): Timing Your Decisions",
   "description": "Learn how Vedic planetary hours (hora) work and how to match everyday decisions to supportive timing windows — a calm, reflection-first guide.",
   "keywords": [
     "planetary hours",

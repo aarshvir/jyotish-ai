@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'rahu-kaal-explained',
   title: 'Rahu Kaal Explained: What It Is and How to Use It Each Day',
+  "seoTitle": "Rahu Kaal Explained: Timings and How to Use It",
   description: 'Rahu Kaal meaning, how it is calculated from sunrise and sunset by weekday, what to avoid, and how to use this inauspicious time practically each day.',
   keywords: [
     'rahu kaal',

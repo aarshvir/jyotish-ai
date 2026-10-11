@@ -8,11 +8,22 @@ import { JsonLd } from '@/components/seo/JsonLd';
 import { absUrl, breadcrumbLd } from '@/lib/seo/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Jyotish Blog — Vedic Astrology Guides',
+  title: 'Vedic Astrology Guides: Kundli, Doshas, Muhurat',
   description:
-    'In-depth, plain-English Vedic astrology guides: kundli matching, Manglik & Sade Sati, reading your birth chart, Vedic vs Western astrology, and more.',
+    'Plain-English Vedic astrology guides: kundli matching, Manglik and Sade Sati, reading your birth chart, dashas, muhurat and daily timing.',
   alternates: { canonical: '/blog' },
 };
+
+const TOOL_LINKS = [
+  { href: '/free-kundli', label: 'Kundli' },
+  { href: '/lagna-calculator', label: 'Lagna' },
+  { href: '/moon-sign-calculator', label: 'Moon sign' },
+  { href: '/nakshatra-finder', label: 'Nakshatra' },
+  { href: '/vimshottari-dasha-calculator', label: 'Dasha' },
+  { href: '/sade-sati-calculator', label: 'Sade Sati' },
+  { href: '/manglik-dosha-calculator', label: 'Manglik' },
+  { href: '/kaal-sarp-dosha-calculator', label: 'Kaal Sarp' },
+];
 
 function fmt(date: string) {
   return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -23,7 +34,7 @@ export default function BlogIndex() {
     <div className="min-h-screen bg-space text-star flex flex-col relative overflow-hidden">
       <StarField />
       <Navbar />
-      <main className="flex-1 max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
+      <main id="main-content" className="flex-1 max-w-4xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
         <div className="text-center mb-12">
           <p className="section-eyebrow mb-3">Jyotish Journal</p>
           <h1 className="text-display-md font-display text-star mb-4">Vedic Astrology, <span className="text-amber">Explained Clearly</span></h1>
@@ -31,6 +42,15 @@ export default function BlogIndex() {
             Plain-English guides to kundli, matching, doshas, dashas, and timing — written to actually help, not to confuse.
           </p>
         </div>
+
+        <nav aria-label="Free calculators" className="mb-10 flex flex-wrap justify-center gap-x-5 gap-y-2 font-body text-body-sm">
+          <span className="text-dust">Free calculators:</span>
+          {TOOL_LINKS.map((t) => (
+            <Link key={t.href} href={t.href} className="text-amber underline hover:text-amber-light transition-colors">
+              {t.label}
+            </Link>
+          ))}
+        </nav>
 
         <div className="space-y-4">
           {POSTS.map((p) => (

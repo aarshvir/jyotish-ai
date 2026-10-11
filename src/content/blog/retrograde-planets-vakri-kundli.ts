@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "retrograde-planets-vakri-kundli",
   "title": "Retrograde Planets (Vakri) in Your Kundli: What They Mean",
+  "seoTitle": "Retrograde Planets (Vakri) in Your Kundli",
   "description": "Unravel the meaning of retrograde planets (Vakri Grahas) in Vedic astrology. Learn how a vakri planet in your kundli influences life's journey.",
   "keywords": [
     "retrograde planets vedic",

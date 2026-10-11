@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "shani-dhaiya-explained",
   "title": "Shani Dhaiya: The 2.5-Year Saturn Transit, Explained Calmly",
+  "seoTitle": "Shani Dhaiya: The 2.5-Year Saturn Transit",
   "description": "Understand Shani Dhaiya, the 2.5-year Saturn transit, calmly. Learn its effects, how it differs from Sade Sati, and how to navigate it in Vedic astrology.",
   "keywords": [
     "shani dhaiya",

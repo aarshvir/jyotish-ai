@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'choghadiya-guide',
   title: 'Choghadiya: The Daily Good and Bad Time Windows, Explained',
+  "seoTitle": "Choghadiya: Good and Bad Time Windows",
   description:
     'Choghadiya explained: the good windows (Amrit, Shubh, Labh), the ones to avoid (Rog, Kaal, Udveg), the neutral Chal, and how to use them in daily life.',
   keywords: [

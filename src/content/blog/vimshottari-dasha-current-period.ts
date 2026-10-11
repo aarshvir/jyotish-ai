@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   slug: 'vimshottari-dasha-current-period',
   title: 'Vimshottari Dasha: How to Find the Planetary Period You Are Living In',
+  "seoTitle": "Vimshottari Dasha: Find Your Current Period",
   description:
     'Find your current Vimshottari dasha: the 120-year cycle, all 9 mahadashas and their lengths, antardashas, and how to know which planetary period you are in now.',
   keywords: [

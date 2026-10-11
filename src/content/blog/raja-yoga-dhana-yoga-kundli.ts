@@ -3,6 +3,7 @@ import type { BlogPost } from '@/content/blog/types';
 export const post: BlogPost = {
   "slug": "raja-yoga-dhana-yoga-kundli",
   "title": "Raja Yoga and Dhana Yoga: Auspicious Combinations in Your Chart",
+  "seoTitle": "Raja Yoga and Dhana Yoga in a Kundli",
   "description": "Explore Raja Yoga and Dhana Yoga in Vedic astrology. Learn how these auspicious combinations are formed in your birth chart and what they signify for success ",
   "keywords": [
     "raja yoga",
