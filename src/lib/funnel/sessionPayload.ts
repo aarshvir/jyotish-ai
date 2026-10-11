@@ -21,6 +21,17 @@ function str(v: unknown, max: number): string | null {
   return s ? s.slice(0, max) : null;
 }
 
+/** Only known answer keys, each trimmed and bounded. Shared with the lead-capture endpoint. */
+export function sanitizeAnswers(raw: unknown): Record<string, string> {
+  const answers: Record<string, string> = {};
+  const a = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  for (const k of ANSWER_KEYS) {
+    const v = str(a[k], 160);
+    if (v) answers[k] = v;
+  }
+  return answers;
+}
+
 export interface SanitizedSession {
   row: Record<string, unknown>;
   consentedEmail: string | null;
@@ -34,12 +45,7 @@ export function sanitizeSessionPayload(raw: unknown): SanitizedSession | null {
   const slug = str(b.slug, 64);
   if (!id || !UUID.test(id) || !slug || !/^[a-z0-9-]+$/.test(slug)) return null;
 
-  const answers: Record<string, string> = {};
-  const a = (b.answers && typeof b.answers === 'object' ? b.answers : {}) as Record<string, unknown>;
-  for (const k of ANSWER_KEYS) {
-    const v = str(a[k], 160);
-    if (v) answers[k] = v;
-  }
+  const answers = sanitizeAnswers(b.answers);
 
   const flags: Record<string, string> = {};
   const f = (b.flags && typeof b.flags === 'object' ? b.flags : {}) as Record<string, unknown>;
