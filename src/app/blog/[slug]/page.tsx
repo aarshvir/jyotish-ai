@@ -27,11 +27,24 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   // The per-post image route draws Latin text only, so Hindi posts use the site card.
   const ogImage = post.lang === 'hi' ? '/opengraph-image' : `/blog/${post.slug}/opengraph-image`;
   const shareTitle = post.seoTitle ?? post.title;
+  const alt = post.alternateSlug ? getPost(post.alternateSlug) : undefined;
   return {
     title: searchTitle(post),
     description: post.description,
     keywords: post.keywords,
-    alternates: { canonical: `/blog/${post.slug}` },
+    alternates: {
+      canonical: `/blog/${post.slug}`,
+      // hreflang only when a real translation exists, in both directions.
+      ...(alt
+        ? {
+            languages: {
+              [post.lang === 'hi' ? 'hi' : 'en']: `/blog/${post.slug}`,
+              [alt.lang === 'hi' ? 'hi' : 'en']: `/blog/${alt.slug}`,
+              'x-default': `/blog/${post.lang === 'hi' ? alt.slug : post.slug}`,
+            },
+          }
+        : {}),
+    },
     openGraph: {
       title: shareTitle,
       description: post.description,
@@ -117,7 +130,7 @@ export default function BlogPostPage({ params }: { params: { slug: string } }) {
       <Navbar />
       <main id="main-content" className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
         <Link href="/blog" className="font-body text-body-sm text-dust hover:text-star transition-colors">← All articles</Link>
-        <h1 className="text-display-md font-display text-star mt-3 mb-2">{post.title}</h1>
+        <h1 lang={post.lang === 'hi' ? 'hi' : undefined} className="text-display-md font-display text-star mt-3 mb-2">{post.title}</h1>
         <p className="font-mono text-mono-sm text-dust mb-8">
           {post.updated && post.updated !== post.date ? (
             <>Updated <time dateTime={post.updated}>{fmt(post.updated)}</time></>

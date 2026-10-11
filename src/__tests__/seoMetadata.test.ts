@@ -138,3 +138,18 @@ describe('article internal links', () => {
     expect(broken).toEqual([]);
   });
 });
+
+describe('translated articles', () => {
+  it('link to each other in both directions', () => {
+    const bySlug = new Map(POSTS.map((p) => [p.slug, p]));
+    const bad: string[] = [];
+    for (const p of POSTS) {
+      if (!p.alternateSlug) continue;
+      const other = bySlug.get(p.alternateSlug);
+      if (!other) bad.push(`${p.slug}: alternate ${p.alternateSlug} does not exist`);
+      else if (other.alternateSlug !== p.slug) bad.push(`${p.slug}: ${other.slug} does not link back`);
+      else if ((other.lang ?? 'en') === (p.lang ?? 'en')) bad.push(`${p.slug}: alternate is in the same language`);
+    }
+    expect(bad).toEqual([]);
+  });
+});

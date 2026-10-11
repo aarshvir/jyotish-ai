@@ -16,6 +16,7 @@ export const post: BlogPost = {
     'ruchaka yoga manglik',
   ],
   date: '2026-10-11',
+  alternateSlug: 'mangalik-dosh-kya-hai-kab-katta-hai',
   readingTimeMin: 6,
   html: `<p><strong>Manglik dosha is treated as cancelled or much weaker when Mars is in its own sign (Aries, Scorpio) or its exalted sign (Capricorn), when Jupiter sits with Mars or looks at it, when both partners are Manglik, or when Mars falls in one of a few listed signs for its house. Schools differ, and no astrologer applies every rule, so ask which ones were checked.</strong></p>
 

@@ -16,6 +16,7 @@ export const post: BlogPost = {
     'shani dhaiya 2026',
   ],
   date: '2026-10-11',
+  alternateSlug: 'sadhesati-2026-kin-rashiyon-par',
   readingTimeMin: 6,
   html: `<p><strong>In 2026, Sade Sati is running for Aquarius, Pisces and Aries Moon signs. Aquarius is in its last phase, Pisces in the middle phase and Aries in the first. Dhaiya (the shorter Saturn period) is running for Leo and Sagittarius Moon. Saturn is in Pisces from 29 March 2025 to 3 June 2027, then moves into Aries.</strong></p>
 

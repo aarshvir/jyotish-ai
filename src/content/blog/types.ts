@@ -18,6 +18,8 @@ export type BlogPost = {
   faqs?: { q: string; a: string }[];
   /** Language of the article body. Defaults to English. */
   lang?: 'en' | 'hi';
+  /** Slug of the same article in the other language. Emits hreflang links in both directions. */
+  alternateSlug?: string;
   /** Classical texts or data sources the article relies on. Shown at the foot of the page. */
   sources?: string[];
 };

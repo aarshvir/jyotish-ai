@@ -45,7 +45,11 @@ import { post as guruChandalYogaExplained } from './guru-chandal-yoga-explained'
 import { post as gajakesariYogaExplained } from './gajakesari-yoga-explained';
 import { post as jupiterTransitLeo2026 } from './jupiter-transit-leo-2026';
 import { post as rahuKetuTransitDecember2026 } from './rahu-ketu-transit-december-2026';
+import { post as sadhesati2026Hindi } from './sadhesati-2026-kin-rashiyon-par';
+import { post as mangalikDoshHindi } from './mangalik-dosh-kya-hai-kab-katta-hai';
 export const POSTS: BlogPost[] = [
+  sadhesati2026Hindi,
+  mangalikDoshHindi,
   sadeSati20262027,
   manglikDoshaCancellationRules,
   kundliWithoutBirthTime,
