@@ -1,6 +1,8 @@
 // Shared FAQ data — imported by both the FAQ client component (for UI)
 // and the marketing page server component (for JSON-LD structured data).
 
+import { SUBSCRIPTION_LINE } from '@/lib/landingCopy';
+
 export interface QA {
   q: string;
   a: string;
@@ -17,7 +19,7 @@ export const FAQS: QA[] = [
   },
   {
     q: 'Can I get a free Kundli here?',
-    a: 'Yes — our Free Kundli plan is completely free, no credit card needed. Enter your birth date, time, and city and we will generate your Janam Kundali with your Lagna, Moon sign, current Dasha period, and a sample Jyotish hora schedule. Upgrade to a paid plan for full hourly forecasts across 7 or 30 days, plus a 12-month outlook.',
+    a: `Yes. The free calculators need no sign-up and no card. Enter your birth date, time, and city and we show your Lagna, Moon sign, birth star and current Dasha period. The hour-by-hour forecast for the next 30 days, plus a 12-month outlook, is ${SUBSCRIPTION_LINE}, and it starts with a 2-minute quiz.`,
   },
   {
     q: 'Does AI write the report?',

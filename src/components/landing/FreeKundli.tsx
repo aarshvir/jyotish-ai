@@ -20,7 +20,7 @@ const KUNDLI_FEATURES = [
   },
   {
     title: 'Hourly windows (sample)',
-    desc: 'A slice of today scored hour by hour. Upgrade for the full 7- or 30-day forecast plus a 12-month outlook.',
+    desc: 'A slice of today scored hour by hour. The full 30-day forecast and 12-month outlook come with the subscription.',
   },
 ];
 

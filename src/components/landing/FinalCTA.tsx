@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { UNLOCK_FREE_HREF } from '@/lib/pricing';
+import { SUBSCRIPTION_LINE } from '@/lib/landingCopy';
 
 export default function FinalCTA() {
   return (
@@ -17,8 +18,8 @@ export default function FinalCTA() {
           Your day is not one mood.
         </h2>
         <p className="font-body text-body-lg text-dust max-w-xl mx-auto mb-10">
-          Get the free chart and a sample of today&apos;s hours — no card. Upgrade when you want
-          every window across 7 or 30 days, plus a 12-month outlook.
+          The calculators are free, with no sign-up and no card. The full hour-by-hour
+          forecast is {SUBSCRIPTION_LINE}.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
