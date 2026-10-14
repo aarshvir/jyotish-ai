@@ -32,7 +32,7 @@ assert(protocol.includes('Rubric frozen') && protocol.includes('Unknown = blank 
 
 const sourceCache = new Map();
 function source(p) {
-  if (!sourceCache.has(p)) sourceCache.set(p, execFileSync('git', ['show', `${baseline}:${p}`], { cwd: root, encoding: 'utf8', maxBuffer: 8e6 }));
+  if (!sourceCache.has(p)) sourceCache.set(p, execFileSync('git', ['show', `${baseline}:${p}`], { cwd: root, encoding: 'utf8', maxBuffer: 8e6, stdio: ['ignore','pipe','ignore'] }));
   return sourceCache.get(p);
 }
 const registry = [
@@ -667,6 +667,18 @@ const postRules = [
   { id:'task-help', needs:['help-route-and-task-search'], kinds:['help'], excludes:['screenreader','zoom'],
     anchors:[['src/app/help/page.tsx','HelpSearch'],['src/app/help/page.tsx','No purchase needed']],
     updates:{ purpose:75, fit:75, action:75, result:75, effort:75, recovery:75 }, reason:'Dedicated task help route/search replaces baseline 404 in checked scope; full accessibility remains unknown' },
+  { id:'optional-analytics-control', needs:['analytics-off-optin-withdraw','analytics-private-data-scrub'], kinds:['privacy'],
+    anchors:[['src/lib/analytics/consent.ts','if (!hasAnalyticsConsent()) return'],['src/components/analytics/AnalyticsPreferences.tsx','Off unless you choose to enable it']],
+    updates:{ trust:75 }, reason:'Tested optional analytics defaults off, supports opt-in/withdrawal and bounds private fields; not general privacy/legal compliance or deletion of sent events' },
+  { id:'saved-chart-error-contract', needs:['saved-collections-error-not-empty','saved-refresh-retains-stale'], kinds:['saved'],
+    anchors:[['src/app/api/user/charts/route.ts','unavailable.kundali = true'],['src/components/dashboard/AccountDashboard.tsx','SavedChartsPanel']],
+    updates:{ recovery:75 }, reason:'Mocked owned-collection and refresh failures are explicit and preserve successful/stale data; no real-account retrieval was executed' },
+  { id:'account-operation-integrity', needs:['export-error-not-empty','delete-partial-honest'], kinds:['account'],
+    anchors:[['src/app/api/account/export/route.ts','EXPORT_UNAVAILABLE'],['src/app/api/account/delete/route.ts','Some records may already have been removed']],
+    updates:{ recovery:75 }, reason:'Isolated mocks verify incomplete exports fail and partial deletion is reported honestly with retry; not a real deletion or transactional rollback' },
+  { id:'free-summary-no-generation', needs:['kundali-free-no-full-compute','synastry-free-no-full-compute'], kinds:['partner','deep'], excludes:['uncertain','missing','offline','partnerprivacy'],
+    anchors:[['src/app/kundali/KundaliForm.tsx',"requestJson('/api/kundali/teaser'"],['src/app/synastry/SynastryForm.tsx',"requestJson('/api/synastry/teaser'"]],
+    updates:{ effort:75, pricing:75 }, reason:'Supported known-input free summaries call teaser only, not a generated full reading; no complete written reading, factor breakdown or entitlement execution claimed' },
 ];
 assert.equal(new Set(postRules.map((r) => r.id)).size,postRules.length);
 for (const r of postRules) for (const [dim,score] of Object.entries(r.updates)) {
@@ -685,7 +697,18 @@ const postDependencies={
   'commercial-denial':['src/lib/commercial/availability.ts','src/app/api/ziina/create-intent/route.ts','src/app/api/ziina/upgrade/route.ts'],
   'unavailable-offer-copy':['src/lib/commercial/availability.ts','src/lib/seo/aiVisibility.ts','src/app/pricing/page.tsx'],
   'task-help':['src/app/help/page.tsx','src/components/help/HelpSearch.tsx','src/components/help/articles.ts'],
+  'optional-analytics-control':['src/lib/analytics/consent.ts','src/components/analytics/AnalyticsPreferences.tsx','src/components/analytics/PostHogProvider.tsx','src/app/privacy/page.tsx','src/app/chart-privacy/page.tsx','src/__tests__/analyticsConsent.test.ts'],
+  'saved-chart-error-contract':['src/app/api/user/charts/route.ts','src/components/dashboard/AccountDashboard.tsx','src/components/dashboard/SavedChartsPanel.tsx','src/__tests__/userChartsRecovery.test.ts'],
+  'account-operation-integrity':['src/app/api/account/export/route.ts','src/app/api/account/delete/route.ts','src/__tests__/accountDataControls.test.ts'],
+  'free-summary-no-generation':['src/app/kundali/KundaliForm.tsx','src/app/synastry/SynastryForm.tsx','src/app/api/kundali/teaser/route.ts','src/app/api/synastry/teaser/route.ts','e2e/customer-experience.spec.ts'],
 };
+const sourceConfigs=new Set(['package.json','package-lock.json','tsconfig.json','next.config.mjs','tailwind.config.ts',
+  'postcss.config.mjs','vitest.config.ts','playwright.customer-experience.config.ts','playwright.config.ts','vercel.json','eslint.config.mjs','.eslintrc.json']);
+function validSourcePath(p) {
+  return typeof p==='string' && !p.includes('..') && !p.includes('\\') && !path.isAbsolute(p)
+    && (p.startsWith('src/') || p.startsWith('e2e/') || (/^ephemeris-service\/(?:[^/]+\.py|requirements\.txt|Dockerfile|railway\.toml)$/.test(p))
+      || sourceConfigs.has(p) || ['scripts/customer-experience-browser.mjs','scripts/record-free-chart-walkthrough.mjs'].includes(p));
+}
 const flags = new Set(scenarios.flatMap((s) => s.constraint_flags.split('|').filter(Boolean)));
 function scopeMatches(scope,s) {
   return scope.devices.includes(s.device) && scope.task_kinds.includes(s.task_kind) && scope.visits.includes(s.first_or_returning_visit)
@@ -723,11 +746,24 @@ function loadPostReceipt(relative, io = {}) {
     assert.equal(gitCommit(snapshot.ref),snapshot.commit,'Source tag/ref moved');
   }
   const sources = new Map();
+  const gitBlobs=new Map();
+  if (snapshot.kind==='git' && !io.gitBytes) {
+    const batch=execFileSync('git',['cat-file','--batch'],{cwd:root,input:snapshot.files.map((f)=>`${snapshot.commit}:${f.path}`).join('\n')+'\n',maxBuffer:64e6});
+    let offset=0;
+    for (const f of snapshot.files) {
+      const end=batch.indexOf(10,offset); assert(end>=0);
+      const [,type,sizeText]=batch.subarray(offset,end).toString('ascii').split(' ');
+      const size=Number(sizeText); assert(type==='blob' && Number.isInteger(size) && size>=0);
+      const b=batch.subarray(end+1,end+1+size); assert.equal(b.length,size); gitBlobs.set(f.path,b);
+      offset=end+1+size+1; assert.equal(batch[offset-1],10);
+    }
+    assert.equal(offset,batch.length);
+  }
   for (const f of snapshot.files) {
     assert(validDigest(f.sha256));
+    assert(validSourcePath(f.path),`Disallowed source/test manifest path: ${f.path}`);
     const bytes = snapshot.kind === 'git'
-      ? gitBytes(snapshot.commit,f.path) : read(f.path,['src/']);
-    assert(typeof f.path === 'string' && f.path.startsWith('src/') && !f.path.includes('..') && !f.path.includes('\\'));
+      ? (gitBlobs.get(f.path) || gitBytes(snapshot.commit,f.path)) : read(f.path,['src/']);
     assert.equal(digest(bytes),f.sha256,`Source changed after verification: ${f.path}`);
     sources.set(f.path,bytes.toString('utf8'));
   }
@@ -743,7 +779,8 @@ function loadPostReceipt(relative, io = {}) {
     assert(validDigest(c.artifact_sha256));
     const bytes = read(c.artifact,['artifacts/customer-experience/']);
     assert.equal(digest(bytes),c.artifact_sha256,`Verification artifact changed: ${c.artifact}`);
-    assert(['passed','expected'].includes(c.expected));
+    assert(['passed','expected',true].includes(c.expected));
+    if (c.expected===true) assert(['public-navigation','real-chart-backend'].includes(c.dependency_mode),'Boolean pass is only for individual route/API receipts');
     assert.equal(pointerValue(JSON.parse(bytes.toString('utf8')),c.pointer),c.expected,`Executed check did not pass: ${c.id}`);
     const scope = c.scope;
     assert(scope && scope.devices?.length && scope.task_kinds?.length && scope.visits?.length && scope.entry_pages?.length && Array.isArray(scope.allowed_flags));
@@ -883,7 +920,7 @@ for (const [index,card] of cards.entries()) {
   card.postimplementation_source_ref=post?.receipt.source.version || '';
   card.postimplementation_source_manifest_sha256=post?.receipt.source.manifest_sha256 || '';
   const composite=metrics(effective);
-  card.postimplementation_status=newWeight ? 'scoped-local-reassessment-not-deployed' : 'pending-primary-versioned-verification';
+  card.postimplementation_status=newWeight ? 'scoped-local-reassessment' : post ? 'not-reassessed-in-local-receipt' : 'pending-primary-versioned-verification';
   card.postimplementation_score=newWeight ? fmt(composite.score) : '';
   card.postimplementation_score_basis=newWeight ? 'composite: newly-evidenced dimensions plus explicitly inherited baseline; not 400 executed tasks' : '';
   card.postimplementation_effective_coverage_pct=newWeight ? fmt(composite.coverage*100) : '';
@@ -897,10 +934,13 @@ const capabilityRules={
   'chart-facts':['chart-first-entry','free-verdict'], 'birth-time-uncertainty':['birth-time-clarity'], birthplace:['city-choice'],
   'dosha-verdicts':['free-verdict'], 'homepage-entry':['chart-first-entry'], 'anonymous-continuity':['opt-in-draft-restore','device-save-control'],
   pricing:['unavailable-offer-copy','commercial-denial'], checkout:['commercial-denial'], help:['task-help'],
+  'privacy-consent':['optional-analytics-control'], analytics:['optional-analytics-control'],
+  'owned-chart-retrieval':['saved-chart-error-contract'], 'export-data':['account-operation-integrity'], 'delete-account':['account-operation-integrity'],
+  'kundali-reading':['free-summary-no-generation'], compatibility:['free-summary-no-generation'],
 };
 for (const c of capabilities) {
   const enabled=post?.rules.filter((r)=>(capabilityRules[c.capability]||[]).includes(r.id)) || [];
-  c.postimplementation_status=enabled.length ? 'changed-source-with-scoped-local-receipt-not-deployed' : 'pending-primary-versioned-verification';
+  c.postimplementation_status=enabled.length ? 'changed-source-with-scoped-local-receipt' : post ? 'not-reassessed-in-local-receipt' : 'pending-primary-versioned-verification';
   c.postimplementation_source_ref=enabled.length ? post.receipt.source.version : '';
   c.postimplementation_evidence_ids=enabled.flatMap((r)=>[...r.sourceIds,...[...post.checks.values()].filter((e)=>r.needs.some((n)=>e.affordances.includes(n))).map((e)=>e.id)]).filter((id,i,all)=>all.indexOf(id)===i).join('|');
   c.postimplementation_actual_behavior=enabled.map((r)=>r.reason).join(' | ');
@@ -977,7 +1017,7 @@ sections.push('', '## Separate Readiness Scorecards', '', '| Scorecard | Source 
 if (post) {
   const m=mean(postCards);
   const newCoverage=cards.reduce((n,c)=>n+c.postimplementation_new_evidence_weight_pct,0)/400;
-  sections.push(`Effective composite: ${m.score.toFixed(2)}; effective known weight ${(m.coverage*100).toFixed(2)}%; newly evidenced weight ${newCoverage.toFixed(2)}%; bounds [${m.lower.toFixed(2)}, ${m.upper.toFixed(2)}]. Unchanged cells inherit their baseline uncertainty, not a new verification. Visual/accessibility remains unknown even though receipt screenshots/basic overflow checks exist.`, '');
+  sections.push(`Effective composite: ${m.score.toFixed(2)}; effective known weight ${fmt(m.coverage*100)}%; newly evidenced weight ${newCoverage.toFixed(2)}%; bounds [${m.lower.toFixed(2)}, ${m.upper.toFixed(2)}]. Unchanged cells inherit their baseline uncertainty, not a new verification. Visual/accessibility remains unknown even though receipt screenshots/basic overflow checks exist.`, '');
   for (const [title,key] of [['Group','customer_group'],['Channel','arrival_channel'],['Intent','intent'],['Device','device'],['First Versus Return','first_or_returning_visit']]) {
     const slices=[...new Set(postCards.map((r)=>r[key]))].sort().map((name)=>[name,postCards.filter((r)=>r[key]===name)]);
     assert.equal(slices.reduce((n,[,rows])=>n+rows.length,0),400);

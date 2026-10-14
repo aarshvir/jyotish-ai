@@ -280,7 +280,231 @@ Double one dimension weight and renormalize all weights to 100; no changed grade
 
 ## Post-Implementation
 
-Pending primary final source version and checksum-bound verification receipt/screenshots. All post numeric fields remain blank. Working-source improvements and differently scoped checks are recorded in CURRENT-STATE.md but do not authorize numeric reassessment by themselves. Use --post RECEIPT only after the documented verification gate is satisfied.
+Scoped local reassessment from `C1=a5d00e066a6b735574652bf18da6985b47e0a47a`, manifest SHA256 ff8a94af4ef647bb040291d3944db3aac0c0d94ed9a3209131579dc31b8d7fdc; receipt `docs/audits/customer-experience-overhaul/2026-10-15/RELEASES/02-local-verification.json`, SHA256 f43cb07f1e5db8f5b045b8ea25a862d059ea9118466ea50f309e40abbdc8b959. Newly graded scenario/dimension cells: 326. The composite below explicitly inherits baseline values for dimensions not reassessed. It is not a newly tested 400-scenario score, deployment claim, predictive validation or real-user result.
+
+Effective composite: 58.38; effective known weight 88.875%; newly evidenced weight 7.75%; bounds [41.15, 74.28]. Unchanged cells inherit their baseline uncertainty, not a new verification. Visual/accessibility remains unknown even though receipt screenshots/basic overflow checks exist.
+
+### Post Group
+
+| Slice | N | Observed-weight heuristic | Evidence coverage % | Full-rubric judgment bounds |
+|---|---:|---:|---:|---|
+| A | 100 | 60.74 | 92.30 | [44.71, 75.49] |
+| B | 100 | 61.22 | 84.20 | [41.34, 78.05] |
+| C | 100 | 56.50 | 91.10 | [40.19, 71.72] |
+| X | 100 | 55.08 | 87.90 | [38.38, 71.84] |
+
+| Slice | Newly evidenced weight % | Rows with reassessed cells |
+|---|---:|---:|
+| A | 13.65 | 29 |
+| B | 4.70 | 36 |
+| C | 8.30 | 31 |
+| X | 4.35 | 21 |
+
+### Post Channel
+
+| Slice | N | Observed-weight heuristic | Evidence coverage % | Full-rubric judgment bounds |
+|---|---:|---:|---:|---|
+| assistant-hypothetical | 36 | 58.88 | 87.64 | [40.97, 75.05] |
+| blog-guide | 31 | 59.36 | 86.94 | [40.54, 75.34] |
+| bookmark | 72 | 57.01 | 89.65 | [40.56, 72.94] |
+| branded-search | 31 | 58.86 | 91.29 | [42.84, 74.15] |
+| deep-link | 26 | 58.45 | 88.85 | [41.18, 74.28] |
+| direct | 32 | 60.73 | 90.31 | [43.63, 75.90] |
+| friend | 33 | 59.03 | 87.88 | [41.27, 75.15] |
+| paid-ad-hypothetical | 33 | 60.24 | 88.64 | [42.14, 75.66] |
+| problem-search | 25 | 56.89 | 86.80 | [38.88, 73.50] |
+| professional-creator | 33 | 56.30 | 89.24 | [39.72, 72.37] |
+| social-hypothetical | 48 | 58.03 | 89.06 | [41.24, 74.15] |
+
+| Slice | Newly evidenced weight % | Rows with reassessed cells |
+|---|---:|---:|
+| assistant-hypothetical | 5.28 | 9 |
+| blog-guide | 5.32 | 7 |
+| bookmark | 6.74 | 18 |
+| branded-search | 10.65 | 11 |
+| deep-link | 9.23 | 10 |
+| direct | 10.94 | 11 |
+| friend | 11.67 | 12 |
+| paid-ad-hypothetical | 7.42 | 8 |
+| problem-search | 3.60 | 7 |
+| professional-creator | 8.48 | 11 |
+| social-hypothetical | 7.08 | 13 |
+
+### Post Intent
+
+| Slice | N | Observed-weight heuristic | Evidence coverage % | Full-rubric judgment bounds |
+|---|---:|---:|---:|---|
+| account-deletion | 4 | 59.38 | 80.00 | [37.50, 77.50] |
+| article-bridge | 4 | 61.84 | 95.00 | [46.88, 75.63] |
+| auth-recovery | 12 | 69.92 | 80.00 | [45.94, 85.94] |
+| availability | 12 | 60.32 | 90.83 | [43.65, 75.52] |
+| calendar | 4 | 58.59 | 80.00 | [36.88, 76.88] |
+| career-reflection | 4 | 55.47 | 80.00 | [34.38, 74.38] |
+| chart-depth | 12 | 55.53 | 83.75 | [35.78, 72.97] |
+| city-correction | 8 | 62.22 | 88.75 | [44.22, 77.66] |
+| compatibility | 16 | 54.03 | 94.06 | [39.10, 68.55] |
+| correction | 12 | 62.34 | 93.75 | [46.72, 76.41] |
+| daily-timing | 8 | 58.98 | 80.00 | [37.19, 77.19] |
+| dasha | 20 | 59.38 | 94.25 | [44.16, 73.47] |
+| data-control | 4 | 62.50 | 80.00 | [40.00, 80.00] |
+| data-export | 4 | 59.38 | 80.00 | [37.50, 77.50] |
+| date-context | 4 | 63.67 | 80.00 | [40.94, 80.94] |
+| day-choice | 4 | 65.79 | 95.00 | [50.63, 79.38] |
+| effort-expectation | 4 | 51.56 | 80.00 | [31.25, 71.25] |
+| example | 20 | 65.46 | 92.50 | [49.06, 79.69] |
+| factor-breakdown | 12 | 55.81 | 95.00 | [41.15, 69.90] |
+| first-chart | 28 | 61.78 | 92.68 | [45.74, 76.23] |
+| generation-recovery | 4 | 50.00 | 80.00 | [30.00, 70.00] |
+| generation-status | 4 | 50.00 | 80.00 | [30.00, 70.00] |
+| kaal-sarp | 4 | 42.76 | 95.00 | [28.75, 57.50] |
+| lagna | 8 | 57.32 | 93.13 | [41.64, 71.80] |
+| location | 4 | 64.06 | 80.00 | [41.25, 81.25] |
+| manglik | 16 | 42.60 | 95.00 | [28.59, 57.34] |
+| method | 8 | 68.42 | 95.00 | [53.13, 81.88] |
+| monthly-context | 4 | 62.50 | 95.00 | [47.50, 76.25] |
+| moon | 12 | 61.84 | 95.00 | [46.88, 75.63] |
+| nakshatra | 8 | 57.40 | 95.00 | [42.66, 71.41] |
+| next-action | 4 | 51.56 | 80.00 | [31.25, 71.25] |
+| offer | 4 | 51.56 | 80.00 | [31.25, 71.25] |
+| partner-input | 4 | 55.59 | 95.00 | [40.94, 69.69] |
+| payment-status | 4 | 53.13 | 80.00 | [32.50, 72.50] |
+| pdf | 8 | 58.98 | 80.00 | [37.19, 77.19] |
+| privacy | 12 | 68.42 | 95.00 | [53.13, 81.88] |
+| profile-correction | 4 | 62.50 | 80.00 | [40.00, 80.00] |
+| renewal | 8 | 57.42 | 80.00 | [35.94, 75.94] |
+| retrieve | 8 | 62.70 | 80.00 | [40.16, 80.16] |
+| retrieve-chart | 4 | 68.36 | 80.00 | [44.69, 84.69] |
+| retrieve-pair | 8 | 60.74 | 80.00 | [38.59, 78.59] |
+| sade-sati | 4 | 42.76 | 95.00 | [28.75, 57.50] |
+| safe-boundary | 16 | 68.42 | 95.00 | [53.13, 81.88] |
+| share | 8 | 61.27 | 87.50 | [42.34, 76.72] |
+| support | 20 | 29.14 | 80.00 | [17.78, 53.31] |
+| timing-method | 4 | 68.42 | 95.00 | [53.13, 81.88] |
+| tracking-control | 4 | 68.42 | 95.00 | [53.13, 81.88] |
+| vocabulary | 4 | 66.78 | 95.00 | [51.56, 80.31] |
+| weekly-context | 4 | 65.79 | 95.00 | [50.63, 79.38] |
+
+| Slice | Newly evidenced weight % | Rows with reassessed cells |
+|---|---:|---:|
+| account-deletion | 2.50 | 2 |
+| article-bridge | 0.00 | 0 |
+| auth-recovery | 0.00 | 0 |
+| availability | 2.50 | 2 |
+| calendar | 0.00 | 0 |
+| career-reflection | 7.50 | 2 |
+| chart-depth | 10.00 | 4 |
+| city-correction | 11.88 | 1 |
+| compatibility | 6.25 | 4 |
+| correction | 29.58 | 6 |
+| daily-timing | 3.13 | 3 |
+| dasha | 0.00 | 0 |
+| data-control | 5.00 | 4 |
+| data-export | 2.50 | 2 |
+| date-context | 2.50 | 2 |
+| day-choice | 0.00 | 0 |
+| effort-expectation | 17.50 | 2 |
+| example | 0.00 | 0 |
+| factor-breakdown | 12.50 | 6 |
+| first-chart | 18.93 | 9 |
+| generation-recovery | 0.00 | 0 |
+| generation-status | 0.00 | 0 |
+| kaal-sarp | 0.00 | 0 |
+| lagna | 0.00 | 0 |
+| location | 3.75 | 3 |
+| manglik | 0.00 | 0 |
+| method | 0.00 | 0 |
+| monthly-context | 7.50 | 2 |
+| moon | 30.00 | 8 |
+| nakshatra | 0.00 | 0 |
+| next-action | 17.50 | 2 |
+| offer | 17.50 | 2 |
+| partner-input | 12.50 | 2 |
+| payment-status | 3.75 | 3 |
+| pdf | 0.00 | 0 |
+| privacy | 3.75 | 9 |
+| profile-correction | 5.00 | 4 |
+| renewal | 5.63 | 3 |
+| retrieve | 3.75 | 6 |
+| retrieve-chart | 5.00 | 4 |
+| retrieve-pair | 3.13 | 5 |
+| sade-sati | 0.00 | 0 |
+| safe-boundary | 0.00 | 0 |
+| share | 6.25 | 2 |
+| support | 24.50 | 7 |
+| timing-method | 0.00 | 0 |
+| tracking-control | 5.00 | 4 |
+| vocabulary | 47.50 | 2 |
+| weekly-context | 0.00 | 0 |
+
+### Post Device
+
+| Slice | N | Observed-weight heuristic | Evidence coverage % | Full-rubric judgment bounds |
+|---|---:|---:|---:|---|
+| desktop | 190 | 59.68 | 88.26 | [42.01, 75.59] |
+| mobile | 195 | 57.65 | 89.23 | [40.67, 73.54] |
+| tablet | 15 | 51.41 | 92.00 | [36.63, 67.17] |
+
+| Slice | Newly evidenced weight % | Rows with reassessed cells |
+|---|---:|---:|
+| desktop | 11.61 | 73 |
+| mobile | 4.59 | 44 |
+| tablet | 0.00 | 0 |
+
+### Post First Versus Return
+
+| Slice | N | Observed-weight heuristic | Evidence coverage % | Full-rubric judgment bounds |
+|---|---:|---:|---:|---|
+| first | 230 | 57.36 | 90.22 | [40.92, 73.04] |
+| returning | 170 | 59.76 | 87.06 | [41.48, 75.94] |
+
+| Slice | Newly evidenced weight % | Rows with reassessed cells |
+|---|---:|---:|
+| first | 8.22 | 59 |
+| returning | 7.12 | 58 |
+
+### Post Audience Sensitivity
+
+| Mix | Composite | Effective coverage % | Bounds |
+|---|---:|---:|---|
+| balanced design | 58.38 | 88.88 | [41.15, 74.28] |
+| first-chart heavy | 59.63 | 90.06 | [42.73, 75.07] |
+| return-timing heavy | 59.59 | 87.16 | [41.32, 75.78] |
+| relationship heavy | 57.94 | 89.58 | [40.92, 73.57] |
+| constraint stress | 57.37 | 88.30 | [40.19, 73.61] |
+
+### Post Dimension Sensitivity
+
+| Doubled dimension | Composite | Effective coverage % | Bounds |
+|---|---:|---:|---|
+| purpose | 60.22 | 90.33 | [43.49, 75.50] |
+| fit | 58.47 | 89.89 | [41.70, 74.05] |
+| action | 58.95 | 89.70 | [42.08, 74.56] |
+| result | 58.11 | 86.09 | [39.56, 74.74] |
+| effort | 59.00 | 90.07 | [42.24, 74.50] |
+| continuity | 56.07 | 89.89 | [39.45, 71.84] |
+| pricing | 58.12 | 89.43 | [41.28, 74.01] |
+| visual | 58.38 | 84.64 | [39.19, 75.50] |
+| trust | 58.28 | 89.17 | [41.23, 74.14] |
+| recovery | 58.11 | 89.40 | [41.14, 73.86] |
+
+### Enabled Rules
+
+| Rule | Required checks | Dimensions | Anchor target |
+|---|---|---|---|
+| chart-first-entry | chart-known | purpose, action, pricing | 75, 75, 75 |
+| birth-time-clarity | unknown-no-api, approximate-provisional | trust, recovery | 75, 75 |
+| city-choice | city-choice-required, city-edit-invalidates | action, trust | 75, 75 |
+| free-verdict | anonymous-doshas-no-lead-write | fit, result, effort, pricing, trust | 75, 75, 75, 75, 75 |
+| opt-in-draft-restore | save-seven-days, refresh-no-extra-api, edit-clears-result, clear-calculator-key | continuity, effort | 75, 75 |
+| device-save-control | no-default-save, clear-calculator-key | trust | 75 |
+| retry-retains-input | synthetic-504-real-retry | recovery | 75 |
+| commercial-denial | paid-default-disabled, authenticated-mutation-no-provider-no-write | trust | 75 |
+| unavailable-offer-copy | unavailable-offer-visible, paid-schema-suppressed | pricing | 75 |
+| task-help | help-route-and-task-search | purpose, fit, action, result, effort, recovery | 75, 75, 75, 75, 75, 75 |
+| optional-analytics-control | analytics-off-optin-withdraw, analytics-private-data-scrub | trust | 75 |
+| saved-chart-error-contract | saved-collections-error-not-empty, saved-refresh-retains-stale | recovery | 75 |
+| account-operation-integrity | export-error-not-empty, delete-partial-honest | recovery | 75 |
+| free-summary-no-generation | kundali-free-no-full-compute, synastry-free-no-full-compute | effort, pricing | 75, 75 |
 
 ## Evidence Registry
 
@@ -327,4 +551,79 @@ Pending primary final source version and checksum-bound verification receipt/scr
 | B02 | executed-browser-primary | `artifacts/customer-experience/before/journeys.json#before-{1440,390}-/free-kundli` | Initial time observed 12:00 at both tested widths | 60d7821a4854aa96cdeb9d62692818ad2dc91262fd79111b927e2f909784d4c5 |
 | B03 | executed-browser-primary | `artifacts/customer-experience/before/journeys.json#before-{1440,390}-/help` | Help route returned 404 at both tested widths | 60d7821a4854aa96cdeb9d62692818ad2dc91262fd79111b927e2f909784d4c5 |
 | B04 | executed-browser-primary | `artifacts/customer-experience/before/journeys.json#journeys[type=public-route-navigation]` | 28 route navigations, 26 basic passes; no full funnel completion or accessibility proof | 60d7821a4854aa96cdeb9d62692818ad2dc91262fd79111b927e2f909784d4c5 |
+| P-CORE-DESKTOP | post-executed-check:real-chart-backend | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/0/tests/0/results/0/status` | Fictional known New Delhi chart: Gemini/Sagittarius, no email input, optional local save, same-browser reload without extra chart API, edit/clear. Executed /free-kundli; homepage chart-first offer is source-transferred, not an executed comprehension task (1440px). | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-UNKNOWN-DESKTOP | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/1/tests/0/results/0/status` | Unknown-time UI on /moon-sign-calculator produces no chart request and offers help (1440px); no date-only chart or interval calculation. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-CITY-DESKTOP | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/2/tests/0/results/0/status` | Two fictional Springfield candidates injected; explicit Massachusetts choice required and editing removes selection (1440px). Geography service mocked. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-RETRY-DESKTOP | post-executed-check:synthetic-504-real-retry | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/3/tests/0/results/0/status` | Injected chart 504, retained date/input, then unmocked real local retry succeeds without default device save (1440px). Not a real provider outage. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-HELP-DESKTOP | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/4/tests/0/results/0/status` | Help search birth-time query, no-result/reset recovery and scoped device clear at /chart-privacy (1440px); source help affordance only, not all support topics or actual account records. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-OFFER-DESKTOP | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/5/tests/0/results/0/status` | Visible closed pricing/start, anonymous dashboard login redirect, quiz offer false and assistant text agree (1440px); no authenticated paid mutation executed in browser. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-LAYOUT-DESKTOP | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/6/tests/0/results/0/status` | Homepage heading visible, no document overflow, mobile Escape restores nav-toggle focus; archived PNG 1440px. No full screen-reader/contrast/a11y certification. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-ANALYTICS-DESKTOP | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/7/tests/0/results/0/status` | Actual privacy preference UI defaults off, explicit opt-in emits intercepted first-party analytics, withdrawal stops capture and removes vh_sid (1440px). Collector requests intercepted; no real analytics/customer query. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-KUNDALI-DESKTOP | post-executed-check:real-chart-backend | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/9/tests/0/results/0/status` | Known fictional Kundali teaser succeeds with Gemini and zero /api/kundali/compute requests (1440px). Free-summary source transfer only; full generated reading not executed. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-SYNASTRY-DESKTOP | post-executed-check:real-chart-backend | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/10/tests/0/results/0/status` | Two fictional birth sets produce a qualified free Gun Milan total with zero /api/synastry/compute requests (1440px). No full breakdown or relationship-outcome validation. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-CORE-MOBILE | post-executed-check:real-chart-backend | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/11/tests/0/results/0/status` | Fictional known New Delhi chart: Gemini/Sagittarius, no email input, optional local save, same-browser reload without extra chart API, edit/clear. Executed /free-kundli; homepage chart-first offer is source-transferred, not an executed comprehension task (390px). | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-UNKNOWN-MOBILE | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/12/tests/0/results/0/status` | Unknown-time UI on /moon-sign-calculator produces no chart request and offers help (390px); no date-only chart or interval calculation. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-CITY-MOBILE | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/13/tests/0/results/0/status` | Two fictional Springfield candidates injected; explicit Massachusetts choice required and editing removes selection (390px). Geography service mocked. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-RETRY-MOBILE | post-executed-check:synthetic-504-real-retry | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/14/tests/0/results/0/status` | Injected chart 504, retained date/input, then unmocked real local retry succeeds without default device save (390px). Not a real provider outage. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-HELP-MOBILE | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/15/tests/0/results/0/status` | Help search birth-time query, no-result/reset recovery and scoped device clear at /chart-privacy (390px); source help affordance only, not all support topics or actual account records. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-OFFER-MOBILE | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/16/tests/0/results/0/status` | Visible closed pricing/start, anonymous dashboard login redirect, quiz offer false and assistant text agree (390px); no authenticated paid mutation executed in browser. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-LAYOUT-MOBILE | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/17/tests/0/results/0/status` | Homepage heading visible, no document overflow, mobile Escape restores nav-toggle focus; archived PNG 390px. No full screen-reader/contrast/a11y certification. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-ANALYTICS-MOBILE | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/18/tests/0/results/0/status` | Actual privacy preference UI defaults off, explicit opt-in emits intercepted first-party analytics, withdrawal stops capture and removes vh_sid (390px). Collector requests intercepted; no real analytics/customer query. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-KUNDALI-MOBILE | post-executed-check:real-chart-backend | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/20/tests/0/results/0/status` | Known fictional Kundali teaser succeeds with Gemini and zero /api/kundali/compute requests (390px). Free-summary source transfer only; full generated reading not executed. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-SYNASTRY-MOBILE | post-executed-check:real-chart-backend | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/21/tests/0/results/0/status` | Two fictional birth sets produce a qualified free Gun Milan total with zero /api/synastry/compute requests (390px). No full breakdown or relationship-outcome validation. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-CORE-NARROW | post-executed-check:real-chart-backend | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/22/tests/0/results/0/status` | Fictional known New Delhi chart: Gemini/Sagittarius, no email input, optional local save, same-browser reload without extra chart API, edit/clear. Executed /free-kundli; homepage chart-first offer is source-transferred, not an executed comprehension task (320px). | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-UNKNOWN-NARROW | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/23/tests/0/results/0/status` | Unknown-time UI on /moon-sign-calculator produces no chart request and offers help (320px); no date-only chart or interval calculation. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-CITY-NARROW | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/24/tests/0/results/0/status` | Two fictional Springfield candidates injected; explicit Massachusetts choice required and editing removes selection (320px). Geography service mocked. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-RETRY-NARROW | post-executed-check:synthetic-504-real-retry | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/25/tests/0/results/0/status` | Injected chart 504, retained date/input, then unmocked real local retry succeeds without default device save (320px). Not a real provider outage. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-HELP-NARROW | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/26/tests/0/results/0/status` | Help search birth-time query, no-result/reset recovery and scoped device clear at /chart-privacy (320px); source help affordance only, not all support topics or actual account records. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-OFFER-NARROW | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/27/tests/0/results/0/status` | Visible closed pricing/start, anonymous dashboard login redirect, quiz offer false and assistant text agree (320px); no authenticated paid mutation executed in browser. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-LAYOUT-NARROW | post-executed-check:public-navigation | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/28/tests/0/results/0/status` | Homepage heading visible, no document overflow, mobile Escape restores nav-toggle focus; archived PNG 320px. No full screen-reader/contrast/a11y certification. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-ANALYTICS-NARROW | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/29/tests/0/results/0/status` | Actual privacy preference UI defaults off, explicit opt-in emits intercepted first-party analytics, withdrawal stops capture and removes vh_sid (320px). Collector requests intercepted; no real analytics/customer query. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-KUNDALI-NARROW | post-executed-check:real-chart-backend | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/31/tests/0/results/0/status` | Known fictional Kundali teaser succeeds with Gemini and zero /api/kundali/compute requests (320px). Free-summary source transfer only; full generated reading not executed. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-SYNASTRY-NARROW | post-executed-check:real-chart-backend | `artifacts/customer-experience/final-local/task-results.json#/suites/0/specs/32/tests/0/results/0/status` | Two fictional birth sets produce a qualified free Gun Milan total with zero /api/synastry/compute requests (320px). No full breakdown or relationship-outcome validation. | ffc791a95ed2d4ecdae9ea217759a33f60400392e2aabdafe7fa7e38c76acd24 |
+| P-APPROXIMATE | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/9/assertionResults/6/status` | Mocked calculator UI labels a single entered estimate provisional/no interval; withdrawing save removes local key. Shared-source label behavior, not mobile approximate-time replay or numerical accuracy. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-UNKNOWN-CONTRACT | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/10/assertionResults/10/status` | Actual route handler with mocked dependencies refuses unknown time before calculation; source transfer to shared calculator only. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-CITY-SOURCE | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/9/assertionResults/0/status` | Mocked UI requires deliberate city choice and no default storage; narrow source transfer does not assert all candidates/geographies were executed. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-CITY-EDIT-SOURCE | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/9/assertionResults/4/status` | Mocked city request/edit rejects stale lookup data and preserves other fields; source invalidation, not verified geography. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-FREE-NO-LEADS | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/10/assertionResults/0/status` | Mocked actual free route returns dosha fields while auth/newsletter writes are forbidden. Real local API corroborates fields, not database-write observation or general calculation accuracy. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-SEVEN-DAYS | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/98/assertionResults/1/status` | Synthetic clock/storage fixture verifies exact 7-day boundary and on-access removal, not seven elapsed days with a real customer. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-CLOSED-DEFAULT | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/11/assertionResults/4/status` | Unit default-off commercial flag guard; not provider eligibility or a live environment credential inspection. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-MUTATION-DENIED | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/11/assertionResults/0/status` | Mock-authenticated mutation handlers reject while provider and draft writes are forbidden; no real payment or customer database access. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-FREE-SCHEMA | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/11/assertionResults/3/status` | Unit structured/assistant availability has only free offer while closed; not verified assistant recommendations/indexing. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-ANALYTICS-SCRUB | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/4/assertionResults/7/status` | Browser/transport mocks verify bounded optional-event properties and no private fields; not general legal privacy compliance. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-SAVED-ERROR | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/73/assertionResults/0/status` | Actual owned-chart handler with database/auth mocks signals both collection failures, not empty account; no real-account queries. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-SAVED-STALE | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/73/assertionResults/9/status` | Mocked saved-panel refresh preserves previous collections with stale guidance; source error-contract only, no authenticated cross-device flow executed. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-EXPORT-INCOMPLETE | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/1/assertionResults/9/status` | Isolated owner/database mock: incomplete report export returns unavailable rather than a false complete empty download; no PII queried. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| P-DELETE-PARTIAL | post-executed-check:mocked-dependencies | `artifacts/customer-experience/final-unit-tests.json#/testResults/1/assertionResults/1/status` | Isolated delete mock retains sign-in on core-cleanup failure and reports possible partial removal honestly; no real deletion or database rollback test. | e3d3e1f0f0702bfab104d69bff6d77d431c8fcbf6a08eed9b702ccc688a77efe |
+| PS-1-CHART-FIRST-ENTRY | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/landing/Hero.tsx:14` | Chart-first source names the actual free result and removes the prior hourly promise at supported entries | 5df3f6255e1ce50b06889008c70ad9069782e4d8bcb2d3ade4def86436e339ca |
+| PS-2-CHART-FIRST-ENTRY | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/tools/ChartTool.tsx:183` | Chart-first source names the actual free result and removes the prior hourly promise at supported entries | cd5269f185028505d9da3a1d634cb0e0ac9875f5bf2bcdc5e1741efb18e30461 |
+| PS-1-BIRTH-TIME-CLARITY | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/lib/tools/birth.ts:43` | Explicit time certainty and honest refusal/provisional copy; no interval or astronomical accuracy claim | 8929711ec65a287eebbd865108ec305e4f91147c56d0489e67e966927a412123 |
+| PS-2-BIRTH-TIME-CLARITY | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/forms/BirthDetailsInput.tsx:108` | Explicit time certainty and honest refusal/provisional copy; no interval or astronomical accuracy claim | 0b3bcd533ff920055f03505e8009567bc9fad2fa6f570d13b0d5cfe920f66cec |
+| PS-3-BIRTH-TIME-CLARITY | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/tools/ChartTool.tsx:189` | Explicit time certainty and honest refusal/provisional copy; no interval or astronomical accuracy claim | cd5269f185028505d9da3a1d634cb0e0ac9875f5bf2bcdc5e1741efb18e30461 |
+| PS-1-CITY-CHOICE | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/forms/BirthDetailsInput.tsx:155` | Explicit candidate choice and invalidation replace silent first-match selection | 0b3bcd533ff920055f03505e8009567bc9fad2fa6f570d13b0d5cfe920f66cec |
+| PS-2-CITY-CHOICE | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/forms/BirthDetailsInput.tsx:137` | Explicit candidate choice and invalidation replace silent first-match selection | 0b3bcd533ff920055f03505e8009567bc9fad2fa6f570d13b0d5cfe920f66cec |
+| PS-1-FREE-VERDICT | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/api/tools/chart/route.ts:28` | Supported anonymous facts/verdict path no longer requires email/auth or newsletter insertion; result usefulness is a source affordance | 30155d59cd3bedd18272bacf0e41434147df742a25c637fd27f03c05175960df |
+| PS-2-FREE-VERDICT | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/tools/ChartTool.tsx:11` | Supported anonymous facts/verdict path no longer requires email/auth or newsletter insertion; result usefulness is a source affordance | cd5269f185028505d9da3a1d634cb0e0ac9875f5bf2bcdc5e1741efb18e30461 |
+| PS-1-OPT-IN-DRAFT-RESTORE | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/lib/tools/storage.ts:6` | Opt-in device-local draft/result restores without recomputation in supported conditions; expiry enforced on access, not background deletion | 517da53f8683d99a2338bc5a64c827e5af0bd74de61d2f4a25224600fea40abe |
+| PS-2-OPT-IN-DRAFT-RESTORE | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/tools/ChartTool.tsx:62` | Opt-in device-local draft/result restores without recomputation in supported conditions; expiry enforced on access, not background deletion | cd5269f185028505d9da3a1d634cb0e0ac9875f5bf2bcdc5e1741efb18e30461 |
+| PS-3-OPT-IN-DRAFT-RESTORE | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/tools/ChartTool.tsx:73` | Opt-in device-local draft/result restores without recomputation in supported conditions; expiry enforced on access, not background deletion | cd5269f185028505d9da3a1d634cb0e0ac9875f5bf2bcdc5e1741efb18e30461 |
+| PS-1-DEVICE-SAVE-CONTROL | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/tools/ChartTool.tsx:42` | Calculator saving is optional and local, with tested clear behavior; this does not establish analytics consent | cd5269f185028505d9da3a1d634cb0e0ac9875f5bf2bcdc5e1741efb18e30461 |
+| PS-2-DEVICE-SAVE-CONTROL | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/tools/ChartTool.tsx:171` | Calculator saving is optional and local, with tested clear behavior; this does not establish analytics consent | cd5269f185028505d9da3a1d634cb0e0ac9875f5bf2bcdc5e1741efb18e30461 |
+| PS-1-RETRY-RETAINS-INPUT | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/tools/ChartTool.tsx:142` | Injected 504 then real retry retains the supported inputs; not evidence all provider failures recover | cd5269f185028505d9da3a1d634cb0e0ac9875f5bf2bcdc5e1741efb18e30461 |
+| PS-2-RETRY-RETAINS-INPUT | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/tools/ChartTool.tsx:12` | Injected 504 then real retry retains the supported inputs; not evidence all provider failures recover | cd5269f185028505d9da3a1d634cb0e0ac9875f5bf2bcdc5e1741efb18e30461 |
+| PS-1-COMMERCIAL-DENIAL | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/lib/commercial/availability.ts:6` | Default-disabled server mutation guard executes before provider/database writes; UAE eligibility is still unresolved | 431312dbf012833d5526edc240c5e376273fc2018454a9d2ba67f81963d45faf |
+| PS-2-COMMERCIAL-DENIAL | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/api/ziina/create-intent/route.ts:42` | Default-disabled server mutation guard executes before provider/database writes; UAE eligibility is still unresolved | 8cd96a55b77b26631e289a1bdbbccbe19b59481858b5e68adad31e8ef971b446 |
+| PS-3-COMMERCIAL-DENIAL | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/api/ziina/upgrade/route.ts:31` | Default-disabled server mutation guard executes before provider/database writes; UAE eligibility is still unresolved | 4517328d6764a11fa5da0e89a1852eeef2bca4d6dce9bf7f5fbeac19edfeff03 |
+| PS-1-UNAVAILABLE-OFFER-COPY | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/lib/commercial/availability.ts:2` | Supported availability surfaces explain free/current-owned access separately from unavailable new paid readings | 431312dbf012833d5526edc240c5e376273fc2018454a9d2ba67f81963d45faf |
+| PS-2-UNAVAILABLE-OFFER-COPY | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/lib/seo/aiVisibility.ts:60` | Supported availability surfaces explain free/current-owned access separately from unavailable new paid readings | 76bd601400d727f21a5fe52980dba9327000955c83128f1172f66ef7ef9b5111 |
+| PS-1-TASK-HELP | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/help/page.tsx:3` | Dedicated task help route/search replaces baseline 404 in checked scope; full accessibility remains unknown | d37ce5b03ccd7ad4a65b251322786355f78e5fa66d07251aa9e23f2d17212f55 |
+| PS-2-TASK-HELP | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/help/page.tsx:17` | Dedicated task help route/search replaces baseline 404 in checked scope; full accessibility remains unknown | d37ce5b03ccd7ad4a65b251322786355f78e5fa66d07251aa9e23f2d17212f55 |
+| PS-1-OPTIONAL-ANALYTICS-CONTROL | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/lib/analytics/consent.ts:152` | Tested optional analytics defaults off, supports opt-in/withdrawal and bounds private fields; not general privacy/legal compliance or deletion of sent events | e7427d7b24bb5dd7851038ee63ab149be1160cc1023987d3761be4d741792d4a |
+| PS-2-OPTIONAL-ANALYTICS-CONTROL | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/analytics/AnalyticsPreferences.tsx:25` | Tested optional analytics defaults off, supports opt-in/withdrawal and bounds private fields; not general privacy/legal compliance or deletion of sent events | 2ac43387b3c5acef334ad3f2c0a1a2501a0aecbf262bbd6ef94d1225a4d1a82c |
+| PS-1-SAVED-CHART-ERROR-CONTRACT | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/api/user/charts/route.ts:55` | Mocked owned-collection and refresh failures are explicit and preserve successful/stale data; no real-account retrieval was executed | 86233cbfd01be2dd5d2428923d88611a1cf9ba17a4eb40fa2c00aa6aa73f001e |
+| PS-2-SAVED-CHART-ERROR-CONTRACT | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/components/dashboard/AccountDashboard.tsx:16` | Mocked owned-collection and refresh failures are explicit and preserve successful/stale data; no real-account retrieval was executed | 4c23f8827eb05165e0bb58acbcbe28da5949fa131a2df06197dc37f75787a899 |
+| PS-1-ACCOUNT-OPERATION-INTEGRITY | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/api/account/export/route.ts:30` | Isolated mocks verify incomplete exports fail and partial deletion is reported honestly with retry; not a real deletion or transactional rollback | 030603cf027cb1a2132c7bb051167632d0afa5a82e14dfc6bd522d728781aaa9 |
+| PS-2-ACCOUNT-OPERATION-INTEGRITY | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/api/account/delete/route.ts:37` | Isolated mocks verify incomplete exports fail and partial deletion is reported honestly with retry; not a real deletion or transactional rollback | 232e01fe30d9407f00fe8a8e14c49988dfedd34c8d01eaeb45746321cb57d050 |
+| PS-1-FREE-SUMMARY-NO-GENERATION | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/kundali/KundaliForm.tsx:52` | Supported known-input free summaries call teaser only, not a generated full reading; no complete written reading, factor breakdown or entitlement execution claimed | 404d41b181a15c11e846f111c515726f0e57f9608c61344657342f9eac34fce1 |
+| PS-2-FREE-SUMMARY-NO-GENERATION | verified-post-source | `C1=a5d00e066a6b735574652bf18da6985b47e0a47a:src/app/synastry/SynastryForm.tsx:62` | Supported known-input free summaries call teaser only, not a generated full reading; no complete written reading, factor breakdown or entitlement execution claimed | 3db067606db1e2d84ebc1465beb5f02ca559a8a1096279891e595b1a681167c3 |
 <!-- GENERATED-ASSESSMENT:END -->

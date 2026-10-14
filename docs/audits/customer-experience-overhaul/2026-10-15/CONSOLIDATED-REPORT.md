@@ -1,6 +1,6 @@
 # Consolidated Assessment
 
-Baseline research synthesis and working-source follow-up, 2026-10-15. Numeric post-implementation assessment remains pending final primary versioned receipt/screenshots. Independent baseline judgments were recorded before other grades; later source/reviewer evidence is explicitly separate. Governing brief: BRIEF.md and attached 22-section request.
+Final primary handoff, 2026-10-15 (Asia/Dubai). Tested source a5d00e066a6b735574652bf18da6985b47e0a47a is deployed READY as dpl_5QU4qs6gkuuCFzw53Rbj8pvrzTMD on https://www.vedichour.com, with 33 live task and 35 live route/API checks passed. Baseline judgments remain immutable; post source-affordance grades are separately checksum-bound. Governing brief: BRIEF.md and attached 22-section request.
 
 ## Product and Audience
 
@@ -8,13 +8,13 @@ VedicHour's source provides free Vedic chart facts, public examples and educatio
 
 Three overlapping groups justify one product: A first chart explorers, B everyday timing/return readers, C relationship/chart-factor explorers. X covers privacy, devices, channels, accessibility and interruptions across those groups. No separate persona product or funnel is implied.
 
-## Customer Misunderstandings
+## Baseline Misunderstandings
 
 1. Free personal timing versus free chart facts: homepage CTA and its calculator destination differ (E01/E02).
 2. Exact time versus initialized noon: source reassurance is too broad; browser observed 12:00 on first load at both widths (E04/E05/B02).
 3. Free verdict versus email capture: source gates doshas; one fictional browser API returned doshas_locked=true and doshas=null (E03/E06/B01).
 4. Saved inputs versus saved results: session-only handoff is not durable anonymous retrieval or cross-device continuity (E03/E07). Account/quiz reuse already exists and should be preserved (E08/E12).
-5. Published prices versus eligible commerce: current licence/provider approval unresolved (U03); local main default-off gate exists but awaits versioned verification.
+5. Published prices versus eligible commerce: licence/provider approval was unresolved (U03) and remains so. The new default-off guard is now deployed and independently source-reviewed; no sale was activated.
 6. Available support versus a dedicated help path: /help returned 404 twice, while general FAQ/email and auth/progress source still exist (E18-E20/B03).
 
 Evidence IDs, immutable source anchors/blob digests and scoped browser anchors are in SCORING.md. The capability inventory separates actual source availability from runtime/configuration verification.
@@ -43,7 +43,7 @@ SEO readiness, business readiness and investor evidence are separate, unassigned
 - Account/payment mutations and model-generation calls in supplied browser evidence: 0. No lead/email mutation or customer-data query by this reviewer.
 - Actual independent AI reviewer count reported by primary: 6, after Mendel's added release/security review. Twenty responsibilities are mapped in INDEPENDENT-REVIEWS/research-operations.md; these are not twenty reviewers or humans. This worker covered three roles; inherited resolved models remain unreported by tools.
 
-Additional checks are not summed into the baseline count. Copernicus/public experience reports 10 supplementary public/browser checks. Pauli/calculation security reports 7 mocked browser regressions within 108 new regressions; these are a different scope. The earlier two primary desktop core tasks are superseded by the raw 21/21 local task run at 1440/390/320 (2026-10-14T20:35:34.486Z), covering real-backend known chart/save/refresh/edit/clear, unknown refusal, city choice, injected-failure/real-retry, help/device clearing, availability/auth and layout. Five commercial mutation unit/contract checks are separately reported. Final source/build, unique-task deduplication and final version-bound receipt/screenshots are pending; privacy-clear/auth-error/consent fixes await final integrated verification. No real user or private customer query is introduced by these counters.
+Final primary whole suite: 1,173/1,173 passed across 108 files, zero skipped; optional mocked browser fixtures enabled. Production build, typecheck and lint passed, with unchanged legacy warnings. Final local tasks: 33/33 at 1440/390/320; local public sweep: 35/35. Actual production repeats: 33/33 tasks and 35/35 route/API checks, plus seven supplementary server-boundary assertions. These replace earlier 2/21-case task checkpoints and are not added as unique user needs. Copernicus's ten and Zeno's fourteen supplementary checks are separate worker-reported scopes; Pauli's seven mocked calculator browser regressions are included in the unit total. Zero real users, real payment/customer-data actions or model-generation calls were performed.
 
 Primary raw evidence: artifacts/customer-experience/before/journeys.json, timestamp 2026-10-14T20:12:35.967Z (2026-10-15 Dubai). BRIEF.md records production-before-overhaul dfb774a972430790fa565dfe5d4529c2e5d3796f and deployment dpl_HDo6n8DPc1tjSfGTJ5XYY6S9pW3D. This reviewer did not independently query release metadata.
 
@@ -59,13 +59,19 @@ Implemented by this reviewer: audit documents, a structured Node-standard-librar
 
 Validated: count/group/context/task uniqueness; ten weights and anchors; every baseline evidence marker/path; source/artifact digests; CSV quoting and embedded-newline roundtrip; aggregate partition totals; balanced group mean; unknown-field semantics; pending post fields; audience/dimension sensitivity; deterministic regeneration via --check. Twelve in-memory audit-verifier unit cases pass; missing CLI receipt argument/file are rejected before output writes. Unit fixtures are not browser/user/release evidence and never enter published IDs or counters. Script creates only owned dataset/scorecard/capability/generated-SCORING artifacts.
 
-Locally inspected shared implementation: chart-first entry, explicit Known/Approximate/Unknown certainty, mandatory city-candidate selection, ungated public facts/verdicts, provisional single-estimate result labels, optional seven-day device-local input/result save, restore/edit/clear, input-preserving failures, task-help route, and default-disabled new-paid-intent/upgrade guards. Relevant source anchors and scoped reported checks are recorded in CURRENT-STATE.md. These are working-source changes, not final release approval or UAE eligibility. Saved-chart error-as-empty behavior and privacy/tracking-policy contradictions remain material review dependencies. Baseline capability behavior/grades are not rewritten from mutable local work.
+The product release implements chart-first entry and a calculated fictional example; deliberate time/certainty and explicit city selection; ungated facts/dosha checks; provisional approximate output; optional seven-day device-local draft/result restoration and correction/clear; input-preserving bounded failures; searchable thirteen-article help; actual captioned desktop/mobile walkthroughs; recoverable sign-in/account/saved-chart states; truthful export/deletion partial-failure semantics; and default-off new checkout. Free Kundli/compatibility submit summaries only; full generated readings require an explicit action and existing entitlement. Optional usage analytics starts off and can be withdrawn; advertising capture remains disabled. Three foundational articles and /hora copy now distinguish calculation, interpretation, sample timing and actual availability.
 
-Current deployed overhaul: **not deployed according to primary handoff**. Post-implementation score: **pending**, all numeric fields blank. Full account/payment/lead/report-generation journeys: **not claimed**. Growth-owned MESSAGING-AND-PRICING.md and SEO-SEM-PLAN.md are now created, with six official advertised/text competitor references, twenty article proposals and draft SEM/social/lifecycle material. The growth owner also reports three foundational article source repairs. These are not competitor journey tests, published campaigns or independent execution by this dataset reviewer.
+All three independent release findings are closed and rechecked. New money collection, campaign launches, customer deletion and schema migrations were not performed. Existing paid report access and entitlement controls are preserved in source; no real private customer was queried to prove that journey. Source/file rollback was restored separately: 1,914 snapshot files byte-identical, no database restoration claimed. The private backup is C:\Users\user\Projects\jyotish-rollback-2026-10-15. Its instructions warn that the older site's purchase paths must not be blindly reactivated.
+
+Current overhaul: **deployed and live verified in the stated public scopes**. Exact versions and rollback refs are in RELEASES/03-live-verification.md. Full authenticated customer/payment/lead/generated-report journeys remain **not claimed**. Growth deliverables include six current official advertised/text competitor references, twenty substantive editorial proposals and complete draft SEM/social/lifecycle material. No campaigns, purchases, outreach or emails were sent.
+
+Post assessment: **58.38 effective composite**, versus baseline 55.87; judgment bounds **[41.15, 74.28]**. Only **7.75%** of rubric weight has new evidence; 326 cells across 117 of 400 scenarios are reassessed. Unchanged dimensions inherit baseline uncertainty, and full visual/accessibility grades remain unknown. Fourteen source-affordance rules cap newly assigned grades at 75. This is not a 400-executed-journey score, a measured satisfaction score, predictive validation or evidence of demand/retention. No 95+ claim is justified.
 
 ## Next Evidence and Deliverables
 
-Primary must provide its final source version/manifest, executed-check artifacts and 1440/390/320 PNG screenshots in EVIDENCE.md plus RELEASES before scoped reassessment. The generator's `--post RECEIPT` validates checksum-bound source/checks, exact passed selectors and scenario-condition scopes; baseline scores stay immutable. Only supported changed dimensions receive new source-affordance grades, capped at 75, with evidence/rationale/uncertainty. The post composite labels inherited baseline dimensions and separately reports new evidence coverage. Full visual/accessibility, numerical validity and privacy consent remain unknown without the relevant evidence. No generated post grades exist yet.
+The final local receipt binds 789 C1 source/test/configuration files, 44 individual passed-check pointers and six PNGs. Both receipt-builder and post-assessment --check passed. Reproduce with `node scripts/customer-experience-receipt.mjs --check` and `node scripts/customer-experience-assessment.mjs --post docs/audits/customer-experience-overhaul/2026-10-15/RELEASES/02-local-verification.json --check`. Raw fictional/test artifacts remain gitignored on this machine; fresh clones must obtain or recreate them, not fabricate passes. Baseline values are read from the immutable baseline source, never recalculated from current product copy.
+
+Still needed: current commercial/provider eligibility confirmation, independent numerical/historical/DST reference cases, full screen-reader/zoom/contrast coverage, real authenticated retention/erasure and database restoration evidence using isolated created data, measured costs and consented real-user observation. Captioned actual recordings exist; the preferred natural presenter/narration does not. No prediction or demand is established by these repairs.
 
 Observe a small consented real-user task study after stable repairs; document output understanding, uncertainty, effort, correction and later retrieval. A 95+ claim requires measured relevant journeys, not optimistic synthetic point gains. Open questions and the proposed observation plan are in OPEN-QUESTIONS-AND-DEPENDENCIES.md.
 
@@ -80,24 +86,26 @@ All paths below are under docs/audits/customer-experience-overhaul/2026-10-15 un
 | BRIEF.md | Primary | Created |
 | CURRENT-STATE.md | Research/operations | Created; baseline plus working-source follow-up |
 | REQUEST-TRACKER.md | Primary | Created |
-| CAPABILITY-MATRIX.csv | Research/operations | Created; 24 baseline rows; separate post columns pending |
+| CAPABILITY-MATRIX.csv | Research/operations | 24 baseline rows with separately scoped post evidence |
 | PERSONAS-AND-SCENARIOS.csv | Research/operations | Created; 400 distinct rows, 100 A/B/C/X |
-| SCORECARDS.csv | Research/operations | Created; 400 rows; immutable baseline plus blank gated post fields |
+| SCORECARDS.csv | Research/operations | 400 immutable baseline rows; 326 separately reassessed cells, other post fields unknown |
 | SCORING.md | Research/operations | Created; predefined rubric, aggregates and reproducible --post protocol |
-| EVIDENCE.md | Primary | Created; evolving checkpoint evidence, final source/build binding pending |
-| INDEPENDENT-REVIEWS/public-experience.md | Copernicus | Created; follow-up consent/privacy repair pending final tests |
+| EVIDENCE.md | Primary | Final scoped local and live evidence recorded |
+| INDEPENDENT-REVIEWS/public-experience.md | Copernicus | Final privacy/copy review; integrated tests passed |
 | INDEPENDENT-REVIEWS/calculation-security.md | Pauli | Created; calculator source and regression evidence |
 | INDEPENDENT-REVIEWS/continuity-support.md | Zeno | Created |
 | INDEPENDENT-REVIEWS/growth-competitors.md | Chandrasekhar | Created |
 | INDEPENDENT-REVIEWS/research-operations.md | Euclid | Created; actual reviewer count and twenty-role mapping |
-| INDEPENDENT-REVIEWS/release-security.md | Mendel | Created; final release review pending |
-| CONSOLIDATED-REPORT.md | Research/operations | Created; final post/release phase pending |
+| INDEPENDENT-REVIEWS/release-security.md | Mendel | Complete; all three findings closed |
+| CONSOLIDATED-REPORT.md | Research plus primary handoff | Final synthesis and explicit limitations |
 | MESSAGING-AND-PRICING.md | Growth worker | Created; drafts and six advertised/text official references |
 | SEO-SEM-PLAN.md | Growth worker | Created; twenty proposals, draft experiments and source-repair addendum |
 | PRIORITY-FIXES.md | Research/operations | Created; eight shared priorities |
 | IMPLEMENTATION-PLAN.md | Primary | Created |
-| RELEASES/01-free-experience.md | Primary | Created; explicitly in progress/not deployed; final local verification receipt pending |
+| RELEASES/01-free-experience.md | Primary | Historical local gate checkpoint |
+| RELEASES/02-local-verification.json | Research/operations | Frozen C1 source/artifact receipt, --check passed |
+| RELEASES/03-live-verification.md | Primary | Exact READY production source and passed live checks |
 | OPEN-QUESTIONS-AND-DEPENDENCIES.md | Research/operations | Created |
 | scripts/customer-experience-assessment.mjs | Research/operations | Created; baseline generation/check and evidence-gated post mode |
 
-No private customer records were queried. All requested audit document paths now exist, including primary's EVIDENCE.md and initial RELEASES record; their final source/test/build/deployment evidence is still pending. They remain primary-owned and are not created or attested by this reviewer.
+All requested audit paths exist in docs/audits/customer-experience-overhaul/2026-10-15. Source implementation was committed/pushed and the deployed product verified; the evidence handoff is a documentation/reproducibility follow-up, not a second product redesign. Earlier worker-only activity statements describe their original scopes; final deployment and counters are primary attestations backed by the referenced receipts. Private customer records were not queried. The next evidence needed for a higher score is direct, consented observation of relevant real users, not more synthetic rows.

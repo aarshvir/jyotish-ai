@@ -2,13 +2,13 @@
 
 Assessment date: 2026-10-15, Asia/Dubai. Confirmed checkout: `C:\Users\user\Projects\jyotish-ai`. Repository: https://github.com/aarshvir/jyotish-ai. The original Downloads context is stale. Production baseline `dfb774a972430790fa565dfe5d4529c2e5d3796f` and deployment `dpl_HDo6n8DPc1tjSfGTJ5XYY6S9pW3D` are inherited evidence from BRIEF.md, not independently re-queried deployment metadata. Other workers' unpublished edits are excluded from baseline judgments using git show.
 
-## Product and Strategy
+## Baseline Product and Strategy
 
 VedicHour provides Vedic chart-fact calculators, samples and educational content; source also implements subscriber forecasts, written Kundali readings, compatibility breakdowns and account retrieval. Calculations are intended to be deterministic; generated commentary is a separate interpretive layer. Astronomy does not validate astrological prediction. The coherent provisional audience is A: first chart explorers; B: everyday timing and returning readers; C: relationship or chart-factor explorers. X is a cross-cutting assessment group, not a fourth commercial product.
 
 The best source-supported free use is a visitor with known date/time/place seeking a named chart fact. Unknown time, dosha verdict gates, free-hourly-window expectations and long-gap return retrieval create material limitations. Existing source does not establish customer demand, willingness to pay or reliable prediction.
 
-## Main Journey Gaps
+## Baseline Journey Gaps
 
 - E01/E02/E03: homepage free-today-windows action goes to chart facts; subscribers get hourly timing. A visitor can mistake the example or chart summary for a free personal forecast.
 - E04/E05/B02: form defaults and noon shortcut lack durable uncertainty semantics, and the help overstates precision of Moon/nakshatra/Gun Milan without exact time. The API does not receive that uncertainty state. Primary browser evidence observed initial 12:00 on free-kundli at both 1440 and 390 widths.
@@ -33,17 +33,17 @@ Public text was retrieved from [homepage](https://www.vedichour.com/), [pricing]
 - Inherited worker model: unresolved; resolved runtime model not reported by available tools.
 - Product-source changes, campaigns, payment activation, customer-data queries and commits by this reviewer: none.
 
-## Release State
+## Final Release State
 
-Rollback artifacts are described in BRIEF.md; a source backup is not a database restoration test. Post-implementation source reassessment is pending versioned primary verification. No unpublished change is marked tested, deployed or live here. Other owners supply EVIDENCE.md, release evidence, exact implementation inventory, browser counts and growth outputs.
+Primary final handoff: product source `a5d00e066a6b735574652bf18da6985b47e0a47a` is deployed READY as `dpl_5QU4qs6gkuuCFzw53Rbj8pvrzTMD` on https://www.vedichour.com. The source-bound receipt and post-score reproduction checks passed. Baseline judgments above remain historical, not descriptions of unresolved current bugs. RELEASES/03-live-verification.md records exact production and rollback versions.
 
 Primary's baseline browser artifact is [journeys.json](../../../../artifacts/customer-experience/before/journeys.json), executed 2026-10-14T20:12:35.967Z (2026-10-15 in Asia/Dubai). It records zero real users, account/payment mutations and model-generation calls. Basic pass checks include response success, no document overflow and no fatal page error. They do not measure comprehension, contrast, keyboard order, output usefulness or full form completion. The single API returned Gemini rising, Sagittarius Moon and Uttara Ashadha; these are observed response fields, not independently validated astronomical accuracy.
 
-Current local source inspection finds `src/lib/commercial/availability.ts` requiring `COMMERCIAL_CHECKOUT_ENABLED` exactly `true`, otherwise disabled; create-intent and upgrade routes check it before starting checkout. This is an implemented local guard, not baseline production behavior, payment-provider approval or proof the correct live environment is disabled. Verification/release status remains pending primary handoff. Eligibility remains unresolved, irrespective of this reversible local safeguard.
+Current source requires `COMMERCIAL_CHECKOUT_ENABLED` exactly `true`; otherwise new checkout and upgrade intents are disabled before provider calls or writes. Actual live pricing/start/quiz/assistant responses confirm unavailable new purchases. Authenticated mutation behavior is verified with isolated mocks, not real payments. Commercial/provider eligibility remains unresolved; deployment does not resolve it.
 
-## Working-Source Follow-Up
+## Implemented Source Follow-Up
 
-These observations follow completed baseline judgments and do not alter baseline scores. Source is still changing; path/line locations are working-checkpoint anchors, not a final version or deployed claim. Post scoring requires primary's final source manifest/version and checksum-bound receipts/screenshots in the documented --post mode.
+These observations do not alter baseline scores. The following table preserves checkpoint source anchors; final source and individually passed-check bindings are in RELEASES/02-local-verification.json. Its manifest binds 789 C1 source/test/configuration files, 44 checks and six screenshots. Later document edits do not change the tested application. The final verification record below supersedes the table's earlier pending/checkpoint states.
 
 | Affordance | Working source observation | Scoped check evidence | Remaining limit |
 |---|---|---|---|
@@ -54,8 +54,8 @@ These observations follow completed baseline judgments and do not alter baseline
 | Optional device save | ChartTool.tsx:62 restores result; :171 offers opt-in draft/result up to seven days; lib/tools/storage.ts uses 7-day TTL and scoped key | Primary desktop core task passed opt-in save/refresh without extra API/edit-clear-result/clear-key | Expiry enforced on access, not background erase; not account/cloud/cross-device persistence |
 | Error recovery | ChartTool.tsx:142/:153 retains inputs for calculation/network errors | Injected 504 followed by real retry passed, no default opt-in save | This is an injected failure, not an observed provider outage or every recovery state |
 | Commercial guard | api/ziina/create-intent/route.ts:42 and api/ziina/upgrade/route.ts:31 deny unavailable sales | Primary reports default-off module/authenticated mutation mocks deny before provider/DB write | Mocks do not prove provider eligibility or live environment state |
-| Task help | app/help/page.tsx:16 renders task search and free/help links | Working source exists; final task/help receipt pending | Baseline /help 404 remains historical; no general screen-reader/help-success claim |
-| Privacy and account recovery | Consent/policy repair assigned Copernicus; Mendel reports scoped device-clearing helper fix and saved-chart empty/error risk | Final privacy-clear/auth-error/consent-gating tests pending | No privacy-compliance or complete account-recovery assertion |
+| Task help | Dedicated help search, thirteen articles and explicit free/existing-access links | Final local/live help search, no-results/reset and device-clear tasks passed | Baseline 404 is historical; general screen-reader/human help-success unobserved |
+| Privacy and account recovery | Consent/policy aligned; device-clear, saved empty/error/stale and account integrity fixes reviewed | Final consent UI tasks passed; isolated ownership/export/delete/retrieval mocks passed; all three independent findings closed | No regulatory compliance, live destructive action or full authenticated-customer recovery claim |
 
 ## Verification Counters
 
@@ -64,12 +64,18 @@ These observations follow completed baseline judgments and do not alter baseline
 | Production-before-overhaul browser artifact | 29 | 28 basic route navigations + one fictional chart API; 27 basic passes | Fixed baseline record; not full funnels |
 | Copernicus/public-experience supplementary checks | 10 reported | Public browser/layout/source checks; dependencies and final binding in owner evidence | Do not label as ten real-backend calculations or Pauli's mocked suite |
 | Pauli/calculation-security mocked browser regressions | 7 reported | Within 108 new regressions; API dependencies mocked | Different scope from supplementary10 and real primary tasks; not added |
-| Primary local tasks, latest checkpoint | 21 | task-results.json 2026-10-14T20:35:34.486Z: expected=21, unexpected/skipped/flaky=0; 7 tasks at each 1440/390/320 | Replaces earlier 2-task desktop checkpoint; does not resolve cross-run overlap |
+| Primary final local tasks | 33 | final-local/task-results.json: expected=33, unexpected/skipped/flaky=0; 11 tasks at each 1440/390/320 against production build | Replaces earlier 2/21-task checkpoints, not additive |
 | Earlier primary desktop core tasks | 2 historical, superseded | Known chart/save/refresh/edit/clear and injected-504/real-retry | Not added to primary21 |
 | Commercial mutation regressions | 5 reported | Default-off/authenticated guards and availability consistency; mocked providers/writes | Unit/contract checks, not browser tasks or real billing |
-| Privacy-clear/auth-error/consent repair | Count pending | New source changes awaiting final tests | Not counted as passed |
+| Primary final whole suite | 1,173 | 108 files, zero failed/skipped, including 7 mocked calculator browser fixtures and analytics browser fixture | Unit/mock scopes, not additional real users |
+| Primary final local route/API sweep | 35 | Seventeen public routes at desktop/mobile plus one fictional chart API; all passed | Separate navigation/render scope |
+| Primary final live tasks | 33 | Same eleven task scopes at 1440/390/320; all passed against actual production alias | Repeated local scenarios in live environment, not unique additional needs |
+| Primary final live route/API sweep | 35 | Seventeen routes at desktop/mobile plus fictional chart API; all passed | No fatal page errors, overflow or broken images observed |
+| Additional live server boundaries | 7 | Closed offers/legacy quiz/assistant copy and invalid/unknown birth rejection; all passed | Supplementary HTTP assertions, not full journeys |
 | Real users / this reviewer's executed browser tasks | 0 / 0 | No private customer queried | Never infer users from scenarios or browser runs |
 
-No summed unique browser-task count is asserted. Artifacts may be overwritten or refer to different working checkpoints; only final checksum/version-bound receipts authorize post grades. Primary-reported local screenshot widths 1440/390/320 and no-overflow checks cover narrow layout conditions, not contrast or screen-reader validation. All post numeric cells remain blank now.
+No summed unique browser-task count is asserted. Frozen local artifacts are archived under artifacts/customer-experience/final-local; live results have separate receipts. Full visual/contrast/screen-reader validation remains unknown. Post grades change 326 cells across 117 scenarios, not all 400 scenarios. Effective scoped composite is 58.38 versus baseline 55.87, with only 7.75% newly evidenced rubric weight; other cells inherit baseline uncertainty. This is not observed satisfaction or a 95+ result.
 
-EVIDENCE.md and RELEASES/01-free-experience.md are now created by primary. The release record explicitly says local verification in progress/not deployed; its final source version/manifest and final test/build receipt are not yet available. The primary identity map confirms Copernicus=public experience/privacy, Pauli=calculation/security, Zeno=continuity/support, Euclid=this research/operations execution, Chandrasekhar=growth and Mendel=release/security. Inherited model identity remains unreported.
+All three independent release findings are closed: calculator privacy clearing, failed saved-chart reads shown as empty and the legacy Pixel bypass. Account export/delete failures are tested with isolated mocks, not real erasure. Optional tracking defaults off; GA/Meta remains disabled. Two actual captioned 40-second walkthroughs are live, without narrator/presenter. Thirteen searchable help articles, foundational copy repairs and free-only metadata are live. Growth campaigns remain drafts. Source/file rollback restored and verified; database restoration is not claimed.
+
+The primary identity map confirms Copernicus=public/privacy, Pauli=calculation/security, Zeno=continuity/support, Euclid=research/operations, Chandrasekhar=growth and Mendel=release/security. Six AI reviewers cover twenty responsibilities, not twenty people. Their inherited resolved models remain unreported. The small real-user study is proposed, with zero participants observed so far.

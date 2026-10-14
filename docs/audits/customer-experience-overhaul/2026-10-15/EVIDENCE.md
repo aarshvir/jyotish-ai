@@ -47,6 +47,10 @@ These cover the twenty requested role responsibilities through grouped ownership
 
 400 distinct scenarios and 400 baseline scorecards, exactly 100 in each A/B/C/X stratum, twenty contexts and declared ten-dimension weights. Reproducible generation and `--check` verify counts, partitions, source references, CSV roundtrips and aggregates. Baseline heuristic 55.87 at 88.875% evidence coverage. Unknown visual/runtime dimensions are not silently graded. This is not a satisfaction, conversion, demand or 95+ score.
 
+Checksum-bound C1 local reassessment updates 326 scenario/dimension cells. Effective composite **58.38**, newly evidenced rubric weight **7.75%**, judgment bounds **[41.15, 74.28]**. Other cells explicitly inherit baseline values/uncertainty or remain unknown. This does not claim all 400 scenarios were executed, that the full experience was freshly graded, or that real customers were observed. Receipt: RELEASES/02-local-verification.json; reproducible rules and condition scopes: SCORING.md.
+
 ## Release Boundary
+
+Production release `a5d00e066a6b735574652bf18da6985b47e0a47a` is READY on Vercel `dpl_5QU4qs6gkuuCFzw53Rbj8pvrzTMD`, assigned to www.vedichour.com. **33/33 live task checks and 35/35 live route/API checks passed** against the actual alias. Exact versions, counters, fixtures and limits are recorded in RELEASES/03-live-verification.md. These repeat the local scopes in a different environment; do not add them together as unique scenarios or real people.
 
 Final source/deployment IDs, production build, final-diff review and live checks are recorded in RELEASES. A passing local test is not a deployed or live-verified state. Account ownership/export/deletion have isolated regression evidence, not live destructive tests or a verified database restore. Real billing/provider eligibility, SMTP delivery and broad independent numerical timezone validation remain separately scoped; no real customer data was queried or deleted for this assessment.
