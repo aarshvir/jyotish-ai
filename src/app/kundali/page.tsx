@@ -4,6 +4,7 @@ import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
 import { KundaliForm } from './KundaliForm';
+import { isCommercialCheckoutEnabled } from '@/lib/commercial/availability';
 import { JsonLd } from '@/components/seo/JsonLd';
 import KundaliSamplePreview from '@/components/landing/KundaliSamplePreview';
 import { SeoProse, FaqSection } from '@/components/seo/SeoSection';
@@ -49,16 +50,15 @@ export default function KundaliPage() {
       <StarField />
       <Navbar />
 
-      <main className="flex-1 max-w-5xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
+      <main id="main-content" className="flex-1 max-w-5xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
         <div className="text-center mb-10">
           <p className="section-eyebrow mb-3">Kundli · Janam Kundali</p>
           <h1 className="text-display-md font-display text-star mb-4">
-            Deep <span className="text-amber">Kundli Analysis</span> — Your Full Vedic Birth Chart
+            Your <span className="text-amber">Kundli</span>, Explained
           </h1>
           <p className="text-body-lg text-dust max-w-2xl mx-auto leading-relaxed">
-            A deep, personalized Vedic birth report in plain English — your character, career &amp; money,
-            marriage &amp; intimacy, health, children and family, plus a year-by-year outlook for the next
-            five years. Computed from your exact birth moment.
+            Calculate your birth-chart facts for free. See how a traditional reading interprets those facts,
+            or open a full reading if your account already has access. New paid readings are currently unavailable.
           </p>
         </div>
 
@@ -72,7 +72,7 @@ export default function KundaliPage() {
         </div>
 
         <Suspense fallback={<p className="text-center text-dust">Loading form…</p>}>
-          <KundaliForm />
+          <KundaliForm checkoutEnabled={isCommercialCheckoutEnabled()} />
         </Suspense>
 
         <KundaliSamplePreview />

@@ -1,43 +1,31 @@
 'use client';
 
 import { useEffect } from 'react';
+import { analyticsRoute, hasAnalyticsConsent } from '@/lib/analytics/consent';
+import { useAnalyticsConsent } from '@/lib/analytics/useAnalyticsConsent';
 
-/**
- * Captures the visitor's FIRST-touch source once and stores it in a 1-year cookie
- * (`vh_first_touch`). At signup, the auth callback reads this cookie and persists it
- * to user_profiles so the admin Attribution view can tie each paying customer to the
- * channel that originally brought them. Fires once; never overwrites an existing cookie.
- */
+const sources = new Set(['google', 'bing', 'facebook', 'instagram', 'youtube', 'tiktok', 'reddit', 'twitter', 'linkedin', 'whatsapp', 'newsletter', 'direct']);
+const media = new Set(['cpc', 'organic', 'social', 'email', 'referral', 'none']);
+
+export function captureFirstTouch() {
+  if (!hasAnalyticsConsent()) return;
+  try {
+    if (document.cookie.split(';').some(part => part.trim().startsWith('vh_first_touch='))) return;
+    const params = new URLSearchParams(window.location.search);
+    const rawSource = (params.get('utm_source') || 'direct').toLowerCase();
+    const rawMedium = (params.get('utm_medium') || 'none').toLowerCase();
+    const data = {
+      s: sources.has(rawSource) ? rawSource : 'other',
+      m: media.has(rawMedium) ? rawMedium : 'other',
+      c: '', r: '', l: analyticsRoute(window.location.pathname), t: new Date().toISOString(),
+    };
+    if (!hasAnalyticsConsent()) return;
+    document.cookie = `vh_first_touch=${encodeURIComponent(JSON.stringify(data))}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+  } catch {}
+}
+
 export default function FirstTouch() {
-  useEffect(() => {
-    try {
-      if (document.cookie.includes('vh_first_touch=')) return;
-      const params = new URLSearchParams(window.location.search);
-      const host = (() => {
-        try { return document.referrer ? new URL(document.referrer).hostname.replace(/^www\./, '') : ''; }
-        catch { return ''; }
-      })();
-      let source = params.get('utm_source') || '';
-      let medium = params.get('utm_medium') || '';
-      if (!source) {
-        if (!host || host.includes('vedichour')) { source = 'direct'; medium = medium || 'none'; }
-        else if (/google|bing|duckduckgo|yahoo|ecosia/.test(host)) { source = 'google'; medium = medium || 'organic'; }
-        else if (/instagram|facebook|fb\.|youtube|tiktok|reddit|twitter|x\.com|t\.co|linkedin|pinterest|whatsapp|threads|quora/.test(host)) { source = host; medium = medium || 'social'; }
-        else { source = host; medium = medium || 'referral'; }
-      }
-      const data = {
-        s: source.slice(0, 64),
-        m: (medium || 'none').slice(0, 64),
-        c: (params.get('utm_campaign') || '').slice(0, 64),
-        r: host.slice(0, 128),
-        l: window.location.pathname.slice(0, 128),
-        t: new Date().toISOString(),
-      };
-      const oneYear = 365 * 24 * 60 * 60;
-      document.cookie = `vh_first_touch=${encodeURIComponent(JSON.stringify(data))}; path=/; max-age=${oneYear}; SameSite=Lax`;
-    } catch {
-      /* never break the page */
-    }
-  }, []);
+  const consent = useAnalyticsConsent();
+  useEffect(() => { if (consent.allowed) captureFirstTouch(); }, [consent.allowed, consent.revision]);
   return null;
 }

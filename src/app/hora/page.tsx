@@ -5,7 +5,7 @@ import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { FaqSection } from '@/components/seo/SeoSection';
-import { faqPageLd, breadcrumbLd, articleLd, type Faq } from '@/lib/seo/jsonLd';
+import { faqPageLd, breadcrumbLd, type Faq } from '@/lib/seo/jsonLd';
 import { HORA_ORDER, HORA_THEMES, WEEKDAY_RULERS, horasFrom } from '@/lib/seo/horaFacts';
 
 export const metadata: Metadata = {
@@ -65,7 +65,7 @@ const FAQS: Faq[] = [
   },
   {
     q: 'How does VedicHour use horas?',
-    a: 'A day has 24 horas, and VedicHour scores the waking day: 18 one-hour slots from 06:00 to midnight local time, each labelled with the hora that covers most of it. It rates every slot clearer or heavier against your own birth chart, computed with the Swiss Ephemeris and the Lahiri ayanamsa, rather than as a generic city-wide table.',
+    a: 'The fictional example reading shows 18 fixed 60-minute windows from 06:00 to midnight local time, each labelled with the hora that has the greatest overlap. These clock-hour windows are not the variable sunrise-based horas. The free calculators show natal chart facts and dasha, not a personal hourly forecast. New paid forecasts are currently unavailable; existing readings remain accessible from your account.',
   },
 ];
 
@@ -79,7 +79,7 @@ export default function HoraPage() {
       <main id="main-content" className="flex-1 max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20 relative z-10 w-full">
         <p className="section-eyebrow mb-2">Vedic timing · plain English</p>
         <h1 className="text-display-md font-display text-star mb-4">What is a hora?</h1>
-        <p className="font-body text-body-sm text-dust mb-4">Updated 11 October 2026 · By the VedicHour team</p>
+        <p className="font-body text-body-sm text-dust mb-4">Updated 15 October 2026 · By the VedicHour team</p>
         <p className="text-body-lg text-dust leading-relaxed mb-8">
           A <strong className="text-star">hora</strong> is a planetary hour — a slice of the day governed
           by one of the seven classical planets. In Vedic astrology it is the building block of day-to-day
@@ -164,15 +164,13 @@ export default function HoraPage() {
             identical table.
           </p>
 
-          <h2>From a generic table to a personal grid</h2>
+          <h2>How the example grid is arranged</h2>
           <p>
-            VedicHour reads timing against <em>your</em> chart instead of the city&apos;s. It rates the
-            day as <strong>clearer</strong> or{' '}
-            <strong>heavier</strong>: a day has 24 horas, and VedicHour scores the waking day as 18 one-hour slots from 06:00 to midnight,
-            each tied to the hora that covers most of it. It draws on drawing on your Lagna, Moon and running dasha, and computes everything
-            with the Swiss Ephemeris and the Lahiri ayanamsa. The result is a grid that is specific to you,
-            written in plain English. For a worked example of this approach, see{' '}
-            <Link href="/compare/best-app-for-vedic-timing">the best app for Vedic timing</Link>.
+            The fictional example reading shows eighteen fixed <strong>60-minute windows</strong> from 06:00 to midnight local time,
+            marked <strong>clearer</strong> or <strong>heavier</strong>. Each window is labelled with the hora that has the greatest
+            overlap; a hora can change within a clock-hour window. The explanatory reading draws on the fictional reader&apos;s
+            chart information. It is not your personal forecast. See the{' '}
+            <Link href="/sample-report">fictional example hour grid</Link>.
           </p>
 
           <h2>How to use it — awareness, not certainty</h2>
@@ -184,12 +182,16 @@ export default function HoraPage() {
             human astrologer who can weigh your full chart is still the most thorough route.
           </p>
 
-          <h2>See your own timing</h2>
+          <h2>Free chart facts and an example reading</h2>
           <p>
-            Generate your <Link href="/free-kundli">free Kundli</Link> to see a sample hour-by-hour grid for
-            your chart, or check your <Link href="/vimshottari-dasha-calculator">current dasha</Link> to
-            understand the longer planetary period your timing sits inside. A full forecast with daily
-            windows comes with a VedicHour subscription, which starts with a <Link href="/start">2-minute quiz</Link>.
+            The <Link href="/free-kundli">free Kundli calculator</Link> shows natal chart facts, not a personal hourly forecast.
+            You can also check your <Link href="/vimshottari-dasha-calculator">current dasha</Link>, a traditional planetary-period
+            calculation. To see the hour-grid format without creating a personal forecast,{' '}
+            <Link href="/sample-report">view the fictional example reading</Link>.
+          </p>
+          <p>
+            New paid forecasts are currently unavailable. Existing readings remain accessible from your account.{' '}
+            <Link href="/dashboard">Open existing readings</Link>.
           </p>
 
           <p className="text-body-sm">
@@ -201,9 +203,9 @@ export default function HoraPage() {
         <FaqSection faqs={FAQS} heading="Hora &amp; Vedic timing — FAQ" />
 
         <div className="mt-12 card border border-amber/30 rounded-card p-6 text-center">
-          <p className="font-display text-headline-sm text-star mb-3">Read your day, hour by hour</p>
+          <p className="font-display text-headline-sm text-star mb-3">Start with your free birth-chart facts</p>
           <div className="flex justify-center">
-            <Link href="/free-kundli" className="btn-primary">Get your free Kundli →</Link>
+            <Link href="/free-kundli" className="btn-primary">Get your free chart facts →</Link>
           </div>
         </div>
       </main>
@@ -224,7 +226,7 @@ export default function HoraPage() {
             author: { '@type': 'Organization', name: 'VedicHour' },
             publisher: { '@type': 'Organization', name: 'VedicHour', '@id': `${SITE_URL}#organization` },
             mainEntityOfPage: `${SITE_URL}/hora`,
-            dateModified: '2026-10-11',
+            dateModified: '2026-10-15',
           },
         ]}
       />

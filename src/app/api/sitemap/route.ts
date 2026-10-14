@@ -25,6 +25,7 @@ const STATIC_ROUTES = [
   { path: '/refund',   changefreq: 'monthly', priority: '0.5'  },
   { path: '/privacy',  changefreq: 'monthly', priority: '0.4'  },
   { path: '/terms',    changefreq: 'monthly', priority: '0.4'  },
+  { path: '/help', changefreq: 'monthly', priority: '0.7', lastmod: '2026-10-15' },
 ];
 
 // Free calculator tool pages — the highest-ROI SEO surface (the niche ranks tools).

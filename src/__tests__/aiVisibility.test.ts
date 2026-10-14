@@ -35,7 +35,7 @@ describe('prices an AI answer would quote', () => {
   });
 
   it('structured data offers match the price book in every currency and link to the quiz, never /onboard', () => {
-    const offers = vedicHourOffers(SITE);
+    const offers = vedicHourOffers(SITE, true);
     for (const sku of ['sub_monthly', 'sub_annual'] as const) {
       for (const currency of ['USD', 'INR', 'AED'] as const) {
         const o = offers.find((x) => x.priceCurrency === currency && String(x.name).toLowerCase().includes(sku === 'sub_monthly' ? 'monthly' : 'yearly'));
@@ -53,7 +53,7 @@ describe('prices an AI answer would quote', () => {
   });
 
   it('llms.txt and llms-full.txt state the live prices and none of the retired promises', () => {
-    for (const text of [buildLlmsTxt(SITE, TODAY), buildLlmsFullTxt(SITE, TODAY)]) {
+    for (const text of [buildLlmsTxt(SITE, TODAY, true), buildLlmsFullTxt(SITE, TODAY, true)]) {
       for (const sku of ['sub_monthly', 'sub_annual'] as const) {
         for (const c of ['USD', 'INR', 'AED'] as const) expect(text).toContain(displayPrice(sku, c));
       }

@@ -12,31 +12,30 @@ export const metadata: Metadata = {
 const SECTIONS: { h: string; p: string }[] = [
   { h: '', p: 'A Kundli — or Janam Kundali — is your Vedic birth chart: a map of the sky at the exact moment and place you were born. This free tool computes it instantly from your birth details and gives you the core readings most people look for first: your ascendant (Lagna), Moon sign (Rashi), birth star (Nakshatra), Sun sign, the dasha period you are currently in, and whether your chart carries the Manglik, Kaal Sarpa or Sade Sati flags.' },
   { h: 'What a Janam Kundali actually is', p: 'A Janam Kundali plots the positions of the Sun, Moon and planets across the twelve houses and twelve zodiac signs at your birth. VedicHour follows the standard Indian method, measuring from where the stars actually sit in the sky, so the chart matches what a traditional astrologer would cast. The ascendant rising on the eastern horizon at your birth time anchors the whole chart, which is why an accurate time matters.' },
-  { h: 'What your free chart shows', p: 'The free snapshot gives you a clear, plain-English summary: your Lagna and Rashi, your Nakshatra and its pada, your Vedic Sun sign, your running Vimshottari mahadasha, and a quick yes or no on the three doshas people most often ask about. It is enough to understand the foundations of your chart and to confirm your core placements before going deeper.' },
-  { h: 'What the deep report adds', p: 'The free chart is a snapshot; the paid deep Kundli report is the full reading. It covers seven life areas — career, money, relationships, health, family, education and spiritual path — with divisional charts (vargas) for finer detail and a five-year outlook built on your dasha sequence. Everything is written in plain language, with the astrology shown so you can see how each conclusion was reached.' },
+  { h: 'What your free chart shows', p: 'See your rising sign, Moon sign, birth star, Sun sign and current planetary period. Traditional Manglik, Kaal Sarpa and Sade Sati checks are included without an email wall. If a required transit cannot be retrieved, that check is marked unavailable rather than absent. These are chart facts and traditional classifications, not guaranteed personal outcomes.' },
+  { h: 'Reading beyond the facts', p: 'The example reading shows how calculated chart information can be interpreted in plain English. It belongs to a fictional reader and is not a prediction about you. New paid readings are currently unavailable; reports already in an account remain accessible.' },
   { h: 'Related free tools', p: 'If you want to focus on one factor, VedicHour also offers free single-purpose tools: Kundli Matching (Gun Milan) for compatibility, plus dedicated Manglik, Sade Sati, Vimshottari Dasha, Nakshatra, Moon Sign and Lagna calculators. Each uses the same engine as this chart, so the results stay consistent across every tool.' },
 ];
 
 const FAQS: Faq[] = [
   { q: 'What is a Kundli or Janam Kundali?', a: 'A Kundli (Janam Kundali) is your Vedic birth chart — a snapshot of the Sun, Moon and planets across the twelve houses at the exact time and place you were born. It is the foundation of every Vedic astrology reading.' },
-  { q: 'Is this Kundli really free?', a: 'Yes, completely free with no login and no card. You get your Lagna, Moon sign, Nakshatra, Sun sign, current dasha and the Manglik / Kaal Sarpa / Sade Sati flags instantly. For a full plain-English reading and your hour-by-hour forecast, VedicHour membership starts with a 2-minute quiz.' },
-  { q: 'Do I need my exact birth time?', a: 'For the most accurate chart, yes. The ascendant (Lagna) and house placements depend on the birth time, and even a few minutes can shift the rising sign. Your Moon sign and Nakshatra are more forgiving, so the chart is still useful if your time is approximate.' },
-  { q: 'What is included free versus the paid report?', a: 'The free chart shows your core placements — Lagna, Rashi, Nakshatra, Sun sign, current dasha and the three main doshas. The paid deep report adds readings across seven life areas, divisional (varga) charts and a five-year outlook based on your dasha sequence.' },
-  { q: 'How accurate is the chart?', a: 'Planetary positions are worked out to the minute, following the same standards a traditional Indian astrologer uses. Accuracy then depends mostly on how precise your birth time and place are.' },
+  { q: 'Is this Kundli really free?', a: 'Yes. Chart facts and available traditional dosha checks need no account, email or card. A personal hourly forecast is not included in the free chart calculation.' },
+  { q: 'Do I need my exact birth time?', a: 'Enter a known time, or mark a time you actually know as approximate. The rising sign and houses are time-sensitive; the Moon sign and birth star can also change during a day. If you do not know a time, this calculator explains the limitation and does not substitute noon.' },
+  { q: 'Can I buy a written report?', a: 'New paid readings are currently unavailable. You can use the free calculators, read an example and open reports already in your account.' },
+  { q: 'How accurate is the chart?', a: 'Positions are calculated using Swiss Ephemeris and the Lahiri sidereal convention. Their usefulness depends on correct birth inputs and timezone handling. Astrological interpretations are traditional meanings, not scientifically established predictions. See the methodology page for assumptions and limitations.' },
   { q: 'What is the difference between a Kundli and a daily horoscope?', a: 'A daily horoscope is a short, general forecast based only on your Sun or Moon sign. A Kundli is your complete personal birth chart, unique to your exact moment of birth, and is what astrologers actually analyse for life-area readings.' },
-  { q: 'How is Vedic astrology different from Western astrology?', a: 'Vedic astrology measures from where the stars actually sit in the sky, while Western astrology measures from the seasons. Because of this, your Vedic Sun sign is often one sign earlier than your Western one, and Vedic charts lean heavily on the Moon, Nakshatras and dasha periods.' },
+  { q: 'How is Vedic astrology different from Western astrology?', a: 'Vedic charts commonly use a sidereal zodiac and systems such as nakshatra and dasha. Many Western charts use a tropical zodiac referenced to the equinoxes. Both use astronomical positions; their chosen zodiac reference changes the sign labels. VedicHour uses the Lahiri sidereal convention.' },
 ];
 
 export default function Page() {
   return (
     <CalculatorPage
       eyebrow="Free tool · Janam Kundali"
-      h1="Free Kundli —"
-      h1Accent="Your Vedic Birth Chart, Instantly"
-      intro="Generate your free Janam Kundali in seconds. Enter your date, time and place of birth and we cast your Vedic chart — showing your Lagna, Moon sign, Nakshatra, Sun sign, current dasha and the Manglik, Kaal Sarpa and Sade Sati flags. No signup, no card."
+      h1="Free Vedic Birth Chart"
+      intro="Enter your birth date, time and city to see your rising sign, Moon sign, birth star and current planetary period. No account, email or card required."
       view="fullchart"
-      ctaHref="/kundali"
-      ctaLabel="Get your deep Kundli report"
+      ctaHref="/sample-report"
+      ctaLabel="Read an example interpretation"
       proseHeading="Your Vedic birth chart, explained"
       proseId="kundli-explained"
       sections={SECTIONS}

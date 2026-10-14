@@ -170,6 +170,15 @@ function ReportContent() {
   const paymentStatusParam = params.get('payment_status') ?? '';
 
   const [isInitializing, setIsInitializing] = useState(true);
+  const [checkoutEnabled, setCheckoutEnabled] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch('/api/geo', { signal: controller.signal })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => { if (!controller.signal.aborted) setCheckoutEnabled(data?.checkoutEnabled === true); })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** From DB when status=error; drives targeted retry / support copy. */
@@ -1595,7 +1604,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         {/* Post-purchase upsell strip — shown only to 7-day plan users, nudges toward Monthly.
             Links to the one-click DELTA upgrade (/upsell appends days 8–30 to THIS report at a
             loyalty price) — never to /onboard, which would re-charge full price and regenerate. */}
-        {reportPlanType === '7day' && !isPreviewPlan && (
+        {checkoutEnabled && reportPlanType === '7day' && !isPreviewPlan && (
           <div className="pdf-exclude mb-6 rounded-card border border-amber/25 bg-amber/[0.04] px-5 py-3 flex flex-wrap items-center justify-between gap-3" data-print-hide>
             <p className="font-body text-body-sm text-dust">
               <span className="text-amber font-semibold">7-day report</span> — extend this exact report to a full 30-day timeline at a loyalty price.
@@ -1612,7 +1621,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
 
         <div id="report-content">
           {/* Last-chance offer when a free reader signals they're leaving (preview only). */}
-          {isPreviewPlan && <ExitIntentUpsell unlockHref="/start" />}
+          {checkoutEnabled && isPreviewPlan && <ExitIntentUpsell unlockHref="/start" />}
 
           {/* Mobile section nav — sticky scroll-spy tabs (desktop uses ReportSidebar). */}
           <MobileSectionNav preview={isPreviewPlan} />
@@ -1656,18 +1665,18 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
               locked full answer (the conversion spine); paid shows the full answer.
               Renders nothing when there's no question on file. */}
           {personalBrief && <WhyHere text={why('answer')} />}
-          <ReportErrorBoundary fallbackTitle="Your question">
+          {(!isPreviewPlan || checkoutEnabled) && <ReportErrorBoundary fallbackTitle="Your question">
             <PersonalizedAnswer
               reportId={reportIdFromRoute}
               isPreview={isPreviewPlan}
               unlockHref="/start"
             />
-          </ReportErrorBoundary>
+          </ReportErrorBoundary>}
 
           {/* Preview proof-of-value: their REAL next-30-day score curve (deterministic,
               no LLM cost) with the strongest/hardest dates named — and the reasons
               locked. Free previews otherwise carry a single day, which reads as empty. */}
-          {isPreviewPlan && (
+          {checkoutEnabled && isPreviewPlan && (
             <ReportErrorBoundary fallbackTitle="Your next 30 days">
               <PreviewValueStrip
                 reportId={reportIdFromRoute}
@@ -1700,6 +1709,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
               currentYearTheme={reportData?.nativity?.profile?.current_year_theme}
               lifeThemes={reportData?.nativity?.profile?.life_themes}
               preview={isPreviewPlan}
+              checkoutEnabled={checkoutEnabled}
             />
           </ReportErrorBoundary>
 
@@ -1721,7 +1731,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           {/* Mid-report upsell — shown to free/preview users right after the sample day,
               before the chart. At this point the user has seen the summary + 1 day and has
               activation energy. This is the highest-converting placement. */}
-          {isPreviewPlan && (
+          {checkoutEnabled && isPreviewPlan && (
             <div className="pdf-exclude my-10" data-print-hide>
               <div className="rounded-card border border-amber/40 bg-gradient-to-br from-amber/[0.08] via-cosmos to-cosmos p-6 sm:p-8 relative overflow-hidden">
                 <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-amber/15 blur-3xl" />
@@ -1863,7 +1873,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         </div>
 
         {/* In-report upsell — preview plan only; excluded from PDF */}
-        {isPreviewPlan && (
+        {checkoutEnabled && isPreviewPlan && (
           <div className="pdf-exclude mt-10" data-print-hide>
             <div className="rounded-card border border-amber/30 bg-gradient-to-br from-amber/[0.07] via-amber/[0.03] to-transparent p-6 sm:p-8">
               <p className="section-eyebrow mb-2">Ready for more precision?</p>

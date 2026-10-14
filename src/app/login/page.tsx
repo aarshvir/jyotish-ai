@@ -1,87 +1,32 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import Link from 'next/link';
-import LoginForm from './_LoginForm';
+import { AccountSignIn } from '@/components/help/AccountSignIn';
 
 export const metadata: Metadata = {
-  title: 'Sign In to VedicHour — Your Vedic Astrology Account',
-  description: 'Sign in to VedicHour to access your Vedic astrology reports, hour-by-hour forecasts, Kundli and matchmaking readings.',
+  title: 'Sign in to your account',
+  description: 'Sign in with your original email or Google account to retrieve existing reports and manage saved preferences.',
   robots: { index: false, follow: true },
 };
 
-/**
- * Visual shell for SSR / crawlers / the useSearchParams Suspense fallback.
- *
- * This is the FIRST HTML paint of /login. It must never be a submitting form
- * with named credential fields: a GET form whose password input is submitted
- * as a query parameter leaks the secret into history, Referer, and access logs
- * if the user or a password manager submits before LoginForm hydrates.
- */
+// The pre-hydration shell has no submitting form or credential inputs.
 function LoginShell() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-space via-cosmos to-space flex items-center justify-center p-6">
-      <div className="w-full max-w-[420px] bg-white/[0.03] border border-amber/15 rounded-2xl p-8 sm:p-10">
-        <div className="text-center mb-8">
-          <Link
-            href="/"
-            className="inline-block font-display font-semibold text-2xl tracking-[0.08em] text-amber rounded-sm"
-          >
-            VedicHour
-          </Link>
-          <p className="font-body text-sm text-dust mt-2">Sign in to your account</p>
-        </div>
-
-        <div>
-          <div className="mb-4">
-            <label htmlFor="shell-email" className="block font-body text-xs font-medium text-dust mb-1.5">
-              Email
-            </label>
-            <input
-              id="shell-email"
-              type="email"
-              placeholder="you@example.com"
-              autoComplete="off"
-              readOnly
-              className="w-full px-4 py-3 min-h-[48px] bg-white/[0.05] border border-white/10 rounded-lg font-body text-sm text-star placeholder:text-dust/40"
-            />
-          </div>
-          <div className="mb-4">
-            <label htmlFor="shell-password" className="block font-body text-xs font-medium text-dust mb-1.5">
-              Password
-            </label>
-            <input
-              id="shell-password"
-              type="password"
-              placeholder="Your password"
-              autoComplete="off"
-              readOnly
-              className="w-full px-4 py-3 min-h-[48px] bg-white/[0.05] border border-white/10 rounded-lg font-body text-sm text-star placeholder:text-dust/40"
-            />
-          </div>
-          <button
-            type="button"
-            disabled
-            className="mt-2 w-full py-3 min-h-[48px] bg-gradient-to-r from-amber to-amber/80 text-space font-body text-sm font-semibold rounded-lg disabled:opacity-60"
-          >
-            Sign In
-          </button>
-        </div>
-
-        <noscript>
-          <p className="mt-4 text-center font-body text-xs text-dust/60">
-            JavaScript is required for the full sign-in experience.{' '}
-            <a href="/login" className="text-amber">Reload the page</a> with JS enabled.
-          </p>
-        </noscript>
+  return <main id="main-content" className="flex min-h-screen items-center justify-center bg-space px-5 py-10 font-body text-star">
+    <div className="w-full max-w-md">
+      <Link href="/" className="font-display text-3xl font-semibold text-star">VedicHour</Link>
+      <h1 className="mt-6 text-2xl font-semibold">Sign in to your account</h1>
+      <p className="mt-2 text-sm leading-relaxed text-dust">Use the same email or Google account to find your existing reports.</p>
+      <p role="status" className="mt-6 text-sm text-dust">Loading secure sign-in...</p>
+      <noscript><p className="mt-4 text-sm text-dust">JavaScript is needed for secure sign-in. Enable it and reload this page.</p></noscript>
+      <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2 border-t border-horizon pt-4 text-sm">
+        <Link href="/help/sign-in" className="py-2 text-amber">Sign-in help</Link>
+        <Link href="/free-kundli" className="py-2 text-amber">Free chart without sign-in</Link>
+        <Link href="/sample-report" className="py-2 text-amber">Example reading</Link>
       </div>
     </div>
-  );
+  </main>;
 }
 
 export default function LoginPage() {
-  return (
-    <Suspense fallback={<LoginShell />}>
-      <LoginForm />
-    </Suspense>
-  );
+  return <Suspense fallback={<LoginShell />}><AccountSignIn /></Suspense>;
 }

@@ -4,8 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/api/rateLimit';
 import { createServiceClient } from '@/lib/supabase/admin';
-import { hasValidBirthCoords } from '@/lib/utils/coords';
-import type { NatalChartData } from '@/lib/agents/types';
+import { validateBirth } from '@/lib/tools/birth';
+import { calculateNatal } from '@/lib/ephemeris/calculateNatal';
 import { computeAshtakoot, nakshatraNameToIndex } from '@/lib/synastry/ashtakoot';
 import { buildSynastryCommentary } from '@/lib/synastry/synastryCommentary';
 
@@ -83,40 +83,21 @@ export async function POST(request: NextRequest) {
     partner_a?: BirthPayload;
     partner_b?: BirthPayload;
   };
-  const a = body.partnerA ?? body.partner_a;
-  const b = body.partnerB ?? body.partner_b;
-  if (!a?.birth_date || !b?.birth_date || !hasValidBirthCoords(a) || !hasValidBirthCoords(b)) {
-    return NextResponse.json({ error: 'partnerA and partnerB birth data required' }, { status: 400 });
+  const rawA = body?.partnerA ?? body?.partner_a;
+  const rawB = body?.partnerB ?? body?.partner_b;
+  const validA = validateBirth(rawA);
+  const validB = validateBirth(rawB);
+  if (!validA.ok || !validB.ok) {
+    const issue = !validA.ok ? validA : !validB.ok ? validB : null;
+    return NextResponse.json({ error: issue?.message, code: issue?.code }, { status: 400 });
   }
+  const a = { ...validA.person, name: typeof rawA?.name === 'string' ? rawA.name.slice(0, 100) : undefined };
+  const b = { ...validB.person, name: typeof rawB?.name === 'string' ? rawB.name.slice(0, 100) : undefined };
 
-  const origin = request.nextUrl.origin;
-  const h = {
-    'Content-Type': 'application/json',
-    'x-service-key': process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
-  };
-
-  async function chart(p: BirthPayload): Promise<NatalChartData | null> {
-    const res = await fetch(`${origin}/api/agents/ephemeris`, {
-      method: 'POST',
-      headers: h,
-      body: JSON.stringify({
-        type: 'natal-chart',
-        birth_date: p.birth_date,
-        birth_time: p.birth_time || '12:00:00',
-        birth_city: p.birth_city || 'Unknown',
-        birth_lat: p.birth_lat,
-        birth_lng: p.birth_lng,
-      }),
-    });
-    if (!res.ok) return null;
-    // Guard the parse: a 200 with a non-JSON body (HTML error page / truncated response)
-    // would otherwise reject unhandled → framework 500. Null flows into the 502 below.
-    const j = await res.json().catch(() => null);
-    if (!j) return null;
-    return (j.data ?? j) as NatalChartData;
-  }
-
-  const [chartA, chartB] = await Promise.all([chart(a), chart(b)]);
+  const [chartA, chartB] = await Promise.all([
+    calculateNatal(a, request.signal).catch(() => null),
+    calculateNatal(b, request.signal).catch(() => null),
+  ]);
   if (!chartA || !chartB) {
     return NextResponse.json({ error: 'Birth chart calculation failed' }, { status: 502 });
   }

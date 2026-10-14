@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { Compass } from 'lucide-react';
 import Footer from '@/components/shared/Footer';
 import { JsonLd } from '@/components/seo/JsonLd';
 import { PersonalBrief } from '@/components/report/PersonalBrief';
@@ -525,7 +526,7 @@ export default function SampleReportPage() {
       {/* ── NIGHT cover ──────────────────────────────────────────────── */}
       <header
         className="relative px-4 pb-16 pt-6 sm:px-6 sm:pb-20 sm:pt-8"
-        style={{ background: 'radial-gradient(120% 90% at 50% -10%, #2A1C42 0%, #120C1E 55%, #0A0713 100%)' }}
+        style={{ background: 'var(--color-bg)' }}
       >
         <div className="mx-auto w-full max-w-2xl">
           <Link
@@ -533,15 +534,11 @@ export default function SampleReportPage() {
             className="inline-flex items-center gap-2.5 rounded-button focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
             aria-label="VedicHour home"
           >
-            <svg width="24" height="24" viewBox="0 0 28 28" fill="none" className="shrink-0 text-amber" aria-hidden>
-              <circle cx="14" cy="14" r="13" stroke="currentColor" strokeWidth="1" opacity="0.5" />
-              <circle cx="14" cy="14" r="9" stroke="currentColor" strokeWidth="0.8" opacity="0.7" />
-              <circle cx="14" cy="14" r="3" fill="currentColor" />
-            </svg>
+            <Compass size={24} className="shrink-0 text-amber" aria-hidden />
             <span className="font-display text-lg font-semibold tracking-wide text-star">VedicHour</span>
           </Link>
 
-          <p className="mt-9 font-body text-body-md text-indigo">Sample report · an invented reader, a real chart</p>
+          <p className="mt-9 font-body text-body-md text-amber">Example reading · a fictional reader, a calculated chart</p>
           <h1 className="mt-2 font-display text-display-md text-star">{READER_NAME}&apos;s next 30 days</h1>
           <p className="mt-4 font-body text-body-lg leading-relaxed text-dust-light">
             One finished forecast, as a member reads it. {READER_NAME} is made up. Her chart is a real calculation, and every score,
@@ -566,7 +563,7 @@ export default function SampleReportPage() {
       </header>
 
       {/* ── PAPER reading canvas ─────────────────────────────────────── */}
-      <main id="main-content" className="-mt-6 flex-1 rounded-[24px] bg-parchment px-4 pb-14 pt-8 sm:px-6 sm:pt-10">
+      <main id="main-content" className="flex-1 bg-parchment px-4 pb-14 pt-8 sm:px-6 sm:pt-10">
         <div className="mx-auto w-full max-w-2xl">
           <ChapterSection />
           {SECTION_ORDER.map((k) => {
@@ -580,21 +577,21 @@ export default function SampleReportPage() {
       {/* ── NIGHT close + CTA ────────────────────────────────────────── */}
       <section
         className="px-4 py-14 sm:px-6 sm:py-16"
-        style={{ background: 'radial-gradient(110% 100% at 50% 110%, #2A1C42 0%, #120C1E 60%, #0A0713 100%)' }}
+        style={{ background: 'var(--color-bg)' }}
       >
         <div className="mx-auto w-full max-w-2xl text-center">
-          <h2 className="font-display text-display-md text-star">Now do this for your own month</h2>
+          <h2 className="font-display text-display-md text-star">Start with your own birth chart</h2>
           <p className="mx-auto mt-3 max-w-md font-body text-body-lg leading-relaxed text-dust-light">
-            Your birth details, your city, your question. The chart is free and takes about a minute.
+            Enter your birth date, known time and city to see your chart facts. A personal hourly forecast is separate from this free calculation.
           </p>
           <div className="mt-7 flex flex-col items-center gap-3">
             {/* Primary CTA is the same free path the navbar uses (UNLOCK_FREE_HREF).
                 /free-kundli is an SEO landing page, not the entry to the flow. */}
             <Link href={UNLOCK_FREE_HREF} className="btn-primary min-h-[3rem] w-full max-w-xs text-base">
-              See your own day — free
+              Calculate my free chart
             </Link>
             <Link href="/pricing" className="btn-secondary min-h-[3rem] w-full max-w-xs">
-              Compare full reports
+              Free tools and availability
             </Link>
           </div>
           <p className="mt-6 font-body text-body-md text-dust">No card needed for the free chart.</p>

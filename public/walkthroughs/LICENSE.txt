@@ -1,0 +1,15 @@
+Free Chart Walkthrough Media
+
+The newly authored continuous screen recordings, extracted poster/verification
+frames, English captions and transcript in this directory are licensed under
+Creative Commons Attribution 4.0 International (CC BY 4.0).
+
+Attribution: VedicHour free-chart walkthrough, created for the project owner.
+License text: https://creativecommons.org/licenses/by/4.0/
+
+Underlying application trademarks, fonts and other pre-existing intellectual
+property remain with their respective owners. This license does not imply
+endorsement or replace licenses for the underlying application source.
+
+No third-party stock footage, music, presenter footage, generated actor,
+synthetic voice or avatar is included. The example birth details are fictional.

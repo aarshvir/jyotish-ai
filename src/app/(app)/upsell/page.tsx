@@ -9,6 +9,7 @@ import { headers, cookies } from 'next/headers';
 import { currencyForRequest } from '@/lib/pricing';
 import { getMonthlyUpgradeAmount, formatAmount } from '@/lib/ziina/server';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
+import { isCommercialCheckoutEnabled } from '@/lib/commercial/availability';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export default async function UpsellPage({ searchParams }: Props) {
+  if (!isCommercialCheckoutEnabled()) redirect('/dashboard');
   const reportId = searchParams.reportId?.trim();
   if (!reportId) {
     redirect('/dashboard');

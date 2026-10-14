@@ -1,234 +1,97 @@
 import { headers, cookies } from 'next/headers';
 import Link from 'next/link';
+import { ArrowRight, ArrowUpRight, Check, CirclePause, BookOpen, UserRound } from 'lucide-react';
 import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
-import { currencyForRequest, getDisplayPrice, PLAN_CARDS, STANDALONE_PRODUCTS } from '@/lib/pricing';
+import { commercialAvailability } from '@/lib/commercial/availability';
+import { currencyForRequest, getDisplayPrice, PLAN_CARDS } from '@/lib/pricing';
 import { getPlanAmount } from '@/lib/ziina/server';
-import { ShieldCheckIcon } from '@/components/ui/ShieldCheckIcon';
+import { FREE_CHART_FEATURES, FREE_CHART_HREF } from '@/lib/landingCopy';
+
+// Availability must be evaluated at request time, not frozen into a static sales page.
+export const dynamic = 'force-dynamic';
 
 export default async function PricingPage() {
-  const h = await headers();
-  const cookieStore = await cookies();
-  const currency = currencyForRequest(cookieStore.get('vh_currency')?.value, h.get('x-vercel-ip-country'));
-
-  const rawUrl = process.env.NEXT_PUBLIC_URL ?? '';
-  const SITE_URL = (rawUrl.startsWith('http://localhost') || rawUrl === '' ? 'https://www.vedichour.com' : rawUrl).replace(
-    /\/+$/,
-    '',
-  );
-
-  // Rendered from the same table checkout charges from, so the shown price is the charged price.
-  const plans = PLAN_CARDS.map((p) => ({
-    ...p,
-    price: p.id === 'free' ? 'Free' : getDisplayPrice(p.id, currency),
-    priceNote: p.id === 'free' ? 'No sign-up, no card' : `${p.id === 'sub_annual' ? 'Per year' : 'Per month'} · ${currency}`,
-  }));
-
-  const usd = (planId: string) => (getPlanAmount(planId, 'USD') / 100).toFixed(2);
+  const availability = commercialAvailability();
+  const requestHeaders = headers();
+  const cookieStore = cookies();
+  const currency = currencyForRequest(cookieStore.get('vh_currency')?.value, requestHeaders.get('x-vercel-ip-country'));
+  const paidPlans = availability.checkoutEnabled ? PLAN_CARDS.filter((plan) => plan.id !== 'free') : [];
+  const rawUrl = (process.env.NEXT_PUBLIC_URL ?? '').trim();
+  const siteUrl = (!rawUrl || rawUrl.startsWith('http://localhost') ? 'https://www.vedichour.com' : rawUrl).replace(/\/+$/, '');
 
   return (
-    <div className="min-h-screen bg-space text-star">
+    <div className="public-experience">
       <Navbar />
-
-      {/* Hero */}
-      <section className="text-center px-5 sm:px-8 pt-28 sm:pt-32 pb-10 sm:pb-14">
-        <p className="section-eyebrow mb-3">Free calculators · one subscription</p>
-        <h1 className="font-body font-semibold text-display-lg mb-4">Your timing, planned every month.</h1>
-        <p className="font-body text-body-lg text-dust max-w-lg mx-auto leading-relaxed">
-          The calculators are free, with no sign-up. Your hour-by-hour forecast, written around what you tell us in a
-          short quiz, comes with a subscription.
-        </p>
-        <p className="mt-4 font-body text-body-sm text-dust">
-          Prices shown in {currency}. Nothing is charged automatically — you renew each period with one tap.
-        </p>
-      </section>
-
-      {/* Deeper readings, included */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-8 pb-6">
-        <div className="grid sm:grid-cols-2 gap-5">
-          {STANDALONE_PRODUCTS.map((p) => (
-            <Link
-              key={p.id}
-              href={p.href}
-              className="group rounded-card border border-horizon/50 hover:border-amber/50 bg-cosmos p-6 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-2 gap-3">
-                <h3 className="font-display text-headline-md text-star">{p.name}</h3>
-                <span className="font-body text-body-sm text-amber shrink-0">Included</span>
+      <main id="main-content">
+        <header className="public-pricing-intro public-container">
+          <p className="public-kicker">Pricing and availability</p>
+          <h1>Start free with VedicHour.</h1>
+          <p className="public-body mt-4 max-w-xl">The birth chart calculators are available now. Written readings and personalized hourly forecasts are separate from the free chart.</p>
+        </header>
+        <section className="public-band pt-0" aria-labelledby="free-plan-heading">
+          <div className="public-container public-pricing-grid">
+            <div className="public-free-plan">
+              <div className="public-section-heading mb-5">
+                <div><p className="public-kicker">Available now</p><h2 id="free-plan-heading">Free chart facts</h2></div>
+                <span className="public-free-price">Free</span>
               </div>
-              <p className="font-body text-body-sm text-dust leading-relaxed mb-3">{p.description}</p>
-              <span className="font-body text-body-sm text-amber group-hover:underline">{p.cta}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Plans */}
-      <section className="max-w-5xl mx-auto px-5 sm:px-8 pb-14 sm:pb-18">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`relative flex flex-col rounded-card p-6 sm:p-7 ${
-                plan.featured ? 'bg-amber/[0.06] border-2 border-amber shadow-glow-amber' : 'card'
-              }`}
-            >
-              {plan.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-pill text-label-sm font-body font-medium whitespace-nowrap bg-amber text-space">
-                  {plan.badge}
-                </div>
-              )}
-
-              <div className="mb-5">
-                <h2 className={`font-body text-headline-sm mb-1.5 ${plan.featured ? 'text-amber' : 'text-star'}`}>
-                  {plan.name}
-                </h2>
-                <p className="font-body text-body-sm text-dust mb-3 leading-relaxed">{plan.description}</p>
-                <span
-                  className={`text-3xl font-bold font-body tabular-nums ${plan.price === 'Free' ? 'text-success' : 'text-star'}`}
-                >
-                  {plan.price}
-                </span>
-                <p className="font-body text-body-sm text-dust mt-1">{plan.priceNote}</p>
+              <p className="public-body">A factual starting point for exploring your Vedic birth chart.</p>
+              <ul className="public-feature-list">{FREE_CHART_FEATURES.map((feature) => <li key={feature}><Check size={18} aria-hidden="true" className="shrink-0" /><span>{feature}</span></li>)}</ul>
+              <Link href={FREE_CHART_HREF} className="public-button public-button-primary">Create my free chart <ArrowRight size={18} aria-hidden="true" /></Link>
+              <p className="public-meta mt-4">No personalized hourly forecast or written reading is included.</p>
+            </div>
+            <div className="public-availability" data-commercial-status={availability.status}>
+              {availability.checkoutEnabled ? <Check size={25} aria-hidden="true" /> : <CirclePause size={25} aria-hidden="true" />}
+              <h2 className="mt-4">{availability.checkoutEnabled ? 'Written readings are available.' : 'New paid readings are unavailable.'}</h2>
+              <p className="public-body mt-3">{availability.message}</p>
+              {!availability.checkoutEnabled && <p className="public-body mt-3">There is no new purchase to make here. Explore a calculated example or return to reports you already have.</p>}
+              <div className="flex flex-col items-start gap-4 mt-6">
+                <Link href="/sample-report" className="public-text-link"><BookOpen size={17} aria-hidden="true" /> Read the example</Link>
+                <Link href="/dashboard" className="public-text-link"><UserRound size={17} aria-hidden="true" /> Open your reports</Link>
               </div>
-
-              <ul className="list-none p-0 mb-6 flex-1 space-y-0" role="list">
-                {plan.features.map((feature) => (
-                  <li
-                    key={feature}
-                    className="flex items-start gap-2.5 py-2 border-b border-horizon/30 text-body-sm text-dust leading-snug"
-                  >
-                    <span className="text-amber shrink-0 mt-0.5">✦</span>
-                    {feature}
-                  </li>
+            </div>
+          </div>
+        </section>
+        {availability.checkoutEnabled && (
+          <section className="public-band" aria-labelledby="paid-plans-heading">
+            <div className="public-container">
+              <div className="public-section-heading">
+                <div><p className="public-kicker">Written readings</p><h2 id="paid-plans-heading">Monthly or yearly</h2></div>
+                <p className="public-meta">Prices in {currency}. Review the total before payment.</p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-5">
+                {paidPlans.map((plan) => (
+                  <article key={plan.id} className="public-paid-plan">
+                    <h3>{plan.name}</h3>
+                    <p className="public-body mt-2">{plan.description}</p>
+                    <p className="public-plan-price mt-5">{getDisplayPrice(plan.id, currency)} <span>per {plan.id === 'sub_annual' ? 'year' : 'month'}</span></p>
+                    <ul className="public-feature-list">{plan.features.map((feature) => <li key={feature}><Check size={17} aria-hidden="true" className="shrink-0" /><span>{feature}</span></li>)}</ul>
+                    <Link href={plan.href} className="public-button public-button-secondary">{plan.cta}<ArrowRight size={17} aria-hidden="true" /></Link>
+                  </article>
                 ))}
-              </ul>
-
-              {plan.id !== 'free' && (
-                <div className="flex items-center gap-2 mb-3 text-sm text-success/80">
-                  <ShieldCheckIcon className="h-4 w-4 shrink-0" />
-                  <Link href="/refund" className="hover:underline font-body text-body-sm">
-                    24-hour money-back guarantee
-                  </Link>
-                </div>
-              )}
-
-              <Link
-                href={plan.href}
-                className={`text-center min-h-[48px] rounded-button text-body-sm font-medium transition-all ${
-                  plan.featured
-                    ? 'btn-primary w-full justify-center'
-                    : plan.id === 'free'
-                      ? 'btn-secondary w-full justify-center text-success border-success/30 hover:bg-success/5'
-                      : 'btn-secondary w-full justify-center'
-                }`}
-              >
-                {plan.cta}
-              </Link>
+              </div>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Methodology / Trust */}
-      <section className="max-w-4xl mx-auto px-5 sm:px-8 pb-14">
-        <div className="card p-7 md:p-9">
-          <h2 className="font-body text-headline-md text-star mb-4">Our Methodology</h2>
-          <div className="prose-reading text-body-md text-dust space-y-3">
-            <p>
-              VedicHour calculates every chart from real astronomical data — the same math a careful astrologer uses.
-              Positions are measured the traditional Indian way, from where the stars actually sit in the sky, and
-              life-period timing comes from your Vimshottari dasha.
-            </p>
-            <p>
-              Each hourly window is scored by combining hora rulers, choghadiya quality, transit lagna, and your natal
-              chart&apos;s functional benefic/malefic relationships. AI interpretation layers narrative and
-              recommendations on top of the mathematical framework.
-            </p>
-            <p>
-              This is a structured analytical tool based on classical Vedic principles. Results should inform — not
-              replace — your own judgment.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Support/Refund */}
-      <section className="max-w-4xl mx-auto px-5 sm:px-8 pb-14">
-        <div className="grid sm:grid-cols-3 gap-4">
-          <div className="card p-5 text-center">
-            <div className="flex justify-center mb-3">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-amber" aria-hidden>
-                <path
-                  d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+              '@context': 'https://schema.org', '@type': 'Product', name: 'VedicHour written readings', url: `${siteUrl}/pricing`,
+              offers: paidPlans.map((plan) => ({
+                '@type': 'Offer', name: plan.name, price: (getPlanAmount(plan.id, 'USD') / 100).toFixed(2),
+                priceCurrency: 'USD', availability: 'https://schema.org/InStock', url: `${siteUrl}${plan.href}`,
+              })),
+            }) }} />
+          </section>
+        )}
+        <section className="public-band public-method" aria-labelledby="pricing-help-heading">
+          <div className="public-container">
+            <h2 id="pricing-help-heading">Understand before you decide.</h2>
+            <div className="grid sm:grid-cols-3 gap-8 mt-6">
+              <div><h3>Method and limits</h3><p className="public-body mt-2">Calculated positions are distinct from written interpretation. Astrology is not a guarantee of outcomes.</p><Link href="/methodology" className="public-text-link mt-4">Read the method <ArrowUpRight size={16} aria-hidden="true" /></Link></div>
+              <div><h3>Existing reports</h3><p className="public-body mt-2">Use the account that owns your report. New checkout availability does not remove reports already in your account.</p><Link href="/dashboard" className="public-text-link mt-4">Your reports <ArrowUpRight size={16} aria-hidden="true" /></Link></div>
+              <div><h3>Account or billing help</h3><p className="public-body mt-2">Find help with account access, existing purchases and the published refund policy.</p><Link href="/help" className="public-text-link mt-4">Get help <ArrowUpRight size={16} aria-hidden="true" /></Link></div>
             </div>
-            <h3 className="font-body text-title-md text-star mb-1">24-Hour Refund</h3>
-            <p className="text-body-sm text-dust">Full refund within 24 hours. No questions asked.</p>
-            <Link href="/refund" className="font-body text-body-sm text-amber mt-2 inline-block hover:underline">
-              Refund policy →
-            </Link>
           </div>
-          <div className="card p-5 text-center">
-            <div className="flex justify-center mb-3">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-amber" aria-hidden>
-                <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
-                <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="2" />
-              </svg>
-            </div>
-            <h3 className="font-body text-title-md text-star mb-1">Privacy First</h3>
-            <p className="text-body-sm text-dust">Birth data encrypted. Never sold. Never shared.</p>
-            <Link href="/privacy" className="font-body text-body-sm text-amber mt-2 inline-block hover:underline">
-              Privacy policy →
-            </Link>
-          </div>
-          <div className="card p-5 text-center">
-            <div className="flex justify-center mb-3">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" className="text-amber" aria-hidden>
-                <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" strokeWidth="2" />
-                <path d="M2 8l10 7 10-7" stroke="currentColor" strokeWidth="2" />
-              </svg>
-            </div>
-            <h3 className="font-body text-title-md text-star mb-1">Support</h3>
-            <p className="text-body-sm text-dust">Questions? Reach us anytime.</p>
-            <span className="font-body text-body-sm text-amber mt-2 inline-block">support@vedichour.com</span>
-          </div>
-        </div>
-      </section>
-
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            '@context': 'https://schema.org',
-            '@type': 'Product',
-            name: 'VedicHour Subscription',
-            url: `${SITE_URL}/pricing`,
-            offers: [
-              {
-                '@type': 'Offer',
-                name: 'Monthly',
-                price: usd('sub_monthly'),
-                priceCurrency: 'USD',
-                availability: 'https://schema.org/InStock',
-              },
-              {
-                '@type': 'Offer',
-                name: 'Yearly',
-                price: usd('sub_annual'),
-                priceCurrency: 'USD',
-                availability: 'https://schema.org/InStock',
-              },
-            ],
-          }),
-        }}
-      />
-
+        </section>
+      </main>
       <Footer />
     </div>
   );

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NowResponse } from '@/lib/api/nowTypes';
+import Link from 'next/link';
+import { RefreshCw } from 'lucide-react';
 
 interface RightNowCardProps {
   className?: string;
@@ -70,11 +72,16 @@ export function RightNowCard({ className = '' }: RightNowCardProps) {
   const load = useCallback(async (isManual: boolean) => {
     if (isManual) setRefreshing(true);
     else if (!fetchStartedOnce.current) setLoading(true);
-    const r = await fetchNow();
-    applyResult(r);
-    fetchStartedOnce.current = true;
-    setLoading(false);
-    setRefreshing(false);
+    try {
+      const r = await fetchNow();
+      applyResult(r);
+    } catch {
+      setFatalMessage('Could not load the score. Check your connection and retry; your saved reports were not changed.');
+    } finally {
+      fetchStartedOnce.current = true;
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [applyResult]);
 
   useEffect(() => { void load(false); }, [load]);
@@ -113,6 +120,8 @@ export function RightNowCard({ className = '' }: RightNowCardProps) {
       <div className={`w-full max-w-xl mx-auto card p-5 sm:p-6 text-dust text-body-sm ${className}`}>
         <p className="section-eyebrow mb-2">Right now</p>
         <p>{fatalMessage}</p>
+        <button type="button" disabled={refreshing} onClick={() => void load(true)} className="mt-3 inline-flex min-h-11 items-center gap-2 text-amber"><RefreshCw aria-hidden="true" className="h-4 w-4" />{refreshing ? 'Checking...' : 'Retry score'}</button>
+        <Link href="/help/troubleshooting" className="ml-4 inline-flex min-h-11 items-center text-amber">Help</Link>
       </div>
     );
   }
@@ -152,11 +161,12 @@ export function RightNowCard({ className = '' }: RightNowCardProps) {
         <button
           type="button"
           aria-label="Refresh score"
+          title="Refresh score"
           onClick={() => void load(true)}
           disabled={refreshing}
           className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-button border border-horizon/60 bg-nebula/40 text-amber hover:bg-amber/10 transition-colors disabled:opacity-50 min-h-[44px] min-w-[44px]"
         >
-          <span className={refreshing ? 'animate-spin inline-block' : ''}>↻</span>
+          <RefreshCw aria-hidden="true" className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 

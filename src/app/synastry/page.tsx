@@ -4,6 +4,7 @@ import Navbar from '@/components/shared/Navbar';
 import Footer from '@/components/shared/Footer';
 import { StarField } from '@/components/ui/StarField';
 import { SynastryForm } from './SynastryForm';
+import { isCommercialCheckoutEnabled } from '@/lib/commercial/availability';
 import { JsonLd } from '@/components/seo/JsonLd';
 import SynastrySamplePreview from '@/components/landing/SynastrySamplePreview';
 import { SeoProse, FaqSection } from '@/components/seo/SeoSection';
@@ -47,17 +48,16 @@ export default function SynastryPage() {
       <StarField />
       <Navbar />
 
-      <main className="flex-1 max-w-5xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
+      <main id="main-content" className="flex-1 max-w-5xl mx-auto px-5 sm:px-8 py-16 sm:py-24 relative z-10 w-full">
         <div className="text-center mb-10">
           <p className="section-eyebrow mb-3">Kundli Matching · Gun Milan</p>
           <h1 className="text-display-md font-display text-star mb-4">
             Kundli Matching &amp; <span className="text-amber">Gun Milan</span> — Free Compatibility Check
           </h1>
           <p className="text-body-lg text-dust max-w-2xl mx-auto leading-relaxed">
-            Enter both birth details and get your <strong className="text-star">36-point compatibility score</strong> free,
-            with the full breakdown across eight areas of life — temperament, mindset, health, and more — for
-            subscribers. The classical Ashtakoot Gun Milan that Indian families have used for generations, computed
-            instantly.
+            Enter two birth dates, known times and confirmed cities to see a free traditional 36-point score.
+            It describes alignment within the Ashtakoot system, not whether a relationship will succeed.
+            New paid readings are currently unavailable; existing account access is preserved.
           </p>
           <div className="flex items-center justify-center gap-6 sm:gap-10 mt-7">
             {STEPS.map((s) => (
@@ -69,7 +69,7 @@ export default function SynastryPage() {
           </div>
         </div>
         <Suspense fallback={<p className="text-center text-dust">Loading form…</p>}>
-          <SynastryForm />
+          <SynastryForm checkoutEnabled={isCommercialCheckoutEnabled()} />
         </Suspense>
 
         <SynastrySamplePreview />

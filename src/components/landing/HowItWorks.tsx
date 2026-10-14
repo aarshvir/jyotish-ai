@@ -1,93 +1,17 @@
-const STEPS = [
-  {
-    number: '01',
-    title: 'Enter your birth details',
-    description: 'Provide your date, time, and place of birth. We locate your city automatically — no coordinates, no configuration. Takes about 30 seconds.',
-    icon: (
-      <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
-        <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="1" opacity="0.4" />
-        <circle cx="24" cy="24" r="13" stroke="currentColor" strokeWidth="0.8" opacity="0.6" />
-        <line x1="24" y1="4"  x2="24" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <line x1="24" y1="38" x2="24" y2="44" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <line x1="4"  y1="24" x2="10" y2="24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <line x1="38" y1="24" x2="44" y2="24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="24" cy="24" r="3" fill="currentColor" />
-      </svg>
-    ),
-  },
-  {
-    number: '02',
-    title: 'Classical Vedic calculation',
-    description: 'Your chart is worked out from real astronomical data — the same math a careful astrologer uses. Precise to the minute, from your actual birth moment, with no shortcuts or pre-baked tables.',
-    icon: (
-      <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
-        <circle cx="24" cy="24" r="5" fill="currentColor" opacity="0.9" />
-        <ellipse cx="24" cy="24" rx="20" ry="9" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
-        <ellipse cx="24" cy="24" rx="20" ry="9" stroke="currentColor" strokeWidth="0.8" opacity="0.5" transform="rotate(60 24 24)" />
-        <ellipse cx="24" cy="24" rx="20" ry="9" stroke="currentColor" strokeWidth="0.8" opacity="0.5" transform="rotate(120 24 24)" />
-        <circle cx="38" cy="18" r="2.5" fill="currentColor" opacity="0.7" />
-      </svg>
-    ),
-  },
-  {
-    number: '03',
-    title: 'Eighteen windows, in English',
-    description: 'Each hour of the day gets a score and a line you can actually use — take the call, send the note, or leave it. Your chart, translated into today.',
-    icon: (
-      <svg width="40" height="40" viewBox="0 0 48 48" fill="none" aria-hidden>
-        <rect x="6" y="30" width="8" height="12" rx="1" fill="currentColor" opacity="0.35" />
-        <rect x="20" y="20" width="8" height="22" rx="1" fill="currentColor" opacity="0.6" />
-        <rect x="34" y="12" width="8" height="30" rx="1" fill="currentColor" opacity="0.9" />
-        <circle cx="10" cy="24" r="2.5" fill="currentColor" opacity="0.5" />
-        <circle cx="24" cy="14" r="2.5" fill="currentColor" opacity="0.7" />
-        <circle cx="38" cy="6" r="2.5" fill="currentColor" />
-        <path d="M10 24 L24 14 L38 6" stroke="currentColor" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.4" />
-      </svg>
-    ),
-  },
-];
+import Link from 'next/link';
+import { ArrowUpRight, Calculator, BookOpen, Clock3 } from 'lucide-react';
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-24 md:py-28 bg-cosmos relative">
-      <div className="section-divider absolute top-0 left-0 right-0" />
-
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="section-header text-center">
-          <p className="section-eyebrow">The Process</p>
-          <h2 className="section-title text-display-md">
-            How your day gets scored
-          </h2>
-          <p className="section-subtitle text-body-lg mx-auto">
-            Birth details in. Hourly windows out. About a minute.
-          </p>
+    <section id="how-it-works" className="public-band public-method" aria-labelledby="method-heading">
+      <div className="public-container">
+        <div className="public-section-heading"><div><p className="public-kicker">Method and limits</p><h2 id="method-heading">Calculation is not interpretation.</h2></div></div>
+        <div className="grid md:grid-cols-2 gap-8 md:gap-14">
+          <div><Calculator size={22} aria-hidden="true" /><h3 className="mt-4">The free chart is calculated.</h3><p className="public-body mt-2">Birth details are used to calculate sidereal positions with Lahiri ayanamsa. Your rising sign, Moon sign, nakshatra and dasha are chart facts within that system, not AI-written predictions.</p></div>
+          <div><BookOpen size={22} aria-hidden="true" /><h3 className="mt-4">A reading adds an interpretation.</h3><p className="public-body mt-2">Vedic astrology is an interpretive tradition. Written readings, including generated commentary, can be mistaken. Use them for reflection, not as certainty or a substitute for professional advice.</p></div>
         </div>
-
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-6">
-          {STEPS.map((step) => (
-            <div
-              key={step.number}
-              className="group card-interactive p-7 md:p-8 relative overflow-hidden"
-            >
-              <div className="absolute top-0 left-0 right-0 h-[2px] bg-amber scale-x-0 group-hover:scale-x-100 transition-transform duration-350 origin-left rounded-t-card" />
-
-              <span className="font-mono text-mono-sm text-dust tracking-[0.15em] mb-5 block">
-                {step.number}
-              </span>
-
-              <div className="text-amber mb-5 transition-transform duration-250 group-hover:scale-105">
-                {step.icon}
-              </div>
-
-              <h3 className="font-body text-headline-sm text-star mb-2.5">
-                {step.title}
-              </h3>
-              <p className="font-body text-body-sm text-dust leading-relaxed">
-                {step.description}
-              </p>
-            </div>
-          ))}
-        </div>
+        <div className="public-time-note"><Clock3 size={20} aria-hidden="true" className="shrink-0 mt-0.5" /><p>Birth time matters, especially for the rising sign. If yours is uncertain, say so in the calculator; an assumed time is not an exact birth chart.</p></div>
+        <Link href="/methodology" className="public-text-link mt-5">Read the calculation method <ArrowUpRight size={16} aria-hidden="true" /></Link>
       </div>
     </section>
   );

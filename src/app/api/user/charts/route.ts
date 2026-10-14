@@ -21,69 +21,69 @@ export interface SynastryChartSummary {
 export interface UserChartsResponse {
   kundali: KundaliChartSummary[];
   synastry: SynastryChartSummary[];
+  unavailable: { kundali: boolean; synastry: boolean };
 }
 
-/**
- * GET /api/user/charts
- * Lists the authenticated user's saved standalone Kundali and Synastry charts,
- * newest-first. RLS on both tables (owner-only SELECT) scopes the rows — we use
- * the user's Supabase client, not service-role. Each table is queried
- * defensively so a missing table (not yet migrated) yields an empty array
- * rather than a 500.
- */
 export async function GET(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
+  const userId = auth.user.id;
+  const headers = { 'Cache-Control': 'no-store' };
+  const unavailable = { kundali: false, synastry: false };
+  let supabase: Awaited<ReturnType<typeof createClient>>;
+  try {
+    supabase = await createClient();
+  } catch {
+    return NextResponse.json({ kundali: [], synastry: [], unavailable: { kundali: true, synastry: true } } satisfies UserChartsResponse, { status: 503, headers });
+  }
 
-  const supabase = await createClient();
+  // Explicit owner filters complement RLS. Each collection can fail independently.
+  async function loadKundali(): Promise<KundaliChartSummary[]> {
+    try {
+      const { data, error } = await supabase
+        .from('kundali_charts')
+        .select('id, person, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []).map(row => {
+        const person = (row.person ?? {}) as { name?: unknown };
+        return { id: row.id as string, name: typeof person.name === 'string' && person.name.trim() ? person.name.trim() : 'Your Kundli', created_at: row.created_at as string };
+      });
+    } catch {
+      unavailable.kundali = true;
+      return [];
+    }
+  }
 
-  // kundali_charts: person JSONB has a `name` key (see /kundali/[id]/page.tsx).
-  const kundali: KundaliChartSummary[] = await supabase
-    .from('kundali_charts')
-    .select('id, person, created_at')
-    .order('created_at', { ascending: false })
-    .limit(50)
-    .then(({ data, error }) => {
-      if (error) {
-        console.warn('[/api/user/charts] kundali query failed:', error.message);
-        return [];
-      }
-      return (data ?? []).map((row) => {
-        const person = (row.person ?? {}) as { name?: string };
+  async function loadSynastry(): Promise<SynastryChartSummary[]> {
+    try {
+      const { data, error } = await supabase
+        .from('synastry_charts')
+        .select('id, partner_a, partner_b, ashtakoot, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []).map(row => {
+        const a = (row.partner_a ?? {}) as { name?: unknown };
+        const b = (row.partner_b ?? {}) as { name?: unknown };
+        const match = (row.ashtakoot ?? {}) as { total?: unknown };
         return {
           id: row.id as string,
-          name: person.name?.trim() || 'Your Kundli',
+          partnerA: typeof a.name === 'string' && a.name.trim() ? a.name.trim() : 'Partner A',
+          partnerB: typeof b.name === 'string' && b.name.trim() ? b.name.trim() : 'Partner B',
+          score: typeof match.total === 'number' && Number.isFinite(match.total) ? match.total : null,
           created_at: row.created_at as string,
         };
       });
-    }, () => []);
+    } catch {
+      unavailable.synastry = true;
+      return [];
+    }
+  }
 
-  // synastry_charts: partner_a/partner_b JSONB have `name`; ashtakoot JSONB has
-  // `total` (see /synastry/[id]/page.tsx).
-  const synastry: SynastryChartSummary[] = await supabase
-    .from('synastry_charts')
-    .select('id, partner_a, partner_b, ashtakoot, created_at')
-    .order('created_at', { ascending: false })
-    .limit(50)
-    .then(({ data, error }) => {
-      if (error) {
-        console.warn('[/api/user/charts] synastry query failed:', error.message);
-        return [];
-      }
-      return (data ?? []).map((row) => {
-        const a = (row.partner_a ?? {}) as { name?: string };
-        const b = (row.partner_b ?? {}) as { name?: string };
-        const ak = (row.ashtakoot ?? {}) as { total?: number };
-        return {
-          id: row.id as string,
-          partnerA: a.name?.trim() || 'Partner A',
-          partnerB: b.name?.trim() || 'Partner B',
-          score: typeof ak.total === 'number' ? ak.total : null,
-          created_at: row.created_at as string,
-        };
-      });
-    }, () => []);
-
-  const payload: UserChartsResponse = { kundali, synastry };
-  return NextResponse.json(payload);
+  const [kundali, synastry] = await Promise.all([loadKundali(), loadSynastry()]);
+  return NextResponse.json({ kundali, synastry, unavailable } satisfies UserChartsResponse, { headers });
 }

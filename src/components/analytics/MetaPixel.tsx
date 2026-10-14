@@ -1,56 +1,30 @@
-import Script from 'next/script';
-import { metaPixelId } from '@/lib/analytics/trackingIds';
+'use client';
 
-/**
- * Meta (Facebook) Pixel — powers ad-campaign conversion optimization + audiences.
- * Renders nothing unless NEXT_PUBLIC_META_PIXEL_ID is a valid pixel id, so it is safe on
- * every environment. Loaded afterInteractive so it never blocks first paint. CSP for
- * connect.facebook.net / www.facebook.com is in next.config.mjs.
- *
- * Beyond the automatic PageView, call `fbqTrack('Purchase', {...})` etc. from
- * client code at conversion moments — it no-ops when the pixel isn't loaded.
- */
-// Validated, not just read: production's value ended in a line break, which put a newline inside
-// the fbq('init', '…') string literal below — a syntax error that stopped the pixel initialising.
-const PIXEL_ID = metaPixelId(process.env.NEXT_PUBLIC_META_PIXEL_ID);
+import { useEffect } from 'react';
+import { registerAnalyticsCleanup } from '@/lib/analytics/consent';
 
-export function fbqTrack(event: string, params?: Record<string, unknown>) {
+type Pixel = ((...args: unknown[]) => void) & { queue?: unknown[] };
+
+export function disableMetaPixel() {
+  if (typeof window === 'undefined') return;
+  const pixel = (window as unknown as { fbq?: Pixel }).fbq;
   try {
-    const w = window as unknown as { fbq?: (...args: unknown[]) => void };
-    w.fbq?.('track', event, params);
-  } catch {
-    /* analytics must never break the page */
-  }
+    if (Array.isArray(pixel?.queue)) pixel.queue.length = 0;
+    if (typeof pixel === 'function') pixel('consent', 'revoke');
+  } catch { /* A legacy SDK must not break the preference controls. */ }
 }
 
+/** Compatibility helper: advertising capture remains disabled, even after usage opt-in. */
+export function fbqTrack(_event: string, _params?: Record<string, unknown>) {
+  void _event;
+  void _params;
+}
+
+/** No script or noscript image: the Pixel's automatic URL capture is not enabled in this release. */
 export function MetaPixel() {
-  if (!PIXEL_ID) return null;
-  return (
-    <>
-      <Script id="meta-pixel-init" strategy="afterInteractive">
-        {`
-          !function(f,b,e,v,n,t,s)
-          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-          n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t,s)}(window, document,'script',
-          'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', '${PIXEL_ID}');
-          fbq('track', 'PageView');
-        `}
-      </Script>
-      <noscript>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          height="1"
-          width="1"
-          style={{ display: 'none' }}
-          alt=""
-          src={`https://www.facebook.com/tr?id=${PIXEL_ID}&ev=PageView&noscript=1`}
-        />
-      </noscript>
-    </>
-  );
+  useEffect(() => {
+    disableMetaPixel();
+    return registerAnalyticsCleanup(disableMetaPixel);
+  }, []);
+  return null;
 }

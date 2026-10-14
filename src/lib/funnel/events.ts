@@ -1,6 +1,7 @@
 'use client';
 
 import { trackEvent } from '@/lib/analytics/client';
+import { fbqTrack } from '@/components/analytics/MetaPixel';
 import type { ClientEventName } from '@/lib/analytics/events';
 
 /**
@@ -26,10 +27,5 @@ export function funnelEvent(ctx: EventContext, name: ClientEventName, props: Rec
 }
 
 export function pixelEvent(ctx: EventContext, event: 'Lead' | 'CompleteRegistration' | 'InitiateCheckout', suffix: string, params: Record<string, unknown> = {}): void {
-  try {
-    const w = window as unknown as { fbq?: (...args: unknown[]) => void };
-    w.fbq?.('track', event, { content_name: ctx.slug, ...params }, { eventID: `${ctx.sessionId}:${suffix}` });
-  } catch {
-    /* analytics must never break the page */
-  }
+  fbqTrack(event, { content_name: ctx.slug, ...params, eventID: `${ctx.sessionId}:${suffix}` });
 }

@@ -3,13 +3,14 @@ export const maxDuration = 300;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
-import { hasValidBirthCoords } from '@/lib/utils/coords';
+import { validateBirth } from '@/lib/tools/birth';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/api/rateLimit';
 import { createServiceClient } from '@/lib/supabase/admin';
 import type { NatalChartData } from '@/lib/agents/types';
 import { plainify } from '@/lib/utils/plainify';
 import { buildDeepKundli } from '@/lib/kundli/deepKundli';
 import { buildKundliCommentary, type KundliSections } from '@/lib/kundli/kundliCommentary';
+import { calculateNatal } from '@/lib/ephemeris/calculateNatal';
 
 type BirthPayload = {
   name?: string;
@@ -64,58 +65,22 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => ({}))) as { person?: BirthPayload };
-  const p = body.person;
-  if (!p?.birth_date || !hasValidBirthCoords(p)) {
-    return NextResponse.json({ error: 'Birth date and a located birth city are required.' }, { status: 400 });
-  }
-
-  const origin = request.nextUrl.origin;
-  const h = {
-    'Content-Type': 'application/json',
-    'x-service-key': process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
-  };
+  const validated = validateBirth(body?.person);
+  if (!validated.ok) return NextResponse.json({ error: validated.message, code: validated.code }, { status: 400 });
+  const p = { ...validated.person, name: typeof body.person?.name === 'string' ? body.person.name.slice(0, 100) : undefined };
 
   // 1) Natal chart from the ephemeris service (deterministic, Swiss Ephemeris / Lahiri)
-  const chartRes = await fetch(`${origin}/api/agents/ephemeris`, {
-    method: 'POST',
-    headers: h,
-    body: JSON.stringify({
-      type: 'natal-chart',
-      birth_date: p.birth_date,
-      birth_time: p.birth_time || '12:00:00',
-      birth_city: p.birth_city || 'Unknown',
-      birth_lat: p.birth_lat,
-      birth_lng: p.birth_lng,
-    }),
-  });
-  if (!chartRes.ok) {
-    return NextResponse.json({ error: 'Birth chart calculation failed.' }, { status: 502 });
-  }
-  const chartJson = await chartRes.json();
-  const chart = (chartJson.data ?? chartJson) as NatalChartData;
+  let chart: NatalChartData;
+  try { chart = await calculateNatal(p, request.signal); }
+  catch { return NextResponse.json({ error: 'Birth chart calculation is temporarily unavailable. Try again.' }, { status: 503 }); }
 
   // 1b) Best-effort current Saturn sign for Sade Sati (date-only is sufficient for sidereal sign).
   let currentSaturnSign: string | undefined;
   try {
-    const today = new Date().toISOString().slice(0, 10);
-    const nowRes = await fetch(`${origin}/api/agents/ephemeris`, {
-      method: 'POST',
-      headers: h,
-      body: JSON.stringify({
-        type: 'natal-chart',
-        birth_date: today,
-        birth_time: '12:00:00',
-        birth_city: p.birth_city || 'Unknown',
-        birth_lat: p.birth_lat,
-        birth_lng: p.birth_lng,
-      }),
-      signal: AbortSignal.timeout(20_000),
-    });
-    if (nowRes.ok) {
-      const nowJson = await nowRes.json();
-      const nowChart = (nowJson.data ?? nowJson) as NatalChartData;
-      currentSaturnSign = nowChart.planets?.Saturn?.sign;
-    }
+    const utc = new Date().toISOString();
+    const now = await calculateNatal({ birth_date: utc.slice(0, 10), birth_time: utc.slice(11, 19),
+      birth_city: 'Reykjavik, Iceland', birth_lat: 64.1466, birth_lng: -21.9426 }, request.signal, 4_000);
+    currentSaturnSign = now.planets.Saturn?.sign;
   } catch {
     // Sade Sati will report "pending live transit" — non-fatal.
   }

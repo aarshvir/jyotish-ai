@@ -1,12 +1,19 @@
 /**
- * Plan wording for the homepage and its FAQ, built from the price book so it can never state a
- * price the checkout does not charge. Pure (no env, no network), so it is safe in Client Components.
- *
- * The homepage speaks about "one monthly or yearly subscription" and names the India prices,
- * because that is the audience this copy is written for. Other currencies are shown on /pricing.
+ * Public free-chart wording. Legacy price-book exports remain for compatibility,
+ * not as a readiness signal. Render any paid sales copy behind the server commercial gate.
  */
 import { subscriptionPrice } from '@/lib/priceBook';
 import { formatAmount } from '@/lib/ziina/amounts';
+
+export const FREE_CHART_HREF = '/free-kundli';
+export const FREE_CHART_DESCRIPTION =
+  'Explore your rising sign, Moon sign, birth star and dasha with a free Vedic birth chart.';
+export const FREE_CHART_FEATURES = [
+  'Rising sign (Lagna) and Moon sign (Rashi)',
+  'Birth star (Nakshatra) and pada',
+  'Current main period and sub-period (Dasha)',
+  'No sign-up or payment card',
+] as const;
 
 /** "₹999" */
 export const INDIA_MONTHLY = formatAmount(subscriptionPrice('sub_monthly', 'INR'), 'INR');

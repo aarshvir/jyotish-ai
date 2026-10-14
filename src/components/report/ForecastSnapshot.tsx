@@ -26,6 +26,7 @@ interface ForecastSnapshotProps {
   lifeThemes?: string[];
   /** Preview (free) shows a teaser version. */
   preview?: boolean;
+  checkoutEnabled?: boolean;
 }
 
 /** First 1–2 sentences of a paragraph, for a scannable thesis line. */
@@ -111,7 +112,7 @@ function constructedThesis(
   return parts.join(' ');
 }
 
-export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, lifeThemes, preview }: ForecastSnapshotProps) {
+export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, lifeThemes, preview, checkoutEnabled = false }: ForecastSnapshotProps) {
   const [showFull, setShowFull] = useState(false);
 
   const firstName = (name || 'Your').trim().split(/\s+/)[0] || 'Your';
@@ -224,7 +225,7 @@ export function ForecastSnapshot({ name, synthesis, months, currentYearTheme, li
 
         {/* PREVIEW: the year-ahead value, visible but locked — plus the way to buy.
             (Free readers previously saw a thesis line and NO purchase path here.) */}
-        {preview && (
+        {preview && checkoutEnabled && (
           <div className="rounded-md bg-space/50 border border-amber/25 p-5 mb-2">
             <div className="flex items-center gap-2 mb-3">
               <svg className="w-4 h-4 text-amber" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>

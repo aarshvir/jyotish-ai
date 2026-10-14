@@ -11,45 +11,42 @@ const config: Config = {
     extend: {
       /* ── Color System ──────────────────────────────────────────────── */
       colors: {
-        /* NIGHT canvas — the ritual frames (hero, report cover, chapter
-           dividers, generating screen). Deep plum-indigo replaces the old cold
-           navy (#080C18/#0D1426/#141C35), which read as a terminal. Names are
-           unchanged so every existing component re-skins with no churn.
-           See docs/DESIGN_SYSTEM.md. */
-        space:   '#0A0713',   // page void
-        cosmos:  '#120C1E',   // canvas
-        nebula:  '#1B1329',   // raised card
-        horizon: '#2A1E3D',   // hairline / border
+        // Keep legacy names stable for reports and account pages.
+        space:   '#171D1C',
+        cosmos:  '#202827',
+        nebula:  '#2A3432',
+        horizon: '#465552',
         // `bg-3` was referenced 34 times but never defined, so those surfaces
         // emitted NO background at all — the single biggest reason cards read
         // as floating text rather than cards.
-        'bg-3':  '#251A38',   // inset / chip / input well
-        'night-4': '#32234A', // overlay / sheet
+        'bg-3':  '#303D39',
+        'night-4': '#394944',
 
         // PAPER canvas — every surface a human reads or types on.
-        parchment:     '#FBF7F1',
-        'parchment-2': '#F4EDE3',
-        'parchment-3': '#EAE0D2',
-        'paper-line':  '#E6DBCB',
-        ink:           '#1E1726',
-        'ink-muted':   '#3B3247',
-        'ink-soft':    '#66596F',
-        'ink-faint':   '#857A8E',
+        parchment:     '#F7F9F8',
+        'parchment-2': '#EDF3F0',
+        'parchment-3': '#E1F1EB',
+        'paper-line':  '#CCD8D4',
+        ink:           '#202A29',
+        'ink-muted':   '#344B44',
+        'ink-soft':    '#526460',
+        'ink-faint':   '#62716C',
+        teal: { DEFAULT: '#245E54', pale: '#E1F1EB' },
 
         // Primary accent
         amber: {
-          DEFAULT: '#D4A853',
-          light:   '#E8C97A',
-          dark:    '#B8923E',
-          glow:    '#FCD34D',
-          muted:   'rgba(212, 168, 83, 0.12)',
+          DEFAULT: '#D7BA78',
+          light:   '#E8D4A5',
+          dark:    '#997536',
+          glow:    '#E8D4A5',
+          muted:   'rgba(215, 186, 120, 0.12)',
         },
 
         // Semantic: guidance / primary action
         guidance: {
-          DEFAULT: '#D4A853',
-          light:   '#E8C97A',
-          bg:      'rgba(212, 168, 83, 0.08)',
+          DEFAULT: '#D7BA78',
+          light:   '#E8D4A5',
+          bg:      'rgba(215, 186, 120, 0.08)',
         },
 
         // Semantic: success / favorable
@@ -75,19 +72,16 @@ const config: Config = {
           bg:      'rgba(199, 91, 58, 0.10)',
         },
 
-        // Text layers — warmed off-white replaces the blue-white #E8EAF0, and
-        // `dust` is lifted to a 4.6:1 floor (it was #8892A4, below AA on the
-        // new canvas and the cause of ~340 sub-AA text instances).
-        star:    '#F6EFE4',
-        dust:    '#9B8FA6',
-        'dust-light': '#C9BCCE',
+        star:    '#F4F7F5',
+        dust:    '#ADBDB8',
+        'dust-light': '#D0DDD7',
 
         // Secondary accent — breaks the amber monopoly so amber can mean
         // "the ONE next action" instead of "anything emphasised".
         indigo: {
-          DEFAULT: '#9AA0F2',
-          deep:    '#4A4FA8',
-          muted:   'rgba(154, 160, 242, 0.13)',
+          DEFAULT: '#9CCBC0',
+          deep:    '#245E54',
+          muted:   'rgba(156, 203, 192, 0.13)',
         },
 
         // Legacy compat
@@ -111,13 +105,13 @@ const config: Config = {
       },
       fontSize: {
         // Display: hero headlines, section openers (marketing only)
-        'display-xl': ['clamp(3rem, 7vw, 5.5rem)', { lineHeight: '1.05', letterSpacing: '-0.02em', fontWeight: '600' }],
-        'display-lg': ['clamp(2.25rem, 5vw, 3.75rem)', { lineHeight: '1.1', letterSpacing: '-0.015em', fontWeight: '600' }],
-        'display-md': ['clamp(1.75rem, 3.5vw, 2.5rem)', { lineHeight: '1.15', letterSpacing: '-0.01em', fontWeight: '600' }],
+        'display-xl': ['3rem', { lineHeight: '1.1', letterSpacing: '0', fontWeight: '600' }],
+        'display-lg': ['2.25rem', { lineHeight: '1.15', letterSpacing: '0', fontWeight: '600' }],
+        'display-md': ['1.75rem', { lineHeight: '1.25', letterSpacing: '0', fontWeight: '600' }],
 
         // Headline: section titles in product surfaces
-        'headline-lg': ['1.5rem', { lineHeight: '1.3', letterSpacing: '-0.01em', fontWeight: '600' }],
-        'headline-md': ['1.25rem', { lineHeight: '1.35', letterSpacing: '-0.005em', fontWeight: '600' }],
+        'headline-lg': ['1.5rem', { lineHeight: '1.3', letterSpacing: '0', fontWeight: '600' }],
+        'headline-md': ['1.25rem', { lineHeight: '1.35', letterSpacing: '0', fontWeight: '600' }],
         'headline-sm': ['1.125rem', { lineHeight: '1.4', fontWeight: '600' }],
 
         // Title: card titles, subsections
@@ -130,15 +124,16 @@ const config: Config = {
         'body-sm':  ['0.8125rem', { lineHeight: '1.55', fontWeight: '400' }],
 
         // Label: UI labels, meta, tags
-        'label-lg': ['0.8125rem', { lineHeight: '1.3', letterSpacing: '0.02em', fontWeight: '500' }],
-        'label-md': ['0.75rem', { lineHeight: '1.3', letterSpacing: '0.03em', fontWeight: '500' }],
-        'label-sm': ['0.6875rem', { lineHeight: '1.3', letterSpacing: '0.04em', fontWeight: '500' }],
+        'label-lg': ['0.8125rem', { lineHeight: '1.3', letterSpacing: '0', fontWeight: '500' }],
+        'label-md': ['0.75rem', { lineHeight: '1.3', letterSpacing: '0', fontWeight: '500' }],
+        'label-sm': ['0.6875rem', { lineHeight: '1.3', letterSpacing: '0', fontWeight: '500' }],
 
         // Mono: data, scores, timestamps
         'mono-lg': ['0.875rem', { lineHeight: '1.4', fontWeight: '400' }],
         'mono-md': ['0.75rem', { lineHeight: '1.4', fontWeight: '400' }],
         'mono-sm': ['0.6875rem', { lineHeight: '1.3', fontWeight: '400' }],
       },
+      letterSpacing: { tighter: '0', tight: '0', normal: '0', wide: '0', wider: '0', widest: '0' },
 
       /* ── Spacing ───────────────────────────────────────────────────── */
       spacing: {

@@ -9,6 +9,8 @@
 
 import Link from 'next/link';
 import { INDIA_MONTHLY, INDIA_YEARLY } from '@/lib/landingCopy';
+import { commercialAvailability } from '@/lib/commercial/availability';
+import FreeKundli from './FreeKundli';
 
 const PRODUCTS = [
   {
@@ -65,6 +67,7 @@ const PRODUCTS = [
 ] as const;
 
 export default function Products() {
+  if (!commercialAvailability().checkoutEnabled) return <FreeKundli />;
   return (
     <section aria-labelledby="products-heading" className="py-24 md:py-28 bg-space relative">
       <div className="section-divider absolute top-0 left-0 right-0" />

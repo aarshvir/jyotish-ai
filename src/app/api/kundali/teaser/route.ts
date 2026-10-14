@@ -2,8 +2,9 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import type { NatalChartData } from '@/lib/agents/types';
-import { hasValidBirthCoords } from '@/lib/utils/coords';
+import { validateBirth } from '@/lib/tools/birth';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
+import { calculateNatal } from '@/lib/ephemeris/calculateNatal';
 
 /**
  * PUBLIC, no-login Kundali teaser. Returns the headline chart FACTS for free
@@ -27,29 +28,13 @@ export async function POST(request: NextRequest) {
   }
 
   const body = (await request.json().catch(() => ({}))) as { person?: BirthPayload };
-  const p = body.person;
-  if (!p?.birth_date || !hasValidBirthCoords(p)) {
-    return NextResponse.json({ error: 'Birth date and a located city are required.' }, { status: 400 });
-  }
+  const validated = validateBirth(body?.person);
+  if (!validated.ok) return NextResponse.json({ error: validated.message, code: validated.code }, { status: 400 });
+  const p = validated.person;
 
-  const origin = request.nextUrl.origin;
-  const res = await fetch(`${origin}/api/agents/ephemeris`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-service-key': process.env.SUPABASE_SERVICE_ROLE_KEY ?? '' },
-    body: JSON.stringify({
-      type: 'natal-chart',
-      birth_date: p.birth_date,
-      birth_time: p.birth_time || '12:00:00',
-      birth_city: p.birth_city || 'Unknown',
-      birth_lat: p.birth_lat,
-      birth_lng: p.birth_lng,
-    }),
-  });
-  if (!res.ok) {
-    return NextResponse.json({ error: 'Birth chart calculation failed. Please try again.' }, { status: 502 });
-  }
-  const j = await res.json();
-  const chart = (j.data ?? j) as NatalChartData;
+  let chart: NatalChartData;
+  try { chart = await calculateNatal(p, request.signal); }
+  catch { return NextResponse.json({ error: 'Calculation is temporarily unavailable. Your inputs are unchanged; try again.' }, { status: 503 }); }
   const moon = chart.planets?.Moon;
 
   return NextResponse.json({
@@ -58,5 +43,5 @@ export async function POST(request: NextRequest) {
     moon_nakshatra: moon?.nakshatra ?? chart.moon_nakshatra ?? '',
     mahadasha: chart.current_dasha?.mahadasha ?? 'Unknown',
     antardasha: chart.current_dasha?.antardasha ?? 'Unknown',
-  });
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }

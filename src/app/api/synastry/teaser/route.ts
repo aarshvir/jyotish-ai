@@ -1,8 +1,8 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import type { NatalChartData } from '@/lib/agents/types';
-import { hasValidBirthCoords } from '@/lib/utils/coords';
+import { calculateNatal } from '@/lib/ephemeris/calculateNatal';
+import { validateBirth } from '@/lib/tools/birth';
 import { computeAshtakoot, nakshatraNameToIndex } from '@/lib/synastry/ashtakoot';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 
@@ -24,10 +24,10 @@ function signToIndex(sign: string): number {
 }
 
 function band(total: number): { label: string; tone: 'excellent' | 'good' | 'fair' | 'work' } {
-  if (total >= 28) return { label: 'Excellent match', tone: 'excellent' };
-  if (total >= 21) return { label: 'Strong match', tone: 'good' };
-  if (total >= 18) return { label: 'Workable match', tone: 'fair' };
-  return { label: 'Needs conscious effort', tone: 'work' };
+  if (total >= 28) return { label: 'High traditional alignment', tone: 'excellent' };
+  if (total >= 21) return { label: 'Moderate to high traditional alignment', tone: 'good' };
+  if (total >= 18) return { label: 'Moderate traditional alignment', tone: 'fair' };
+  return { label: 'Lower traditional alignment', tone: 'work' };
 }
 
 type BirthPayload = {
@@ -51,37 +51,19 @@ export async function POST(request: NextRequest) {
     partner_a?: BirthPayload;
     partner_b?: BirthPayload;
   };
-  const a = body.partnerA ?? body.partner_a;
-  const b = body.partnerB ?? body.partner_b;
-  if (!a?.birth_date || !b?.birth_date || !hasValidBirthCoords(a) || !hasValidBirthCoords(b)) {
-    return NextResponse.json({ error: 'Both birth dates and located cities are required.' }, { status: 400 });
+  const validA = validateBirth(body?.partnerA ?? body?.partner_a);
+  const validB = validateBirth(body?.partnerB ?? body?.partner_b);
+  if (!validA.ok || !validB.ok) {
+    const issue = !validA.ok ? validA : !validB.ok ? validB : null;
+    return NextResponse.json({ error: issue?.message, code: issue?.code }, { status: 400 });
   }
+  const a = validA.person;
+  const b = validB.person;
 
-  const origin = request.nextUrl.origin;
-  const h = {
-    'Content-Type': 'application/json',
-    'x-service-key': process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
-  };
-
-  async function chart(p: BirthPayload): Promise<NatalChartData | null> {
-    const res = await fetch(`${origin}/api/agents/ephemeris`, {
-      method: 'POST',
-      headers: h,
-      body: JSON.stringify({
-        type: 'natal-chart',
-        birth_date: p.birth_date,
-        birth_time: p.birth_time || '12:00:00',
-        birth_city: p.birth_city || 'Unknown',
-        birth_lat: p.birth_lat,
-        birth_lng: p.birth_lng,
-      }),
-    });
-    if (!res.ok) return null;
-    const j = await res.json();
-    return (j.data ?? j) as NatalChartData;
-  }
-
-  const [chartA, chartB] = await Promise.all([chart(a), chart(b)]);
+  const [chartA, chartB] = await Promise.all([
+    calculateNatal(a, request.signal).catch(() => null),
+    calculateNatal(b, request.signal).catch(() => null),
+  ]);
   if (!chartA || !chartB) {
     return NextResponse.json({ error: 'Birth chart calculation failed. Please try again.' }, { status: 502 });
   }
@@ -109,5 +91,5 @@ export async function POST(request: NextRequest) {
     total: ashtakoot.total,
     max: 36,
     ...band(ashtakoot.total),
-  });
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }

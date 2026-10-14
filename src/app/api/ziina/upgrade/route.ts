@@ -15,6 +15,7 @@ import {
 import { getReusablePendingZiinaIntent } from '@/lib/ziina/pendingIntentReuse';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
 import { emitUpsellEvent } from '@/lib/analytics/upsellEvents';
+import { commercialAvailability } from '@/lib/commercial/availability';
 
 /**
  * POST /api/ziina/upgrade
@@ -24,6 +25,11 @@ import { emitUpsellEvent } from '@/lib/analytics/upsellEvents';
 export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
+
+  const availability = commercialAvailability();
+  if (!availability.checkoutEnabled) {
+    return NextResponse.json({ error: availability.message, code: 'COMMERCIAL_UNAVAILABLE' }, { status: 503 });
+  }
 
   // Retired with the subscription pivot (owner, 2026-09-13: "all subscription-based, not
   // one-time"). This only ever extended a one-time 7-day report, and those are no longer

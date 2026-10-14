@@ -23,6 +23,7 @@ import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { isSubscriptionPlanType } from '@/lib/subscriptions/period';
 import { subscriptionTablesReady } from '@/lib/subscriptions/access';
 import { BLUEPRINT_PLANS, blueprintSalesOpen } from '@/lib/funnel/offer';
+import { commercialAvailability } from '@/lib/commercial/availability';
 
 /**
  * POST /api/ziina/create-intent
@@ -35,6 +36,11 @@ export async function POST(request: NextRequest) {
   const auth = await requireAuth(request);
   if (auth instanceof NextResponse) return auth;
   const user = auth.user;
+
+  const availability = commercialAvailability();
+  if (!availability.checkoutEnabled) {
+    return NextResponse.json({ error: availability.message, code: 'COMMERCIAL_UNAVAILABLE' }, { status: 503 });
+  }
 
   if (!isZiinaConfigured()) {
     return NextResponse.json({ error: 'Payment not configured' }, { status: 503 });

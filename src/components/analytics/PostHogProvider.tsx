@@ -1,174 +1,125 @@
 'use client';
 
-import { Suspense, useEffect } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import type { PostHog } from 'posthog-js';
+import { analyticsConsentGuard, analyticsRoute, clearOptionalAnalyticsStorage, hasAnalyticsConsent, publicAnalyticsPath, registerAnalyticsCleanup, safeAnalyticsProperties, sendOptionalAnalytics } from '@/lib/analytics/consent';
+import { useAnalyticsConsent } from '@/lib/analytics/useAnalyticsConsent';
 
-// Public, client-side project token (safe to ship). EU Cloud region.
-// Env vars override if you ever want to, but none are required.
-const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || 'phc_mwtEwkk3KoTfFuuqpKSUETY3tparzfMwX8LdBBhfuE9n';
+const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || '';
 const HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com';
+let instance: PostHog | null = null;
+let active = false;
+let sdkRequestController: AbortController | null = null;
 
-let initialized = false;
-// posthog-js is loaded lazily (dynamic import) so its ~62 kB stays out of the
-// initial root-layout bundle. Once init resolves, the instance is cached here
-// so PageviewTracker can capture without re-importing.
-let ph: PostHog | null = null;
-
-// --- First-party tracking → /api/track (powers the in-portal admin funnel + per-user journey) ---
-function sessionId(): string {
-  try {
-    let id = localStorage.getItem('vh_sid');
-    if (!id) { id = crypto.randomUUID(); localStorage.setItem('vh_sid', id); }
-    return id;
-  } catch { return 'anon'; }
-}
-function parseUtm(): Record<string, string> {
-  const u: Record<string, string> = {};
-  try {
-    const p = new URLSearchParams(window.location.search);
-    for (const k of ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']) {
-      const v = p.get(k);
-      if (v) u[k] = v;
-    }
-  } catch { /* ignore */ }
-  return u;
-}
-export function track(name: string, props: Record<string, unknown> = {}) {
-  try {
-    fetch('/api/track', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      keepalive: true,
-      body: JSON.stringify({
-        name,
-        path: window.location.pathname,
-        referrer: document.referrer || null,
-        utm: parseUtm(),
-        session_id: sessionId(),
-        props,
-      }),
-    }).catch(() => {});
-  } catch { /* analytics must never break the page */ }
+function publicLocation() {
+  if (typeof window === 'undefined' || window.location.search || window.location.hash) return null;
+  return publicAnalyticsPath(window.location.pathname);
 }
 
-/** Manual SPA pageview capture on route change (capture_pageview is disabled in init). */
-function PageviewTracker() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  useEffect(() => {
-    if (!pathname) return;
-    let url = window.location.origin + pathname;
-    const qs = searchParams?.toString();
-    if (qs) url += `?${qs}`;
-    // ph may not be loaded yet on the very first paint; skip the capture
-    // (the init effect fires the initial pageview once loaded). Always send
-    // the first-party page_view so the in-portal funnel never misses a route.
-    ph?.capture('$pageview', { $current_url: url });
-    track('page_view'); // first-party, for the in-portal funnel + journey
-  }, [pathname, searchParams]);
-  return null;
+const events = new Set([
+  'page_view', 'session_start', 'calculator_submitted', 'calculator_result', 'calculator_failed',
+  'result_shared', 'kundali_subscribe_cta', 'synastry_subscribe_cta', 'subscriber_next_forecast',
+  'paywall_view', 'quiz_step', 'quiz_signup_shown', 'quiz_signup_done', 'checkout_started',
+  'onboard_step', 'plan_selected', 'winback_resumed',
+]);
+
+export function track(name: string, properties: Record<string, unknown> = {}) {
+  if (!hasAnalyticsConsent() || !events.has(name)) return;
+  sendOptionalAnalytics('/api/track', {
+    name, path: analyticsRoute(window.location.pathname), props: safeAnalyticsProperties(properties),
+  });
+}
+
+export function stopPostHog() {
+  active = false;
+  sdkRequestController?.abort();
+  const sdk = instance ?? (typeof window !== 'undefined' ? (window as unknown as { posthog?: PostHog }).posthog : null);
+  try { sdk?.set_config({ cookieless_mode: undefined, autocapture: false, capture_pageleave: false, disable_session_recording: true }); } catch {}
+  try { sdk?.stopSessionRecording(); } catch {}
+  try { sdk?.opt_out_capturing(); } catch {}
+}
+
+function capturePageview() {
+  const route = publicLocation();
+  if (active && instance && hasAnalyticsConsent() && route) {
+    instance.capture('$pageview', { $current_url: window.location.origin + route, $pathname: route });
+  }
+}
+
+export async function initializePostHog(load: () => Promise<{ default: PostHog }> = () => import('posthog-js')) {
+  if (!KEY || !hasAnalyticsConsent() || !publicLocation()) return;
+  const current = analyticsConsentGuard();
+  try {
+    const requestOptions = () => {
+      sdkRequestController = new AbortController();
+      // The installed SDK passes fetch_options through as RequestInit; aborted generations cannot retry later.
+      return { cache: 'no-store' as const, signal: sdkRequestController.signal, referrerPolicy: 'no-referrer' as const, keepalive: false };
+    };
+    if (!instance) {
+      const { default: sdk } = await load();
+      if (!current() || !publicLocation()) return;
+      instance = sdk.init(KEY, {
+        api_host: HOST,
+        api_transport: 'fetch',
+        disable_beacon: true,
+        request_batching: false,
+        fetch_options: requestOptions(),
+        persistence: 'memory',
+        disable_persistence: true,
+        opt_out_capturing_by_default: true,
+        opt_out_persistence_by_default: true,
+        autocapture: false,
+        capture_pageview: false,
+        capture_pageleave: false,
+        capture_performance: false,
+        capture_exceptions: false,
+        disable_session_recording: true,
+        disable_surveys: true,
+        disable_external_dependency_loading: true,
+        advanced_disable_flags: true,
+        save_referrer: false,
+        save_campaign_params: false,
+        person_profiles: 'never',
+        before_send: event => {
+          const route = publicLocation();
+          if (!event || event.event !== '$pageview' || !active || !hasAnalyticsConsent() || !route) return null;
+          // Replace SDK-enriched properties instead of trying to blacklist every private URL field.
+          event.properties = {
+            token: KEY,
+            ...(typeof event.properties.distinct_id === 'string' && /^[a-f0-9-]{16,64}$/i.test(event.properties.distinct_id) ? { distinct_id: event.properties.distinct_id } : {}),
+            $current_url: window.location.origin + route,
+            $pathname: route,
+          };
+          return event;
+        },
+      }) ?? sdk;
+    } else instance.set_config({ fetch_options: requestOptions() });
+    if (!current() || !publicLocation()) { stopPostHog(); return; }
+    active = true;
+    instance.opt_in_capturing({ captureEventName: false });
+    if (!current()) { stopPostHog(); return; }
+    capturePageview();
+  } catch { stopPostHog(); }
 }
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const consent = useAnalyticsConsent();
   useEffect(() => {
-    if (initialized || !KEY) return;
-    initialized = true;
-
-    // One first-party "session_start" per browser-tab session → login/visit
-    // counting. Independent of posthog-js, so fire it immediately.
-    try {
-      if (!sessionStorage.getItem('vh_session_started')) {
-        sessionStorage.setItem('vh_session_started', '1');
-        track('session_start');
-      }
-    } catch { /* ignore */ }
-
-    // Lazily load posthog-js AFTER hydration so it is code-split out of the
-    // initial bundle. Cache the instance in module scope for PageviewTracker.
-    void import('posthog-js')
-      .then(({ default: posthog }) => {
-        posthog.init(KEY, {
-          api_host: HOST,
-          capture_pageview: false, // captured manually on route change (App Router)
-          capture_pageleave: true, // time-on-page
-          autocapture: true, // clicks, form interactions
-          // Visitors type birth details and see their chart, name and birth city on screen.
-          // None of that may reach analytics: autocapture must not record element text or
-          // attributes, and replays mask all text as well as inputs.
-          mask_all_text: true,
-          mask_all_element_attributes: true,
-          person_profiles: 'identified_only',
-          session_recording: { maskAllInputs: true, maskTextSelector: '*' },
-        });
-        ph = posthog;
-
-        // Capture the initial pageview the PageviewTracker effect missed while
-        // posthog-js was still loading.
-        posthog.capture('$pageview', { $current_url: window.location.href });
-
-        // Best-effort: link events to the signed-in user for per-user analysis.
-        import('@/lib/supabase/client')
-          .then(({ createClient }) => {
-            try {
-              const sb = createClient();
-              void sb.auth.getUser().then(({ data }) => {
-                // The opaque user id is enough to join events; the email address never goes to PostHog.
-                if (data.user?.id) {
-                  posthog.identify(data.user.id);
-                }
-              });
-            } catch {
-              /* anonymous analytics still work */
-            }
-          })
-          .catch(() => {});
-      })
-      .catch(() => { /* analytics must never break the page */ });
+    return () => { stopPostHog(); };
   }, []);
-
-  // First-party click capture → /api/track, so the admin journey timeline can show
-  // WHICH element each visitor clicked (autocapture only feeds PostHog, not our DB).
-  // Delegated, capture-phase, passive; never throws into the page.
   useEffect(() => {
-    const onClick = (ev: MouseEvent) => {
-      try {
-        const start = ev.target as HTMLElement | null;
-        const el = start?.closest?.('a, button, [role="button"], [data-track]') as HTMLElement | null;
-        if (!el) return;
-        // Button text outside the marketing pages can be personal (a birth-city result such as
-        // "Use Jaipur, Rajasthan, India", a name, chart facts), so there only explicit labels are sent.
-        const path = window.location.pathname;
-        const textIsSafe = path === '/' || path.startsWith('/pricing') || path.startsWith('/blog');
-        const label = (
-          el.getAttribute('aria-label') ||
-          el.getAttribute('data-track') ||
-          (textIsSafe ? el.textContent : '') ||
-          el.getAttribute('title') ||
-          ''
-        ).replace(/\s+/g, ' ').trim().slice(0, 80);
-        const a = el.closest('a') as HTMLAnchorElement | null;
-        let href: string | null = null;
-        if (a) {
-          try {
-            const u = new URL(a.href, window.location.origin);
-            href = u.origin === window.location.origin ? u.pathname : `${u.host}${u.pathname}`;
-          } catch { href = a.getAttribute('href'); }
-        }
-        if (!label && !href) return;
-        track('click', { text: label || (href ?? 'element'), href });
-      } catch { /* analytics must never break the page */ }
-    };
-    document.addEventListener('click', onClick, { capture: true, passive: true });
-    return () => document.removeEventListener('click', onClick, { capture: true });
-  }, []);
-
-  return (
-    <>
-      <Suspense fallback={null}>
-        <PageviewTracker />
-      </Suspense>
-      {children}
-    </>
-  );
+    if (!consent.allowed) {
+      stopPostHog();
+      if (!hasAnalyticsConsent()) clearOptionalAnalyticsStorage();
+      return;
+    }
+    track('page_view');
+    if (pathname && publicAnalyticsPath(pathname)) void initializePostHog();
+    else stopPostHog();
+  }, [pathname, consent.allowed, consent.revision]);
+  return <>{children}</>;
 }
+
+registerAnalyticsCleanup(stopPostHog);

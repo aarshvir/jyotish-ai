@@ -3,6 +3,10 @@ import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { DEFAULT_SLUG, getQuizSlug } from '@/config/quiz_slugs';
 import { Funnel } from './_Funnel';
+import { isCommercialCheckoutEnabled } from '@/lib/commercial/availability';
+import { AvailabilityNotice } from '@/components/checkout/AvailabilityNotice';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * Ad landing funnel: /q/{slug}. Each slug is the question its paired short-video ad asks
@@ -12,6 +16,11 @@ import { Funnel } from './_Funnel';
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const s = getQuizSlug(params.slug);
+  if (!isCommercialCheckoutEnabled()) return {
+    title: 'Free Chart Facts and Availability',
+    description: 'Use the free Vedic birth-chart calculator, read an example or open an existing account report. New paid readings are currently unavailable.',
+    robots: { index: false, follow: true },
+  };
   return {
     title: s ? s.s01.en : 'Your Karmic Blueprint',
     description: 'A two-minute quiz, then your Rahu–Ketu axis worked out from your real birth chart.',
@@ -27,6 +36,7 @@ export default function QuizFunnelPage({
   params: { slug: string };
   searchParams: Record<string, string | string[] | undefined>;
 }) {
+  if (!isCommercialCheckoutEnabled()) return <AvailabilityNotice />;
   // A mistyped ad URL should still land on a quiz (keeping its UTM tags), not a 404.
   if (!getQuizSlug(params.slug)) {
     const qs = new URLSearchParams();

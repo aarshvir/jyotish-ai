@@ -12,6 +12,8 @@ import { PLAN_CARDS } from '@/lib/pricing';
  */
 
 export interface OfferInfo {
+  checkoutEnabled?: boolean;
+  message?: string;
   currency: string;
   country: string | null;
   blueprintOpen: boolean;
@@ -82,6 +84,23 @@ export function OfferScreen({
 }) {
   const p = offer?.prices;
   const monthly = PLAN_CARDS.find((c) => c.id === 'sub_monthly');
+
+  if (offer?.checkoutEnabled !== true) {
+    return (
+      <section className="border-t border-paper-line pt-6 pb-10">
+        <h1 className="font-display font-semibold text-ink text-[2rem] leading-tight mb-3">Keep exploring your chart</h1>
+        <p className="text-body-md text-ink-muted mb-6">
+          {offer?.message ?? 'New paid readings are currently unavailable. Your free chart facts and example reading remain available.'}
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <a href="/free-kundli" className="btn-primary min-h-[48px]">Open the free calculator</a>
+          <a href="/sample-report" className="btn-secondary min-h-[48px]">Read an example</a>
+        </div>
+        {notify === 'ask' && <button type="button" onClick={onAddContact} className="mt-5 min-h-[44px] underline underline-offset-4 text-ink">Save my chart link</button>}
+        <p className="mt-5 text-body-sm text-ink-soft">Already have a report? <a href="/dashboard" className="underline underline-offset-4">Open your account</a>.</p>
+      </section>
+    );
+  }
 
   return (
     <div className="-mx-4 px-4 pt-6 pb-10 bg-parchment min-h-[70vh] rounded-t-[20px]">

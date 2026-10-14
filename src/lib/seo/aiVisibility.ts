@@ -12,6 +12,7 @@ import { PLAN_CARDS } from '@/lib/pricing';
 import { subscriptionPrice, type PriceCurrency, type SubscriptionSku } from '@/lib/priceBook';
 import { POSTS } from '@/content/blog';
 import { METHOD_FACTS, METHOD_REVIEWED } from '@/lib/seo/methodology';
+import { isCommercialCheckoutEnabled, COMMERCIAL_UNAVAILABLE_MESSAGE } from '@/lib/commercial/availability';
 
 export const SITE_FALLBACK = 'https://www.vedichour.com';
 
@@ -42,7 +43,7 @@ const BILLING: Record<SubscriptionSku, { iso: string; words: string }> = {
 };
 
 /** schema.org Offers for SoftwareApplication.offers — one free tier plus both plans in every currency sold. */
-export function vedicHourOffers(siteUrl: string) {
+export function vedicHourOffers(siteUrl: string, checkoutEnabled = isCommercialCheckoutEnabled()) {
   const subscribe = `${siteUrl}/start`;
   const offers: Array<Record<string, unknown>> = [
     {
@@ -56,6 +57,7 @@ export function vedicHourOffers(siteUrl: string) {
       url: `${siteUrl}/free-kundli`,
     },
   ];
+  if (!checkoutEnabled) return offers;
   for (const sku of ['sub_monthly', 'sub_annual'] as const) {
     const card = PLAN_CARDS.find((c) => c.id === sku);
     for (const currency of CURRENCIES) {
@@ -119,6 +121,10 @@ export const PRIVATE_PATHS = [
   '/onboard',
   '/login',
   '/signup',
+  '/admin',
+  '/admin2',
+  '/resume',
+  '/q/',
   '/upsell',
   '/kundali/', // private report pages /kundali/{id} (NOT the /kundali landing page)
   '/synastry/', // private report pages /synastry/{id} (NOT the /synastry landing page)
@@ -147,10 +153,11 @@ const CALCULATORS: readonly Page[] = [
 ];
 
 const MEMBERSHIP_PAGES: readonly Page[] = [
-  { path: '/pricing', name: 'Plans and prices', does: 'Monthly and yearly plans, with a feature-by-feature comparison against the free calculators.' },
-  { path: '/sample-report', name: 'Sample report', does: 'A full sample day: the 18 scored hourly windows and what to do in each.' },
-  { path: '/kundali', name: 'Kundli analysis', does: 'Divisional charts, doshas and life-area readings (included with a subscription).' },
-  { path: '/synastry', name: 'Kundli matching (Gun Milan)', does: '36-point Ashtakoot compatibility for two charts; the full breakdown is included with a subscription.' },
+  { path: '/pricing', name: 'Availability and pricing', does: 'What is free now and whether new paid readings are available.' },
+  { path: '/sample-report', name: 'Example reading', does: 'A 30-day example for a fictional reader, including traditional hourly scores and generated interpretation.' },
+  { path: '/kundali', name: 'Kundli analysis', does: 'Free chart facts and access to existing entitled readings.' },
+  { path: '/synastry', name: 'Kundli matching (Gun Milan)', does: 'A free traditional 36-point compatibility score for two charts; existing entitled accounts can access their full reading.' },
+  { path: '/help', name: 'Help', does: 'Birth-time uncertainty, choosing a city, understanding results, retrieving reports and controlling saved details.' },
 ];
 
 function link(site: string, p: Page): string {
@@ -164,29 +171,31 @@ function priceLines(): string[] {
   });
 }
 
-const SUMMARY =
-  'VedicHour turns your exact birth moment into a Vedic (Jyotish) timing forecast: eighteen scored hourly windows a day, written in plain English, with the best and the heaviest hours marked. ' +
-  'The birth-chart calculators are free with no sign-up. The hour-by-hour forecast is a subscription that starts with a 2-minute quiz. ' +
-  'Charts are computed with the Swiss Ephemeris (sidereal zodiac, Lahiri ayanamsa); the AI only explains the computed chart and never invents planetary positions. ' +
-  'It is a tool for reflection and planning, not a source of guaranteed outcomes, and not medical, legal or financial advice.';
+function summary(checkoutEnabled: boolean) {
+  return 'VedicHour provides free Vedic (Jyotish) birth-chart facts and a traditional compatibility score with no sign-up or card. ' +
+    'Enter a birth date, a known birth time and a confirmed birth city. Chart positions use Swiss Ephemeris, the sidereal zodiac and Lahiri ayanamsa. ' +
+    'Astrological meanings and hourly ratings are traditional interpretations, not probabilities of an outcome. Written readings may use AI and can contain errors. ' +
+    (checkoutEnabled ? 'New written readings are available through the plans on /pricing. ' : `${COMMERCIAL_UNAVAILABLE_MESSAGE} `) +
+    'Use the product for reflection, not medical, legal or financial decisions.';
+}
 
-export function buildLlmsTxt(site: string = SITE_FALLBACK, today: Date = new Date()): string {
+export function buildLlmsTxt(site: string = SITE_FALLBACK, today: Date = new Date(), checkoutEnabled = isCommercialCheckoutEnabled()): string {
   const out: string[] = [
     '# VedicHour',
     '',
-    `> ${SUMMARY}`,
+    `> ${summary(checkoutEnabled)}`,
     '',
     `Last updated: ${today.toISOString().slice(0, 10)}. Audiences: India (INR), UAE (AED) and worldwide (USD).`,
     '',
     '## Free tools (full results, no sign-up, no card)',
     ...CALCULATORS.map((p) => link(site, p)),
     '',
-    '## Membership',
+    '## Readings and help',
     ...MEMBERSHIP_PAGES.map((p) => link(site, p)),
-    `- [Start the 2-minute quiz](${site}/start): the only way to subscribe.`,
+    `- [Start](${site}/start): ${checkoutEnabled ? 'a quiz leading to the current subscription offer.' : 'free calculator, example and existing account access.'}`,
     '',
-    '## Prices (subscription only; there are no one-time reports)',
-    ...priceLines(),
+    '## Availability and cost',
+    ...(checkoutEnabled ? priceLines() : ['- Free calculators: no charge, account or card.', '- New paid readings: currently unavailable. No purchase or trial can be started.', '- Existing account reports remain accessible.']),
     '',
     '## Transits',
     `- [Current planet transits](${site}/transit): where Saturn, Jupiter, Rahu and Ketu are today in the sidereal zodiac, when each changes sign, and which Moon signs have Sade Sati.`,
@@ -209,10 +218,6 @@ export function buildLlmsTxt(site: string = SITE_FALLBACK, today: Date = new Dat
 }
 
 const FAQ: ReadonlyArray<readonly [string, string]> = [
-  ['What is VedicHour?', SUMMARY],
-  ['Is VedicHour free?', 'The birth-chart calculators (Kundli facts, Lagna, Moon sign, Nakshatra, dasha, Manglik, Sade Sati, Kaal Sarp) are free, give full results and need no sign-up. The hour-by-hour forecast is a paid subscription. There is no free report and nothing is sold as a one-time purchase.'],
-  ['How much does it cost?', `Monthly: ${(['USD', 'INR', 'AED'] as const).map((c) => displayPrice('sub_monthly', c)).join(' / ')} per month. Yearly: ${(['USD', 'INR', 'AED'] as const).map((c) => displayPrice('sub_annual', c)).join(' / ')} per year. Prices are shown in USD, INR or AED.`],
-  ['What does a subscription include?', PLAN_CARDS.find((c) => c.id === 'sub_monthly')?.features.join('; ') ?? ''],
   ['How is the chart calculated?', 'With the Swiss Ephemeris, using the sidereal zodiac and the Lahiri ayanamsa, the standard for Jyotish. Timing uses Vimshottari dasha, hora and choghadiya. The AI writes the explanation; it does not calculate positions.'],
   ['What is a hora (planetary hour)?', 'A hora is one of the 24 planetary hours of a day. Each is ruled by one of the seven classical planets in the Chaldean order, starting from the ruler of the weekday at sunrise. Each hora is traditionally linked to a kind of activity: for example the Sun for authority and visibility, the Moon for care and reflection, Mercury for communication and trade, Jupiter for learning and advice, Venus for relationships, Saturn for patience and structure, Mars for effort and conflict.'],
   ['What is choghadiya?', 'Choghadiya divides the daytime and the night each into eight parts of roughly 90 minutes. Amrit, Shubh and Labh are considered favourable, Chal is neutral, and Udveg, Rog and Kaal are considered unfavourable for starting new things. It is used alongside hora.'],
@@ -223,15 +228,18 @@ const FAQ: ReadonlyArray<readonly [string, string]> = [
   ['Does VedicHour predict the future?', 'No. It scores how supportive each hour looks against your own chart so you can plan around it. It is for reflection and planning only and is not medical, legal, financial or emergency advice.'],
 ];
 
-export function buildLlmsFullTxt(site: string = SITE_FALLBACK, today: Date = new Date()): string {
+export function buildLlmsFullTxt(site: string = SITE_FALLBACK, today: Date = new Date(), checkoutEnabled = isCommercialCheckoutEnabled()): string {
   const posts = [...POSTS].sort((a, b) => (a.date < b.date ? 1 : -1));
   const out: string[] = [
-    buildLlmsTxt(site, today).trimEnd(),
+    buildLlmsTxt(site, today, checkoutEnabled).trimEnd(),
     '',
     '---',
     '',
     '# Reference',
     '',
+    '## What is VedicHour?', summary(checkoutEnabled), '',
+    '## Is VedicHour free?', 'The chart calculators and traditional compatibility score are free. A personal hourly forecast is not included in the free chart calculation.', '',
+    '## How much does it cost?', ...(checkoutEnabled ? priceLines() : [COMMERCIAL_UNAVAILABLE_MESSAGE]), '',
     ...FAQ.flatMap(([q, a]) => [`## ${q}`, a, '']),
     `## Methodology (reviewed ${METHOD_REVIEWED}; full page: ${site}/methodology)`,
     ...METHOD_FACTS.map((f) => `- ${f.label}: ${f.text}`),

@@ -5,7 +5,7 @@ export const post: BlogPost = {
   title: 'Planetary Hours (Hora): The Weekday Table and Which Hour Suits What',
   seoTitle: 'Planetary Hours (Hora): Table and Which Hour for What',
   description:
-    'A hora is one of 24 planetary hours in a day, counted from sunrise. The weekday table, how to calculate hora times, and what each planet hour suits.',
+    'Calculate sunrise-based planetary hours, read the weekday table, and distinguish variable horas from VedicHour\'s fixed 60-minute example windows.',
   keywords: [
     'hora',
     'planetary hours',
@@ -17,22 +17,28 @@ export const post: BlogPost = {
     'hora calculator',
   ],
   date: '2026-06-15',
-  updated: '2026-10-11',
+  updated: '2026-10-15',
   readingTimeMin: 6,
-  html: `<p><strong>A hora is a planetary hour. The day from sunrise to sunset is divided into 12 horas and the night from sunset to the next sunrise into 12 more. Each is ruled by one of the seven classical planets in a fixed order (Sun, Venus, Mercury, Moon, Saturn, Jupiter, Mars), and the first hora of each day belongs to the ruler of the weekday. Because the day and the night are not the same length, a hora is rarely exactly 60 minutes.</strong></p>
+  html: `<p><strong>A hora is a planetary hour. Daylight from sunrise to sunset is divided into 12 equal horas and the night from sunset to the next sunrise into 12 more. Each has a traditional ruler in the repeating order Sun, Venus, Mercury, Moon, Saturn, Jupiter, Mars. The first daytime hora belongs to the weekday ruler. A hora's duration depends on those sunrise and sunset times: it is not a fixed 60-minute clock hour.</strong></p>
 
-<p>Hora is the everyday layer of Vedic timing. You do not need your birth chart to use it, only the weekday and sunrise for your city.</p>
+<p>A city-wide hora table needs the date, location, sunrise, sunset and next sunrise, not a birth chart. Its traditional associations are a different layer from a personal chart or VedicHour's fixed clock-hour display.</p>
 
 <h2>How to calculate it</h2>
 
 <ol>
-<li>Find sunrise and sunset for your city and date.</li>
+<li>Find sunrise, sunset and the following sunrise for your location and date. Check the timezone and the sunrise definition used by the source.</li>
 <li>Daytime hora length is (sunset minus sunrise) divided by 12. The first hora starts at sunrise.</li>
 <li>The first hora belongs to the weekday ruler. After that, follow the cycle: Sun, Venus, Mercury, Moon, Saturn, Jupiter, Mars, then back to Sun.</li>
 <li>Night horas are (next sunrise minus sunset) divided by 12, and continue the same cycle without a break.</li>
 </ol>
 
-<p>On Sunday 11 October 2026 in Delhi, sunrise is about 6:19 am and sunset about 5:56 pm, so each day hora is about 58 minutes: Sun from 6:19, Venus from 7:17, Mercury from 8:15, Moon from 9:13, and so on. The day hora table, for any weekday:</p>
+<p>Use elapsed durations, not just clock-label subtraction across midnight or a clock change. If the location has no sunrise or sunset for the date, this division needs special handling; do not fill in convenient times and call them calculated.</p>
+
+<h2>A worked example with invented times</h2>
+
+<p><strong>Invented arithmetic example, not a real city's timing or an ephemeris result:</strong> suppose a Sunday has sunrise at 07:00, sunset at 18:00 and the next sunrise at 07:00, with no clock change. Daylight lasts 660 minutes, so each daytime hora is 660 / 12 = 55 minutes. The night lasts 780 minutes, so each night hora is 780 / 12 = 65 minutes.</p>
+
+<p>In that invented example, the first daytime horas are Sun 07:00-07:55, Venus 07:55-08:50, Mercury 08:50-09:45 and Moon 09:45-10:40. These are assumed inputs demonstrating the formula, not auspicious times to use today. The ruler sequence for the twelve daytime horas on each weekday is:</p>
 
 <table>
 <thead><tr><th>Day</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th></tr></thead>
@@ -51,6 +57,8 @@ export const post: BlogPost = {
 
 <h2>What each hora is traditionally used for</h2>
 
+<p>The following are common Jyotish associations, not measured effects or instructions that override your circumstances. Interpretations differ between schools; no planetary ruler guarantees a favourable outcome.</p>
+
 <table>
 <thead><tr><th>Hora of</th><th>Often chosen for</th><th>Often avoided for</th></tr></thead>
 <tbody>
@@ -64,21 +72,34 @@ export const post: BlogPost = {
 </tbody>
 </table>
 
-<p>Jupiter, Venus, Mercury and the Moon are usually seen as the friendlier horas, and Saturn, Mars and the Sun as the heavier ones, though each has a job it suits.</p>
+<p>Descriptions such as "friendly" or "heavy" belong to the interpretive tradition. A label does not measure the chance of success or failure, and there is no universally best hora.</p>
 
 <h2>Hora next to choghadiya and Rahu Kaal</h2>
 
-<p>Hora counts 12 unequal slots from sunrise. <a href="/blog/choghadiya-guide">Choghadiya</a> counts eight equal slots with different names, and <a href="/blog/rahu-kaal-explained">Rahu Kaal</a> picks out one eighth of the day. The three do not line up, and they do not always agree. The <a href="/blog/choghadiya-vs-hora-timing">comparison of choghadiya and hora</a> explains how to use them together.</p>
+<p>Hora divides daylight into twelve equal parts and the night into twelve more; daytime and night-time durations can differ. <a href="/blog/choghadiya-guide">Choghadiya</a> divides each into eight parts with different names, while <a href="/blog/rahu-kaal-explained">Rahu Kaal</a> identifies a weekday-dependent eighth of daylight. Their boundaries and labels need not agree. The <a href="/blog/choghadiya-vs-hora-timing">comparison of Choghadiya and hora</a> explains the different systems.</p>
+
+<h2>VedicHour's fixed windows are not sunrise-based horas</h2>
+
+<p>VedicHour's forecast grid uses eighteen fixed <strong>60-minute windows</strong>, from 06:00 to midnight in the displayed location's local-time schedule. It is not a table of eighteen traditional horas. The timing engine calculates variable hora spans separately and labels a window with the ruler whose span has the greatest overlap with that window.</p>
+
+<p>For example, the invented 07:00-08:00 clock-hour window above contains 55 minutes of Sun hora and 5 minutes of Venus hora. Its dominant label would be Sun, but the hora changes within the window. A single label does not mean the whole clock hour is one planetary hour.</p>
+
+<p><a href="/sample-report">View the example reading</a> to see the clock-hour format, or read <a href="/methodology">the calculation methodology</a>. It is an example, not your own forecast. The <a href="/free-kundli">free birth-chart calculator</a> supplies chart facts, not a personal hourly forecast; new paid readings are currently unavailable.</p>
 
 <h2>Limits</h2>
 
 <ul>
-<li>It is the same for everyone in your city. It cannot know your chart or your dasha.</li>
-<li>It is one input. A hora is a soft preference, not a ban. If you have no choice of time, go ahead.</li>
-<li>For big dates (a wedding, a house-warming, a surgery) use a full muhurta, as in <a href="/blog/what-is-muhurat">what is muhurat</a>.</li>
+<li>A city-wide table with the same date, location and method is the same regardless of who reads it. It does not incorporate your birth chart or dasha.</li>
+<li>A hora is a traditional association, not a ban. Keep practical commitments and other people's availability in view.</li>
+<li>A single hora label is not a full muhurta assessment. For the terminology, see <a href="/blog/what-is-muhurat">what is muhurat</a>; no timing rule guarantees an outcome.</li>
+<li>Do not use astrology to schedule or delay medical care, or as financial, legal or safety advice.</li>
 </ul>
 
-<p>That is the gap VedicHour's forecast fills: it scores each hour of your own day against your own chart, with hora and choghadiya as two of the inputs. The <a href="/sample-report">sample report</a> shows a full day, and the <a href="/hora">hora page</a> sets out the system.</p>`,
+<h2>Sources and a useful next step</h2>
+
+<p><a href="https://www.drikpanchang.com/muhurat/hora.html">Drik Panchang's official Hora Chakra page</a> shows location/date-specific day and night horas, the weekday sequence and traditional associations. <a href="https://www.astro.com/swisseph/swephprg.htm">Astrodienst's Swiss Ephemeris documentation</a> covers rise/set calculation and sunrise definitions (sections 8.12 and 8.12.1). Different sunrise definitions can affect boundaries; neither source validates predictions about personal outcomes. Sources checked 15 October 2026; no vendor table or real city timing is reproduced in the invented example.</p>
+
+<p>For a chart of your own, <a href="/free-kundli">open the free Kundli calculator</a>. Choose Known or enter an actual estimate as Approximate; approximate results are provisional at that single time, with no interval checked. Choosing Unknown does not compute a chart or substitute noon. Use <a href="/help?q=birth%20time#birth-time">birth-time help</a> if needed, or <a href="/help?q=chart%20terms#chart-terms">read the result glossary</a>. The <a href="/hora">hora reference page</a> provides more on the traditional sequence.</p>`,
   faqs: [
     {
       q: 'What is a hora in Vedic astrology?',
@@ -86,7 +107,7 @@ export const post: BlogPost = {
     },
     {
       q: 'How long is a hora?',
-      a: 'Daytime hora = (sunset minus sunrise) divided by 12. It is usually between 45 and 75 minutes, depending on the season and the latitude, and rarely exactly 60.',
+      a: 'Daytime hora is the elapsed time from sunrise to sunset divided by 12. Night hora is sunset to the next sunrise divided by 12. Its duration depends on the date, place and sunrise definition; there is no fixed 60-minute duration.',
     },
     {
       q: 'Which hora is best?',
@@ -98,11 +119,17 @@ export const post: BlogPost = {
     },
     {
       q: 'Is hora the same as choghadiya?',
-      a: 'No. Hora has 12 unequal slots counted in planetary order, and choghadiya has 8 equal slots with names like Amrit and Kaal. They are separate systems.',
+      a: 'No. Hora divides daylight into 12 equal parts and night into 12 more. Choghadiya divides each into 8 parts with names such as Amrit and Kaal. Day and night lengths can differ, and the two systems have different boundaries.',
+    },
+    {
+      q: 'Is a forecast window the same as a hora?',
+      a: 'No. VedicHour\'s example grid uses 60-minute clock-hour windows. A traditional hora varies with sunrise and sunset. A window\'s dominant hora label identifies the greatest overlap; it does not make the whole window one hora.',
     },
   ],
   sources: [
-    'Hora order (Sun, Venus, Mercury, Moon, Saturn, Jupiter, Mars) and weekday rulers: standard Jyotish and panchang practice',
-    'Delhi example: sunrise and sunset from the Swiss Ephemeris for 11 October 2026',
+    'Drik Panchang, Hora Chakra and weekday rulers: https://www.drikpanchang.com/muhurat/hora.html (checked 2026-10-15)',
+    'Astrodienst Swiss Ephemeris programming interface, sections 8.12 and 8.12.1: https://www.astro.com/swisseph/swephprg.htm (checked 2026-10-15)',
+    'VedicHour methodology: /methodology; fixed clock-hour grid and greatest-overlap hora selection reviewed in the timing-engine source on 2026-10-15',
+    'The 07:00/18:00 example uses invented times for arithmetic, not a real city, customer observation or ephemeris output',
   ],
 };

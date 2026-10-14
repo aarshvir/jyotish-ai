@@ -44,9 +44,10 @@ describe('landing copy', () => {
     }
   });
 
-  it('answers "can I get a free Kundli" with the free calculators and the subscription', () => {
+  it('distinguishes free chart facts from personal forecasts and written readings', () => {
     const a = FAQS.find((x) => /free Kundli/i.test(x.q))?.a ?? '';
     expect(a).toContain('free calculators');
-    expect(a).toContain(SUBSCRIPTION_LINE);
+    expect(a).toMatch(/hourly forecasts and written readings are not part of the free chart/i);
+    expect(a).not.toContain(SUBSCRIPTION_LINE);
   });
 });

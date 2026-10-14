@@ -11,21 +11,28 @@
 :root {
   --nav-height: 4rem;
 
-  /* NIGHT canvas (default) — deep plum-indigo, warm off-white type.
-     Replaces the cold navy that made the product read as a terminal.
-     Kept in sync with tailwind.config.ts; see docs/DESIGN_SYSTEM.md. */
-  --color-bg:        #0A0713;
-  --color-surface:   #120C1E;
-  --color-surface-2: #1B1329;
-  --color-border:    #2A1E3D;
-  --color-text:      #F6EFE4;
-  --color-muted:     #9B8FA6;
+  /* Preserve dark report contracts while using a neutral charcoal canvas. */
+  --color-bg:        #171D1C;
+  --color-surface:   #202827;
+  --color-surface-2: #2A3432;
+  --color-border:    #465552;
+  --color-text:      #F4F7F5;
+  --color-muted:     #ADBDB8;
 
   /* Accent */
-  --amber:       #D4A853;
-  --amber-light: #E8C97A;
-  --amber-dark:  #B8923E;
-  --amber-glow:  #FCD34D;
+  --amber:       #D7BA78;
+  --amber-light: #E8D4A5;
+  --amber-dark:  #997536;
+  --amber-glow:  #E8D4A5;
+
+  --public-bg: #F7F9F8;
+  --public-paper: #FFFFFF;
+  --public-ink: #202A29;
+  --public-muted: #526460;
+  --public-line: #CCD8D4;
+  --public-teal: #E1F1EB;
+  --public-action: #245E54;
+  --public-gold: #997536;
 
   /* Semantic */
   --success:  #3B9B6E;
@@ -33,33 +40,32 @@
   --guidance: #D4A853;
 
   /* Legacy compat */
-  --space:    #080C18;
-  --cosmos:   #0D1426;
-  --nebula:   #141C35;
-  --horizon:  #1E2A4A;
-  --star:     #E8EAF0;
-  --dust:     #8892A4;
+  --space:    #171D1C;
+  --cosmos:   #202827;
+  --nebula:   #2A3432;
+  --horizon:  #465552;
+  --star:     #F4F7F5;
+  --dust:     #ADBDB8;
   --emerald:  #3B9B6E;
   --crimson:  #C75B3A;
 }
 
 /* Light / reading mode */
 [data-theme="light"] {
-  /* PAPER canvas — warm parchment + ink, for surfaces a human reads or types
-     on. Warmer and higher-contrast than the previous near-white/grey pair. */
-  --color-bg:        #FBF7F1;
+  /* Reading surfaces retain their existing light-theme variable contract. */
+  --color-bg:        #F7F9F8;
   --color-surface:   #FFFFFF;
-  --color-surface-2: #F4EDE3;
-  --color-border:    #E6DBCB;
-  --color-text:      #1E1726;
-  --color-muted:     #66596F;
+  --color-surface-2: #EDF3F0;
+  --color-border:    #CCD8D4;
+  --color-text:      #202A29;
+  --color-muted:     #526460;
 
-  --space:   #FAF8F5;
+  --space:   #F7F9F8;
   --cosmos:  #FFFFFF;
-  --nebula:  #F2EDE6;
-  --horizon: #E0D8CC;
-  --star:    #1A1A2E;
-  --dust:    #6B6B7B;
+  --nebula:  #EDF3F0;
+  --horizon: #CCD8D4;
+  --star:    #202A29;
+  --dust:    #526460;
 }
 
 /* ── Base Reset ────────────────────────────────────────────────────────────── */
@@ -73,23 +79,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-}
-
-/* Film grain. A flat #hex fill is what makes a screen read as "digital
-   rectangle"; ~2.5% noise gives every surface the tooth of printed paper.
-   Inline SVG (no network request), non-interactive, fixed so it never scrolls.
-   See docs/DESIGN_SYSTEM.md. */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  pointer-events: none;
-  opacity: 0.028;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-@media print {
-  body::after { display: none; }
+  letter-spacing: 0;
 }
 
 /* ── Focus States (Accessibility) ──────────────────────────────────────────── */
@@ -256,14 +246,10 @@ body::after {
 /* ── Component Classes ─────────────────────────────────────────────────────── */
 @layer components {
   /* Standard card */
-  /* Cards get real depth + a softer radius. Flat 8px rectangles with a solid
-     1px border are the "dashboard" signature; consumer products use a larger
-     radius, a hairline, and a tinted shadow so a card reads as an object.
-     See docs/DESIGN_SYSTEM.md. */
   .card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 1rem;
+    border-radius: 0.5rem;
     padding: 1.5rem;
     box-shadow: 0 1px 2px rgba(10, 7, 19, 0.30), 0 8px 24px -12px rgba(10, 7, 19, 0.45);
   }
@@ -271,7 +257,7 @@ body::after {
   .card-interactive {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 1rem;
+    border-radius: 0.5rem;
     padding: 1.5rem;
     box-shadow: 0 1px 2px rgba(10, 7, 19, 0.30), 0 8px 24px -12px rgba(10, 7, 19, 0.45);
     transition: border-color 250ms, box-shadow 250ms, transform 250ms;
@@ -292,7 +278,7 @@ body::after {
   .section-eyebrow {
     font-family: var(--font-mono), monospace;
     font-size: 0.6875rem;
-    letter-spacing: 0.15em;
+    letter-spacing: 0;
     text-transform: uppercase;
     color: var(--amber);
     margin-bottom: 0.75rem;
@@ -318,7 +304,7 @@ body::after {
     padding: 0.75rem 1.75rem;
     min-height: 2.75rem;
     background: var(--amber);
-    color: #080C18;
+    color: #171D1C;
     font-family: var(--font-body), sans-serif;
     font-weight: 500;
     font-size: 0.875rem;
@@ -381,7 +367,7 @@ body::after {
   width: 100%;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   padding: 0.875rem 1rem;
   font-family: var(--font-body), sans-serif;
   /* 16px MINIMUM — iOS Safari force-zooms the entire page on focus for any
@@ -410,6 +396,128 @@ input[type="time"]::-webkit-calendar-picker-indicator {
 }
 
 /* ── Reduced Motion ────────────────────────────────────────────────────────── */
+/* Public pages use explicit classes so report layouts and typography remain independent. */
+.public-experience, .public-header, .public-footer {
+  background: var(--public-bg);
+  color: var(--public-ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  letter-spacing: 0;
+}
+.public-container { width: min(100% - 3rem, 70rem); margin-inline: auto; }
+.public-experience h2 { font-size: 1.75rem; line-height: 1.25; font-weight: 600; }
+.public-experience h3 { font-size: 1.0625rem; line-height: 1.4; font-weight: 500; }
+.public-experience section[id] { scroll-margin-top: calc(var(--header-height, 7rem) + 1rem); }
+.public-kicker { color: var(--public-muted); font-size: 0.75rem; line-height: 1.5; margin-bottom: 0.75rem; font-weight: 500; }
+.public-body { color: var(--public-muted); font-size: 0.9375rem; line-height: 1.7; }
+.public-meta { color: var(--public-muted); font-size: 0.8125rem; line-height: 1.55; }
+.public-band { padding-block: 3.5rem; border-top: 1px solid var(--public-line); }
+.public-section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1.5rem; margin-bottom: 2rem; }
+.public-hero { padding-block: 3rem 2.5rem; }
+.public-brand-heading { font-family: var(--font-display), Georgia, serif; font-size: 4.5rem; font-weight: 600; line-height: 1.05; }
+.public-hero-copy { max-width: 34rem; margin: 1rem auto 1.5rem; color: var(--public-muted); font-size: 1.0625rem; line-height: 1.65; }
+.public-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+.public-button { display: inline-flex; align-items: center; justify-content: center; gap: 0.625rem; min-height: 3rem; padding: 0.75rem 1.25rem; border-radius: 6px; font-size: 0.875rem; font-weight: 500; line-height: 1.5; transition: background 150ms, color 150ms; }
+.public-button-primary { background: var(--public-ink); color: var(--public-paper); border: 1px solid var(--public-ink); }
+.public-button-primary:hover { background: var(--public-action); border-color: var(--public-action); }
+.public-button-secondary { border: 1px solid var(--public-line); color: var(--public-ink); }
+.public-button-secondary:hover { background: var(--public-teal); }
+.public-text-link { display: inline-flex; align-items: center; gap: 0.375rem; color: var(--public-action); font-size: 0.875rem; font-weight: 500; min-height: 1.75rem; text-decoration: underline; text-underline-offset: 4px; }
+.public-text-link:hover { color: var(--public-ink); }
+.public-experience :focus-visible, .public-header :focus-visible, .public-footer :focus-visible { outline: 2px solid var(--public-action); outline-offset: 4px; }
+.public-sample { background: var(--public-teal); padding-block: 2rem 3rem; }
+.public-sample-grid { display: grid; grid-template-columns: minmax(0, 22rem) minmax(0, 1fr); gap: 4rem; align-items: start; }
+.public-chart-figure { min-width: 0; max-width: 22rem; }
+.public-birth-chart { width: 100%; height: auto; aspect-ratio: 1; display: block; font-family: var(--font-body), system-ui, sans-serif; }
+.public-facts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-block: 0.9rem; border-bottom: 1px solid var(--public-line); }
+.public-facts dt { color: var(--public-muted); font-size: 0.875rem; }
+.public-facts dd { text-align: right; font-size: 1rem; font-weight: 500; }
+.public-sample-note { display: flex; gap: 0.75rem; margin-top: 1.5rem; border-top: 1px solid var(--public-line); padding-top: 1.25rem; }
+.public-tool { min-width: 0; border: 1px solid var(--public-line); background: var(--public-paper); border-radius: 8px; padding: 1.25rem; transition: border-color 150ms, background 150ms; }
+.public-tool:hover { background: var(--public-teal); border-color: var(--public-action); }
+.public-tool svg { color: var(--public-action); }
+.public-method { background: var(--public-paper); }
+.public-method svg { color: var(--public-gold); }
+.public-time-note { display: flex; gap: 0.75rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--public-line); font-size: 0.875rem; line-height: 1.65; color: var(--public-muted); }
+.public-faq-layout { display: grid; grid-template-columns: 1fr 1.65fr; gap: 4rem; }
+.public-faq { border-bottom: 1px solid var(--public-line); }
+.public-faq:first-child { border-top: 1px solid var(--public-line); }
+.public-faq summary { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 3.5rem; padding-block: 1rem; list-style: none; cursor: pointer; font-size: 0.9375rem; font-weight: 500; }
+.public-faq summary::-webkit-details-marker { display: none; }
+.public-faq[open] summary svg { transform: rotate(180deg); }
+.public-faq > p { padding-bottom: 1.25rem; padding-right: 2rem; }
+.public-close { background: var(--public-teal); }
+.public-navigation { border-bottom: 1px solid var(--public-line); position: relative; }
+.public-nav-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4.5rem; }
+.public-wordmark { display: inline-flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.public-wordmark span { font-family: var(--font-display), Georgia, serif; font-size: 1.5rem; font-weight: 600; line-height: 1.3; }
+.public-wordmark svg { color: var(--public-gold); flex-shrink: 0; }
+.public-nav-link { display: inline-flex; align-items: center; min-height: 2.75rem; color: var(--public-muted); font-size: 0.8125rem; }
+.public-nav-link:hover, .public-nav-link[aria-current="page"] { color: var(--public-ink); text-decoration: underline; text-underline-offset: 5px; }
+.public-nav-account { align-items: center; justify-content: center; gap: 0.375rem; min-height: 2.75rem; padding-inline: 0.75rem; font-size: 0.8125rem; color: var(--public-muted); }
+.public-nav-chart { display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; min-height: 2.75rem; padding-inline: 0.875rem; background: var(--public-ink); color: var(--public-paper); border-radius: 6px; font-size: 0.8125rem; font-weight: 500; white-space: nowrap; }
+.public-nav-chart:hover { background: var(--public-action); }
+.public-nav-toggle { width: 2.75rem; height: 2.75rem; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--public-ink); border-radius: 6px; }
+.public-nav-toggle:hover { background: var(--public-teal); }
+.public-mobile-navigation { position: absolute; left: 0; right: 0; top: 100%; background: var(--public-bg); border-bottom: 1px solid var(--public-line); max-height: calc(100dvh - var(--header-height, 7rem)); overflow-y: auto; box-shadow: 0 12px 20px -18px #202A2960; }
+.public-mobile-link { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3rem; font-size: 0.9375rem; border-bottom: 1px solid var(--public-line); }
+.public-mobile-link:last-child { border: 0; }
+.public-mobile-link:hover { color: var(--public-action); }
+.public-mobile-navigation[hidden] { display: none; }
+.public-banner { background: var(--public-teal); border-bottom: 1px solid var(--public-line); padding-block: 0.5rem; color: var(--public-muted); font-size: 0.75rem; line-height: 1.5; }
+.public-banner a { display: inline-flex; align-items: center; gap: 0.25rem; color: var(--public-action); text-decoration: underline; text-underline-offset: 3px; }
+.public-footer { padding-block: 3rem 1.5rem; border-top: 1px solid var(--public-line); }
+.public-footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 2rem; }
+.public-footer-heading { font-size: 0.875rem; font-weight: 500; margin-bottom: 1rem; }
+.public-footer li a { color: var(--public-muted); font-size: 0.8125rem; display: inline-flex; align-items: center; min-height: 2.25rem; line-height: 1.5; }
+.public-footer li a:hover { color: var(--public-action); text-decoration: underline; text-underline-offset: 3px; }
+.public-footer-bottom { display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem; border-top: 1px solid var(--public-line); padding-top: 1.25rem; margin-top: 2.5rem; color: var(--public-muted); font-size: 0.75rem; line-height: 1.6; }
+.public-pricing-intro { padding-block: 3.5rem 2.5rem; }
+.public-pricing-intro h1 { font-size: 2.5rem; line-height: 1.2; font-weight: 600; max-width: 40rem; }
+.public-pricing-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 3rem; }
+.public-free-plan { background: var(--public-teal); border-radius: 8px; padding: 2rem; }
+.public-free-price { font-size: 1.75rem; line-height: 1.2; font-weight: 500; }
+.public-feature-list { margin-block: 1.5rem; }
+.public-feature-list li { display: flex; align-items: start; gap: 0.625rem; padding-block: 0.625rem; color: var(--public-muted); font-size: 0.875rem; line-height: 1.5; }
+.public-feature-list svg { color: var(--public-action); margin-top: 0.125rem; }
+.public-availability { padding-block: 1rem; }
+.public-experience .public-availability h2 { font-size: 1.375rem; }
+.public-availability > svg { color: var(--public-gold); }
+.public-paid-plan { border: 1px solid var(--public-line); border-radius: 8px; padding: 1.5rem; }
+.public-plan-price { font-size: 1.75rem; font-weight: 500; }
+.public-plan-price span { font-size: 0.875rem; color: var(--public-muted); font-weight: 400; }
+@media (min-width: 1024px) {
+  .public-nav-toggle { display: none; }
+}
+@media (max-width: 767px) {
+  .public-container { width: min(100% - 2rem, 70rem); }
+  .public-hero { padding-block: 2rem; }
+  .public-brand-heading { font-size: 3.25rem; }
+  .public-hero-copy { font-size: 1rem; margin-block: 0.75rem 1.25rem; }
+  .public-band { padding-block: 2.5rem; }
+  .public-experience h2 { font-size: 1.5rem; }
+  .public-section-heading { flex-direction: column; align-items: start; gap: 0.75rem; margin-bottom: 1.5rem; }
+  .public-sample-grid, .public-faq-layout, .public-pricing-grid { grid-template-columns: minmax(0, 1fr); gap: 1.75rem; }
+  .public-chart-figure { width: 100%; max-width: 20rem; margin-inline: auto; }
+  .public-facts > div { flex-wrap: wrap; gap: 0.25rem 1rem; }
+  .public-facts dd { margin-left: auto; }
+  .public-footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem 1rem; }
+  .public-footer-grid > div { grid-column: 1 / -1; }
+  .public-pricing-intro { padding-block: 2.5rem 2rem; }
+  .public-pricing-intro h1 { font-size: 2rem; }
+  .public-free-plan { padding: 1.5rem; }
+  .public-free-plan .public-section-heading { flex-direction: row; flex-wrap: wrap; align-items: start; }
+  .public-experience h2, .public-experience h3, .public-footer a { overflow-wrap: break-word; }
+}
+@media (max-width: 359px) {
+  .public-wordmark span { font-size: 1.25rem; }
+  .public-wordmark svg { width: 20px; }
+  .public-nav-row { gap: 0.5rem; }
+  .public-nav-chart { padding-inline: 0.625rem; }
+  .public-actions { flex-direction: column; }
+  .public-actions .public-button { width: 100%; }
+  .public-brand-heading { font-size: 3rem; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -1,60 +1,33 @@
-// Shared FAQ data — imported by both the FAQ client component (for UI)
-// and the marketing page server component (for JSON-LD structured data).
-
-import { SUBSCRIPTION_LINE } from '@/lib/landingCopy';
-
-export interface QA {
-  q: string;
-  a: string;
-}
+// Shared by the visible FAQ and its server-rendered structured data.
+export interface QA { q: string; a: string; }
 
 export const FAQS: QA[] = [
   {
-    q: 'What is Jyotish astrology?',
-    a: 'Jyotish (Sanskrit: "science of light") is the classical Indian system of Vedic astrology. It reads the planets from where they actually sit in the sky, and uses time-based systems like dasha periods and planetary hours to interpret life chapters and daily timing. VedicHour applies those rules to score your hours and write the reading in plain English.',
-  },
-  {
-    q: 'What is a Kundli (Janam Kundali)?',
-    a: 'A Kundli — also called Janam Kundali, Janam Patri, or birth chart — is a map of planetary positions at the exact moment of your birth. It shows your Lagna (rising sign), Moon sign, Sun sign, and the placement of all 9 Jyotish grahas across the 12 houses. VedicHour generates your free Kundli online from your birth date, time, and place.',
-  },
-  {
     q: 'Can I get a free Kundli here?',
-    a: `Yes. The free calculators need no sign-up and no card. Enter your birth date, time, and city and we show your Lagna, Moon sign, birth star and current Dasha period. The hour-by-hour forecast for the next 30 days, plus a 12-month outlook, is ${SUBSCRIPTION_LINE}, and it starts with a 2-minute quiz.`,
+    a: 'Yes. The free calculators show chart facts: your rising sign, Moon sign, birth star and dasha periods. No sign-up or payment card is needed. Personalized hourly forecasts and written readings are not part of the free chart.',
   },
   {
-    q: 'Does AI write the report?',
-    a: 'The chart and every hourly score are calculated first — to the minute, from your birth data. A language model then writes the English commentary from those fixed numbers. It is not allowed to invent positions. Treat the writing as a clear reading of the math, not as an oracle.',
+    q: 'What birth details do I need?',
+    a: 'Your birth date, birth time and birth city. Select the matching city from the suggestions so its location is confirmed. The time should be the local clock time at your birthplace, not converted to your current timezone.',
   },
   {
-    q: 'How is a Vedic forecast different from a Sun-sign horoscope?',
-    a: "A Vedic astrology forecast (Jyotish forecast) is personalised to your exact birth chart — not a generic Sun sign. It reads the planets from where they actually sit in the sky, uses your own Lagna and Moon sign, and predictive systems like Vimshottari Dasha. VedicHour goes further: it gives you 18 hourly windows per day with individual scores and written commentary, far beyond any daily horoscope column.",
+    q: 'What if I do not know my birth time?',
+    a: 'Choose the uncertain-time option in the calculator. An unknown or approximate time cannot support a reliable rising sign or house-based chart. Moon sign, birth star and dasha may also change near a boundary. The calculator should make those limits explicit rather than present a guessed time as exact.',
   },
   {
-    q: 'How is VedicHour different from other free Kundli or astrology apps?',
-    a: "Most free Kundli apps show your chart but give generic interpretations. VedicHour gives you 18 hourly windows per day (06:00–24:00 in your city's local time), each rated 0–100 and explained in detail. Every number is computed fresh from your own chart to the standards professional Jyotish astrologers work to — never from simplified or pre-computed tables.",
+    q: 'Does AI calculate my chart?',
+    a: 'No. The free chart facts are calculated from birth details using the astrology engine. Written readings are a separate interpretation and may use AI-generated commentary. That commentary can be mistaken and is not a guarantee of future events.',
   },
   {
-    q: 'How fast is report delivery?',
-    a: "Reports typically generate in 3–8 minutes. You can safely close the tab — the pipeline runs on our servers and you'll find the report in your dashboard when you return.",
+    q: 'Can I buy a written reading or hourly forecast?',
+    a: 'Paid readings are separate from the free calculators. The pricing page shows current availability; a price or purchase action is shown only when new checkout is available. You can still open existing reports from your dashboard.',
   },
   {
-    q: 'What birth data do I need to provide?',
-    a: 'Your birth date, exact birth time (important — rounded times reduce accuracy), and birth city. Your current city is used for the local-time hourly schedule. We never share or sell this information.',
+    q: 'Is the sample a real customer reading?',
+    a: 'No. It uses an invented birth and scenario. The chart positions and timing values are calculated by the existing engine, and the commentary is illustrative. It is not a testimonial or evidence that astrology predicts outcomes.',
   },
   {
-    q: "What happens if I'm not satisfied?",
-    a: "We offer a 24-hour no-questions-asked refund. Email support@vedichour.com and we'll process it. See our refund policy for details.",
-  },
-  {
-    q: 'Is my data safe?',
-    a: 'Yes. All data is TLS-encrypted in transit and at rest. We never sell personal data. Payments are handled by PCI-DSS compliant partners — we never see your card details.',
-  },
-  {
-    q: 'Which payment methods are supported?',
-    a: 'International cards (Visa, Mastercard, Amex) via Ziina. Prices auto-adjust to INR, AED, or USD based on your location, or the currency you select.',
-  },
-  {
-    q: 'Can I gift a Jyotish report to someone else?',
-    a: 'Yes — enter their birth details during onboarding. The report is bound to your account, and you can download and share the PDF or Markdown with them.',
+    q: 'How should I use these results?',
+    a: 'Use the chart to explore Vedic astrology as an interpretive tradition. It is not medical, legal or financial advice. Keep your own judgment and real-world information central, especially for consequential decisions.',
   },
 ];

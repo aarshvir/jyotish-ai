@@ -42,7 +42,7 @@ export function CalculatorPage(cfg: CalculatorConfig) {
           <p className="text-body-lg text-dust max-w-2xl mx-auto leading-relaxed">{cfg.intro}</p>
         </div>
 
-        <ChartTool view={cfg.view} ctaHref={cfg.ctaHref} ctaLabel={cfg.ctaLabel} />
+        <ChartTool view={cfg.view} />
 
         <SeoProse heading={cfg.proseHeading} id={cfg.proseId}>
           {cfg.sections.map((s) => (

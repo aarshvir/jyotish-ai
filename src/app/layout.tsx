@@ -44,10 +44,10 @@ const SITE_URL = (RAW_SITE_URL.startsWith('http://localhost') || RAW_SITE_URL ==
   : RAW_SITE_URL
 ).trim().replace(/\/+$/, '');
 const SITE_NAME = 'VedicHour';
-const SITE_TITLE = 'Hour-by-hour Vedic timing | VedicHour';
+const SITE_TITLE = 'VedicHour | Free Vedic Birth Chart';
 // Keep ≤160 chars for Google snippet (no truncation).
 const SITE_DESCRIPTION =
-  'Your chart scored into 18 hourly windows a day — clearer vs heavier, in plain English. Free to start. No card needed.';
+  'Calculate your free Vedic birth-chart facts, explore a traditional compatibility score and read an example. No sign-up or card required.';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -124,8 +124,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#080C18',
-  colorScheme: 'dark',
+  themeColor: '#171c1b',
+  colorScheme: 'dark light',
 };
 
 export default function RootLayout({
@@ -196,7 +196,7 @@ export default function RootLayout({
                     'Janam Kundali Generator',
                   ],
                   description:
-                    'Generate your free Vedic birth chart and an hour-by-hour forecast in plain English. Eighteen scored windows a day from your exact birth moment.',
+                    'Calculate free Vedic birth-chart facts and a traditional compatibility score. Explore a clearly labelled example interpretation and access existing account reports.',
                   url: SITE_URL,
                   applicationCategory: 'LifestyleApplication',
                   applicationSubCategory: 'Astrology',
@@ -206,20 +206,13 @@ export default function RootLayout({
                   offers: vedicHourOffers(SITE_URL),
                   featureList: [
                     'Free Kundli generator',
-                    'Janam Kundali online',
-                    'Hourly Vedic forecast',
-                    'Vedic astrology report',
-                    'Jyotish hourly forecast',
+                    'Free traditional compatibility score',
                     'Swiss Ephemeris calculations',
                     'Lahiri Ayanamsa',
                     'Vimshottari Dasha',
-                    'Choghadiya timing',
-                    'Hora ruler schedule',
-                    'Rahu Kaal warnings',
-                    '18 hourly windows per day',
-                    'PDF and Markdown export',
+                    'Example reading with calculation and interpretation labelled',
+                    'Existing account report access',
                   ],
-                  screenshot: `${SITE_URL}/opengraph-image`,
                   // NOTE: aggregateRating intentionally omitted. Google disallows
                   // self-asserted ratings without a genuine, visible on-page review
                   // mechanism — re-add only when wired to a real review source.

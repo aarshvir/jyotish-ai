@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { track } from '@/components/analytics/PostHogProvider';
 import { daysLeft, RENEW_REMINDER_DAYS, type SubscriptionPlan } from '@/lib/subscriptions/period';
+import { ArrowRight, RefreshCw } from 'lucide-react';
 
 interface LatestReport {
   native_name: string | null;
@@ -36,37 +37,53 @@ function formatDate(iso: string): string {
  * the product would start it), and renewing near or after the end of a period. Ziina cannot
  * charge a card again on its own, so renewal is always the customer's tap.
  */
-export function SubscriptionCard() {
+export function SubscriptionCard({ checkoutEnabled = false }: { checkoutEnabled?: boolean }) {
   const router = useRouter();
   const [status, setStatus] = useState<Status | null>(null);
   const [starting, setStarting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    fetch('/api/subscription/status', { cache: 'no-store' })
-      .then((r) => (r.ok ? (r.json() as Promise<Status>) : null))
-      .then(setStatus)
+    const controller = new AbortController();
+    let cancelled = false;
+    const timer = setTimeout(() => controller.abort(), 20_000);
+    setStatusError(false);
+    fetch('/api/subscription/status', { cache: 'no-store', credentials: 'include', signal: controller.signal })
+      .then(async r => {
+        if (!r.ok) throw new Error('Status unavailable');
+        const result = await r.json() as Status;
+        if (typeof result.signedIn !== 'boolean') throw new Error('Invalid status response');
+        return result;
+      })
+      .then(result => { if (!cancelled) setStatus(result); })
       .catch(() => {
-        /* the rest of the dashboard still works */
-      });
-  }, []);
+        if (!cancelled) setStatusError(true);
+      })
+      .finally(() => clearTimeout(timer));
+    return () => { cancelled = true; clearTimeout(timer); controller.abort(); };
+  }, [attempt]);
+
+  if (statusError) return <section className="border-y border-horizon py-5"><h2 className="font-semibold">Existing subscription access</h2><p role="alert" className="mt-2 text-sm text-dust">We could not check your access. This does not mean your subscription ended.</p><button type="button" onClick={() => setAttempt(value => value + 1)} className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm text-amber"><RefreshCw aria-hidden="true" className="h-4 w-4" />Retry access check</button></section>;
+  if (!status) return <p role="status" className="text-sm text-dust">Checking existing subscription access...</p>;
 
   if (!status?.signedIn) return null;
   const sub = status.subscription;
 
   if (!sub) {
     return (
-      <div className="card p-5 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+      <section className="border-y border-horizon py-5">
         <div>
-          <h2 className="font-body font-semibold text-star">Your hour-by-hour forecast</h2>
+          <h2 className="font-body font-semibold text-star">Existing subscription access</h2>
           <p className="font-body text-body-sm text-dust mt-1">
-            Take a short quiz and subscribe for your next 30 days, planned hour by hour.
+            No subscription was found in this account. Existing individual reports are listed separately above.
           </p>
         </div>
-        <Link href="/start" className="btn-primary px-5 py-2.5 text-body-sm shrink-0 justify-center">
-          Start with the quiz →
+        <Link href="/free-kundli" className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm text-amber">
+          Open free birth chart <ArrowRight aria-hidden="true" className="h-4 w-4" />
         </Link>
-      </div>
+      </section>
     );
   }
 
@@ -74,12 +91,12 @@ export function SubscriptionCard() {
   const unlockAt = status.nextForecastUnlock ? new Date(status.nextForecastUnlock) : null;
   const cooling = unlockAt !== null && unlockAt.getTime() > Date.now();
   const canStart = sub.active && !cooling && Boolean(status.latestReport);
-  const showRenew = !sub.active || left <= RENEW_REMINDER_DAYS[sub.plan];
+  const showRenew = checkoutEnabled && (!sub.active || left <= RENEW_REMINDER_DAYS[sub.plan]);
   const planName = sub.plan === 'annual' ? 'Yearly' : 'Monthly';
 
   async function startNextForecast() {
     const r = status?.latestReport;
-    if (!r || starting) return;
+    if (!r || starting || !canStart) return;
     setStarting(true);
     setMessage(null);
     const reportId = crypto.randomUUID();
@@ -104,12 +121,11 @@ export function SubscriptionCard() {
           ...(r.personal_context ? { personal_context: r.personal_context } : {}),
         }),
       });
-      const j = (await res.json().catch(() => ({}))) as { error?: string };
       if (res.ok) {
         router.push(`/report/${reportId}`);
         return;
       }
-      setMessage(j.error ?? 'We could not start your forecast. Please try again.');
+      setMessage(res.status === 401 ? 'Your session expired. Sign in again with the same account.' : res.status === 403 ? 'This account does not currently have access to start that forecast. Your existing reports remain available.' : res.status === 429 ? 'Please wait before trying to start another forecast.' : 'We could not confirm that the forecast started. Check your saved reports before trying again.');
     } catch {
       setMessage('Network problem — please check your connection and try again.');
     } finally {
@@ -118,10 +134,10 @@ export function SubscriptionCard() {
   }
 
   return (
-    <div className="card p-5">
+    <section className="border-y border-horizon py-5">
       <div className="flex items-start justify-between gap-3 mb-4">
         <div>
-          <h2 className="font-body font-semibold text-star">Your subscription</h2>
+          <h2 className="font-body font-semibold text-star">Existing subscription access</h2>
           <p className="font-body text-body-sm text-dust mt-1">
             {sub.active
               ? `${planName} · active until ${formatDate(sub.currentPeriodEnd)} (${left} day${left === 1 ? '' : 's'} left)`
@@ -160,6 +176,8 @@ export function SubscriptionCard() {
           Your next 30-day forecast unlocks on {formatDate(unlockAt.toISOString())}.
         </p>
       )}
+      {sub.active && !status.latestReport && <p className="mt-3 text-sm text-dust">No eligible saved birth details were returned for a new forecast. <Link href="/help/existing-reports" className="text-amber underline">Get help with existing access</Link>.</p>}
+      {!checkoutEnabled && <p className="mt-3 text-sm leading-relaxed text-dust">New purchases and renewals are currently unavailable. This does not remove existing access or saved reports. <Link href="/help/unavailable-offers" className="text-amber underline">Availability help</Link>.</p>}
       {sub.active && showRenew && (
         <p className="font-body text-body-sm text-dust mt-3">
           Renewing early adds a new period after this one ends, so you never lose days. Nothing is charged
@@ -171,6 +189,6 @@ export function SubscriptionCard() {
           {message}
         </p>
       )}
-    </div>
+    </section>
   );
 }

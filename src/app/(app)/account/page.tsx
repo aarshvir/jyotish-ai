@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Footer from '@/components/shared/Footer';
+import { Download } from 'lucide-react';
 
 export default function AccountPage() {
   const router = useRouter();
   const [confirm, setConfirm] = useState('');
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [ref, setRef] = useState<{ link: string; count: number } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -25,7 +27,28 @@ export default function AccountPage() {
     navigator.clipboard?.writeText(ref.link).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); }).catch(() => {});
   }
 
+  async function downloadData() {
+    if (busy || exporting) return;
+    setErr(null); setExporting(true);
+    try {
+      const response = await fetch('/api/account/export', { credentials: 'include', cache: 'no-store', signal: AbortSignal.timeout(30_000) });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({})) as { error?: string };
+        setErr(result.error ?? 'Your account export is unavailable. Please try again.');
+        return;
+      }
+      const payload = await response.json() as { exported_at?: string; scope?: string };
+      if (!payload.exported_at || !payload.scope) throw new Error('Invalid export');
+      const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = url; link.download = 'vedichour-my-data.json'; link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    } catch { setErr('Could not download the export. No account records were changed. Please try again.'); }
+    finally { setExporting(false); }
+  }
+
   async function deleteAccount() {
+    if (busy || exporting || confirm !== 'DELETE') return;
     setErr(null);
     setBusy(true);
     try {
@@ -33,6 +56,7 @@ export default function AccountPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        signal: AbortSignal.timeout(30_000),
         body: JSON.stringify({ confirm: 'DELETE' }),
       });
       if (!res.ok) {
@@ -44,7 +68,7 @@ export default function AccountPage() {
       try { await createClient().auth.signOut(); } catch { /* ignore */ }
       router.replace('/?deleted=1');
     } catch {
-      setErr('Network error. Please try again.');
+      setErr('Deletion status could not be confirmed. Some records may have been removed. Check account access or contact support@vedichour.com.');
       setBusy(false);
     }
   }
@@ -68,14 +92,15 @@ export default function AccountPage() {
 
         <section className="card border border-horizon/40 rounded-card p-6 mb-6">
           <h2 className="font-display text-xl text-star mb-2">Export your data</h2>
-          <p className="font-body text-body-sm text-dust mb-4">Download everything we hold about you (profile, reports, charts, payments) as a JSON file.</p>
-          <a href="/api/account/export" className="btn-secondary inline-block px-6 py-2.5">Download my data</a>
+            <p className="font-body text-body-sm text-dust mb-4">Download the account collections listed in the export, including your profile, reports, charts and payment history. Separately saved quiz links and device drafts are not included.</p>
+            <button type="button" disabled={exporting || busy} onClick={() => void downloadData()} className="btn-secondary inline-flex items-center gap-2 px-6 py-2.5 disabled:opacity-50"><Download size={18} aria-hidden />{exporting ? 'Preparing export...' : 'Download my account data'}</button>
+            {err && <p role="alert" className="text-caution text-body-sm mt-3">{err}</p>}
         </section>
 
         <section className="card border border-error/30 rounded-card p-6 bg-error/[0.03]">
           <h2 className="font-display text-xl text-star mb-2">Delete your account</h2>
           <p className="font-body text-body-sm text-dust mb-4">
-            This permanently deletes your account, birth details, reports and charts. Payment records are kept (de-identified) for legal/tax purposes. This cannot be undone.
+            This permanently deletes your sign-in and account-linked profile, reports and charts. Retained payment records are de-identified. Device drafts and separately saved quiz links require separate controls or a request to privacy@vedichour.com. Deletion cannot be undone; a failed attempt may already have removed some records.
           </p>
           <label className="block font-body text-body-sm text-dust mb-2">
             Type <strong className="text-star">DELETE</strong> to confirm:
@@ -87,10 +112,9 @@ export default function AccountPage() {
               autoComplete="off"
             />
           </label>
-          {err && <p className="text-caution text-body-sm mb-3">{err}</p>}
           <button
             type="button"
-            disabled={confirm !== 'DELETE' || busy}
+              disabled={confirm !== 'DELETE' || busy || exporting}
             onClick={() => void deleteAccount()}
             className="mt-2 px-6 py-2.5 rounded-button bg-error/80 text-white font-body text-body-sm font-semibold disabled:opacity-40 hover:bg-error transition-colors"
           >

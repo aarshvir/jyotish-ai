@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { countryToCurrency, ZIINA_PLANS, getPlanAmount, formatAmount, type SupportedCurrency } from '@/lib/ziina/server';
+import { commercialAvailability } from '@/lib/commercial/availability';
 
 /**
  * GET /api/geo
@@ -21,9 +22,11 @@ export async function GET(request: NextRequest) {
   const country = request.headers.get('x-vercel-ip-country') ?? null;
   const cookieCurrency = normaliseCurrency(request.cookies.get('vh_currency')?.value);
   const currency: SupportedCurrency = cookieCurrency ?? countryToCurrency(country);
+  const availability = commercialAvailability();
 
   const prices: Record<string, { amount: number; display: string; currency: string }> = {};
   for (const [planId] of Object.entries(ZIINA_PLANS)) {
+    if (!availability.checkoutEnabled) continue;
     const amount = getPlanAmount(planId, currency);
     prices[planId] = {
       amount,
@@ -32,5 +35,5 @@ export async function GET(request: NextRequest) {
     };
   }
 
-  return NextResponse.json({ country, currency, prices });
+  return NextResponse.json({ country, currency, prices, ...availability });
 }

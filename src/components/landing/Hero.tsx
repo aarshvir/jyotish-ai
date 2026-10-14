@@ -1,89 +1,24 @@
 import Link from 'next/link';
-import { StarField } from '@/components/ui/StarField';
-import { UNLOCK_FREE_HREF } from '@/lib/pricing';
+import { ArrowDown, ArrowRight } from 'lucide-react';
+import { FREE_CHART_DESCRIPTION, FREE_CHART_HREF } from '@/lib/landingCopy';
 
-// Verifiable product facts only — no invented counters or ratings.
-const TRUST_STATS = [
-  { value: '18', label: 'hourly windows a day' },
-  { value: 'Real', label: 'astronomy — no guesswork' },
-  { value: 'Free', label: 'calculators · no sign-up' },
-  { value: '2-min', label: 'quiz to start' },
-];
-
-/*
- * Server Component — no 'use client'.
- * All animations are pure CSS (globals.css animate-* classes) so no
- * Framer Motion ships in the critical above-fold JS bundle.
- * The H1 is fully visible from SSR for optimal LCP.
- */
 export default function Hero() {
   return (
-    <section className="relative min-h-[calc(100svh-var(--header-height,6rem))] flex flex-col items-center justify-center overflow-hidden bg-space">
-      <StarField />
-
-      {/* Premium Glow & Aurora */}
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-        <div className="aura-glow animate-aurora" />
-      </div>
-
-      <div className="relative z-10 text-center max-w-4xl mx-auto px-6 pt-24 pb-16 md:pt-32 md:pb-20">
-        {/* Eyebrow — CSS fade-down */}
-        <div className="animate-fade-down inline-flex items-center gap-2 mb-8 md:mb-10 px-4 py-1.5 rounded-pill border border-amber/20 bg-amber/[0.04]">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber animate-pulse-amber" />
-          <span className="font-mono text-mono-sm text-amber tracking-[0.15em] uppercase">
-            Calculated for your exact birth — not a sun-sign mood
-          </span>
-        </div>
-
-        {/*
-         * H1 — LCP element. Rendered fully visible from SSR (no animation, no opacity:0).
-         * LCP fires immediately on first paint.
-         */}
-        <h1 className="font-display font-semibold text-star mb-6 text-display-xl tracking-tight">
-          <span className="inline-block mr-[0.2em]">Your</span>{' '}
-          <span className="inline-block mr-[0.2em] text-amber">Vedic</span>{' '}
-          <span className="inline-block mr-[0.2em]">Forecast,</span>{' '}
-          <span className="inline-block mr-[0.2em]">Decoded</span>{' '}
-          <span className="inline-block mr-[0.2em]">Hour</span>{' '}
-          <span className="inline-block mr-[0.2em]">by</span>{' '}
-          <span className="inline-block text-amber-gradient">Hour.</span>
-        </h1>
-
-        {/* Subtitle — CSS fade-up */}
-        <p className="animate-fade-up-1 font-body text-body-lg text-dust max-w-xl mx-auto mb-10 leading-relaxed">
-          Same Tuesday. Two windows. Your chart says which hour is clearer for the call.{' '}
-          <br className="hidden md:block" />
-          Eighteen slots a day, scored in plain English. Free to start.
-        </p>
-
-        {/* Primary CTA — single high-contrast action */}
-        <div className="animate-fade-up-2 flex flex-col items-center gap-3 mb-4">
-          <Link href={UNLOCK_FREE_HREF} rel="nofollow" className="btn-primary text-base px-10 py-4 w-full max-w-xs sm:max-w-none sm:w-auto group">
-            <span>See today&apos;s windows — free</span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="group-hover:translate-x-0.5 transition-transform" aria-hidden>
-              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+    <section className="public-hero" aria-labelledby="home-heading">
+      <div className="public-container text-center">
+        <p className="public-kicker">Vedic astrology, starting with your chart</p>
+        <h1 id="home-heading" className="public-brand-heading">VedicHour</h1>
+        <p className="public-hero-copy">{FREE_CHART_DESCRIPTION}</p>
+        <div className="public-actions justify-center">
+          <Link href={FREE_CHART_HREF} className="public-button public-button-primary">
+            Create my free chart <ArrowRight size={18} aria-hidden="true" />
           </Link>
-          <Link href="/sample-report" className="font-body text-body-sm text-dust hover:text-dust underline-offset-2 hover:underline transition-colors">
-            Or read a full sample day →
+          <Link href="#sample-chart" className="public-button public-button-secondary">
+            See a sample <ArrowDown size={16} aria-hidden="true" />
           </Link>
-          <p className="font-mono text-mono-sm text-dust tracking-wider">
-            No sign-up · no card required
-          </p>
         </div>
-
-        {/* Trust bar — verifiable product facts */}
-        <div className="animate-fade-in-1 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-10 md:mb-12">
-          {TRUST_STATS.map((s) => (
-            <div key={s.value} className="flex items-center gap-1.5">
-              <span className="font-mono text-mono-md text-amber font-medium tracking-wider">{s.value}</span>
-              <span className="font-body text-body-sm text-dust">{s.label}</span>
-            </div>
-          ))}
-        </div>
+        <p className="public-meta mt-4">Chart facts only. No sign-up or payment card.</p>
       </div>
-
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-space to-transparent" />
     </section>
   );
 }

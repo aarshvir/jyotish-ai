@@ -1,102 +1,50 @@
 import Link from 'next/link';
-import { NewsletterSignup } from '@/components/newsletter/NewsletterSignup';
+import { ArrowUpRight, Compass } from 'lucide-react';
 
-const READINGS = [
-  { href: '/pricing', label: 'Hour-by-Hour Forecast' },
-  { href: '/kundali', label: 'Deep Kundli Report' },
-  { href: '/synastry', label: 'Kundli Matching (Gun Milan)' },
-  { href: '/transit', label: 'Planet transits now' },
+const groups = [
+  { title: 'Explore', links: [
+    { href: '/free-kundli', label: 'Free birth chart' },
+    { href: '/moon-sign-calculator', label: 'Moon sign' },
+    { href: '/nakshatra-finder', label: 'Birth star' },
+    { href: '/vimshottari-dasha-calculator', label: 'Dasha periods' },
+    { href: '/sample-report', label: 'Example reading' },
+  ] },
+  { title: 'Understand', links: [
+    { href: '/methodology', label: 'Calculation method' },
+    { href: '/blog', label: 'Journal' },
+    { href: '/about', label: 'About VedicHour' },
+    { href: '/pricing', label: 'Pricing and availability' },
+    { href: '/help', label: 'Help' },
+  ] },
+  { title: 'Your account', links: [
+    { href: '/dashboard', label: 'Your reports' },
+    { href: '/account', label: 'Account and saved details' },
+    { href: '/privacy', label: 'Privacy' },
+    { href: '/terms', label: 'Terms' },
+    { href: '/refund', label: 'Refund policy' },
+  ] },
 ];
-
-const TOOLS = [
-  { href: '/free-kundli', label: 'Free Kundli' },
-  { href: '/manglik-dosha-calculator', label: 'Manglik Dosha Calculator' },
-  { href: '/sade-sati-calculator', label: 'Sade Sati Calculator' },
-  { href: '/vimshottari-dasha-calculator', label: 'Dasha Calculator' },
-  { href: '/nakshatra-finder', label: 'Nakshatra Finder' },
-  { href: '/moon-sign-calculator', label: 'Moon Sign Calculator' },
-  { href: '/lagna-calculator', label: 'Lagna Calculator' },
-  { href: '/kaal-sarp-dosha-calculator', label: 'Kaal Sarp Dosha' },
-];
-
-const LEARN = [
-  { href: '/blog', label: 'Blog' },
-  { href: '/nakshatra', label: 'The 27 Nakshatras' },
-  { href: '/dasha', label: 'Dasha periods' },
-  { href: '/hora', label: 'Planetary hours (Hora)' },
-  { href: '/muhurat', label: 'Shubh Muhurat' },
-  { href: '/predictions', label: 'Life Predictions' },
-  { href: '/compare', label: 'Compare alternatives' },
-  { href: '/methodology', label: 'How we calculate' },
-];
-
-const COMPANY = [
-  { href: '/#how-it-works', label: 'How It Works' },
-  { href: '/about', label: 'About and method' },
-  { href: '/pricing', label: 'Pricing' },
-  { href: '/refund', label: 'Refund Policy' },
-  { href: '/privacy', label: 'Privacy' },
-  { href: '/terms', label: 'Terms' },
-  { href: '/account', label: 'Your data' },
-];
-
-const linkCls =
-  'hover:text-star transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button';
-
-function Col({ title, links }: { title: string; links: { href: string; label: string }[] }) {
-  return (
-    <div>
-      <h3 className="font-mono text-mono-sm uppercase tracking-wider text-dust mb-3">{title}</h3>
-      <ul className="space-y-2 font-body text-body-sm text-dust">
-        {links.map((l) => (
-          <li key={l.href + l.label}>
-            <Link href={l.href} className={linkCls}>
-              {l.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
 
 export default function Footer() {
   return (
-    <footer className="border-t border-horizon/40 py-12 md:py-14">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="mb-10 pb-8 border-b border-horizon/30">
-          <h3 className="font-display text-headline-sm text-star mb-1">Weekly Vedic timing tips</h3>
-          <p className="font-body text-body-sm text-dust/70 mb-3">Hour-by-hour guidance, new tools, and seasonal forecasts — no spam.</p>
-          <NewsletterSignup source="footer" />
-        </div>
-
-        <nav aria-label="Footer" className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
-          <div className="col-span-2 md:col-span-1">
-            <span className="font-display font-semibold text-lg tracking-wide text-star/70">VedicHour</span>
-            <p className="mt-2 font-body text-body-sm text-dust max-w-[14rem]">
-              Your life, decoded hour by hour — Vedic astrology built on{' '}
-              <a
-                href="https://www.astro.com/swisseph/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-star transition-colors"
-              >
-                real astronomical data
-              </a>
-              .
-            </p>
+    <footer className="public-footer">
+      <div className="public-container">
+        <div className="public-footer-grid">
+          <div>
+            <Link href="/" className="public-wordmark"><Compass size={24} aria-hidden="true" /><span>VedicHour</span></Link>
+            <p className="mt-4 max-w-xs public-body">A place to explore your Vedic chart, understand the method and reflect with care.</p>
+            <a href="mailto:support@vedichour.com" className="public-text-link mt-5">Contact support <ArrowUpRight size={16} aria-hidden="true" /></a>
           </div>
-          <Col title="Readings" links={READINGS} />
-          <Col title="Free Tools" links={TOOLS} />
-          <Col title="Learn" links={LEARN} />
-          <Col title="Company" links={COMPANY} />
-        </nav>
-
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-horizon/30 pt-6">
-          <a href="mailto:support@vedichour.com" className={`font-body text-body-sm text-dust ${linkCls}`}>
-            support@vedichour.com
-          </a>
-          <p className="font-mono text-mono-sm text-dust tracking-wider">© {new Date().getFullYear()} VedicHour</p>
+          {groups.map(({ title, links }) => (
+            <nav key={title} aria-label={title}>
+              <h2 className="public-footer-heading">{title}</h2>
+              <ul>{links.map(({ href, label }) => <li key={href}><Link href={href}>{label}</Link></li>)}</ul>
+            </nav>
+          ))}
+        </div>
+        <div className="public-footer-bottom">
+          <p>Astrology is an interpretive tradition, not a guarantee of outcomes or professional advice.</p>
+          <p>&copy; {new Date().getFullYear()} VedicHour</p>
         </div>
       </div>
     </footer>

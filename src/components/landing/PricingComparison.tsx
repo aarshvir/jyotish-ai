@@ -7,6 +7,7 @@
 
 import { Fragment } from 'react';
 import { FEATURE_MATRIX, type PlanId } from '@/lib/pricing';
+import { commercialAvailability } from '@/lib/commercial/availability';
 
 // Single source of truth: the table renders from FEATURE_MATRIX, the SAME data the
 // landing Pricing cards and /pricing use, so the three surfaces cannot contradict.
@@ -43,6 +44,7 @@ function Cell({ value }: { value: string | boolean }) {
 }
 
 export default function PricingComparison() {
+  if (!commercialAvailability().checkoutEnabled) return null;
   return (
     <section aria-labelledby="pricing-comparison-heading" className="py-24 md:py-28 bg-space relative">
       <div className="section-divider absolute top-0 left-0 right-0" />

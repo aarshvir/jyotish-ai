@@ -232,7 +232,8 @@ describe('the page renders statically', () => {
     expect(html.match(/data-testid="why-here"/g)).toHaveLength(1 + SECTION_ORDER.length);
     for (const slot of EVENT_DAY.slots) expect(html).toContain(formatRange(slot.label));
     expect(html).toContain('What this report cannot do');
-    expect(html).toContain('See your own day');
+    expect(html).toContain('Calculate my free chart');
+    expect(html).toContain('A personal hourly forecast is separate');
   });
 
   it('has the sections in the order her answers chose', () => {

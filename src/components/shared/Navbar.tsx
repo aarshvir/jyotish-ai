@@ -1,187 +1,98 @@
 'use client';
 
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import LaunchBanner from '@/components/shared/LaunchBanner';
+import { ArrowRight, Compass, Menu, UserRound, X } from 'lucide-react';
+import LaunchBanner from './LaunchBanner';
 
-/*
- * AuthButton loads Supabase client + Lucide icons — defer to after
- * initial hydration so they don't block FCP/LCP on marketing pages.
- */
-const AuthButton = dynamic(() => import('@/components/shared/AuthButton'), {
-  ssr: false,
-  loading: () => (
-    <div className="h-9 w-28 shrink-0 rounded-button bg-nebula/60 skeleton" aria-hidden />
-  ),
-});
-
-const MobileAuthLinks = dynamic(
-  () => import('@/components/shared/AuthButton').then((m) => m.MobileAuthLinks),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="h-11 w-full rounded-button bg-nebula/60 skeleton" aria-hidden />
-    ),
-  }
-);
-
-const NAV_LINKS = [
-  { href: '/kundali', label: 'Kundli' },
-  { href: '/synastry', label: 'Matchmaking' },
-  { href: '/#how-it-works', label: 'How it works' },
+const links = [
+  { href: '/sample-report', label: 'Example reading' },
+  { href: '/methodology', label: 'Method' },
   { href: '/pricing', label: 'Pricing' },
-  { href: '/blog', label: 'Blog' },
-  { href: '/#faq', label: 'FAQ' },
-] as const;
+  { href: '/blog', label: 'Journal' },
+  { href: '/help', label: 'Help' },
+];
 
 export default function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const wrapperRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    const header = headerRef.current;
+    if (!header) return;
+    const updateHeight = () => document.documentElement.style.setProperty('--header-height', `${header.getBoundingClientRect().height}px`);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(header);
+    return () => observer.disconnect();
   }, []);
+
+  useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   useEffect(() => {
-    const el = wrapperRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => {
-      document.documentElement.style.setProperty('--header-height', `${el.getBoundingClientRect().height}px`);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const onResize = () => { if (desktop.matches) setMobileOpen(false); };
+    desktop.addEventListener('change', onResize);
+    return () => desktop.removeEventListener('change', onResize);
   }, []);
 
-  // Close menu on Escape and lock body scroll when open
   useEffect(() => {
     if (!mobileOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false);
+        toggleRef.current?.focus();
+      }
     };
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prev;
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, [mobileOpen]);
 
   return (
-    <header ref={wrapperRef} className="sticky top-0 z-50">
+    <header ref={headerRef} className="public-header sticky top-0 z-50 pdf-exclude">
       <LaunchBanner />
-      <nav
-        className={`pdf-exclude transition-all duration-250 ${
-          scrolled
-            ? 'bg-space/85 backdrop-blur-md border-b border-horizon/40'
-            : 'bg-transparent'
-        }`}
-        role="navigation"
-        aria-label="Main navigation"
-      >
-        <div className="mx-auto flex h-full max-w-6xl items-center justify-between gap-3 px-5 sm:px-6 py-3">
-          <Link
-            href="/"
-            className="group flex min-w-0 shrink-0 items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button"
-            aria-label="VedicHour home"
-          >
-            <svg width="26" height="26" viewBox="0 0 28 28" fill="none" className="shrink-0 text-amber" aria-hidden>
-              <circle cx="14" cy="14" r="13" stroke="currentColor" strokeWidth="1" opacity="0.5" />
-              <circle cx="14" cy="14" r="9" stroke="currentColor" strokeWidth="0.8" opacity="0.7" />
-              <circle cx="14" cy="14" r="3" fill="currentColor" />
-              <line x1="14" y1="1" x2="14" y2="5" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-              <line x1="14" y1="23" x2="14" y2="27" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-              <line x1="1" y1="14" x2="5" y2="14" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-              <line x1="23" y1="14" x2="27" y2="14" stroke="currentColor" strokeWidth="1" opacity="0.6" />
-            </svg>
-            <span className="font-display text-lg font-semibold tracking-wide text-star group-hover:text-amber-light transition-colors">
-              VedicHour
-            </span>
+      <nav aria-label="Main navigation" className="public-navigation">
+        <div className="public-container public-nav-row">
+          <Link href="/" className="public-wordmark" aria-label="VedicHour home">
+            <Compass size={24} aria-hidden="true" /><span>VedicHour</span>
           </Link>
-
-          {/* Desktop links */}
-          <div className="hidden items-center gap-5 font-body text-body-sm text-dust lg:flex">
-            {NAV_LINKS.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className="tracking-wide transition-colors hover:text-star focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber rounded-button px-1 py-0.5"
-              >
-                {l.label}
-              </Link>
+          <div className="hidden lg:flex items-center gap-5">
+            {links.map(({ href, label }) => (
+              <Link key={href} href={href} className="public-nav-link" aria-current={pathname === href ? 'page' : undefined}>{label}</Link>
             ))}
           </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <Link
-              href="/start"
-              className="hidden lg:inline-flex btn-primary px-4 py-2 text-sm"
-            >
-              Get your forecast
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="public-nav-account hidden lg:inline-flex">
+              <UserRound size={17} aria-hidden="true" /> Your reports
             </Link>
-            <div className="hidden lg:block">
-              <AuthButton />
-            </div>
-
-            {/* Mobile hamburger */}
-            <button
-              type="button"
-              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={mobileOpen}
-              aria-controls="mobile-menu"
-              onClick={() => setMobileOpen((v) => !v)}
-              className="lg:hidden inline-flex items-center justify-center h-11 w-11 rounded-button text-dust hover:text-amber hover:bg-amber/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
-            >
-              {mobileOpen ? (
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              ) : (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <line x1="4" y1="7" x2="20" y2="7" />
-                  <line x1="4" y1="12" x2="20" y2="12" />
-                  <line x1="4" y1="17" x2="20" y2="17" />
-                </svg>
-              )}
+            <Link href="/free-kundli" className="public-nav-chart">
+              Free chart <ArrowRight size={16} aria-hidden="true" className="hidden sm:block" />
+            </Link>
+            <button ref={toggleRef} type="button" title={mobileOpen ? 'Close navigation' : 'Open navigation'}
+              aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
+              aria-expanded={mobileOpen} aria-controls="public-mobile-navigation"
+              onClick={() => setMobileOpen((open) => !open)} className="public-nav-toggle lg:hidden">
+              {mobileOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}
             </button>
           </div>
         </div>
-
-        {/* Mobile menu panel */}
-        {mobileOpen && (
-          <div
-            id="mobile-menu"
-            className="lg:hidden border-t border-horizon/40 bg-space/95 backdrop-blur-md"
-          >
-            <div className="mx-auto max-w-6xl px-5 py-5 flex flex-col gap-4">
-              <Link
-                href="/start"
-                onClick={() => setMobileOpen(false)}
-                className="btn-primary text-center py-3"
-              >
-                Get your forecast
-              </Link>
-              {NAV_LINKS.map((l) => (
-                <Link
-                  key={l.href}
-                  href={l.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="font-body text-body-md text-dust hover:text-amber transition-colors py-2"
-                >
-                  {l.label}
-                </Link>
-              ))}
-              <div className="pt-3 border-t border-horizon/30">
-                <MobileAuthLinks onNavigate={() => setMobileOpen(false)} />
-              </div>
-            </div>
+        <div id="public-mobile-navigation" hidden={!mobileOpen} className="public-mobile-navigation lg:hidden">
+          <div className="public-container py-3">
+            {links.map(({ href, label }) => (
+              <Link key={href} href={href} className="public-mobile-link" onClick={() => setMobileOpen(false)}
+                aria-current={pathname === href ? 'page' : undefined}>{label}<ArrowRight size={16} aria-hidden="true" /></Link>
+            ))}
+            <Link href="/dashboard" className="public-mobile-link" onClick={() => setMobileOpen(false)}>
+              Your reports <UserRound size={17} aria-hidden="true" />
+            </Link>
+            <Link href="/account" className="public-mobile-link" onClick={() => setMobileOpen(false)}>
+              Account and saved details <ArrowRight size={16} aria-hidden="true" />
+            </Link>
           </div>
-        )}
+        </div>
       </nav>
     </header>
   );

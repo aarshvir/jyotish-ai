@@ -1,24 +1,21 @@
 'use client';
 
 import { useEffect } from 'react';
+import { hasAnalyticsConsent } from '@/lib/analytics/consent';
+import { useAnalyticsConsent } from '@/lib/analytics/useAnalyticsConsent';
 
-/**
- * Captures a referral code from ?ref=CODE into a 90-day cookie (`vh_ref`). At signup
- * the auth callback reads it and records the referral. Fires once; first ref wins.
- */
+export function captureReferral() {
+  if (!hasAnalyticsConsent()) return;
+  try {
+    if (document.cookie.split(';').some(part => part.trim().startsWith('vh_ref='))) return;
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (!ref || !/^[A-Za-z0-9]{1,16}$/.test(ref) || !hasAnalyticsConsent()) return;
+    document.cookie = `vh_ref=${ref}; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax${window.location.protocol === 'https:' ? '; Secure' : ''}`;
+  } catch {}
+}
+
 export default function RefCapture() {
-  useEffect(() => {
-    try {
-      if (document.cookie.includes('vh_ref=')) return;
-      const ref = new URLSearchParams(window.location.search).get('ref');
-      if (!ref) return;
-      const clean = ref.replace(/[^A-Za-z0-9]/g, '').slice(0, 16);
-      if (!clean) return;
-      const ninetyDays = 90 * 24 * 60 * 60;
-      document.cookie = `vh_ref=${clean}; path=/; max-age=${ninetyDays}; SameSite=Lax`;
-    } catch {
-      /* never break the page */
-    }
-  }, []);
+  const consent = useAnalyticsConsent();
+  useEffect(() => { if (consent.allowed) captureReferral(); }, [consent.allowed, consent.revision]);
   return null;
 }

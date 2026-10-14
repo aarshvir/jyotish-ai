@@ -4,14 +4,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/api/requireAuth';
 import { createServiceClient } from '@/lib/supabase/admin';
 
-/** GDPR/DPDP data export — returns all of the signed-in user's data as a JSON download. */
+/** Owner-scoped export of the account collections listed below. */
 export async function GET(req: NextRequest) {
   const auth = await requireAuth(req);
   if (auth instanceof NextResponse) return auth;
   const db = createServiceClient();
   const uid = auth.user.id;
 
-  const [profile, reports, kundalis, synastries, payments, feedback, referrals, newsletter] = await Promise.all([
+  const results = await Promise.allSettled([
     db.from('user_profiles').select('*').eq('id', uid).maybeSingle(),
     // Full Subject-Access export of the user's own report rows. Exclude ONLY
     // pipeline_state/pipeline_checkpoint — internal resumable-generation blobs that
@@ -23,11 +23,20 @@ export async function GET(req: NextRequest) {
     db.from('ziina_payments').select('id, amount, currency, plan_type, status, created_at').eq('user_id', uid),
     db.from('feedback').select('*').eq('user_id', uid),
     db.from('referrals').select('*').or(`referrer_id.eq.${uid},referee_id.eq.${uid}`),
-    db.from('newsletter_subscribers').select('*').eq('email', auth.user.email ?? ''),
+    auth.user.email ? db.from('newsletter_subscribers').select('*').eq('email', auth.user.email) : Promise.resolve({ data: [], error: null }),
   ]);
+
+  if (results.some(result => result.status === 'rejected' || result.value.error)) {
+    return NextResponse.json({ error: 'Could not complete your account export. No account records were changed. Try again or contact support@vedichour.com.', code: 'EXPORT_UNAVAILABLE' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
+  }
+  const [profile, reports, kundalis, synastries, payments, feedback, referrals, newsletter] = results.map(result => {
+    if (result.status === 'rejected') throw new Error('Export unavailable');
+    return result.value;
+  });
 
   const payload = {
     exported_at: new Date().toISOString(),
+    scope: 'Account profile, reports, charts, payment history, feedback, referrals and legacy newsletter records. Device drafts and separately saved quiz links are not included. Contact privacy@vedichour.com for a broader request.',
     account: { id: uid, email: auth.user.email ?? null },
     profile: profile.data ?? null,
     reports: reports.data ?? [],
