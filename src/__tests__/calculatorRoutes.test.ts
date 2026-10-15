@@ -58,6 +58,12 @@ describe('free calculator chart API', () => {
     expect(await response.json()).toMatchObject({ code: 'UNKNOWN_TIME' });
     expect(fetch).not.toHaveBeenCalled();
   });
+  it('returns natal facts when the current period window has ended', async () => {
+    vi.mocked(fetch).mockResolvedValue(Response.json({ ...syntheticNatal, current_dasha: {} }));
+    const response = await POST(chartRequest({ person: { ...birth, birth_date: '1900-03-15' } }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ lagna: 'Gemini', moon_sign: 'Sagittarius', current_dasha: null });
+  });
   it('keeps approximate output explicitly provisional', async () => {
     const response = await POST(chartRequest({ person: { ...birth, birth_time_accuracy: 'approximate' } }));
     expect(await response.json()).toMatchObject({ birth_time_accuracy: 'approximate' });

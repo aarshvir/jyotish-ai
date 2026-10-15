@@ -40,6 +40,16 @@ describe('birth transport and compatibility inputs', () => {
     expect(await response.text()).not.toContain('private-provider-detail');
   });
 
+  it('returns a chart when the engine has no current period', async () => {
+    const ended = { ...syntheticNatal, current_dasha: {}, functional_nature: { Sun: 'benefic' } };
+    vi.mocked(fetch).mockResolvedValueOnce(Response.json(ended));
+    const chart = await calculateNatal({ ...person, birth_date: '1900-03-15' });
+    expect(chart.lagna).toBe('Gemini');
+    expect(chart.planets.Moon.sign).toBe('Sagittarius');
+    expect(chart.current_dasha).toEqual({});
+    expect(chart.functional_nature).toEqual({ Sun: 'benefic' });
+  });
+
   it('preserves dasha sub-periods for existing full readings and bounds a stalled JSON body', async () => {
     const full = { ...syntheticNatal, dasha_sequence: [{ planet: 'Moon', start_date: '2020-01-01', end_date: '2030-01-01', antardasha: [{ planet: 'Mars', start_date: '2022-01-01', end_date: '2023-01-01' }] }] };
     vi.mocked(fetch).mockResolvedValueOnce(Response.json(full));

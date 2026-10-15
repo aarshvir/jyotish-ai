@@ -4,7 +4,7 @@ export const maxDuration = 30;
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, getRateLimitKey } from '@/lib/api/rateLimit';
 import { validateBirth, type ValidBirth } from '@/lib/tools/birth';
-import { makeChartResult, natalSchema } from '@/lib/tools/chart';
+import { makeChartResult, natalSchema, normalizeServiceNatal } from '@/lib/tools/chart';
 import { requestJson, RequestTimeout } from '@/lib/tools/requests';
 
 const privateHeaders = { 'Cache-Control': 'no-store' };
@@ -22,7 +22,7 @@ async function natal(person: ValidBirth, timeoutMs: number, signal: AbortSignal)
     }),
   }, timeoutMs);
   if (!response.ok) throw new Error('Calculation unavailable');
-  return natalSchema.parse(data);
+  return natalSchema.parse(normalizeServiceNatal(data));
 }
 
 /** Public deterministic results are free; this endpoint neither collects leads nor changes accounts. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { doshaLabel, makeChartResult } from './chart';
+import { chartResultSchema, doshaLabel, makeChartResult, natalSchema } from './chart';
 
 import { syntheticNatal } from './test-fixtures';
 
@@ -33,5 +33,16 @@ describe('honest free chart results', () => {
   it('rejects malformed service output instead of inventing missing facts', () => {
     expect(() => makeChartResult({})).toThrow();
     expect(() => makeChartResult({ ...syntheticNatal, lagna: 'Invented' })).toThrow();
+  });
+  it('keeps planets when the Vimshottari window has already ended', () => {
+    const ended = {
+      ...syntheticNatal,
+      current_dasha: {},
+      dasha_sequence: [{ planet: 'Venus', start_date: '1880-01-01', end_date: '1900-01-01', antardasha: [{ planet: 'Sun', start_date: '1880-01-01', end_date: '1883-01-01' }] }],
+    };
+    expect(natalSchema.safeParse(ended).success).toBe(false);
+    const result = makeChartResult(ended, 'Pisces');
+    expect(result).toMatchObject({ lagna: 'Gemini', moon_sign: 'Sagittarius', current_dasha: null, dasha_sequence: [{ planet: 'Venus', start_date: '1880-01-01', end_date: '1900-01-01' }] });
+    expect(chartResultSchema.safeParse(result).success).toBe(true);
   });
 });

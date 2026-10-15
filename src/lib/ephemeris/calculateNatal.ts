@@ -1,5 +1,5 @@
 import type { NatalChartData, NatalChartInput } from '@/lib/agents/types';
-import { natalSchema } from '@/lib/tools/chart';
+import { natalSchema, normalizeServiceNatal } from '@/lib/tools/chart';
 import { requestJson } from '@/lib/tools/requests';
 
 /** Birth calculations never forward an account secret to a request-derived host. */
@@ -12,7 +12,7 @@ export async function calculateNatal(input: NatalChartInput, signal?: AbortSigna
       birth_lat: input.birth_lat, birth_lng: input.birth_lng,
     }),
   }, timeoutMs);
-  const verified = natalSchema.safeParse(data);
+  const verified = natalSchema.safeParse(normalizeServiceNatal(data));
   if (!response.ok || !verified.success || !verified.data.lagna || !verified.data.planets.Moon) {
     throw new Error('Birth chart calculation is unavailable');
   }
