@@ -126,7 +126,7 @@ export function OfferScreen({
               'One payment. Nothing is charged automatically.',
             ]}
           />
-          <p className="mt-3 font-body text-body-sm text-ink-soft">Card payment through Ziina. UPI is not available yet.</p>
+          <p className="mt-3 font-body text-body-sm text-ink-soft">Secure card payment through Ziina. If your bank declines an online payment, turn on online or international use for the card in your banking app, or try another card.</p>
         </section>
       ) : (
         <section>
@@ -172,7 +172,7 @@ export function OfferScreen({
               'Your birth details are never sold',
             ]}
           />
-          <p className="mt-3 font-body text-body-sm text-ink-soft">Card payment through Ziina. UPI is not available yet.</p>
+          <p className="mt-3 font-body text-body-sm text-ink-soft">Secure card payment through Ziina. If your bank declines an online payment, turn on online or international use for the card in your banking app, or try another card.</p>
         </section>
       )}
     </div>

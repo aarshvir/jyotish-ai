@@ -35,7 +35,7 @@ export default function Page() {
       h1Accent="Your Shani Status"
       intro="Find out instantly whether Shani Sade Sati is running in your chart. Enter your birth details and we check the live position of Saturn against your natal Moon, tell you which of the three phases you are in, and explain it in plain English — no fear, no signup."
       view="sadesati"
-      ctaHref="/kundali"
+      ctaHref="/start"
       ctaLabel="See Sade Sati in your full Kundli"
       proseHeading="Understanding Shani Sade Sati"
       proseId="sade-sati-explained"

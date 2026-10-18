@@ -35,7 +35,7 @@ export default function Page() {
       h1Accent="Free"
       intro="Find the sign that was rising in the east when you were born — the anchor of your whole Vedic chart. Enter your exact date, time and place of birth and we calculate your Lagna (ascendant) instantly, in plain English — no signup."
       view="lagna"
-      ctaHref="/kundali"
+      ctaHref="/start"
       ctaLabel="See your full Vedic chart"
       proseHeading="Understanding your Lagna (ascendant)"
       proseId="lagna-explained"

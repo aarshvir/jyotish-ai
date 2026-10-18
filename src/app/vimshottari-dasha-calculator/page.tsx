@@ -35,7 +35,7 @@ export default function Page() {
       h1Accent="Your Current Mahadasha"
       intro="See exactly which planetary period is running your life right now. Enter your birth details and we find your birth Moon’s nakshatra, calculate your current Mahadasha and Antardasha, and lay out your full 120-year timeline — in plain English, no signup."
       view="dasha"
-      ctaHref="/kundali"
+      ctaHref="/start"
       ctaLabel="See your 5-year dasha outlook"
       proseHeading="Understanding Vimshottari Dasha"
       proseId="vimshottari-explained"

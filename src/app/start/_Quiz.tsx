@@ -1050,11 +1050,36 @@ function Paywall({
         {paying ? 'Starting secure payment…' : selected ? `Subscribe — ${selected}` : 'Subscribe'}
       </button>
 
+      <p className="font-body text-body-sm text-dust mt-3 text-center">
+        Secure card payment through Ziina. Covered by our{' '}
+        <Link href="/refund" className="underline underline-offset-2">
+          24-hour refund policy
+        </Link>
+        .
+      </p>
+
+      <div className="mt-6 rounded-card border border-horizon px-4 py-4">
+        <h2 className="font-body font-semibold text-star text-body-lg mb-2">What you get today</h2>
+        <ul className="space-y-1.5 font-body text-body-md text-dust-light">
+          <li>• Your next 30 days, hour by hour, with the best and worst windows marked</li>
+          <li>• Written around {concernHeadline(answers)}, not a generic horoscope</li>
+          <li>• Ask questions about your own chart, plus your Kundli and matchmaking reports</li>
+        </ul>
+        <p className="font-body text-body-sm text-dust mt-3">
+          <Link href="/sample-report" className="underline underline-offset-2">
+            See a real sample report first
+          </Link>
+        </p>
+      </div>
+
       <p className="font-body text-body-sm text-dust mt-4">
         Nothing is charged automatically. Before each period ends we remind you, and you renew with one tap. Stop any
         time by simply not renewing.
       </p>
-      <p className="font-body text-body-sm text-dust/70 mt-2">Card payments through Ziina. UPI is not available yet.</p>
+      <p className="font-body text-body-sm text-dust/80 mt-2">
+        Paying from India? If your bank declines an online payment, switch on online or international use for your
+        card in your banking app, or try another card.
+      </p>
     </section>
   );
 }

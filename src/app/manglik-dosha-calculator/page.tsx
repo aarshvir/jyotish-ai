@@ -34,7 +34,7 @@ export default function Page() {
       h1Accent="Are You Manglik?"
       intro="Find out instantly whether your chart carries Manglik (Mangal) Dosha. Enter your birth details and we check Mars’s placement from your ascendant, Moon and Venus, grade the strength, and explain it in plain English — no fear, no signup."
       view="manglik"
-      ctaHref="/kundali"
+      ctaHref="/start"
       ctaLabel="See Manglik in your full Kundli"
       proseHeading="Understanding Manglik (Mangal) Dosha"
       proseId="manglik-explained"

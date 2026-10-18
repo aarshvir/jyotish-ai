@@ -35,7 +35,7 @@ export default function Page() {
       h1Accent="Your Birth Star"
       intro="Discover your Janma Nakshatra — the lunar mansion the Moon occupied when you were born. Enter your birth details and we locate it among the 27 nakshatras and tell you your pada, in plain English — no fate-talk, no signup."
       view="nakshatra"
-      ctaHref="/kundali"
+      ctaHref="/start"
       ctaLabel="See your nakshatra in your full Kundli"
       proseHeading="Understanding your nakshatra (birth star)"
       proseId="nakshatra-explained"

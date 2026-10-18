@@ -35,7 +35,7 @@ export default function Page() {
       h1Accent="Your Vedic Birth Chart, Instantly"
       intro="Generate your free Janam Kundali in seconds. Enter your date, time and place of birth and we cast your Vedic chart — showing your Lagna, Moon sign, Nakshatra, Sun sign, current dasha and the Manglik, Kaal Sarpa and Sade Sati flags. No signup, no card."
       view="fullchart"
-      ctaHref="/kundali"
+      ctaHref="/start"
       ctaLabel="Get your deep Kundli report"
       proseHeading="Your Vedic birth chart, explained"
       proseId="kundli-explained"

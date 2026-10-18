@@ -92,7 +92,7 @@ function shareTextFor(view: ToolView, res: ChartResult): string {
 
 export function ChartTool({
   view,
-  ctaHref = '/kundali',
+  ctaHref = '/start',
   ctaLabel = 'Get your full Kundli report',
 }: {
   view: ToolView;

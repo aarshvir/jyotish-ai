@@ -35,7 +35,7 @@ export default function Page() {
       h1Accent="Free"
       intro="Find your Vedic Moon sign in seconds. Enter your birth details and we calculate the exact Rashi the Moon occupied at birth — the sign Jyotish uses for your horoscope and compatibility, explained in plain English with no signup."
       view="moonsign"
-      ctaHref="/kundali"
+      ctaHref="/start"
       ctaLabel="See your full Vedic chart"
       proseHeading="Understanding your Moon sign (Rashi)"
       proseId="moon-sign-explained"

@@ -35,7 +35,7 @@ export default function Page() {
       h1Accent="Free Check"
       intro="Find out instantly whether your chart carries Kaal Sarp Dosha. Enter your birth details and we check whether all seven planets sit on one side of the Rahu–Ketu axis, then explain what it means in plain English — no fear, no signup."
       view="kaalsarp"
-      ctaHref="/kundali"
+      ctaHref="/start"
       ctaLabel="See Kaal Sarp in your full Kundli"
       proseHeading="Understanding Kaal Sarp Dosha"
       proseId="kaal-sarp-explained"
