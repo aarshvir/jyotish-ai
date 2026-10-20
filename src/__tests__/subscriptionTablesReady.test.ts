@@ -3,18 +3,25 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { subscriptionTablesReady } from '@/lib/subscriptions/access';
 
 /**
- * Checkout refuses a subscription until the tables its grant writes to exist. This is
- * the guard against charging a customer for a period that cannot be recorded.
+ * Checkout refuses a subscription until the tables its grant writes to exist, in the
+ * shape the grant writes. A user_id column on the 20260727 pivot table is not enough:
+ * that read succeeds and the later upsert of `plan` fails after the customer is charged.
  */
-function fakeDb(behaviour: Record<string, 'ok' | 'missing' | 'throws'>): SupabaseClient {
+function fakeDb(behaviour: Record<string, 'ok' | 'missing' | 'throws' | 'legacy'>): SupabaseClient {
   return {
     from(table: string) {
       return {
-        select() {
+        select(columns: string) {
           return {
             limit() {
               const mode = behaviour[table] ?? 'missing';
               if (mode === 'throws') return Promise.reject(new Error('network down'));
+              if (mode === 'legacy' || (table === 'subscriptions' && !String(columns).includes('plan'))) {
+                return Promise.resolve({
+                  data: null,
+                  error: { code: '42703', message: 'column subscriptions.plan does not exist' },
+                });
+              }
               return Promise.resolve(
                 mode === 'ok'
                   ? { data: [], error: null }
@@ -44,5 +51,9 @@ describe('subscriptionTablesReady', () => {
 
   it('is not ready when the database cannot be reached', async () => {
     expect(await subscriptionTablesReady(fakeDb({ subscriptions: 'throws', subscription_periods: 'ok' }))).toBe(false);
+  });
+
+  it('is not ready when subscriptions is still the pivot table and has no plan column', async () => {
+    expect(await subscriptionTablesReady(fakeDb({ subscriptions: 'legacy', subscription_periods: 'ok' }))).toBe(false);
   });
 });

@@ -55,15 +55,20 @@ export async function getSubscription(
 }
 
 /**
- * True only when both tables a paid period is written to can be read. Checkout calls this
- * before creating a payment intent: if the migration has not been run (or the database is
- * unreachable) the customer must not be charged for a period that cannot be recorded.
+ * True only when both tables a paid period is written to can be read in the shape
+ * grant.ts writes. Checkout calls this before creating a payment intent.
+ *
+ * Selecting `user_id` alone is not enough: 20260727 created a different
+ * `subscriptions` table that has `user_id` but not `plan`. That table still
+ * answers a user_id read, and the grant upsert then fails after the charge.
+ * Requiring `plan` refuses checkout until 20261020_subscriptions_grant_shape
+ * (or an already-correct 20260913 table) is what is live.
  */
 export async function subscriptionTablesReady(db: SupabaseClient): Promise<boolean> {
   try {
     const [periods, subs] = await Promise.all([
       db.from('subscription_periods').select('payment_intent_id').limit(1),
-      db.from('subscriptions').select('user_id').limit(1),
+      db.from('subscriptions').select('user_id, plan').limit(1),
     ]);
     return !periods.error && !subs.error;
   } catch {
