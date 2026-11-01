@@ -30,6 +30,7 @@ import { appendReportGenerationLog, clearReportGenerationLog } from '@/lib/obser
 import { inferReportGenerationErrorCode, markReportAsFailed } from '@/lib/reports/reportErrors';
 import { getPromoDiscount, hasUserRedeemed, redeemPromoCode, oncePerUserOrderId } from '@/lib/promo/server';
 import { isEntitledPaymentStatus } from '@/lib/reports/entitlement';
+import { reportWriteOwner, resolveAdminRequestedPaymentStatus } from '@/lib/reports/startActor';
 import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { decideAfterPromoRedeem } from '@/lib/promo/redeemGate';
 import { decideFreeReportClaim } from '@/lib/reports/freeReportGate';
@@ -154,6 +155,7 @@ interface StartRequestBody {
 
 type ExistingReportForStart = {
   user_id: string | null;
+  user_email: string | null;
   status: string | null;
   report_data: unknown;
   generation_started_at: string | null;
@@ -223,7 +225,9 @@ async function resolveTrustedPaymentStatus(
   allowE2ESelfGrant: boolean,
 ): Promise<string> {
   if (isAdmin && typeof body.payment_status === 'string' && body.payment_status.trim() !== '') {
-    return body.payment_status.trim();
+    // The report page can only send a client-writable status (unpaid/free).
+    // Trusting that on a retry stripped paid/promo/bypass off the row.
+    return resolveAdminRequestedPaymentStatus(existing?.payment_status, body.payment_status);
   }
 
   // Non-production e2e only: the bypass/service principal may grant itself 'bypass'
@@ -309,7 +313,7 @@ export async function POST(request: NextRequest) {
   const { data: existingRaw, error: existingErr } = await db
     .from('reports')
     .select(
-      'user_id, status, report_data, generation_started_at, plan_type, payment_status, payment_provider, report_start_date',
+      'user_id, user_email, status, report_data, generation_started_at, plan_type, payment_status, payment_provider, report_start_date',
     )
     .eq('id', reportId)
     .maybeSingle();
@@ -336,6 +340,19 @@ export async function POST(request: NextRequest) {
       },
       { status: 404 },
     );
+  }
+
+  // Support can open another account's failed report and press Try Again.
+  // That session is the admin's, but the row, grant, and pipeline must stay
+  // with the person who owns the report.
+  const { ownerId, actingForOwner } = reportWriteOwner({
+    actorId: auth.user.id,
+    actorIsAdmin: auth.isAdmin === true,
+    existingUserId: existing?.user_id,
+  });
+  const ownerEmail = actingForOwner ? (existing?.user_email ?? '') : (auth.user.email ?? '');
+  if (actingForOwner && existing?.plan_type) {
+    body.plan_type = existing.plan_type;
   }
 
   // personal_context lives behind migration 20260617. Read it tolerantly (separate
@@ -457,7 +474,7 @@ export async function POST(request: NextRequest) {
     trustedPaymentStatus = await resolveTrustedPaymentStatus(
       db,
       reportId,
-      auth.user.id,
+      ownerId,
       body,
       existing,
       auth.isAdmin === true,
@@ -499,6 +516,7 @@ export async function POST(request: NextRequest) {
     typeof body.payment_status === 'string' && body.payment_status.trim() === 'promo';
   const isPaidForecastPlan = planNorm === '7day' || planNorm === 'monthly' || planNorm === 'annual';
   if (
+    !actingForOwner &&
     !isFreePlan &&
     isPaidForecastPlan &&
     requestedPromo &&
@@ -651,7 +669,7 @@ export async function POST(request: NextRequest) {
       .from('ziina_payments')
       .select('plan_type')
       .eq('report_id', reportId)
-      .eq('user_id', auth.user.id)
+      .eq('user_id', ownerId)
       .eq('status', 'completed')
       .order('created_at', { ascending: false })
       .limit(1)
@@ -733,7 +751,7 @@ export async function POST(request: NextRequest) {
           .from('reports')
           .select('payment_status')
           .eq('id', reportId)
-          .eq('user_id', auth.user.id)
+          .eq('user_id', ownerId)
           .maybeSingle();
         reportAlreadyPromo = (fresh as { payment_status?: string } | null)?.payment_status === 'promo';
       }
@@ -766,8 +784,8 @@ export async function POST(request: NextRequest) {
   const { error: upsertError } = await db.from('reports').upsert(
     {
       id: reportId,
-      user_id: auth.user.id,
-      user_email: auth.user.email ?? '',
+      user_id: ownerId,
+      user_email: ownerEmail,
       native_name: body.name ?? 'Unknown',
       birth_date: body.birth_date ?? '2000-01-01',
       birth_time: body.birth_time ?? '12:00:00',
@@ -782,8 +800,9 @@ export async function POST(request: NextRequest) {
       ...(forecastStartForRow ? { report_start_date: forecastStartForRow } : {}),
       status: 'generating',
       payment_status: trustedPaymentStatus,
-      payment_provider:
-        trustedPaymentStatus === 'paid'
+      payment_provider: actingForOwner
+        ? (existing?.payment_provider ?? null)
+        : trustedPaymentStatus === 'paid'
           ? subscriptionGranted
             ? 'subscription'
             : 'ziina'
@@ -815,7 +834,7 @@ export async function POST(request: NextRequest) {
     const { data: freeRows, error: freeRaceErr } = await db
       .from('reports')
       .select('id')
-      .eq('user_id', auth.user.id)
+      .eq('user_id', ownerId)
       .in('plan_type', ['free', 'preview'])
       .order('created_at', { ascending: true })
       .order('id', { ascending: true });
@@ -828,7 +847,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', reportId)
-        .eq('user_id', auth.user.id);
+        .eq('user_id', ownerId);
       await releaseOwnedLock();
       console.error('[reports/start] free-report race re-check failed:', freeRaceErr.message);
       return NextResponse.json(
@@ -854,7 +873,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', reportId)
-        .eq('user_id', auth.user.id);
+        .eq('user_id', ownerId);
       await releaseOwnedLock();
       return NextResponse.json(
         {
@@ -873,7 +892,7 @@ export async function POST(request: NextRequest) {
     .from('reports')
     .update({ generation_trace_id: generationTraceId, updated_at: nowIso })
     .eq('id', reportId)
-    .eq('user_id', auth.user.id);
+    .eq('user_id', ownerId);
   if (traceErr) {
     const m = traceErr.message ?? '';
     if (!m.includes('generation_trace_id') && !m.includes('schema cache')) {
@@ -898,7 +917,7 @@ export async function POST(request: NextRequest) {
       .from('reports')
       .update({ phone: body.phone.trim(), updated_at: nowIso })
       .eq('id', reportId)
-      .eq('user_id', auth.user.id);
+      .eq('user_id', ownerId);
     if (phoneErr) {
       const m = phoneErr.message ?? '';
       if (!m.includes('phone') && !m.includes('schema cache')) {
@@ -914,7 +933,7 @@ export async function POST(request: NextRequest) {
       .from('reports')
       .update({ personal_context: body.personal_context.trim().slice(0, 1200), updated_at: nowIso })
       .eq('id', reportId)
-      .eq('user_id', auth.user.id);
+      .eq('user_id', ownerId);
     if (pcErr) {
       const m = pcErr.message ?? '';
       if (!m.includes('personal_context') && !m.includes('schema cache')) {
@@ -925,7 +944,7 @@ export async function POST(request: NextRequest) {
 
   // Reset append-only log when the column exists (migration). Omitted from upsert so older
   // DBs without `reports.generation_log` still accept the row; clears stale log on restart.
-  await clearReportGenerationLog(reportId, auth.user.id);
+  await clearReportGenerationLog(reportId, ownerId);
 
   // CRITICAL: On forceRestart, wipe pipeline_state so the next run does NOT reuse stale LLM
   // checkpoints from previous failed/partial attempts. Without this, the orchestrator finds
@@ -936,7 +955,7 @@ export async function POST(request: NextRequest) {
       .from('reports')
       .update({ pipeline_state: null, pipeline_checkpoint: null, generation_progress: 0, updated_at: nowIso })
       .eq('id', reportId)
-      .eq('user_id', auth.user.id);
+      .eq('user_id', ownerId);
   }
 
   const pipelineTime = birthTimeToPipelineTime(String(body.birth_time ?? '12:00:00'));
@@ -997,7 +1016,7 @@ export async function POST(request: NextRequest) {
   const authHeaders: Record<string, string> = {};
   authHeaders['x-job-token'] = createJobToken({
     reportId,
-    userId: auth.user.id,
+    userId: ownerId,
     purpose: 'pipeline',
     correlationId: generationTraceId,
     ttlSeconds: getPipelineJobTokenTtlSeconds(),
@@ -1052,8 +1071,8 @@ export async function POST(request: NextRequest) {
         name: 'report/generate',
         data: {
           reportId,
-          userId: auth.user.id,
-          userEmail: auth.user.email ?? '',
+          userId: ownerId,
+          userEmail: ownerEmail,
           input,
           base,
           authHeaders: dispatchAuthHeaders,
@@ -1124,8 +1143,8 @@ export async function POST(request: NextRequest) {
   try {
     await generateReportPipeline(
       reportId,
-      auth.user.id,
-      auth.user.email ?? '',
+      ownerId,
+      ownerEmail,
       input,
       () => {},
       base,
@@ -1136,7 +1155,7 @@ export async function POST(request: NextRequest) {
     const errMsg = err instanceof Error ? err.message : String(err);
     await appendReportGenerationLog({
       reportId,
-      userId: auth.user.id,
+      userId: ownerId,
       entry: {
         ts: new Date().toISOString(),
         elapsed_ms: 0,
@@ -1146,7 +1165,7 @@ export async function POST(request: NextRequest) {
         detail: { route: 'POST /api/reports/start', generation_trace_id: generationTraceId },
       },
     });
-    await markReportAsFailed(db, reportId, auth.user.id, {
+    await markReportAsFailed(db, reportId, ownerId, {
       message: errMsg,
       errorStep: 'start_route_inline_pipeline',
       generationErrorCode: inferReportGenerationErrorCode(errMsg, 'start_route_inline_pipeline'),
