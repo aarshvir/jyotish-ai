@@ -14,6 +14,18 @@ describe('safeInternalPath', () => {
     expect(safeInternalPath('/\\evil.com')).toBe('/dashboard');
   });
 
+  it('blocks control characters the URL parser strips into a protocol-relative host', () => {
+    const origin = 'https://vedichour.com';
+    for (const raw of ['/\t/evil.example/', '/\n/evil.example/', '/\r/evil.example/']) {
+      const fromQuery = new URL(`${origin}/login?next=${encodeURIComponent(raw)}`).searchParams.get('next');
+      const path = safeInternalPath(fromQuery);
+      expect(path).toBe('/dashboard');
+      expect(new URL(path, origin).origin).toBe(origin);
+    }
+    // Same resolution Next's client router uses before window.location.assign.
+    expect(new URL('/\t/evil.example/', origin).origin).toBe('https://evil.example');
+  });
+
   it('empty fallback lets callers omit next on error redirects', () => {
     expect(safeInternalPath('https://evil.com', '')).toBe('');
     expect(safeInternalPath('/login/reset', '')).toBe('/login/reset');
