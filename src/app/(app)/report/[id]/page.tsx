@@ -29,6 +29,10 @@ import { Glossary } from '@/components/report/Glossary';
 import { AskQuestion } from '@/components/report/AskQuestion';
 import { ReportErrorBoundary } from '@/components/ErrorBoundary';
 import { generateReportPDF } from '@/lib/pdf/generateReportPDF';
+import {
+  getStaleOrphanUpdatedAtMs,
+  hasFreshGeneratingHeartbeat,
+} from '@/lib/reports/staleGeneratingConstants';
 import { reportDataToMarkdown } from '@/lib/pdf/reportDataToMarkdown';
 import { PrintAllDays } from '@/components/report/PrintAllDays';
 import { GeneratingScreen } from '@/components/report/GeneratingScreen';
@@ -114,16 +118,6 @@ function birthDisplayForUi(
     city: city || url.city || 'Unknown',
   };
 }
-
-/**
- * Stop polling after this if status is still `generating` (server likely dead or orphaned row).
- * Must exceed the worst-case real pipeline runtime. MEASURED on production (bypass e2e):
- * a 7-day report ≈ 11–12 min; a 30-day monthly/annual report (30 days × 18 hourly slots +
- * 12 months + 6 weeks of LLM commentary across 6 hourly batches) runs ≈ 25–32 min. Set to
- * 40 min so a healthy long monthly/annual job is never declared "failed" (which would tempt
- * a wasteful force-restart). Still well under the 120-min server orphan sweep.
- */
-const CLIENT_GENERATING_TIMEOUT_MS = 40 * 60 * 1000;
 
 /** Tier B: no successful HTTP `/status` for this long while Realtime is disconnected → terminal. */
 const STATUS_SIGNAL_STALE_MS = 90_000;
@@ -542,16 +536,6 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
     const tick = async () => {
       if (pollCancelRef.current) return;
       try {
-        if (Date.now() - pollLoopStartedAt > CLIENT_GENERATING_TIMEOUT_MS) {
-          stopReportPolling();
-          setError(
-            'This is taking longer than usual. Large monthly and annual reports can take 20–30 minutes, and yours may still be generating on our servers. You can safely close this tab and find it in your dashboard when it’s ready — or use Try again if nothing appears, or contact support@vedichour.com.',
-          );
-          setGenerationErrorMeta({ code: 'STATUS_POLL_TIMEOUT', phase: null });
-          setIsGenerating(false);
-          return;
-        }
-
         const response = await fetch(`/api/reports/${reportIdFromRoute}/status`, {
           method: 'GET',
           headers: authJsonHeaders(),
@@ -622,6 +606,7 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           generation_step?: string | null;
           report: ReportData | null;
           generation_started_at?: string | null;
+          updated_at?: string | null;
           generation_error?: string | null;
           generation_error_code?: string | null;
           generation_error_at_phase?: string | null;
@@ -654,12 +639,19 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
           };
         });
 
-        // If the server says still generating but generation_started_at is older than the
-        // worst-case real pipeline runtime, the background job is almost certainly dead/orphaned.
-        // Use the shared ceiling so a healthy long monthly/annual run isn't declared failed early.
-        if (data.status === 'generating' && data.generation_started_at) {
-          const startedMs = new Date(data.generation_started_at).getTime();
-          if (!Number.isNaN(startedMs) && Date.now() - startedMs > CLIENT_GENERATING_TIMEOUT_MS) {
+        // Dead only when the pipeline heartbeat (`updated_at`) is older than the same
+        // window the orphan cron uses. `generation_started_at` stays put for the whole
+        // run, and healthy paid reports keep writing for 45–90+ minutes — treating that
+        // clock as a timeout restarted the live job and wiped its checkpoints.
+        if (data.status === 'generating') {
+          const heartbeat =
+            typeof data.updated_at === 'string' && data.updated_at.trim() !== ''
+              ? data.updated_at
+              : data.generation_started_at;
+          if (
+            heartbeat &&
+            !hasFreshGeneratingHeartbeat(heartbeat, Date.now(), getStaleOrphanUpdatedAtMs())
+          ) {
             stopReportPolling();
             setError(
               'The server did not finish in time (likely a timeout). Use Try again to restart.',
@@ -1025,15 +1017,9 @@ ${codeLine ? `${codeLine}\n` : ''}${logText ? `\n--- pipeline log ---\n${logText
         if (!cancelled && isRowGenerating) {
           hasFetched.current = true;
           setBirthDisplay(birthDisplayForUi(row ?? undefined, { name, date, time, city }));
-          const startedMs = row?.generation_started_at
-            ? new Date(row.generation_started_at as string).getTime()
-            : 0;
-          const isStale = !Number.isNaN(startedMs) && startedMs > 0 && Date.now() - startedMs > CLIENT_GENERATING_TIMEOUT_MS;
-          if (isStale && !viewingOtherUser) {
-            void kickOffBackgroundGeneration({ forceRestart: true });
-          } else {
-            startPollingForReport();
-          }
+          // Keep watching a live run. Auto forceRestart here wiped checkpoints while
+          // the Inngest job was still heartbeating (paid runs routinely pass 40 minutes).
+          startPollingForReport();
           return;
         }
 
