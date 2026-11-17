@@ -34,6 +34,7 @@ import { resolveReportTimezoneOffset } from '@/lib/utils/timezoneOffset';
 import { decideAfterPromoRedeem } from '@/lib/promo/redeemGate';
 import { decideFreeReportClaim } from '@/lib/reports/freeReportGate';
 import { minForecastDaysForPlan } from '@/lib/reports/forecastDayCount';
+import { shouldDeferForceRestart } from '@/lib/reports/staleGeneratingConstants';
 import { getSubscription, latestForecastStartedAt, nextForecastUnlock } from '@/lib/subscriptions/access';
 import { isSubscriptionPlanType } from '@/lib/subscriptions/period';
 
@@ -157,6 +158,7 @@ type ExistingReportForStart = {
   status: string | null;
   report_data: unknown;
   generation_started_at: string | null;
+  updated_at: string | null;
   plan_type: string | null;
   payment_status: string | null;
   payment_provider: string | null;
@@ -309,7 +311,7 @@ export async function POST(request: NextRequest) {
   const { data: existingRaw, error: existingErr } = await db
     .from('reports')
     .select(
-      'user_id, status, report_data, generation_started_at, plan_type, payment_status, payment_provider, report_start_date',
+      'user_id, status, report_data, generation_started_at, updated_at, plan_type, payment_status, payment_provider, report_start_date',
     )
     .eq('id', reportId)
     .maybeSingle();
@@ -360,6 +362,25 @@ export async function POST(request: NextRequest) {
 
   const rd = existing?.report_data as { days?: unknown[] } | null | undefined;
   const forceRestart = body.forceRestart === true;
+  // Reopening the report (or Try Again) while the pipeline is still heartbeating
+  // used to null pipeline_state under the live Inngest run. The next step then
+  // re-executed every prior phase in one invocation, hit the time budget, and
+  // persisted deterministic fallback commentary as the paid report.
+  if (forceRestart && shouldDeferForceRestart(existing)) {
+    return NextResponse.json(
+      {
+        reportId,
+        ok: true,
+        status: 'generating',
+        skippedPipeline: true,
+        message: 'Generation is still running — keep polling status.',
+        generation_trace_id: null,
+        engine: (useInngest ? 'inngest' : 'node') as ReportStartEngine,
+        dispatch_mode: (useInngest ? 'inngest' : 'inline_fallback') as ReportStartDispatchMode,
+      },
+      { status: 202 },
+    );
+  }
   const dayCount = Array.isArray(rd?.days) ? (rd!.days as unknown[]).length : 0;
   const planForDone = String(body.plan_type ?? existing?.plan_type ?? '7day');
   // A complete free/preview stub (1 day) must not block paid regeneration or an
